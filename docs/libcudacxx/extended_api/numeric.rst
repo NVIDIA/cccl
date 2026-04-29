@@ -61,8 +61,8 @@ Numeric
 
    * - :ref:`cuda::mul_overflow <libcudacxx-extended-api-numeric-mul_overflow>`
      - Performs multiplication with overflow checking
-     - CCCL 3.3.0
-     - CUDA 13.3
+     - CCCL 3.4.0
+     - CUDA 13.4
 
    * - :ref:`cuda::saturating_overflow_cast <libcudacxx-extended-api-numeric-saturating_overflow_cast>`
      - Performs saturating cast of a value with overflow checking

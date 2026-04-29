@@ -106,7 +106,7 @@ void test_device_vmm_allocation()
   cuda_try(cuMemSetAccess(va_ptr, alloc_size, &accessDesc, 1));
 
   // Now we can use the memory!
-  int* d_ptr = reinterpret_cast<int*>(va_ptr);
+  int* d_ptr = reinterpret_cast<int*>(va_ptr); // NOLINT(performance-no-int-to-ptr)
 
   // Create a stream for operations
   cudaStream_t stream;
@@ -196,7 +196,7 @@ void test_host_vmm_allocation()
   cuda_try(cuMemSetAccess(va_ptr, alloc_size, &accessDesc, 1));
 
   // Use the memory from the host
-  int* ptr = reinterpret_cast<int*>(va_ptr);
+  int* ptr = reinterpret_cast<int*>(va_ptr); // NOLINT(performance-no-int-to-ptr)
 
   // Initialize on host
   for (size_t i = 0; i < n; i++)
@@ -256,7 +256,7 @@ void test_multi_segment_vmm()
   accessDesc.flags           = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
   cuda_try(cuMemSetAccess(va_ptr, total_size, &accessDesc, 1));
 
-  int* d_ptr = reinterpret_cast<int*>(va_ptr);
+  int* d_ptr = reinterpret_cast<int*>(va_ptr); // NOLINT(performance-no-int-to-ptr)
 
   cudaStream_t stream;
   cuda_try(cudaStreamCreate(&stream));

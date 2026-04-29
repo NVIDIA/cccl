@@ -21,7 +21,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
 template <typename T>
-__host__ __device__ constexpr void check(T* p)
+TEST_FUNC constexpr void check(T* p)
 {
   static_assert(cuda::std::is_same_v<T*, decltype(cuda::std::assume_aligned<1>(p))>);
   constexpr cuda::std::size_t alignment = alignof(T);
@@ -43,7 +43,7 @@ struct alignas(64) S64
 struct alignas(128) S128
 {};
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   char c{};
   int i{};
@@ -75,7 +75,7 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
 
   return 0;
 }

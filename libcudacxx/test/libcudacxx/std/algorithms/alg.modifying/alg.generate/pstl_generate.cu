@@ -28,6 +28,8 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 1000;
 
 template <class T = int>
@@ -39,35 +41,55 @@ struct gen_val
       : val_(val)
   {}
 
-  __device__ constexpr T operator()() const noexcept
+  TEST_DEVICE_FUNC constexpr T operator()() const noexcept
   {
     return static_cast<T>(val_);
   }
 };
 
-template <class Policy>
-void test_generate(const Policy& policy, thrust::device_vector<int>& output)
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
+template <class Policy, class T>
+void test_generate(const Policy& policy, c2h::device_vector<T>& output)
 {
   { // empty should not access anything
-    cuda::std::generate(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), gen_val{42});
+    cuda::std::generate(policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), gen_val{42});
   }
 
-  { // same type
-    cuda::std::fill(policy, output.begin(), output.end(), 0);
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  { // contiguous iterators
+    cuda::std::generate(policy, output.begin(), output.end(), gen_val<T>{42});
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{static_cast<T>(42)}));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  T* raw_pointer = thrust::raw_pointer_cast(output.data());
+  { // random access iterators
+    cuda::std::generate(
+      policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, gen_val<T>{42});
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{static_cast<T>(42)}));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  { // contiguous iterators, convertible generator result
     cuda::std::generate(policy, output.begin(), output.end(), gen_val{42});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{static_cast<T>(42)}));
   }
 
-  { // convertible type
-    cuda::std::fill(policy, output.begin(), output.end(), 0);
-    cuda::std::generate(policy, output.begin(), output.end(), gen_val<short>{42});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  { // random access iterators, convertible generator result
+    cuda::std::generate(
+      policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, gen_val{42});
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{static_cast<T>(42)}));
   }
 }
 
-C2H_TEST("cuda::std::generate", "[parallel algorithm]")
+C2H_TEST("cuda::std::generate", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> output(size, thrust::no_init);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> output(size, thrust::no_init);
 
   SECTION("with default stream")
   {

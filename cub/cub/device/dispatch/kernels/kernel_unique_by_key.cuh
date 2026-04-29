@@ -14,7 +14,13 @@
 #endif // no system header
 
 #include <cub/agent/agent_unique_by_key.cuh>
+#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_vsmem.cuh>
+
+#include <cuda/__device/arch_id.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -28,33 +34,138 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
-// TODO: this class should be templated on `typename... Ts` to avoid repetition,
-// but due to an issue with NVCC 12.0 we currently template each member function
-// individually instead.
-struct VSMemHelper
+template <typename PolicyGetter>
+struct host_policy_provider
 {
-  template <typename ActivePolicyT, typename... Ts>
-  using VSMemHelperDefaultFallbackPolicyT =
-    vsmem_helper_default_fallback_policy_t<ActivePolicyT, detail::unique_by_key::AgentUniqueByKey, Ts...>;
+  static constexpr unique_by_key_policy selected_policy = PolicyGetter{}();
 
-  template <typename ActivePolicyT, typename... Ts>
-  _CCCL_HOST_DEVICE static constexpr int BlockThreads(ActivePolicyT /*policy*/)
+  struct fallback_pol_getter
   {
-    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::agent_policy_t::BLOCK_THREADS;
-  }
+    _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+    {
+      unique_by_key_policy policy = PolicyGetter{}();
+      policy.block_threads        = 64;
+      policy.items_per_thread     = 1;
+      return policy;
+    }
+  };
 
-  template <typename ActivePolicyT, typename... Ts>
-  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread(ActivePolicyT /*policy*/)
-  {
-    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::agent_policy_t::ITEMS_PER_THREAD;
-  }
-
-  template <typename ActivePolicyT, typename... Ts>
-  _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t VSMemPerBlock(ActivePolicyT /*policy*/)
-  {
-    return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::vsmem_per_block;
-  }
+  static constexpr unique_by_key_policy fallback_policy = fallback_pol_getter{}();
 };
+
+template <typename PolicyGetter>
+struct device_policy_provider
+{
+  static constexpr unique_by_key_policy selected_policy = PolicyGetter{}();
+
+  struct fallback_pol_getter
+  {
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
+    {
+      unique_by_key_policy policy = PolicyGetter{}();
+      policy.block_threads        = 64;
+      policy.items_per_thread     = 1;
+      return policy;
+    }
+  };
+
+  static constexpr unique_by_key_policy fallback_policy = fallback_pol_getter{}();
+};
+
+template <typename PolicyProvider,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+class unique_by_key_vsmem_helper_impl
+{
+  static constexpr unique_by_key_policy selected_policy = PolicyProvider::selected_policy;
+
+  using selected_policy_t = AgentUniqueByKeyPolicy<
+    selected_policy.block_threads,
+    selected_policy.items_per_thread,
+    selected_policy.load_algorithm,
+    selected_policy.load_modifier,
+    selected_policy.scan_algorithm,
+    delay_constructor_t<selected_policy.delay_constructor.kind,
+                        selected_policy.delay_constructor.delay,
+                        selected_policy.delay_constructor.l2_write_latency>>;
+
+  static constexpr unique_by_key_policy fallback_policy = PolicyProvider::fallback_policy;
+
+  using fallback_policy_t = AgentUniqueByKeyPolicy<
+    fallback_policy.block_threads,
+    fallback_policy.items_per_thread,
+    fallback_policy.load_algorithm,
+    fallback_policy.load_modifier,
+    fallback_policy.scan_algorithm,
+    delay_constructor_t<fallback_policy.delay_constructor.kind,
+                        fallback_policy.delay_constructor.delay,
+                        fallback_policy.delay_constructor.l2_write_latency>>;
+
+  using default_agent_t =
+    AgentUniqueByKey<selected_policy_t,
+                     KeyInputIteratorT,
+                     ValueInputIteratorT,
+                     KeyOutputIteratorT,
+                     ValueOutputIteratorT,
+                     EqualityOpT,
+                     OffsetT>;
+  using fallback_agent_t =
+    AgentUniqueByKey<fallback_policy_t,
+                     KeyInputIteratorT,
+                     ValueInputIteratorT,
+                     KeyOutputIteratorT,
+                     ValueOutputIteratorT,
+                     EqualityOpT,
+                     OffsetT>;
+
+  static constexpr ::cuda::std::size_t max_default_size  = sizeof(typename default_agent_t::TempStorage);
+  static constexpr ::cuda::std::size_t max_fallback_size = sizeof(typename fallback_agent_t::TempStorage);
+  static constexpr bool uses_fallback_policy =
+    (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
+
+public:
+  static constexpr unique_by_key_policy policy    = uses_fallback_policy ? fallback_policy : selected_policy;
+  static constexpr bool selected_policy_fits_smem = max_default_size <= max_smem_per_block;
+
+  using selected_agent_t = default_agent_t;
+  using agent_t          = ::cuda::std::_If<uses_fallback_policy, fallback_agent_t, default_agent_t>;
+};
+
+template <typename PolicyGetter,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+using unique_by_key_vsmem_helper_t = unique_by_key_vsmem_helper_impl<
+  host_policy_provider<PolicyGetter>,
+  KeyInputIteratorT,
+  ValueInputIteratorT,
+  KeyOutputIteratorT,
+  ValueOutputIteratorT,
+  EqualityOpT,
+  OffsetT>;
+
+template <typename PolicyGetter,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+using device_unique_by_key_vsmem_helper_t = unique_by_key_vsmem_helper_impl<
+  device_policy_provider<PolicyGetter>,
+  KeyInputIteratorT,
+  ValueInputIteratorT,
+  KeyOutputIteratorT,
+  ValueOutputIteratorT,
+  EqualityOpT,
+  OffsetT>;
 
 /**
  * @brief Unique by key kernel entry point (multi-block)
@@ -115,7 +226,7 @@ struct VSMemHelper
  * @param[in] vsmem
  *   Memory to support virtual shared memory
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyOutputIteratorT,
@@ -123,17 +234,16 @@ template <typename ChainedPolicyT,
           typename NumSelectedIteratorT,
           typename ScanTileStateT,
           typename EqualityOpT,
-          typename OffsetT,
-          typename VSMemHelperT = VSMemHelper>
-__launch_bounds__(int(
-  VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
-    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+          typename OffsetT>
+__launch_bounds__(
+  device_unique_by_key_vsmem_helper_t<
+    device_policy_getter<PolicySelector, current_tuning_arch()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
     ValueOutputIteratorT,
     EqualityOpT,
-    OffsetT>::agent_policy_t::BLOCK_THREADS))
+    OffsetT>::policy.block_threads)
   _CCCL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
@@ -146,33 +256,30 @@ __launch_bounds__(int(
     _CCCL_GRID_CONSTANT const int num_tiles,
     vsmem_t vsmem)
 {
-  using VsmemHelperT = typename VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
-    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+  using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
+    device_policy_getter<PolicySelector, current_tuning_arch()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
     ValueOutputIteratorT,
     EqualityOpT,
     OffsetT>;
-
-  using AgentUniqueByKeyPolicyT = typename VsmemHelperT::agent_policy_t;
-
-  // Thread block type for selecting data from input tiles
-  using AgentUniqueByKeyT = typename VsmemHelperT::agent_t;
+  using agent_unique_by_key_t = typename vsmem_adapted_agents::agent_t;
+  using vsmem_helper_t        = vsmem_helper_impl<agent_unique_by_key_t>;
 
   // Static shared memory allocation
-  __shared__ typename VsmemHelperT::static_temp_storage_t static_temp_storage;
+  __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
 
   // Get temporary storage
-  typename AgentUniqueByKeyT::TempStorage& temp_storage =
-    VsmemHelperT::get_temp_storage(static_temp_storage, vsmem, (blockIdx.x * gridDim.y) + blockIdx.y);
+  typename agent_unique_by_key_t::TempStorage& temp_storage =
+    vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem, (blockIdx.x * gridDim.y) + blockIdx.y);
 
   // Process tiles
-  AgentUniqueByKeyT(temp_storage, d_keys_in, d_values_in, d_keys_out, d_values_out, equality_op, num_items)
+  agent_unique_by_key_t(temp_storage, d_keys_in, d_values_in, d_keys_out, d_values_out, equality_op, num_items)
     .ConsumeRange(num_tiles, tile_state, d_num_selected_out);
 
   // If applicable, hints to discard modified cache lines for vsmem
-  VsmemHelperT::discard_temp_storage(temp_storage);
+  vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 } // namespace detail::unique_by_key
 

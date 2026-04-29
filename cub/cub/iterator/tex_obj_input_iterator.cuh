@@ -25,13 +25,10 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 #include <nv/target>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -125,19 +122,15 @@ private:
   static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
 private:
-  T* ptr;
-  difference_type tex_offset;
-  cudaTextureObject_t tex_obj;
+  T* ptr{nullptr};
+  difference_type tex_offset{0};
+  cudaTextureObject_t tex_obj{0};
 
 public:
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
-      : ptr(nullptr)
-      , tex_offset(0)
-      , tex_obj(0)
-  {}
+  _CCCL_FORCEINLINE TexObjInputIterator() = default;
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /**
    * @brief Use this iterator to bind @p ptr with a texture reference
    *
@@ -174,7 +167,7 @@ public:
   {
     return CubDebug(cudaDestroyTextureObject(tex_obj));
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   /// Postfix increment
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
@@ -194,7 +187,7 @@ public:
   /// Indirection
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
   }
 
   /// Addition
@@ -267,7 +260,7 @@ public:
     return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /// ostream operator
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
@@ -275,7 +268,7 @@ public:
        << " )";
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   // This is hoisted out of operator* because #pragma can't be used inside of

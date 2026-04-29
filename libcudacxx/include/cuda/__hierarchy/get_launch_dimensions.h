@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK()
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__hierarchy/block_level.h>
 #  include <cuda/__hierarchy/cluster_level.h>
@@ -89,6 +89,6 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK()
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA___HIERARCHY_GET_LAUNCH_DIMENSIONS_H

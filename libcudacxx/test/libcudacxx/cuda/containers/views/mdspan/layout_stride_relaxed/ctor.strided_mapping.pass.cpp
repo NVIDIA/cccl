@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // Converting constructor from strided layout mappings:
@@ -38,7 +41,7 @@
 using cuda::std::intptr_t;
 
 template <class FromL, class FromExt>
-__host__ __device__ constexpr auto get_strides(FromExt src_exts)
+TEST_FUNC constexpr auto get_strides(FromExt src_exts)
 {
   using From = typename FromL::template mapping<FromExt>;
 
@@ -61,7 +64,7 @@ __host__ __device__ constexpr auto get_strides(FromExt src_exts)
 }
 
 template <bool implicit, class FromL, class ToExt, class FromExt>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::layout_stride_relaxed::mapping<ToExt>;
   using From = typename FromL::template mapping<FromExt>;
@@ -92,7 +95,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <class FromL, class T1, class T2>
-__host__ __device__ constexpr void test_conversion()
+TEST_FUNC constexpr void test_conversion()
 {
   using cuda::std::is_same_v;
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
@@ -147,7 +150,7 @@ __host__ __device__ constexpr void test_conversion()
 }
 
 template <class FromL>
-__host__ __device__ constexpr void test_layout()
+TEST_FUNC constexpr void test_layout()
 {
   test_conversion<FromL, int, int>();
   test_conversion<FromL, int, size_t>();
@@ -156,7 +159,7 @@ __host__ __device__ constexpr void test_layout()
 }
 
 // Test conversion from another layout_stride_relaxed::mapping
-__host__ __device__ constexpr void test_self_conversion()
+TEST_FUNC constexpr void test_self_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -191,7 +194,7 @@ __host__ __device__ constexpr void test_self_conversion()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_layout<cuda::std::layout_right>();
   test_layout<cuda::std::layout_left>();

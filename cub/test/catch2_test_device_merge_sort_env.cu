@@ -9,8 +9,10 @@ struct stream_registry_factory_t;
 
 #include <cub/device/device_merge_sort.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -29,6 +31,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_st
 #include <c2h/catch2_test_helper.h>
 
 namespace stdexec = cuda::std::execution;
+
+template <int BlockThreads>
+struct merge_sort_tuning
+{
+  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::merge_sort::merge_sort_policy
+  {
+    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
+  }
+};
 
 #if TEST_LAUNCH == 0
 
@@ -434,3 +445,115 @@ TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_sort
   c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
+
+using block_size_compare_t = block_size_extracting_op<cuda::std::less<>>;
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+C2H_TEST("DeviceMergeSort::SortPairs can be tuned", "[merge_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys{4, 1, 3, 2};
+  c2h::device_vector<int> d_values{0, 1, 2, 3};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceMergeSort::SortPairs(
+            d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), compare_op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#if TEST_LAUNCH != 1
+
+C2H_TEST("DeviceMergeSort::SortPairsCopy can be tuned", "[merge_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
+  c2h::device_vector<int> d_values_in{0, 1, 2, 3};
+  c2h::device_vector<int> d_keys_out(4);
+  c2h::device_vector<int> d_values_out(4);
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
+
+  device_merge_sort_pairs_copy(
+    d_keys_in.data().get(),
+    d_values_in.data().get(),
+    d_keys_out.data().get(),
+    d_values_out.data().get(),
+    static_cast<int>(d_keys_in.size()),
+    compare_op,
+    env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceMergeSort::SortKeys can be tuned", "[merge_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys{4, 1, 3, 2};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
+
+  device_merge_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceMergeSort::SortKeysCopy can be tuned", "[merge_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
+  c2h::device_vector<int> d_keys_out(4);
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
+
+  device_merge_sort_keys_copy(
+    d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceMergeSort::StableSortPairs can be tuned", "[merge_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys{4, 1, 3, 2};
+  c2h::device_vector<int> d_values{0, 1, 2, 3};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
+
+  device_merge_stable_sort_pairs(
+    d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceMergeSort::StableSortKeys can be tuned", "[merge_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys{4, 1, 3, 2};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
+
+  device_merge_stable_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
+  c2h::device_vector<int> d_keys_out(4);
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
+
+  device_merge_stable_sort_keys_copy(
+    d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1

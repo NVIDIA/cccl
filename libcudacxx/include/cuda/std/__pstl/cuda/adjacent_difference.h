@@ -66,40 +66,22 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
     _BinaryOp __binary_op)
   {
     auto __count = ::cuda::std::distance(__first, __last);
-    auto __ret   = __result + __count;
 
-    // Determine temporary device storage requirements for device_merge
-    size_t __num_bytes = 0;
+    // We pass the policy as an environment to DeviceAdjacentDifference
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceAdjacentDifference::SubtractLeftCopy,
-      "__pstl_cuda_merge: determination of device storage for cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
-      static_cast<void*>(nullptr),
-      __num_bytes,
-      __first,
+      "__pstl_cuda_merge: kernel launch of cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
+      ::cuda::std::move(__first),
       __result,
       __count,
-      __binary_op,
-      0);
+      ::cuda::std::move(__binary_op),
+      __policy);
 
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    {
-      __temporary_storage<> __storage{__policy, __num_bytes};
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    __stream.sync();
 
-      // Run the kernel, the standard requires that the input and output range do not overlap
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceAdjacentDifference::SubtractLeftCopy,
-        "__pstl_cuda_merge: kernel launch of cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
-        __storage.__get_temp_storage(),
-        __num_bytes,
-        ::cuda::std::move(__first),
-        ::cuda::std::move(__result),
-        __count,
-        ::cuda::std::move(__binary_op),
-        __stream.get());
-    }
-
-    return __ret;
+    return __result + __count;
   }
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _BinaryOp)

@@ -118,14 +118,17 @@ namespace detail
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (if (Delay > 0) {
-                 if (gridDim.x < GridThreshold)
+  NV_IF_TARGET(NV_PROVIDES_SM_70, ({
+                 if (Delay > 0)
                  {
-                   __threadfence_block();
-                 }
-                 else
-                 {
-                   __nanosleep(Delay);
+                   if (gridDim.x < GridThreshold)
+                   {
+                     __threadfence_block();
+                   }
+                   else
+                   {
+                     __nanosleep(Delay);
+                   }
                  }
                }));
 }
@@ -133,14 +136,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (if (ns > 0) {
-                 if (gridDim.x < GridThreshold)
+  NV_IF_TARGET(NV_PROVIDES_SM_70, ({
+                 if (ns > 0)
                  {
-                   __threadfence_block();
-                 }
-                 else
-                 {
-                   __nanosleep(ns);
+                   if (gridDim.x < GridThreshold)
+                   {
+                     __threadfence_block();
+                   }
+                   else
+                   {
+                     __nanosleep(ns);
+                   }
                  }
                }));
 }
@@ -159,24 +165,24 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<Delay, GridThreshold>();), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<Delay, GridThreshold>();), (__threadfence_block();));
 }
 
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
 }
 
 template <unsigned int Delay = 350>
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
 }
 
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
 }
 
 template <unsigned int L2WriteLatency>
@@ -186,7 +192,7 @@ struct no_delay_constructor_t
   {
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence_block();));
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence_block();));
     }
   };
 
@@ -199,14 +205,6 @@ struct no_delay_constructor_t
   {
     return {};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">() = value<string("no_delay_constructor_t")>(), key<"params">() = array<L2WriteLatency>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold = 500>
@@ -235,15 +233,6 @@ struct reduce_by_key_delay_constructor_t
   {
     return {};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("reduce_by_key_delay_constructor_t")>(),
-                  key<"params">() = array<Delay, L2WriteLatency, GridThreshold>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
@@ -266,15 +255,6 @@ struct fixed_delay_constructor_t
   {
     return {};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("fixed_delay_constructor_t")>(),
-                  key<"params">() = array<Delay, L2WriteLatency>()>();
-  }
-#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -300,15 +280,6 @@ struct exponential_backoff_constructor_t
   {
     return {InitialDelay};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("exponential_backoff_constructor_t")>(),
-                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -347,15 +318,6 @@ struct exponential_backoff_jitter_constructor_t
   {
     return {InitialDelay, seed};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("exponential_backoff_jitter_constructor_t")>(),
-                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -394,15 +356,6 @@ struct exponential_backoff_jitter_window_constructor_t
   {
     return {InitialDelay, seed};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("exponential_backoff_jitter_window_constructor_t")>(),
-                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -444,15 +397,6 @@ struct exponential_backon_jitter_window_constructor_t
     max_delay >>= 1;
     return {max_delay, seed};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("exponential_backon_jitter_window_constructor_t")>(),
-                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -493,15 +437,6 @@ struct exponential_backon_jitter_constructor_t
     max_delay >>= 1;
     return {max_delay, seed};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("exponential_backon_jitter_constructor_t")>(),
-                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -530,15 +465,6 @@ struct exponential_backon_constructor_t
     max_delay >>= 1;
     return {max_delay};
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedConstructor()
-  {
-    using namespace ptx_json;
-    return object<key<"name">()   = value<string("exponential_backon_constructor_t")>(),
-                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
-  }
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 using default_no_delay_constructor_t = no_delay_constructor_t<450>;
@@ -690,6 +616,7 @@ struct ScanTileState<T, true>
     StatusWord status;
     T value;
   };
+  static_assert(sizeof(TileDescriptor) <= sizeof(TxnWord), "Tile descriptor must fit into the atomic transaction word");
   static_assert(sizeof(TileDescriptor) <= detail::largest_atomic_message_size);
 
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
@@ -786,7 +713,7 @@ private:
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
-    NV_IF_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
   }
 
   template <MemoryOrder Order>
@@ -798,7 +725,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   ThreadfenceForLoadAcqPreVolta()
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
   }
 
 public:
@@ -884,19 +811,15 @@ struct ScanTileState<T, false>
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Device storage
-  StatusWord* d_tile_status;
-  T* d_tile_partial;
-  T* d_tile_inclusive;
+  StatusWord* d_tile_status{};
+  T* d_tile_partial{};
+  T* d_tile_inclusive{};
 
   static constexpr size_t description_bytes_per_tile = sizeof(StatusWord);
   static constexpr size_t payload_bytes_per_tile     = sizeof(Uninitialized<T>);
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
-      : d_tile_status(nullptr)
-      , d_tile_partial(nullptr)
-      , d_tile_inclusive(nullptr)
-  {}
+  _CCCL_FORCEINLINE ScanTileState() = default;
 
   /**
    * @brief Initializer
@@ -929,7 +852,7 @@ struct ScanTileState<T, false>
       d_tile_status    = reinterpret_cast<StatusWord*>(allocations[0]);
       d_tile_partial   = reinterpret_cast<T*>(allocations[1]);
       d_tile_inclusive = reinterpret_cast<T*>(allocations[2]);
-    } while (0);
+    } while (false);
 
     return error;
   }

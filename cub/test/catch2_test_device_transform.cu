@@ -521,10 +521,12 @@ struct non_trivial
       : data(data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ non_trivial(const non_trivial& nt)
       : data(nt.data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ auto operator=(const non_trivial& nt) -> non_trivial&
   {
     data = nt.data;
@@ -766,7 +768,7 @@ void fill_pdl(T* data, size_t n, T value)
   const auto blocks               = static_cast<unsigned>(::cuda::ceil_div(n, block_threads * items_per_thread));
 
   THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-    blocks, block_threads, /* smem */ 0, /*stream*/ 0, /* pdl */ true)
+    blocks, block_threads, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
     .doit(fill_pdl_kernel<block_threads, items_per_thread, T>, data, n, value);
 }
 

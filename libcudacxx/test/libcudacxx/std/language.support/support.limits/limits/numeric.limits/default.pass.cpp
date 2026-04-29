@@ -18,13 +18,13 @@
 
 struct A
 {
-  __host__ __device__ A(int i = 0)
+  TEST_FUNC A(int i = 0)
       : data_(i)
   {}
   int data_;
 };
 
-__host__ __device__ bool operator==(const A& x, const A& y)
+TEST_FUNC bool operator==(const A& x, const A& y)
 {
   return x.data_ == y.data_;
 }

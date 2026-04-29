@@ -200,11 +200,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   const histogram_policy active_policy = policy_selector(arch_id);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << active_policy;
-                _CubLog("Dispatching DeviceHistogram to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceHistogram to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
   auto sweep_kernel      = [&] {
@@ -1261,7 +1263,7 @@ struct DispatchHistogram
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
               /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ false>,
               PolicyHub>::MaxPolicy,
             bool IsByteSample>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
@@ -1347,7 +1349,7 @@ struct DispatchHistogram
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
               /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ true>,
               PolicyHub>::MaxPolicy,
             bool IsByteSample>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(

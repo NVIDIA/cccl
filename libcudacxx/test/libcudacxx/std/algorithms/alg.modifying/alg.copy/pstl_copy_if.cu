@@ -29,112 +29,133 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-inline constexpr int size = 10000;
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
 
-struct is_even
+inline constexpr int size = 1000;
+
+template <class T>
+struct is_not_42
 {
-  __device__ constexpr bool operator()(const int& val) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(const T& val) const noexcept
   {
-    return (val % 2) == 0;
+    return !(val == static_cast<T>(42));
   }
 };
 
-struct check_is_even
-{
-  __device__ void operator()(const cuda::std::ptrdiff_t pos, const int value) const noexcept
-  {
-    _CCCL_VERIFY(static_cast<int>(pos * 2) == value, "Invalid position");
-    _CCCL_VERIFY(is_even{}(value), "Not even");
-  }
-};
-
-template <class Policy>
-void test_copy_if(const Policy& policy, const thrust::device_vector<int>& input, thrust::device_vector<int>& output)
+template <class Policy, class T>
+void test_copy_if(const Policy& policy,
+                  const c2h::device_vector<T>& input,
+                  c2h::device_vector<T>& output,
+                  const c2h::device_vector<int>& converting)
 {
   { // empty should not access anything
     const auto res = cuda::std::copy_if(
-      policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), static_cast<int*>(nullptr), is_even{});
+      policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), static_cast<T*>(nullptr), is_not_42<T>{});
     CHECK(res == nullptr);
   }
 
-  { // Same input output type
-    { // With random_access iterator
-      cuda::std::fill(policy, output.begin(), output.end(), -1);
-      const auto res = cuda::std::copy_if(
-        policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_even{});
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-      CHECK(res == output.end());
-    }
-
-    { // With contiguous iterator
-      cuda::std::fill(policy, output.begin(), output.end(), -1);
-      const auto res = cuda::std::copy_if(policy, input.begin(), input.end(), output.begin(), is_even{});
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-      CHECK(res == output.end());
-    }
-
-    { // With pointer
-      cuda::std::fill(policy, output.begin(), output.end(), -1);
-      auto ptr       = thrust::raw_pointer_cast(input.data());
-      const auto res = cuda::std::copy_if(policy, ptr, ptr + size, output.begin(), is_even{});
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-      CHECK(res == output.end());
-    }
-  }
-
-  { // Different input type
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    const auto res = cuda::std::copy_if(
-      policy, cuda::counting_iterator{short{0}}, cuda::counting_iterator{short{size}}, output.begin(), is_even{});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
+  const auto mid_in  = cuda::std::next(input.begin(), 43);
+  const auto mid_out = cuda::std::next(output.begin(), 42);
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  { // With contiguous iterator
+    const auto res = cuda::std::copy_if(policy, input.begin(), input.end(), output.begin(), is_not_42<T>{});
     CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, output.end(), mid_in));
   }
 
-  { // Random access output type
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  const T* raw_pointer = thrust::raw_pointer_cast(input.data());
+  { // With non-contiguous input iterator
     const auto res = cuda::std::copy_if(
       policy,
-      cuda::counting_iterator{0},
-      cuda::counting_iterator{size},
-      cuda::tabulate_output_iterator{check_is_even{}, 0},
-      is_even{});
-    CHECK(res == cuda::tabulate_output_iterator{check_is_even{}, size / 2});
+      random_access_iterator{raw_pointer},
+      random_access_iterator{raw_pointer + size},
+      output.begin(),
+      is_not_42<T>{});
+    CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, output.end(), mid_in));
   }
 
-  { // Random access output type with conversion during assignment
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  T* raw_out_pointer = thrust::raw_pointer_cast(output.data());
+  { // With non-contiguous output iterator
+    const auto res =
+      cuda::std::copy_if(policy, input.begin(), input.end(), random_access_iterator{raw_out_pointer}, is_not_42<T>{});
+    CHECK(res == random_access_iterator{raw_out_pointer + size - 1});
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, output.end(), mid_in));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  { // All non-contiguous iterators
     const auto res = cuda::std::copy_if(
       policy,
-      cuda::counting_iterator{short{0}},
-      cuda::counting_iterator{short{size}},
-      cuda::tabulate_output_iterator{check_is_even{}, 0},
-      is_even{});
-    CHECK(res == cuda::tabulate_output_iterator{check_is_even{}, size / 2});
+      random_access_iterator{raw_pointer},
+      random_access_iterator{raw_pointer + size},
+      random_access_iterator{raw_out_pointer},
+      is_not_42<T>{});
+    CHECK(res == random_access_iterator{raw_out_pointer + size - 1});
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, output.end(), mid_in));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  { // From a converting contiguous sequence
+    const auto res = cuda::std::copy_if(policy, converting.begin(), converting.end(), output.begin(), is_not_42<int>{});
+    CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, output.end(), mid_in));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  const int* raw_converting_pointer = thrust::raw_pointer_cast(converting.data());
+  { // From a converting random access sequence
+    const auto res = cuda::std::copy_if(
+      policy,
+      random_access_iterator{raw_converting_pointer},
+      random_access_iterator{raw_converting_pointer + size},
+      output.begin(),
+      is_not_42<int>{});
+    CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, output.end(), mid_in));
   }
 }
 
-C2H_TEST("cuda::std::copy_if", "[parallel algorithm]")
+C2H_TEST("cuda::std::copy_if", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> output(size / 2, thrust::no_init);
-  thrust::device_vector<int> input(size, thrust::no_init);
-  thrust::sequence(input.begin(), input.end(), 0);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> output(size - 1, thrust::no_init);
+  c2h::device_vector<T> input(size, thrust::no_init);
+  c2h::device_vector<int> converting(size, thrust::no_init);
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  thrust::sequence(converting.begin(), converting.end(), 0);
 
   SECTION("with default stream")
   {
     const auto policy = cuda::execution::gpu;
-    test_copy_if(policy, input, output);
+
+    test_copy_if(policy, input, output, converting);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_copy_if(policy, input, output);
+
+    test_copy_if(policy, input, output, converting);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource);
-    test_copy_if(policy, input, output);
+
+    test_copy_if(policy, input, output, converting);
   }
 
   SECTION("with provided stream and memory_resource")
@@ -143,6 +164,7 @@ C2H_TEST("cuda::std::copy_if", "[parallel algorithm]")
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
-    test_copy_if(policy, input, output);
+
+    test_copy_if(policy, input, output, converting);
   }
 }

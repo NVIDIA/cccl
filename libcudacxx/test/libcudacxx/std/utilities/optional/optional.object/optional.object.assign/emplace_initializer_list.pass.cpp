@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <cuda/std/optional>
 
 // template <class U, class... Args>
@@ -28,25 +31,25 @@ class X
   bool* dtor_called_;
 
 public:
-  __host__ __device__ constexpr X(bool& dtor_called)
+  TEST_FUNC constexpr X(bool& dtor_called)
       : i_(0)
       , dtor_called_(&dtor_called)
   {}
-  __host__ __device__ constexpr X(int i, bool& dtor_called)
+  TEST_FUNC constexpr X(int i, bool& dtor_called)
       : i_(i)
       , dtor_called_(&dtor_called)
   {}
-  __host__ __device__ constexpr X(cuda::std::initializer_list<int> il, bool& dtor_called)
+  TEST_FUNC constexpr X(cuda::std::initializer_list<int> il, bool& dtor_called)
       : i_(il.begin()[0])
       , j_(il.begin()[1])
       , dtor_called_(&dtor_called)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~X()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~X()
   {
     *dtor_called_ = true;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const X& x, const X& y)
+  TEST_FUNC friend constexpr bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
@@ -58,42 +61,42 @@ class Y
   int j_ = 0;
 
 public:
-  __host__ __device__ constexpr Y()
+  TEST_FUNC constexpr Y()
       : i_(0)
   {}
-  __host__ __device__ constexpr Y(int i)
+  TEST_FUNC constexpr Y(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr Y(cuda::std::initializer_list<int> il)
+  TEST_FUNC constexpr Y(cuda::std::initializer_list<int> il)
       : i_(il.begin()[0])
       , j_(il.begin()[1])
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
+  TEST_FUNC friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool check_X()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool check_X()
 {
   bool dtor_called = false;
   X x(dtor_called);
   optional<X> opt(x);
   assert(dtor_called == false);
   auto& v = opt.emplace({1, 2}, dtor_called);
-  static_assert(cuda::std::is_same_v<X&, decltype(v)>, "");
+  static_assert(cuda::std::is_same_v<X&, decltype(v)>);
   assert(dtor_called);
   assert(*opt == X({1, 2}, dtor_called));
   assert(&v == &*opt);
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool check_Y()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool check_Y()
 {
   optional<Y> opt{};
   auto& v = opt.emplace({1, 2});
-  static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
+  static_assert(cuda::std::is_same_v<Y&, decltype(v)>);
   assert(static_cast<bool>(opt) == true);
   assert(*opt == Y({1, 2}));
   assert(&v == &*opt);
@@ -140,7 +143,7 @@ void test_exceptions()
     assert(static_cast<bool>(opt) == true);
     assert(Z::dtor_called() == false);
     [[maybe_unused]] auto& v = opt.emplace({1, 2});
-    static_assert(cuda::std::is_same_v<Z&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<Z&, decltype(v)>);
     assert(false);
   }
   catch (int i)

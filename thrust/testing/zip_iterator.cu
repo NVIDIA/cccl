@@ -62,7 +62,7 @@ struct TestZipIteratorConstructionFromIterators
     ASSERT_EQUAL(true, iter0 == ZipIterator{cuda::std::make_tuple(v0.begin(), v1.begin())});
   }
 
-  void operator()(void)
+  void operator()()
   {
     test<thrust::host_vector<T>>();
     test<thrust::device_vector<T>>();
@@ -151,20 +151,19 @@ struct TestZipIteratorManipulation
     ASSERT_EQUAL(-1, iter0 - iter4);
   }
 
-  void operator()(void)
+  void operator()()
   {
     test<thrust::host_vector<T>>();
     test<thrust::device_vector<T>>();
   }
 };
 SimpleUnitTest<TestZipIteratorManipulation, type_list<int>> TestZipIteratorManipulationInstance;
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<cuda::std::tuple<int*, int*>>>::value,
-              "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<cuda::std::tuple<int*, int*>>>::value);
 
 template <typename T>
 struct TestZipIteratorReference
 {
-  void operator()(void)
+  void operator()()
   {
     // test host types
     using Iterator1      = typename thrust::host_vector<T>::iterator;

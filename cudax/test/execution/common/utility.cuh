@@ -67,13 +67,16 @@ struct potentially_throwing
 
   _CCCL_HOST_DEVICE potentially_throwing(potentially_throwing&&) noexcept(false) {}
 
-  _CCCL_HOST_DEVICE potentially_throwing(const potentially_throwing&) noexcept(false) {}
+  _CCCL_HOST_DEVICE
+  potentially_throwing(const potentially_throwing&) noexcept(false) // NOLINT(modernize-use-equals-default)
+  {}
 
   _CCCL_HOST_DEVICE potentially_throwing& operator=(potentially_throwing&&) noexcept(false)
   {
     return *this;
   }
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE potentially_throwing& operator=(const potentially_throwing&) noexcept(false)
   {
     return *this;

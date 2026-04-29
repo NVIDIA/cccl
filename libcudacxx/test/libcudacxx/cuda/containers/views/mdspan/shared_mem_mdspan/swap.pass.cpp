@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <mdspan>
 //
 // friend constexpr void swap(mdspan& x, mdspan& y) noexcept;
@@ -27,7 +30,7 @@
 #include "test_macros.h"
 
 template <class MDS>
-__device__ void test_swap(MDS a, MDS b)
+TEST_DEVICE_FUNC void test_swap(MDS a, MDS b)
 {
   auto org_a = a;
   auto org_b = b;
@@ -43,7 +46,7 @@ __device__ void test_swap(MDS a, MDS b)
   test_swap_counter<MDS>();
 }
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   using extents_t    = cuda::std::extents<int, 4, cuda::std::dynamic_extent>;
   float data_a[1024] = {};

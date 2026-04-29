@@ -1106,7 +1106,7 @@ void data_dump([[maybe_unused]] mdspan<E, X, L, A> s,
   }
   else
   {
-    ::std::cerr << "Unsupported typed." << ::std::endl;
+    ::std::cerr << "Unsupported typed." << '\n';
   }
 }
 

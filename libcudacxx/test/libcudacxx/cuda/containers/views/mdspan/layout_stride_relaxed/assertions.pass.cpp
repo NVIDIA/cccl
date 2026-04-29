@@ -63,10 +63,45 @@ void test_strides_narrowing_assertion()
   TEST_CCCL_ASSERT_FAILURE((small_strides(too_big)), "strides construction: stride is out of range");
 }
 
+void test_insufficient_offset_for_negative_strides()
+{
+  // 1D: extent=4, stride=-1 requires offset >= 3
+  {
+    using extents_t = cuda::std::extents<int, 4>;
+    using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
+    using strides_t = typename mapping_t::strides_type;
+    using offset_t  = typename mapping_t::offset_type;
+
+    TEST_CCCL_ASSERT_FAILURE(mapping_t(extents_t{}, strides_t(-1), static_cast<offset_t>(2)),
+                             "layout_stride_relaxed::mapping: offset is insufficient for negative strides");
+  }
+  // 2D: extents(3,4), strides(4,-1) requires offset >= (4-1)*1 = 3
+  {
+    using extents_t = cuda::std::extents<int, 3, 4>;
+    using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
+    using strides_t = typename mapping_t::strides_type;
+    using offset_t  = typename mapping_t::offset_type;
+
+    TEST_CCCL_ASSERT_FAILURE(mapping_t(extents_t{}, strides_t(4, -1), static_cast<offset_t>(2)),
+                             "layout_stride_relaxed::mapping: offset is insufficient for negative strides");
+  }
+  // 2D: extents(3,4), strides(-2,-1) requires offset >= (3-1)*2 + (4-1)*1 = 7
+  {
+    using extents_t = cuda::std::extents<int, 3, 4>;
+    using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
+    using strides_t = typename mapping_t::strides_type;
+    using offset_t  = typename mapping_t::offset_type;
+
+    TEST_CCCL_ASSERT_FAILURE(mapping_t(extents_t{}, strides_t(-2, -1), static_cast<offset_t>(6)),
+                             "layout_stride_relaxed::mapping: offset is insufficient for negative strides");
+  }
+}
+
 int main(int, char**)
 {
   test_negative_offset_assertion();
   test_static_stride_comparison();
   test_strides_narrowing_assertion();
+  test_insufficient_offset_for_negative_strides();
   return 0;
 }

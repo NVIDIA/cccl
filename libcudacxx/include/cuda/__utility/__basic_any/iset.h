@@ -129,7 +129,7 @@ struct __iset_vptr : __base_vptr
   _CCCL_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
       : __base_vptr(__vptr->__query_interface(__iunknown()))
   {
-    static_assert(::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Others...>, _Interfaces...>, "");
+    static_assert(::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Others...>, _Interfaces...>);
     _CCCL_ASSERT(__vptr_->__kind_ == __vtable_kind::__rtti && __vptr_->__cookie_ == 0xDEADBEEF,
                  "query_interface returned a bad pointer to the __iunknown vtable");
   }
@@ -163,6 +163,7 @@ struct __tagged_ptr<__iset_vptr<_Interfaces...>>
 
   [[nodiscard]] _CCCL_NODEBUG_API auto __get() const noexcept -> __iset_vptr<_Interfaces...>
   {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return __iset_vptr<_Interfaces...>{reinterpret_cast<__rtti_base const*>(__ptr_ & ~uintptr_t(1))};
   }
 

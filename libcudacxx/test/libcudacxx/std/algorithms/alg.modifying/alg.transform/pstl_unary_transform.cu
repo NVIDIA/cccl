@@ -29,12 +29,14 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 1000;
 
 template <class T = int>
 struct minus_five
 {
-  __device__ constexpr T operator()(const T val) const noexcept
+  TEST_DEVICE_FUNC constexpr T operator()(const T val) const noexcept
   {
     return static_cast<T>(val - 5);
   }
@@ -51,14 +53,14 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
     cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy, cuda::counting_iterator{42}, cuda::counting_iterator{size + 42}, output.begin(), minus_five{});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{37}));
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::counting_iterator{37}));
   }
 
   { // convertible transform arg
     cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy, cuda::counting_iterator{42}, cuda::counting_iterator{size + 42}, output.begin(), minus_five<short>{});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{37}));
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::counting_iterator{37}));
   }
 
   { // convertible type
@@ -69,7 +71,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
       cuda::counting_iterator<short>{size + 42},
       output.begin(),
       minus_five{});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{37}));
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::counting_iterator{37}));
   }
 }
 

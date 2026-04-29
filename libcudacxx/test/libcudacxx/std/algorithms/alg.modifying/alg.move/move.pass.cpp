@@ -30,47 +30,47 @@ struct NonTrivialMove
   bool move_assigned_from = false;
 
   NonTrivialMove() = default;
-  __host__ __device__ constexpr NonTrivialMove(const NonTrivialMove& other) noexcept
+  TEST_FUNC constexpr NonTrivialMove(const NonTrivialMove& other) noexcept
       : data(other.data)
       , move_assigned_from(false)
   {}
 
-  __host__ __device__ constexpr NonTrivialMove(NonTrivialMove&& other) noexcept
+  TEST_FUNC constexpr NonTrivialMove(NonTrivialMove&& other) noexcept
       : data(other.data)
       , move_assigned_from(false)
   {}
 
-  __host__ __device__ constexpr NonTrivialMove& operator=(const NonTrivialMove& other) noexcept
+  TEST_FUNC constexpr NonTrivialMove& operator=(const NonTrivialMove& other) noexcept
   {
     data               = other.data;
     move_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ constexpr NonTrivialMove& operator=(NonTrivialMove&& other) noexcept
+  TEST_FUNC constexpr NonTrivialMove& operator=(NonTrivialMove&& other) noexcept
   {
     data               = other.data;
     move_assigned_from = true;
     return *this;
   }
 
-  __host__ __device__ constexpr NonTrivialMove(const int val) noexcept
+  TEST_FUNC constexpr NonTrivialMove(const int val) noexcept
       : data(val)
       , move_assigned_from(false)
   {}
-  __host__ __device__ constexpr NonTrivialMove& operator=(const int val) noexcept
+  TEST_FUNC constexpr NonTrivialMove& operator=(const int val) noexcept
   {
     data               = val;
     move_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ constexpr friend bool operator==(const NonTrivialMove& lhs, const NonTrivialMove& rhs) noexcept
+  TEST_FUNC constexpr friend bool operator==(const NonTrivialMove& lhs, const NonTrivialMove& rhs) noexcept
   {
     // NOTE: This uses implicit knowledge that the right hand side has been moved from
     return lhs.data == rhs.data && !lhs.move_assigned_from && rhs.move_assigned_from;
   }
-  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  TEST_FUNC constexpr bool operator==(const int& other) const noexcept
   {
     // NOTE: This uses implicit knowledge that the only elements we compare against were untouched
     return data == other && !move_assigned_from;
@@ -87,30 +87,30 @@ struct NonTrivialDestructor
   NonTrivialDestructor(const NonTrivialDestructor&) noexcept            = default;
   NonTrivialDestructor& operator=(NonTrivialDestructor&&) noexcept      = default;
   NonTrivialDestructor& operator=(const NonTrivialDestructor&) noexcept = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~NonTrivialDestructor() noexcept {}
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~NonTrivialDestructor() noexcept {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor(const int val) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialDestructor(const int val) noexcept
       : data(val)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor& operator=(const int val) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialDestructor& operator=(const int val) noexcept
   {
     data = val;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 friend bool
+  TEST_FUNC TEST_CONSTEXPR_CXX20 friend bool
   operator==(const NonTrivialDestructor& lhs, const NonTrivialDestructor& rhs) noexcept
   {
     return lhs.data == rhs.data;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
   {
     return data == other;
   }
 };
 
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using value_type = typename cuda::std::iterator_traits<InIter>::value_type;
   {
@@ -151,7 +151,7 @@ __host__ __device__ constexpr void test()
 
 #if defined(_LIBCUDACXX_HAS_MEMORY)
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   constexpr unsigned N = 100;
   cuda::std::unique_ptr<int> ia[N];
@@ -170,7 +170,7 @@ __host__ __device__ constexpr void test()
 }
 #endif // _LIBCUDACXX_HAS_MEMORY
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<int*>, cpp17_input_iterator<int*>>();
@@ -209,6 +209,13 @@ __host__ __device__ constexpr bool test()
 
   test<NonTrivialMove*, NonTrivialMove*>();
   test<NonTrivialDestructor*, NonTrivialDestructor*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<int*, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<int*, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
 #if defined(_LIBCUDACXX_HAS_MEMORY)
   test1<cpp17_input_iterator<cuda::std::unique_ptr<int>*>, cpp17_output_iterator<cuda::std::unique_ptr<int>*>>();

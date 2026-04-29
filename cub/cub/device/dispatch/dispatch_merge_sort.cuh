@@ -24,12 +24,9 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 
@@ -510,12 +507,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (std::stringstream ss; ss << active_policy;
-       _CubLog("Dispatching DeviceMergeSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceMergeSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const auto tile_size = active_policy.items_per_tile();
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);

@@ -790,6 +790,40 @@ void TestInclusiveScanWithNonCommutativeOp()
 }
 DECLARE_UNITTEST(TestInclusiveScanWithNonCommutativeOp);
 
+struct checking_identity
+{
+  static constexpr unsigned sentinel = 0x12345678;
+
+  _CCCL_HOST_DEVICE unsigned operator()([[maybe_unused]] unsigned a, [[maybe_unused]] unsigned b) const
+  {
+    // only the SM100 tuning will pick the warpspeed implementation currently, so only verify on that architecture.
+    // < SM100 and SM120 will use the old scan implementation for this scan operator, which passes invalid data.
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_100,
+      ({
+        _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+        _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+      }),
+      NV_PROVIDES_SM_120,
+      ());
+
+    return sentinel;
+  }
+};
+
+void TestInclusiveScanForInvalidValues()
+{
+  const thrust::device_vector<unsigned> input(10'000, checking_identity::sentinel);
+  thrust::device_vector<unsigned> output(10'000, thrust::no_init);
+
+  thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
+  ASSERT_EQUAL(input, output);
+
+  thrust::exclusive_scan(input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
+  ASSERT_EQUAL(input, output);
+}
+DECLARE_UNITTEST(TestInclusiveScanForInvalidValues);
+
 // Adapted from issue: https://github.com/NVIDIA/cccl/issues/6317
 void TestScanBug6317()
 {

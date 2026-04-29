@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // Test layout_stride_relaxed::mapping with integral_constant as _OffsetType:
@@ -29,7 +32,7 @@ template <class E, ptrdiff_t Offset>
 using mapping_with_constant_offset =
   cuda::layout_stride_relaxed::mapping<E, cuda::steps<E::rank()>, contant_offset_t<Offset>>;
 
-__host__ __device__ constexpr void test_basic_properties()
+TEST_FUNC constexpr void test_basic_properties()
 {
   using Extents        = cuda::std::extents<int, 4>;
   constexpr int Offset = 7;
@@ -40,7 +43,7 @@ __host__ __device__ constexpr void test_basic_properties()
   static_assert(cuda::std::is_nothrow_move_assignable_v<M>);
 }
 
-__host__ __device__ constexpr void test_explicit_construction_1d()
+TEST_FUNC constexpr void test_explicit_construction_1d()
 {
   using Extents         = cuda::std::extents<int, 4>;
   constexpr auto Offset = 7;
@@ -52,7 +55,7 @@ __host__ __device__ constexpr void test_explicit_construction_1d()
   assert(m.strides().stride(0) == 2);
 }
 
-__host__ __device__ constexpr void test_access_1d()
+TEST_FUNC constexpr void test_access_1d()
 {
   // backward access
   using E = cuda::std::extents<int, 5>;
@@ -66,7 +69,7 @@ __host__ __device__ constexpr void test_access_1d()
   assert(m(4) == 0);
 }
 
-__host__ __device__ constexpr void test_required_span_size()
+TEST_FUNC constexpr void test_required_span_size()
 {
   using E = cuda::std::extents<int, 4>;
   using M = mapping_with_constant_offset<E, 10>;
@@ -74,7 +77,7 @@ __host__ __device__ constexpr void test_required_span_size()
   assert(m.required_span_size() == 14); // 10 + 4 = 14
 }
 
-__host__ __device__ constexpr void test_is_strided_zero_offset()
+TEST_FUNC constexpr void test_is_strided_zero_offset()
 {
   using E = cuda::std::extents<int, 4>;
   using M = mapping_with_constant_offset<E, 0>;
@@ -84,7 +87,7 @@ __host__ __device__ constexpr void test_is_strided_zero_offset()
   assert(m.is_always_strided() == true);
 }
 
-__host__ __device__ constexpr void test_is_strided_nonzero_offset()
+TEST_FUNC constexpr void test_is_strided_nonzero_offset()
 {
   using E = cuda::std::extents<int, 4>;
   using M = mapping_with_constant_offset<E, 10>;
@@ -94,7 +97,7 @@ __host__ __device__ constexpr void test_is_strided_nonzero_offset()
   assert(m.is_always_strided() == false);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_basic_properties();
   test_explicit_construction_1d();

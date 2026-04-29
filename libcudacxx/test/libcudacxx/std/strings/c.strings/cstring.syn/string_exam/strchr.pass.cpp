@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstring>
@@ -16,7 +19,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr void test_strchr(char* str, int c, char* expected_ret)
+TEST_FUNC constexpr void test_strchr(char* str, int c, char* expected_ret)
 {
   const char* cstr = const_cast<const char*>(str);
 
@@ -33,7 +36,7 @@ __host__ __device__ constexpr void test_strchr(char* str, int c, char* expected_
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(cuda::std::is_same_v<char*, decltype(cuda::std::strchr(cuda::std::declval<char*>(), int{}))>);
   static_assert(

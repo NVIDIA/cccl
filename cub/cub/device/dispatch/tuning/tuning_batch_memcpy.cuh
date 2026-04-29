@@ -18,10 +18,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 
 #include <cuda/__device/arch_id.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -57,7 +54,7 @@ struct small_buffer_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const small_buffer_policy& policy)
   {
     return os
@@ -68,7 +65,7 @@ struct small_buffer_policy
         << ", .block_level_threshold = " << policy.block_level_threshold << ", .buff_delay_constructor = "
         << policy.buff_delay_constructor << ", .block_delay_constructor = " << policy.block_delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct large_buffer_policy
@@ -88,13 +85,13 @@ struct large_buffer_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const large_buffer_policy& policy)
   {
     return os << "large_buffer_policy { .block_threads = " << policy.block_threads
               << ", .bytes_per_thread = " << policy.bytes_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct batch_memcpy_policy
@@ -114,13 +111,13 @@ struct batch_memcpy_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const batch_memcpy_policy& policy)
   {
     return os << "batch_memcpy_policy { .small_buffer = " << policy.small_buffer
               << ", .large_buffer = " << policy.large_buffer << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

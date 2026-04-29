@@ -37,16 +37,7 @@ struct bench_rle_policy_selector
 template <class T, class OffsetT, class RunLengthT>
 static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
-  // Offset type large enough to represent any offset into the input sequence
   using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;
-  // Offset type large enough to represent the longest run in the sequence
-  using run_length_t = RunLengthT;
-
-  using keys_input_it_t            = const T*;
-  using offset_output_it_t         = offset_t*;
-  using length_output_it_t         = run_length_t*;
-  using num_runs_output_iterator_t = offset_t*;
-  using equality_op_t              = ::cuda::std::equal_to<>;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
@@ -54,43 +45,32 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
 
   thrust::device_vector<offset_t> num_runs_out(1);
   thrust::device_vector<offset_t> out_offsets(elements);
-  thrust::device_vector<run_length_t> out_lengths(elements);
+  thrust::device_vector<RunLengthT> out_lengths(elements);
   thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  const T* d_in_keys          = thrust::raw_pointer_cast(in_keys.data());
-  offset_t* d_out_offsets     = thrust::raw_pointer_cast(out_offsets.data());
-  run_length_t* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
-  offset_t* d_num_runs_out    = thrust::raw_pointer_cast(num_runs_out.data());
+  const T* d_in_keys        = thrust::raw_pointer_cast(in_keys.data());
+  offset_t* d_out_offsets   = thrust::raw_pointer_cast(out_offsets.data());
+  RunLengthT* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
+  offset_t* d_num_runs_out  = thrust::raw_pointer_cast(num_runs_out.data());
 
-  std::uint8_t* d_temp_storage{};
-  std::size_t temp_storage_bytes{};
-  const offset_t num_items = static_cast<offset_t>(elements);
-
-  auto dispatch_on_stream = [&](cudaStream_t stream) {
-    cub::detail::rle::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+  {
+    // Run once to get num_runs for memory accounting
+    auto memory_env = cuda::std::execution::env{
+#if !TUNE_BASE
+      cuda::execution::tune(bench_rle_policy_selector{})
+#endif // !TUNE_BASE
+    };
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRunLengthEncode::NonTrivialRuns,
+      "NonTrivialRuns failed",
       d_in_keys,
       d_out_offsets,
       d_out_lengths,
       d_num_runs_out,
-      equality_op_t{},
-      num_items,
-      stream
-#if !TUNE_BASE
-      ,
-      bench_rle_policy_selector{}
-#endif
-    );
-  };
-
-  dispatch_on_stream(cudaStream_t{0});
-
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  dispatch_on_stream(cudaStream_t{0});
-  cudaDeviceSynchronize();
+      static_cast<OffsetT>(elements),
+      memory_env);
+    cudaDeviceSynchronize();
+  }
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -99,8 +79,25 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   state.add_global_memory_writes<OffsetT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_on_stream(launch.get_stream().get_stream());
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_rle_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRunLengthEncode::NonTrivialRuns,
+      "NonTrivialRuns failed",
+      d_in_keys,
+      d_out_offsets,
+      d_out_lengths,
+      d_num_runs_out,
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 

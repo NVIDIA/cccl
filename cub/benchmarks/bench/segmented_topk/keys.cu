@@ -12,33 +12,30 @@
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_BLOCK_LOAD_ALGORITHM ld 0:2:1
 
-#if TUNE_BLOCK_LOAD_ALGORITHM == 0
-#  define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#elif TUNE_BLOCK_LOAD_ALGORITHM == 1
-#  define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#elif TUNE_BLOCK_LOAD_ALGORITHM == 2
-#  define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_VECTORIZE
-#endif
-
 #if !TUNE_BASE
-template <class KeyInT, class OffsetT>
-struct policy_hub_t
+struct tuned_policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+    -> cub::detail::batched_topk::batched_topk_policy
   {
-    static constexpr int items_per_thread = TUNE_ITEMS_PER_THREAD;
-
-    static constexpr int bits_per_pass = cub::detail::topk::calc_bits_per_pass<KeyInT>();
-
-    using topk_policy_t =
-      cub::detail::topk::AgentTopKPolicy<TUNE_THREADS_PER_BLOCK,
-                                         items_per_thread,
-                                         bits_per_pass,
-                                         TUNE_LOAD_ALGORITHM,
-                                         cub::BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  using MaxPolicy = policy_t;
+    // Single-entry policy chain driven by the tuning knobs.
+    constexpr auto store_alg = cub::BLOCK_STORE_WARP_TRANSPOSE;
+#  if TUNE_BLOCK_LOAD_ALGORITHM == 0
+    constexpr auto load_alg = cub::BLOCK_LOAD_DIRECT;
+#  elif TUNE_BLOCK_LOAD_ALGORITHM == 1
+    constexpr auto load_alg = cub::BLOCK_LOAD_WARP_TRANSPOSE;
+#  elif TUNE_BLOCK_LOAD_ALGORITHM == 2
+    constexpr auto load_alg = cub::BLOCK_LOAD_VECTORIZE;
+#  endif
+    return cub::detail::batched_topk::batched_topk_policy{{{
+      cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
+      cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
+      cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
+      cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
+      cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
+      cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
+    }}};
+  }
 };
 #endif // !TUNE_BASE
 
@@ -50,10 +47,6 @@ void fixed_seg_size_topk_keys(
   // Range of guaranteed total number of items
   constexpr auto min_num_total_items = 1;
   constexpr auto max_num_total_items = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-
-  // Iterator types
-  using key_input_it_t  = cuda::strided_iterator<cuda::counting_iterator<KeyT*>>;
-  using key_output_it_t = cuda::strided_iterator<cuda::counting_iterator<KeyT*>>;
 
   // Static segment size
   using seg_size_t = cub::detail::batched_topk::segment_size_static<MaxSegmentSize>;
@@ -70,22 +63,6 @@ void fixed_seg_size_topk_keys(
   // Total number of items guarantee type
   using total_num_items_guarantee_t =
     cub::detail::batched_topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
-
-  using dispatch_t = cub::detail::batched_topk::dispatch_batched_topk<
-    key_input_it_t,
-    key_output_it_t,
-    cub::NullType**,
-    cub::NullType**,
-    seg_size_t,
-    k_value_t,
-    select_direction_value_t,
-    num_segments_uniform_t,
-    total_num_items_guarantee_t
-#if !TUNE_BASE
-    ,
-    policy_hub_t<KeyT, cub::NullType, ::cuda::std::int32_t, MaxNumSelected>
-#endif // !TUNE_BASE
-    >;
 
   // Retrieve axis parameters
   const auto max_elements      = static_cast<size_t>(state.get_int64("Elements{io}"));
@@ -122,7 +99,7 @@ void fixed_seg_size_topk_keys(
 
   // allocate temporary storage
   size_t temp_size;
-  dispatch_t::dispatch(
+  cub::detail::batched_topk::dispatch(
     nullptr,
     temp_size,
     d_keys_in,
@@ -132,16 +109,21 @@ void fixed_seg_size_topk_keys(
     segment_sizes,
     k,
     select_directions,
-    num_segments,
+    num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
     total_num_items,
-    0);
+    nullptr
+#if !TUNE_BASE
+    ,
+    tuned_policy_selector{}
+#endif // !TUNE_BASE
+  );
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   // run the algorithm
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::dispatch(
+    cub::detail::batched_topk::dispatch(
       temp_storage,
       temp_size,
       d_keys_in,
@@ -151,9 +133,14 @@ void fixed_seg_size_topk_keys(
       segment_sizes,
       k,
       select_directions,
-      num_segments,
+      num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
       total_num_items,
-      launch.get_stream());
+      launch.get_stream()
+#if !TUNE_BASE
+        ,
+      tuned_policy_selector{}
+#endif // !TUNE_BASE
+    );
   });
 }
 

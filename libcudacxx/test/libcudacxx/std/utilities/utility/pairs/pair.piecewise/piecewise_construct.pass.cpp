@@ -27,15 +27,15 @@ class A
   char c_;
 
 public:
-  __host__ __device__ A(int i, char c)
+  TEST_FUNC A(int i, char c)
       : i_(i)
       , c_(c)
   {}
-  __host__ __device__ int get_i() const
+  TEST_FUNC int get_i() const
   {
     return i_;
   }
-  __host__ __device__ char get_c() const
+  TEST_FUNC char get_c() const
   {
     return c_;
   }
@@ -48,20 +48,20 @@ class B
   unsigned u2_;
 
 public:
-  __host__ __device__ B(double d, unsigned u1, unsigned u2)
+  TEST_FUNC B(double d, unsigned u1, unsigned u2)
       : d_(d)
       , u1_(u1)
       , u2_(u2)
   {}
-  __host__ __device__ double get_d() const
+  TEST_FUNC double get_d() const
   {
     return d_;
   }
-  __host__ __device__ unsigned get_u1() const
+  TEST_FUNC unsigned get_u1() const
   {
     return u1_;
   }
-  __host__ __device__ unsigned get_u2() const
+  TEST_FUNC unsigned get_u2() const
   {
     return u2_;
   }

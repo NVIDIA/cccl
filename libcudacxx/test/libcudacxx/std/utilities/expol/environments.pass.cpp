@@ -9,6 +9,10 @@
 
 // UNSUPPORTED: nvrtc
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
@@ -32,33 +36,33 @@ struct SomeProperty
 
 struct test_resource
 {
-  __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+  TEST_FUNC void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
 
-  __host__ __device__ void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
+  TEST_FUNC void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ void* allocate(cuda::stream_ref, std::size_t, std::size_t)
+  TEST_FUNC void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return &_val;
   }
 
-  __host__ __device__ void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
+  TEST_FUNC void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ bool operator==(const test_resource& other) const
+  TEST_FUNC bool operator==(const test_resource& other) const
   {
     return _val == other._val;
   }
-  __host__ __device__ bool operator!=(const test_resource& other) const
+  TEST_FUNC bool operator!=(const test_resource& other) const
   {
     return _val != other._val;
   }

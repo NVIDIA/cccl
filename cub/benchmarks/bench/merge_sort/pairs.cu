@@ -36,7 +36,6 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using key_t        = KeyT;
   using value_t      = ValueT;
-  using offset_t     = cub::detail::choose_offset_t<OffsetT>;
   using compare_op_t = less_t;
 
   // Retrieve axis parameters
@@ -60,43 +59,26 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
   state.add_global_memory_writes<KeyT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
-  // Allocate temporary storage:
-  std::size_t temp_size{};
-  cub::detail::merge_sort::dispatch(
-    nullptr,
-    temp_size,
-    d_keys_buffer_1,
-    d_values_buffer_1,
-    d_keys_buffer_2,
-    d_values_buffer_2,
-    static_cast<offset_t>(elements),
-    compare_op_t{},
-    0 /* stream */
-#if !TUNE_BASE
-    ,
-    policy_selector<key_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::merge_sort::dispatch(
-      temp_storage,
-      temp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<key_t>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceMergeSort::SortPairsCopy,
+      "SortPairsCopy failed",
       d_keys_buffer_1,
       d_values_buffer_1,
       d_keys_buffer_2,
       d_values_buffer_2,
-      static_cast<offset_t>(elements),
+      static_cast<OffsetT>(elements),
       compare_op_t{},
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      policy_selector<key_t>{}
-#endif // !TUNE_BASE
-    );
+      env);
   });
 }
 

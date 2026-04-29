@@ -30,117 +30,150 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 1000;
 
 template <class T>
 struct is_even
 {
-  [[nodiscard]] __device__ constexpr bool operator()(T value) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T value) const noexcept
   {
     return value % 2 == 0;
   }
 };
 
-template <class Policy>
+template <class Policy, class T>
 void test_partition_copy(const Policy& policy,
-                         const thrust::device_vector<int>& input,
-                         thrust::device_vector<int>& output_true,
-                         thrust::device_vector<int>& output_false)
+                         const c2h::device_vector<T>& input,
+                         c2h::device_vector<T>& output_true,
+                         c2h::device_vector<T>& output_false)
 {
   { // Empty does not access anything
     auto res = cuda::std::partition_copy(
       policy,
-      static_cast<int*>(nullptr),
-      static_cast<int*>(nullptr),
-      static_cast<int*>(nullptr),
-      static_cast<int*>(nullptr),
-      is_even<int>{});
+      static_cast<T*>(nullptr),
+      static_cast<T*>(nullptr),
+      static_cast<T*>(nullptr),
+      static_cast<T*>(nullptr),
+      is_even<T>{});
     CHECK(res.first == nullptr);
     CHECK(res.second == nullptr);
   }
 
-  cuda::std::fill(policy, output_true.begin(), output_true.end(), -1);
-  cuda::std::fill(policy, output_false.begin(), output_false.end(), -1);
-  { // With contiguous input
+  auto expected_true  = cuda::transform_iterator{cuda::strided_iterator{cuda::counting_iterator{0}, 2}, cast_to<T>{}};
+  auto expected_false = cuda::transform_iterator{cuda::strided_iterator{cuda::counting_iterator{1}, 2}, cast_to<T>{}};
+
+  cuda::std::fill(policy, output_true.begin(), output_true.end(), static_cast<T>(-1));
+  cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
+  { // contiguous iterators
     auto res = cuda::std::partition_copy(
-      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), is_even<int>{});
+      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), is_even<T>{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
-    CHECK(cuda::std::equal(
-      policy, output_true.begin(), output_true.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-    CHECK(cuda::std::equal(
-      policy, output_false.begin(), output_false.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
+    CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
+    CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
   }
 
-  cuda::std::fill(policy, output_true.begin(), output_true.end(), -1);
-  cuda::std::fill(policy, output_false.begin(), output_false.end(), -1);
-  { // With random access input
+  cuda::std::fill(policy, output_true.begin(), output_true.end(), static_cast<T>(-1));
+  cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
+  const T* raw_in = thrust::raw_pointer_cast(input.data());
+  { // random access input
     auto res = cuda::std::partition_copy(
       policy,
-      cuda::counting_iterator<int>{0},
-      cuda::counting_iterator<int>{size},
+      random_access_iterator{raw_in},
+      random_access_iterator{raw_in + size},
       output_true.begin(),
       output_false.begin(),
-      is_even<int>{});
+      is_even<T>{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
-    CHECK(cuda::std::equal(
-      policy, output_true.begin(), output_true.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-    CHECK(cuda::std::equal(
-      policy, output_false.begin(), output_false.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
+    CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
+    CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
   }
 
-  cuda::std::fill(policy, output_true.begin(), output_true.end(), -1);
-  cuda::std::fill(policy, output_false.begin(), output_false.end(), -1);
-  { // With different input type
+  cuda::std::fill(policy, output_true.begin(), output_true.end(), static_cast<T>(-1));
+  cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
+  T* raw_true  = thrust::raw_pointer_cast(output_true.data());
+  T* raw_false = thrust::raw_pointer_cast(output_false.data());
+  { // random access outputs
+    auto res = cuda::std::partition_copy(
+      policy,
+      input.begin(),
+      input.end(),
+      random_access_iterator{raw_true},
+      random_access_iterator{raw_false},
+      is_even<T>{});
+    CHECK(
+      res
+      == cuda::std::pair{random_access_iterator{raw_true + size / 2}, random_access_iterator{raw_false + size / 2}});
+    CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
+    CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
+  }
+
+  cuda::std::fill(policy, output_true.begin(), output_true.end(), static_cast<T>(-1));
+  cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
+  { // counting_iterator input
+    auto res = cuda::std::partition_copy(
+      policy,
+      cuda::counting_iterator<T>{static_cast<T>(0)},
+      cuda::counting_iterator<T>{static_cast<T>(size)},
+      output_true.begin(),
+      output_false.begin(),
+      is_even<T>{});
+    CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
+    CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
+    CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
+  }
+
+  cuda::std::fill(policy, output_true.begin(), output_true.end(), static_cast<T>(-1));
+  cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
+  { // converting input iterators
     auto res = cuda::std::partition_copy(
       policy,
       cuda::counting_iterator<short>{0},
-      cuda::counting_iterator<short>{size},
+      cuda::counting_iterator<short>{static_cast<short>(size)},
       output_true.begin(),
       output_false.begin(),
       is_even<short>{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
-    CHECK(cuda::std::equal(
-      policy, output_true.begin(), output_true.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-    CHECK(cuda::std::equal(
-      policy, output_false.begin(), output_false.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
+    CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
+    CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
   }
 
-  cuda::std::fill(policy, output_true.begin(), output_true.end(), -1);
-  cuda::std::fill(policy, output_false.begin(), output_false.end(), -1);
-  { // With contiguous input, converting predicate
+  cuda::std::fill(policy, output_true.begin(), output_true.end(), static_cast<T>(-1));
+  cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
+  { // contiguous input, converting predicate
     auto res = cuda::std::partition_copy(
       policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), is_even<long>{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
-    CHECK(cuda::std::equal(
-      policy, output_true.begin(), output_true.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-    CHECK(cuda::std::equal(
-      policy, output_false.begin(), output_false.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
+    CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
+    CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
   }
 
-  cuda::std::fill(policy, output_true.begin(), output_true.end(), -1);
-  cuda::std::fill(policy, output_false.begin(), output_false.end(), -1);
-  { // With different input type, converting predicate
+  cuda::std::fill(policy, output_true.begin(), output_true.end(), static_cast<T>(-1));
+  cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
+  { // short iterators, converting predicate
     auto res = cuda::std::partition_copy(
       policy,
       cuda::counting_iterator<short>{0},
-      cuda::counting_iterator<short>{size},
+      cuda::counting_iterator<short>{static_cast<short>(size)},
       output_true.begin(),
       output_false.begin(),
       is_even<long>{});
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
-    CHECK(cuda::std::equal(
-      policy, output_true.begin(), output_true.end(), cuda::strided_iterator{cuda::counting_iterator{0}, 2}));
-    CHECK(cuda::std::equal(
-      policy, output_false.begin(), output_false.end(), cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
+    CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
+    CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
   }
 }
 
-C2H_TEST("cuda::std::partition_copy", "[parallel algorithm]")
+C2H_TEST("cuda::std::partition_copy", "[parallel algorithm]", integral_types)
 {
-  thrust::device_vector<int> input(size, thrust::no_init);
-  thrust::device_vector<int> output_true(size / 2, thrust::no_init);
-  thrust::device_vector<int> output_false(size / 2, thrust::no_init);
-  thrust::sequence(input.begin(), input.end(), 0);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
+  c2h::device_vector<T> output_true(size / 2, thrust::no_init);
+  c2h::device_vector<T> output_false(size / 2, thrust::no_init);
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
 
   SECTION("with default stream")
   {

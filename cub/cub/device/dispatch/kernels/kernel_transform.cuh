@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
@@ -136,7 +137,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
-    (..., (ins += offset));
+    (..., (void) (ins += offset));
     out += offset;
   }
 
@@ -261,7 +262,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
-    (..., (ins += offset));
+    (..., (void) (ins += offset));
     out += offset;
   }
 
@@ -953,7 +954,7 @@ template <typename It>
 union kernel_arg
 {
   aligned_base_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
-  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");
+  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>);
   It iterator; // may not be trivially [default|copy]-constructible
 
   // Sometimes It is not trivially [default|copy]-constructible (e.g.
@@ -993,7 +994,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 template <typename PolicySelector>
 _CCCL_API constexpr int get_block_threads_helper()
 {
-  constexpr transform_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr transform_policy policy = current_policy<PolicySelector>();
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
     return policy.prefetch.block_threads;
@@ -1036,7 +1037,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES voi
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
 
-  static constexpr transform_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr transform_policy policy = current_policy<PolicySelector>();
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {

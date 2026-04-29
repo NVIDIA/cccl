@@ -189,8 +189,8 @@ template <class _Tp>
 
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
 // A quick smoke test to ensure that the pretty name extraction is working.
-static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"), "");
-static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>(), "");
+static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"));
+static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>());
 #endif
 
 // There are many complications with defining a unique constexpr global object
@@ -282,13 +282,13 @@ struct __type_info
     return !(__a == __b);
   }
 
+  __type_info& operator=(__type_info const&) = delete;
+
 private:
   friend struct __type_info_ptr_;
   friend struct __type_info_ref_;
 
-  __type_info(__type_info const&)            = default; // needed by __type_info_ptr_::operator*() before C++17
-  __type_info& operator=(__type_info const&) = delete;
-
+  __type_info(__type_info const&) = default; // needed by __type_info_ptr_::operator*() before C++17
   __type_info_impl (*__pfn_)() noexcept;
 };
 
@@ -302,9 +302,7 @@ struct __type_info_ref_ : __type_info
       : __type_info(__other)
   {}
 
-  _CCCL_API constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
-      : __type_info(__other)
-  {}
+  _CCCL_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept = default;
 };
 
 [[nodiscard]] _CCCL_API constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept
@@ -373,8 +371,8 @@ struct __type_info
   }
 
 #  if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
-  operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_HOST_API friend constexpr bool operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }

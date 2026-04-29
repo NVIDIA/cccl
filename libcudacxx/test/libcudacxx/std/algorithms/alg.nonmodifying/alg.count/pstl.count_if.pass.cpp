@@ -29,7 +29,7 @@ int data[100];
 
 struct equal_to_42
 {
-  __host__ __device__ constexpr bool operator()(const int& val) const noexcept
+  TEST_FUNC constexpr bool operator()(const int& val) const noexcept
   {
     return val == 42;
   }
@@ -51,7 +51,7 @@ struct Test
   }
 };
 
-__host__ void test()
+void test()
 {
   types::count_if(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
 }

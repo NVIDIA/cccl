@@ -28,22 +28,22 @@ class A
   int data_;
 
 public:
-  __host__ __device__ A()
+  TEST_FUNC A()
       : data_(1)
   {}
-  __host__ __device__ ~A()
+  TEST_FUNC ~A()
   {
     data_ = -1;
   }
 
-  __host__ __device__ friend bool operator==(const A& x, const A& y)
+  TEST_FUNC friend bool operator==(const A& x, const A& y)
   {
     return x.data_ == y.data_;
   }
 };
 
 template <class It>
-__host__ __device__ void test(It i, typename cuda::std::iterator_traits<It>::value_type x)
+TEST_FUNC void test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 {
   cuda::std::reverse_iterator<It> r(i);
   assert(*r == x);
@@ -59,8 +59,8 @@ int main(int, char**)
     using RI                = cuda::std::reverse_iterator<const char*>;
     constexpr RI it1        = cuda::std::make_reverse_iterator(p + 1);
     constexpr RI it2        = cuda::std::make_reverse_iterator(p + 2);
-    static_assert(*it1 == p[0], "");
-    static_assert(*it2 == p[1], "");
+    static_assert(*it1 == p[0]);
+    static_assert(*it2 == p[1]);
   }
 
   return 0;

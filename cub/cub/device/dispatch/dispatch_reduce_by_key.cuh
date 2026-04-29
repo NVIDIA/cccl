@@ -26,15 +26,14 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -189,7 +188,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const UniqueOutputIteratorT d_unique_out,
@@ -204,7 +203,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
-  static constexpr reduce_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr reduce_by_key_policy policy = current_policy<PolicySelector>();
   using AgentReduceByKeyPolicyT                = AgentReduceByKeyPolicy<
                    policy.block_threads,
                    policy.items_per_thread,
@@ -530,7 +529,7 @@ struct DispatchReduceByKey
           break;
         }
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -638,7 +637,7 @@ struct DispatchReduceByKey
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -711,12 +710,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   }
 
   return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (::std::stringstream ss; ss << policy_getter(); _CubLog(
-         "Dispatching DeviceReduceByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
-#endif
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << policy_getter();
+                   _CubLog("Dispatching DeviceReduceByKey to arch %d with tuning: %s\n",
+                           static_cast<int>(arch_id),
+                           ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const auto [block_threads, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
       decltype(policy_getter),

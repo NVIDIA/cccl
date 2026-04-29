@@ -22,10 +22,10 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
-#include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
+#include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/std/__execution/env.h>
@@ -170,7 +170,7 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_counts_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
 
@@ -302,23 +302,24 @@ struct DeviceRunLengthEncode
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
     using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+    using default_policy_selector = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::reduce_by_key::dispatch_streaming<accum_t>(
-        storage,
-        bytes,
-        d_in,
-        d_unique_out,
-        lengths_input_iterator_t(length_t{1}),
-        d_counts_out,
-        d_num_runs_out,
-        equality_op{},
-        reduction_op{},
-        static_cast<offset_t>(num_items),
-        stream,
-        policy_selector_t{});
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::reduce_by_key::dispatch_streaming<accum_t>(
+          storage,
+          bytes,
+          d_in,
+          d_unique_out,
+          lengths_input_iterator_t(length_t{1}),
+          d_counts_out,
+          d_num_runs_out,
+          equality_op{},
+          reduction_op{},
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -433,7 +434,7 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
@@ -541,21 +542,26 @@ struct DeviceRunLengthEncode
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::NonTrivialRuns");
 
-    using global_offset_t = detail::choose_signed_offset_t<NumItemsT>;
-    using equality_op     = ::cuda::std::equal_to<>;
+    using global_offset_t         = detail::choose_signed_offset_t<NumItemsT>;
+    using equality_op             = ::cuda::std::equal_to<>;
+    using length_t                = detail::non_void_value_t<LengthsOutputIteratorT, global_offset_t>;
+    using key_t                   = detail::it_value_t<InputIteratorT>;
+    using default_policy_selector = detail::rle::non_trivial_runs::policy_selector_from_types<length_t, key_t>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::rle::dispatch(
-        storage,
-        bytes,
-        d_in,
-        d_offsets_out,
-        d_lengths_out,
-        d_num_runs_out,
-        equality_op{},
-        static_cast<global_offset_t>(num_items),
-        stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::rle::dispatch(
+          storage,
+          bytes,
+          d_in,
+          d_offsets_out,
+          d_lengths_out,
+          d_num_runs_out,
+          equality_op{},
+          static_cast<global_offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 };
 

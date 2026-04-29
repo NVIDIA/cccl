@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // Test offset functionality specific to layout_stride_relaxed:
@@ -26,8 +29,7 @@
 using cuda::std::intptr_t;
 
 template <class E>
-__host__ __device__ constexpr void
-test_offset(E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t expected_offset)
+TEST_FUNC constexpr void test_offset(E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t expected_offset)
 {
   using M            = cuda::layout_stride_relaxed::mapping<E>;
   using strides_type = typename M::strides_type;
@@ -44,7 +46,7 @@ test_offset(E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t expecte
 
 // Test that offset is correctly used in index computation
 template <class E, class... Indices>
-__host__ __device__ constexpr void test_offset_in_indexing(
+TEST_FUNC constexpr void test_offset_in_indexing(
   E e,
   cuda::std::array<intptr_t, E::rank()> strides,
   intptr_t offset,
@@ -61,7 +63,7 @@ __host__ __device__ constexpr void test_offset_in_indexing(
 }
 
 // Test reverse array pattern using negative stride
-__host__ __device__ constexpr void test_reverse_array_pattern()
+TEST_FUNC constexpr void test_reverse_array_pattern()
 {
   // For a 1D array of size N with negative stride -1 and offset N-1,
   // we get a reverse iteration pattern:
@@ -87,7 +89,7 @@ __host__ __device__ constexpr void test_reverse_array_pattern()
 }
 
 // Test 2D array with one reversed dimension
-__host__ __device__ constexpr void test_2d_partial_reverse()
+TEST_FUNC constexpr void test_2d_partial_reverse()
 {
   // 2D array 3x4 where the first dimension is reversed
   // Layout: physical[offset - i*stride0 + j*stride1]
@@ -111,7 +113,7 @@ __host__ __device__ constexpr void test_2d_partial_reverse()
 }
 
 // Test that default constructor has zero offset
-__host__ __device__ constexpr void test_default_zero_offset()
+TEST_FUNC constexpr void test_default_zero_offset()
 {
   using E = cuda::std::extents<int, 4, 5>;
   using M = cuda::layout_stride_relaxed::mapping<E>;
@@ -121,7 +123,7 @@ __host__ __device__ constexpr void test_default_zero_offset()
 }
 
 // Test that copy constructor preserves offset
-__host__ __device__ constexpr void test_copy_preserves_offset()
+TEST_FUNC constexpr void test_copy_preserves_offset()
 {
   using E            = cuda::std::extents<int, 4, 5>;
   using M            = cuda::layout_stride_relaxed::mapping<E>;
@@ -137,7 +139,7 @@ __host__ __device__ constexpr void test_copy_preserves_offset()
   assert(m1.offset() == m2.offset());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 

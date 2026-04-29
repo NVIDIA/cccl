@@ -24,17 +24,17 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 namespace detail::radix_sort
 {
-using detail::scan::make_mem_scaled_scan_policy;
+using detail::scan::make_mem_scaled_lookback_scan_policy;
+using detail::scan::scan_algorithm;
+using detail::scan::scan_lookback_policy;
 using detail::scan::scan_policy;
+using detail::scan::scan_warpspeed_policy;
 
 struct radix_sort_histogram_policy
 {
@@ -56,13 +56,13 @@ struct radix_sort_histogram_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_histogram_policy& p)
   {
     return os << "radix_sort_histogram_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
               << p.items_per_thread << ", .num_parts = " << p.num_parts << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct radix_sort_exclusive_sum_policy
@@ -82,13 +82,13 @@ struct radix_sort_exclusive_sum_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_exclusive_sum_policy& p)
   {
     return os << "radix_sort_exclusive_sum_policy { .block_threads = " << p.block_threads
               << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct radix_sort_onesweep_policy
@@ -116,7 +116,7 @@ struct radix_sort_onesweep_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_onesweep_policy& p)
   {
     return os
@@ -125,7 +125,7 @@ struct radix_sort_onesweep_policy
         << ", .radix_bits = " << p.radix_bits << ", .rank_algorith = " << p.rank_algorith
         << ", .scan_algorithm = " << p.scan_algorithm << ", .store_algorithm = " << p.store_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
@@ -174,7 +174,7 @@ struct radix_sort_downsweep_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_downsweep_policy& p)
   {
     return os
@@ -183,7 +183,7 @@ struct radix_sort_downsweep_policy
         << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_API constexpr auto make_reg_scaled_radix_sort_downsweep_policy(
@@ -225,14 +225,14 @@ struct radix_sort_upsweep_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_upsweep_policy& p)
   {
     return os
         << "radix_sort_upsweep_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
         << p.items_per_thread << ", .radix_bits = " << p.radix_bits << ", .load_modifier = " << p.load_modifier << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_API constexpr auto make_reg_scaled_radix_sort_upsweep_policy(
@@ -277,7 +277,7 @@ struct radix_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_policy& p)
   {
     return os
@@ -288,7 +288,7 @@ struct radix_sort_policy
         << ", .alt_upsweep = " << p.alt_upsweep << ", .single_tile = " << p.single_tile
         << ", .segmented = " << p.segmented << ", .alt_segmented = " << p.alt_segmented << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 // TODO(bgruber): remove for CCCL 4.0 when we drop the public radix sort dispatcher
@@ -795,10 +795,6 @@ struct RadixSortPolicyWrapper : PolicyT
   {}
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-using namespace radix_sort_runtime_policies;
-#endif
-
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
@@ -847,25 +843,6 @@ struct RadixSortPolicyWrapper<
   CUB_DEFINE_SUB_POLICY_GETTER(ExclusiveSum);
   CUB_DEFINE_SUB_POLICY_GETTER(Segmented);
   CUB_DEFINE_SUB_POLICY_GETTER(AltSegmented);
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<
-      key<"SingleTilePolicy">()     = SingleTile().EncodedPolicy(),
-      key<"OnesweepPolicy">()       = Onesweep().EncodedPolicy(),
-      key<"UpsweepPolicy">()        = Upsweep().EncodedPolicy(),
-      key<"AltUpsweepPolicy">()     = AltUpsweep().EncodedPolicy(),
-      key<"DownsweepPolicy">()      = Downsweep().EncodedPolicy(),
-      key<"AltDownsweepPolicy">()   = AltDownsweep().EncodedPolicy(),
-      key<"HistogramPolicy">()      = Histogram().EncodedPolicy(),
-      key<"ScanPolicy">()           = Scan().EncodedPolicy(),
-      key<"ScanDelayConstructor">() = StaticPolicyT::ScanPolicy::detail::delay_constructor_t::EncodedConstructor(),
-      key<"ExclusiveSumPolicy">()   = ExclusiveSum().EncodedPolicy(),
-      key<"Onesweep">()             = value<IsOnesweep()>()>();
-  }
-#endif
 };
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
@@ -913,13 +890,16 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
 
   using scan_pol  = typename active_policy::ScanPolicy;
   const auto scan = scan_policy{
-    scan_pol::BLOCK_THREADS,
-    scan_pol::ITEMS_PER_THREAD,
-    scan_pol::LOAD_ALGORITHM,
-    scan_pol::LOAD_MODIFIER,
-    scan_pol::STORE_ALGORITHM,
-    scan_pol::SCAN_ALGORITHM,
-    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
+    scan_algorithm::lookback,
+    scan_lookback_policy{
+      scan_pol::BLOCK_THREADS,
+      scan_pol::ITEMS_PER_THREAD,
+      scan_pol::LOAD_ALGORITHM,
+      scan_pol::LOAD_MODIFIER,
+      scan_pol::STORE_ALGORITHM,
+      scan_pol::SCAN_ALGORITHM,
+      delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>},
+    {}};
 
   const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
   const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
@@ -1758,7 +1738,7 @@ struct policy_selector
     // device compiler pass will also compile all kernels for SM70 **and** SM90, even though only the onesweep kernel is
     // used on SM90.
 
-    const auto scan = make_mem_scaled_scan_policy(
+    const auto scan = make_mem_scaled_lookback_scan_policy(
       512,
       23,
       offset_size,
@@ -1876,7 +1856,7 @@ struct policy_selector
         BLOCK_SCAN_RAKING_MEMOIZE,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -1980,7 +1960,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2082,7 +2062,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2171,7 +2151,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2275,7 +2255,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2380,7 +2360,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       RADIX_SORT_STORE_DIRECT);
 
-    const auto scan = make_mem_scaled_scan_policy(
+    const auto scan = make_mem_scaled_lookback_scan_policy(
       512,
       23,
       offset_size,

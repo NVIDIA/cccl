@@ -21,10 +21,7 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/max.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -259,7 +256,7 @@ struct histogram_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const histogram_policy& p)
   {
     return os
@@ -270,7 +267,7 @@ struct histogram_policy
         << ", .pdl_trigger_next_launch_in_init_kernel_max_bin_count = "
         << p.pdl_trigger_next_launch_in_init_kernel_max_bin_count << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

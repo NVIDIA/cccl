@@ -8,16 +8,19 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-__device__ int scalar_object             = 42;
-__device__ const int const_scalar_object = 42;
+TEST_GLOBAL_VARIABLE int scalar_object             = 42;
+TEST_GLOBAL_VARIABLE const int const_scalar_object = 42;
 
-__device__ int array_object[]             = {42, 1337, -1};
-__device__ const int const_array_object[] = {42, 1337, -1};
+TEST_GLOBAL_VARIABLE int array_object[]             = {42, 1337, -1};
+TEST_GLOBAL_VARIABLE const int const_array_object[] = {42, 1337, -1};
 
 #if !TEST_COMPILER(NVRTC)
 template <class T>
@@ -48,7 +51,7 @@ void test_host(T& object)
 #endif // !TEST_COMPILER(NVRTC)
 
 template <class T>
-__host__ __device__ void test(T& object)
+TEST_FUNC void test(T& object)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (assert(cuda::std::addressof(object) == cuda::get_device_address(object));), (test_host(object);))

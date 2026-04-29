@@ -53,7 +53,7 @@ void print_vector(const std::string& name, const Vector& v)
   using T = typename Vector::value_type;
   std::cout << "  " << std::setw(20) << name << "  ";
   thrust::copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 }
 
 // dense histogram using binary search
@@ -158,14 +158,14 @@ int main()
 
   // demonstrate dense histogram method
   {
-    std::cout << "Dense Histogram" << std::endl;
+    std::cout << "Dense Histogram" << '\n';
     thrust::device_vector<int> histogram;
     dense_histogram(input, histogram);
   }
 
   // demonstrate sparse histogram method
   {
-    std::cout << "Sparse Histogram" << std::endl;
+    std::cout << "Sparse Histogram" << '\n';
     thrust::device_vector<int> histogram_values;
     thrust::device_vector<int> histogram_counts;
     sparse_histogram(input, histogram_values, histogram_counts);

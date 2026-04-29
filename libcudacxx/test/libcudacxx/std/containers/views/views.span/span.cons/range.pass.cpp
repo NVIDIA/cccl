@@ -33,46 +33,46 @@
 template <typename T>
 struct IsAContainer
 {
-  __host__ __device__ constexpr IsAContainer()
+  TEST_FUNC constexpr IsAContainer()
       : v_{}
   {}
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return 1;
   }
-  __host__ __device__ constexpr T* data()
+  TEST_FUNC constexpr T* data()
   {
     return &v_;
   }
-  __host__ __device__ constexpr const T* data() const
+  TEST_FUNC constexpr const T* data() const
   {
     return &v_;
   }
-  __host__ __device__ constexpr T* begin()
+  TEST_FUNC constexpr T* begin()
   {
     return &v_;
   }
-  __host__ __device__ constexpr const T* begin() const
+  TEST_FUNC constexpr const T* begin() const
   {
     return &v_;
   }
-  __host__ __device__ constexpr T* end()
+  TEST_FUNC constexpr T* end()
   {
     return &v_ + 1;
   }
-  __host__ __device__ constexpr const T* end() const
+  TEST_FUNC constexpr const T* end() const
   {
     return &v_ + 1;
   }
 
-  __host__ __device__ constexpr T const* getV() const
+  TEST_FUNC constexpr T const* getV() const
   {
     return &v_;
   } // for checking
   T v_;
 };
 
-__host__ __device__ void checkCV()
+TEST_FUNC void checkCV()
 {
   IsAContainer<int> v{};
 
@@ -102,7 +102,7 @@ __host__ __device__ void checkCV()
 }
 
 template <typename T>
-__host__ __device__ constexpr bool testConstexprSpan()
+TEST_FUNC constexpr bool testConstexprSpan()
 {
   constexpr IsAContainer<const T> val{};
   cuda::std::span<const T> s1{val};
@@ -110,7 +110,7 @@ __host__ __device__ constexpr bool testConstexprSpan()
 }
 
 template <typename T>
-__host__ __device__ constexpr bool testConstexprSpanStatic()
+TEST_FUNC constexpr bool testConstexprSpanStatic()
 {
   constexpr IsAContainer<const T> val{};
   cuda::std::span<const T, 1> s1{val};
@@ -118,7 +118,7 @@ __host__ __device__ constexpr bool testConstexprSpanStatic()
 }
 
 template <typename T>
-__host__ __device__ void testRuntimeSpan()
+TEST_FUNC void testRuntimeSpan()
 {
   IsAContainer<T> val{};
   const IsAContainer<T> cVal;
@@ -129,7 +129,7 @@ __host__ __device__ void testRuntimeSpan()
 }
 
 template <typename T>
-__host__ __device__ void testRuntimeSpanStatic()
+TEST_FUNC void testRuntimeSpanStatic()
 {
   IsAContainer<T> val{};
   const IsAContainer<T> cVal;
@@ -157,15 +157,15 @@ struct A
 
 int main(int, char**)
 {
-  static_assert(testConstexprSpan<int>(), "");
-  static_assert(testConstexprSpan<long>(), "");
-  static_assert(testConstexprSpan<double>(), "");
-  static_assert(testConstexprSpan<A>(), "");
+  static_assert(testConstexprSpan<int>());
+  static_assert(testConstexprSpan<long>());
+  static_assert(testConstexprSpan<double>());
+  static_assert(testConstexprSpan<A>());
 
-  static_assert(testConstexprSpanStatic<int>(), "");
-  static_assert(testConstexprSpanStatic<long>(), "");
-  static_assert(testConstexprSpanStatic<double>(), "");
-  static_assert(testConstexprSpanStatic<A>(), "");
+  static_assert(testConstexprSpanStatic<int>());
+  static_assert(testConstexprSpanStatic<long>());
+  static_assert(testConstexprSpanStatic<double>());
+  static_assert(testConstexprSpanStatic<A>());
 
   testRuntimeSpan<int>();
   testRuntimeSpan<long>();

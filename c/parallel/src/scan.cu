@@ -209,11 +209,6 @@ struct scan_kernel_source
     return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
   }
 
-  bool use_warpspeed(const cub::detail::scan::scan_policy& /*policy*/) const
-  {
-    return build.use_warpspeed;
-  }
-
   std::size_t look_ahead_tile_state_size() const
   {
     return look_ahead_tile_state_alignment();
@@ -237,7 +232,7 @@ struct scan_kernel_source
   {
     // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
     cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    ::cuda::std::__construct_at(&arg.warpspeed, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
     return arg;
   }
 };
@@ -268,6 +263,15 @@ try
   const auto input_it_value_t  = cccl_type_enum_to_name(input_it.value_type.type);
   const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
+  const std::string input_iterator_t =
+    (input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
+       ? cccl_type_enum_to_name(input_it.value_type.type, true) //
+       : scan::get_input_iterator_name());
+  const std::string output_iterator_t =
+    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
+      ? cccl_type_enum_to_name(output_it.value_type.type, true) //
+      : scan::get_output_iterator_name();
+
   const std::string input_iterator_src =
     make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
   const std::string output_iterator_src =
@@ -282,6 +286,11 @@ try
     using cub::detail::scan::primitive_accum;
     using cub::detail::scan::primitive_op;
 
+    const auto is_trivial_type = [](cccl_type_enum /* type */) {
+      // TODO: implement actual logic here when nontrivial custom types become supported
+      return true;
+    };
+
     const auto accum_type   = cccl_type_enum_to_cub_type(accum_t.type);
     const auto operation_t  = cccl_op_kind_to_cub_op(op.type);
     const auto input_type   = input_it.value_type.type;
@@ -289,9 +298,16 @@ try
 
     const auto output_type = output_it.value_type.type;
     const bool types_match = input_type == output_type && input_type == accum_t.type;
+
+    const bool input_contiguous             = input_it.type == cccl_iterator_kind_t::CCCL_POINTER;
+    const bool output_contiguous            = output_it.type == cccl_iterator_kind_t::CCCL_POINTER;
+    const bool input_trivially_copyable     = is_trivial_type(input_it.value_type.type);
+    const bool output_trivially_copyable    = is_trivial_type(output_it.value_type.type);
+    const bool output_default_constructible = output_trivially_copyable;
+    const bool accum_is_primitive_or_trivially_copy_constructible = true;
+
     const bool benchmark_match =
       operation_t != cub::detail::op_kind_t::other && types_match && input_type != CCCL_STORAGE;
-    const bool accum_is_primitive_or_trivially_copy_constructible = true;
 
     return policy_selector{
       static_cast<int>(input_it.value_type.size),
@@ -304,6 +320,11 @@ try
       input_type_t,
       accum_type,
       operation_t,
+      input_contiguous,
+      output_contiguous,
+      input_trivially_copyable,
+      output_trivially_copyable,
+      output_default_constructible,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match};
   }();
@@ -311,45 +332,14 @@ try
   const auto arch_id       = cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor});
   const auto active_policy = policy_sel(arch_id);
 
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-  const auto is_trivial_type = [](cccl_type_enum /* type */) {
-    // TODO: implement actual logic here when nontrivial custom types become supported
-    return true;
-  };
-
-  const bool input_contiguous             = input_it.type == cccl_iterator_kind_t::CCCL_POINTER;
-  const bool output_contiguous            = output_it.type == cccl_iterator_kind_t::CCCL_POINTER;
-  const bool input_trivially_copyable     = is_trivial_type(input_it.value_type.type);
-  const bool output_trivially_copyable    = is_trivial_type(output_it.value_type.type);
-  const bool output_default_constructible = output_trivially_copyable;
-
-  const bool use_warpspeed =
-    active_policy.warpspeed
-    && cub::detail::scan::use_warpspeed(
-      active_policy.warpspeed,
-      static_cast<int>(input_it.value_type.size),
-      static_cast<int>(input_it.value_type.alignment),
-      static_cast<int>(output_it.value_type.size),
-      static_cast<int>(output_it.value_type.alignment),
-      static_cast<int>(accum_t.size),
-      static_cast<int>(accum_t.alignment),
-      input_contiguous,
-      output_contiguous,
-      input_trivially_copyable,
-      output_trivially_copyable,
-      output_default_constructible);
-#else
-  const bool use_warpspeed = false;
-#endif
-
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
   policy_sel_str << active_policy;
 
   std::string policy_selector_expr = std::format(
     "cub::detail::scan::policy_selector_from_types<{}, {}, {}, {}, {}>",
-    input_it_value_t,
-    output_it_value_t,
+    input_iterator_t,
+    output_iterator_t,
     accum_cpp,
     offset_t,
     "op_wrapper");
@@ -371,7 +361,7 @@ using namespace cub;
 using namespace cub::detail::scan;
 using cub::detail::delay_constructor_policy;
 using cub::detail::delay_constructor_kind;
-static_assert(device_scan_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_scan_policy()(detail::current_tuning_arch()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_it.value_type.size, // 0
     input_it.value_type.alignment, // 1
@@ -402,6 +392,7 @@ static_assert(device_scan_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6},
     ctk_path,
     "-rdc=true",
     "-dlto",
+    "-default-device",
     "-DCUB_DISABLE_CDP",
     "-std=c++20"};
 
@@ -448,7 +439,6 @@ static_assert(device_scan_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6},
   build_ptr->description_bytes_per_tile = description_bytes_per_tile;
   build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   build_ptr->runtime_policy             = new cub::detail::scan::policy_selector{policy_sel};
-  build_ptr->use_warpspeed              = use_warpspeed;
 
   return CUDA_SUCCESS;
 }

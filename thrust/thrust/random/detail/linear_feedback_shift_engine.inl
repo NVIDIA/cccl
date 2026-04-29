@@ -33,7 +33,7 @@ _CCCL_HOST_DEVICE void linear_feedback_shift_engine<UIntType, w, k, q, s>::seed(
 
 template <typename UIntType, size_t w, size_t k, size_t q, size_t s>
 _CCCL_HOST_DEVICE typename linear_feedback_shift_engine<UIntType, w, k, q, s>::result_type
-linear_feedback_shift_engine<UIntType, w, k, q, s>::operator()(void)
+linear_feedback_shift_engine<UIntType, w, k, q, s>::operator()()
 {
   const UIntType b    = (((m_value << q) ^ m_value) & wordmask) >> (k - s);
   const UIntType mask = ((~static_cast<UIntType>(0)) << (w - k)) & wordmask;

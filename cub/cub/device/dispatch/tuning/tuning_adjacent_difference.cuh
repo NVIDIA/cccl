@@ -18,10 +18,7 @@
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/arch_id.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,14 +46,14 @@ struct adjacent_difference_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const adjacent_difference_policy& p)
   {
     return os << "adjacent_difference_policy { .block_threads = " << p.block_threads
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
               << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

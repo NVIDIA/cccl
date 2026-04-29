@@ -14,15 +14,17 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test_neg(T pos, T neg)
+TEST_FUNC constexpr void test_neg(T pos, T neg)
 {
   assert(cuda::neg(pos) == neg);
   assert(cuda::neg(neg) == pos);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::neg(T{})), T>);
   static_assert(noexcept(cuda::neg(T{})));
@@ -36,7 +38,7 @@ __host__ __device__ constexpr void test_type()
   test_neg<T>(cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::min());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<signed short>();

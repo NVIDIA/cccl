@@ -80,10 +80,8 @@ void TestMerge(size_t n)
   const thrust::device_vector<T> d_a = h_a;
   const thrust::device_vector<T> d_b = h_b;
 
-  for (size_t i = 0; i < num_sizes; i++)
+  for (const auto size : sizes)
   {
-    const size_t size = sizes[i];
-
     thrust::host_vector<T> h_result(n + size);
     thrust::device_vector<T> d_result(n + size);
 

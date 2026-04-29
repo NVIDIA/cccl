@@ -21,7 +21,7 @@ enum Enum
 };
 
 template <class T, class U>
-__host__ __device__ void test_remove_all_extents()
+TEST_FUNC void test_remove_all_extents()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::remove_all_extents<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::remove_all_extents_t<T>>);

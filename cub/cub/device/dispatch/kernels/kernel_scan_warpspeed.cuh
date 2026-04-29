@@ -21,18 +21,15 @@
 #include <cub/detail/warpspeed/squad/load_store.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 #include <cub/detail/warpspeed/values.cuh>
-#include <cub/device/dispatch/kernels/scan_warpspeed_policy.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
-
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/arch_id.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/align_up.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
@@ -46,30 +43,6 @@ namespace detail::scan
 {
 namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
-_CCCL_API constexpr warpspeed::SquadDesc squad_reduce(const scan_warpspeed_policy& policy)
-{
-  return warpspeed::SquadDesc{0, policy.num_reduce_and_scan_warps};
-}
-
-_CCCL_API constexpr warpspeed::SquadDesc squad_scan_store(const scan_warpspeed_policy& policy)
-{
-  return warpspeed::SquadDesc{1, policy.num_reduce_and_scan_warps};
-}
-
-_CCCL_API constexpr warpspeed::SquadDesc squad_load(const scan_warpspeed_policy&)
-{
-  return warpspeed::SquadDesc{2, 1}; // no point in being more than 1 warp
-}
-
-_CCCL_API constexpr warpspeed::SquadDesc squad_sched(const scan_warpspeed_policy&)
-{
-  return warpspeed::SquadDesc{3, 1}; // no point in being more than 1 warp
-}
-
-_CCCL_API constexpr warpspeed::SquadDesc squad_lookback(const scan_warpspeed_policy&)
-{
-  return warpspeed::SquadDesc{4, 1}; // must have 1 warp
-}
 
 _CCCL_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
 {
@@ -81,7 +54,7 @@ _CCCL_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
 template <typename PolicySelector>
 _CCCL_DEVICE_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
 {
-  return PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warpspeed;
+  return current_policy<PolicySelector>().warpspeed;
 }
 
 template <typename InputT, typename OutputT, typename AccumT>
@@ -119,62 +92,6 @@ struct ScanResources
   warpspeed::SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
 };
 
-struct ScanResourcesRaw
-{
-  warpspeed::SmemResourceRaw smemInOut;
-  warpspeed::SmemResourceRaw smemNextBlockIdx;
-  warpspeed::SmemResourceRaw smemSumExclusiveCta;
-  warpspeed::SmemResourceRaw smemSumThreadAndWarp;
-};
-
-struct scan_stage_counts
-{
-  int num_block_idx_stages;
-  int num_sum_exclusive_cta_stages;
-};
-
-_CCCL_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
-{
-  // If numBlockIdxStages is one less than the number of stages, we find a small speedup compared to setting it equal to
-  // num_stages. Not sure why. TODO(bgruber): make this tunable
-  const int num_block_idx_stages = ::cuda::std::max(1, num_stages - 1);
-
-  // We do not need too many sumExclusiveCta stages. The lookback warp is the bottleneck. As soon as it produces a new
-  // value, it will be consumed by the scanStore squad, releasing the stage.
-  return {num_block_idx_stages, 2};
-}
-
-template <typename SmemInOutT, typename SmemNextBlockIdxT, typename SmemSumExclusiveCtaT, typename SmemSumThreadAndWarpT>
-_CCCL_API constexpr void setup_scan_resources(
-  const scan_warpspeed_policy& policy,
-  warpspeed::SyncHandler& syncHandler,
-  warpspeed::SmemAllocator& smemAllocator,
-  SmemInOutT& smemInOut,
-  SmemNextBlockIdxT& smemNextBlockIdx,
-  SmemSumExclusiveCtaT& smemSumExclusiveCta,
-  SmemSumThreadAndWarpT& smemSumThreadAndWarp)
-{
-  const warpspeed::SquadDesc scanSquads[] = {
-    squad_reduce(policy),
-    squad_scan_store(policy),
-    squad_load(policy),
-    squad_sched(policy),
-    squad_lookback(policy),
-  };
-
-  smemInOut.addPhase(syncHandler, smemAllocator, squad_load(policy));
-  smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan_store(policy)});
-
-  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_sched(policy));
-  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
-
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookback(policy));
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
-
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_reduce(policy));
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
-}
-
 // Function to allocate resources.
 
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
@@ -194,8 +111,9 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
     warpspeed::SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
 
+  constexpr auto policy = get_warpspeed_policy<PolicySelector>();
   setup_scan_resources(
-    get_warpspeed_policy<PolicySelector>(),
+    policy,
     syncHandler,
     smemAllocator,
     res.smemInOut,
@@ -260,6 +178,83 @@ _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
   return result;
 }
 
+template <typename Tp, typename ScanOpT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
+warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, bool this_lane_is_valid)
+{
+  // if we have an identity, just fill the out-of-bounds items with it and use the full warp scan, since it's faster
+  if constexpr (cuda::has_identity_element_v<ScanOpT, Tp>)
+  {
+    if (!this_lane_is_valid)
+    {
+      regInput = cuda::identity_element<ScanOpT, Tp>();
+    }
+    return warpScanExclusive(regInput, scan_op);
+  }
+  else
+  {
+    using warp_scan_t = WarpScan<Tp>;
+
+    // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
+    static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
+                  "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
+
+    Tp result;
+    typename warp_scan_t::TempStorage temp_storage;
+    warp_scan_t{temp_storage}.ExclusiveScanPartial(regInput, result, scan_op, num_items);
+    return result;
+  }
+}
+
+template <bool is_last_tile, typename ScanOpT, typename Tp, size_t elemPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regSumInclusive)[elemPerThread], int valid_items)
+{
+  // if we are in the last tile and have an identity, fill the invalid array items with it
+  constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
+  if constexpr (is_last_tile && have_identity)
+  {
+    for (int i = 0; i < elemPerThread; ++i)
+    {
+      if (i >= valid_items)
+      {
+        regSumInclusive[i] = ::cuda::identity_element<ScanOpT, Tp>();
+      }
+    }
+  }
+}
+
+template <bool isInclusive, bool is_last_tile, typename Tp, size_t elemPerThread, typename ScanOpT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
+{
+  // skip the partial scan if we have an identity
+  constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
+  if constexpr (is_last_tile && !have_identity)
+  {
+    if constexpr (isInclusive)
+    {
+      __cub_detail::ThreadScanInclusivePartial(
+        regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+    }
+    else
+    {
+      __cub_detail::ThreadScanExclusivePartial(
+        regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+    }
+  }
+  else
+  {
+    if constexpr (isInclusive)
+    {
+      __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, prefix, use_prefix);
+    }
+    else
+    {
+      __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, prefix, use_prefix);
+    }
+  }
+}
+
 // The kernelBody device function is a straight-line implementation of the
 // warp-specialized kernel.
 //
@@ -283,11 +278,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   warpspeed::SpecialRegisters specialRegisters,
   const scanKernelParams<InputT, OutputT, AccumT>& params,
   ScanOpT scan_op,
-  RealInitValueT real_init_value)
+  RealInitValueT real_init_value,
+  ScanResources<PolicySelector, InputT, OutputT, AccumT>& res)
 {
-  ////////////////////////////////////////////////////////////////////////////////
-  // Tuning dependent variables
-  ////////////////////////////////////////////////////////////////////////////////
   static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
@@ -295,23 +288,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
   static constexpr warpspeed::SquadDesc squadLookback  = squad_lookback(policy);
 
-  constexpr int tile_size                   = policy.tile_size();
-  constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
+  static constexpr int tile_size                   = policy.tile_size();
+  static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
 
-  // We might try to instantiate the kernel with hughe types which would lead to a small tile size. Ensure its never 0
-  constexpr int elemPerThread = policy.items_per_thread;
+  // We might try to instantiate the kernel with huge types which would lead to a small tile size. Ensure its never 0
+  static constexpr int elemPerThread = policy.items_per_thread;
   static_assert(elemPerThread * squadReduce.threadCount() == tile_size, "Invalid tuning policy");
-
-  ////////////////////////////////////////////////////////////////////////////////
-  // Resources
-  ////////////////////////////////////////////////////////////////////////////////
-  warpspeed::SyncHandler syncHandler{};
-  warpspeed::SmemAllocator smemAllocator{};
-
-  ScanResources<PolicySelector, InputT, OutputT, AccumT> res =
-    allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
-
-  syncHandler.clusterInitSync(specialRegisters);
 
   // Inclusive scan if no init_value type is provided
   static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
@@ -519,218 +501,271 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     {
       static_assert(tile_size % squadScanStore.threadCount() == 0);
 
-      // Sum of all threads up to but not including this one
-      AccumT sumExclusive;
-
-      ////////////////////////////////////////////////////////////////////////////////
-      // Include warp and thread sum of current tile
-      ////////////////////////////////////////////////////////////////////////////////
-      {
-        // Acquire refSumThread briefly
-        warpspeed::SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
-        // Add the sums of the preceding warps in this CTA to the cumulative
-        // sum. These sums have been calculated in reduce squad. We need
-        // the reduce and scan squads to be the same size to do this.
-        static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
-
-        // Include warp sums
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < squadScanStore.warpCount(); ++i)
-        {
-          // We want a predicated unrolled loop here.
-          if (i < squad.warpRank())
-          {
-            if (i == 0)
+      // TODO(bgruber): remove the phase parameters in C++20, we can't capture them in C++17 yet
+      auto scan_and_store =
+        [&](auto is_last_tile_ic, auto& phaseSumThreadAndWarpR, auto& phaseSumExclusiveCtaR, auto& phaseInOutRW)
+          _CCCL_FORCEINLINE_LAMBDA {
+            // need to init these to silence nvcc warning about reading uninitialized data
+            [[maybe_unused]] int valid_items_this_thread = 0;
+            [[maybe_unused]] int valid_threads_this_warp = 0;
+            [[maybe_unused]] int valid_warps             = 0;
+            if constexpr (is_last_tile_ic)
             {
-              // The first iteration initializes sumExclusive
-              sumExclusive = refSumThreadAndWarpR.data()[squadReduce.threadCount()];
+              valid_items_this_thread =
+                ::cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, elemPerThread);
+              valid_threads_this_warp =
+                ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+              valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
+              _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
+            }
+
+            // Fill the registers with the scan identity, if there is one, before acquiring/waiting on any resources
+            AccumT regSumInclusive[elemPerThread];
+            fillWithIdentity<is_last_tile_ic, ScanOpT>(regSumInclusive, valid_items_this_thread);
+
+            // Sum of all threads up to but not including this one
+            AccumT sumExclusive;
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // Include warp and thread sum of current tile
+            ////////////////////////////////////////////////////////////////////////////////
+            {
+              // Acquire refSumThread briefly
+              warpspeed::SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
+              // Add the sums of the preceding warps in this CTA to the cumulative
+              // sum. These sums have been calculated in reduce squad. We need
+              // the reduce and scan squads to be the same size to do this.
+              static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
+
+              // Include warp sums
+              _CCCL_PRAGMA_UNROLL_FULL()
+              for (int i = 0; i < squadScanStore.warpCount(); ++i)
+              {
+                // We want a predicated unrolled loop here.
+                bool include_warp = i < squad.warpRank();
+                if constexpr (is_last_tile_ic)
+                {
+                  include_warp &= i < valid_warps;
+                }
+                if (include_warp)
+                {
+                  if (i == 0)
+                  {
+                    // The first iteration initializes sumExclusive
+                    sumExclusive = refSumThreadAndWarpR.data()[squadReduce.threadCount()];
+                  }
+                  else
+                  {
+                    // If loaded value belongs to previous warp, include it in sumExclusive.
+                    sumExclusive = scan_op(sumExclusive, refSumThreadAndWarpR.data()[squadReduce.threadCount() + i]);
+                  }
+                }
+              }
+              // sumExclusive contains the sum of previous warps.
+              // It has a valid value in
+              // - tile*::warp{1,2, ..}      (sum of previous warps)
+              //
+              // It is not yet initialized in
+              // - tile*::warp0
+
+              // Add the sums of preceding threads in this warp to the cumulative sum.
+              // We perform an exclusive scan of:
+              //
+              //   {sumT0, sumT1, ..., sumT30, sumT31 }
+              //
+              // As a result:
+              // - lane0 has undefined value
+              // - lane1 has sumT0
+              // - ...
+              // - lane31 has sumT0 + ... + sumT30
+              //
+              // For lane1, ..., 31, we add the result to sumExclusive.
+              //
+              // If the warp contains partial data, we pass invalid elements to
+              // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
+              // invalid.
+              AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
+              AccumT sumExclusiveIntraWarp;
+              if constexpr (is_last_tile_ic) // this branch would cost up to 4% BW for I8 and I16 if it were at runtime
+              {
+                sumExclusiveIntraWarp = __scan_detail::warpScanExclusivePartial(
+                  regSumThread,
+                  scan_op,
+                  valid_threads_this_warp,
+                  specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp));
+              }
+              else
+              {
+                sumExclusiveIntraWarp = __scan_detail::warpScanExclusive(regSumThread, scan_op);
+              }
+
+              if (squad.warpRank() == 0)
+              {
+                // Warp0 does not yet have a valid value for sumExclusive. We set it
+                // here. This ensures that lane1,..,31 of tile0::warp0 have a valid
+                // value for sumExclusive.
+                sumExclusive = sumExclusiveIntraWarp;
+              }
+              else
+              {
+                // lane0 has an undefined value for sumExclusiveIntraWarp, so skip it
+                bool includeIntraWarpSum = specialRegisters.laneIdx != 0;
+                if constexpr (is_last_tile_ic)
+                {
+                  includeIntraWarpSum &= specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp);
+                }
+
+                if (includeIntraWarpSum)
+                {
+                  sumExclusive = scan_op(sumExclusive, sumExclusiveIntraWarp);
+                }
+              }
+            }
+            // sumExclusive contains the sum of previous warps and sum of previous threads.
+            //
+            // - tile*::warp0::lane{1, .., 31}  (sum of previous threads)
+            // - tile*::warp{1,2, ..}           (sum of previous warps + sum of previous threads)
+            //
+            // It has an undefined value in
+            // - tile*::warp0::lane0
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // Include sum of previous tiles
+            ////////////////////////////////////////////////////////////////////////////////
+            {
+              // Briefly acquire refSumExclusiveCtaR (we have to do this for the first tile as well to prevent a hang)
+              warpspeed::SmemRef refSumExclusiveCtaR = phaseSumExclusiveCtaR.acquireRef();
+
+              if (!is_first_tile)
+              {
+                // Add the sums of preceding CTAs to the cumulative sum.
+                AccumT regSumExclusiveCta = refSumExclusiveCtaR.data();
+                // sumExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
+                sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(regSumExclusiveCta, sumExclusive);
+              }
+            }
+
+            if constexpr (hasInit)
+            {
+              if (is_first_tile)
+              {
+                // The first thread cannot use scan_op because sumExclusive holds garbage data
+                if (squad.threadRank() == 0)
+                {
+                  sumExclusive = static_cast<AccumT>(real_init_value);
+                }
+                else
+                {
+                  sumExclusive = scan_op(static_cast<AccumT>(real_init_value), sumExclusive);
+                }
+              }
+            }
+            // sumExclusive contains the following values:
+            //
+            // - tile0::warp0::lane0            (init_value)
+            // - tile0::warp0::lane{1, .., 31}  (init_value + sum of previous threads)
+            // - tile0::warp{1,2, ..}           (init_value + sum of previous warps + sum of previous threads)
+            // - tile*::warp0::lane0            (sum of previous CTAs)
+            // - tile*::warp0::lane{1, .., 31}  (sum of previous CTAs + sum of previous threads)
+            // - tile*::warp{1,2, ..}           (sum of previous CTAs + sum of previous warps + sum of previous threads)
+            //
+            // If no init value is provided, then sumExclusive has an undefined value in
+            // - tile0::warp0::lane0
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // Scan across elements allocated to this thread
+            ////////////////////////////////////////////////////////////////////////////////
+
+            // Acquire refInOut for remainder of scope.
+            warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
+
+            // We are always loading a full tile even for the last tile, so we are loading invalid data
+            warpspeed::squadLoadSmem(
+              squad,
+              regSumInclusive,
+              reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
+
+            // Perform inclusive scan of register array in current thread.
+            // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
+            const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
+            threadScanPartial<isInclusive, is_last_tile_ic>(
+              regSumInclusive, scan_op, sumExclusive, use_prefix, valid_items_this_thread);
+
+            ////////////////////////////////////////////////////////////////////////////////
+            // Store result to shared memory
+            ////////////////////////////////////////////////////////////////////////////////
+            // Sync before storing to avoid data races on SMEM
+            squad.syncThreads();
+
+            ::cuda::std::byte* smem_output_tile = refInOutRW.data().inout;
+            if constexpr (sizeof(OutputT) <= sizeof(InputT))
+            {
+              warpspeed::CpAsyncOobInfo storeInfo =
+                warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
+
+              warpspeed::squadStoreSmem(
+                squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regSumInclusive);
+              // We do *not* release refSmemInOut here, because we will issue a TMA
+              // instruction below. Instead, we issue a squad-local syncthreads +
+              // fence.proxy.async to sync the shared memory writes with the TMA store.
+              squad.syncThreads();
+
+              ////////////////////////////////////////////////////////////////////////////////
+              // Store result to global memory using TMA
+              ////////////////////////////////////////////////////////////////////////////////
+              warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
             }
             else
             {
-              // If loaded value belongs to previous warp, include it in sumExclusive.
-              sumExclusive = scan_op(sumExclusive, refSumThreadAndWarpR.data()[squadReduce.threadCount() + i]);
+              // otherwise, issue multiple bulk copies in chunks of the input tile size
+              // TODO(bgruber): I am sure this could be implemented a lot more efficiently
+              static constexpr int elem_per_chunk =
+                static_cast<int>(policy.tile_size() * sizeof(InputT) / sizeof(OutputT));
+              for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
+              {
+                const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
+                warpspeed::CpAsyncOobInfo storeInfo =
+                  warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
+
+                // only stage elements of the current chunk to SMEM
+                // storeInfo.smemStartSkipBytes < 16 and smem_output_tile contains extra 16 bytes, so we should fit
+                _CCCL_ASSERT(
+                  storeInfo.smemStartSkipBytes + elem_per_chunk * sizeof(OutputT) <= res.smemInOut.mSizeBytes, "");
+                warpspeed::squadStoreSmemPartial(
+                  squad,
+                  reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), // different in each
+                                                                                               // iteration
+                  regSumInclusive,
+                  chunk_offset,
+                  chunk_offset + chunk_size);
+
+                // We do *not* release refSmemInOut here, because we will issue a TMA
+                // instruction below. Instead, we issue a squad-local syncthreads +
+                // fence.proxy.async to sync the shared memory writes with the TMA store.
+                squad.syncThreads();
+
+                ////////////////////////////////////////////////////////////////////////////////
+                // Store result to global memory using TMA
+                ////////////////////////////////////////////////////////////////////////////////
+                warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
+
+                squad.syncThreads();
+              }
             }
-          }
-        }
-        // sumExclusive contains the sum of previous warps.
-        // It has a valid value in
-        // - tile*::warp{1,2, ..}      (sum of previous warps)
-        //
-        // It it not yet initialized in
-        // - tile*::warp0
 
-        // Add the sums of preceding threads in this warp to the cumulative sum.
-        // We perform an exclusive scan of:
-        //
-        //   {sumT0, sumT1, ..., sumT30, sumT31 }
-        //
-        // As a result:
-        // - lane0 has undefined value
-        // - lane1 has sumT0
-        // - ...
-        // - lane31 has sumT0 + ... + sumT30
-        //
-        // For lane1, ..., 31, we add the result to sumExclusive.
-        //
-        // If the warp contains partial data, we pass invalid elements to
-        // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
-        // invalid.
-        AccumT regSumThread          = refSumThreadAndWarpR.data()[squad.threadRank()];
-        AccumT sumExclusiveIntraWarp = __scan_detail::warpScanExclusive(regSumThread, scan_op);
+            // Release refInOut. No need to do any cross-proxy fencing here, because
+            // the TMA store in this warp and the TMA load in the load warp are both
+            // async proxy.
+          };
 
-        if (squad.warpRank() == 0)
-        {
-          // Warp0 does not yet have a valid value for sumExclusive. We set it
-          // here. This ensures that lane1,..,31 of tile0::warp0 have a valid
-          // value for sumExclusive.
-          sumExclusive = sumExclusiveIntraWarp;
-        }
-        else if (specialRegisters.laneIdx != 0)
-        {
-          // lane0 has an undefined value for sumIntraWarp. Other lanes update
-          // sumExclusive using sumIntraWarp.
-          sumExclusive = scan_op(sumExclusive, sumExclusiveIntraWarp);
-        }
-      }
-      // sumExclusive contains the sum of previous warps and sum of previous threads.
-      //
-      // - tile*::warp0::lane{1, .., 31}  (sum of previous threads)
-      // - tile*::warp{1,2, ..}           (sum of previous warps + sum of previous threads)
-      //
-      // It has an undefined value in
-      // - tile*::warp0::lane0
-
-      ////////////////////////////////////////////////////////////////////////////////
-      // Include sum of previous tiles
-      ////////////////////////////////////////////////////////////////////////////////
+      if (is_last_tile)
       {
-        // Briefly acquire refSumExclusiveCtaR (we have to do this for the first tile as well to prevent a hang)
-        warpspeed::SmemRef refSumExclusiveCtaR = phaseSumExclusiveCtaR.acquireRef();
-
-        if (!is_first_tile)
-        {
-          // Add the sums of preceding CTAs to the cumulative sum.
-          AccumT regSumExclusiveCta = refSumExclusiveCtaR.data();
-          // sumExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
-          sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(regSumExclusiveCta, sumExclusive);
-        }
-      }
-
-      if constexpr (hasInit)
-      {
-        if (is_first_tile)
-        {
-          // The first thread cannot use scan_op because sumExclusive holds garbage data
-          if (squad.threadRank() == 0)
-          {
-            sumExclusive = static_cast<AccumT>(real_init_value);
-          }
-          else
-          {
-            sumExclusive = scan_op(static_cast<AccumT>(real_init_value), sumExclusive);
-          }
-        }
-      }
-      // sumExclusive contains the following values:
-      //
-      // - tile0::warp0::lane0            (init_value)
-      // - tile0::warp0::lane{1, .., 31}  (init_value + sum of previous threads)
-      // - tile0::warp{1,2, ..}           (init_value + sum of previous warps + sum of previous threads)
-      // - tile*::warp0::lane0            (sum of previous CTAs)
-      // - tile*::warp0::lane{1, .., 31}  (sum of previous CTAs + sum of previous threads)
-      // - tile*::warp{1,2, ..}           (sum of previous CTAs + sum of previous warps + sum of previous threads)
-      //
-      // If no init value is provided, then sumExclusive has an undefined value in
-      // - tile0::warp0::lane0
-
-      ////////////////////////////////////////////////////////////////////////////////
-      // Scan across elements allocated to this thread
-      ////////////////////////////////////////////////////////////////////////////////
-      AccumT regSumInclusive[elemPerThread] = {{}};
-
-      // Acquire refInOut for remainder of scope.
-      warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
-
-      // We are always loading a full tile even for the last one. That will call scan_op on invalid data
-      // loading partial tiles here regresses perf for about 10-15%
-      warpspeed::squadLoadSmem(
-        squad,
-        regSumInclusive,
-        reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
-
-      // Perform inclusive scan of register array in current thread.
-      // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
-      const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-      if constexpr (isInclusive)
-      {
-        __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        scan_and_store(::cuda::std::true_type{}, phaseSumThreadAndWarpR, phaseSumExclusiveCtaR, phaseInOutRW);
       }
       else
       {
-        __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        scan_and_store(::cuda::std::false_type{}, phaseSumThreadAndWarpR, phaseSumExclusiveCtaR, phaseInOutRW);
       }
-
-      ////////////////////////////////////////////////////////////////////////////////
-      // Store result to shared memory
-      ////////////////////////////////////////////////////////////////////////////////
-      // Sync before storing to avoid data races on SMEM
-      squad.syncThreads();
-
-      ::cuda::std::byte* smem_output_tile = refInOutRW.data().inout;
-      if constexpr (sizeof(OutputT) <= sizeof(InputT))
-      {
-        warpspeed::CpAsyncOobInfo storeInfo = warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
-
-        warpspeed::squadStoreSmem(
-          squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regSumInclusive);
-        // We do *not* release refSmemInOut here, because we will issue a TMA
-        // instruction below. Instead, we issue a squad-local syncthreads +
-        // fence.proxy.async to sync the shared memory writes with the TMA store.
-        squad.syncThreads();
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Store result to global memory using TMA
-        ////////////////////////////////////////////////////////////////////////////////
-        warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
-      }
-      else
-      {
-        // otherwise, issue multiple bulk copies in chunks of the input tile size
-        // TODO(bgruber): I am sure this could be implemented a lot more efficiently
-        static constexpr int elem_per_chunk = static_cast<int>(policy.tile_size() * sizeof(InputT) / sizeof(OutputT));
-        for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
-        {
-          const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
-          warpspeed::CpAsyncOobInfo storeInfo =
-            warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
-
-          // only stage elements of the current chunk to SMEM
-          // storeInfo.smemStartSkipBytes < 16 and smem_output_tile contains extra 16 bytes, so we should fit
-          _CCCL_ASSERT(storeInfo.smemStartSkipBytes + elem_per_chunk * sizeof(OutputT) <= res.smemInOut.mSizeBytes, "");
-          warpspeed::squadStoreSmemPartial(
-            squad,
-            reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), // different in each iteration
-            regSumInclusive,
-            chunk_offset,
-            chunk_offset + chunk_size);
-
-          // We do *not* release refSmemInOut here, because we will issue a TMA
-          // instruction below. Instead, we issue a squad-local syncthreads +
-          // fence.proxy.async to sync the shared memory writes with the TMA store.
-          squad.syncThreads();
-
-          ////////////////////////////////////////////////////////////////////////////////
-          // Store result to global memory using TMA
-          ////////////////////////////////////////////////////////////////////////////////
-          warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
-
-          squad.syncThreads();
-        }
-      }
-
-      // Release refInOut. No need to do any cross-proxy fencing here, because
-      // the TMA store in this warp and the TMA load in the load warp are both
-      // async proxy.
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -760,7 +795,7 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   const scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
@@ -778,17 +813,25 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     squad_lookback(policy),
   };
 
+  ScanResources<PolicySelector, InputT, OutputT, AccumT> res = [&] {
+    warpspeed::SyncHandler syncHandler{};
+    warpspeed::SmemAllocator smemAllocator{};
+    auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
+    syncHandler.clusterInitSync<num_total_threads(policy)>(specialRegisters);
+    return r;
+  }();
+
   // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
   warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
     kernelBody<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
-      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
+      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res);
   });
 #endif // __cccl_ptx_isa >= 860
 }
 
 template <typename AccumT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
+device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)
@@ -820,61 +863,6 @@ device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, co
   }
 }
 
-_CCCL_API constexpr auto smem_for_stages(
-  const scan_warpspeed_policy& policy,
-  int num_stages,
-  int input_size,
-  int input_align,
-  int output_size,
-  int output_align,
-  int accum_size,
-  int accum_align) -> int
-{
-  warpspeed::SyncHandler syncHandler{};
-  warpspeed::SmemAllocator smemAllocator{};
-  (void) output_size;
-  const auto counts = make_scan_stage_counts(num_stages);
-
-  const int align_inout = ::cuda::std::max({16, input_align, output_align});
-  const int inout_bytes = policy.tile_size() * input_size + 16;
-  // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
-  const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
-  const auto reduce_squad   = squad_reduce(policy);
-  const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
-
-  void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
-  void* next_block_idx_base = smemAllocator.alloc(
-    static_cast<::cuda::std::uint32_t>(sizeof(uint4) * counts.num_block_idx_stages), alignof(uint4));
-  void* sum_exclusive_base = smemAllocator.alloc(
-    static_cast<::cuda::std::uint32_t>(accum_size * counts.num_sum_exclusive_cta_stages), accum_align);
-  void* sum_thread_warp_base =
-    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sum_thread_warp * num_stages), accum_align);
-
-  ScanResourcesRaw res = {
-    warpspeed::SmemResourceRaw{syncHandler, inout_base, inout_stride, inout_stride, num_stages},
-    warpspeed::SmemResourceRaw{
-      syncHandler,
-      next_block_idx_base,
-      static_cast<int>(sizeof(uint4)),
-      static_cast<int>(sizeof(uint4)),
-      counts.num_block_idx_stages},
-    warpspeed::SmemResourceRaw{
-      syncHandler, sum_exclusive_base, accum_size, accum_size, counts.num_sum_exclusive_cta_stages},
-    warpspeed::SmemResourceRaw{syncHandler, sum_thread_warp_base, sum_thread_warp, sum_thread_warp, num_stages},
-  };
-
-  setup_scan_resources(
-    policy,
-    syncHandler,
-    smemAllocator,
-    res.smemInOut,
-    res.smemNextBlockIdx,
-    res.smemSumExclusiveCta,
-    res.smemSumThreadAndWarp);
-  syncHandler.mHasInitialized = true; // avoid assertion in destructor
-  return static_cast<int>(smemAllocator.sizeBytes());
-}
-
 template <typename InputT, typename OutputT, typename AccumT>
 _CCCL_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, int num_stages) -> int
 {
@@ -883,73 +871,9 @@ _CCCL_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, in
     num_stages,
     static_cast<int>(sizeof(InputT)),
     static_cast<int>(alignof(InputT)),
-    static_cast<int>(sizeof(OutputT)),
     static_cast<int>(alignof(OutputT)),
     static_cast<int>(sizeof(AccumT)),
     static_cast<int>(alignof(AccumT)));
-}
-
-_CCCL_API constexpr bool use_warpspeed(
-  const scan_warpspeed_policy& policy,
-  int input_size,
-  int input_align,
-  int output_size,
-  int output_align,
-  int accum_size,
-  int accum_align,
-  bool input_contiguous,
-  bool output_contiguous,
-  bool input_trivially_copyable,
-  bool output_trivially_copyable,
-  bool output_default_constructible)
-{
-// We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
-// MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing else.
-#if (defined(__CUDA_ARCH__) && __cccl_ptx_isa < 860) || !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
-  || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1)))
-  (void) policy;
-  (void) input_size;
-  (void) input_align;
-  (void) output_size;
-  (void) output_align;
-  (void) accum_size;
-  (void) accum_align;
-  (void) input_contiguous;
-  (void) output_contiguous;
-  (void) input_trivially_copyable;
-  (void) output_trivially_copyable;
-  (void) output_default_constructible;
-  return false;
-#else
-  if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
-      || !output_default_constructible)
-  {
-    return false;
-  }
-
-  return smem_for_stages(policy, 1, input_size, input_align, output_size, output_align, accum_size, accum_align)
-      <= static_cast<int>(max_smem_per_block);
-#endif
-}
-
-template <typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-_CCCL_API constexpr bool use_warpspeed(const scan_warpspeed_policy& policy)
-{
-  using InputT  = it_value_t<InputIteratorT>;
-  using OutputT = it_value_t<OutputIteratorT>;
-  return use_warpspeed(
-    policy,
-    static_cast<int>(sizeof(InputT)),
-    static_cast<int>(alignof(InputT)),
-    static_cast<int>(sizeof(OutputT)),
-    static_cast<int>(alignof(OutputT)),
-    static_cast<int>(sizeof(AccumT)),
-    static_cast<int>(alignof(AccumT)),
-    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>,
-    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>,
-    ::cuda::std::is_trivially_copyable_v<InputT>,
-    ::cuda::std::is_trivially_copyable_v<OutputT>,
-    ::cuda::std::is_default_constructible_v<OutputT>);
 }
 } // namespace detail::scan
 

@@ -24,12 +24,9 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 
@@ -78,13 +75,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   const reduce_by_key_policy policy = policy_selector(arch_id);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (::std::stringstream ss; ss << policy;
-                _CubLog("Dispatching streaming reduce by key to arch %d with tuning: %s\n",
-                        static_cast<int>(arch_id),
-                        ss.str().c_str());))
-#endif
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << policy;
+                 _CubLog("Dispatching streaming reduce by key to arch %d with tuning: %s\n",
+                         static_cast<int>(arch_id),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;

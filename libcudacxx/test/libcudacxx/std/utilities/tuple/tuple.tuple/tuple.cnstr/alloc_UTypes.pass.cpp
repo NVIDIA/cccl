@@ -25,12 +25,12 @@
 template <class T = void>
 struct DefaultCtorBlowsUp
 {
-  __host__ __device__ constexpr DefaultCtorBlowsUp()
+  TEST_FUNC constexpr DefaultCtorBlowsUp()
   {
     static_assert(!cuda::std::is_same<T, T>::value, "Default Ctor instantiated");
   }
 
-  __host__ __device__ explicit constexpr DefaultCtorBlowsUp(int x)
+  TEST_FUNC explicit constexpr DefaultCtorBlowsUp(int x)
       : value(x)
   {}
 
@@ -43,13 +43,13 @@ struct DerivedFromAllocArgT : cuda::std::allocator_arg_t
 // Make sure the _Up... constructor SFINAEs out when the number of initializers
 // is less that the number of elements in the tuple. Previously libc++ would
 // offer these constructors as an extension but they broke conforming code.
-__host__ __device__ void test_uses_allocator_sfinae_evaluation()
+TEST_FUNC void test_uses_allocator_sfinae_evaluation()
 {
   using BadDefault = DefaultCtorBlowsUp<>;
   {
     using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value, "");
+    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value);
 
     static_assert(
       cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value,
@@ -71,7 +71,7 @@ __host__ __device__ void test_uses_allocator_sfinae_evaluation()
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };

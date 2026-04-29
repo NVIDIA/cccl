@@ -42,11 +42,11 @@
 */
 
 template <class T>
-__host__ __device__ void test(T)
+TEST_FUNC void test(T)
 {}
 
 template <class T>
-__host__ __device__ void test_type_helper()
+TEST_FUNC void test_type_helper()
 {
   test(cuda::std::numeric_limits<T>::is_specialized);
   test(cuda::std::numeric_limits<T>::digits);
@@ -74,7 +74,7 @@ __host__ __device__ void test_type_helper()
 }
 
 template <class T>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_type_helper<T>();
   test_type_helper<const T>();

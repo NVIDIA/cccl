@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 /**
@@ -24,6 +24,7 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -33,7 +34,9 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 
@@ -52,8 +55,8 @@ namespace detail::scan_by_key
 /**
  * @brief Scan by key kernel entry point (multi-block)
  *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
+ * @tparam PolicySelector
+ *   Policy selector type
  *
  * @tparam KeysInputIteratorT
  *   Random-access input iterator type
@@ -109,7 +112,7 @@ namespace detail::scan_by_key
  * @param num_items
  *   Total number of scan items for the entire problem
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename KeysInputIteratorT,
           typename ValuesInputIteratorT,
           typename ValuesOutputIteratorT,
@@ -120,7 +123,7 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_prev_in,
@@ -133,11 +136,22 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
-  using ScanByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT;
+  static constexpr scan_by_key_policy policy = current_policy<PolicySelector>();
+
+  using scan_by_key_policy_t = AgentScanByKeyPolicy<
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.scan_algorithm,
+    policy.store_algorithm,
+    delay_constructor_t<policy.delay_constructor.kind,
+                        policy.delay_constructor.delay,
+                        policy.delay_constructor.l2_write_latency>>;
 
   // Thread block type for scanning input tiles
   using AgentScanByKeyT = detail::scan_by_key::AgentScanByKey<
-    ScanByKeyPolicyT,
+    scan_by_key_policy_t,
     KeysInputIteratorT,
     ValuesInputIteratorT,
     ValuesOutputIteratorT,
@@ -173,6 +187,40 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
     d_keys_prev_in[tid] = d_keys_in[tile_base - 1];
   }
 }
+
+template <typename PolicySelector,
+          typename KeysInputIteratorT,
+          typename ValuesInputIteratorT,
+          typename ValuesOutputIteratorT,
+          typename EqualityOp,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename AccumT>
+struct DeviceScanByKeyKernelSource
+{
+  using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, int>;
+
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>)
+
+  CUB_DEFINE_KERNEL_GETTER(
+    ScanKernel,
+    DeviceScanByKeyKernel<PolicySelector,
+                          KeysInputIteratorT,
+                          ValuesInputIteratorT,
+                          ValuesOutputIteratorT,
+                          ScanByKeyTileStateT,
+                          EqualityOp,
+                          ScanOpT,
+                          InitValueT,
+                          OffsetT,
+                          AccumT>)
+
+  CUB_RUNTIME_FUNCTION static ScanByKeyTileStateT TileState()
+  {
+    return {};
+  }
+};
 } // namespace detail::scan_by_key
 
 /******************************************************************************
@@ -205,6 +253,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
  *   Unsigned integer type for global offsets
  *
  */
+// TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
 template <
   typename KeysInputIteratorT,
   typename ValuesInputIteratorT,
@@ -219,7 +268,19 @@ template <
     ::cuda::std::
       _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
   typename PolicyHub =
-    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>>
+    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>,
+  typename PolicySelector = detail::scan_by_key::policy_selector_from_hub<PolicyHub>,
+  typename KernelSource   = detail::scan_by_key::DeviceScanByKeyKernelSource<
+      PolicySelector,
+      KeysInputIteratorT,
+      ValuesInputIteratorT,
+      ValuesOutputIteratorT,
+      EqualityOp,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      AccumT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchScanByKey
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
@@ -238,7 +299,7 @@ struct DispatchScanByKey
   using InputT = cub::detail::it_value_t<ValuesInputIteratorT>;
 
   // Tile state used for the decoupled look-back
-  using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, int>;
+  using ScanByKeyTileStateT = typename KernelSource::ScanByKeyTileStateT;
 
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
   /// required allocation size is written to `temp_storage_bytes` and no work
@@ -272,6 +333,8 @@ struct DispatchScanByKey
   /// CUDA stream to launch kernels within.
   cudaStream_t stream;
   int ptx_version;
+  KernelSource kernel_source;
+  KernelLauncherFactory launcher_factory;
 
   /**
    * @param[in] d_temp_storage
@@ -289,7 +352,7 @@ struct DispatchScanByKey
    *   Iterator to the input sequence of value items
    *
    * @param[out] d_values_out
-   *   Iterator to the input sequence of value items
+   *   Iterator to the output sequence of value items
    *
    * @param[in] equality_op
    *   Binary equality functor
@@ -305,7 +368,17 @@ struct DispatchScanByKey
    *
    * @param[in] stream
    *   CUDA stream to launch kernels within.
+   *
+   * @param[in] kernel_source
+   *   Object specifying implementation kernels
+   *
+   * @param[in] launcher_factory
+   *   Object to execute implementation kernels on the given stream
+   *
+   * @param[in] max_policy
+   *   Struct encoding chain of algorithm tuning policies
    */
+  // TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -317,7 +390,9 @@ struct DispatchScanByKey
     InitValueT init_value,
     OffsetT num_items,
     cudaStream_t stream,
-    int ptx_version)
+    int ptx_version,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys_in(d_keys_in)
@@ -329,13 +404,12 @@ struct DispatchScanByKey
       , num_items(num_items)
       , stream(stream)
       , ptx_version(ptx_version)
+      , kernel_source(kernel_source)
+      , launcher_factory(launcher_factory)
   {}
 
-  template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(detail::scan_by_key::scan_by_key_policy active_policy)
   {
-    using Policy = typename ActivePolicyT::ScanByKeyPolicyT;
-
     // Get device ordinal
     int device_ordinal;
     if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
@@ -344,12 +418,14 @@ struct DispatchScanByKey
     }
 
     // Number of input tiles
-    const int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
+    const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+
+    auto tile_state = kernel_source.TileState();
 
     // Specify temporary storage allocation requirements
     size_t allocation_sizes[2];
-    if (const auto error = CubDebug(ScanByKeyTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+    if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
     {
       return error; // bytes needed for tile status descriptors
     }
@@ -374,7 +450,6 @@ struct DispatchScanByKey
     KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]);
 
     // Construct the tile status interface
-    ScanByKeyTileStateT tile_state;
     if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
     {
       return error;
@@ -388,8 +463,18 @@ struct DispatchScanByKey
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-            .doit(init_kernel, tile_state, d_keys_in, d_keys_prev_in, static_cast<OffsetT>(tile_size), num_tiles)))
+          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+            .doit(kernel_source.InitKernel(),
+                  tile_state,
+                  d_keys_in,
+                  d_keys_prev_in,
+                  static_cast<OffsetT>(tile_size),
+                  num_tiles)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
     {
       return error;
     }
@@ -411,21 +496,21 @@ struct DispatchScanByKey
     const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
-// Log scan_kernel configuration
+      // Log scan_kernel configuration
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
               "per thread\n",
               start_tile,
               scan_grid_size,
-              Policy::BLOCK_THREADS,
+              active_policy.block_threads,
               (long long) stream,
-              Policy::ITEMS_PER_THREAD);
+              active_policy.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, Policy::BLOCK_THREADS, 0, stream)
-              .doit(scan_kernel,
+            launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream)
+              .doit(kernel_source.ScanKernel(),
                     d_keys_in,
                     d_keys_prev_in,
                     d_values_in,
@@ -436,6 +521,11 @@ struct DispatchScanByKey
                     scan_op,
                     init_value,
                     num_items)))
+      {
+        return error;
+      }
+
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
@@ -451,22 +541,9 @@ struct DispatchScanByKey
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
   {
-    // Ensure kernels are instantiated.
-    return Invoke<ActivePolicyT>(
-      detail::scan_by_key::DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
-      detail::scan_by_key::DeviceScanByKeyKernel<
-        typename PolicyHub::MaxPolicy,
-        KeysInputIteratorT,
-        ValuesInputIteratorT,
-        ValuesOutputIteratorT,
-        ScanByKeyTileStateT,
-        EqualityOp,
-        ScanOpT,
-        InitValueT,
-        OffsetT,
-        AccumT>);
+    return __invoke(detail::scan_by_key::convert_policy<ActivePolicyT>());
   }
 
   /**
@@ -487,7 +564,7 @@ struct DispatchScanByKey
    *   Iterator to the input sequence of value items
    *
    * @param[out] d_values_out
-   *   Iterator to the input sequence of value items
+   *   Iterator to the output sequence of value items
    *
    * @param[in] equality_op
    *   Binary equality functor
@@ -504,6 +581,7 @@ struct DispatchScanByKey
    * @param[in] stream
    *   CUDA stream to launch kernels within.
    */
+  // TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -514,16 +592,16 @@ struct DispatchScanByKey
     ScanOpT scan_op,
     InitValueT init_value,
     OffsetT num_items,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {})
   {
-    // Get PTX version
     int ptx_version = 0;
-    if (const auto error = CubDebug(PtxVersion(ptx_version)))
+    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
     {
       return error;
     }
 
-    // Create dispatch functor
     DispatchScanByKey dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -535,12 +613,174 @@ struct DispatchScanByKey
       init_value,
       num_items,
       stream,
-      ptx_version);
+      ptx_version,
+      kernel_source,
+      launcher_factory);
 
-    // Dispatch to chained policy
-    return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
+    return CubDebug(typename PolicyHub::MaxPolicy{}.Invoke(ptx_version, dispatch));
+  }
+
+  template <typename PolicySelectorT, typename KernelSourceT = KernelSource>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeysInputIteratorT d_keys_in,
+    ValuesInputIteratorT d_values_in,
+    ValuesOutputIteratorT d_values_out,
+    EqualityOp equality_op,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    OffsetT num_items,
+    cudaStream_t stream,
+    PolicySelectorT policy_selector,
+    KernelSourceT kernel_source            = {},
+    KernelLauncherFactory launcher_factory = {})
+  {
+    ::cuda::arch_id arch_id{};
+    if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+    {
+      return error;
+    }
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << policy_selector(arch_id);
+                   _CubLog("Dispatching DeviceScanByKey to arch %d with tuning: %s\n",
+                           static_cast<int>(arch_id),
+                           ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+
+    const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+
+    return DispatchScanByKey<KeysInputIteratorT,
+                             ValuesInputIteratorT,
+                             ValuesOutputIteratorT,
+                             EqualityOp,
+                             ScanOpT,
+                             InitValueT,
+                             OffsetT,
+                             AccumT,
+                             PolicyHub,
+                             PolicySelectorT,
+                             KernelSourceT,
+                             KernelLauncherFactory>(
+             d_temp_storage,
+             temp_storage_bytes,
+             d_keys_in,
+             d_values_in,
+             d_values_out,
+             equality_op,
+             scan_op,
+             init_value,
+             num_items,
+             stream,
+             -1,
+             kernel_source,
+             launcher_factory)
+      .__invoke(active_policy);
   }
 };
+
+namespace detail::scan_by_key
+{
+template <
+  typename KeysInputIteratorT,
+  typename ValuesInputIteratorT,
+  typename ValuesOutputIteratorT,
+  typename EqualityOp,
+  typename ScanOpT,
+  typename InitValueT,
+  typename OffsetT,
+  typename AccumT = ::cuda::std::__accumulator_t<
+    ScanOpT,
+    cub::detail::it_value_t<ValuesInputIteratorT>,
+    ::cuda::std::
+      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
+  typename PolicySelector = policy_selector_from_types<cub::detail::it_value_t<KeysInputIteratorT>,
+                                                       AccumT,
+                                                       cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                       ScanOpT>,
+  typename KernelSource   = DeviceScanByKeyKernelSource<
+      PolicySelector,
+      KeysInputIteratorT,
+      ValuesInputIteratorT,
+      ValuesOutputIteratorT,
+      EqualityOp,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      AccumT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeysInputIteratorT d_keys_in,
+  ValuesInputIteratorT d_values_in,
+  ValuesOutputIteratorT d_values_out,
+  EqualityOp equality_op,
+  ScanOpT scan_op,
+  InitValueT init_value,
+  OffsetT num_items,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {}) -> cudaError_t
+{
+  static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
+                "DispatchScan only supports unsigned offset types of at least 4-bytes");
+
+  ::cuda::arch_id arch_id{};
+  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  {
+    return error;
+  }
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(
+    NV_IS_HOST, ({
+      ::std::stringstream ss;
+      ss << policy_selector(arch_id);
+      _CubLog("Dispatching DeviceScanByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
+    }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+
+  struct fake_policy
+  {
+    using MaxPolicy = void;
+  };
+
+  const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+
+  return DispatchScanByKey<KeysInputIteratorT,
+                           ValuesInputIteratorT,
+                           ValuesOutputIteratorT,
+                           EqualityOp,
+                           ScanOpT,
+                           InitValueT,
+                           OffsetT,
+                           AccumT,
+                           fake_policy,
+                           PolicySelector,
+                           KernelSource,
+                           KernelLauncherFactory>{
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in,
+    d_values_in,
+    d_values_out,
+    equality_op,
+    scan_op,
+    init_value,
+    num_items,
+    stream,
+    -1,
+    kernel_source,
+    launcher_factory}
+    .__invoke(active_policy);
+}
+} // namespace detail::scan_by_key
 
 CUB_NAMESPACE_END
 

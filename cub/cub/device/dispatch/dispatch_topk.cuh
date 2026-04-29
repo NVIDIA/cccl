@@ -21,6 +21,7 @@
 #include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -49,7 +50,7 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
-          bool IsFundamental = detail::radix::is_fundamental_type_v<T>>
+          bool CanTwiddle = detail::radix::can_twiddle<T>>
 struct extract_bin_op_t;
 
 template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
@@ -113,7 +114,7 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
-          bool IsFundamental = detail::radix::is_fundamental_type_v<T>>
+          bool CanTwiddle = detail::radix::can_twiddle<T>>
 struct identify_candidates_op_t;
 
 template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
@@ -243,31 +244,30 @@ template <typename PolicySelector,
           typename OutOffsetT,
           typename KeyInT,
           typename ExtractBinOpT,
-          typename IdentifyCandidatesOpT,
-          bool IsFirstPass>
+          typename IdentifyCandidatesOpT>
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
-    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
-    _CCCL_GRID_CONSTANT KeyInT* const in_buf,
-    _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
-    _CCCL_GRID_CONSTANT KeyInT* const out_buf,
-    _CCCL_GRID_CONSTANT OffsetT* const out_idx_buf,
-    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-    _CCCL_GRID_CONSTANT OffsetT* const histogram,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const OutOffsetT k,
-    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
-    ExtractBinOpT extract_bin_op,
-    IdentifyCandidatesOpT identify_candidates_op,
-    _CCCL_GRID_CONSTANT const int pass)
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
+  _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
+  _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
+  _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
+  _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
+  _CCCL_GRID_CONSTANT KeyInT* const in_buf,
+  _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
+  _CCCL_GRID_CONSTANT KeyInT* const out_buf,
+  _CCCL_GRID_CONSTANT OffsetT* const out_idx_buf,
+  Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+  _CCCL_GRID_CONSTANT OffsetT* const histogram,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  _CCCL_GRID_CONSTANT const OutOffsetT k,
+  _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+  ExtractBinOpT extract_bin_op,
+  IdentifyCandidatesOpT identify_candidates_op,
+  _CCCL_GRID_CONSTANT const int pass,
+  _CCCL_GRID_CONSTANT const bool is_last_pass)
 {
-  static constexpr topk_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
     AgentTopKPolicy<policy.block_threads,
                     policy.items_per_thread,
@@ -297,8 +297,68 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     buffer_length,
     extract_bin_op,
     identify_candidates_op)
-    .template invoke_filter_and_histogram<IsFirstPass>(
-      in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
+    .invoke_filter_and_histogram(in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass, is_last_pass);
+}
+
+template <typename PolicySelector,
+          typename KeyInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueInputIteratorT,
+          typename ValueOutputIteratorT,
+          typename OffsetT,
+          typename OutOffsetT,
+          typename KeyInT,
+          typename ExtractBinOpT>
+#if _CCCL_HAS_CONCEPTS()
+  requires topk_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceTopKHistogramKernel(
+    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
+    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+    _CCCL_GRID_CONSTANT OffsetT* const histogram,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const OutOffsetT k,
+    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+    ExtractBinOpT extract_bin_op,
+    _CCCL_GRID_CONSTANT const int pass,
+    _CCCL_GRID_CONSTANT const bool is_last_pass)
+{
+  static constexpr topk_policy policy = current_policy<PolicySelector>();
+  using agent_topk_policy_t =
+    AgentTopKPolicy<policy.block_threads,
+                    policy.items_per_thread,
+                    policy.bits_per_pass,
+                    policy.load_algorithm,
+                    policy.scan_algorithm>;
+  using identify_candidates_op_t = NullType;
+  using agent_topk_t =
+    AgentTopK<agent_topk_policy_t,
+              KeyInputIteratorT,
+              KeyOutputIteratorT,
+              ValueInputIteratorT,
+              ValueOutputIteratorT,
+              ExtractBinOpT,
+              identify_candidates_op_t,
+              OffsetT,
+              OutOffsetT>;
+
+  __shared__ typename agent_topk_t::TempStorage temp_storage;
+  agent_topk_t(
+    temp_storage,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    num_items,
+    k,
+    buffer_length,
+    extract_bin_op,
+    identify_candidates_op_t{})
+    .invoke_histogram_only(counter, histogram, pass, is_last_pass);
 }
 
 template <typename PolicySelector,
@@ -313,7 +373,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
@@ -328,7 +388,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     IdentifyCandidatesOpT identify_candidates_op,
     _CCCL_GRID_CONSTANT const int pass)
 {
-  static constexpr topk_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
     AgentTopKPolicy<policy.block_threads,
                     policy.items_per_thread,
@@ -422,7 +482,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
     using key_in_t                             = it_value_t<KeyInputIteratorT>;
-    static constexpr bool keys_only            = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
+    using value_in_t                           = it_value_t<ValueInputIteratorT>;
+    static constexpr bool keys_only            = ::cuda::std::is_same_v<value_in_t, NullType>;
 
     // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long
     // long
@@ -504,18 +565,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    auto topk_kernel = DeviceTopKKernel<
-      PolicySelector,
-      KeyInputIteratorT,
-      KeyOutputIteratorT,
-      ValueInputIteratorT,
-      ValueOutputIteratorT,
-      OffsetT,
-      OutOffsetT,
-      key_in_t,
-      extract_bin_op,
-      identify_candidates_op,
-      false>;
+    auto topk_kernel =
+      DeviceTopKKernel<PolicySelector,
+                       KeyInputIteratorT,
+                       KeyOutputIteratorT,
+                       ValueInputIteratorT,
+                       ValueOutputIteratorT,
+                       OffsetT,
+                       OutOffsetT,
+                       key_in_t,
+                       extract_bin_op,
+                       identify_candidates_op>;
 
     int main_kernel_blocks_per_sm = 0;
     if (const auto error =
@@ -526,7 +586,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
     const auto topk_grid_size            = (::cuda::std::min) (main_kernel_max_occupancy, num_tiles);
 
-// Log topk_kernel configuration @todo check the kernel launch
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
             "%lld>>>(), %d items per thread, %d SM occupancy\n",
@@ -538,103 +597,95 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #endif // CUB_DEBUG_LOG
 
     // Initialize address variables
-    counter_t* counter   = static_cast<counter_t*>(allocations[0]);
-    OffsetT* histogram   = static_cast<decltype(histogram)>(allocations[1]);
-    key_in_t* in_buf     = nullptr;
-    key_in_t* out_buf    = nullptr;
-    OffsetT* in_idx_buf  = nullptr;
-    OffsetT* out_idx_buf = nullptr;
-    int pass             = 0;
+    counter_t* counter = static_cast<counter_t*>(allocations[0]);
+    OffsetT* histogram = static_cast<decltype(histogram)>(allocations[1]);
+
+    // Pass 0: dedicated histogram-only kernel over the full input
+    {
+      auto histogram_kernel = DeviceTopKHistogramKernel<
+        PolicySelector,
+        KeyInputIteratorT,
+        KeyOutputIteratorT,
+        ValueInputIteratorT,
+        ValueOutputIteratorT,
+        OffsetT,
+        OutOffsetT,
+        key_in_t,
+        extract_bin_op>;
+
+      int histogram_kernel_blocks_per_sm = 0;
+      if (const auto error =
+            CubDebug(launcher_factory.MaxSmOccupancy(histogram_kernel_blocks_per_sm, histogram_kernel, block_threads)))
+      {
+        return error;
+      }
+      const auto histogram_kernel_max_occupancy = static_cast<unsigned int>(histogram_kernel_blocks_per_sm * num_sms);
+      const auto histogram_grid_size            = (::cuda::std::min) (histogram_kernel_max_occupancy, num_tiles);
+
+      extract_bin_op extract_op(0, total_bits, decomposer);
+      if (const auto error = CubDebug(
+            launcher_factory(histogram_grid_size, block_threads, 0, stream)
+              .doit(histogram_kernel,
+                    d_keys_in,
+                    d_keys_out,
+                    d_values_in,
+                    d_values_out,
+                    counter,
+                    histogram,
+                    num_items,
+                    k,
+                    candidate_buffer_length,
+                    extract_op,
+                    0,
+                    num_passes == 1)))
+      {
+        return error;
+      }
+    }
+
+    // Passes 1..num_passes-1: fused filter + histogram kernel
+    // Current() = input buffer (read), Alternate() = output buffer (write)
+    DoubleBuffer<key_in_t> key_bufs(static_cast<key_in_t*>(allocations[3]), static_cast<key_in_t*>(allocations[2]));
+    DoubleBuffer<OffsetT> idx_bufs;
+    if constexpr (!keys_only)
+    {
+      idx_bufs = DoubleBuffer<OffsetT>(static_cast<OffsetT*>(allocations[5]), static_cast<OffsetT*>(allocations[4]));
+    }
+
+    int pass = 1;
     for (; pass < num_passes; pass++)
     {
-      // Set operator
       extract_bin_op extract_op(pass, total_bits, decomposer);
       identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
 
-      // Initialize address variables
-      in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
-      out_buf = pass == 0 ? nullptr : static_cast<key_in_t*>(pass % 2 == 0 ? allocations[3] : allocations[2]);
+      if (const auto error = CubDebug(
+            launcher_factory(topk_grid_size, block_threads, 0, stream)
+              .doit(topk_kernel,
+                    d_keys_in,
+                    d_keys_out,
+                    d_values_in,
+                    d_values_out,
+                    key_bufs.Current(),
+                    idx_bufs.Current(),
+                    key_bufs.Alternate(),
+                    idx_bufs.Alternate(),
+                    counter,
+                    histogram,
+                    num_items,
+                    k,
+                    candidate_buffer_length,
+                    extract_op,
+                    identify_op,
+                    pass,
+                    pass == num_passes - 1)))
+      {
+        return error;
+      }
+
+      key_bufs.selector ^= 1;
       if constexpr (!keys_only)
       {
-        in_idx_buf  = pass <= 1 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[4] : allocations[5]);
-        out_idx_buf = pass == 0 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[5] : allocations[4]);
-      }
-
-      // Invoke kernel
-      if (pass == 0)
-      {
-        auto topk_first_pass_kernel = DeviceTopKKernel<
-          PolicySelector,
-          KeyInputIteratorT,
-          KeyOutputIteratorT,
-          ValueInputIteratorT,
-          ValueOutputIteratorT,
-          OffsetT,
-          OutOffsetT,
-          key_in_t,
-          extract_bin_op,
-          identify_candidates_op,
-          true>;
-
-        // Compute grid size for the histogram kernel of the first pass
-        int first_pass_kernel_blocks_per_sm = 0;
-        if (const auto error = CubDebug(
-              launcher_factory.MaxSmOccupancy(first_pass_kernel_blocks_per_sm, topk_first_pass_kernel, block_threads)))
-        {
-          return error;
-        }
-        const auto first_pass_kernel_max_occupancy =
-          static_cast<unsigned int>(first_pass_kernel_blocks_per_sm * num_sms);
-        const auto topk_first_pass_grid_size = (::cuda::std::min) (first_pass_kernel_max_occupancy, num_tiles);
-
-        // Compute histogram of the first pass
-        if (const auto error = CubDebug(
-              launcher_factory(topk_first_pass_grid_size, block_threads, 0, stream)
-                .doit(topk_first_pass_kernel,
-                      d_keys_in,
-                      d_keys_out,
-                      d_values_in,
-                      d_values_out,
-                      in_buf,
-                      in_idx_buf,
-                      out_buf,
-                      out_idx_buf,
-                      counter,
-                      histogram,
-                      num_items,
-                      k,
-                      candidate_buffer_length,
-                      extract_op,
-                      identify_op,
-                      pass)))
-        {
-          return error;
-        }
-      }
-      else
-      {
-        if (const auto error = CubDebug(
-              launcher_factory(topk_grid_size, block_threads, 0, stream)
-                .doit(topk_kernel,
-                      d_keys_in,
-                      d_keys_out,
-                      d_values_in,
-                      d_values_out,
-                      in_buf,
-                      in_idx_buf,
-                      out_buf,
-                      out_idx_buf,
-                      counter,
-                      histogram,
-                      num_items,
-                      k,
-                      candidate_buffer_length,
-                      extract_op,
-                      identify_op,
-                      pass)))
-        {
-          return error;
-        }
+        idx_bufs.selector ^= 1;
       }
     }
 
@@ -665,8 +716,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                   d_keys_out,
                   d_values_in,
                   d_values_out,
-                  out_buf,
-                  out_idx_buf,
+                  key_bufs.Current(),
+                  idx_bufs.Current(),
                   counter,
                   num_items,
                   k,
@@ -677,7 +728,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    // pass==num_passes to align with the usage of identify_candidates_op in previous passes.
     return cudaSuccess;
   });
 }

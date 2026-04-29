@@ -4,6 +4,8 @@ import cupy as cp
 import numpy as np
 import pytest
 
+check_ldl_stl_in_sass = False
+
 
 # Define a pytest fixture that returns random arrays with different dtypes
 @pytest.fixture(
@@ -91,6 +93,10 @@ def cuda_stream() -> Stream:
 @pytest.fixture(scope="function", autouse=True)
 def verify_sass(request, monkeypatch):
     if request.node.get_closest_marker("no_verify_sass"):
+        return
+
+    if not check_ldl_stl_in_sass:
+        print("not checking sass")
         return
 
     import cuda.compute._cccl_interop

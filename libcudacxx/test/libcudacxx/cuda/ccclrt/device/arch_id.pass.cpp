@@ -13,7 +13,9 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-__device__ void test_current()
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void test_current()
 {
   // 1. Test cuda::device::current_arch_id() signature.
   static_assert(cuda::std::is_same_v<cuda::arch_id, decltype(cuda::device::current_arch_id())>);
@@ -84,7 +86,7 @@ __device__ void test_current()
   )
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // 1. Test cuda::arch_id enum values.
   static_assert(cuda::std::is_scoped_enum_v<cuda::arch_id>);

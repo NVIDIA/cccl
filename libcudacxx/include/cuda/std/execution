@@ -49,6 +49,8 @@
 #  include <cuda/std/__pstl/generate.h>
 #  include <cuda/std/__pstl/generate_n.h>
 #  include <cuda/std/__pstl/inclusive_scan.h>
+#  include <cuda/std/__pstl/is_heap.h>
+#  include <cuda/std/__pstl/is_heap_until.h>
 #  include <cuda/std/__pstl/is_partitioned.h>
 #  include <cuda/std/__pstl/is_sorted.h>
 #  include <cuda/std/__pstl/is_sorted_until.h>
@@ -68,6 +70,11 @@
 #  include <cuda/std/__pstl/replace_if.h>
 #  include <cuda/std/__pstl/reverse.h>
 #  include <cuda/std/__pstl/reverse_copy.h>
+#  include <cuda/std/__pstl/rotate.h>
+#  include <cuda/std/__pstl/rotate_copy.h>
+#  include <cuda/std/__pstl/shift_left.h>
+#  include <cuda/std/__pstl/shift_right.h>
+#  include <cuda/std/__pstl/stable_partition.h>
 #  include <cuda/std/__pstl/swap_ranges.h>
 #  include <cuda/std/__pstl/transform.h>
 #  include <cuda/std/__pstl/transform_exclusive_scan.h>

@@ -16,7 +16,7 @@ Usage: $0 [bench-yaml-path]
 Parse ci/bench.yaml and emit a GitHub Actions strategy matrix JSON object:
   {"include":[...]}
 
-Each include entry maps one enabled GPU to a bench_cub.yml workflow invocation.
+Each include entry maps one enabled GPU to a benchmark workflow invocation.
 EOF
 }
 
@@ -37,17 +37,31 @@ if ! bench_cfg_json="$(yq -o=json '.benchmarks // {}' "${bench_yaml_path}" 2>&1)
   die "Failed to parse ${bench_yaml_path} as YAML: ${bench_cfg_json}"
 fi
 
-if ! jq -e '.filters? | type == "array" and length > 0 and all(.[]; type == "string")' >/dev/null <<<"${bench_cfg_json}"; then
-  die "${bench_yaml_path} must define at least one string entry in benchmarks.filters."
+# Extract CUB and Python filter arrays (default to empty arrays).
+cub_filters_json="$(jq -c '.filters.cub // []' <<<"${bench_cfg_json}")"
+python_filters_json="$(jq -c '.filters.python // []' <<<"${bench_cfg_json}")"
+
+has_cub_filters="$(jq -e 'type == "array" and length > 0 and all(.[]; type == "string")' <<<"${cub_filters_json}" >/dev/null 2>&1 && echo true || echo false)"
+has_python_filters="$(jq -e 'type == "array" and length > 0 and all(.[]; type == "string")' <<<"${python_filters_json}" >/dev/null 2>&1 && echo true || echo false)"
+
+if [[ "${has_cub_filters}" != "true" && "${has_python_filters}" != "true" ]]; then
+  die "${bench_yaml_path} must define at least one string entry in benchmarks.filters.cub or benchmarks.filters.python."
 fi
 
-filters_arg="$(
-  jq -r '.filters | map(@sh) | join(" ")' <<<"${bench_cfg_json}"
-)"
+cub_filters_arg=""
+if [[ "${has_cub_filters}" == "true" ]]; then
+  cub_filters_arg="$(jq -r '.filters.cub | map(@sh) | join(" ")' <<<"${bench_cfg_json}")"
+fi
+
+python_filters_arg=""
+if [[ "${has_python_filters}" == "true" ]]; then
+  python_filters_arg="$(jq -r '.filters.python | map(@sh) | join(" ")' <<<"${bench_cfg_json}")"
+fi
 
 jq -cn \
   --argjson cfg "${bench_cfg_json}" \
-  --arg filters "${filters_arg}" \
+  --arg cub_filters "${cub_filters_arg}" \
+  --arg python_filters "${python_filters_arg}" \
   '{
     "include": [
       ($cfg.gpus // [])[] as $gpu
@@ -57,7 +71,8 @@ jq -cn \
           "arch": ($cfg.arch // "native"),
           "base_ref": ($cfg.base_ref // "origin/main"),
           "test_ref": ($cfg.test_ref // "HEAD"),
-          "filters": $filters,
+          "cub_filters": $cub_filters,
+          "python_filters": $python_filters,
           "nvbench_args": ($cfg.nvbench_args // ""),
           "nvbench_compare_args": ($cfg.nvbench_compare_args // "")
         }

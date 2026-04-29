@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-// %PARAM% TEST_ERR err 0:1
+// %PARAM% TEST_ERR err 0:1:2:3
 
 #include <cub/device/device_scan.cuh>
+
+#include <iostream>
 
 int main()
 {
@@ -19,10 +21,20 @@ int main()
   // expected-error {{"run_to_run or gpu_to_gpu is only supported for integral types with known operators"}}
   auto error = cub::DeviceScan::ExclusiveScan(
     ptr, ptr, cuda::std::plus<>{}, 0.0f, 0, cuda::execution::require(cuda::execution::determinism::gpu_to_gpu));
+#elif TEST_ERR == 2
+  // expected-error {{"run_to_run or gpu_to_gpu is only supported for integral types with known operators"}}
+  auto future_init = cub::FutureValue<float>(ptr);
+  auto error       = cub::DeviceScan::ExclusiveScan(
+    ptr, ptr, cuda::std::plus<>{}, future_init, 0, cuda::execution::require(cuda::execution::determinism::run_to_run));
+#elif TEST_ERR == 3
+  // expected-error {{"run_to_run or gpu_to_gpu is only supported for integral types with known operators"}}
+  auto future_init = cub::FutureValue<float>(ptr);
+  auto error       = cub::DeviceScan::ExclusiveScan(
+    ptr, ptr, cuda::std::plus<>{}, future_init, 0, cuda::execution::require(cuda::execution::determinism::gpu_to_gpu));
 #endif
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << '\n';
   }
 }

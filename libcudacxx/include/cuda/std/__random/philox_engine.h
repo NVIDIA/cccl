@@ -23,16 +23,15 @@
 
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>
+#include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ios>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -77,7 +76,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!      rng3.set_counter({0, 0, 0, 100});
 //!      const int n = 4;
 //!      rng1.discard(100*n); // rng1 is now at the same position as rng3
-//!      std::cout << (rng1() == rng3()) << std::endl; // 1
+//!      std::cout << (rng1() == rng3()) << '\n'; // 1
 //!
 //!      return 0;
 //!    }
@@ -88,7 +87,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _UIntType, size_t _WordSize, size_t _WordCount, size_t _NumRounds, _UIntType... _Constants>
 class philox_engine
 {
-  static_assert(__cccl_is_unsigned_integer_v<_UIntType>, "philox_engine: _UIntType must be an unsigned integer type");
+  static_assert(__cccl_random_is_valid_uinttype<_UIntType>,
+                "philox_engine: UIntType must be a supported unsigned integer type");
   static_assert(_WordCount == 2 || _WordCount == 4, "N argument must be either 2 or 4");
   static_assert(sizeof...(_Constants) == _WordCount, "consts array must be of length N");
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
@@ -323,7 +323,7 @@ public:
   }
 #endif
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   //! This function streams a philox_engine to a std::basic_ostream.
   //! @param os The basic_ostream to stream out to.
   //! @param e The philox_engine to stream out.
@@ -427,7 +427,7 @@ public:
 
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   _CCCL_API constexpr void __increment_counter() noexcept

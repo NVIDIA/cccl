@@ -25,6 +25,7 @@
 
 #  include <cuda/__device/all_devices.h>
 #  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 
@@ -62,7 +63,9 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 //!    exceeds the lifetime of the ``pinned_memory_pool_ref``.
 //!
 //! @endrst
-class pinned_memory_pool_ref : public __memory_pool_base
+class pinned_memory_pool_ref
+    : public __memory_pool_base
+    , public ::cuda::mr::memory_resource_base<pinned_memory_pool_ref>
 {
 public:
   //! @brief  Constructs the pinned_memory_pool_ref from a \c cudaMemPool_t.
@@ -172,11 +175,11 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>);
 
-static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>);
 
 //! @brief Returns the default pinned memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.

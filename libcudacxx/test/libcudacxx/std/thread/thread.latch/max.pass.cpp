@@ -5,7 +5,11 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
 
@@ -18,9 +22,9 @@
 
 int main(int, char**)
 {
-  static_assert(cuda::std::latch::max() > 0, "");
-  static_assert(cuda::latch<cuda::thread_scope_system>::max() > 0, "");
-  static_assert(cuda::latch<cuda::thread_scope_device>::max() > 0, "");
-  static_assert(cuda::latch<cuda::thread_scope_block>::max() > 0, "");
+  static_assert(cuda::std::latch::max() > 0);
+  static_assert(cuda::latch<cuda::thread_scope_system>::max() > 0);
+  static_assert(cuda::latch<cuda::thread_scope_device>::max() > 0);
+  static_assert(cuda::latch<cuda::thread_scope_block>::max() > 0);
   return 0;
 }

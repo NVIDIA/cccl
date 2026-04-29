@@ -33,7 +33,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   thrust::device_vector<T> in = generate(elements);
-  thrust::device_vector<T> out(elements);
+  thrust::device_vector<T> out(elements, thrust::no_init);
 
   input_it_t d_in   = thrust::raw_pointer_cast(in.data());
   output_it_t d_out = thrust::raw_pointer_cast(out.data());
@@ -42,41 +42,24 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements);
 
-  std::size_t temp_storage_bytes{};
-
-  cub::detail::adjacent_difference::
-    dispatch<cub::MayAlias::No, cub::ReadOption::Left, input_it_t, output_it_t, offset_t, difference_op_t>(
-      nullptr,
-      temp_storage_bytes,
+  caching_allocator_t alloc;
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector_t{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceAdjacentDifference::SubtractLeftCopy,
+      "SubtractLeftCopy failed",
       d_in,
       d_out,
       static_cast<offset_t>(elements),
       difference_op_t{},
-      0
-#if !TUNE_BASE
-      ,
-      policy_selector_t{}
-#endif // TUNE_BASE
-    );
-
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  std::uint8_t* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::adjacent_difference::
-      dispatch<cub::MayAlias::No, cub::ReadOption::Left, input_it_t, output_it_t, offset_t, difference_op_t>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        static_cast<offset_t>(elements),
-        difference_op_t{},
-        launch.get_stream()
-#if !TUNE_BASE
-          ,
-        policy_selector_t{}
-#endif // TUNE_BASE
-      );
+      env);
   });
 }
 

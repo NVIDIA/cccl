@@ -71,7 +71,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   // Create wrapped iterator for argmin/argmax operations
   [[maybe_unused]] auto d_indexed_in = cuda::make_transform_iterator(
     cuda::counting_iterator<::cuda::std::int64_t>(0),
-    cub::detail::reduce::generate_idx_value<raw_input_it_t, T>(d_raw_in, 1));
+    cub::detail::segmented_reduce::generate_idx_value<raw_input_it_t, T>(d_raw_in, 1));
   using arg_index_input_iterator_t = decltype(d_indexed_in);
 
   auto d_in = [&] {
@@ -106,7 +106,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     op_t{},
     init_t{},
     guaranteed_max_seg_size,
-    0 /* stream */);
+    nullptr /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());

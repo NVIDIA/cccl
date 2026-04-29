@@ -20,8 +20,26 @@ Checks:
   - 'concurrency-*'
   # TODO: BEGIN REMOVE ME
   - '-*'
-  - 'performance-implicit-conversion-in-loop'
+  - 'performance-*'
+  - '-performance-enum-size'
+  - '-performance-unnecessary-value-param'
+  - 'modernize-*'
+  - '-modernize-use-integer-sign-comparison'
+  - '-modernize-use-nodiscard'
+  - '-modernize-return-braced-init-list'
+  - '-modernize-use-auto'
   # END REMOVE ME
+  # TODO(jfaibussowit):
+  #
+  # Enable these once we move to C++20. Normally, clang-tidy does not suggest checks for
+  # cpp N+1 if you are compiling with -std=c++N. However some subprojects like c.parallel
+  # actually require cpp N+1 so clang-tidy emits diagnostics for any headers included by
+  # it.
+  - '-modernize-use-designated-initializers'
+  - '-modernize-use-constraints'
+  - '-modernize-use-ranges'
+  # Irrelevant for GPU code
+  - '-modernize-pass-by-value'
   # HICPP is 99% aliased to other checks (mostly modernize-* and bugprone-*). We don't
   # want to also enable it because then we need to duplicate the NOLINT. The only 2 checks
   # that aren't aliases are:
@@ -199,6 +217,7 @@ ImplementationFileExtensions:
   - cxx
   - cu
 SystemHeaders: false
+HeaderFilterRegex: '.*/(thrust|cub|cuda|nv|cccl|c2h|cudastf|test)/.*'
 ExtraArgsBefore:
   # To match _CCCL_DOXYGEN_INVOKED
   - '-D_CCCL_CLANG_TIDY_INVOKED=1'
@@ -275,4 +294,6 @@ CheckOptions:
   bugprone-argument-comment.CommentNullPtrs: true
   cppcoreguidelines-macro-usage.AllowedRegexp: '^DEBUG_.*|THRUST_PP_.*|_CCCL.*_PP_.*'
   bugprone-reserved-identifier.AllowedIdentifiers: '^_CCCL.*'
+  performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
+  performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
 ...

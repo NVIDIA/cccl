@@ -32,9 +32,9 @@ public:
     m_what += w;
   } // end bad_alloc()
 
-  inline virtual ~bad_alloc() noexcept {}
+  inline ~bad_alloc() noexcept override = default;
 
-  inline virtual const char* what() const noexcept
+  inline const char* what() const noexcept override
   {
     return m_what.c_str();
   } // end what()

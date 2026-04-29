@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
 
@@ -21,7 +24,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fp_sat_finite_overflow_handler()
+TEST_FUNC void test_fp_sat_finite_overflow_handler()
 {
   using Handler = cuda::std::__fp_overflow_handler<cuda::std::__fp_overflow_handler_kind::__sat_finite>;
 

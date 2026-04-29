@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
@@ -252,6 +253,15 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __deviceTotalMem(int __ordinal)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceTotalMem);
+  ::std::size_t __result;
+  ::CUdevice __dev = __deviceGet(__ordinal);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query total memory of a device", &__result, __dev);
+  return static_cast<::cuda::std::size_t>(__result);
+}
+
 // Primary context management
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __primaryCtxRetain(::CUdevice __dev)
@@ -375,20 +385,23 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t 
   if constexpr (sizeof(_Tp) == 1)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD8Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned char>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else if constexpr (sizeof(_Tp) == 2)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD16Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned short>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else if constexpr (sizeof(_Tp) == 4)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD32Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned int>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else
   {

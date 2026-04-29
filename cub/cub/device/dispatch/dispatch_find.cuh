@@ -23,6 +23,7 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -32,10 +33,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__iterator/transform_iterator.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -54,11 +52,10 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
 #if _CCCL_HAS_CONCEPTS()
   requires find_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  _CCCL_KERNEL_ATTRIBUTES void find_kernel(
-    IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
+  IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
-  constexpr find_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr find_policy policy = current_policy<PolicySelector>();
   using agent_find_t =
     agent_t<policy.block_threads,
             policy.items_per_thread,
@@ -117,11 +114,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const find_policy active_policy = policy_selector(arch_id);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << active_policy;
-                _CubLog("Dispatching DeviceFind to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceFind to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));

@@ -282,9 +282,9 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
 {
   ::std::vector<::CUmemAccessDesc> __descs;
   __descs.reserve(__devices.size());
-  for (size_t __i = 0; __i < __devices.size(); ++__i)
+  for (const auto& __dev : __devices)
   {
-    __descs.push_back({::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __devices[__i].get()}, __flags});
+    __descs.push_back({::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags});
   }
   ::cuda::__driver::__mempoolSetAccess(__pool, __descs.data(), __descs.size());
 }
@@ -423,7 +423,7 @@ public:
 
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
-    return reinterpret_cast<void*>(__ptr);
+    return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
   //! @brief deallocate_sync memory pointed to by \p __ptr.
@@ -477,7 +477,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
-    return reinterpret_cast<void*>(__ptr);
+    return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.

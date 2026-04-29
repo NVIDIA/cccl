@@ -3,30 +3,27 @@
 
 #include <cub/device/device_scan.cuh>
 
-#if !TUNE_BASE
-#  include "look_back_helper.cuh"
-#endif // !TUNE_BASE
-
 #ifndef USES_WARPSPEED
 #  define USES_WARPSPEED() 0
 #endif
 
 #if !TUNE_BASE
+#  if !USES_WARPSPEED()
+#    include <look_back_helper.cuh>
+#  endif // !USES_WARPSPEED()
+
 template <typename AccumT>
 struct policy_selector
 {
+  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::scan::scan_policy
+  {
 #  if USES_WARPSPEED()
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::scan::scan_policy
-  {
-    cub::detail::scan::scan_policy policy{};
-    policy.warpspeed = cub::detail::scan::scan_warpspeed_policy{
-      true, TUNE_NUM_REDUCE_SCAN_WARPS, TUNE_NUM_LOOKBACK_ITEMS, TUNE_ITEMS_PLUS_ONE - 1};
-    return policy;
-  }
+    return {cub::detail::scan::scan_algorithm::warpspeed,
+            cub::detail::scan::scan_lookback_policy{},
+            cub::detail::scan::scan_warpspeed_policy{
+              TUNE_NUM_REDUCE_SCAN_WARPS, TUNE_NUM_LOOKBACK_ITEMS, TUNE_ITEMS_PLUS_ONE - 1}};
 #  else
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::scan::scan_policy
-  {
-    return cub::detail::scan::make_mem_scaled_scan_policy(
+    return cub::detail::scan::make_mem_scaled_lookback_scan_policy(
       TUNE_THREADS,
       TUNE_ITEMS,
       int{sizeof(AccumT)},
@@ -35,7 +32,7 @@ struct policy_selector
       TUNE_STORE_ALGORITHM,
       cub::BLOCK_SCAN_WARP_SCANS,
       delay_constructor_policy);
-  }
 #  endif
+  }
 };
 #endif // !TUNE_BASE

@@ -13,6 +13,8 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 #if !_CCCL_COMPILER(NVRTC)
 struct host_only_type
 {
@@ -84,61 +86,65 @@ struct device_only_type
 {
   int val_;
 
-  __device__ device_only_type(const int val = 0) noexcept
+  TEST_DEVICE_FUNC device_only_type(const int val = 0) noexcept
       : val_(val)
   {}
-  __device__ device_only_type(cuda::std::initializer_list<int>, const int val) noexcept
+  TEST_DEVICE_FUNC device_only_type(cuda::std::initializer_list<int>, const int val) noexcept
       : val_(val)
   {}
 
-  __device__ device_only_type(const device_only_type& other) noexcept
+  TEST_DEVICE_FUNC device_only_type(const device_only_type& other) noexcept
       : val_(other.val_)
   {}
-  __device__ device_only_type(device_only_type&& other) noexcept
+  TEST_DEVICE_FUNC device_only_type(device_only_type&& other) noexcept
       : val_(cuda::std::exchange(other.val_, -1))
   {}
 
-  __device__ device_only_type& operator=(const device_only_type& other) noexcept
+  TEST_DEVICE_FUNC device_only_type& operator=(const device_only_type& other) noexcept
   {
     val_ = other.val_;
     return *this;
   }
 
-  __device__ device_only_type& operator=(device_only_type&& other) noexcept
+  TEST_DEVICE_FUNC device_only_type& operator=(device_only_type&& other) noexcept
 
   {
     val_ = cuda::std::exchange(other.val_, -1);
     return *this;
   }
 
-  __device__ ~device_only_type() noexcept {}
+  TEST_DEVICE_FUNC ~device_only_type() noexcept {}
 
-  [[nodiscard]] __device__ friend bool operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC friend bool
+  operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  [[nodiscard]] __device__ friend bool operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC friend bool
+  operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ != rhs.val_;
   }
-  [[nodiscard]] __device__ friend bool operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC friend bool operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
-  [[nodiscard]] __device__ friend bool operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC friend bool
+  operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ <= rhs.val_;
   }
-  [[nodiscard]] __device__ friend bool operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC friend bool operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ > rhs.val_;
   }
-  [[nodiscard]] __device__ friend bool operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC friend bool
+  operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ >= rhs.val_;
   }
 
-  __device__ void swap(device_only_type& other) noexcept
+  TEST_DEVICE_FUNC void swap(device_only_type& other) noexcept
   {
     cuda::std::swap(val_, other.val_);
   }

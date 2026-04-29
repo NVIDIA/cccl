@@ -24,6 +24,7 @@
 #if _CCCL_CTK_AT_LEAST(13, 0)
 
 #  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 
@@ -58,7 +59,9 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 //!    exceeds the lifetime of the ``managed_memory_pool_ref``.
 //!
 //! @endrst
-class managed_memory_pool_ref : public __memory_pool_base
+class managed_memory_pool_ref
+    : public __memory_pool_base
+    , public ::cuda::mr::memory_resource_base<managed_memory_pool_ref>
 {
 public:
   //! @brief  Constructs the managed_memory_pool_ref from a \c cudaMemPool_t.
@@ -149,11 +152,11 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::host_accessible>);
 
-static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>);
 
 _CCCL_DIAG_POP
 

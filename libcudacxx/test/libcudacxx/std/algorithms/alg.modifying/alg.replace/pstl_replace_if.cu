@@ -22,53 +22,77 @@
 
 #include <cuda/cmath>
 #include <cuda/memory_pool>
-#include <cuda/std/algorithm>
 #include <cuda/std/execution>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <testing.cuh>
 #include <utility.cuh>
+
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
 
 inline constexpr int size = 1000;
 
 template <class T = int>
 struct is_power_of_2
 {
-  __device__ constexpr bool operator()(const T val) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T val) const noexcept
   {
-    return cuda::is_power_of_two(val);
+    if constexpr (cuda::std::is_convertible_v<T, int>)
+    {
+      return cuda::is_power_of_two(static_cast<int>(val));
+    }
+    else
+    {
+      return cuda::is_power_of_two(val.value_);
+    }
   }
 };
 
-template <class Policy>
-void test_replace_if(const Policy& policy, thrust::device_vector<int>& input)
+template <class Policy, class T>
+void test_replace_if(const Policy& policy, c2h::device_vector<T>& input)
 {
   { // empty should not access anything
-    cuda::std::replace_if(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), is_power_of_2{}, 1337);
+    cuda::std::replace_if(
+      policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), is_power_of_2<T>{}, static_cast<T>(1337));
   }
 
-  { // same type
-    thrust::sequence(input.begin(), input.end(), 0);
-    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(input.begin(), input.end(), is_power_of_2{}));
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // contiguous
+    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2<T>{}, static_cast<T>(1337));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
   }
 
-  { // convertible type
-    thrust::sequence(input.begin(), input.end(), 0);
-    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2<short>{}, 1337);
-    CHECK(thrust::none_of(input.begin(), input.end(), is_power_of_2{}));
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  T* raw = thrust::raw_pointer_cast(input.data());
+  { // random access
+    cuda::std::replace_if(
+      policy, random_access_iterator{raw}, random_access_iterator{raw + size}, is_power_of_2<T>{}, static_cast<T>(1337));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
   }
 
+  if constexpr (cuda::std::is_integral_v<T>)
+  {
+    thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+    { // convertible type
+      cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2<int>{}, static_cast<T>(1337));
+      CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
+    }
+  }
+
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
   { // convertible replacement
-    thrust::sequence(input.begin(), input.end(), 0);
-    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2{}, static_cast<short>(1337));
-    CHECK(thrust::none_of(input.begin(), input.end(), is_power_of_2{}));
+    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2<T>{}, static_cast<short>(1337));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
   }
 }
 
-C2H_TEST("cuda::std::replace_if", "[parallel algorithm]")
+C2H_TEST("cuda::std::replace_if", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> input(size, thrust::no_init);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {

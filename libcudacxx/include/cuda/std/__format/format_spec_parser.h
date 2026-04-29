@@ -40,9 +40,9 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/string_view>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <string>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 // This file contains the std-format-spec parser.
 //

@@ -18,7 +18,6 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>

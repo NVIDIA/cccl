@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/std/cassert>
 #include <cuda/std/ctime>
 #include <cuda/std/type_traits>
@@ -16,10 +19,11 @@
 #ifndef TIME_UTC
 #  error TIME_UTC not defined
 #endif
+#include "test_macros.h"
 
 static_assert(TIME_UTC != 0);
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   // struct timespec
 

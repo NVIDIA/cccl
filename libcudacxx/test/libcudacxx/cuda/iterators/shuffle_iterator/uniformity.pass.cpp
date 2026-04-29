@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // Test uniformity of shuffle_iterator permutation distribution
 // This test checks that different seeds produce a reasonably uniform
 // distribution across all possible permutations.
@@ -26,7 +29,7 @@ TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, 
 
 // A lehmer code is a unique index for a permutation
 template <size_t N>
-__host__ __device__ size_t lehmer_code(const cuda::std::array<int, N>& perm)
+TEST_FUNC size_t lehmer_code(const cuda::std::array<int, N>& perm)
 {
   // This algorithm is N^2 but is faster for small N
   size_t rank = 0;
@@ -50,14 +53,14 @@ __host__ __device__ size_t lehmer_code(const cuda::std::array<int, N>& perm)
   return rank;
 }
 
-__host__ __device__ constexpr size_t factorial(size_t n)
+TEST_FUNC constexpr size_t factorial(size_t n)
 {
   return n <= 1 ? 1 : n * factorial(n - 1);
 }
 
 // Compute chi-squared statistic
 template <size_t NumCategories>
-__host__ __device__ double compute_chi_squared(const cuda::std::array<size_t, NumCategories>& counts, double expected)
+TEST_FUNC double compute_chi_squared(const cuda::std::array<size_t, NumCategories>& counts, double expected)
 {
   double chi2 = 0.0;
   for (size_t c : counts)
@@ -70,7 +73,7 @@ __host__ __device__ double compute_chi_squared(const cuda::std::array<size_t, Nu
 
 // Exhaustively generate permutations for a small N and count occurrences
 template <size_t N>
-__host__ __device__ void test_small_n()
+TEST_FUNC void test_small_n()
 {
   static_assert(N <= 5, "N too large for exhaustive permutation test");
   constexpr size_t num_permutations = factorial(N);
@@ -110,7 +113,7 @@ __host__ __device__ void test_small_n()
   assert(chi2 < critical_values_N[N]);
 }
 
-__host__ __device__ void chi_squared_tests()
+TEST_FUNC void chi_squared_tests()
 {
   test_small_n<2>();
   test_small_n<3>();
@@ -125,7 +128,7 @@ struct Fenwick
 
   Fenwick() = default;
 
-  __host__ __device__ void add(size_t i, int v = 1)
+  TEST_FUNC void add(size_t i, int v = 1)
   {
     for (++i; i < f.size(); i += i & -i)
     {
@@ -133,7 +136,7 @@ struct Fenwick
     }
   }
 
-  __host__ __device__ int sum(size_t i) const
+  TEST_FUNC int sum(size_t i) const
   {
     int s = 0;
     for (++i; i > 0; i -= i & -i)
@@ -146,7 +149,7 @@ struct Fenwick
 
 // O(n log n) Kendall distance
 template <size_t N>
-__host__ __device__ size_t kendall_distance(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>& b)
+TEST_FUNC size_t kendall_distance(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>& b)
 {
   cuda::std::array<int, N> inv{};
   cuda::std::array<int, N> c{};
@@ -175,8 +178,7 @@ __host__ __device__ size_t kendall_distance(const cuda::std::array<int, N>& a, c
 
 // Mallows kernel
 template <size_t N>
-__host__ __device__ double
-mallows_kernel(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>& b, double lambda)
+TEST_FUNC double mallows_kernel(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>& b, double lambda)
 {
   const double n = static_cast<double>(N);
   double d       = static_cast<double>(kendall_distance<N>(a, b));
@@ -184,7 +186,7 @@ mallows_kernel(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>
 }
 
 // E[K] under uniform distribution (closed form)
-__host__ __device__ double expected_K(size_t n, double lambda)
+TEST_FUNC double expected_K(size_t n, double lambda)
 {
   double prod = 1.0;
   double n2   = double(n) * double(n);
@@ -199,7 +201,7 @@ __host__ __device__ double expected_K(size_t n, double lambda)
 }
 
 // E[K^2] under uniform distribution
-__host__ __device__ double expected_K2(size_t n, double lambda)
+TEST_FUNC double expected_K2(size_t n, double lambda)
 {
   double prod = 1.0;
   double n2   = double(n) * double(n);
@@ -213,7 +215,7 @@ __host__ __device__ double expected_K2(size_t n, double lambda)
   return prod;
 }
 
-__host__ __device__ double inverse_erf(double x)
+TEST_FUNC double inverse_erf(double x)
 {
   double tt1, tt2, lnx, sgn;
   sgn = (x < 0) ? -1.0 : 1.0;
@@ -228,7 +230,7 @@ __host__ __device__ double inverse_erf(double x)
 }
 
 // Formula (7): acceptance threshold
-__host__ __device__ double mmd_threshold(size_t n, size_t M, double lambda, double alpha)
+TEST_FUNC double mmd_threshold(size_t n, size_t M, double lambda, double alpha)
 {
   double EK  = expected_K(n, lambda);
   double EK2 = expected_K2(n, lambda);
@@ -240,7 +242,7 @@ __host__ __device__ double mmd_threshold(size_t n, size_t M, double lambda, doub
 }
 
 template <size_t N>
-__host__ __device__ void test_mmd()
+TEST_FUNC void test_mmd()
 {
   const double lambda   = 5.0;
   const int num_samples = 1000;
@@ -272,7 +274,7 @@ __host__ __device__ void test_mmd()
 
 // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
 // (2022): 1-20.
-__host__ __device__ void maximum_mean_discrepency_tests()
+TEST_FUNC void maximum_mean_discrepency_tests()
 {
   test_mmd<50>();
   test_mmd<100>();
@@ -280,7 +282,7 @@ __host__ __device__ void maximum_mean_discrepency_tests()
 }
 
 template <size_t N>
-__host__ __device__ void expected_value_test()
+TEST_FUNC void expected_value_test()
 {
   const int num_samples = 1000;
   cuda::std::philox4x64 rng;
@@ -311,7 +313,7 @@ __host__ __device__ void expected_value_test()
 }
 
 // Test the expected value at each index of the shuffle_iterator
-__host__ __device__ void expected_value_tests()
+TEST_FUNC void expected_value_tests()
 {
   expected_value_test<50>();
   expected_value_test<100>();
@@ -319,7 +321,7 @@ __host__ __device__ void expected_value_tests()
 }
 
 template <size_t N>
-__host__ __device__ void adjacent_inversion_test()
+TEST_FUNC void adjacent_inversion_test()
 {
   const double alpha    = 0.05;
   const int num_samples = 1000;
@@ -346,7 +348,7 @@ __host__ __device__ void adjacent_inversion_test()
   assert(z_max < zcrit);
 }
 
-__host__ __device__ void adjacent_inversion_tests()
+TEST_FUNC void adjacent_inversion_tests()
 {
   adjacent_inversion_test<5>();
   adjacent_inversion_test<694>();

@@ -27,23 +27,23 @@ int main()
 
   const auto result = thrust::reduce(data.cbegin(), data.cend());
 
-  std::cout << "Sum: " << result << std::endl;
+  std::cout << "Sum: " << result << '\n';
 
   if (result != N)
   {
-    std::cerr << "Error: Expected sum of " << N << ", but got " << result << std::endl;
+    std::cerr << "Error: Expected sum of " << N << ", but got " << result << '\n';
     return 1;
   }
 
   std::cout << "Detected device system: ";
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-  std::cout << "CUDA" << std::endl;
+  std::cout << "CUDA" << '\n';
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
-  std::cout << "TBB" << std::endl;
+  std::cout << "TBB" << '\n';
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP
-  std::cout << "OMP" << std::endl;
+  std::cout << "OMP" << '\n';
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP
-  std::cout << "CPP" << std::endl;
+  std::cout << "CPP" << '\n';
 #endif
 
   return 0;

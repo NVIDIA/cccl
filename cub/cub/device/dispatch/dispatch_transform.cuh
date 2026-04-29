@@ -32,6 +32,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -44,10 +45,6 @@
 #include <cuda/std/expected>
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
 
 // On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
 _CCCL_DIAG_PUSH
@@ -111,13 +108,13 @@ struct TransformKernelSource<PolicySelector,
   template <class ActionT>
   CUB_RUNTIME_FUNCTION cuda_expected<async_config> CacheAsyncConfiguration(const ActionT& action)
   {
-    NV_IF_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
   }
 
   template <class ActionT>
   CUB_RUNTIME_FUNCTION cuda_expected<prefetch_config> CachePrefetchConfiguration(const ActionT& action)
   {
-    NV_IF_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
   }
 
   CUB_RUNTIME_FUNCTION static constexpr int LoadedBytesPerIteration()
@@ -200,7 +197,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
   -> cuda_expected<
-    ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
+    ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, nullptr)), decltype(kernel_source.TransformKernel()), int>>
 {
   CUB_DETAIL_CONSTEXPR_ISH const transform_policy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH int block_threads             = policy.async_copy.block_threads;
@@ -464,12 +461,13 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     CUB_DETAIL_CONSTEXPR_ISH transform_policy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (std::stringstream ss; ss << active_policy;
-       _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy.algorithm)
     {

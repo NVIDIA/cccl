@@ -17,14 +17,16 @@
 #include <cuda/std/numeric>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class I>
-__host__ __device__ constexpr void test(I x, I y, I res, int zero_value)
+TEST_FUNC constexpr void test(I x, I y, I res, int zero_value)
 {
   assert(cuda::std::saturating_add(static_cast<I>(x + zero_value), static_cast<I>(y + zero_value)) == res);
 }
 
 template <class I>
-__host__ __device__ constexpr void test_signed(int zero_value)
+TEST_FUNC constexpr void test_signed(int zero_value)
 {
   constexpr auto minVal = cuda::std::numeric_limits<I>::min();
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
@@ -89,13 +91,13 @@ __host__ __device__ constexpr void test_signed(int zero_value)
 }
 
 template <class I>
-__host__ __device__ constexpr void test_unsigned(int zero_value)
+TEST_FUNC constexpr void test_unsigned(int zero_value)
 {
   constexpr auto minVal = cuda::std::numeric_limits<I>::min();
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
 
   static_assert(cuda::std::is_same_v<I, decltype(cuda::std::saturating_add(I{}, I{}))>);
-  static_assert(noexcept(cuda::std::saturating_add(I{}, I{})), "");
+  static_assert(noexcept(cuda::std::saturating_add(I{}, I{})));
 
   // Litmit values (0, 1, min, max)
   test<I>(I{0}, I{0}, I{0}, zero_value);
@@ -130,7 +132,7 @@ __host__ __device__ constexpr void test_unsigned(int zero_value)
   }
 }
 
-__host__ __device__ constexpr bool test(int zero_value)
+TEST_FUNC constexpr bool test(int zero_value)
 {
   test_signed<signed char>(zero_value);
   test_signed<signed short>(zero_value);

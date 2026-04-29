@@ -102,13 +102,12 @@ multiply_extract_higher_bits(T value, R multiplier)
   using unsigned_t             = unsigned_implicit_prom_t<DivisorType>;
   using larger_t               = larger_unsigned_type_t<DivisorType>;
   // clang-format off
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_IS_HOST,
       (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);),
-    //NV_IS_DEVICE
-      (return (sizeof(T) == 8)
+      ({return (sizeof(T) == 8)
         ? static_cast<unsigned_t>(__umul64hi(value, multiplier))
-        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);));
+        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);}));
   // clang-format on
 }
 

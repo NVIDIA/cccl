@@ -39,11 +39,11 @@ struct FooIter
   using difference_type   = void*;
   using pointer           = void*;
   using reference         = char&;
-  __host__ __device__ bool& operator*() const;
-  __host__ __device__ FooIter& operator++();
-  __host__ __device__ FooIter& operator--();
-  __host__ __device__ FooIter operator++(int);
-  __host__ __device__ FooIter operator--(int);
+  TEST_FUNC bool& operator*() const;
+  TEST_FUNC FooIter& operator++();
+  TEST_FUNC FooIter& operator--();
+  TEST_FUNC FooIter operator++(int);
+  TEST_FUNC FooIter operator--(int);
 };
 
 template <>
@@ -58,10 +58,10 @@ struct cuda::std::incrementable_traits<FooIter>
 };
 
 // Not using `FooIter::value_type`.
-static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::value_type, int>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::value_type, int>);
 // Not using `FooIter::difference_type`.
-static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::difference_type, char>, "");
-static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::reference, bool&>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::difference_type, char>);
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::reference, bool&>);
 
 template <class ValueType, class Reference>
 struct DummyIt
@@ -72,20 +72,20 @@ struct DummyIt
   using pointer           = ValueType*;
   using reference         = Reference;
 
-  __host__ __device__ Reference operator*() const;
+  TEST_FUNC Reference operator*() const;
 };
 
 template <class It>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using R = cuda::std::move_iterator<It>;
   using T = cuda::std::iterator_traits<It>;
-  static_assert((cuda::std::is_same<typename R::iterator_type, It>::value), "");
-  static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value), "");
-  static_assert((cuda::std::is_same<typename R::pointer, It>::value), "");
-  static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value), "");
+  static_assert((cuda::std::is_same<typename R::iterator_type, It>::value));
+  static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value));
+  static_assert((cuda::std::is_same<typename R::pointer, It>::value));
+  static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value));
 
-  static_assert((cuda::std::is_same_v<typename R::reference, cuda::std::iter_rvalue_reference_t<It>>), "");
+  static_assert((cuda::std::is_same_v<typename R::reference, cuda::std::iter_rvalue_reference_t<It>>) );
 
   if constexpr (cuda::std::is_same_v<typename T::iterator_category, cuda::std::contiguous_iterator_tag>)
   {
@@ -94,7 +94,7 @@ __host__ __device__ void test()
   }
   else
   {
-    static_assert((cuda::std::is_same<typename R::iterator_category, typename T::iterator_category>::value), "");
+    static_assert((cuda::std::is_same<typename R::iterator_category, typename T::iterator_category>::value));
   }
 
   static_assert(
@@ -117,30 +117,30 @@ int main(int, char**)
   {
     using T  = DummyIt<int, int>;
     using It = cuda::std::move_iterator<T>;
-    static_assert(cuda::std::is_same<It::reference, int>::value, "");
+    static_assert(cuda::std::is_same<It::reference, int>::value);
   }
   {
     using T  = DummyIt<int, cuda::std::reference_wrapper<int>>;
     using It = cuda::std::move_iterator<T>;
 
-    static_assert(cuda::std::is_same<It::reference, cuda::std::reference_wrapper<int>>::value, "");
+    static_assert(cuda::std::is_same<It::reference, cuda::std::reference_wrapper<int>>::value);
   }
   {
     // Check that move_iterator uses whatever reference type it's given
     // when it's not a reference.
     using T  = DummyIt<int, long>;
     using It = cuda::std::move_iterator<T>;
-    static_assert(cuda::std::is_same<It::reference, long>::value, "");
+    static_assert(cuda::std::is_same<It::reference, long>::value);
   }
   {
     using T  = DummyIt<int, int&>;
     using It = cuda::std::move_iterator<T>;
-    static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
+    static_assert(cuda::std::is_same<It::reference, int&&>::value);
   }
   {
     using T  = DummyIt<int, int&&>;
     using It = cuda::std::move_iterator<T>;
-    static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
+    static_assert(cuda::std::is_same<It::reference, int&&>::value);
   }
 
   test<contiguous_iterator<char*>>();

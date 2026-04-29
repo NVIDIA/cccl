@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
 
@@ -27,7 +30,7 @@ struct cauchy_cdf
 {
   using P = typename cuda::std::cauchy_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     // CDF of Cauchy distribution: F(x; a, b) = (1/π) * arctan((x - a) / b) + 0.5
     return (1.0 / cuda::std::numbers::pi) * cuda::std::atan((x - p.a()) / p.b()) + 0.5;
@@ -35,7 +38,7 @@ struct cauchy_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::cauchy_distribution<T>;

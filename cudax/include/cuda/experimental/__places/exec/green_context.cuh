@@ -171,7 +171,7 @@ public:
 
     // First we query how many groups should be created
     unsigned int nbGroups;
-    cuda_try(cuDevSmResourceSplitByCount(NULL, &nbGroups, &input, NULL, 0, sm_count));
+    cuda_try(cuDevSmResourceSplitByCount(nullptr, &nbGroups, &input, nullptr, 0, sm_count));
 
     // Split the resources as requested
     assert(nbGroups >= 1);

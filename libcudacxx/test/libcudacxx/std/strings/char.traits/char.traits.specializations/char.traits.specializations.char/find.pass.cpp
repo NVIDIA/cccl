@@ -7,10 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 #include <cuda/std/__string_>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   char s1[] = {1, 2, 3};
   assert(cuda::std::char_traits<char>::find(s1, 3, char(1)) == s1);

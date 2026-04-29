@@ -10,6 +10,8 @@
 
 #include <cuda/__execution/tune.h>
 
+#include "test_macros.h"
+
 struct reduce_policy
 {
   int block_threads;
@@ -18,7 +20,7 @@ struct reduce_policy
 template <int BlockThreads, class T>
 struct reduce_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> reduce_policy
+  TEST_FUNC constexpr auto operator()(cuda::arch_id /*arch*/) const -> reduce_policy
   {
     return {BlockThreads / sizeof(T)};
   }
@@ -31,19 +33,19 @@ struct scan_policy
 
 struct scan_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> scan_policy
+  TEST_FUNC constexpr auto operator()(cuda::arch_id /*arch*/) const -> scan_policy
   {
     return {};
   }
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   constexpr int nominal_block_threads = 256;
   constexpr int block_threads         = nominal_block_threads / sizeof(int);
 
   using env_t =
-    decltype(cuda::execution::__tune(reduce_policy_selector<nominal_block_threads, int>{}, scan_policy_selector{}));
+    decltype(cuda::execution::tune(reduce_policy_selector<nominal_block_threads, int>{}, scan_policy_selector{}));
   using tuning_t        = cuda::std::execution::__query_result_t<env_t, cuda::execution::__get_tuning_t>;
   using reduce_policy_t = cuda::std::execution::__query_result_t<tuning_t, reduce_policy>;
   using scan_policy_t   = cuda::std::execution::__query_result_t<tuning_t, scan_policy>;

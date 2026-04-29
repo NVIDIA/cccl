@@ -48,6 +48,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/__utility/pair.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -59,7 +60,7 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::__cuda>
 {
   template <class _Policy, class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _UnaryPred>
-  [[nodiscard]] _CCCL_HOST_API static size_t __par_impl(
+  [[nodiscard]] _CCCL_HOST_API static pair<_OutputIterator1, _OutputIterator2> __par_impl(
     const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
@@ -70,9 +71,9 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
     using _OffsetType = size_t;
     using __output_wrapper_t =
       CUB_NS_QUALIFIER::detail::select::partition_distinct_output_t<_OutputIterator1, _OutputIterator2>;
-    __output_wrapper_t __result{::cuda::std::move(__result_true), ::cuda::std::move(__result_false)};
+    __output_wrapper_t __result{__result_true, __result_false};
 
-    _OffsetType __ret;
+    _OffsetType __num_selected;
     const auto __count = static_cast<_OffsetType>(::cuda::std::distance(__first, __last));
 
     // Determine temporary device storage requirements for device_partition
@@ -87,10 +88,10 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      0);
+      nullptr);
 
     // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
@@ -111,7 +112,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_partition_copy: copy of result from device to host failed",
-        ::cuda::std::addressof(__ret),
+        ::cuda::std::addressof(__num_selected),
         __storage.template __get_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
@@ -119,13 +120,15 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
     }
 
     __stream.sync();
-    return static_cast<size_t>(__ret);
+    const auto __num_not_selected = __count - static_cast<iter_difference_t<_InputIterator>>(__num_selected);
+    return pair{__result_true + static_cast<iter_difference_t<_OutputIterator1>>(__num_selected),
+                __result_false + static_cast<iter_difference_t<_OutputIterator2>>(__num_not_selected)};
   }
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator1> _CCCL_AND
                    __has_forward_traversal<_OutputIterator2>)
-  [[nodiscard]] _CCCL_HOST_API size_t operator()(
+  [[nodiscard]] _CCCL_HOST_API pair<_OutputIterator1, _OutputIterator2> operator()(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,

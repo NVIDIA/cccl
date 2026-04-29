@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -79,12 +82,12 @@ int main(int, char**)
   static_assert(
     (cuda::std::is_same<cuda::std::atomic<cuda::std::uint_fast64_t>, cuda::std::atomic_uint_fast64_t>::value), "");
 
-  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::intptr_t>, cuda::std::atomic_intptr_t>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::uintptr_t>, cuda::std::atomic_uintptr_t>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::size_t>, cuda::std::atomic_size_t>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::ptrdiff_t>, cuda::std::atomic_ptrdiff_t>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::intmax_t>, cuda::std::atomic_intmax_t>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::uintmax_t>, cuda::std::atomic_uintmax_t>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::intptr_t>, cuda::std::atomic_intptr_t>::value));
+  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::uintptr_t>, cuda::std::atomic_uintptr_t>::value));
+  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::size_t>, cuda::std::atomic_size_t>::value));
+  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::ptrdiff_t>, cuda::std::atomic_ptrdiff_t>::value));
+  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::intmax_t>, cuda::std::atomic_intmax_t>::value));
+  static_assert((cuda::std::is_same<cuda::std::atomic<cuda::std::uintmax_t>, cuda::std::atomic_uintmax_t>::value));
 
   return 0;
 }

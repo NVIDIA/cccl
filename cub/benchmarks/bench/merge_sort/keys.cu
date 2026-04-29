@@ -15,8 +15,6 @@
 #  define TUNE_THREADS_PER_BLOCK (1 << TUNE_THREADS_PER_BLOCK_POW2)
 #endif // TUNE_BASE
 
-using value_t = cub::NullType;
-
 #if !TUNE_BASE
 template <typename KeyT>
 struct policy_selector
@@ -37,8 +35,6 @@ template <typename T, typename OffsetT>
 void keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using key_t        = T;
-  using value_t      = cub::NullType;
-  using offset_t     = cub::detail::choose_offset_t<OffsetT>;
   using compare_op_t = less_t;
 
   // Retrieve axis parameters
@@ -56,43 +52,24 @@ void keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(elements);
 
-  // Allocate temporary storage:
-  std::size_t temp_size{};
-  cub::detail::merge_sort::dispatch(
-    nullptr,
-    temp_size,
-    d_buffer_1,
-    static_cast<value_t*>(nullptr),
-    d_buffer_2,
-    static_cast<value_t*>(nullptr),
-    static_cast<offset_t>(elements),
-    compare_op_t{},
-    0 /* stream */
-#if !TUNE_BASE
-    ,
-    policy_selector<key_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::merge_sort::dispatch(
-      temp_storage,
-      temp_size,
-      d_buffer_1,
-      static_cast<value_t*>(nullptr),
-      d_buffer_2,
-      static_cast<value_t*>(nullptr),
-      static_cast<offset_t>(elements),
-      compare_op_t{},
-      launch.get_stream()
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-        ,
-      policy_selector<key_t>{}
+      ,
+      cuda::execution::tune(policy_selector<key_t>{})
 #endif // !TUNE_BASE
     );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceMergeSort::SortKeysCopy,
+      "SortKeysCopy failed",
+      d_buffer_1,
+      d_buffer_2,
+      static_cast<OffsetT>(elements),
+      compare_op_t{},
+      env);
   });
 }
 

@@ -16,8 +16,8 @@
 //                               UnaryPredicate pred);
 
 #include <thrust/device_vector.h>
-#include <thrust/equal.h>
 #include <thrust/execution_policy.h>
+#include <thrust/sequence.h>
 
 #include <cuda/cmath>
 #include <cuda/iterator>
@@ -29,69 +29,133 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 10000;
 
-template <class T = int>
-struct is_even
+template <class T>
+struct is_42
 {
-  __device__ constexpr bool operator()(const T& val) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(const T& val) const noexcept
   {
-    return (val % 2) == 0;
+    return (val == static_cast<T>(42));
   }
 };
 
-template <class Policy>
-void test_remove_copy_if(const Policy& policy, thrust::device_vector<int>& output)
+template <class Policy, class T>
+void test_remove_copy_if(const Policy& policy,
+                         const c2h::device_vector<T>& input,
+                         c2h::device_vector<T>& output,
+                         const c2h::device_vector<int>& converting)
 {
   { // empty should not access anything
     const auto res = cuda::std::remove_copy_if(
-      policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), static_cast<int*>(nullptr), is_even{});
+      policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), static_cast<T*>(nullptr), is_42<T>{});
     CHECK(res == nullptr);
   }
 
-  { // With matching predicate (copy odd elements)
-    cuda::std::fill(policy, output.begin(), output.end(), 0);
-    const auto res = cuda::std::remove_copy_if(
-      policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_even{});
-    CHECK(thrust::equal(output.begin(), res, cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
-    CHECK(cuda::std::distance(output.begin(), res) == size / 2);
+  auto mid_in  = cuda::std::next(input.begin(), 43);
+  auto mid_out = cuda::std::next(output.begin(), 42);
+
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  { // contiguous iterator
+    const auto res = cuda::std::remove_copy_if(policy, input.begin(), input.end(), output.begin(), is_42<T>{});
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, res, mid_in));
+    CHECK(cuda::std::distance(output.begin(), res) == size - 1);
   }
 
-  { // With conversion for predicate
-    cuda::std::fill(policy, output.begin(), output.end(), 0);
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  const T* raw_pointer = thrust::raw_pointer_cast(input.data());
+  { // random access iterator
     const auto res = cuda::std::remove_copy_if(
       policy,
-      cuda::counting_iterator{0},
-      cuda::counting_iterator{size},
+      random_access_iterator{raw_pointer},
+      random_access_iterator{raw_pointer + size},
       output.begin(),
-      is_even<cuda::std::ptrdiff_t>{});
-    CHECK(thrust::equal(output.begin(), res, cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
-    CHECK(cuda::std::distance(output.begin(), res) == size / 2);
+      is_42<T>{});
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, res, mid_in));
+    CHECK(cuda::std::distance(output.begin(), res) == size - 1);
+  }
+
+  if constexpr (cuda::std::integral<T>)
+  {
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
+    { // contiguous iterator, converting predicate
+      const auto res = cuda::std::remove_copy_if(policy, input.begin(), input.end(), output.begin(), is_42<int>{});
+      CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+      CHECK(cuda::std::equal(policy, mid_out, res, mid_in));
+      CHECK(cuda::std::distance(output.begin(), res) == size - 1);
+    }
+
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
+    { // random access iterator, converting predicate
+      const auto res = cuda::std::remove_copy_if(
+        policy,
+        random_access_iterator{raw_pointer},
+        random_access_iterator{raw_pointer + size},
+        output.begin(),
+        is_42<int>{});
+      CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+      CHECK(cuda::std::equal(policy, mid_out, res, mid_in));
+      CHECK(cuda::std::distance(output.begin(), res) == size - 1);
+    }
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  { // contiguous iterator, converting input sequence
+    const auto res =
+      cuda::std::remove_copy_if(policy, converting.begin(), converting.end(), output.begin(), is_42<int>{});
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, res, mid_in));
+    CHECK(cuda::std::distance(output.begin(), res) == size - 1);
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), 0);
+  const int* raw_converting_pointer = thrust::raw_pointer_cast(converting.data());
+  { // random access iterator, converting predicate
+    const auto res = cuda::std::remove_copy_if(
+      policy,
+      random_access_iterator{raw_converting_pointer},
+      random_access_iterator{raw_converting_pointer + size},
+      output.begin(),
+      is_42<int>{});
+    CHECK(cuda::std::equal(policy, output.begin(), mid_out, input.begin()));
+    CHECK(cuda::std::equal(policy, mid_out, res, mid_in));
+    CHECK(cuda::std::distance(output.begin(), res) == size - 1);
   }
 }
 
-C2H_TEST("cuda::std::remove_copy_if", "[parallel algorithm]")
+C2H_TEST("cuda::std::remove_copy_if", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> output(size / 2, thrust::no_init);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
+  c2h::device_vector<T> output(size - 1, thrust::no_init);
+  c2h::device_vector<int> converting(size, thrust::no_init);
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  thrust::sequence(converting.begin(), converting.end(), 0);
 
   SECTION("with default stream")
   {
     const auto policy = cuda::execution::gpu;
-    test_remove_copy_if(policy, output);
+    test_remove_copy_if(policy, input, output, converting);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_remove_copy_if(policy, output);
+    test_remove_copy_if(policy, input, output, converting);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource);
-    test_remove_copy_if(policy, output);
+    test_remove_copy_if(policy, input, output, converting);
   }
 
   SECTION("with provided stream and memory_resource")
@@ -100,6 +164,6 @@ C2H_TEST("cuda::std::remove_copy_if", "[parallel algorithm]")
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
-    test_remove_copy_if(policy, output);
+    test_remove_copy_if(policy, input, output, converting);
   }
 }

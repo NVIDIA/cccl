@@ -11,14 +11,20 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/stream>
 
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_reduce_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_reduce_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_reduce_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -33,28 +39,7 @@ namespace stdexec = cuda::std::execution;
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-struct block_size_check_t
-{
-  int* ptr;
-
-  __device__ int operator()(int a, int b)
-  {
-    *ptr = blockDim.x;
-    return a + b;
-  }
-};
-
-struct block_size_retreiver_t
-{
-  int* ptr;
-
-  template <class ActivePolicyT>
-  cudaError_t Invoke()
-  {
-    *ptr = ActivePolicyT::SingleTilePolicy::BLOCK_THREADS;
-    return cudaSuccess;
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 {
@@ -68,12 +53,12 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   cuda::arch_id arch_id{};
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
 
-  int target_block_size =
+  unsigned int target_block_size =
     cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(arch_id)
       .single_tile.block_threads;
 
   num_items_t num_items = 1;
-  c2h::device_vector<int> d_block_size(1);
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
@@ -129,12 +114,13 @@ struct unrelated_tuning
   }
 };
 
-using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
 C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<int> d_block_size(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 1;
@@ -142,7 +128,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
@@ -151,14 +137,14 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 
 C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
   auto num_items = 1;
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);
@@ -227,7 +213,15 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       REQUIRE(
         cudaSuccess
         == cub::detail::reduce::dispatch_nondeterministic(
-          nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init, /* stream */ 0, transform_t{}));
+          nullptr,
+          expected_bytes_allocated,
+          d_in,
+          raw_ptr,
+          num_items,
+          op_t{},
+          init,
+          /* stream */ nullptr,
+          transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
@@ -345,7 +339,15 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       REQUIRE(
         cudaSuccess
         == cub::detail::reduce::dispatch_nondeterministic(
-          nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init, /* stream */ 0, transform_t{}));
+          nullptr,
+          expected_bytes_allocated,
+          d_in,
+          raw_ptr,
+          num_items,
+          op_t{},
+          init,
+          /* stream */ nullptr,
+          transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
@@ -410,6 +412,26 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
 
 #if TEST_LAUNCH == 0
 
+TEST_CASE("Device Min works with default environment", "[reduce][device]")
+{
+  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  auto error = cub::DeviceReduce::Min(input.begin(), output.begin(), static_cast<int>(input.size()));
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 0.0f);
+}
+
+TEST_CASE("Device Max works with default environment", "[reduce][device]")
+{
+  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  auto error = cub::DeviceReduce::Max(input.begin(), output.begin(), static_cast<int>(input.size()));
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 4.0f);
+}
+
 TEST_CASE("Device TransformReduce works with default environment", "[reduce][device]")
 {
   auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
@@ -452,6 +474,58 @@ TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]
   REQUIRE(d_aggregates_out == expected_aggregates);
 }
 
+TEST_CASE("Device ArgMin works with default environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto min_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  auto error =
+    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()));
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(min_output[0] == 0.0f);
+  REQUIRE(index_output[0] == 3);
+}
+
+TEST_CASE("Device ArgMax works with default environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto max_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  auto error =
+    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()));
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(max_output[0] == 4.0f);
+  REQUIRE(index_output[0] == 2);
+}
+
+TEST_CASE("Device ArgMin with compare_op works with default environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto min_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  auto error = cub::DeviceReduce::ArgMin(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{});
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(min_output[0] == 0.0f);
+  REQUIRE(index_output[0] == 3);
+}
+
+TEST_CASE("Device ArgMax with compare_op works with default environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto max_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  auto error = cub::DeviceReduce::ArgMax(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{});
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(max_output[0] == 4.0f);
+  REQUIRE(index_output[0] == 2);
+}
+
 #endif
 
 C2H_TEST("Device TransformReduce uses environment", "[reduce][device]")
@@ -480,6 +554,40 @@ C2H_TEST("Device TransformReduce uses environment", "[reduce][device]")
     d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0, env);
 
   REQUIRE(d_out[0] == -10);
+}
+
+C2H_TEST("Device Min uses environment", "[reduce][device]")
+{
+  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Min(
+            nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce_min(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+
+  REQUIRE(output[0] == 0.0f);
+}
+
+C2H_TEST("Device Max uses environment", "[reduce][device]")
+{
+  auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto output = c2h::device_vector<float>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Max(
+            nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce_max(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+
+  REQUIRE(output[0] == 4.0f);
 }
 
 C2H_TEST("Device ReduceByKey uses environment", "[reduce][device]")
@@ -523,4 +631,108 @@ C2H_TEST("Device ReduceByKey uses environment", "[reduce][device]")
   d_aggregates_out.resize(5);
   REQUIRE(d_unique_out == expected_keys);
   REQUIRE(d_aggregates_out == expected_aggregates);
+}
+
+C2H_TEST("Device ArgMin uses environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto min_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::ArgMin(
+      nullptr,
+      expected_bytes_allocated,
+      input.begin(),
+      min_output.begin(),
+      index_output.begin(),
+      static_cast<int>(input.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_arg_min(input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), env);
+
+  REQUIRE(min_output[0] == 0.0f);
+  REQUIRE(index_output[0] == 3);
+}
+
+C2H_TEST("Device ArgMin with compare_op uses environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto min_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::ArgMin(
+      nullptr,
+      expected_bytes_allocated,
+      input.begin(),
+      min_output.begin(),
+      index_output.begin(),
+      static_cast<int>(input.size()),
+      cuda::std::less{}));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_arg_min(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{}, env);
+
+  REQUIRE(min_output[0] == 0.0f);
+  REQUIRE(index_output[0] == 3);
+}
+
+C2H_TEST("Device ArgMax uses environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto max_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::ArgMax(
+      nullptr,
+      expected_bytes_allocated,
+      input.begin(),
+      max_output.begin(),
+      index_output.begin(),
+      static_cast<int>(input.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_arg_max(input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), env);
+
+  REQUIRE(max_output[0] == 4.0f);
+  REQUIRE(index_output[0] == 2);
+}
+
+C2H_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]")
+{
+  auto input        = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
+  auto max_output   = c2h::device_vector<float>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::ArgMax(
+      nullptr,
+      expected_bytes_allocated,
+      input.begin(),
+      max_output.begin(),
+      index_output.begin(),
+      static_cast<int>(input.size()),
+      cuda::std::less{}));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_arg_max(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{}, env);
+
+  REQUIRE(max_output[0] == 4.0f);
+  REQUIRE(index_output[0] == 2);
 }

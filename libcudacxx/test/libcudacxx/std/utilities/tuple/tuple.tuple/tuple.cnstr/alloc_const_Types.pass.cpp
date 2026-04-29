@@ -23,8 +23,8 @@
 
 struct ImplicitCopy
 {
-  __host__ __device__ explicit ImplicitCopy(int) {}
-  __host__ __device__ ImplicitCopy(ImplicitCopy const&) {}
+  TEST_FUNC explicit ImplicitCopy(int) {}
+  TEST_FUNC ImplicitCopy(ImplicitCopy const&) {}
 };
 
 // cuda::std::allocator not supported

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -253,6 +254,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   _CCCL_HOST_API auto instantiate() -> graph
   {
     _CCCL_ASSERT(__graph_ != nullptr, "cannot instantiate a NULL graph");
+    ::cuda::__ensure_current_context __ctx_guard{__dev_};
     return graph{::cuda::experimental::__driver::__graphInstantiate(__graph_)};
   }
 
@@ -263,16 +265,20 @@ private:
   //! \param __parent The parent graph to which this graph will be added.
   //! \return A `graph_node_ref` representing the added child graph.
   //! \throws cuda::std::cuda_error if `cudaGraphAddChildGraphNode` fails.
+#if _CCCL_CTK_AT_LEAST(12, 2)
   template <size_t _Extent>
   [[nodiscard]] _CCCL_HOST_API auto
   __add_to_graph(cudaGraph_t __parent, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
   {
+    ::CUgraphNodeParams __params{};
+    __params.type        = ::CU_GRAPH_NODE_TYPE_GRAPH;
+    __params.graph.graph = __graph_;
     graph_node_ref __child;
     __child.__graph_ = __graph_;
-    __child.__node_ =
-      ::cuda::experimental::__driver::__graphAddChildGraphNode(__parent, __deps.data(), __deps.size(), __graph_);
+    __child.__node_ = ::cuda::experimental::__driver::__graphAddNode(__parent, __deps.data(), __deps.size(), &__params);
     return __child;
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   device_ref __dev_; //!< The device on which the graph is built.
   cudaGraph_t __graph_ = nullptr; //!< The underlying CUDA graph handle.

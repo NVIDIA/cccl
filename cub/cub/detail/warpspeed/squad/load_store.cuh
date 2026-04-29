@@ -224,11 +224,13 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     // Perform fence.proxy.async with full warp to avoid BSSY+BSYNC
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 
-    // FIXME(bgruber): for some reason the optimizer propagates some information from the computation of
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+    // for some reason the optimizer propagates some information from the computation of
     // overCopySizeBytes to the masked bulk copy below and generates an unaligned access error.
     // The artificial read modification of overCopySizeBytes prevents the propagation here works around this.
     // It also solves the issue described in nvbug 5848313 by accident on nvcc 13.2+
     asm volatile("" : "+r"(cpAsyncOobInfo.overCopySizeBytes));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
 
     const bool doStartCopy  = cpAsyncOobInfo.smemStartSkipBytes > 0;
     const bool doEndCopy    = cpAsyncOobInfo.smemEndBytesAfter16BBoundary > 0;
@@ -259,6 +261,10 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       // (hopefully) hide all the arithmetic behind this instruction.
       if (::cuda::ptx::elect_sync(~0))
       {
+        // need to work around another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8644
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemStartAlignUp));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         ::cuda::ptx::cp_async_bulk(
           ::cuda::ptx::space_global,
           ::cuda::ptx::space_shared,
@@ -282,6 +288,12 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       }
       if (doEndCopy)
       {
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+        // nvc++ seems to have an optimizer bug, crashing with an unaligned access error below. The addresses are fine
+        // when printed, so let's shake the optimizer a bit.
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemEndAlignDown));
+#  endif // _CCCL_CUDA_COMPILER(NVHPC)
+
         // Copy a subset of the last 16 bytes
         if (::cuda::ptx::elect_sync(~0))
         {

@@ -25,11 +25,8 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -357,7 +354,7 @@ struct rle_non_trivial_runs_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const rle_non_trivial_runs_policy& p)
   {
     return os
@@ -366,7 +363,7 @@ struct rle_non_trivial_runs_policy
         << ", .load_modifier = " << p.load_modifier << ", .store_with_time_slicing = " << p.store_with_time_slicing
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

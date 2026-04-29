@@ -48,7 +48,7 @@ enum class stream_id : unsigned long long
 class stream_ref
 {
 protected:
-  ::cudaStream_t __stream{0};
+  ::cudaStream_t __stream{nullptr};
 
 public:
   using value_type = ::cudaStream_t;

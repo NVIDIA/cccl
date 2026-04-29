@@ -660,7 +660,7 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
 
 inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type_enum t, int compare_to)
 {
-  const std::string less_op_src = std::format(
+  std::string less_op_src = std::format(
     "#include <cuda_fp16.h>\n"
     "extern \"C\" __device__ void less_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
@@ -669,7 +669,7 @@ inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type
     "}}",
     type_enum_to_name(t),
     compare_to);
-  const std::string greater_or_equal_op_src = std::format(
+  std::string greater_or_equal_op_src = std::format(
     "#include <cuda_fp16.h>\n"
     "extern \"C\" __device__ void greater_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
@@ -700,10 +700,7 @@ struct pointer_t
     size = vec.size();
   }
 
-  pointer_t()
-      : ptr(nullptr)
-      , size(0)
-  {}
+  pointer_t() = default;
 
   ~pointer_t()
   {

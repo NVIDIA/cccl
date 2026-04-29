@@ -1900,7 +1900,7 @@ inline event_list enforce_stf_deps_before(
   const bool write = (mode == access_mode::rw || mode == access_mode::write);
 
   // ::std::cout << "Notifying " << (write?"W":"R") << " access on " << get_symbol() << " by task " <<
-  // task->get_symbol() << ::std::endl;
+  // task->get_symbol() << ::'\n';
   if (write)
   {
     if (ctx_.current_mode == access_mode::write)
@@ -1976,7 +1976,7 @@ inline event_list enforce_stf_deps_before(
       }
 
       ctx_.current_mode = access_mode::none;
-      // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
+      // ::std::cout << "CHANGING to FALSE for " << symbol << ::'\n';
     }
     else if (ctx_.previous_writer.has_value())
     {
