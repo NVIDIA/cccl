@@ -217,6 +217,61 @@ private:
     }
   };
 
+  struct single_segment_scan_scope
+  {
+    agent_warp_segmented_scan& agent;
+
+    template <typename IteratorT, typename ItemT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    load(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size, ItemT oob_default)
+    {
+      warp_load_t loader(agent.temp_storage.reused.load[agent.warp_id]);
+      if (chunk_size == tile_items)
+      {
+        loader.Load(it, thread_values);
+      }
+      else
+      {
+        loader.Load(it, thread_values, chunk_size, oob_default);
+      }
+    }
+
+    template <typename ItemT, typename InitValueTy, typename OpT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    scan_first_tile(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& warp_aggregate)
+    {
+      warp_scan_t scanner(agent.temp_storage.reused.scan[agent.warp_id]);
+      agent.scan_first_tile(scanner, items, init_value, scan_op, warp_aggregate);
+    }
+
+    template <typename ItemT, typename OpT, typename PrefixCallbackT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    scan_later_tile(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
+    {
+      warp_scan_t scanner(agent.temp_storage.reused.scan[agent.warp_id]);
+      agent.scan_later_tile(scanner, items, scan_op, prefix_op);
+    }
+
+    template <typename IteratorT, typename ItemT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void store(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size)
+    {
+      warp_store_t storer(agent.temp_storage.reused.store[agent.warp_id]);
+      if (chunk_size == tile_items)
+      {
+        storer.Store(it, thread_values);
+      }
+      else
+      {
+        storer.Store(it, thread_values, chunk_size);
+      }
+    }
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void sync()
+    {
+      __syncwarp();
+    }
+  };
+
 public:
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
@@ -235,73 +290,15 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
-    const OffsetT segment_items = ::cuda::std::max(input_end_idx, input_begin_idx) - input_begin_idx;
-    const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, tile_items);
-
-    AccumT exclusive_prefix{};
-    worker_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
-
-    for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
-    {
-      const OffsetT chunk_begin = input_begin_idx + chunk_id * tile_items;
-      const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, input_end_idx);
-
-      // chunk_size <= TILE_ITEMS, casting to int is safe
-      const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
-
-      AccumT thread_values[items_per_thread];
-
-      // load
-      {
-        warp_load_t loader(temp_storage.reused.load[warp_id]);
-        if (chunk_size == tile_items)
-        {
-          loader.Load(d_in + chunk_begin, thread_values);
-        }
-        else
-        {
-          constexpr AccumT oob_default{};
-          loader.Load(d_in + chunk_begin, thread_values, chunk_size, oob_default);
-        }
-      }
-      __syncwarp();
-
-      // scan
-      {
-        warp_scan_t scanner(temp_storage.reused.scan[warp_id]);
-        if (chunk_id == 0)
-        {
-          // Initialize exclusive_prefix, referenced from prefix_op
-          scan_first_tile(scanner, thread_values, initial_value, scan_op, exclusive_prefix);
-        }
-        else
-        {
-          scan_later_tile(scanner, thread_values, scan_op, prefix_op);
-        }
-      }
-      __syncwarp();
-
-      // store
-      {
-        const OffsetT out_offset = output_begin_idx + chunk_id * tile_items;
-        warp_store_t storer(temp_storage.reused.store[warp_id]);
-
-        if (chunk_size == tile_items)
-        {
-          storer.Store(d_out + out_offset, thread_values);
-        }
-        else
-        {
-          storer.Store(d_out + out_offset, thread_values, chunk_size);
-        }
-      }
-      // Avoiding synchronization at the end of last chunk
-      // could save up to 10% of performance for very short segments
-      if (++chunk_id < n_chunks)
-      {
-        __syncwarp();
-      }
-    }
+    single_segment_scan_chunked<items_per_thread, tile_items, OffsetT, AccumT>(
+      single_segment_scan_scope{*this},
+      d_in,
+      d_out,
+      input_begin_idx,
+      input_end_idx,
+      output_begin_idx,
+      scan_op,
+      initial_value);
   };
 
   //! @brief Scan dynamically given number of segments of values
