@@ -222,4 +222,15 @@
 #  define _CCCL_WARNING(_MSG) _CCCL_PRAGMA(GCC warning _MSG)
 #endif // !_CCCL_COMPILER(MSVC)
 
+// Freestanding environment detection
+// NVRTC is treated as freestanding since it has no access to the host standard library
+#if defined(_CCCL_ENABLE_FREESTANDING) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_FREESTANDING() 1
+#  define _CCCL_HOSTED()       0
+#  define _CCCL_NO_TYPEID
+#else // ^^^ _CCCL_ENABLE_FREESTANDING ||  _CCCL_COMPILER(NVRTC) ^^^ / vvv Hosted environment vvv
+#  define _CCCL_FREESTANDING() 0
+#  define _CCCL_HOSTED()       1
+#endif // Hosted environment
+
 #endif // __CCCL_COMPILER_H
