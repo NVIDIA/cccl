@@ -396,6 +396,8 @@ public:
         // We make sure that a thread is not re-entering this conditional when being assigned to the last run already by
         // extending the last run's length to all the thread's item
         assigned_run++;
+        // False positive
+        // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
         assigned_run_begin = temp_storage.runs.run_offsets[assigned_run];
 
         // If this thread is getting assigned the last run, we make sure it will not fetch any other run after this

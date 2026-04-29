@@ -162,7 +162,8 @@ struct BlockScanRaking
   template <int ITERATION>
   _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T* out, T* in, constant_t<ITERATION> /*iteration*/)
   {
-    out[ITERATION] = in[ITERATION];
+    // clang analyzer doesn't understand the SEGMENT_LENGTH base-case
+    out[ITERATION] = in[ITERATION]; // NOLINT(clang-analyzer-security.ArrayBound)
     CopySegment(out, in, constant_v<ITERATION + 1>);
   }
 

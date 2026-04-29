@@ -957,6 +957,8 @@ public:
         // without modification.
         if (idx < valid_items - 1)
         {
+          // False positive
+          // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
           output[item] = difference_op(input[item], input[item + 1]);
         }
         else
