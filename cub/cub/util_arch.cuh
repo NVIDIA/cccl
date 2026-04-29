@@ -180,7 +180,7 @@ struct NoScaling
 
 // Gets the current tuning architecture. Compared to CUB_PTX_ARCH, it can result in arch-specific architecture id. When
 // compiling with nvc++, it always results in ordinary arch id for __NVCOMPILER_CUDA_ARCH__.
-[[nodiscard]] _CCCL_API constexpr ::cuda::arch_id current_tuning_arch() noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::arch_id current_tuning_arch() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   return ::cuda::__to_arch_id_unchecked(::cuda::compute_capability{__NVCOMPILER_CUDA_ARCH__ / 10});
@@ -205,7 +205,7 @@ template <class PolicySelector>
 
 // Selects the tuning policy for the current_tuning_arch() architecture.
 template <class PolicySelector>
-[[nodiscard]] _CCCL_API constexpr auto current_policy()
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto current_policy()
 {
   return select_policy<PolicySelector>(current_tuning_arch());
 }

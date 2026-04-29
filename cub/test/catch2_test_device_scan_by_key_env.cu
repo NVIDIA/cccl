@@ -8,6 +8,7 @@ struct stream_registry_factory_t;
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_scan.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/device_vector.h>
 
@@ -52,15 +53,10 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
 
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  cuda::arch_id ptx_arch_id{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(ptx_arch_id));
 
-  cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
-
-  const auto target_block_size =
-    cub::detail::select_policy<selector_t>(cuda::compute_capability{device_props.major, device_props.minor})
-      .block_threads;
+  const auto target_block_size = cub::detail::select_policy<selector_t>(ptx_arch_id).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};
@@ -100,15 +96,10 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
 
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  cuda::arch_id ptx_arch_id{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(ptx_arch_id));
 
-  cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
-
-  const auto target_block_size =
-    cub::detail::select_policy<selector_t>(cuda::compute_capability{device_props.major, device_props.minor})
-      .block_threads;
+  const auto target_block_size = cub::detail::select_policy<selector_t>(ptx_arch_id).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};
