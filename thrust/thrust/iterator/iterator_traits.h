@@ -34,6 +34,7 @@
 #include <thrust/iterator/iterator_categories.h>
 
 #include <cuda/__fwd/iterator.h>
+#include <cuda/std/__fwd/common_iterator.h>
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -311,6 +312,13 @@ struct iterator_traversal<::cuda::zip_transform_iterator<Fn, Iterators...>>
 {
   using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };
+
+template <class Iter, class Sent>
+struct iterator_system<::cuda::std::common_iterator<Iter, Sent>> : iterator_system<Iter>
+{};
+template <class Iter, class Sent>
+struct iterator_traversal<::cuda::std::common_iterator<Iter, Sent>> : iterator_traversal<Iter>
+{};
 
 //! \} // end iterator_traits
 

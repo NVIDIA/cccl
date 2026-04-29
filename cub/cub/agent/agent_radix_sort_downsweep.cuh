@@ -35,6 +35,7 @@
 #  include <cub/agent/agent_unique_by_key.cuh>
 #endif
 
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -353,7 +354,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
+    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
 
     BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
 
@@ -387,7 +388,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
+    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
 
     LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
   }
@@ -419,7 +420,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
+    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
 
     BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
 
@@ -451,7 +452,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
+    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
 
     LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
   }

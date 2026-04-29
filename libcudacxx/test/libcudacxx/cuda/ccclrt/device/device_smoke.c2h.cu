@@ -289,6 +289,13 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
       CCCLRT_REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
     }
+
+    SECTION("Total global memory")
+    {
+      auto total_mem = device_ref(0).attribute(attributes::total_global_memory);
+      STATIC_REQUIRE(::cuda::std::is_same_v<decltype(total_mem), cuda::std::size_t>);
+      CCCLRT_REQUIRE(total_mem > 0);
+    }
   }
   SECTION("Name")
   {

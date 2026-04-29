@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <iostream>
-#include <typeinfo>
 #include <utility>
 
 #include "catch2_test_device_reduce.cuh" // for reference_extended_fp
@@ -149,7 +148,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   auto d_offsets_it           = thrust::raw_pointer_cast(d_segment_offsets.data());
 
   INFO("Num segments: " << num_segments);
-  INFO("Types: " << typeid(input_t).name() << " " << typeid(output_t).name() << " " << typeid(offset_t).name());
+  CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>(), c2h::type_name<offset_t>);
 
   // Generate input data
   c2h::device_vector<input_t> in_items(num_items);
@@ -164,7 +163,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   c2h::host_vector<output_t> h_output(num_items);
   c2h::host_vector<output_t> h_ref(num_items);
 
-  SECTION("exclusive scan")
+  SECTION("exclusive segmented scan")
   {
     using op_t = ::cuda::minimum<>;
 
@@ -199,10 +198,10 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     }
   }
 
-  SECTION("inclusive scan")
+  SECTION("inclusive segmented scan")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t      = ::cuda::std::plus<>;
+    using h_accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -220,7 +219,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
         h_input.cbegin() + h_segment_offsets[i + 1],
         h_ref.begin() + h_segment_offsets[i],
         scan_op,
-        accum_t{});
+        h_accum_t{});
 
       bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
       REQUIRE(correct);
@@ -246,10 +245,12 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
 
   SECTION("inclusive segmented scan with init")
   {
-    using op_t    = cuda::std::plus<>;
-    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t              = cuda::std::plus<>;
+    using unwrapped_input_t = typename cuda::std::iterator_traits<decltype(unwrap_it(d_in_it))>::value_type;
+    using accum_t           = cuda::std::__accumulator_t<op_t, unwrapped_input_t, unwrapped_input_t>;
+    using h_accum_t         = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
-    INFO("Accum type: " << typeid(accum_t).name());
+    CAPTURE(c2h::type_name<accum_t>(), c2h::type_name<h_accum_t>());
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -278,7 +279,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
         h_input.cbegin() + h_segment_offsets[i + 1],
         h_ref.begin() + h_segment_offsets[i],
         scan_op,
-        init_value);
+        h_accum_t{init_value});
       // Verify result
       bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
       REQUIRE(correct);
@@ -299,7 +300,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   }
 
 #if ((TEST_TYPES == 0) || (TEST_TYPES == 1))
-  SECTION("exclusive sum")
+  SECTION("exclusive segmented sum")
   {
     using op_t = cuda::std::plus<>;
 
@@ -333,7 +334,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     }
   }
 
-  SECTION("inclusive sum")
+  SECTION("inclusive segmented sum")
   {
     using op_t = cuda::std::plus<>;
 
