@@ -17,13 +17,13 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/block_topk.cuh>
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -32,11 +32,13 @@ namespace detail::batched_topk
 // Atomic counters used by the small-segment kernel to (a) enqueue large segments into the large-segment work queue
 // and (b) elect the last block to run the epilogue scan over the queued tile counts. `alignas(128)` isolates each
 // counter on its own cache line for performance.
+template <class NumTilesT>
 struct batched_topk_counters
 {
+  using tile_count_t = detail::choose_offset_t<NumTilesT>;
   // Number of segments enqueued in the large-segment work queue. Atomically incremented (by 1) by the first thread
   // of each block that decides its segment is large.
-  alignas(128) unsigned long long large_segments_count;
+  alignas(128) tile_count_t large_segments_count;
 
   // Block retirement counter. Each block atomically increments by 1 when it has finished processing its segment, and
   // the block that observes `gridDim.x - 1` runs the epilogue on the queued large segments tile counts.
@@ -51,7 +53,8 @@ template <typename PolicyGetter, // TODO(bgruber): pass worker_policy as NTTP in
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename SelectDirectionParameterT,
-          typename NumSegmentsParameterT>
+          typename NumSegmentsParameterT,
+          typename LargeSegmentTileOffsetT>
 struct agent_batched_topk_worker_per_segment
 {
   // -------------------------------------------------------------------------
@@ -66,6 +69,7 @@ struct agent_batched_topk_worker_per_segment
 
   using segment_size_val_t = typename SegmentSizeParameterT::value_type;
   using num_segments_val_t = typename NumSegmentsParameterT::value_type;
+  using counters_t         = batched_topk_counters<num_segments_val_t>;
 
   static constexpr auto policy                 = PolicyGetter{}();
   static constexpr worker_policy active_policy = policy.worker_per_segment_policy;
@@ -84,6 +88,7 @@ struct agent_batched_topk_worker_per_segment
   static constexpr int multi_worker_per_segment_tile_size =
     multi_worker_per_segment_policy.block_threads * multi_worker_per_segment_policy.items_per_thread;
 
+  // Check if there could be large segments present
   static constexpr bool only_small_segments = params::static_max_value_v<SegmentSizeParameterT> <= tile_size;
 
   // Check if we are dealing with keys-only or key-value pairs
@@ -140,10 +145,9 @@ struct agent_batched_topk_worker_per_segment
   KParameterT k_param;
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
-  batched_topk_counters* d_counters;
+  counters_t* d_counters;
   num_segments_val_t* d_large_segments_ids;
-  // Assuming the large segment agent will also use int for tile_id = blockIdx.x.
-  ::cuda::std::int64_t* d_large_segments_tile_offsets;
+  LargeSegmentTileOffsetT* d_large_segments_tile_offsets;
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
@@ -157,9 +161,9 @@ struct agent_batched_topk_worker_per_segment
     KParameterT k_param,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    batched_topk_counters* d_counters,
+    counters_t* d_counters,
     num_segments_val_t* d_large_segments_ids,
-    ::cuda::std::int64_t* d_large_segments_tile_offsets)
+    LargeSegmentTileOffsetT* d_large_segments_tile_offsets)
       : temp_storage(temp_storage.Alias())
       , d_key_segments_it(d_key_segments_it)
       , d_key_segments_out_it(d_key_segments_out_it)
@@ -200,7 +204,7 @@ struct agent_batched_topk_worker_per_segment
         const auto large_segment_queue_idx            = atomicAdd(&d_counters->large_segments_count, 1ull);
         d_large_segments_ids[large_segment_queue_idx] = static_cast<num_segments_val_t>(segment_id);
         d_large_segments_tile_offsets[large_segment_queue_idx] =
-          static_cast<::cuda::std::int64_t>(::cuda::ceil_div(segment_size, multi_worker_per_segment_tile_size));
+          static_cast<LargeSegmentTileOffsetT>(::cuda::ceil_div(segment_size, multi_worker_per_segment_tile_size));
       }
     }
     else

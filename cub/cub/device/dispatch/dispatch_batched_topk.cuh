@@ -140,16 +140,16 @@ struct total_num_items_guarantee
 // per-segment tile counts that we exclusive-scan to obtain per-segment tile
 // offsets.
 // -----------------------------------------------------------------------------
-template <typename SegmentSizeParameterT>
+template <class SegmentSizeParameterT, class TotalNumItemsValueType>
 struct segment_size_to_tile_count_op
 {
   SegmentSizeParameterT segment_sizes;
-  ::cuda::std::int32_t large_segment_agent_tile_size;
+  int large_segment_agent_tile_size;
 
   template <typename SegmentIndexT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::int64_t operator()(SegmentIndexT segment_id) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
   {
-    return static_cast<::cuda::std::int64_t>(
+    return static_cast<TotalNumItemsValueType>(
       ::cuda::ceil_div(segment_sizes.get_param(segment_id), large_segment_agent_tile_size));
   }
 };
@@ -206,6 +206,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
+  using large_segment_tile_offset_t = typename TotalNumItemsGuaranteeT::value_type;
   // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
   // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
   constexpr auto policy = find_smallest_covering_policy<
@@ -218,7 +219,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>::policy;
+    NumSegmentsParameterT,
+    large_segment_tile_offset_t>::policy;
   constexpr worker_policy worker_per_segment_policy             = policy.worker_per_segment_policy;
   constexpr multi_worker_policy multi_worker_per_segment_policy = policy.multi_worker_per_segment_policy;
 
@@ -236,9 +238,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   //   !any_small_segments (large-only): [0] tile offsets, [1] segment-size transform-scan temp storage.
   static constexpr int allocations_array_size     = only_small_segments ? 1 : (any_small_segments ? 3 : 2);
   size_t allocation_sizes[allocations_array_size] = {1};
-  using num_segments_val_t                        = typename NumSegmentsParameterT::value_type;
-  using segment_size_scan_offset_t                = detail::choose_offset_t<num_segments_val_t>;
-  using segment_size_scan_input_op_t              = segment_size_to_tile_count_op<SegmentSizeParameterT>;
+
+  using num_segments_val_t         = typename NumSegmentsParameterT::value_type;
+  using counters_t                 = batched_topk_counters<num_segments_val_t>;
+  using segment_size_scan_offset_t = detail::choose_offset_t<num_segments_val_t>;
+  using segment_size_scan_input_op_t =
+    segment_size_to_tile_count_op<SegmentSizeParameterT, large_segment_tile_offset_t>;
   static constexpr auto multi_worker_per_segment_tile_size =
     multi_worker_per_segment_policy.block_threads * multi_worker_per_segment_policy.items_per_thread;
   const segment_size_scan_input_op_t segment_size_scan_input_op{segment_sizes, multi_worker_per_segment_tile_size};
@@ -249,11 +254,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   if constexpr (!only_small_segments)
   {
     const auto num_segments_val = num_segments.get_param(0);
-    // For large segments size tile offsets.
-    allocation_sizes[0] = num_segments_val * sizeof(::cuda::std::int64_t);
+    // Scan output
+    allocation_sizes[0] = num_segments_val * sizeof(large_segment_tile_offset_t);
     if constexpr (any_small_segments)
     {
-      allocation_sizes[1] = sizeof(batched_topk_counters);
+      allocation_sizes[1] = sizeof(counters_t);
+      // Large segment ids for indirectly accessing the large segment parameters
       allocation_sizes[2] = num_segments_val * sizeof(num_segments_val_t);
     }
     else
@@ -263,9 +269,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             nullptr,
             allocation_sizes[1],
             segment_size_scan_input_it,
-            static_cast<::cuda::std::int64_t*>(nullptr),
+            static_cast<large_segment_tile_offset_t*>(nullptr),
             ::cuda::std::plus<>{},
-            detail::InputValue<::cuda::std::int64_t>(::cuda::std::int64_t{0}),
+            detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
             static_cast<segment_size_scan_offset_t>(num_segments_val),
             stream)))
       {
@@ -298,7 +304,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       // Zero-initialize the counters struct that holds the large-segment queue length and the block retirement
       // counter; both are read by the agent's atomic operations and must start at 0.
-      if (const auto error = CubDebug(cudaMemsetAsync(allocations[1], 0, sizeof(batched_topk_counters), stream)))
+      if (const auto error = CubDebug(cudaMemsetAsync(allocations[1], 0, sizeof(counters_t), stream)))
       {
         return error;
       }
@@ -307,26 +313,29 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int block_dim = worker_per_segment_policy.block_threads;
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
-            .doit(device_segmented_topk_kernel<PolicySelector,
-                                               KeyInputItItT,
-                                               KeyOutputItItT,
-                                               ValueInputItItT,
-                                               ValueOutputItItT,
-                                               SegmentSizeParameterT,
-                                               KParameterT,
-                                               SelectDirectionParameterT,
-                                               NumSegmentsParameterT>,
-                  d_key_segments_it,
-                  d_key_segments_out_it,
-                  d_value_segments_it,
-                  d_value_segments_out_it,
-                  segment_sizes,
-                  k,
-                  select_directions,
-                  num_segments,
-                  only_small_segments ? nullptr : static_cast<batched_topk_counters*>(allocations[1]),
-                  only_small_segments ? nullptr : static_cast<num_segments_val_t*>(allocations[2]),
-                  only_small_segments ? nullptr : static_cast<::cuda::std::int64_t*>(allocations[0]))))
+            .doit(
+              device_segmented_topk_kernel<
+                PolicySelector,
+                KeyInputItItT,
+                KeyOutputItItT,
+                ValueInputItItT,
+                ValueOutputItItT,
+                SegmentSizeParameterT,
+                KParameterT,
+                SelectDirectionParameterT,
+                NumSegmentsParameterT,
+                large_segment_tile_offset_t>,
+              d_key_segments_it,
+              d_key_segments_out_it,
+              d_value_segments_it,
+              d_value_segments_out_it,
+              segment_sizes,
+              k,
+              select_directions,
+              num_segments,
+              only_small_segments ? nullptr : static_cast<counters_t*>(allocations[1]),
+              only_small_segments ? nullptr : static_cast<num_segments_val_t*>(allocations[2]),
+              only_small_segments ? nullptr : static_cast<large_segment_tile_offset_t*>(allocations[0]))))
     {
       return error;
     }
@@ -341,9 +350,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           allocations[1],
           allocation_sizes[1],
           segment_size_scan_input_it,
-          static_cast<::cuda::std::int64_t*>(allocations[0]),
+          static_cast<large_segment_tile_offset_t*>(allocations[0]),
           ::cuda::std::plus<>{},
-          detail::InputValue<::cuda::std::int64_t>(::cuda::std::int64_t{0}),
+          detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
           static_cast<segment_size_scan_offset_t>(num_segments.get_param(0)),
           stream)))
     {

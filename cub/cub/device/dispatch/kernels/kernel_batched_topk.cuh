@@ -106,7 +106,8 @@ template <typename PolicySelector,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename SelectDirectionParameterT,
-          typename NumSegmentsParameterT>
+          typename NumSegmentsParameterT,
+          typename LargeSegmentTileOffsetT>
 #if _CCCL_HAS_CONCEPTS()
   requires batched_topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -121,7 +122,8 @@ __launch_bounds__(int(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>::policy.worker_per_segment_policy.block_threads)) __global__
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.block_threads)) __global__
   void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
@@ -131,9 +133,9 @@ __launch_bounds__(int(
     KParameterT k,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    batched_topk_counters* d_counters,
+    batched_topk_counters<typename NumSegmentsParameterT::value_type>* d_counters,
     typename NumSegmentsParameterT::value_type* d_large_segments_ids,
-    ::cuda::std::int64_t* d_large_segments_tile_offsets)
+    LargeSegmentTileOffsetT* d_large_segments_tile_offsets)
 {
   using agent_t = typename find_smallest_covering_policy<
     PolicySelector,
@@ -145,7 +147,8 @@ __launch_bounds__(int(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>::agent_t;
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>::agent_t;
 
   // Static Assertions (Constraints)
   static_assert(agent_t::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,
