@@ -333,7 +333,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   OffsetT num_items,
   DifferenceOpT difference_op,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  PolicySelector                         = {},
   KernelLauncherFactory launcher_factory = {})
 {
   using InputT = detail::it_value_t<InputIteratorT>;
@@ -344,7 +344,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const adjacent_difference_policy active_policy = policy_selector(arch_id);
+  const adjacent_difference_policy active_policy = select_policy<PolicySelector>(arch_id);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({

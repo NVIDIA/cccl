@@ -88,6 +88,11 @@ enum class arch_id : int
   }
 }
 
+[[nodiscard]] _CCCL_API constexpr arch_id __to_arch_id_unchecked(compute_capability __cc) noexcept
+{
+  return static_cast<arch_id>(__cc.get());
+}
+
 //! @brief Converts the compute capability to the architecture id.
 //!
 //! @param __cc The compute capability. Must have a corresponding architecture id.
@@ -96,7 +101,12 @@ enum class arch_id : int
 [[nodiscard]] _CCCL_API constexpr arch_id to_arch_id(compute_capability __cc) noexcept
 {
   _CCCL_ASSERT(::cuda::__has_known_arch(__cc), "this compute capability cannot be converted to arch id");
-  return static_cast<arch_id>(__cc.get());
+  return ::cuda::__to_arch_id_unchecked(__cc);
+}
+
+[[nodiscard]] _CCCL_API constexpr arch_id __to_arch_specific_id_unchecked(compute_capability __cc) noexcept
+{
+  return static_cast<arch_id>(__cc.get() * __arch_specific_id_multiplier);
 }
 
 //! @brief Converts the compute capability to the architecture specific id.
@@ -108,7 +118,7 @@ enum class arch_id : int
 {
   _CCCL_ASSERT(::cuda::__has_known_specific_arch(__cc),
                "this compute capability cannot be converted to arch specific id");
-  return static_cast<arch_id>(__cc.get() * __arch_specific_id_multiplier);
+  return ::cuda::__to_arch_specific_id_unchecked(__cc);
 }
 
 _CCCL_END_NAMESPACE_CUDA
@@ -151,6 +161,22 @@ _CCCL_END_NAMESPACE_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
+[[nodiscard]] _CCCL_DEVICE_API inline _CCCL_TARGET_CONSTEXPR ::cuda::arch_id __current_arch_id_unchecked() noexcept
+{
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+  return ::cuda::__to_arch_id_unchecked(::cuda::device::current_compute_capability());
+#  elif _CCCL_DEVICE_COMPILATION()
+  constexpr auto __cc = ::cuda::device::current_compute_capability();
+#    if defined(__CUDA_ARCH_SPECIFIC__)
+  return ::cuda::__to_arch_specific_id_unchecked(__cc);
+#    else // ^^^ __CUDA_ARCH_SPECIFIC__ ^^^ / vvv !__CUDA_ARCH_SPECIFIC__ vvv
+  return ::cuda::__to_arch_id_unchecked(__cc);
+#    endif // ^^^ !__CUDA_ARCH_SPECIFIC__ ^^^
+#  else
+  return {};
+#  endif // ^^^ single-pass cuda compiler ^^^
+}
+
 //! @brief This function should cause a link error. If it happens, you are trying to compile the code for an unsupported
 //!        architecture (too new/old).
 _CCCL_DEVICE_API ::cuda::arch_id __unknown_cuda_architecture();
@@ -184,7 +210,7 @@ template <class _Dummy = void>
   constexpr auto __is_known_cc = ::cuda::std::__always_false_v<_Dummy> || ::cuda::__has_known_arch(__cc);
   static_assert(__is_known_cc, "unknown CUDA architecture");
   return ::cuda::to_arch_id(__cc);
-#    endif // ^^^ __CUDA_ARCH_SPECIFIC__ ^^^
+#    endif // ^^^ !__CUDA_ARCH_SPECIFIC__ ^^^
 #  else
   return {};
 #  endif // ^^^ single-pass cuda compiler ^^^

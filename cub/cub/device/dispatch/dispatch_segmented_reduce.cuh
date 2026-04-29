@@ -19,6 +19,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -97,13 +98,15 @@ private:
 public:
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch_id) const -> segmented_reduce_policy
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (const int ptx_version = static_cast<int>(arch_id) * 10; segmented_reduce_policy policy{};
-       extract_policy_dispatch_t dispatch{policy};
-       PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-       return policy;),
-      (return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        const int ptx_version = static_cast<int>(arch_id) * 10;
+                        segmented_reduce_policy policy{};
+                        extract_policy_dispatch_t dispatch{policy};
+                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+                        return policy;
+                      }),
+                      (return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();));
   }
 };
 } // namespace detail::segmented_reduce
@@ -520,7 +523,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   InitT init,
   size_t max_segment_size,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  PolicySelector                         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -536,7 +539,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const segmented_reduce_policy active_policy = policy_selector(arch_id);
+  const segmented_reduce_policy active_policy = select_policy<PolicySelector>(arch_id);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({
@@ -720,7 +723,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   ReductionOpT reduction_op,
   InitT init,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  PolicySelector                         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -740,7 +743,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
     return error;
   }
 
-  const segmented_reduce_policy active_policy = policy_selector(arch_id);
+  const segmented_reduce_policy active_policy = select_policy<PolicySelector>(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,

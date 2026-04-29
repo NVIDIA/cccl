@@ -661,7 +661,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   EqualityOpT equality_op,
   OffsetT num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  PolicySelector = {})
 {
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
@@ -678,7 +678,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return error;
   }
 
-  const non_trivial_runs::rle_non_trivial_runs_policy active_policy = policy_selector(arch_id);
+  const non_trivial_runs::rle_non_trivial_runs_policy active_policy = select_policy<PolicySelector>(arch_id);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({

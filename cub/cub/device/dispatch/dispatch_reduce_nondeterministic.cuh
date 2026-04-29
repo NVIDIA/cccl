@@ -25,6 +25,7 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -172,7 +173,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   InitT init,
   cudaStream_t stream,
   TransformOpT transform_op              = {},
-  PolicySelector policy_selector         = {},
+  PolicySelector                         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -183,7 +184,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
     return error;
   }
 
-  const reduce_policy active_policy = policy_selector(arch_id);
+  const reduce_policy active_policy = select_policy<PolicySelector>(arch_id);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({

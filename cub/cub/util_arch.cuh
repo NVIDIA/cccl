@@ -183,9 +183,9 @@ struct NoScaling
 [[nodiscard]] _CCCL_API constexpr ::cuda::arch_id current_tuning_arch() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
-  return ::cuda::to_arch_id(::cuda::compute_capability(__NVCOMPILER_CUDA_ARCH__ / 10));
+  return ::cuda::__to_arch_id_unchecked(::cuda::compute_capability{__NVCOMPILER_CUDA_ARCH__ / 10});
 #  elif _CCCL_DEVICE_COMPILATION()
-  return ::cuda::device::current_arch_id();
+  return ::cuda::device::__current_arch_id_unchecked();
 #  else // _CCCL_HOST_COMPILATION()
   return ::cuda::arch_id{};
 #  endif
@@ -196,18 +196,11 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class PolicySelector>
 [[nodiscard]] _CCCL_API constexpr auto select_policy(::cuda::arch_id arch_id)
 {
-  // todo(dabayer): enable this once current policies are rewritten to work with cuda::compute_capability
-  // if constexpr (::cuda::std::is_invocable_v<PolicySelector, ::cuda::arch_id>)
-  // {
-  //   return PolicySelector{}(arch_id);
-  // }
-  // else
-  // {
-  //   return PolicySelector{}(::cuda::compute_capability{arch_id});
-  // }
-  //
-  // Just convert arch-specific architectures to ordinary archs for now.
-  return PolicySelector{}(::cuda::arch_id{::cuda::compute_capability{arch_id}.get()});
+  // Currently, the tuning selectors should not care about specific architectures, so we convert the arch_id to the
+  // non-specific value.
+
+  // todo(dabayer): Invoke the selector with compute capability.
+  return PolicySelector{}(::cuda::__to_arch_id_unchecked(::cuda::compute_capability{arch_id}));
 }
 
 // Selects the tuning policy for the current_tuning_arch() architecture.

@@ -57,7 +57,7 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
 
   cuda::arch_id arch_id;
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
+  const auto target_block_size = cub::detail::select_policy<selector_t>(arch_id).lookback.block_threads;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
@@ -207,7 +207,7 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
 
   cuda::arch_id arch_id;
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
+  const auto target_block_size = cub::detail::select_policy<selector_t>(arch_id).lookback.block_threads;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};

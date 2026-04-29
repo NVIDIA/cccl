@@ -261,7 +261,7 @@ struct __align__({3}) items_storage_t {{
 using device_merge_sort_policy = {9};
 using namespace cub;
 using namespace cub::detail::merge_sort;
-static_assert(device_merge_sort_policy()(detail::current_tuning_arch()) == {10}, "Host generated and JIT compiled policy mismatch");
+static_assert(detail::current_policy<device_merge_sort_policy>() == {10}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_keys_it.value_type.size, // 0
     input_keys_it.value_type.alignment, // 1

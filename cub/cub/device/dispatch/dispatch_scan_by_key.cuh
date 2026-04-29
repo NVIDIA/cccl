@@ -645,14 +645,14 @@ struct DispatchScanByKey
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
                    ::std::stringstream ss;
-                   ss << policy_selector(arch_id);
+                   ss << cub::detail::select_policy<PolicySelectorT>(arch_id);
                    _CubLog("Dispatching DeviceScanByKey to arch %d with tuning: %s\n",
                            static_cast<int>(arch_id),
                            ss.str().c_str());
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+    const detail::scan_by_key::scan_by_key_policy active_policy = cub::detail::select_policy<PolicySelectorT>(arch_id);
 
     return DispatchScanByKey<KeysInputIteratorT,
                              ValuesInputIteratorT,
@@ -724,7 +724,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   InitValueT init_value,
   OffsetT num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  PolicySelector                         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
@@ -741,7 +741,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   NV_IF_TARGET(
     NV_IS_HOST, ({
       ::std::stringstream ss;
-      ss << policy_selector(arch_id);
+      ss << select_policy<PolicySelector>(arch_id);
       _CubLog("Dispatching DeviceScanByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
     }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
@@ -751,7 +751,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     using MaxPolicy = void;
   };
 
-  const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+  const detail::scan_by_key::scan_by_key_policy active_policy = select_policy<PolicySelector>(arch_id);
 
   return DispatchScanByKey<KeysInputIteratorT,
                            ValuesInputIteratorT,

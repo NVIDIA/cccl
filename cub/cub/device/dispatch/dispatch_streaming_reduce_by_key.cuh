@@ -17,6 +17,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
@@ -65,7 +66,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   ReductionOpT reduction_op,
   OffsetT num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  PolicySelector = {})
 {
   ::cuda::arch_id arch_id{};
   if (const auto error = CubDebug(ptx_arch_id(arch_id)))
@@ -73,7 +74,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     return error;
   }
 
-  const reduce_by_key_policy policy = policy_selector(arch_id);
+  const reduce_by_key_policy policy = select_policy<PolicySelector>(arch_id);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

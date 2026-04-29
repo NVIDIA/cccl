@@ -90,7 +90,7 @@ struct CudaDriverLauncherFactory
 
   ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
   {
-    arch_id = ::cuda::to_arch_id(::cuda::compute_capability(cc));
+    arch_id = ::cuda::__to_arch_id_unchecked(::cuda::compute_capability(cc));
     return ::cudaSuccess;
   }
 

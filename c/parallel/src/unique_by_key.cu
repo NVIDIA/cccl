@@ -259,7 +259,7 @@ using namespace cub;
 using namespace cub::detail::unique_by_key;
 using cub::detail::delay_constructor_policy;
 using cub::detail::delay_constructor_kind;
-static_assert(device_unique_by_key_policy()(detail::current_tuning_arch()) == {13}, "Host generated and JIT compiled policy mismatch");
+static_assert(detail::current_policy<device_unique_by_key_policy>() == {13}, "Host generated and JIT compiled policy mismatch");
 static_assert(
   cub::detail::unique_by_key::unique_by_key_vsmem_helper_t<
     cub::detail::policy_getter<device_unique_by_key_policy, detail::current_tuning_arch()>,

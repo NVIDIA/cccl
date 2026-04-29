@@ -13,6 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_arch.cuh>
+
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__utility/forward.h>
@@ -29,7 +31,7 @@ struct policy_getter : PolicySelector
 {
   _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
   {
-    return PolicySelector::operator()(ArchId);
+    return select_policy<PolicySelector>(ArchId);
   }
 };
 
@@ -39,18 +41,19 @@ struct device_policy_getter : PolicySelector
 {
   _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
   {
-    return PolicySelector::operator()(ArchId);
+    return select_policy<PolicySelector>(ArchId);
   }
 };
 
 #if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 #  if _CCCL_STD_VER < 2020
 template <typename PolicySelector, size_t N>
-_CCCL_API constexpr auto find_lowest_arch_with_same_policy(
-  PolicySelector policy_selector, size_t i, const ::cuda::std::array<::cuda::arch_id, N>& all_arches) -> ::cuda::arch_id
+_CCCL_API constexpr auto
+find_lowest_arch_with_same_policy(PolicySelector, size_t i, const ::cuda::std::array<::cuda::arch_id, N>& all_arches)
+  -> ::cuda::arch_id
 {
-  const auto policy = policy_selector(all_arches[i]);
-  while (i > 0 && policy_selector(all_arches[i - 1]) == policy)
+  const auto policy = select_policy<PolicySelector>(all_arches[i]);
+  while (i > 0 && select_policy<PolicySelector>(all_arches[i - 1]) == policy)
   {
     --i;
   }
@@ -66,13 +69,13 @@ struct lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArc
 {
   static_assert(sizeof...(CudaArches) == sizeof...(Is));
 
-  using policy_t = decltype(PolicySelector{}(::cuda::arch_id{}));
+  using policy_t = decltype(select_policy<PolicySelector>(::cuda::arch_id{}));
 
   static constexpr ::cuda::arch_id all_arches[sizeof...(Is)] = {::cuda::arch_id{(CudaArches * ArchMult) / 10}...};
 
   // GCC 7 has issues reusing the constexpr array of tuning policies in find_lowest below (it loses the constexpr-ness)
 #    if _CCCL_COMPILER(GCC, >=, 8)
-  static constexpr policy_t all_policies[sizeof...(Is)] = {PolicySelector{}(all_arches[Is])...};
+  static constexpr policy_t all_policies[sizeof...(Is)] = {select_policy<PolicySelector>(all_arches[Is])...};
 #    endif // _CCCL_COMPILER(GCC, <, 8)
 
   _CCCL_API static constexpr auto find_lowest(size_t i) -> ::cuda::arch_id
@@ -81,8 +84,8 @@ struct lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArc
     const auto& policy = all_policies[i];
     while (i > 0 && policy == all_policies[i - 1])
 #    else // _CCCL_COMPILER(GCC, >=, 8)
-    const auto& policy = PolicySelector{}(all_arches[i]);
-    while (i > 0 && policy == PolicySelector{}(all_arches[i - 1]))
+    const auto& policy = select_policy<PolicySelector>(all_arches[i]);
+    while (i > 0 && policy == select_policy<PolicySelector>(all_arches[i - 1]))
 #    endif // _CCCL_COMPILER(GCC, >=, 8)
     {
       --i;
@@ -96,7 +99,10 @@ struct lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArc
 
 template <int ArchMult, int... CudaArches, typename PolicySelector, typename FunctorT, size_t... Is>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_arch_list(
-  PolicySelector policy_selector, ::cuda::arch_id device_arch, FunctorT&& f, ::cuda::std::index_sequence<Is...>)
+  [[maybe_unused]] PolicySelector policy_selector,
+  ::cuda::arch_id device_arch,
+  FunctorT&& f,
+  ::cuda::std::index_sequence<Is...>)
 {
   _CCCL_ASSERT(((device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}) || ...),
                "device_arch must appear in the list of architectures compiled for");
@@ -106,11 +112,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_arch_list(
   // In C++20, we just create an integral_constant holding the policy, because policies are structural types in C++20.
   // This causes f to be only instantiated for each distinct policy, since the same policy for different arches results
   // in the same integral_constant type passed to f
-  using policy_t = decltype(policy_selector(::cuda::arch_id{}));
+  using policy_t = decltype(select_policy<PolicySelector>(::cuda::arch_id{}));
   (...,
    (device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}
-      ? (e = f(
-           ::cuda::std::integral_constant<policy_t, policy_selector(::cuda::arch_id{(CudaArches * ArchMult) / 10})>{}))
+      ? (e = f(::cuda::std::integral_constant<
+               policy_t,
+               select_policy<PolicySelector>(::cuda::arch_id{(CudaArches * ArchMult) / 10})>{}))
       : cudaSuccess));
 #  else // if _CCCL_STD_VER >= 2020
   // In C++17, we have to collapse architectures with the same policies ourselves, so we instantiate call_for_arch once
@@ -169,10 +176,10 @@ dispatch_arch(PolicySelector policy_selector, ::cuda::arch_id device_arch, F&& f
 // if we are compiling CCCL.C with runtime policies, we cannot query the policy hub at compile time
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, typename F>
-_CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_arch(PolicySelector policy_selector, ::cuda::arch_id device_arch, F&& f)
+_CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_arch(PolicySelector, ::cuda::arch_id device_arch, F&& f)
 {
   return f([&] {
-    return policy_selector(device_arch);
+    return select_policy<PolicySelector>(device_arch);
   });
 }
 #endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)

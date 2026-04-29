@@ -255,7 +255,7 @@ struct __align__({4}) output_storage_t {{
 using device_transform_policy = {8};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(detail::current_tuning_arch()) == {9}, "Host generated and JIT compiled policy mismatch");
+static_assert(detail::current_policy<device_transform_policy>() == {9}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1
@@ -454,7 +454,7 @@ struct __align__({6}) output_storage_t {{
 using device_transform_policy = {11};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(detail::current_tuning_arch()) == {12}, "Host generated and JIT compiled policy mismatch");
+static_assert(detail::current_policy<device_transform_policy>() == {12}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input1_it.value_type.size, // 1

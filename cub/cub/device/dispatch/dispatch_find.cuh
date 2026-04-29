@@ -95,7 +95,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   OffsetT num_items,
   PredicateT predicate,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  PolicySelector = {})
 {
   using output_t = it_value_t<OutputIteratorT>;
 
@@ -112,7 +112,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const find_policy active_policy = policy_selector(arch_id);
+  const find_policy active_policy = select_policy<PolicySelector>(arch_id);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

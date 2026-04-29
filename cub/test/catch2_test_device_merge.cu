@@ -109,7 +109,8 @@ C2H_TEST("DeviceMerge::MergeKeys almost tile-sized input sizes", "[merge][device
   cuda::arch_id arch_id{};
   REQUIRE(cub::detail::ptx_arch_id(arch_id) == cudaSuccess);
   const offset_t items_per_tile =
-    cub::detail::merge::policy_selector_from_types<key_t, cub::NullType, offset_t>{}(arch_id).items_per_thread;
+    cub::detail::select_policy<cub::detail::merge::policy_selector_from_types<key_t, cub::NullType, offset_t>>(arch_id)
+      .items_per_thread;
 
   test_keys<key_t>(items_per_tile - 1, 1);
   test_keys<key_t>(items_per_tile, 1);

@@ -22,6 +22,7 @@
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -335,7 +336,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   InitT init                             = {},
   cudaStream_t stream                    = {},
   TransformOpT transform_op              = {},
-  PolicySelector policy_selector         = {},
+  PolicySelector                         = {},
   KernelLauncherFactory launcher_factory = {})
 {
   // Get arch ID
@@ -345,7 +346,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const rfa_policy active_policy = policy_selector(arch_id);
+  const rfa_policy active_policy = select_policy<PolicySelector>(arch_id);
   const auto tile_items =
     static_cast<OffsetT>(active_policy.single_tile.block_threads * active_policy.single_tile.items_per_thread);
 

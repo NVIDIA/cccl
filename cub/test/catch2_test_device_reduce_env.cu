@@ -54,7 +54,8 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
 
   unsigned int target_block_size =
-    cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(arch_id)
+    cub::detail::select_policy<cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>>(
+      arch_id)
       .single_tile.block_threads;
 
   num_items_t num_items = 1;

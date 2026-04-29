@@ -362,7 +362,7 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
   {
     return error;
   }
-  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  arch_id = ::cuda::__to_arch_id_unchecked(::cuda::compute_capability(ptx_version / 10));
   return cudaSuccess;
 }
 
@@ -375,7 +375,7 @@ _CCCL_HOST_API cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
   {
     return error;
   }
-  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  arch_id = ::cuda::__to_arch_id_unchecked(::cuda::compute_capability(ptx_version / 10));
   return cudaSuccess;
 }
 } // namespace detail

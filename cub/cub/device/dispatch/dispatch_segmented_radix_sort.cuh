@@ -22,6 +22,7 @@
 
 #include <cub/device/dispatch/kernels/kernel_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -890,7 +891,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   bool is_overwrite_okay,
   cudaStream_t stream,
   DecomposerT decomposer                 = {},
-  PolicySelector policy_selector         = {},
+  PolicySelector                         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -909,7 +910,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const radix_sort_policy active_policy = policy_selector(arch_id);
+  const radix_sort_policy active_policy = select_policy<PolicySelector>(arch_id);
 
   return invoke_passes_segmented_radix_sort(
     d_temp_storage,

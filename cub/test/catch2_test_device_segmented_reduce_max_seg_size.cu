@@ -33,7 +33,9 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
 
   cuda::arch_id arch_id{};
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  auto full_policy = cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{}(arch_id);
+  auto full_policy =
+    cub::detail::select_policy<cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>>(
+      arch_id);
 
   const int small_segment_size  = full_policy.small_reduce.items_per_tile();
   const int medium_segment_size = full_policy.medium_reduce.items_per_tile();

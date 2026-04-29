@@ -189,9 +189,7 @@ using device_segmented_reduce_policy = {8};
 using namespace cub;
 using namespace cub::detail::reduce;
 using namespace cub::detail::segmented_reduce;
-static_assert(
-  device_segmented_reduce_policy()(detail::current_tuning_arch()) == {9},
-  "Host generated and JIT compiled policy mismatch");
+static_assert(detail::current_policy<device_segmented_reduce_policy>() == {9}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1

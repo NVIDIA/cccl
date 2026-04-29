@@ -303,7 +303,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   BufferSizeIteratorT buffer_sizes,
   ::cuda::std::int64_t num_buffers,
   cudaStream_t stream,
-  PolicySelectorT policy_selector = {})
+  PolicySelectorT = {})
 {
   using per_invocation_buffer_offset_t = detail::batch_memcpy::per_invocation_buffer_offset_t;
   using BufferSizeT                    = cub::detail::it_value_t<BufferSizeIteratorT>;
@@ -315,7 +315,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
-  const batch_memcpy_policy active_policy = policy_selector(arch_id);
+  const batch_memcpy_policy active_policy = select_policy<PolicySelectorT>(arch_id);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({

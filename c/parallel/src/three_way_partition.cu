@@ -196,7 +196,7 @@ using namespace cub;
 using namespace cub::detail;
 using namespace cub::detail::three_way_partition;
 static_assert(
-  device_three_way_partition_policy_selector()(current_tuning_arch()) == {11},
+  detail::current_policy<device_three_way_partition_policy_selector>() == {11},
   "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
