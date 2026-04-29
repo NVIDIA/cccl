@@ -106,35 +106,29 @@ template <::cuda::std::int64_t MinNumSegments = 1,
           ::cuda::std::int64_t MaxNumSegments = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
 using num_segments_uniform = params::uniform_param<::cuda::std::int64_t, MinNumSegments, MaxNumSegments>;
 
-// Number of segments via iterator
-template <typename NumSegmentsItT,
-          ::cuda::std::int64_t MinNumSegments = 1,
-          ::cuda::std::int64_t MaxNumSegments = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
-using num_segments_per_segment =
-  params::per_segment_param<NumSegmentsItT, ::cuda::std::int64_t, MinNumSegments, MaxNumSegments>;
-
 // ------------ TOTAL NUMBER OF ITEMS PARAMETER TYPES ------------
 
 // Number of items guarantee
-template <::cuda::std::int64_t MinNumItemsT = 1,
-          ::cuda::std::int64_t MaxNumItems  = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+template <::cuda::std::int64_t MinNumItems = 1,
+          ::cuda::std::int64_t MaxNumItems = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
 struct total_num_items_guarantee
 {
-  static constexpr ::cuda::std::int64_t static_min_num_items = MinNumItemsT;
-  static constexpr ::cuda::std::int64_t static_max_num_items = MaxNumItems;
+  using value_type                                 = ::cuda::std::int64_t;
+  static constexpr value_type static_min_num_items = MinNumItems;
+  static constexpr value_type static_max_num_items = MaxNumItems;
 
-  ::cuda::std::int64_t min_num_items = MinNumItemsT;
-  ::cuda::std::int64_t max_num_items = MaxNumItems;
+  value_type min_num_items = MinNumItems;
+  value_type max_num_items = MaxNumItems;
 
   // Create default ctor, 1 param ctor taking min, 2 param ctor taking min/max
   total_num_items_guarantee() = default;
 
-  _CCCL_HOST_DEVICE total_num_items_guarantee(::cuda::std::int64_t num_items)
+  _CCCL_HOST_DEVICE total_num_items_guarantee(value_type num_items)
       : min_num_items(num_items)
       , max_num_items(num_items)
   {}
 
-  _CCCL_HOST_DEVICE total_num_items_guarantee(::cuda::std::int64_t min_items, ::cuda::std::int64_t max_items)
+  _CCCL_HOST_DEVICE total_num_items_guarantee(value_type min_items, value_type max_items)
       : min_num_items(min_items)
       , max_num_items(max_items)
   {}
