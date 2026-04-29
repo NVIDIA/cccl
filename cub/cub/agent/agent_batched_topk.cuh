@@ -67,14 +67,22 @@ struct agent_batched_topk_worker_per_segment
   using segment_size_val_t = typename SegmentSizeParameterT::value_type;
   using num_segments_val_t = typename NumSegmentsParameterT::value_type;
 
-  static constexpr worker_policy active_policy = PolicyGetter{}();
+  static constexpr auto policy                 = PolicyGetter{}();
+  static constexpr worker_policy active_policy = policy.worker_per_segment_policy;
 
-  static constexpr int block_threads                 = active_policy.block_threads;
-  static constexpr int items_per_thread              = active_policy.items_per_thread;
-  static constexpr int tile_size                     = block_threads * items_per_thread;
-  static constexpr int epilogue_items_per_thread     = active_policy.epilogue.items_per_thread;
-  static constexpr int epilogue_tile_size            = block_threads * epilogue_items_per_thread;
-  static constexpr int large_segment_agent_tile_size = active_policy.epilogue.multi_worker_tile_size;
+  // For block-topk (and keys/values load/store):
+  static constexpr int block_threads    = active_policy.block_threads;
+  static constexpr int items_per_thread = active_policy.items_per_thread;
+  static constexpr int tile_size        = block_threads * items_per_thread;
+
+  // For block-scan (and offsets load/store):
+  static constexpr int epilogue_items_per_thread = active_policy.epilogue.items_per_thread;
+  static constexpr int epilogue_tile_size        = block_threads * epilogue_items_per_thread;
+
+  // Number used for preprocessing segment-size data, not for tuning => should not affect performance of this agent.
+  static constexpr multi_worker_policy multi_worker_per_segment_policy = policy.multi_worker_per_segment_policy;
+  static constexpr int multi_worker_per_segment_tile_size =
+    multi_worker_per_segment_policy.block_threads * multi_worker_per_segment_policy.items_per_thread;
 
   static constexpr bool only_small_segments = params::static_max_value_v<SegmentSizeParameterT> <= tile_size;
 
@@ -192,7 +200,7 @@ struct agent_batched_topk_worker_per_segment
         const auto large_segment_queue_idx            = atomicAdd(&d_counters->large_segments_count, 1ull);
         d_large_segments_ids[large_segment_queue_idx] = static_cast<num_segments_val_t>(segment_id);
         d_large_segments_tile_offsets[large_segment_queue_idx] =
-          static_cast<::cuda::std::int64_t>(::cuda::ceil_div(segment_size, large_segment_agent_tile_size));
+          static_cast<::cuda::std::int64_t>(::cuda::ceil_div(segment_size, multi_worker_per_segment_tile_size));
       }
     }
     else

@@ -214,7 +214,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 {
   // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
   // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
-  constexpr worker_policy selected = find_smallest_covering_policy<
+  constexpr auto policy = find_smallest_covering_policy<
     PolicySelector,
     SegmentSizeParameterT,
     KeyInputItItT,
@@ -225,13 +225,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     KParameterT,
     SelectDirectionParameterT,
     NumSegmentsParameterT>::policy;
-  static constexpr int worker_per_segment_tile_size = selected.block_threads * selected.items_per_thread;
+  constexpr worker_policy worker_per_segment_policy             = policy.worker_per_segment_policy;
+  constexpr multi_worker_policy multi_worker_per_segment_policy = policy.multi_worker_per_segment_policy;
+
+  static constexpr int worker_per_segment_tile_size =
+    worker_per_segment_policy.block_threads * worker_per_segment_policy.items_per_thread;
   static constexpr bool any_small_segments =
     params::static_min_value_v<SegmentSizeParameterT> <= worker_per_segment_tile_size;
   static constexpr bool only_small_segments =
     params::static_max_value_v<SegmentSizeParameterT> <= worker_per_segment_tile_size;
-
-  static constexpr auto large_segment_agent_tile_size = selected.epilogue.multi_worker_tile_size;
 
   // Allocation layout:
   //   only_small_segments: [0] dummy.
@@ -243,7 +245,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using num_segments_val_t                        = typename NumSegmentsParameterT::value_type;
   using segment_size_scan_offset_t                = detail::choose_offset_t<num_segments_val_t>;
   using segment_size_scan_input_op_t              = segment_size_to_tile_count_op<SegmentSizeParameterT>;
-  const segment_size_scan_input_op_t segment_size_scan_input_op{segment_sizes, large_segment_agent_tile_size};
+  static constexpr auto multi_worker_per_segment_tile_size =
+    multi_worker_per_segment_policy.block_threads * multi_worker_per_segment_policy.items_per_thread;
+  const segment_size_scan_input_op_t segment_size_scan_input_op{segment_sizes, multi_worker_per_segment_tile_size};
   // Transform iterator over [0, num_segments) producing the tile-count for each segment.
   [[maybe_unused]] const auto segment_size_scan_input_it = ::cuda::transform_iterator(
     ::cuda::counting_iterator<num_segments_val_t>{num_segments_val_t{0}}, segment_size_scan_input_op);
@@ -294,10 +298,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static_assert(!params::is_per_segment_param_v<NumSegmentsParameterT>,
                 "Only uniform segment sizes are currently supported.");
 
-  // TODO (elstehle): support larger number of segments through multiple kernel launches
-  const int grid_dim      = static_cast<int>(num_segments.get_param(0));
-  constexpr int block_dim = selected.block_threads;
-
   if constexpr (any_small_segments)
   {
     if constexpr (!only_small_segments)
@@ -309,7 +309,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         return error;
       }
     }
-
+    const int grid_dim      = static_cast<int>(num_segments.get_param(0));
+    constexpr int block_dim = worker_per_segment_policy.block_threads;
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
             .doit(device_segmented_topk_kernel<PolicySelector,
@@ -358,7 +359,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   if constexpr (!only_small_segments)
   {
-    // TODO (elstehle): Implement the large segment agent.
+    // TODO (elstehle): support larger number of segments through multiple kernel launches
     // Depending on any_small_segments, we need to either:
     // - Indirectly get the large segment parameters via the queued large segment IDs
     // - Directly take the segment parameters since all segments are large

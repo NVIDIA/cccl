@@ -34,6 +34,11 @@ template <typename PolicySelector, typename SegmentSizeParameterT, typename... A
 struct find_smallest_covering_policy
 {
 private:
+  struct policy_t
+  {
+    worker_policy worker_per_segment_policy;
+    multi_worker_policy multi_worker_per_segment_policy;
+  };
   static constexpr ::cuda::std::int64_t max_segment_size = params::static_max_value_v<SegmentSizeParameterT>;
   static constexpr batched_topk_policy active_policy     = current_policy<PolicySelector>();
 
@@ -53,7 +58,8 @@ private:
       {
         _CCCL_API constexpr auto operator()() const
         {
-          return active_policy.worker_per_segment_policies[Index];
+          return policy_t{active_policy.worker_per_segment_policies[Index],
+                          active_policy.multi_worker_per_segment_policy};
         }
       };
       using candidate_agent_t  = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
@@ -76,7 +82,8 @@ private:
 public:
   // TODO (elstehle): extend support for variable-size segments
   static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
-  static constexpr worker_policy policy = active_policy.worker_per_segment_policies[selected_index];
+  static constexpr policy_t policy = {
+    active_policy.worker_per_segment_policies[selected_index], active_policy.multi_worker_per_segment_policy};
 
   struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
   {
@@ -114,7 +121,7 @@ __launch_bounds__(int(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>::policy.block_threads)) __global__
+    NumSegmentsParameterT>::policy.worker_per_segment_policy.block_threads)) __global__
   void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
