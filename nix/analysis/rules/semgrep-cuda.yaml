@@ -1,0 +1,115 @@
+rules:
+  # -- CUDA API Error Checking --
+  - id: cuda-unchecked-malloc
+    patterns:
+      - pattern: cudaMalloc(...)
+      - pattern-not-inside: |
+          $RET = cudaMalloc(...);
+          ...
+          if ($RET != cudaSuccess) { ... }
+      - pattern-not-inside: |
+          if (cudaMalloc(...) != cudaSuccess) { ... }
+      - pattern-not-inside: CUDACHECK(cudaMalloc(...))
+      - pattern-not-inside: CUDACHECKGOTO(cudaMalloc(...), ...)
+    message: cudaMalloc() return value not checked -- GPU allocation can fail
+    languages: [cpp, c]
+    severity: WARNING
+
+  - id: cuda-unchecked-memcpy
+    patterns:
+      - pattern: cudaMemcpy(...)
+      - pattern-not-inside: |
+          $RET = cudaMemcpy(...);
+          ...
+          if ($RET != cudaSuccess) { ... }
+      - pattern-not-inside: CUDACHECK(cudaMemcpy(...))
+      - pattern-not-inside: CUDACHECKGOTO(cudaMemcpy(...), ...)
+    message: cudaMemcpy() return value not checked -- transfer can fail
+    languages: [cpp, c]
+    severity: WARNING
+
+  - id: cuda-unchecked-launch
+    patterns:
+      - pattern: cudaLaunchKernel(...)
+      - pattern-not-inside: |
+          cudaLaunchKernel(...);
+          ...
+          cudaGetLastError();
+      - pattern-not-inside: CUDACHECK(cudaLaunchKernel(...))
+      - pattern-not-inside: CUDACHECKGOTO(cudaLaunchKernel(...), ...)
+    message: Kernel launch not followed by error check -- use cudaGetLastError()
+    languages: [cpp, c]
+    severity: WARNING
+
+  # -- Memory Lifecycle --
+  - id: cuda-missing-free
+    pattern: |
+      cudaMalloc(&$PTR, ...);
+      ...
+      return ...;
+    message: cudaMalloc without matching cudaFree before return -- potential GPU memory leak
+    languages: [cpp, c]
+    severity: WARNING
+
+  - id: cuda-double-free
+    pattern: |
+      cudaFree($PTR);
+      ...
+      cudaFree($PTR);
+    message: Potential double cudaFree on same pointer
+    languages: [cpp, c]
+    severity: ERROR
+
+  # -- Synchronization --
+  - id: cuda-missing-sync
+    pattern: |
+      cudaMemcpyAsync(..., $STREAM);
+      ...
+      $USE;
+    message: Async memcpy without synchronization before use -- add cudaStreamSynchronize()
+    languages: [cpp, c]
+    severity: WARNING
+
+  - id: cuda-device-sync-in-loop
+    pattern: |
+      for (...) {
+        ...
+        cudaDeviceSynchronize();
+        ...
+      }
+    message: cudaDeviceSynchronize() in loop is expensive -- consider cudaStreamSynchronize()
+    languages: [cpp, c]
+    severity: INFO
+
+  # -- Stream/Event Management --
+  - id: cuda-missing-stream-destroy
+    pattern: |
+      cudaStreamCreate(&$STREAM);
+      ...
+      return ...;
+    message: cudaStreamCreate without matching cudaStreamDestroy before return
+    languages: [cpp, c]
+    severity: WARNING
+
+  - id: cuda-event-missing-destroy
+    pattern: |
+      cudaEventCreate(&$EVENT);
+      ...
+      return ...;
+    message: cudaEventCreate without matching cudaEventDestroy before return
+    languages: [cpp, c]
+    severity: WARNING
+
+  # -- Device Management --
+  - id: cuda-set-device-unchecked
+    patterns:
+      - pattern: cudaSetDevice(...)
+      - pattern-not-inside: |
+          $RET = cudaSetDevice(...);
+          ...
+          if ($RET != cudaSuccess) { ... }
+      - pattern-not-inside: CUDACHECK(cudaSetDevice(...))
+      - pattern-not-inside: CUDACHECKGOTO(cudaSetDevice(...), ...)
+    message: cudaSetDevice() return value not checked -- device may not exist
+    languages: [cpp, c]
+    severity: WARNING

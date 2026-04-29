@@ -1,0 +1,132 @@
+rules:
+  # -- Command Injection --
+  - id: py-os-system
+    pattern: os.system($CMD)
+    message: os.system() invokes shell -- use subprocess.run() with shell=False
+    languages: [python]
+    severity: WARNING
+
+  - id: py-shell-true
+    pattern: subprocess.run(..., shell=True, ...)
+    message: subprocess with shell=True risks command injection
+    languages: [python]
+    severity: WARNING
+
+  - id: py-popen-shell
+    pattern: subprocess.Popen($CMD, shell=True, ...)
+    message: Popen with shell=True risks command injection
+    languages: [python]
+    severity: WARNING
+
+  # -- Path Traversal --
+  - id: py-open-user-input
+    pattern: open($PATH, ...)
+    message: Verify path is sanitized before opening -- risk of path traversal
+    languages: [python]
+    severity: INFO
+
+  # -- Insecure Deserialization --
+  - id: py-pickle-load
+    patterns:
+      - pattern-either:
+          - pattern: pickle.load(...)
+          - pattern: pickle.loads(...)
+    message: pickle.load() can execute arbitrary code -- use safe alternatives (json, msgpack)
+    languages: [python]
+    severity: WARNING
+
+  - id: py-yaml-unsafe-load
+    pattern: yaml.load($DATA)
+    message: yaml.load() without Loader is unsafe -- use yaml.safe_load()
+    languages: [python]
+    severity: WARNING
+
+  # -- Hardcoded Secrets --
+  - id: py-hardcoded-password
+    patterns:
+      - pattern-either:
+          - pattern: password = "..."
+          - pattern: PASSWORD = "..."
+          - pattern: passwd = "..."
+          - pattern: secret = "..."
+          - pattern: SECRET = "..."
+    message: Potential hardcoded secret -- use environment variables or secret management
+    languages: [python]
+    severity: WARNING
+
+  - id: py-hardcoded-token
+    patterns:
+      - pattern-either:
+          - pattern: token = "..."
+          - pattern: TOKEN = "..."
+          - pattern: api_key = "..."
+          - pattern: API_KEY = "..."
+    message: Potential hardcoded API token -- use environment variables
+    languages: [python]
+    severity: WARNING
+
+  # -- Insecure Hashing --
+  - id: py-md5-usage
+    pattern: hashlib.md5(...)
+    message: MD5 is cryptographically broken -- use SHA-256 or SHA-3
+    languages: [python]
+    severity: WARNING
+
+  - id: py-sha1-usage
+    pattern: hashlib.sha1(...)
+    message: SHA-1 is cryptographically weak -- use SHA-256 or SHA-3
+    languages: [python]
+    severity: INFO
+
+  # -- Debug/Development Artifacts --
+  - id: py-debug-breakpoint
+    patterns:
+      - pattern-either:
+          - pattern: breakpoint()
+          - pattern: pdb.set_trace()
+          - pattern: ipdb.set_trace()
+    message: Debug breakpoint left in code -- remove before production
+    languages: [python]
+    severity: WARNING
+
+  - id: py-print-statement
+    pattern: print(...)
+    message: print() in production code -- consider using logging module
+    languages: [python]
+    severity: INFO
+
+  # -- Exception Handling --
+  - id: py-bare-except
+    pattern: |
+      except:
+        ...
+    message: Bare except catches all exceptions including SystemExit/KeyboardInterrupt
+    languages: [python]
+    severity: WARNING
+
+  - id: py-broad-except
+    patterns:
+      - pattern: |
+          except Exception:
+              pass
+    message: Broad except with pass silently ignores all errors
+    languages: [python]
+    severity: WARNING
+
+  # -- SQL Injection --
+  - id: py-sql-format-string
+    patterns:
+      - pattern: cursor.execute(f"...", ...)
+      - pattern: cursor.execute("..." + $VAR, ...)
+      - pattern: cursor.execute("...".format(...), ...)
+      - pattern: cursor.execute("..." % $VAR, ...)
+    message: SQL query built with string formatting -- use parameterized queries
+    languages: [python]
+    severity: ERROR
+
+  # -- Temporary Files --
+  - id: py-insecure-tempfile
+    pattern: tempfile.mktemp(...)
+    message: mktemp() is insecure (race condition) -- use mkstemp() or NamedTemporaryFile
+    languages: [python]
+    severity: WARNING
