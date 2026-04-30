@@ -20,7 +20,7 @@
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/limits>

@@ -297,7 +297,7 @@ struct policy_selector_from_hub
   using max_policy = typename PolicyHub::MaxPolicy;
 
   // this is only called in device code, so we can ignore the arch parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_sort_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> segmented_sort_policy
   {
     using ap = typename PolicyHub::MaxPolicy::ActivePolicy;
     using lp = typename ap::LargeSegmentPolicy;
@@ -1276,24 +1276,26 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return buffer.d_buffers[final_selector];
   };
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) -> cudaError_t {
+  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
     check_policy<keys_only>(policy_getter); // MSVC fails to evaluate static_asserts inside this lambda, so move them to
                                             // a function
     CUB_DETAIL_CONSTEXPR_ISH const segmented_sort_policy active_policy = policy_getter();
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST, ({
-        ::std::stringstream ss;
-        ss << active_policy;
-        _CubLog("Dispatching DeviceSegmentedSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
-      }))
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceSegmentedSort to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const int radix_bits = active_policy.large_segment.radix_bits;

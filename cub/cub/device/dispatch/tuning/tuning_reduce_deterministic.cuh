@@ -17,7 +17,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -48,9 +48,9 @@ struct policy_selector
   type_t accum_t;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rfa_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
   {
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       // only tuned for float, fall through for other types
       if (accum_t == type_t::float32)
@@ -62,7 +62,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       // only tuned for float and double, fall through for other types
       if (accum_t == type_t::float32)
@@ -81,7 +81,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{6, 0})
     {
       const auto scaled = scale_mem_bound(256, 16, accum_size);
       return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
@@ -98,9 +98,9 @@ struct policy_selector
 template <typename AccumT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rfa_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
   {
-    return policy_selector{classify_type<AccumT>, int{sizeof(AccumT)}}(arch);
+    return policy_selector{classify_type<AccumT>, int{sizeof(AccumT)}}(cc);
   }
 };
 } // namespace detail::rfa

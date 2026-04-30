@@ -19,7 +19,7 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__utility/in_range.h>
 
 CUB_NAMESPACE_BEGIN

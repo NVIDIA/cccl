@@ -428,7 +428,7 @@ template <typename RandomAccessIteratorTupleIn,
           typename TransformOp,
           typename KernelSource,
           typename KernelLauncherFactory>
-struct invoke_for_arch;
+struct invoke_for_cc;
 
 template <typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
@@ -437,13 +437,13 @@ template <typename... RandomAccessIteratorsIn,
           typename TransformOp,
           typename KernelSource,
           typename KernelLauncherFactory>
-struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                       RandomAccessIteratorOut,
-                       Offset,
-                       Predicate,
-                       TransformOp,
-                       KernelSource,
-                       KernelLauncherFactory>
+struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                     RandomAccessIteratorOut,
+                     Offset,
+                     Predicate,
+                     TransformOp,
+                     KernelSource,
+                     KernelLauncherFactory>
 {
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
   RandomAccessIteratorOut out;
@@ -453,7 +453,7 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   cudaStream_t stream;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
-  ::cuda::arch_id arch_id;
+  ::cuda::compute_capability cc;
 
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t operator()(PolicyGetter policy_getter) const
@@ -465,7 +465,10 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     NV_IF_TARGET(NV_IS_HOST, ({
                    ::std::stringstream ss;
                    ss << active_policy;
-                   _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                   _CubLog("Dispatching DeviceTransform to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
@@ -478,7 +481,7 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         ::cuda::std::move(pred),
         ::cuda::std::move(op),
         stream,
-        bulk_copy_alignment(arch_id),
+        bulk_copy_alignment(cc),
         [&](int tile_size, int alignment) {
           return bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
             kernel_source.InputIteratorInfos(), tile_size, alignment);
@@ -561,22 +564,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return cudaSuccess;
   }
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  return dispatch_arch(
+  return dispatch_compute_cap(
     policy_selector,
-    arch_id,
-    invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                    RandomAccessIteratorOut,
-                    Offset,
-                    Predicate,
-                    TransformOp,
-                    KernelSource,
-                    KernelLauncherFactory>{
+    cc,
+    invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                  RandomAccessIteratorOut,
+                  Offset,
+                  Predicate,
+                  TransformOp,
+                  KernelSource,
+                  KernelLauncherFactory>{
       ::cuda::std::move(in),
       ::cuda::std::move(out),
       num_items,
@@ -585,7 +588,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
       stream,
       kernel_source,
       launcher_factory,
-      arch_id});
+      cc});
 }
 } // namespace detail::transform
 CUB_NAMESPACE_END

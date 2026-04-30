@@ -310,19 +310,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using BLevBufferOffsetTileState      = cub::ScanTileState<per_invocation_buffer_offset_t>;
   using BLevBlockOffsetTileState       = cub::ScanTileState<BlockOffsetT>;
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
-  const batch_memcpy_policy active_policy = policy_selector(arch_id);
+  const batch_memcpy_policy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
                  ss << active_policy;
-                 _CubLog("Dispatching DeviceBatchMemcpy to arch %d with tuning: %s\n",
-                         static_cast<int>(arch_id),
+                 _CubLog("Dispatching DeviceBatchMemcpy to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
                          ss.str().c_str());
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)

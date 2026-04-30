@@ -11,7 +11,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/iterator>
 
@@ -298,10 +298,10 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  cuda::arch_id arch_id{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
 
-  const auto target_block_size = selector_t{}(arch_id).block_threads;
+  const auto target_block_size = selector_t{}(cc).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys_in        = c2h::device_vector<key_t>{0};

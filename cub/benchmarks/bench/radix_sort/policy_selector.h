@@ -9,7 +9,8 @@ struct policy_selector
 {
   using DominantT = cuda::std::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::detail::radix_sort::radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> ::cub::detail::radix_sort::radix_sort_policy
   {
     const auto onesweep = [] {
       const auto scaled =

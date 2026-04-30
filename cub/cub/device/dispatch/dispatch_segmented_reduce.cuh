@@ -95,11 +95,11 @@ private:
   };
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch_id) const -> segmented_reduce_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_reduce_policy
   {
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
-      (const int ptx_version = static_cast<int>(arch_id) * 10; segmented_reduce_policy policy{};
+      (const int ptx_version = cc.get() * 10; segmented_reduce_policy policy{};
        extract_policy_dispatch_t dispatch{policy};
        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
        return policy;),
@@ -530,20 +530,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get arch ID
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const segmented_reduce_policy active_policy = policy_selector(arch_id);
+  const segmented_reduce_policy active_policy = policy_selector(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST, ({
-      ::std::stringstream ss;
-      ss << active_policy;
-      _CubLog("Dispatching DeviceSegmentedReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
-    }))
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceSegmentedReduce to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   // Compute segments_per_block based on max_segment_size hint
@@ -730,18 +732,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   }
 
   // Get arch ID
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const segmented_reduce_policy active_policy = policy_selector(arch_id);
+  const segmented_reduce_policy active_policy = policy_selector(cc);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,
-    (::std::stringstream ss; ss << active_policy; _CubLog(
-       "Dispatching DeviceFixedSizeSegmentedReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+    (::std::stringstream ss; ss << active_policy;
+     _CubLog("Dispatching DeviceFixedSizeSegmentedReduce to compute capability %d.%d with tuning: %s\n",
+             cc.major_cap(),
+             cc.minor_cap(),
+             ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   const auto tile_size = active_policy.large_reduce.block_threads * active_policy.large_reduce.items_per_thread;

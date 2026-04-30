@@ -14,7 +14,8 @@
 template <typename AccumT>
 struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::reduce::reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce::reduce_policy
   {
     const auto [items, threads] =
       cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
