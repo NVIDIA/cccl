@@ -87,7 +87,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     cub::NullType,
-    std::uint64_t,
+    cub::detail::choose_offset_t<std::uint64_t>,
     AccumT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
@@ -196,7 +196,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     InitValueT,
-    std::uint64_t,
+    cub::detail::choose_offset_t<std::uint64_t>,
     InitValueT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
