@@ -24,12 +24,9 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/iterator>
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN
 
