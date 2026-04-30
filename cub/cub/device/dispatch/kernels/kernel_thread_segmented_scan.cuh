@@ -207,6 +207,73 @@ private:
   ScanOpT scan_op; ///< Binary associative scan operator
   InitValueT initial_value; ///< The initial value element for ScanOpT
 
+  struct single_segment_scan_scope_t
+  {
+    agent_thread_segmented_scan& agent;
+
+    template <typename IteratorT, typename ItemT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    load(IteratorT it, ItemT (&items)[items_per_thread], int chunk_size, ItemT oob_default)
+    {
+      if (chunk_size == tile_items)
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int k = 0; k < items_per_thread; ++k)
+        {
+          items[k] = it[k];
+        }
+      }
+      else
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int k = 0; k < items_per_thread; ++k)
+        {
+          items[k] = (k < chunk_size) ? it[k] : oob_default;
+        }
+      }
+    }
+
+    template <typename ItemT, typename InitValueTy, typename OpT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    scan_first_tile(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& aggregate)
+    {
+      agent.scan_first_tile(items, init_value, scan_op, aggregate);
+    }
+
+    template <typename ItemT, typename OpT, typename PrefixCallbackT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    scan_later_tile(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
+    {
+      agent.scan_later_tile(items, scan_op, prefix_op);
+    }
+
+    template <typename IteratorT, typename ItemT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void store(IteratorT it, ItemT (&items)[items_per_thread], int chunk_size)
+    {
+      if (chunk_size == tile_items)
+      {
+        _CCCL_PRAGMA_UNROLL()
+        for (int k = 0; k < items_per_thread; ++k)
+        {
+          it[k] = items[k];
+        }
+      }
+      else
+      {
+        _CCCL_PRAGMA_UNROLL()
+        for (int k = 0; k < items_per_thread; ++k)
+        {
+          if (k < chunk_size)
+          {
+            it[k] = items[k];
+          }
+        }
+      }
+    }
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void sync() {}
+  };
+
 public:
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
@@ -249,70 +316,16 @@ private:
         const OffsetT input_begin_idx  = d_input_begin_idx[work_id];
         const OffsetT input_end_idx    = (::cuda::std::max<OffsetT>) (d_input_end_idx[work_id], input_begin_idx);
         const OffsetT output_begin_idx = d_output_begin_idx[work_id];
-        const OffsetT segment_size     = input_end_idx - input_begin_idx;
 
-        constexpr auto max_chunk_size = static_cast<OffsetT>(items_per_thread);
-        const OffsetT num_chunks      = ::cuda::ceil_div(segment_size, max_chunk_size);
-
-        augmented_accum_t exclusive_prefix;
-        augmented_accum_t items[items_per_thread];
-        for (OffsetT chunk_id = 0; chunk_id < num_chunks; ++chunk_id)
-        {
-          const OffsetT chunk_begin = input_begin_idx + chunk_id * max_chunk_size;
-          const OffsetT chunk_end   = chunk_begin + max_chunk_size;
-          const OffsetT chunk_size  = (::cuda::std::min) (chunk_end, input_end_idx) - chunk_begin;
-
-          const bool entire_tile = (chunk_size == max_chunk_size);
-          // load data
-          if (entire_tile)
-          {
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int k = 0; k < items_per_thread; ++k)
-            {
-              items[k] = d_in[chunk_begin + k];
-            }
-          }
-          else
-          {
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int k = 0; k < items_per_thread; ++k)
-            {
-              items[k] = (k < chunk_size) ? d_in[chunk_begin + k] : augmented_accum_t{};
-            }
-          };
-
-          // compute scan
-          if (chunk_id == 0)
-          {
-            scan_first_tile(items, initial_value, scan_op, exclusive_prefix);
-          }
-          else
-          {
-            scan_later_tile(items, scan_op, exclusive_prefix);
-          }
-
-          // store data
-          const OffsetT output_idx = output_begin_idx + chunk_id * max_chunk_size;
-          if (entire_tile)
-          {
-            _CCCL_PRAGMA_UNROLL()
-            for (int k = 0; k < items_per_thread; ++k)
-            {
-              d_out[output_idx + k] = items[k];
-            }
-          }
-          else
-          {
-            _CCCL_PRAGMA_UNROLL()
-            for (int k = 0; k < items_per_thread; ++k)
-            {
-              if (k < chunk_size)
-              {
-                d_out[output_idx + k] = items[k];
-              }
-            }
-          };
-        }
+        single_segment_scan_chunked<items_per_thread, tile_items, OffsetT, AccumT>(
+          single_segment_scan_scope_t{*this},
+          d_in,
+          d_out,
+          input_begin_idx,
+          input_end_idx,
+          output_begin_idx,
+          scan_op,
+          initial_value);
       }
     }
   }
@@ -340,6 +353,7 @@ private:
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     hv_t exclusive_prefix;
+    worker_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
     hv_t items[items_per_thread];
     bool flags[items_per_thread];
     OffsetT out_offsets[items_per_thread];
@@ -383,7 +397,7 @@ private:
       }
       else
       {
-        scan_later_tile(items, augmented_scan_op, exclusive_prefix);
+        scan_later_tile(items, augmented_scan_op, prefix_op);
       }
 
       // store
@@ -453,13 +467,13 @@ private:
     }
   }
 
-  template <typename ItemTy, typename ScanOpTy, bool IsInclusive = is_inclusive>
+  template <typename ItemTy, typename ScanOpTy, typename PrefixCallbackT, bool IsInclusive = is_inclusive>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  scan_later_tile(ItemTy (&items)[items_per_thread], ScanOpTy scan_op, ItemTy& exclusive_prefix)
+  scan_later_tile(ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallbackT& prefix_op)
   {
     const ItemTy thread_aggregate = cub::ThreadReduce(items, scan_op);
 
-    const ItemTy& init_v = exclusive_prefix;
+    const ItemTy init_v = prefix_op.current_prefix();
     if constexpr (IsInclusive)
     {
       detail::ThreadScanInclusive(items, items, scan_op, init_v);
@@ -468,7 +482,7 @@ private:
     {
       detail::ThreadScanExclusive(items, items, scan_op, init_v);
     }
-    exclusive_prefix = scan_op(exclusive_prefix, thread_aggregate);
+    prefix_op(thread_aggregate);
   }
 };
 
