@@ -76,7 +76,8 @@ template <class _Tp>
   // This is attained at acosh(x) * MIN_DENORMAL_FLOAT = MAX_FLOAT.
   // aka x ~= (MAX_FLOAT_EXPONENT - MIN_DENORMAL_FLOAT_EXPONENT + 1) * log(2)
   // aka x ~= (1024 + 1074 + 1) * log(2) in double for example.
-  // ~= 1454.916... for double ~ (128  + 149  + 1) * log(2) ~= 192.695.... for float
+  // ~= 1454.916... for double
+  // ~= 192.695.... for float
 
   // we also find where sinh(x) ~=cosh(x) ~= exp(x)/2 overflows normally..
   // This is at exp(x)/2 = MAX_FLOAT,
