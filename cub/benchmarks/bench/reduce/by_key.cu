@@ -33,7 +33,7 @@ struct bench_reduce_by_key_policy_selector
 #endif // !TUNE_BASE
 
 template <class KeyT, class ValueT, class OffsetT>
-static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using equality_op_t  = ::cuda::std::equal_to<>;
   using reduction_op_t = ::cuda::std::plus<>;
@@ -125,7 +125,7 @@ using value_types = nvbench::type_list<TUNE_ValueT>;
 using value_types = all_types;
 #endif // TUNE_ValueT
 
-NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_types))
+NVBENCH_BENCH_TYPES(reduce_by_key, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
