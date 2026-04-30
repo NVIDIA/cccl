@@ -148,7 +148,7 @@ private:
   unsigned int warp_id; ///< Warp identifier within CTA
   unsigned int lane_id; ///< Thread identified within warp
 
-  struct segment_size_preprocessing_scope_t
+  struct scope_t
   {
     static constexpr unsigned worker_thread_count = warp_threads;
 
@@ -210,19 +210,9 @@ private:
       }
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void sync()
-    {
-      __syncwarp();
-    }
-  };
-
-  struct single_segment_scan_scope_t
-  {
-    agent_warp_segmented_scan& agent;
-
     template <typename IteratorT, typename ItemT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    load(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size, ItemT oob_default)
+    load_single(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size, ItemT oob_default)
     {
       warp_load_t loader(agent.temp_storage.reused.load[agent.warp_id]);
       if (chunk_size == tile_items)
@@ -237,7 +227,7 @@ private:
 
     template <typename ItemT, typename InitValueTy, typename OpT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_first_tile(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& warp_aggregate)
+    scan_first_single(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& warp_aggregate)
     {
       warp_scan_t scanner(agent.temp_storage.reused.scan[agent.warp_id]);
       agent.scan_first_tile(scanner, items, init_value, scan_op, warp_aggregate);
@@ -245,16 +235,73 @@ private:
 
     template <typename ItemT, typename OpT, typename PrefixCallbackT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_later_tile(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
+    scan_later_single(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
     {
       warp_scan_t scanner(agent.temp_storage.reused.scan[agent.warp_id]);
       agent.scan_later_tile(scanner, items, scan_op, prefix_op);
     }
 
     template <typename IteratorT, typename ItemT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void store(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    store_single(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size)
     {
       warp_store_t storer(agent.temp_storage.reused.store[agent.warp_id]);
+      if (chunk_size == tile_items)
+      {
+        storer.Store(it, thread_values);
+      }
+      else
+      {
+        storer.Store(it, thread_values, chunk_size);
+      }
+    }
+
+    template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
+      const SearcherT& searcher,
+      InputBeginOffsetIteratorT input_begin_idx_it,
+      OutputBeginOffsetIteratorT output_begin_idx_it,
+      OffsetT items_per_warp)
+    {
+      agent.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_warp);
+    }
+
+    template <typename IteratorT, typename ItemT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    load_multi(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size, ItemT oob_default)
+    {
+      warp_load_aug_t loader(agent.temp_storage.reused.load_aug[agent.warp_id]);
+      if (chunk_size == tile_items)
+      {
+        loader.Load(it, thread_values);
+      }
+      else
+      {
+        loader.Load(it, thread_values, chunk_size, oob_default);
+      }
+    }
+
+    template <typename ItemT, typename OpT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    scan_first_multi(ItemT (&items)[items_per_thread], ItemT init_value, OpT scan_op, ItemT& warp_aggregate)
+    {
+      warp_scan_aug_t scanner(agent.temp_storage.reused.scan_aug[agent.warp_id]);
+      agent.scan_first_tile(scanner, items, init_value, scan_op, warp_aggregate);
+    }
+
+    template <typename ItemT, typename OpT, typename PrefixCallbackT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    scan_later_multi(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
+    {
+      warp_scan_aug_t scanner(agent.temp_storage.reused.scan_aug[agent.warp_id]);
+      agent.scan_later_tile(scanner, items, scan_op, prefix_op);
+    }
+
+    template <typename IteratorT, typename ItemT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    store_multi(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size)
+    {
+      warp_store_aug_t storer(agent.temp_storage.reused.store_aug[agent.warp_id]);
       if (chunk_size == tile_items)
       {
         storer.Store(it, thread_values);
@@ -268,21 +315,6 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void sync()
     {
       __syncwarp();
-    }
-  };
-
-  struct segment_scan_searcher_scope_t
-  {
-    agent_warp_segmented_scan& agent;
-
-    template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
-      const SearcherT& searcher,
-      InputBeginOffsetIteratorT input_begin_idx_it,
-      OutputBeginOffsetIteratorT output_begin_idx_it,
-      OffsetT items_per_warp)
-    {
-      agent.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_warp);
     }
   };
 
@@ -305,14 +337,7 @@ public:
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
     single_segment_scan_chunked<items_per_thread, tile_items, OffsetT, AccumT>(
-      single_segment_scan_scope_t{*this},
-      d_in,
-      d_out,
-      input_begin_idx,
-      input_end_idx,
-      output_begin_idx,
-      scan_op,
-      initial_value);
+      scope_t{*this}, d_in, d_out, input_begin_idx, input_end_idx, output_begin_idx, scan_op, initial_value);
   };
 
   //! @brief Scan dynamically given number of segments of values
@@ -342,7 +367,7 @@ public:
     _CCCL_ASSERT(n_segments <= max_segments, "Number of segments should not exceed statically provisioned storage");
 
     n_segments = preprocess_segment_sizes<MaxNumSegments, OffsetT>(
-      segment_size_preprocessing_scope_t{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
+      scope_t{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
 
     // All accesses of logical_segment_offsets from now on are read-only. Elements of
     // logical_segment_offsets[warp_id] are only accessed by threads with the same warp_id.
@@ -351,7 +376,7 @@ public:
     const ::cuda::std::span<OffsetT> cum_sizes{temp_storage.logical_segment_offsets[warp_id], cum_sizes_count};
 
     select_segment_scan_searcher<MaxNumSegments, OffsetT>(
-      segment_scan_searcher_scope_t{*this},
+      scope_t{*this},
       cum_sizes,
       n_segments,
       temp_storage.fixed_size_mask[warp_id],
@@ -360,61 +385,6 @@ public:
   }
 
 private:
-  struct multi_segment_scan_scope_t
-  {
-    agent_warp_segmented_scan& agent;
-
-    template <typename IteratorT, typename ItemT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    load(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size, ItemT oob_default)
-    {
-      warp_load_aug_t loader(agent.temp_storage.reused.load_aug[agent.warp_id]);
-      if (chunk_size == tile_items)
-      {
-        loader.Load(it, thread_values);
-      }
-      else
-      {
-        loader.Load(it, thread_values, chunk_size, oob_default);
-      }
-    }
-
-    template <typename ItemT, typename OpT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_first_tile(ItemT (&items)[items_per_thread], ItemT init_value, OpT scan_op, ItemT& warp_aggregate)
-    {
-      warp_scan_aug_t scanner(agent.temp_storage.reused.scan_aug[agent.warp_id]);
-      agent.scan_first_tile(scanner, items, init_value, scan_op, warp_aggregate);
-    }
-
-    template <typename ItemT, typename OpT, typename PrefixCallbackT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_later_tile(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
-    {
-      warp_scan_aug_t scanner(agent.temp_storage.reused.scan_aug[agent.warp_id]);
-      agent.scan_later_tile(scanner, items, scan_op, prefix_op);
-    }
-
-    template <typename IteratorT, typename ItemT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void store(IteratorT it, ItemT (&thread_values)[items_per_thread], int chunk_size)
-    {
-      warp_store_aug_t storer(agent.temp_storage.reused.store_aug[agent.warp_id]);
-      if (chunk_size == tile_items)
-      {
-        storer.Store(it, thread_values);
-      }
-      else
-      {
-        storer.Store(it, thread_values, chunk_size);
-      }
-    }
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE void sync()
-    {
-      __syncwarp();
-    }
-  };
-
   template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
     const SearcherT& searcher,
@@ -423,7 +393,7 @@ private:
     OffsetT items_per_warp)
   {
     multi_segment_scan_chunked<has_init, is_inclusive, items_per_thread, tile_items, OffsetT, AccumT>(
-      multi_segment_scan_scope_t{*this},
+      scope_t{*this},
       d_in,
       d_out,
       scan_op,
