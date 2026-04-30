@@ -39,7 +39,7 @@ using __as_span_t = ::cuda::std::span<::cuda::std::remove_reference_t<::cuda::st
 //! The type must be a contiguous range.
 template <typename _Tp>
 _CCCL_CONCEPT __spannable = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __value)( //
-  _Satisfies(::cuda::std::ranges::contiguous_range)::cuda::std::forward<_Tp>(__value), //
+  _Satisfies(cuda::std::ranges::contiguous_range)::cuda::std::forward<_Tp>(__value), //
   _Convertible_to(__as_span_t<_Tp>)::cuda::std::forward<_Tp>(__value));
 
 template <typename _Tp>
