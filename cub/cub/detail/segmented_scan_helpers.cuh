@@ -595,21 +595,21 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void single_segment_scan_chunked(
     // chunk_size <= TileItems, casting to int is safe
     const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
 
-    scope.load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+    scope.load_single(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
     scope.sync();
 
     if (chunk_id == 0)
     {
       // Initialize exclusive_prefix, referenced from prefix_op
-      scope.scan_first_tile(thread_values, initial_value, scan_op, exclusive_prefix);
+      scope.scan_first_single(thread_values, initial_value, scan_op, exclusive_prefix);
     }
     else
     {
-      scope.scan_later_tile(thread_values, scan_op, prefix_op);
+      scope.scan_later_single(thread_values, scan_op, prefix_op);
     }
     scope.sync();
 
-    scope.store(d_out + output_begin_idx + chunk_id * TileItems, thread_values, chunk_size);
+    scope.store_single(d_out + output_begin_idx + chunk_id * TileItems, thread_values, chunk_size);
 
     // Avoiding synchronization at the end of last chunk could save up to 10% of performance for very short segments
     if (++chunk_id < n_chunks)
@@ -750,14 +750,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void multi_segment_scan_chunked(
         const packer_iv<ScanOpT, AccumT> packer_op{scan_op, initial_value};
         multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
 
-        scope.load(it_in, thread_flag_values, chunk_size, oob_default);
+        scope.load_multi(it_in, thread_flag_values, chunk_size, oob_default);
       }
       else
       {
         constexpr packer<AccumT> packer_op{};
         multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
 
-        scope.load(it_in, thread_flag_values, chunk_size, oob_default);
+        scope.load_multi(it_in, thread_flag_values, chunk_size, oob_default);
       }
     }
     scope.sync();
@@ -775,11 +775,11 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void multi_segment_scan_chunked(
           augmented_init_value = augmented_accum_t{AccumT{}, false};
         }
         // Initialize exclusive_prefix, referenced from prefix_op
-        scope.scan_first_tile(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
+        scope.scan_first_multi(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
       else
       {
-        scope.scan_later_tile(thread_flag_values, augmented_scan_op, prefix_op);
+        scope.scan_later_multi(thread_flag_values, augmented_scan_op, prefix_op);
       }
     }
     scope.sync();
@@ -793,14 +793,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void multi_segment_scan_chunked(
         constexpr projector<AccumT> projector_op{};
         multi_segmented_output_iterator it_out{d_out, output_offset, searcher, output_begin_idx_it, projector_op};
 
-        scope.store(it_out, thread_flag_values, chunk_size);
+        scope.store_multi(it_out, thread_flag_values, chunk_size);
       }
       else
       {
         const projector_iv<AccumT> projector_op{initial_value};
         multi_segmented_output_iterator it_out{d_out, output_offset, searcher, output_begin_idx_it, projector_op};
 
-        scope.store(it_out, thread_flag_values, chunk_size);
+        scope.store_multi(it_out, thread_flag_values, chunk_size);
       }
     }
 

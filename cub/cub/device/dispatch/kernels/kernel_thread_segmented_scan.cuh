@@ -213,7 +213,7 @@ private:
 
     template <typename IteratorT, typename ItemT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    load(IteratorT it, ItemT (&items)[items_per_thread], int chunk_size, ItemT oob_default)
+    load_single(IteratorT it, ItemT (&items)[items_per_thread], int chunk_size, ItemT oob_default)
     {
       if (chunk_size == tile_items)
       {
@@ -235,20 +235,20 @@ private:
 
     template <typename ItemT, typename InitValueTy, typename OpT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_first_tile(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& aggregate)
+    scan_first_single(ItemT (&items)[items_per_thread], InitValueTy init_value, OpT scan_op, ItemT& aggregate)
     {
       agent.scan_first_tile(items, init_value, scan_op, aggregate);
     }
 
     template <typename ItemT, typename OpT, typename PrefixCallbackT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
-    scan_later_tile(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
+    scan_later_single(ItemT (&items)[items_per_thread], OpT scan_op, PrefixCallbackT& prefix_op)
     {
       agent.scan_later_tile(items, scan_op, prefix_op);
     }
 
     template <typename IteratorT, typename ItemT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void store(IteratorT it, ItemT (&items)[items_per_thread], int chunk_size)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void store_single(IteratorT it, ItemT (&items)[items_per_thread], int chunk_size)
     {
       if (chunk_size == tile_items)
       {
