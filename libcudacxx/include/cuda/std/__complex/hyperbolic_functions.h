@@ -153,7 +153,7 @@ template <class _Tp>
   const _Tp __ans_re = (__sinh_re_scaled * (__cos * __out_scale)) * __out_scale;
   const _Tp __ans_im = (__cosh_re_scaled * (__sin * __out_scale)) * __out_scale;
 
-  const complex<_Tp> __ans_abs = complex<_Tp>{__ans_re, __ans_im};
+  const complex __ans_abs{__ans_re, __ans_im};
   return __x_neg ? -__ans_abs : __ans_abs;
 }
 
