@@ -90,7 +90,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     {
       _CCCL_TRY_CUDA_API(
         cub::DeviceSegmentedReduce::Reduce,
-        "Reduce failed",
+        "Segmented reduce failed",
         d_in,
         d_out,
         static_cast<::cuda::std::int64_t>(num_segments),
