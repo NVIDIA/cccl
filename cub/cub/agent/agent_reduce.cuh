@@ -188,15 +188,15 @@ struct AgentReduceImpl
                      InputIteratorT>;
 
   /// Constants
-  static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS         = NumThreads * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int ITEMS_PER_THREAD = AgentReducePolicy::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
+  static constexpr int vec_size         = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
   // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
+    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
     && (::cuda::std::is_pointer_v<InputIteratorT>)
     // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
     &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>);
@@ -278,7 +278,7 @@ struct AgentReduceImpl
     if constexpr (CanVectorize)
     {
       // Fabricate a vectorized input iterator
-      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
+      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * vec_size);
       CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
         reinterpret_cast<VectorT*>(d_in_unqualified));
 
@@ -287,7 +287,7 @@ struct AgentReduceImpl
       VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
 
       // Alias items as an array of VectorT and load it in striped fashion
-      static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
+      static constexpr int words = ITEMS_PER_THREAD / vec_size;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < words; ++i)
       {

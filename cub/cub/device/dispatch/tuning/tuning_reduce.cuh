@@ -31,14 +31,14 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
 {
   int block_threads;
   int items_per_thread;
-  int vector_load_length;
+  int vec_size;
   BlockReduceAlgorithm block_algorithm;
   CacheLoadModifier load_modifier;
 
   _CCCL_API constexpr friend bool operator==(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.vector_load_length == rhs.vector_load_length && lhs.block_algorithm == rhs.block_algorithm
+        && lhs.vec_size == rhs.vec_size && lhs.block_algorithm == rhs.block_algorithm
         && lhs.load_modifier == rhs.load_modifier;
   }
 
@@ -51,7 +51,7 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
   {
     return os << "agent_reduce_policy { .block_threads = " << p.block_threads
-              << ", .items_per_thread = " << p.items_per_thread << ", .vector_load_length = " << p.vector_load_length
+              << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
               << ", .block_algorithm = " << p.block_algorithm << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // _CCCL_HOSTED()

@@ -59,7 +59,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KER
   using agent_find_t =
     agent_t<policy.block_threads,
             policy.items_per_thread,
-            policy.vector_load_length,
+            policy.vec_size,
             policy.load_modifier,
             IteratorT,
             OffsetT,

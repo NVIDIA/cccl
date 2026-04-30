@@ -31,10 +31,8 @@ struct policy_selector
     const auto rp = cub::agent_reduce_policy{
       l_threads, l_items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
     return {rp,
-            cub::warp_reduce_policy{
-              rp.block_threads, TUNE_S_THREADS_PER_WARP, s_items, rp.vector_load_length, rp.load_modifier},
-            cub::warp_reduce_policy{
-              rp.block_threads, TUNE_M_THREADS_PER_WARP, m_items, rp.vector_load_length, rp.load_modifier}};
+            cub::warp_reduce_policy{rp.block_threads, TUNE_S_THREADS_PER_WARP, s_items, rp.vec_size, rp.load_modifier},
+            cub::warp_reduce_policy{rp.block_threads, TUNE_M_THREADS_PER_WARP, m_items, rp.vec_size, rp.load_modifier}};
   }
 };
 #endif // !TUNE_BASE

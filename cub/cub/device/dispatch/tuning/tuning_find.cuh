@@ -28,13 +28,13 @@ struct find_policy
 {
   int block_threads;
   int items_per_thread;
-  int vector_load_length;
+  int vec_size;
   CacheLoadModifier load_modifier;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const find_policy& lhs, const find_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.vector_load_length == rhs.vector_load_length && lhs.load_modifier == rhs.load_modifier;
+        && lhs.vec_size == rhs.vec_size && lhs.load_modifier == rhs.load_modifier;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const find_policy& lhs, const find_policy& rhs)
@@ -46,7 +46,7 @@ struct find_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const find_policy& p)
   {
     return os << "find_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-              << ", .vector_load_length = " << p.vector_load_length << ", .load_modifier = " << p.load_modifier << " }";
+              << ", .vec_size = " << p.vec_size << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // _CCCL_HOSTED()
 };
