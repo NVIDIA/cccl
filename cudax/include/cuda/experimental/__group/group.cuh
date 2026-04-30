@@ -58,7 +58,8 @@ class group
 
   // todo(dabayer): static_assert that _Unit is (under) typename _ParentGroup::unit_type
 
-  [[nodiscard]] _CCCL_DEVICE_API static auto __get_parent_mapping_result(const _ParentGroup& __parent) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
+  __get_initial_mapping_result(const _ParentGroup& __parent) noexcept
   {
     using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
     using _MappingResult =
@@ -76,7 +77,7 @@ class group
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   using _MappingResult       = decltype(::cuda::std::declval<const _Mapping&>().map(
     ::cuda::std::declval<const _ParentGroup&>(),
-    __get_parent_mapping_result(::cuda::std::declval<const _ParentGroup&>())));
+    __get_initial_mapping_result(::cuda::std::declval<const _ParentGroup&>())));
   using _SynchronizerInstance =
     __group_synchronizer_instance_t<_Synchronizer, _Unit, _ParentGroup, _Mapping, _MappingResult>;
   static_assert(__group_mapping_result<_MappingResult>);
@@ -90,7 +91,7 @@ class group
   [[nodiscard]] _CCCL_DEVICE_API static _MappingResult
   __do_mapping(const _Mapping& __mapping, const _ParentGroup& __parent) noexcept
   {
-    const auto __mapping_result = __mapping.map(__parent, __get_parent_mapping_result(__parent));
+    const auto __mapping_result = __mapping.map(__parent, __get_initial_mapping_result(__parent));
     if (__mapping_result.is_valid())
     {
       _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
