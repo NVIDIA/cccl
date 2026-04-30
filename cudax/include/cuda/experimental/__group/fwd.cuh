@@ -69,7 +69,7 @@ class group;
 
 // mappings
 
-template <::cuda::std::size_t _Np = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
+template <::cuda::std::size_t _Count = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
 class group_by;
 
 template <class _Data, bool _IsExahustive>
