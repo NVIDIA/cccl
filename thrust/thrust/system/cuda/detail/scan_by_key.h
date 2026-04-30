@@ -17,8 +17,7 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/dispatch/dispatch_scan_by_key.cuh>
-#  include <cub/util_type.cuh>
+#  include <cub/device/device_scan.cuh>
 
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/functional.h>
@@ -62,80 +61,42 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   }
 
   // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
-  using AccumT            = thrust::detail::it_value_t<ValuesInUnwrapIt>;
-
   auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
   auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
-
-  using Dispatch32 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    cub::NullType,
-    std::uint32_t,
-    AccumT>;
-  using Dispatch64 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    cub::NullType,
-    cub::detail::choose_offset_t<std::uint64_t>,
-    AccumT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status{};
 
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
-  {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
-      status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
-      num_items,
-      (nullptr,
-       tmp_size,
-       keys_unwrap,
-       values_unwrap,
-       result_unwrap,
-       equality_op,
-       scan_op,
-       cub::NullType{},
-       num_items_fixed,
-       stream));
-    thrust::cuda_cub::throw_on_error(
-      status,
-      "after determining tmp storage "
-      "requirements for inclusive_scan_by_key");
-  }
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
+    status,
+    cub::DeviceScan::InclusiveScanByKey,
+    num_items,
+    (nullptr, tmp_size, keys_unwrap, values_unwrap, result_unwrap, scan_op, num_items_fixed, equality_op, stream));
+  thrust::cuda_cub::throw_on_error(
+    status,
+    "after determining tmp storage "
+    "requirements for inclusive_scan_by_key");
 
   // Run scan:
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::DeviceScan::InclusiveScanByKey,
       num_items,
       (tmp.data().get(),
        tmp_size,
        keys_unwrap,
        values_unwrap,
        result_unwrap,
-       equality_op,
        scan_op,
-       cub::NullType{},
        num_items_fixed,
+       equality_op,
        stream));
 
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan_by_key kernel");
@@ -172,79 +133,52 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   }
 
   // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
-
   auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
   auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
-
-  using Dispatch32 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    InitValueT,
-    std::uint32_t,
-    InitValueT>;
-  using Dispatch64 = cub::DispatchScanByKey<
-    KeysInUnwrapIt,
-    ValuesInUnwrapIt,
-    ValuesOutUnwrapIt,
-    EqualityOpT,
-    ScanOpT,
-    InitValueT,
-    cub::detail::choose_offset_t<std::uint64_t>,
-    InitValueT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status{};
 
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
-  {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
-      status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
-      num_items,
-      (nullptr,
-       tmp_size,
-       keys_unwrap,
-       values_unwrap,
-       result_unwrap,
-       equality_op,
-       scan_op,
-       init_value,
-       num_items_fixed,
-       stream));
-    thrust::cuda_cub::throw_on_error(
-      status,
-      "after determining tmp storage "
-      "requirements for exclusive_scan_by_key");
-  }
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
+    status,
+    cub::DeviceScan::ExclusiveScanByKey,
+    num_items,
+    (nullptr,
+     tmp_size,
+     keys_unwrap,
+     values_unwrap,
+     result_unwrap,
+     scan_op,
+     init_value,
+     num_items_fixed,
+     equality_op,
+     stream));
+  thrust::cuda_cub::throw_on_error(
+    status,
+    "after determining tmp storage "
+    "requirements for exclusive_scan_by_key");
 
   // Run scan:
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::DeviceScan::ExclusiveScanByKey,
       num_items,
       (tmp.data().get(),
        tmp_size,
        keys_unwrap,
        values_unwrap,
        result_unwrap,
-       equality_op,
        scan_op,
        init_value,
        num_items_fixed,
+       equality_op,
        stream));
 
     thrust::cuda_cub::throw_on_error(status, "after dispatching exclusive_scan_by_key kernel");
