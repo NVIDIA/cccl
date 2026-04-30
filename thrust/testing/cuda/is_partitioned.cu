@@ -2,15 +2,9 @@
 #include <thrust/functional.h>
 #include <thrust/partition.h>
 
-#include <unittest/unittest.h>
+#include <cuda/std/utility>
 
-#ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename Iterator2>
-__global__ void
-is_partitioned_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predicate pred, Iterator2 result)
-{
-  *result = thrust::is_partitioned(exec, first, last, pred);
-}
+#include <unittest/unittest.h>
 
 template <typename T>
 struct is_even
@@ -20,6 +14,14 @@ struct is_even
     return ((int) x % 2) == 0;
   }
 };
+
+#ifdef THRUST_TEST_DEVICE_SIDE
+template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename Iterator2>
+__global__ void
+is_partitioned_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predicate pred, Iterator2 result)
+{
+  *result = thrust::is_partitioned(exec, first, last, pred);
+}
 
 template <typename ExecutionPolicy>
 void TestIsPartitionedDevice(ExecutionPolicy exec)
@@ -110,3 +112,38 @@ void TestIsPartitionedCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestIsPartitionedCudaStreams);
+
+// Wraps a callable with a non-const operator() so the predicate becomes
+// non-const-callable. is_partitioned must accept such predicates;
+// do not add const to operator() — that would defeat the test.
+template <typename F>
+struct NonConstAdapter
+{
+  F f;
+
+  NonConstAdapter(const F& func)
+      : f(func)
+  {}
+
+  template <typename... Args>
+  _CCCL_HOST_DEVICE auto operator()(Args&&... args) -> decltype(f(cuda::std::forward<Args>(args)...))
+  {
+    return f(cuda::std::forward<Args>(args)...);
+  }
+};
+
+void TestIsPartitionedWithNonConstPredicate()
+{
+  thrust::device_vector<int> partitioned   = {0, 2, 4, 1, 3, 5};
+  thrust::device_vector<int> unpartitioned = {0, 1, 2, 3};
+
+  using Adapter = NonConstAdapter<is_even<int>>;
+
+  ASSERT_EQUAL_QUIET(
+    true, thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), Adapter{is_even<int>{}}));
+
+  ASSERT_EQUAL_QUIET(
+    false,
+    thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), Adapter{is_even<int>{}}));
+}
+DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);
