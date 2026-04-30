@@ -7,8 +7,10 @@ if [ -z "${GITHUB_ACTIONS:-}" ]; then
   exit 1
 fi
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly repo_root="$(cd "${ci_dir}/.." && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ci_dir
+repo_root="$(cd "${ci_dir}/.." && pwd)"
+readonly repo_root
 
 cd "$repo_root"
 

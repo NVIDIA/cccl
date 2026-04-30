@@ -70,7 +70,8 @@ update_file () {
     local pattern=$2
     local new_value=$3
     if [ "$DRY_RUN" = true ]; then
-        local temp_file=$(mktemp)
+        local temp_file
+        temp_file=$(mktemp)
         sed "s/$pattern/$new_value/g" "$file" > "$temp_file"
         diff --color=auto -U 0 "$file" "$temp_file" || true
         rm "$temp_file"

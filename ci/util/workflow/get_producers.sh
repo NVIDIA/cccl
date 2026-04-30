@@ -2,16 +2,18 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/workflow/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 [job_id]
 
 Return a json array of job definitions for all producers of the specified consumer job ID.
 If no job ID is provided, the \$JOB_ID environment variable is used.
 EOF
 )
+readonly usage
 
 if [ "$#" -gt 1 ]; then
   echo "Error: Too many arguments." >&2
