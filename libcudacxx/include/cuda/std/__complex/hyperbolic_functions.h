@@ -65,7 +65,7 @@ template <class _Tp>
   // We scale our inputs to avoid this.
 
   // Rather than examining exponents, we save computation by pre-selecting 2
-  // seperate intervals that cover our problematic overflow interval.
+  // separate intervals that cover our problematic overflow interval.
   // Use sinh(x) ~= cosh(x) ~= exp(x)/2 for large x.
   // Need two intervals to ensure the reduced values do not break the sinh(x) ~= cosh(x) ~= exp(x)/2 estimate.
 
