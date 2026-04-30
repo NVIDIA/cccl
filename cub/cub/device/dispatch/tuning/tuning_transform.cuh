@@ -43,7 +43,7 @@ struct always_true_predicate
 CUB_NAMESPACE_END
 
 template <>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
+struct cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
     : ::cuda::std::true_type
 {};
 

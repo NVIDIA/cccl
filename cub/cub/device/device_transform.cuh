@@ -43,7 +43,7 @@ struct __return_constant
 CUB_NAMESPACE_END
 
 template <typename T>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+struct cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
 
 CUB_NAMESPACE_BEGIN
