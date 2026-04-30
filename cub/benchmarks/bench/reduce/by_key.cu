@@ -55,36 +55,19 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   ValueT* d_out_vals       = thrust::raw_pointer_cast(out_vals.data());
   offset_t* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
 
-  std::uint8_t* d_temp_storage{};
-  std::size_t temp_storage_bytes{};
-  const auto num_items = static_cast<offset_t>(elements);
+  caching_allocator_t alloc;
 
-  auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::reduce_by_key::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in_keys,
-      d_out_keys,
-      d_in_vals,
-      d_out_vals,
-      d_num_runs_out,
-      equality_op_t{},
-      reduction_op_t{},
-      num_items,
-      stream
-#if !TUNE_BASE
-      ,
-      bench_reduce_by_key_policy_selector{}
-#endif
-    );
-  };
-
-  dispatch_on_stream(cudaStream_t{nullptr});
-
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  dispatch_on_stream(cudaStream_t{nullptr});
+  // Run once to get the number of runs for reporting
+  _CCCL_TRY_CUDA_API(
+    cub::DeviceReduce::ReduceByKey,
+    d_in_keys,
+    d_out_keys,
+    d_in_vals,
+    d_out_vals,
+    d_num_runs_out,
+    reduction_op_t{},
+    static_cast<OffsetT>(elements),
+    alloc);
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 
@@ -96,7 +79,25 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   state.add_global_memory_writes<OffsetT>(1);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_on_stream(launch.get_stream());
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_reduce_by_key_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceReduce::ReduceByKey,
+      "ReduceByKey failed",
+      d_in_keys,
+      d_out_keys,
+      d_in_vals,
+      d_out_vals,
+      d_num_runs_out,
+      reduction_op_t{},
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 
