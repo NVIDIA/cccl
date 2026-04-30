@@ -92,7 +92,7 @@ template <class _Tp>
   // Massage these values a little to cover the edges.
   // These values are small enough we can cast to int and back as a poor mans constexpr floor.
   // (we want __ans_always_overflow_bound to be slightly larger than the real value, we add 1)
-  constexpr _Tp __sinh_cosh_overflow_bound = _Tp(int(_Tp(__exp_max + 2) * __numbers<_Tp>::__ln2()));
+  constexpr _Tp __sinh_cosh_overflow_bound = _Tp{int(_Tp{__exp_max + 2} * __numbers<_Tp>::__ln2())};
   constexpr _Tp __ans_always_overflow_bound =
     _Tp(int(_Tp((__exp_max + 1) + (__exp_max + __mant_nbits - 1)) * __numbers<_Tp>::__ln2()) + 1);
 
