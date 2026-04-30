@@ -148,8 +148,7 @@ private:
   unsigned int warp_id; ///< Warp identifier within CTA
   unsigned int lane_id; ///< Thread identified within warp
 
-private:
-  struct segment_size_preprocessing_scope
+  struct segment_size_preprocessing_scope_t
   {
     static constexpr unsigned worker_thread_count = warp_threads;
 
@@ -217,7 +216,7 @@ private:
     }
   };
 
-  struct single_segment_scan_scope
+  struct single_segment_scan_scope_t
   {
     agent_warp_segmented_scan& agent;
 
@@ -272,7 +271,7 @@ private:
     }
   };
 
-  struct segment_scan_searcher_scope
+  struct segment_scan_searcher_scope_t
   {
     agent_warp_segmented_scan& agent;
 
@@ -306,7 +305,7 @@ public:
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
     single_segment_scan_chunked<items_per_thread, tile_items, OffsetT, AccumT>(
-      single_segment_scan_scope{*this},
+      single_segment_scan_scope_t{*this},
       d_in,
       d_out,
       input_begin_idx,
@@ -343,7 +342,7 @@ public:
     _CCCL_ASSERT(n_segments <= max_segments, "Number of segments should not exceed statically provisioned storage");
 
     n_segments = preprocess_segment_sizes<MaxNumSegments, OffsetT>(
-      segment_size_preprocessing_scope{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
+      segment_size_preprocessing_scope_t{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
 
     // All accesses of logical_segment_offsets from now on are read-only. Elements of
     // logical_segment_offsets[warp_id] are only accessed by threads with the same warp_id.
@@ -352,7 +351,7 @@ public:
     const ::cuda::std::span<OffsetT> cum_sizes{temp_storage.logical_segment_offsets[warp_id], cum_sizes_count};
 
     select_segment_scan_searcher<MaxNumSegments, OffsetT>(
-      segment_scan_searcher_scope{*this},
+      segment_scan_searcher_scope_t{*this},
       cum_sizes,
       n_segments,
       temp_storage.fixed_size_mask[warp_id],
@@ -361,7 +360,7 @@ public:
   }
 
 private:
-  struct warp_chunked_scan_scope
+  struct multi_segment_scan_scope_t
   {
     agent_warp_segmented_scan& agent;
 
@@ -424,7 +423,7 @@ private:
     OffsetT items_per_warp)
   {
     multi_segment_scan_chunked<has_init, is_inclusive, items_per_thread, tile_items, OffsetT, AccumT>(
-      warp_chunked_scan_scope{*this},
+      multi_segment_scan_scope_t{*this},
       d_in,
       d_out,
       scan_op,

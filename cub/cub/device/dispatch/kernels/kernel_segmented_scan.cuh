@@ -160,8 +160,7 @@ private:
   ScanOpT scan_op; ///< Binary associative scan operator
   InitValueT initial_value; ///< The initial value element for ScanOpT
 
-private:
-  struct segment_size_preprocessing_scope
+  struct segment_size_preprocessing_scope_t
   {
     static constexpr unsigned worker_thread_count = threads_per_block;
 
@@ -223,7 +222,7 @@ private:
     }
   };
 
-  struct single_segment_scan_scope
+  struct single_segment_scan_scope_t
   {
     agent_segmented_scan& agent;
 
@@ -278,7 +277,7 @@ private:
     }
   };
 
-  struct segment_scan_searcher_scope
+  struct segment_scan_searcher_scope_t
   {
     agent_segmented_scan& agent;
 
@@ -325,7 +324,7 @@ public:
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
     single_segment_scan_chunked<items_per_thread, tile_items, OffsetT, AccumT>(
-      single_segment_scan_scope{*this},
+      single_segment_scan_scope_t{*this},
       d_in,
       d_out,
       input_begin_idx,
@@ -362,13 +361,13 @@ public:
     _CCCL_ASSERT(n_segments <= NumSegments, "Number of segments per worker exceeds statically provisioned storage");
 
     n_segments = preprocess_segment_sizes<NumSegments, OffsetT>(
-      segment_size_preprocessing_scope{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
+      segment_size_preprocessing_scope_t{*this}, input_begin_idx_it, input_end_idx_it, n_segments);
 
     const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
 
     select_segment_scan_searcher<NumSegments, OffsetT>(
-      segment_scan_searcher_scope{*this},
+      segment_scan_searcher_scope_t{*this},
       cum_sizes,
       n_segments,
       temp_storage.fixed_size_mask,
@@ -377,7 +376,7 @@ public:
   }
 
 private:
-  struct block_chunked_scan_scope
+  struct multi_segment_scan_scope_t
   {
     agent_segmented_scan& agent;
 
@@ -440,7 +439,7 @@ private:
     OffsetT items_per_block)
   {
     multi_segment_scan_chunked<has_init, is_inclusive, items_per_thread, tile_items, OffsetT, AccumT>(
-      block_chunked_scan_scope{*this},
+      multi_segment_scan_scope_t{*this},
       d_in,
       d_out,
       scan_op,
