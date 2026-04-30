@@ -19,12 +19,12 @@
  *   1. Create an explicit CUDA stream.
  *   2. Start a capture on it with ``cudaStreamCaptureModeRelaxed``.
  *   3. Construct a ``stream_ctx`` bound to that captured stream and submit a
- *      small diamond DAG of tasks:
+ *      small fork-join DAG of tasks (plus an unrelated empty epilogue):
  *
  *          ctx.task(lA.write())          // initA on one pool stream
  *          ctx.task(lB.write())          // initB on another pool stream
  *          ctx.task(lA.read(), lB.rw())  // axpy joining the two branches
- *          ctx.task()                    // empty epilogue
+ *          ctx.task()                    // empty task, no token deps
  *
  *   4. ``ctx.finalize()`` and ``cudaStreamEndCapture`` produce a CUDA graph.
  *   5. The graph is instantiated, launched several times on a clean replay
@@ -81,19 +81,19 @@ __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t 
 
 __global__ void empty_kernel()
 {
-  // no-op: acts as the "epilogue" task in the diamond DAG.
+  // no-op: acts as the unrelated empty-task epilogue (no token deps).
 }
 
 /**
- * @brief Control path: same diamond DAG, built with plain CUDA API calls --
+ * @brief Control path: same fork-join DAG, built with plain CUDA API calls --
  *        two side streams forked from the captured main stream via events,
  *        then joined back on the main stream.
  *
- * Establishes a baseline that the diamond pattern itself (fork + join via
+ * Establishes a baseline that the fork-join pattern itself (fork + join via
  * events, with non-blocking side streams) is legal inside a Relaxed-mode
  * capture, independently of STF.
  */
-void submit_diamond_manual(cudaStream_t main, double* d_ptrA, double* d_ptrB, size_t N)
+void submit_fork_join_manual(cudaStream_t main, double* d_ptrA, double* d_ptrB, size_t N)
 {
   // Fresh side streams created inside the capture so they have no prior
   // (uncaptured) work of their own. Use the non-blocking flag to mirror how
@@ -140,11 +140,11 @@ void submit_diamond_manual(cudaStream_t main, double* d_ptrA, double* d_ptrB, si
 }
 
 /**
- * @brief Submit the token-based diamond DAG inside an already-started capture.
+ * @brief Submit the token-based fork-join DAG inside an already-started capture.
  *
  * Must be called while ``stream`` is in ``StreamCaptureStatusActive``.
  */
-void submit_diamond_token(cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
+void submit_fork_join_token(cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
 {
   stream_ctx ctx(stream);
 
@@ -228,9 +228,9 @@ static std::unordered_set<cudaGraphNode_t> transitive_dependencies(cudaGraphNode
  *
  * We identify the three kernel nodes by launch-dimension signature: the two
  * ``init`` kernels and the ``axpy`` kernel all use ``<<<128, 32>>>`` while the
- * epilogue uses ``<<<16, 8>>>``. The combiner (``axpy``) is the kernel node
- * that transitively depends on both of the others; the remaining two are the
- * independent ``init`` branches.
+ * empty epilogue uses ``<<<16, 8>>>`` and is ignored here. The combiner
+ * (``axpy``) is the kernel node that transitively depends on both of the
+ * others; the remaining two are the independent ``init`` branches.
  */
 static void assert_inits_are_parallel(cudaGraph_t graph)
 {
@@ -240,8 +240,8 @@ static void assert_inits_are_parallel(cudaGraph_t graph)
   cuda_safe_call(cudaGraphGetNodes(graph, nodes.data(), &nnodes));
 
   // Collect kernel nodes whose grid/block signature matches the three
-  // diamond kernels (initA / initB / axpy all launch <<<128, 32>>>).
-  std::vector<cudaGraphNode_t> diamond_kernels;
+  // fork-join kernels (initA / initB / axpy all launch <<<128, 32>>>).
+  std::vector<cudaGraphNode_t> fork_join_kernels;
   for (cudaGraphNode_t n : nodes)
   {
     cudaGraphNodeType t;
@@ -254,31 +254,31 @@ static void assert_inits_are_parallel(cudaGraph_t graph)
     cuda_safe_call(cudaGraphKernelNodeGetParams(n, &p));
     if (p.gridDim.x == 128 && p.blockDim.x == 32)
     {
-      diamond_kernels.push_back(n);
+      fork_join_kernels.push_back(n);
     }
   }
 
-  EXPECT(diamond_kernels.size() == 3,
-         "Expected exactly 3 diamond-shape kernel nodes (initA, initB, axpy), got ",
-         diamond_kernels.size());
+  EXPECT(fork_join_kernels.size() == 3,
+         "Expected exactly 3 fork-join kernel nodes (initA, initB, axpy), got ",
+         fork_join_kernels.size());
 
   // Find the combiner: the single kernel whose transitive predecessors
-  // contain the other two diamond kernels.
+  // contain the other two fork-join kernels.
   int combiner_idx = -1;
   for (int i = 0; i < 3; ++i)
   {
-    auto deps = transitive_dependencies(diamond_kernels[i]);
+    auto deps = transitive_dependencies(fork_join_kernels[i]);
     int hits  = 0;
     for (int j = 0; j < 3; ++j)
     {
-      if (j != i && deps.count(diamond_kernels[j]) > 0)
+      if (j != i && deps.count(fork_join_kernels[j]) > 0)
       {
         ++hits;
       }
     }
     if (hits == 2)
     {
-      EXPECT(combiner_idx == -1, "More than one combiner kernel found; DAG is not a diamond");
+      EXPECT(combiner_idx == -1, "More than one combiner kernel found; DAG is not a fork-join");
       combiner_idx = i;
     }
   }
@@ -291,7 +291,7 @@ static void assert_inits_are_parallel(cudaGraph_t graph)
   {
     if (i != combiner_idx)
     {
-      inits.push_back(diamond_kernels[i]);
+      inits.push_back(fork_join_kernels[i]);
     }
   }
   EXPECT(inits.size() == 2);
@@ -300,9 +300,9 @@ static void assert_inits_are_parallel(cudaGraph_t graph)
   auto deps_b = transitive_dependencies(inits[1]);
 
   EXPECT(deps_a.count(inits[1]) == 0,
-         "init branch A transitively depends on init branch B -- STF serialized the diamond");
+         "init branch A transitively depends on init branch B -- STF serialized the fork-join");
   EXPECT(deps_b.count(inits[0]) == 0,
-         "init branch B transitively depends on init branch A -- STF serialized the diamond");
+         "init branch B transitively depends on init branch A -- STF serialized the fork-join");
 }
 
 /**
@@ -311,7 +311,7 @@ static void assert_inits_are_parallel(cudaGraph_t graph)
  *        replay stream, and validate the resulting arrays on the host.
  */
 template <typename Submit>
-void run_diamond_under_capture(const char* label, Submit&& submit)
+void run_fork_join_under_capture(const char* label, Submit&& submit)
 {
   const size_t N = 128 * 1024;
 
@@ -383,14 +383,14 @@ void run_diamond_under_capture(const char* label, Submit&& submit)
 
 int main()
 {
-  // Control path: plain CUDA API diamond inside a Relaxed-mode capture.
-  run_diamond_under_capture("manual", submit_diamond_manual);
+  // Control path: plain CUDA API fork-join inside a Relaxed-mode capture.
+  run_fork_join_under_capture("manual", submit_fork_join_manual);
 
-  // STF path: token-based diamond submitted through ``stream_ctx(user_stream)``.
+  // STF path: token-based fork-join submitted through ``stream_ctx(user_stream)``.
   // The context is constructed without an explicit ``async_resources_handle``
   // so it gets a fresh, empty stream pool that STF is free to fold into the
   // on-going capture. This is the supported in-capture configuration.
-  run_diamond_under_capture("stf_token", submit_diamond_token);
+  run_fork_join_under_capture("stf_token", submit_fork_join_token);
 
   // Negative case: ``stream_ctx(user_stream, handle)`` with a user-provided
   // handle while ``user_stream`` is capturing must be rejected early, before
