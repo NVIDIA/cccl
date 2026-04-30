@@ -58,7 +58,7 @@ template <class _Tp>
     return __x;
   }
 
-  auto [__sin, __cos] = ::cuda::sincos(__imag_x);
+  const auto [__sin, __cos] = ::cuda::sincos(__imag_x);
 
   // Using ans = {sinh(re) * cos(im), cosh(re) * sin(im)}
   // results in intermediate overflows where eg cosh(re) overflows, but cosh(re) * sin(im) does not.
