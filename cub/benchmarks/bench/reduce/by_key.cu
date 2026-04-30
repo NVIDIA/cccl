@@ -60,6 +60,7 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   // Run once to get the number of runs for reporting
   _CCCL_TRY_CUDA_API(
     cub::DeviceReduce::ReduceByKey,
+    "ReduceByKey failed",
     d_in_keys,
     d_out_keys,
     d_in_vals,
