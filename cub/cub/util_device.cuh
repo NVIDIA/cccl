@@ -24,7 +24,6 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
@@ -355,27 +354,27 @@ namespace detail
 {
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
 template <class T = void>
-CUB_RUNTIME_FUNCTION cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
+CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version))
   {
     return error;
   }
-  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  cc = ::cuda::compute_capability{ptx_version / 10};
   return cudaSuccess;
 }
 
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
 template <class T = void>
-_CCCL_HOST_API cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
+_CCCL_HOST_API cudaError_t ptx_compute_cap(::cuda::compute_capability& cc, int device)
 {
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version, device))
   {
     return error;
   }
-  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  cc = ::cuda::compute_capability{ptx_version / 10};
   return cudaSuccess;
 }
 } // namespace detail
@@ -768,9 +767,9 @@ public:
     // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
     // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
 #  ifdef __CUDA_ARCH_LIST__
-    return runtime_arch_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
+    return runtime_cc_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
-    return runtime_arch_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
+    return runtime_cc_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #  else
     // some compilers, like clang in CUDA mode, do not have a macro, so we have to include a fallback
     if constexpr (have_previous_policy)
@@ -792,7 +791,7 @@ private:
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t
-  runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
+  runtime_cc_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
     // one matching device_ptx_version.
@@ -829,10 +828,10 @@ namespace detail
 #if _CCCL_HAS_CONCEPTS()
 // TODO(bgruber): should we either drop the Policy template argument or rename it to policy_selector_for?
 template <typename T, typename Policy>
-concept policy_selector = requires(T pol_sel, ::cuda::arch_id arch) {
+concept policy_selector = requires(T pol_sel, ::cuda::compute_capability cc) {
   requires ::cuda::std::regular<Policy>;
-  { pol_sel(arch) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
-  // we cannot reliably check whether pol_sel(arch) is a constant expression, since it sometimes depends on the data
+  { pol_sel(cc) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
+  // we cannot reliably check whether pol_sel(cc) is a constant expression, since it sometimes depends on the data
   // member values whether it can be constant evaluated (e.g., a default constructed reduce::policy_selector will lead
   // to a division by zero when evaluated)
 };

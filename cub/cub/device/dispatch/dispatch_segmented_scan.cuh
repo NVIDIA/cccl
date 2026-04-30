@@ -137,19 +137,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return (num_segments == 0) ? cudaSuccess : cudaErrorUnknown;
   }
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const segmented_scan_policy active_policy = policy_selector(arch_id);
+  const segmented_scan_policy active_policy = policy_selector(cc);
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,
     (::std::stringstream ss; ss << active_policy;
-     _CubLog("Dispatching DeviceSegmentedScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+     _CubLog("Dispatching DeviceSegmentedScan to compute capability %d.%d with tuning: %s\n",
+             cc.major_cap(),
+             cc.minor_cap(),
+             ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   if (d_temp_storage == nullptr)

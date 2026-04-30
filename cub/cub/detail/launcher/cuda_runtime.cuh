@@ -17,6 +17,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__device/compute_capability.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -36,9 +38,9 @@ struct TripleChevronFactory
   }
 
   template <class T = void>
-  CUB_RUNTIME_FUNCTION ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  CUB_RUNTIME_FUNCTION ::cudaError_t PtxComputeCap(::cuda::compute_capability& cc) const
   {
-    return ptx_arch_id<T>(arch_id);
+    return ptx_compute_cap<T>(cc);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const

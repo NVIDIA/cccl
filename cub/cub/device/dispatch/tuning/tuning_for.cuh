@@ -53,7 +53,7 @@ concept for_policy_selector = policy_selector<T, for_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> for_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> for_policy
   {
     return for_policy{256, 2};
   }

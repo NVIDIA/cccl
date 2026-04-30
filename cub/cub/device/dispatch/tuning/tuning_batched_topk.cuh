@@ -16,7 +16,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/array>
 
@@ -91,7 +91,7 @@ concept batched_topk_policy_selector = policy_selector<T, batched_topk_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> batched_topk_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> batched_topk_policy
   {
     constexpr auto load_alg  = BLOCK_LOAD_WARP_TRANSPOSE;
     constexpr auto store_alg = BLOCK_STORE_WARP_TRANSPOSE;
@@ -109,9 +109,9 @@ struct policy_selector
 template <typename KeyT, typename ValueT, typename SegmentSizeT, ::cuda::std::int64_t MaxK>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> batched_topk_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> batched_topk_policy
   {
-    return policy_selector{}(arch);
+    return policy_selector{}(cc);
   }
 };
 

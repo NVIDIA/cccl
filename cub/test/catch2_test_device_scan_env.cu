@@ -15,7 +15,7 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/iterator>
 
 #include "catch2_test_device_scan.cuh"
@@ -55,9 +55,9 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
 
-  cuda::arch_id arch_id;
-  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
+  cuda::compute_capability cc;
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  const auto target_block_size = selector_t{}(cc).lookback.block_threads;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
@@ -108,7 +108,7 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
 template <int BlockThreads>
 struct scan_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::scan::scan_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan::scan_policy
   {
     return {cub::detail::scan::scan_algorithm::lookback,
             {BlockThreads,
@@ -128,7 +128,7 @@ struct unrelated_policy
 struct unrelated_tuning
 {
   // should never be called
-  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
+  auto operator()(cuda::compute_capability) const -> unrelated_policy
   {
     throw 1337;
   }
@@ -205,9 +205,9 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
 
-  cuda::arch_id arch_id;
-  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
+  cuda::compute_capability cc;
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  const auto target_block_size = selector_t{}(cc).lookback.block_threads;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};

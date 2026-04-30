@@ -252,7 +252,7 @@ struct device_rle_policy_selector
   static constexpr int threads = 96;
   static constexpr int items   = 15;
 
-  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const
     -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
     return {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS};

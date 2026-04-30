@@ -100,7 +100,7 @@ struct policy_selector
   int accum_size;
   int accum_align;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_scan_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> segmented_scan_policy
   {
     constexpr int nominal_block_threads    = 128;
     constexpr int nominal_items_per_thread = 9;
@@ -142,11 +142,11 @@ static_assert(segmented_scan_policy_selector<policy_selector>);
 template <typename AccumT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_scan_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_scan_policy
   {
     constexpr auto accum_size  = static_cast<int>(sizeof(AccumT));
     constexpr auto accum_align = static_cast<int>(alignof(AccumT));
-    return policy_selector{accum_size, accum_align}(arch);
+    return policy_selector{accum_size, accum_align}(cc);
   };
 };
 } // namespace detail::segmented_scan

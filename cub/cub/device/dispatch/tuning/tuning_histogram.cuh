@@ -19,7 +19,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 
@@ -293,9 +293,9 @@ private:
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> histogram_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
   {
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
       {
@@ -315,7 +315,7 @@ public:
       // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive)
       {
@@ -342,7 +342,7 @@ static_assert(histogram_policy_selector<policy_selector>);
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> histogram_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
   {
     constexpr auto policies = policy_selector{
       is_primitive_v<SampleT>,
@@ -352,7 +352,7 @@ struct policy_selector_from_types
       NumChannels,
       NumActiveChannels,
       IsEven};
-    return policies(arch);
+    return policies(cc);
   }
 };
 } // namespace detail::histogram

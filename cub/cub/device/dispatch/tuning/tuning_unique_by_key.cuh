@@ -23,7 +23,7 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
 
@@ -1454,9 +1454,9 @@ private:
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> unique_by_key_policy
   {
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (auto tuning = get_sm100_tuning())
       {
@@ -1464,7 +1464,7 @@ public:
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (auto tuning = get_sm90_tuning())
       {
@@ -1473,12 +1473,12 @@ public:
       return get_default_policy();
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return get_default_policy();
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (auto tuning = get_sm80_tuning())
       {
@@ -1493,13 +1493,13 @@ public:
 template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> unique_by_key_policy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),
       static_cast<int>(sizeof(ValueT)),
       is_primitive<KeyT>::value && sizeof(KeyT) <= 8,
-      is_primitive<ValueT>::value && sizeof(ValueT) <= 8}(arch);
+      is_primitive<ValueT>::value && sizeof(ValueT) <= 8}(cc);
   }
 };
 
@@ -1518,7 +1518,7 @@ _CCCL_API constexpr auto convert_policy() -> unique_by_key_policy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> unique_by_key_policy
   {
     using UniqueByKeyPolicyT = typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT;
     return unique_by_key_policy{

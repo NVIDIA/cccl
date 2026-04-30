@@ -18,7 +18,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
 #include <cuda/std/optional>
@@ -346,11 +346,11 @@ struct policy_selector
   int offset_size;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
   {
     // if we don't have a tuning for sm100, fall through
     auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
-    if (arch >= ::cuda::arch_id::sm_100 && sm100_tuning)
+    if (cc >= ::cuda::compute_capability{10, 0} && sm100_tuning)
     {
       agent_reduce_policy rp{};
       auto [scaled_items, scaled_threads] = scale_mem_bound(sm100_tuning->threads, sm100_tuning->items, accum_size);
@@ -362,7 +362,7 @@ struct policy_selector
       return {rp, rp, rp_nondet};
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{6, 0})
     {
       constexpr int threads_per_block  = 256;
       constexpr int items_per_thread   = 16;
@@ -402,11 +402,11 @@ static_assert(reduce_policy_selector<policy_selector>);
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
   {
     constexpr auto policies =
       policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
-    return policies(arch);
+    return policies(cc);
   }
 };
 } // namespace detail::reduce
