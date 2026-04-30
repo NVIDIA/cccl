@@ -106,6 +106,13 @@ template <::cuda::std::int64_t MinNumSegments = 1,
           ::cuda::std::int64_t MaxNumSegments = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
 using num_segments_uniform = params::uniform_param<::cuda::std::int64_t, MinNumSegments, MaxNumSegments>;
 
+// Number of segments via iterator
+template <typename NumSegmentsItT,
+          ::cuda::std::int64_t MinNumSegments = 1,
+          ::cuda::std::int64_t MaxNumSegments = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+using num_segments_indirect =
+  params::per_segment_param<NumSegmentsItT, ::cuda::std::int64_t, MinNumSegments, MaxNumSegments>;
+
 // ------------ TOTAL NUMBER OF ITEMS PARAMETER TYPES ------------
 
 // Number of items guarantee
