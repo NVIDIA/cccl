@@ -20,7 +20,7 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -237,7 +237,7 @@ template <typename PolicySelector,
           typename OffsetT>
 __launch_bounds__(
   device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, current_tuning_arch()>,
+    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -257,7 +257,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, current_tuning_arch()>,
+    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,

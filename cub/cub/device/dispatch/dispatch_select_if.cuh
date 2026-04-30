@@ -336,7 +336,7 @@ template <typename PolicySelectorT,
   requires select_if_policy_selector<PolicySelectorT>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
-  make_vsmem_helper<policy_getter<PolicySelectorT, current_tuning_arch()>,
+  make_vsmem_helper<policy_getter<PolicySelectorT, current_tuning_cc().get()>,
                     SelectionOpt,
                     InputIteratorT,
                     FlagsInputIteratorT,
@@ -359,7 +359,7 @@ __launch_bounds__(int(
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<
-    policy_getter<PolicySelectorT, current_tuning_arch()>,
+    policy_getter<PolicySelectorT, current_tuning_cc().get()>,
     SelectionOpt,
     InputIteratorT,
     FlagsInputIteratorT,
@@ -391,7 +391,7 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   // this is only called in device code
-  [[nodiscard]] _CCCL_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const -> select_if_policy
+  [[nodiscard]] _CCCL_DEVICE constexpr auto operator()(::cuda::compute_capability) const -> select_if_policy
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::SelectIfPolicyT;
     return select_if_policy{
@@ -1101,22 +1101,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST, ({
-      ::std::stringstream ss;
-      ss << PolicySelector{}(arch_id);
-      _CubLog("Dispatching DeviceSelectIf to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
-    }))
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << PolicySelector{}(cc);
+                 _CubLog("Dispatching DeviceSelectIf to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(
       policy_getter,
       d_temp_storage,

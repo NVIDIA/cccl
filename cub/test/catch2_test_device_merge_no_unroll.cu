@@ -64,7 +64,7 @@ using large_type_vsmem = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_c
 
 struct fixed_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::merge::merge_policy
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::merge::merge_policy
   {
     return {128, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false};
   }

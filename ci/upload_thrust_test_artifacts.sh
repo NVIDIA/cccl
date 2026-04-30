@@ -2,13 +2,15 @@
 
 set -euo pipefail
 
-if [ -z "${GITHUB_ACTIONS:-}" ]; then
+if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
   echo "This script must be run in a GitHub Actions environment." >&2
   exit 1
 fi
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly repo_root="$(cd "${ci_dir}/.." && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ci_dir
+repo_root="$(cd "${ci_dir}/.." && pwd)"
+readonly repo_root
 
 cd "$repo_root"
 
@@ -27,13 +29,13 @@ if grep -q "TestCPU" <<< "$consumers"; then
   preset_variants+=("test_cpu")
 fi
 
-artifact_prefix=z_thrust-test-artifacts-$DEVCONTAINER_NAME-${JOB_ID}
+artifact_prefix="z_thrust-test-artifacts-${DEVCONTAINER_NAME:?}-${JOB_ID:?}"
 
 # BUILD_INFIX is undefined on windows CI
 build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/thrust[^/]*"
 
 # Just collect the minimum set of files needed for running each ctest preset:
-for preset_variant in ${preset_variants[@]}; do
+for preset_variant in "${preset_variants[@]}"; do
   # Shared across all presets:
   ci/util/artifacts/stage.sh "$artifact_prefix-$preset_variant" \
       "$build_dir_regex/build\.ninja$" \
@@ -44,7 +46,7 @@ for preset_variant in ${preset_variants[@]}; do
       > /dev/null
 done
 
-if [[ " ${preset_variants[@]} " =~ " test_cpu " ]]; then
+if [[ " ${preset_variants[*]} " == *" test_cpu "* ]]; then
   # Initially add all binaries, then remove all containing 'cuda' in the name:
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-test_cpu" \
@@ -68,7 +70,7 @@ if [[ " ${preset_variants[@]} " =~ " test_cpu " ]]; then
   ci/util/artifacts/upload_stage_packed.sh "$artifact_prefix-test_cpu"
 fi
 
-if [[ " ${preset_variants[@]} " =~ " test_gpu " ]]; then
+if [[ " ${preset_variants[*]} " == *" test_gpu "* ]]; then
   # Only binaries containing 'cuda':
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-test_gpu" \

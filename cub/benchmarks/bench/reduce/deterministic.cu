@@ -14,7 +14,8 @@
 #if !TUNE_BASE
 struct policy_selector_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::rfa::rfa_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::rfa::rfa_policy
   {
     return {{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, cub::BLOCK_REDUCE_RAKING},
             {TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, cub::BLOCK_REDUCE_RAKING}};

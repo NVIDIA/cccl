@@ -59,7 +59,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KER
   using agent_find_t =
     agent_t<policy.block_threads,
             policy.items_per_thread,
-            policy.vector_load_length,
+            policy.vec_size,
             policy.load_modifier,
             IteratorT,
             OffsetT,
@@ -106,19 +106,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT> && ::cuda::std::is_integral_v<output_t>
     && size_of<output_t> == sizeof(OffsetT);
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  const find_policy active_policy = policy_selector(arch_id);
+  const find_policy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;
                  ss << active_policy;
-                 _CubLog("Dispatching DeviceFind to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 _CubLog("Dispatching DeviceFind to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 

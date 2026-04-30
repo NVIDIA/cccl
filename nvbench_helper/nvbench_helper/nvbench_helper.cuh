@@ -47,8 +47,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(complex64, "C64", "complex64");
 
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMin, "ArgMin", "cub::ArgMin");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMax, "ArgMax", "cub::ArgMax");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_min, "arg_min", "cub::detail::arg_min");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_max, "arg_max", "cub::detail::arg_max");
 
 template <typename T, T I>
 struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>

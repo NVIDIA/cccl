@@ -244,7 +244,7 @@ try
 {
   const char* name = "test";
 
-  const int cc           = cc_major * 10 + cc_minor;
+  const cuda::compute_capability cc{cc_major, cc_minor};
   const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
   const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
   const auto level_cpp   = cccl_type_enum_to_name(lower_level.type.type);
@@ -271,8 +271,7 @@ try
     num_active_channels,
     is_evenly_segmented};
 
-  const auto arch_id       = cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor});
-  const auto active_policy = policy_sel(arch_id);
+  const auto active_policy = policy_sel(cc);
 
   std::stringstream policy_sel_str;
   policy_sel_str << active_policy;
@@ -299,7 +298,7 @@ struct __align__({1}) storage_t {{
 using device_histogram_policy = {3};
 using namespace cub;
 using namespace cub::detail::histogram;
-static_assert(device_histogram_policy()(detail::current_tuning_arch()) == {4}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     d_samples.value_type.size, // 0
     d_samples.value_type.alignment, // 1
@@ -380,7 +379,7 @@ static_assert(device_histogram_policy()(detail::current_tuning_arch()) == {4}, "
   check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
-  build_ptr->cc                  = cc;
+  build_ptr->cc                  = cc.get();
   build_ptr->cubin               = (void*) result.data.release();
   build_ptr->cubin_size          = result.size;
   build_ptr->counter_type        = d_output_histograms.value_type;

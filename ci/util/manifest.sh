@@ -5,7 +5,7 @@
 # TODO: rewrite using printf if we can keep nice formatting.
 set -u
 
-path="$(realpath $1)"
+path="$(realpath "$1")"
 outfile="$2"
 version="$3"
 platform="$4"

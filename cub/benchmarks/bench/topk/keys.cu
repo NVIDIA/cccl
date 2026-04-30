@@ -14,7 +14,8 @@
 template <class KeyInT, class OffsetT>
 struct policy_selector_t
 {
-  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id) const -> cub::detail::topk::topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::topk::topk_policy
   {
 #  if TUNE_BLOCK_LOAD_ALGORITHM == 0
     constexpr auto load_alg = cub::BLOCK_LOAD_DIRECT;

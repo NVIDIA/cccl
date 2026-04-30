@@ -54,7 +54,9 @@
 #  include <cuda/std/__pstl/is_partitioned.h>
 #  include <cuda/std/__pstl/is_sorted.h>
 #  include <cuda/std/__pstl/is_sorted_until.h>
+#  include <cuda/std/__pstl/max_element.h>
 #  include <cuda/std/__pstl/merge.h>
+#  include <cuda/std/__pstl/min_element.h>
 #  include <cuda/std/__pstl/mismatch.h>
 #  include <cuda/std/__pstl/none_of.h>
 #  include <cuda/std/__pstl/partition.h>

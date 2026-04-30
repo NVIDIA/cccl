@@ -30,7 +30,8 @@
 template <typename KeyT>
 struct bench_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge::merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::merge::merge_policy
   {
     return cub::detail::merge::merge_policy{
       (1 << TUNE_THREADS_PER_BLOCK_POW2),

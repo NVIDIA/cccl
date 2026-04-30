@@ -34,17 +34,6 @@
 #  include <ciso646>
 #endif // ^^^ __has_include(<ciso646>) ^^^
 
-// Freestanding environment detection
-// NVRTC is treated as freestanding since it has no access to the host standard library
-#if defined(_CCCL_ENABLE_FREESTANDING) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_FREESTANDING() 1
-#  define _CCCL_NO_TYPEID
-#else
-#  define _CCCL_FREESTANDING() 0
-#endif
-
-#define _CCCL_HOSTED() (!_CCCL_FREESTANDING())
-
 #define _CCCL_HOST_STD_LIB_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 100 + (_MINOR))
 #define _CCCL_HOST_STD_LIB(...)                         _CCCL_VERSION_COMPARE(_CCCL_HOST_STD_LIB_, _CCCL_HOST_STD_LIB_##__VA_ARGS__)
 

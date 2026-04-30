@@ -18,7 +18,7 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/atomic>
 
 CUB_NAMESPACE_BEGIN
@@ -145,7 +145,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.block_threads)) vo
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
                       AccumT,
-                      policy.vector_load_length,
+                      policy.vec_size,
                       policy.block_algorithm,
                       policy.load_modifier,
                       NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
@@ -238,7 +238,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().single_tile.block_threads
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
                       AccumT,
-                      policy.vector_load_length,
+                      policy.vec_size,
                       policy.block_algorithm,
                       policy.load_modifier,
                       NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
@@ -325,7 +325,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
                       AccumT,
-                      policy.vector_load_length,
+                      policy.vec_size,
                       policy.block_algorithm,
                       policy.load_modifier,
                       NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;

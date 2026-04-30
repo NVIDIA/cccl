@@ -95,6 +95,8 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   std::size_t temp_size{};
   using override_offset_t = cuda::std::conditional_t<(is_argmin || is_argmax), int, cub::detail::use_default>;
 
+  // TODO(bgruber): rewrite this to use the public CUB API directly. But in order to do this, we need to expose the
+  // guaranteed_max_seg_size at the public API
   cub::detail::segmented_reduce::dispatch<accum_t, override_offset_t>(
     nullptr,
     temp_size,
