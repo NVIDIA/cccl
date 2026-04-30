@@ -26,7 +26,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_writes<T>(1);
+  state.add_global_memory_writes<typename thrust::device_vector<T>::iterator::difference_type>(1);
 
   caching_allocator_t alloc{};
 
@@ -50,7 +50,7 @@ static void with_comp(nvbench::state& state, nvbench::type_list<T>)
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_writes<T>(1);
+  state.add_global_memory_writes<typename thrust::device_vector<T>::iterator::difference_type>(1);
 
   caching_allocator_t alloc{};
 
