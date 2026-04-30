@@ -26,6 +26,7 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/__iterator/discard_iterator.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -348,8 +349,8 @@ cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, 
     return last;
   }
 
-  size_t tmp_size = 0;
-  auto error      = cub::DeviceReduce::ArgMin(
+  ::cuda::std::size_t tmp_size = 0;
+  auto error                   = cub::DeviceReduce::ArgMin(
     nullptr,
     tmp_size,
     first,
@@ -363,7 +364,7 @@ cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, 
   // We allocate both the temporary storage needed for the algorithm, and a `size_type` to store the result.
   thrust::detail::temporary_array<char, Derived> tmp(policy, sizeof(offset_t) + tmp_size);
   offset_t* index_ptr = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get());
-  void* tmp_ptr       = static_cast<void*>(tmp.data().get() + sizeof(offset_t));
+  auto tmp_ptr        = static_cast<void*>(tmp.data().get() + sizeof(offset_t));
 
   error = cub::DeviceReduce::ArgMin(
     tmp_ptr, tmp_size, first, ::cuda::discard_iterator{}, index_ptr, num_items, binary_pred, stream);
