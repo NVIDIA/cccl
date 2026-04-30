@@ -112,6 +112,11 @@ public:
                        _PrevMappingResult::is_always_exhaustive() && _IsExhaustive,
                        _PrevMappingResult::is_always_contiguous()>;
 
+    if (!__prev_mapping_result.is_valid())
+    {
+      return _MappingResult::invalid();
+    }
+
     const auto __prev_nunits      = __prev_mapping_result.count();
     const auto __prev_unit_rank   = __prev_mapping_result.rank();
     constexpr auto __curr_ngroups = static_cast<unsigned>(sizeof...(_Counts));
@@ -244,6 +249,11 @@ public:
                        ::cuda::std::dynamic_extent,
                        _PrevMappingResult::is_always_exhaustive() && _IsExhaustive,
                        _PrevMappingResult::is_always_contiguous()>;
+
+    if (!__prev_mapping_result.is_valid())
+    {
+      return _MappingResult::invalid();
+    }
 
     const auto __prev_nunits      = __prev_mapping_result.count();
     const auto __prev_unit_rank   = __prev_mapping_result.rank();
