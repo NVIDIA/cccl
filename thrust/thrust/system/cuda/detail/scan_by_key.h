@@ -60,6 +60,8 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     return result;
   }
 
+  using accum_t = thrust::detail::it_value_t<ValuesInIt>;
+
   // Convert to raw pointers if possible:
   auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
   auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
@@ -72,9 +74,18 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   std::size_t tmp_size = 0;
   THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
     status,
-    cub::DeviceScan::InclusiveScanByKey,
+    cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>,
     num_items,
-    (nullptr, tmp_size, keys_unwrap, values_unwrap, result_unwrap, scan_op, num_items_fixed, equality_op, stream));
+    (nullptr,
+     tmp_size,
+     keys_unwrap,
+     values_unwrap,
+     result_unwrap,
+     equality_op,
+     scan_op,
+     cub::NullType{},
+     num_items_fixed,
+     stream));
   thrust::cuda_cub::throw_on_error(
     status,
     "after determining tmp storage "
@@ -87,16 +98,17 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
 
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      cub::DeviceScan::InclusiveScanByKey,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>,
       num_items,
       (tmp.data().get(),
        tmp_size,
        keys_unwrap,
        values_unwrap,
        result_unwrap,
-       scan_op,
-       num_items_fixed,
        equality_op,
+       scan_op,
+       cub::NullType{},
+       num_items_fixed,
        stream));
 
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan_by_key kernel");
@@ -144,17 +156,17 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   std::size_t tmp_size = 0;
   THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
     status,
-    cub::DeviceScan::ExclusiveScanByKey,
+    cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ InitValueT>,
     num_items,
     (nullptr,
      tmp_size,
      keys_unwrap,
      values_unwrap,
      result_unwrap,
+     equality_op,
      scan_op,
      init_value,
      num_items_fixed,
-     equality_op,
      stream));
   thrust::cuda_cub::throw_on_error(
     status,
@@ -168,17 +180,17 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
 
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      cub::DeviceScan::ExclusiveScanByKey,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ InitValueT>,
       num_items,
       (tmp.data().get(),
        tmp_size,
        keys_unwrap,
        values_unwrap,
        result_unwrap,
+       equality_op,
        scan_op,
        init_value,
        num_items_fixed,
-       equality_op,
        stream));
 
     thrust::cuda_cub::throw_on_error(status, "after dispatching exclusive_scan_by_key kernel");

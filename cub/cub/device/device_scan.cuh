@@ -204,15 +204,8 @@ struct DeviceScan
     using policy_selector_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
 
-    return detail::scan_by_key::dispatch<
-      KeysInputIteratorT,
-      ValuesInputIteratorT,
-      ValuesOutputIteratorT,
-      EqualityOpT,
-      ScanOpT,
-      InitValueT,
-      offset_t,
-      accum_t>(
+    // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
+    return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
