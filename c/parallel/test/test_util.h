@@ -916,7 +916,7 @@ struct name_source_t
 template <class ValueT, class StateT>
 iterator_t<ValueT, StateT> make_iterator(name_source_t state, operation_t advance, operation_t dereference)
 {
-  iterator_t<ValueT, StateT> it;
+  iterator_t<ValueT, StateT> it{};
   it.state_name                = state.name;
   const std::string& state_src = std::string{state.def_src};
   it.advance                   = make_operation(advance.name, state_src + advance.code);
