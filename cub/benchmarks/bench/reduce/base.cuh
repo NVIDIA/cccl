@@ -13,12 +13,13 @@
 #if !TUNE_BASE
 struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_policy
+  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::detail::reduce::reduce_policy
   {
-    const auto [items, threads] = cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD);
-    const auto policy           = cub::agent_reduce_policy{
+    const auto [items, threads] =
+      cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(TUNE_T)});
+    const auto policy = cub::detail::reduce::agent_reduce_policy{
       threads, items, 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {policy, policy, policy, policy};
+    return {policy, policy, policy};
   }
 };
 #endif // !TUNE_BASE
