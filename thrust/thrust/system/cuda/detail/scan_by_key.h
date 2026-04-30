@@ -72,24 +72,26 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
 
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
-  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
-    status,
-    cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>,
-    num_items,
-    (nullptr,
-     tmp_size,
-     keys_unwrap,
-     values_unwrap,
-     result_unwrap,
-     equality_op,
-     scan_op,
-     cub::NullType{},
-     num_items_fixed,
-     stream));
-  thrust::cuda_cub::throw_on_error(
-    status,
-    "after determining tmp storage "
-    "requirements for inclusive_scan_by_key");
+  {
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
+      status,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>,
+      num_items,
+      (nullptr,
+       tmp_size,
+       keys_unwrap,
+       values_unwrap,
+       result_unwrap,
+       equality_op,
+       scan_op,
+       cub::NullType{},
+       num_items_fixed,
+       stream));
+    thrust::cuda_cub::throw_on_error(
+      status,
+      "after determining tmp storage "
+      "requirements for inclusive_scan_by_key");
+  }
 
   // Run scan:
   {
@@ -154,24 +156,26 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
 
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
-  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
-    status,
-    cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ InitValueT>,
-    num_items,
-    (nullptr,
-     tmp_size,
-     keys_unwrap,
-     values_unwrap,
-     result_unwrap,
-     equality_op,
-     scan_op,
-     init_value,
-     num_items_fixed,
-     stream));
-  thrust::cuda_cub::throw_on_error(
-    status,
-    "after determining tmp storage "
-    "requirements for exclusive_scan_by_key");
+  {
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
+      status,
+      cub::detail::scan_by_key::dispatch</* OverrideAccumT = */ InitValueT>,
+      num_items,
+      (nullptr,
+       tmp_size,
+       keys_unwrap,
+       values_unwrap,
+       result_unwrap,
+       equality_op,
+       scan_op,
+       init_value,
+       num_items_fixed,
+       stream));
+    thrust::cuda_cub::throw_on_error(
+      status,
+      "after determining tmp storage "
+      "requirements for exclusive_scan_by_key");
+  }
 
   // Run scan:
   {
