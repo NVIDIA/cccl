@@ -38,9 +38,9 @@ using __as_span_t = ::cuda::std::span<::cuda::std::remove_reference_t<::cuda::st
 //! @brief A concept that checks if the type can be converted to a `cuda::std::span`.
 //! The type must be a contiguous range.
 template <typename _Tp>
-_CCCL_CONCEPT __spannable = _CCCL_REQUIRES_EXPR((_Tp))( //
-  requires(::cuda::std::ranges::contiguous_range<_Tp>), //
-  requires(::cuda::std::convertible_to<_Tp, __as_span_t<_Tp>>));
+_CCCL_CONCEPT __spannable = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __value)( //
+  _Satisfies(::cuda::std::ranges::contiguous_range)::cuda::std::forward<_Tp>(__value), //
+  _Convertible_to(__as_span_t<_Tp>)::cuda::std::forward<_Tp>(__value));
 
 template <typename _Tp>
 using __as_mdspan_t =
@@ -52,8 +52,8 @@ using __as_mdspan_t =
 //! @brief A concept that checks if the type can be converted to a `cuda::std::mdspan`.
 //! The type must have a conversion to `__as_mdspan_t<_Tp>`.
 template <typename _Tp>
-_CCCL_CONCEPT __mdspannable =
-  _CCCL_REQUIRES_EXPR((_Tp))(requires(::cuda::std::convertible_to<_Tp, __as_mdspan_t<_Tp>>));
+_CCCL_CONCEPT __mdspannable = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __value)( //
+  _Convertible_to(__as_mdspan_t<_Tp>)::cuda::std::forward<_Tp>(__value));
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_API constexpr auto __as_mdspan(_Tp&& __value) noexcept -> __as_mdspan_t<_Tp>
