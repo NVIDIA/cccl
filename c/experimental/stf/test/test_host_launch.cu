@@ -101,8 +101,8 @@ C2H_TEST("host_launch with stream context", "[host_launch]")
   stf_host_launch_submit(h, verify_callback);
   stf_host_launch_destroy(h);
 
-  stf_ctx_finalize(ctx);
   stf_logical_data_destroy(lData);
+  stf_ctx_finalize(ctx);
 
   REQUIRE(passed);
 
@@ -152,8 +152,8 @@ C2H_TEST("host_launch with graph context", "[host_launch]")
   stf_host_launch_submit(h, verify_callback);
   stf_host_launch_destroy(h);
 
-  stf_ctx_finalize(ctx);
   stf_logical_data_destroy(lData);
+  stf_ctx_finalize(ctx);
 
   REQUIRE(passed);
 
