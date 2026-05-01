@@ -19,6 +19,7 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/dispatch_find.cuh>
+#include <cub/device/dispatch/dispatch_find_bound_sorted_values.cuh>
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/__iterator/zip_iterator.h>
@@ -668,6 +669,238 @@ struct DeviceFind
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
         ::cuda::stream_ref{stream});
     });
+  }
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Accelerated variant of :cpp:func:`LowerBound` that exploits the additional
+  //! precondition that ``[d_values, d_values + values_num_items)`` is also
+  //! sorted consistently with ``comp``.
+  //!
+  //! For each ``value`` in ``[d_values, d_values + values_num_items)``,
+  //! performs a search in ``[d_range, d_range + range_num_items)`` to find the
+  //! iterator to the first element that is **not ordered before** ``value``.
+  //!
+  //! Because both sequences are sorted, the algorithm uses the Merge-Path
+  //! algorithm (Odeh et al., IPDPS 2012) to partition the combined traversal
+  //! across thread blocks, achieving O(N+M) total device work rather than the
+  //! O(M log N) of independent binary searches.
+  //!
+  //! - Both ``[d_range, d_range + range_num_items)`` **and**
+  //!   ``[d_values, d_values + values_num_items)`` must be sorted consistently
+  //!   with ``comp``.
+  //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.4.0
+  //!
+  //! @endrst
+  //!
+  //! @tparam RangeIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a
+  //!   [Relation] with the value type of ``ValuesIteratorT`` via ``CompareOpT``.
+  //!
+  //! @tparam RangeNumItemsT
+  //!   is an integral type representing the number of elements in the range.
+  //!
+  //! @tparam ValuesIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a
+  //!   [Relation] with the value type of ``RangeIteratorT`` via ``CompareOpT``.
+  //!
+  //! @tparam ValuesNumItemsT
+  //!   is an integral type representing the number of values to search for.
+  //!
+  //! @tparam OutputIteratorT
+  //!   is a model of [Random Access Iterator] whose value type is assignable
+  //!   from ``RangeIteratorT``'s difference type.
+  //!
+  //! @tparam CompareOpT
+  //!   is a model of [Strict Weak Ordering] over the value types of both
+  //!   iterator types.
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_range
+  //!   Iterator to the beginning of the ordered haystack range.
+  //!
+  //! @param[in] range_num_items
+  //!   Number of elements in the haystack range.
+  //!
+  //! @param[in] d_values
+  //!   Iterator to the beginning of the sorted range of needles.
+  //!
+  //! @param[in] values_num_items
+  //!   Number of needle elements.
+  //!
+  //! @param[out] d_output
+  //!   Iterator to the beginning of the output range.
+  //!
+  //! @param[in] comp
+  //!   Comparison function object (Strict Weak Ordering).
+  //!
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
+  //!   Default is stream<sub>0</sub>.
+  //!
+  //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
+  //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+  //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
+  template <typename RangeIteratorT,
+            typename RangeNumItemsT,
+            typename ValuesIteratorT,
+            typename ValuesNumItemsT,
+            typename OutputIteratorT,
+            typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t LowerBoundSortedValues(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RangeIteratorT d_range,
+    RangeNumItemsT range_num_items,
+    ValuesIteratorT d_values,
+    ValuesNumItemsT values_num_items,
+    OutputIteratorT d_output,
+    CompareOpT comp,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::LowerBoundSortedValues");
+
+    using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
+    using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
+    using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
+
+    return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_range,
+      static_cast<OffsetT>(range_num_items),
+      d_values,
+      static_cast<OffsetT>(values_num_items),
+      d_output,
+      comp,
+      stream);
+  }
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Accelerated variant of :cpp:func:`UpperBound` that exploits the additional
+  //! precondition that ``[d_values, d_values + values_num_items)`` is also
+  //! sorted consistently with ``comp``.
+  //!
+  //! For each ``value`` in ``[d_values, d_values + values_num_items)``,
+  //! performs a search in ``[d_range, d_range + range_num_items)`` to find the
+  //! iterator to the first element that is **ordered after** ``value``.
+  //!
+  //! Because both sequences are sorted, the algorithm uses the Merge-Path
+  //! algorithm (Odeh et al., IPDPS 2012) to partition the combined traversal
+  //! across thread blocks, achieving O(N+M) total device work rather than the
+  //! O(M log N) of independent binary searches.
+  //!
+  //! - Both ``[d_range, d_range + range_num_items)`` **and**
+  //!   ``[d_values, d_values + values_num_items)`` must be sorted consistently
+  //!   with ``comp``.
+  //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.4.0
+  //!
+  //! @endrst
+  //!
+  //! @tparam RangeIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a
+  //!   [Relation] with the value type of ``ValuesIteratorT`` via ``CompareOpT``.
+  //!
+  //! @tparam RangeNumItemsT
+  //!   is an integral type representing the number of elements in the range.
+  //!
+  //! @tparam ValuesIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a
+  //!   [Relation] with the value type of ``RangeIteratorT`` via ``CompareOpT``.
+  //!
+  //! @tparam ValuesNumItemsT
+  //!   is an integral type representing the number of values to search for.
+  //!
+  //! @tparam OutputIteratorT
+  //!   is a model of [Random Access Iterator] whose value type is assignable
+  //!   from ``RangeIteratorT``'s difference type.
+  //!
+  //! @tparam CompareOpT
+  //!   is a model of [Strict Weak Ordering] over the value types of both
+  //!   iterator types.
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_range
+  //!   Iterator to the beginning of the ordered haystack range.
+  //!
+  //! @param[in] range_num_items
+  //!   Number of elements in the haystack range.
+  //!
+  //! @param[in] d_values
+  //!   Iterator to the beginning of the sorted range of needles.
+  //!
+  //! @param[in] values_num_items
+  //!   Number of needle elements.
+  //!
+  //! @param[out] d_output
+  //!   Iterator to the beginning of the output range.
+  //!
+  //! @param[in] comp
+  //!   Comparison function object (Strict Weak Ordering).
+  //!
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
+  //!   Default is stream<sub>0</sub>.
+  //!
+  //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
+  //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+  //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
+  template <typename RangeIteratorT,
+            typename RangeNumItemsT,
+            typename ValuesIteratorT,
+            typename ValuesNumItemsT,
+            typename OutputIteratorT,
+            typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t UpperBoundSortedValues(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RangeIteratorT d_range,
+    RangeNumItemsT range_num_items,
+    ValuesIteratorT d_values,
+    ValuesNumItemsT values_num_items,
+    OutputIteratorT d_output,
+    CompareOpT comp,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::UpperBoundSortedValues");
+
+    using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
+    using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
+    using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
+
+    return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_range,
+      static_cast<OffsetT>(range_num_items),
+      d_values,
+      static_cast<OffsetT>(values_num_items),
+      d_output,
+      comp,
+      stream);
   }
 };
 

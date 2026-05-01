@@ -1,0 +1,216 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#pragma once
+
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/block_merge_sort.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_namespace.cuh>
+#include <cub/util_type.cuh>
+
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__utility/forward.h>
+
+CUB_NAMESPACE_BEGIN
+
+namespace detail::find_bound_sorted_values
+{
+// lower_bound vs upper_bound: partition comparator and per-step advance differ.
+struct lower_bound_mode
+{
+  // Wrap user comp so the merge path partitions identically to std::lower_bound.
+  template <typename CompareOp>
+  struct partition_comp_t
+  {
+    CompareOp comp;
+
+    template <typename A, typename B>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(A&& a, B&& b) const
+    {
+      return !comp(::cuda::std::forward<B>(b), ::cuda::std::forward<A>(a));
+    }
+  };
+
+  template <typename CompareOp>
+  _CCCL_HOST_DEVICE static partition_comp_t<CompareOp> make_partition_comp(CompareOp compare_op)
+  {
+    return {compare_op};
+  }
+
+  template <typename H, typename N, typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static bool should_advance(const H& h, const N& n, CompareOp compare_op)
+  {
+    return compare_op(h, n);
+  }
+};
+
+struct upper_bound_mode
+{
+  template <typename CompareOp>
+  using partition_comp_t = CompareOp;
+
+  template <typename CompareOp>
+  _CCCL_HOST_DEVICE static CompareOp make_partition_comp(CompareOp compare_op)
+  {
+    return compare_op;
+  }
+
+  template <typename H, typename N, typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static bool should_advance(const H& h, const N& n, CompareOp compare_op)
+  {
+    return !compare_op(n, h);
+  }
+};
+
+template <int BlockThreads,
+          int ItemsPerThread,
+          CacheLoadModifier LoadModifier,
+          typename Mode,
+          typename HaystackIt,
+          typename NeedlesIt,
+          typename OutputIt,
+          typename Offset,
+          typename CompareOp>
+struct agent_t
+{
+  static constexpr int tile_size = BlockThreads * ItemsPerThread;
+
+  using haystack_type = it_value_t<HaystackIt>;
+  using needles_type  = it_value_t<NeedlesIt>;
+
+  // Separate buffers because haystack and needles may have different value types.
+  struct _TempStorage
+  {
+    haystack_type haystack[tile_size];
+    needles_type needles[tile_size];
+  };
+
+  using TempStorage = Uninitialized<_TempStorage>;
+
+  _TempStorage& storage;
+  HaystackIt d_range;
+  NeedlesIt d_values;
+  OutputIt d_output;
+  Offset range_count;
+  Offset values_count;
+  Offset* range_beg_offsets;
+  CompareOp compare_op;
+
+  template <bool IsFullTile>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset diag0, int total_in_tile)
+  {
+    const Offset range_beg  = range_beg_offsets[tile_idx];
+    const Offset range_end  = range_beg_offsets[tile_idx + 1];
+    const Offset values_beg = diag0 - range_beg;
+
+    const int haystack_count = static_cast<int>(range_end - range_beg);
+    const int needles_count  = total_in_tile - haystack_count;
+
+    {
+      auto d_range_cm = try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
+      for (int i = threadIdx.x; i < haystack_count; i += BlockThreads)
+      {
+        storage.haystack[i] = d_range_cm[i];
+      }
+    }
+
+    {
+      auto d_values_cm = try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
+      for (int i = threadIdx.x; i < needles_count; i += BlockThreads)
+      {
+        storage.needles[i] = d_values_cm[i];
+      }
+    }
+
+    __syncthreads();
+
+    const auto partition_comp = Mode::make_partition_comp(compare_op);
+
+    const int d0_thread =
+      IsFullTile ? (ItemsPerThread * static_cast<int>(threadIdx.x))
+                 : (::cuda::std::min) (ItemsPerThread * static_cast<int>(threadIdx.x), total_in_tile);
+
+    const int i0 = static_cast<int>(
+      cub::MergePath(storage.haystack, storage.needles, haystack_count, needles_count, d0_thread, partition_comp));
+    const int j0 = d0_thread - i0;
+
+    const int steps = IsFullTile ? ItemsPerThread : (::cuda::std::min) (total_in_tile - d0_thread, ItemsPerThread);
+
+    int i                  = i0;
+    int j                  = j0;
+    int haystack_remaining = haystack_count - i0;
+    int needles_remaining  = needles_count - j0;
+
+    if constexpr (IsFullTile)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int step = 0; step < ItemsPerThread; ++step)
+      {
+        const bool advance_haystack =
+          (needles_remaining == 0)
+          || (haystack_remaining > 0 && Mode::should_advance(storage.haystack[i], storage.needles[j], compare_op));
+        if (advance_haystack)
+        {
+          ++i;
+          --haystack_remaining;
+        }
+        else
+        {
+          d_output[values_beg + j] = static_cast<it_value_t<OutputIt>>(range_beg + i);
+          ++j;
+          --needles_remaining;
+        }
+      }
+    }
+    else
+    {
+      for (int step = 0; step < steps; ++step)
+      {
+        const bool advance_haystack =
+          (needles_remaining == 0)
+          || (haystack_remaining > 0 && Mode::should_advance(storage.haystack[i], storage.needles[j], compare_op));
+        if (advance_haystack)
+        {
+          ++i;
+          --haystack_remaining;
+        }
+        else
+        {
+          d_output[values_beg + j] = static_cast<it_value_t<OutputIt>>(range_beg + i);
+          ++j;
+          --needles_remaining;
+        }
+      }
+    }
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+  {
+    const Offset tile_idx   = blockIdx.x;
+    const Offset diag0      = static_cast<Offset>(tile_size) * tile_idx;
+    const Offset diag1      = (::cuda::std::min) (diag0 + static_cast<Offset>(tile_size), range_count + values_count);
+    const int total_in_tile = static_cast<int>(diag1 - diag0);
+
+    if (total_in_tile == tile_size)
+    {
+      consume_tile</* IsFullTile = */ true>(tile_idx, diag0, tile_size);
+    }
+    else
+    {
+      consume_tile</* IsFullTile = */ false>(tile_idx, diag0, total_in_tile);
+    }
+  }
+};
+} // namespace detail::find_bound_sorted_values
+
+CUB_NAMESPACE_END

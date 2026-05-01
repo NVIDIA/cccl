@@ -1,0 +1,111 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#pragma once
+
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
+
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/concepts>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
+CUB_NAMESPACE_BEGIN
+
+namespace detail::find_bound_sorted_values
+{
+struct find_bound_sorted_values_policy
+{
+  int block_threads;
+  int items_per_thread;
+  CacheLoadModifier load_modifier;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const find_bound_sorted_values_policy& lhs, const find_bound_sorted_values_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_modifier == rhs.load_modifier;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const find_bound_sorted_values_policy& lhs, const find_bound_sorted_values_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const find_bound_sorted_values_policy& p)
+  {
+    return os << "find_bound_sorted_values_policy { .block_threads = " << p.block_threads
+              << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept find_bound_sorted_values_policy_selector = policy_selector<T, find_bound_sorted_values_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+[[nodiscard]] _CCCL_API inline constexpr int
+nominal_4b_items_to_items(int nominal_4b_items_per_thread, int combined_type_size)
+{
+  return ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / combined_type_size, 1, nominal_4b_items_per_thread);
+}
+
+struct policy_selector
+{
+  int range_type_size;
+  int values_type_size;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> find_bound_sorted_values_policy
+  {
+    const int combined_size = range_type_size + values_type_size;
+    const int ipt           = nominal_4b_items_to_items(15, combined_size);
+
+    if (cc >= ::cuda::compute_capability{8, 0})
+    {
+      return find_bound_sorted_values_policy{512, ipt, LOAD_DEFAULT};
+    }
+
+    if (cc >= ::cuda::compute_capability{6, 0})
+    {
+      return find_bound_sorted_values_policy{256, ipt, LOAD_DEFAULT};
+    }
+
+    // default
+    return find_bound_sorted_values_policy{256, ipt, LOAD_LDG};
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(find_bound_sorted_values_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+template <typename RangeT, typename ValuesT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> find_bound_sorted_values_policy
+  {
+    return policy_selector{int{sizeof(RangeT)}, int{sizeof(ValuesT)}}(cc);
+  }
+};
+} // namespace detail::find_bound_sorted_values
+
+CUB_NAMESPACE_END
