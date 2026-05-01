@@ -39,7 +39,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // sinh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> sinh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API inline complex<_Tp> sinh(const complex<_Tp>& __x) noexcept
 {
   // Need to distinguish +-0.0, use signbit rather than >
   const bool __x_neg = ::cuda::std::signbit(__x.real());
@@ -124,7 +124,7 @@ template <class _Tp>
     // Calling exp loses too much accuracy (as well as relying on it being evaluated at compile time).
     // Set the value manually for now:
     // __out_scale = ::cuda::std::exp(__in_scale * _Tp{0.5});
-    __out_scale = is_same_v<_Tp, double> ? _Tp{7.715201168634011507e80} : _Tp{1.95729609e11};
+    __out_scale = is_same_v<_Tp, double> ? static_cast<_Tp>(7.715201168634011507e80) : static_cast<_Tp>(1.95729609e11f);
 
     // Other half of the interval:
     if (__real_x_abs > __overflow_interval_midpoint)
@@ -133,7 +133,8 @@ template <class _Tp>
 
       // Same as above, set the value manually for the moment:
       // __out_scale = ::cuda::std::exp(__in_scale * _Tp{0.5});
-      __out_scale = is_same_v<_Tp, double> ? _Tp{5.952432907249161686e161} : _Tp{3.831008e22};
+      __out_scale =
+        is_same_v<_Tp, double> ? static_cast<_Tp>(5.952432907249161686e161) : static_cast<_Tp>(3.831008e22f);
     }
 
     if (__real_x_abs > __ans_always_overflow_bound)
@@ -162,7 +163,7 @@ template <class _Tp>
 // We have performance issues with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) noexcept
+[[nodiscard]] _CCCL_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) noexcept
 {
   return complex<__nv_bfloat16>{::cuda::std::sinh(complex<float>{__x})};
 }
@@ -170,7 +171,7 @@ _CCCL_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) 
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> sinh(const complex<__half>& __x) noexcept
+[[nodiscard]] _CCCL_API inline complex<__half> sinh(const complex<__half>& __x) noexcept
 {
   return complex<__half>{::cuda::std::sinh(complex<float>{__x})};
 }
