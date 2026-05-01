@@ -67,6 +67,7 @@ TEST_CASE("ScalarLowerBoundDispatchImplicit", "[binary_search]")
   CHECK(13 == vec.front());
 }
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 template <class OutputIt>
 struct tabulate_lower_bound_output_op
 {
@@ -92,6 +93,7 @@ TEST_CASE("VectorLowerBoundWithTabulateOutputIterator", "[binary_search]")
   thrust::device_vector<int> expected = {1, 2, 3, 4};
   CHECK(output == expected);
 }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 TEMPLATE_LIST_TEST_CASE("ScalarUpperBoundSimple", "[binary_search]", vector_list)
 {
