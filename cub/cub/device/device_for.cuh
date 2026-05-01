@@ -122,16 +122,19 @@ struct DeviceFor
       (AllowCopy
        /*|| detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value*/);
 
-    if constexpr (allow_vectorization && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>)
+    if constexpr (allow_vectorization)
     {
-      auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
-      using wrapped_op_t    = __op_wrapper_vectorized_t<NumItemsT, OpT, detail::it_value_t<RandomAccessIteratorT>>;
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>)
+      {
+        auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
+        using wrapped_op_t    = __op_wrapper_vectorized_t<NumItemsT, OpT, detail::it_value_t<RandomAccessIteratorT>>;
 
-      if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
-      { // Vectorize loads
-        const NumItemsT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
-        return __bulk(
-          num_vec_items, wrapped_op_t{unwrapped_first, op, num_items / wrapped_op_t::vec_size, num_items}, env);
+        if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
+        { // Vectorize loads
+          const NumItemsT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
+          return __bulk(
+            num_vec_items, wrapped_op_t{unwrapped_first, op, num_items / wrapped_op_t::vec_size, num_items}, env);
+        }
       }
     }
 
