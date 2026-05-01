@@ -1,6 +1,6 @@
-.. _systems:
+.. _thrust-systems:
 
-Thrust systems
+Thrust Systems
 ==============
 
 Thrust offers a set of algorithms and APIs which can dispatch to various systems.

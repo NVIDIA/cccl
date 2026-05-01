@@ -8,7 +8,6 @@ Thrust
    :maxdepth: 2
 
    Overview <self>
-   developer_overview
    releases
    release_process
    API documentation <api>
