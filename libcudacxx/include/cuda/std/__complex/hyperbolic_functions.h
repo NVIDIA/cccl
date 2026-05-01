@@ -31,6 +31,7 @@
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 
 #include <cuda/std/__cccl/prologue.h>
 
