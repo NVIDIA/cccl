@@ -2,13 +2,15 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+readonly ci_dir
+# shellcheck source=ci/util/artifacts/common.sh
 source "$ci_dir/util/artifacts/common.sh"
 
 readonly artifact_compression_level=6
 readonly artifact_retention_days=7
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <artifact_name> [<artifact_path>]
 
 Registers artifacts for upload. If path is not provided, it defaults to the artifact name.
@@ -25,8 +27,9 @@ Example Usages:
   - $0 my_artifact /path/to/my_artifact_directory/
 EOF
 )
+readonly usage
 
-if [ "$#" -lt 1 ]; then
+if [[ "$#" -lt 1 ]]; then
   echo "Error: Missing artifact name." >&2
   echo "$usage" >&2
   exit 1
@@ -40,7 +43,7 @@ if [[ "$artifact_path" != /* ]]; then
   artifact_path="$(pwd)/$artifact_path"
 fi
 
-if [ ! -e "$artifact_path" ]; then
+if [[ ! -e "$artifact_path" ]]; then
   echo "Error: Artifact path '$artifact_path' does not exist." >&2
   echo "$usage" >&2
   exit 1

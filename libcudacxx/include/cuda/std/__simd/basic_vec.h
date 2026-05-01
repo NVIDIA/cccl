@@ -24,11 +24,13 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
+#include <cuda/std/__simd/iterator.h>
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -99,15 +101,33 @@ private:
 public:
   using abi_type = _Abi;
 
-  // TODO(fbusato): add simd-iterator
-  // using iterator       = simd-iterator<basic_vec>;
-  // using const_iterator = simd-iterator<const basic_vec>;
+  using iterator       = __simd_iterator<basic_vec>;
+  using const_iterator = __simd_iterator<const basic_vec>;
 
-  // constexpr iterator begin() noexcept { return {*this, 0}; }
-  // constexpr const_iterator begin() const noexcept { return {*this, 0}; }
-  // constexpr const_iterator cbegin() const noexcept { return {*this, 0}; }
-  // constexpr default_sentinel_t end() const noexcept { return {}; }
-  // constexpr default_sentinel_t cend() const noexcept { return {}; }
+  [[nodiscard]] _CCCL_API constexpr iterator begin() noexcept
+  {
+    return {*this, 0};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
+  {
+    return {*this, 0};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const_iterator cbegin() const noexcept
+  {
+    return {*this, 0};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr default_sentinel_t end() const noexcept
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr default_sentinel_t cend() const noexcept
+  {
+    return {};
+  }
 
   static constexpr integral_constant<__simd_size_type, __simd_size_v<value_type, abi_type>> size{};
 

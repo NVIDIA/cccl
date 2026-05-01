@@ -17,7 +17,7 @@
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -127,7 +127,7 @@ concept batch_memcpy_policy_selector = policy_selector<T, batch_memcpy_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> batch_memcpy_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> batch_memcpy_policy
   {
     const auto large = large_buffer_policy{
       256,
@@ -138,7 +138,7 @@ struct policy_selector
         /* .block_threads = */ 128,
         /* .buffers_per_thread = */ 4,
         /* .tlev_bytes_per_thread = */ 8,
-        /* .prefer_pow2_bits = */ arch < ::cuda::arch_id::sm_70,
+        /* .prefer_pow2_bits = */ cc < ::cuda::compute_capability{7, 0},
         /* .block_level_tile_size = */ large.block_threads * large.bytes_per_thread,
         /* .warp_level_threshold = */ 128,
         /* .block_level_threshold = */ 8 * 1024,

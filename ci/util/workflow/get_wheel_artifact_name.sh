@@ -2,9 +2,10 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 [job_id]
 
 Get the name of the wheel file that matches the specified job ID's configuration.
@@ -12,8 +13,9 @@ If no job ID is provided, the \$JOB_ID environment variable is used.
 If the job ID does not exist in the workflow, or is not a python job, an error is raised.
 EOF
 )
+readonly usage
 
-if [ "$#" -gt 1 ]; then
+if [[ "$#" -gt 1 ]]; then
   echo "Error: Too many arguments." >&2
   echo "$usage" >&2
   exit 1
@@ -21,7 +23,7 @@ fi
 
 job_id="${1:-${JOB_ID:-}}"
 
-if [ -z "$job_id" ]; then
+if [[ -z "$job_id" ]]; then
   echo "Error: No job ID provided and \$JOB_ID is not set." >&2
   echo "$usage" >&2
   exit 1

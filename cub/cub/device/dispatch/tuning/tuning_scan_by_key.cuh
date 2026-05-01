@@ -25,7 +25,7 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
@@ -1061,14 +1061,13 @@ private:
   };
 
 public:
-  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_by_key_policy
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        const int ptx_version = static_cast<int>(::cuda::compute_capability{arch});
                         scan_by_key_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
-                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+                        PolicyHub::MaxPolicy::Invoke(cc.get() * 10, dispatch);
                         return policy;
                       }),
                       ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
@@ -1087,7 +1086,7 @@ struct policy_selector
   type_t accum_type;
   op_kind_t operation_t;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_by_key_policy
   {
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
     const bool primitive_accum =
@@ -1107,7 +1106,7 @@ struct policy_selector
         ? 6
         : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
 
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (primitive_op && primitive_value)
       {
@@ -1292,7 +1291,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (primitive_op)
       {
@@ -1601,7 +1600,7 @@ struct policy_selector
                 sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
     }
 
-    if (arch >= ::cuda::arch_id::sm_86) // && arch < ::cuda::arch_id::sm_90
+    if (cc >= ::cuda::compute_capability{8, 6}) // && cc < ::cuda::compute_capability{9, 0}
     {
       return {256,
               default_items,
@@ -1612,7 +1611,7 @@ struct policy_selector
               default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (primitive_op)
       {
@@ -1921,7 +1920,7 @@ struct policy_selector
                 sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{6, 0})
     {
       return {256,
               default_items,
@@ -1945,7 +1944,7 @@ struct policy_selector
 template <typename KeyT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_by_key_policy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),
@@ -1956,7 +1955,7 @@ struct policy_selector_from_types
       classify_type<KeyT>,
       classify_type<ValueT>,
       classify_type<AccumT>,
-      classify_op<ScanOpT>}(arch);
+      classify_op<ScanOpT>}(cc);
   }
 };
 } // namespace detail::scan_by_key

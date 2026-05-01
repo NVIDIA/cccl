@@ -166,7 +166,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_sel_expr =
     std::format("cub::detail::segmented_reduce::policy_selector_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
@@ -190,7 +190,7 @@ using namespace cub;
 using namespace cub::detail::reduce;
 using namespace cub::detail::segmented_reduce;
 static_assert(
-  device_segmented_reduce_policy()(detail::current_tuning_arch()) == {9},
+  device_segmented_reduce_policy()(detail::current_tuning_cc()) == {9},
   "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0

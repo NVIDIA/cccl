@@ -22,8 +22,11 @@ fi
 
 PRESET="cccl-c-parallel-hostjit"
 
-CMAKE_OPTIONS="-DCMAKE_CXX_STANDARD=${CXX_STANDARD} -DCMAKE_CUDA_STANDARD=${CXX_STANDARD}"
+CMAKE_OPTIONS=()
+if test -n "${CXX_STANDARD:+x}"; then
+    CMAKE_OPTIONS+=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
+fi
 
-configure_and_build_preset "CCCL C Parallel Library (HostJIT)" "$PRESET" "$CMAKE_OPTIONS"
+configure_and_build_preset "CCCL C Parallel Library (HostJIT)" "$PRESET" "${CMAKE_OPTIONS[@]}"
 
 print_time_summary

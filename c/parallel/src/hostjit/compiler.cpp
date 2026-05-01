@@ -330,15 +330,6 @@ public:
     arg_strings.push_back("-internal-isystem");
     if (config.cccl_include_path.empty())
     {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include/cuda/std");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path + "/cuda/std");
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
       arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include");
     }
     else
@@ -376,6 +367,7 @@ public:
     arg_strings.push_back("-D__HOSTJIT_DEVICE_COMPILATION__=1");
     arg_strings.push_back("-DNDEBUG");
     arg_strings.push_back("-DCCCL_DISABLE_CTK_COMPATIBILITY_CHECK");
+    arg_strings.push_back("-D_CCCL_ENABLE_FREESTANDING=1");
     arg_strings.push_back("-DCCCL_DISABLE_FP16_SUPPORT=1");
     arg_strings.push_back("-DCCCL_DISABLE_BF16_SUPPORT=1");
     arg_strings.push_back("-DCCCL_DISABLE_NVTX=1");
@@ -735,15 +727,6 @@ public:
     arg_strings.push_back("-internal-isystem");
     if (config.cccl_include_path.empty())
     {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include/cuda/std");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path + "/cuda/std");
-    }
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
       arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include");
     }
     else
@@ -775,6 +758,7 @@ public:
     arg_strings.push_back("-D__HOSTJIT_DEVICE_COMPILATION__=1");
     arg_strings.push_back("-DNDEBUG");
     arg_strings.push_back("-DCCCL_DISABLE_CTK_COMPATIBILITY_CHECK");
+    arg_strings.push_back("-D_CCCL_ENABLE_FREESTANDING=1");
     arg_strings.push_back("-DCCCL_DISABLE_FP16_SUPPORT=1");
     arg_strings.push_back("-DCCCL_DISABLE_BF16_SUPPORT=1");
     arg_strings.push_back("-DCCCL_DISABLE_NVTX=1");
@@ -891,15 +875,6 @@ public:
     arg_strings.push_back("-internal-isystem");
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
-    arg_strings.push_back("-internal-isystem");
-    if (config.cccl_include_path.empty())
-    {
-      arg_strings.push_back(std::string(CCCL_SOURCE_DIR) + "/libcudacxx/include/cuda/std");
-    }
-    else
-    {
-      arg_strings.push_back(config.cccl_include_path + "/cuda/std");
-    }
     arg_strings.push_back("-internal-isystem");
     if (config.cccl_include_path.empty())
     {

@@ -11,7 +11,7 @@
 #if !TUNE_BASE
 struct policy_selector_t
 {
-  _CCCL_API constexpr auto operator()(::cuda::arch_id) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::adjacent_difference::adjacent_difference_policy
   {
     return {TUNE_THREADS_PER_BLOCK,

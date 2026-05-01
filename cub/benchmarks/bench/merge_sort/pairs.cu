@@ -19,7 +19,8 @@
 template <typename KeyT>
 struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge_sort::merge_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::merge_sort::merge_sort_policy
   {
     return cub::detail::merge_sort::merge_sort_policy{
       TUNE_THREADS_PER_BLOCK,

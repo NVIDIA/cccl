@@ -502,8 +502,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KeyT*                                  = nullptr /* for CCCL.C */,
   ValueT*                                = nullptr /* for CCCL.C */) -> cudaError_t
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
@@ -511,9 +511,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
-                 ss << policy_selector(arch_id);
-                 _CubLog("Dispatching DeviceSelect::UniqueByKey to arch %d with tuning: %s\n",
-                         static_cast<int>(arch_id),
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceSelect::UniqueByKey to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
                          ss.str().c_str());
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
@@ -523,7 +524,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     using MaxPolicy = void;
   };
 
-  return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
 #ifdef CUB_DEFINE_RUNTIME_POLICIES
     const unique_by_key_policy active_policy  = policy_getter();
     const ::cuda::std::size_t vsmem_per_block = 0;
