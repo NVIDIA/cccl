@@ -172,7 +172,7 @@ C2H_TEST("Device for each n works with a tabulate output iterator in a zip itera
   c2h::device_vector<int> input = {1, 2, 3, 4};
   c2h::device_vector<int> output(input.size());
 
-  auto output_it = cuda::tabulate_output_iterator{tabulate_output_op{output.begin()}};
+  auto output_it = cuda::tabulate_output_iterator{tabulate_output_op<decltype(output.begin())>{output.begin()}};
   auto zipped_it = thrust::make_zip_iterator(input.begin(), output_it);
 
   auto result = cub::DeviceFor::ForEachN(zipped_it, input.size(), assign_zip_value_t{});

@@ -84,7 +84,8 @@ TEST_CASE("VectorLowerBoundWithTabulateOutputIterator", "[binary_search]")
   thrust::device_vector<int> needles  = {1, 3, 5, 7};
   thrust::device_vector<int> output(needles.size());
 
-  auto output_it = cuda::tabulate_output_iterator{tabulate_lower_bound_output_op{output.begin()}};
+  auto output_it =
+    cuda::tabulate_output_iterator{tabulate_lower_bound_output_op<decltype(output.begin())>{output.begin()}};
 
   thrust::lower_bound(haystack.begin(), haystack.end(), needles.begin(), needles.end(), output_it);
 
