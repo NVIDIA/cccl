@@ -1,7 +1,7 @@
-.. _cmake-options:
+.. _thrust-cmake-options:
 
-Developer CMake Options
-=======================
+Thrust Developer CMake Options
+==============================
 
 .. important::
 
