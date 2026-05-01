@@ -253,7 +253,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     transform_kernel_prefetch<block_threads, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
-      always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(f),
       ::cuda::std::move(out),
       ins...);
@@ -715,7 +715,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 }
 // FIXME(bgruber): nvcc 12.0 - 13.1 error with `function "void
 // cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::transform_kernel_ublkcp< ::policy, int,
-// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::always_true_predicate,
+// ::cuda::always_true,
 // ::cuda::std::__4::logical_and<int> , bool *, int, int > (T2, int, T3, T4, T5,
 // ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::aligned_base_ptr<T6> ...)::[lambda(T1) (instance
 // 3)]::operator ()< ::cuda::std::__4::integral_constant<bool, (bool)1> >  const" has already been defined` when we pass
@@ -1053,7 +1053,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES voi
   }
   else if constexpr (policy.algorithm == Algorithm::vectorized)
   {
-    static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
+    static_assert(::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
                   "Cannot vectorize transform with a predicate");
 
     transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,

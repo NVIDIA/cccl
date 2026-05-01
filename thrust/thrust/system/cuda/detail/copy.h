@@ -198,7 +198,7 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
       result,
       n,
       ::cuda::std::move(first).__pred(),
-      cub::detail::transform::always_true_predicate{});
+      ::cuda::always_true{});
   }
   else
   {

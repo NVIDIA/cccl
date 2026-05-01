@@ -67,7 +67,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
       ::cuda::std::make_tuple(mdspan_in.data_handle()),
       mdspan_out.data_handle(),
       mdspan_in.size(),
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::identity{},
       env);
   }

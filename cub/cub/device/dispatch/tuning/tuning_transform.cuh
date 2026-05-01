@@ -32,13 +32,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
-using always_true_predicate = ::cuda::always_true;
-} // namespace detail::transform
-CUB_NAMESPACE_END
-
-CUB_NAMESPACE_BEGIN
-namespace detail::transform
-{
 enum class Algorithm
 {
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm

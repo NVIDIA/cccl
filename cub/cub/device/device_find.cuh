@@ -223,7 +223,7 @@ struct DeviceFind
       ::cuda::std::make_tuple(d_values),
       d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
       ::cuda::stream_ref{stream});
@@ -343,7 +343,7 @@ struct DeviceFind
       ::cuda::std::make_tuple(d_values),
       d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
       ::cuda::stream_ref{stream});
@@ -543,7 +543,7 @@ struct DeviceFind
         ::cuda::std::make_tuple(d_values),
         d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
         ::cuda::stream_ref{stream});
@@ -663,7 +663,7 @@ struct DeviceFind
         ::cuda::std::make_tuple(d_values),
         d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
         ::cuda::stream_ref{stream});

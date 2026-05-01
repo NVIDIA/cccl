@@ -130,7 +130,7 @@ template <class Derived,
           class... InputIts,
           class OutputIt,
           class TransformOp,
-          class Predicate = cub::detail::transform::always_true_predicate>
+          class Predicate = ::cuda::always_true>
 OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<InputIts...> firsts,

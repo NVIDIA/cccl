@@ -81,7 +81,7 @@ struct DeviceTransform
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
     using default_policy_selector = detail::transform::policy_selector_from_types<
       StableAddress == detail::transform::requires_stable_address::yes,
-      ::cuda::std::is_same_v<Predicate, detail::transform::always_true_predicate>,
+      ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut>;
 
@@ -175,7 +175,7 @@ struct DeviceTransform
       ::cuda::std::move(inputs),
       ::cuda::std::move(outputs),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(transform_op),
       ::cuda::std::move(env));
   }
@@ -278,7 +278,7 @@ struct DeviceTransform
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(transform_op),
       ::cuda::std::move(env));
   }
@@ -442,7 +442,7 @@ struct DeviceTransform
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(generator),
       ::cuda::std::move(env));
   }
@@ -507,7 +507,7 @@ struct DeviceTransform
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       detail::__return_constant<Value>{::cuda::std::move(value)},
       ::cuda::std::move(env));
   }
@@ -821,7 +821,7 @@ struct DeviceTransform
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(transform_op),
       ::cuda::std::move(env));
   }

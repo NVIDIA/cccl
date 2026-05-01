@@ -95,7 +95,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         tuple<_InputIterator>{__first},
         __storage.template __get_ptr<1>(),
         __count,
-        CUB_NS_QUALIFIER::detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         identity{},
         __stream.get());
 
