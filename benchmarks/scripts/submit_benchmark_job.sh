@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script schedules a SLURM job via crun on computelab to run all CCCL benchmarks and produce a benchmark database
 # TODO: set those accordingly
@@ -10,7 +10,7 @@ benchmark_preset="benchmark"
 
 batch_script=$scratch/batch.sh
 cat << BATCH_SCRIPT > "$batch_script"
-#!/bin/bash
+#!/usr/bin/env bash
 
 pip install --break-system-packages fpzip pandas scipy
 
