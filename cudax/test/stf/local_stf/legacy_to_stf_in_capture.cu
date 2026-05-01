@@ -54,7 +54,7 @@ __global__ void initA(double* d_ptrA, size_t N)
   size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
-    d_ptrA[i] = sin((double) i);
+    d_ptrA[i] = sin(i);
   }
 }
 
@@ -64,7 +64,7 @@ __global__ void initB(double* d_ptrB, size_t N)
   size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
-    d_ptrB[i] = cos((double) i);
+    d_ptrB[i] = cos(i);
   }
 }
 
