@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "catch2_test_device_scan.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "catch2_test_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -1233,8 +1233,6 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
 }
 
 // Test for using three-way partition
-namespace
-{
 template <typename OffsetT>
 struct segment_descriptor
 {
@@ -1290,21 +1288,22 @@ void run_partitioned_segmented_sum(
   auto begin_offsets = cuda::make_transform_iterator(segments, segment_begin_op<offset_t>{});
   auto end_offsets   = cuda::make_transform_iterator(segments, segment_end_op<offset_t>{});
 
-  size_t temp_storage_bytes = 0;
-  cudaError_t error         = cub::detail::segmented_scan::dispatch<
-            cub::ForceInclusive::No,
-            cuda::constant_iterator<AccumT>,
-            AccumT*,
-            decltype(begin_offsets),
-            decltype(end_offsets),
-            decltype(begin_offsets),
-            cuda::std::plus<>,
-            cub::NullType,
-            AccumT,
-            offset_t,
-            PolicyT>(
-    nullptr,
-    temp_storage_bytes,
+  auto dispatch_fn = [](auto&&... args) {
+    dispatch_segmented_scan<
+      cub::ForceInclusive::No,
+      cuda::constant_iterator<AccumT>,
+      AccumT*,
+      decltype(begin_offsets),
+      decltype(end_offsets),
+      decltype(begin_offsets),
+      cuda::std::plus<>,
+      cub::NullType,
+      AccumT,
+      offset_t,
+      PolicyT>(std::forward<decltype(args)>(args)...);
+  };
+
+  dispatch_fn(
     input,
     output,
     num_segments,
@@ -1314,41 +1313,13 @@ void run_partitioned_segmented_sum(
     cuda::std::plus<>{},
     cub::NullType{},
     segments_per_worker,
-    worker,
-    nullptr);
-
-  REQUIRE(error == cudaSuccess);
-
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  error = cub::detail::segmented_scan::dispatch<
-    cub::ForceInclusive::No,
-    cuda::constant_iterator<AccumT>,
-    AccumT*,
-    decltype(begin_offsets),
-    decltype(end_offsets),
-    decltype(begin_offsets),
-    cuda::std::plus<>,
-    cub::NullType,
-    AccumT,
-    offset_t,
-    PolicyT>(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_storage_bytes,
-    input,
-    output,
-    num_segments,
-    begin_offsets,
-    end_offsets,
-    begin_offsets,
-    cuda::std::plus<>{},
-    cub::NullType{},
-    segments_per_worker,
-    worker,
-    nullptr);
-
-  REQUIRE(error == cudaSuccess);
+    worker
+#if TEST_LAUNCH != 2
+    ,
+    nullptr
+#endif // TEST_LAUNCH != 2
+  );
 }
-} // namespace
 
 C2H_TEST("Segmented inclusive sum works with partitioned segment sizes", "[multi_segment][segmented][scan]")
 {
