@@ -108,10 +108,9 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues input sizes", "[find][device][binar
 C2H_TEST("DeviceFind::LowerBoundSortedValues almost tile-sized input sizes", "[find][device][binary-search]")
 {
   using value_type = int;
-  cuda::arch_id arch_id{};
-  REQUIRE(cub::detail::ptx_arch_id(arch_id) == cudaSuccess);
-  const auto policy =
-    cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(arch_id);
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  const auto policy = cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(cc);
   const auto tile_size = std::size_t{static_cast<std::size_t>(policy.block_threads) * policy.items_per_thread};
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, tile_size - 1, 1);
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, tile_size, 1);
@@ -122,10 +121,9 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues almost tile-sized input sizes", "[f
 C2H_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[find][device][binary-search]")
 {
   using value_type = int;
-  cuda::arch_id arch_id{};
-  REQUIRE(cub::detail::ptx_arch_id(arch_id) == cudaSuccess);
-  const auto policy =
-    cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(arch_id);
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  const auto policy = cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(cc);
   const auto tile_size = std::size_t{static_cast<std::size_t>(policy.block_threads) * policy.items_per_thread};
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, tile_size - 1, 1);
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, tile_size, 1);
