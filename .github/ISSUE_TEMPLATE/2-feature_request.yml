@@ -23,7 +23,7 @@ body:
         - CUB
         - libcu++
         - CUDA Experimental (cudax)
-        - cuda.coop (Python)
+        - cuda.coop.numba_cuda (Python)
         - cuda.compute (Python)
         - General CCCL
         - Infrastructure

@@ -7,7 +7,7 @@ changelog:
     - title: 📚 Libcudacxx
       labels:
         - "libcu++"
-    - title: 🤝 cuda.coop
+    - title: 🤝 cuda.coop.numba_cuda
       labels:
         - "cuda.coop"
     - title: ⚡ cuda.compute

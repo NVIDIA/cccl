@@ -7,7 +7,7 @@ Examples
 For recipes and patterns, see our examples:
 
 * ``cuda.compute`` `examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples>`_
-* ``cuda.coop`` `examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/examples>`_
+* ``cuda.coop.numba_cuda`` `examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/numba_cuda/examples>`_
 
 CUB and Thrust Documentation
 ----------------------------
