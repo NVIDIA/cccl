@@ -967,7 +967,7 @@ if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
 
   # Append Python targets to the selected targets metadata file.
   for py_target_path in "${selected_py_targets[@]}"; do
-    echo "$(python_path_to_target_name "${py_target_path}")" >> "${artifact_dir}/meta/selected_targets.txt"
+    python_path_to_target_name "${py_target_path}" >> "${artifact_dir}/meta/selected_targets.txt"
   done
 
   for py_target_path in "${selected_py_targets[@]}"; do

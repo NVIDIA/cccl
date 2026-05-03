@@ -2,10 +2,12 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
+# shellcheck source=ci/util/artifacts/common.sh
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <artifact_name> <regex> [<regex> ...]
 
 Unstages (removes) files matching the provided regexes from the specified artifact stage.
@@ -19,8 +21,9 @@ Unstage previously-staged built binaries and .cmake files from test_artifacts:
   $0 test_artifacts 'bin/.*' 'lib/.*' '.*cmake$'
 EOF
 )
+readonly usage
 
-if [ "$#" -lt 2 ]; then
+if [[ "$#" -lt 2 ]]; then
   echo "Error: Missing arguments." >&2
   echo "$usage" >&2
   exit 1

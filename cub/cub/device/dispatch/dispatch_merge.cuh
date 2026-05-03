@@ -98,7 +98,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
-    choose_merge_agent<policy_getter<PolicySelector, current_tuning_arch()>,
+    choose_merge_agent<policy_getter<PolicySelector, current_tuning_cc().get()>,
                        KeyIt1,
                        ValueIt1,
                        KeyIt2,
@@ -125,7 +125,7 @@ template <typename PolicySelector,
           typename Offset,
           typename CompareOp>
 __launch_bounds__(
-  choose_merge_agent<policy_getter<PolicySelector, current_tuning_arch()>,
+  choose_merge_agent<policy_getter<PolicySelector, current_tuning_cc().get()>,
                      KeyIt1,
                      ValueIt1,
                      KeyIt2,
@@ -153,7 +153,7 @@ __launch_bounds__(
                 "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
-    policy_getter<PolicySelector, current_tuning_arch()>,
+    policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeyIt1,
     ValueIt1,
     KeyIt2,
@@ -210,20 +210,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST, ({
-        std::stringstream ss;
-        ss << policy_getter();
-        _CubLog("Dispatching DeviceMerge to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
-      }))
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << policy_getter();
+                   _CubLog("Dispatching DeviceMerge to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);

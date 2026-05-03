@@ -201,7 +201,7 @@ try
 {
   const char* name = "test";
 
-  const int cc = cc_major * 10 + cc_minor;
+  const cuda::compute_capability cc{cc_major, cc_minor};
 
   const auto input_keys_it_value_t   = cccl_type_enum_to_name(input_keys_it.value_type.type);
   const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);
@@ -236,7 +236,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cc);
 
   auto policy_selector_expr =
     std::format("cub::detail::merge_sort::policy_selector_from_types<{}>",
@@ -261,7 +261,7 @@ struct __align__({3}) items_storage_t {{
 using device_merge_sort_policy = {9};
 using namespace cub;
 using namespace cub::detail::merge_sort;
-static_assert(device_merge_sort_policy()(detail::current_tuning_arch()) == {10}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_keys_it.value_type.size, // 0
     input_keys_it.value_type.alignment, // 1
@@ -337,7 +337,7 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_arch()) == {10},
   check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
 
-  build_ptr->cc             = cc;
+  build_ptr->cc             = cc.get();
   build_ptr->cubin          = (void*) result.data.release();
   build_ptr->cubin_size     = result.size;
   build_ptr->key_type       = input_keys_it.value_type;

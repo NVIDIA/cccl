@@ -24,7 +24,6 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
@@ -146,7 +145,8 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  if _CCCL_HOSTED()
+#    ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -261,7 +261,8 @@ public:
     return entry.payload;
   }
 };
-#  endif // _CCCL_DOXYGEN_INVOKED
+#    endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_HOSTED()
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
@@ -294,18 +295,21 @@ _CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
   return PtxVersionUncached<T>(ptx_version);
 }
 
+#  if _CCCL_HOSTED()
 template <typename Tag>
 _CCCL_HOST inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
 {
   static PerDeviceAttributeCache cache;
   return cache;
 }
+#  endif // _CCCL_HOSTED()
 
 struct PtxVersionCacheTag
 {};
 struct SmVersionCacheTag
 {};
 
+#  if _CCCL_HOSTED()
 /**
  * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10). If
  * __CUDA_ARCH_LIST__ is defined, this value is one of __CUDA_ARCH_LIST__.
@@ -332,6 +336,7 @@ _CCCL_HOST cudaError_t PtxVersion(int& ptx_version, int device)
 
   return payload.error;
 }
+#  endif // _CCCL_HOSTED()
 
 /**
  * \brief Retrieves the PTX virtual architecture that will be used on the current device (major * 100 + minor * 10).
@@ -345,9 +350,13 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
+#  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (result = PtxVersion<T>(ptx_version, CurrentDevice());),
                     (result = PtxVersionUncached<T>(ptx_version);));
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  result = PtxVersionUncached<T>(ptx_version);
+#  endif // !_CCCL_HOSTED()
   return result;
 }
 
@@ -355,27 +364,27 @@ namespace detail
 {
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
 template <class T = void>
-CUB_RUNTIME_FUNCTION cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
+CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version))
   {
     return error;
   }
-  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  cc = ::cuda::compute_capability{ptx_version / 10};
   return cudaSuccess;
 }
 
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
 template <class T = void>
-_CCCL_HOST_API cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
+_CCCL_HOST_API cudaError_t ptx_compute_cap(::cuda::compute_capability& cc, int device)
 {
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version, device))
   {
     return error;
   }
-  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  cc = ::cuda::compute_capability{ptx_version / 10};
   return cudaSuccess;
 }
 } // namespace detail
@@ -415,7 +424,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
 CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = CurrentDevice())
 {
   cudaError_t result = cudaErrorUnknown;
-
+#  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
                       auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
@@ -434,6 +443,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
                       result = payload.error;
                     }),
                     (result = SmVersionUncached(sm_version, device);));
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  result = SmVersionUncached(sm_version, device);
+#  endif // !_CCCL_HOSTED()
 
   return result;
 }
@@ -618,22 +630,22 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
 }
 } // namespace detail
 
-/******************************************************************************
- * Policy management
- ******************************************************************************/
-// PolicyWrapper
-
 namespace detail
 {
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers requires C++20 concepts.
 #  endif // !_CCCL_HAS_CONCEPTS()
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
-#define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
+#define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field) , StaticPolicyT::_CCCL_PP_FIRST field
+
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                   \
   __host__ __device__ static constexpr auto _CCCL_PP_SECOND field() \
   {                                                                 \
@@ -643,6 +655,7 @@ namespace detail
 template <typename T>
 _CCCL_CONCEPT always_true = true;
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #define CUB_DETAIL_POLICY_WRAPPER_DEFINE(concept_name, refines, ...)                                                   \
   template <typename StaticPolicyT>                                                                                    \
   _CCCL_CONCEPT concept_name = _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT, _CCCL_PP_EXPAND refines)    \
@@ -662,10 +675,12 @@ _CCCL_CONCEPT always_true = true;
     return concept_name##Wrapper{policy};                                                                              \
   }
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 _CCCL_TEMPLATE(typename PolicyT)
 #if _CCCL_STD_VER < 2020
 _CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) ) // in C++20+ we get this by preferring constrained functions
@@ -705,8 +720,7 @@ struct KernelConfig
   int tile_size{0};
   int sm_occupancy{0};
 
-  // TODO(bgruber): remove this function once all reduce and radix sort (segmented) algorithms have been ported to the
-  // new tuning API
+  // TODO(bgruber): remove this overload in CCCL 4.0 when we drop the public dispatchers
   template <typename AgentPolicyT,
             typename KernelPtrT,
             typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -766,9 +780,9 @@ public:
     // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
     // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
 #  ifdef __CUDA_ARCH_LIST__
-    return runtime_arch_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
+    return runtime_cc_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
-    return runtime_arch_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
+    return runtime_cc_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #  else
     // some compilers, like clang in CUDA mode, do not have a macro, so we have to include a fallback
     if constexpr (have_previous_policy)
@@ -790,7 +804,7 @@ private:
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t
-  runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
+  runtime_cc_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
     // one matching device_ptx_version.
@@ -827,10 +841,10 @@ namespace detail
 #if _CCCL_HAS_CONCEPTS()
 // TODO(bgruber): should we either drop the Policy template argument or rename it to policy_selector_for?
 template <typename T, typename Policy>
-concept policy_selector = requires(T pol_sel, ::cuda::arch_id arch) {
+concept policy_selector = requires(T pol_sel, ::cuda::compute_capability cc) {
   requires ::cuda::std::regular<Policy>;
-  { pol_sel(arch) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
-  // we cannot reliably check whether pol_sel(arch) is a constant expression, since it sometimes depends on the data
+  { pol_sel(cc) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
+  // we cannot reliably check whether pol_sel(cc) is a constant expression, since it sometimes depends on the data
   // member values whether it can be constant evaluated (e.g., a default constructed reduce::policy_selector will lead
   // to a division by zero when evaluated)
 };

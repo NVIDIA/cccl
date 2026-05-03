@@ -1,9 +1,11 @@
 //===----------------------------------------------------------------------===//
-// test_freestanding_compiler.cpp
 //
-// Smoke-test for HostJIT compiler infrastructure (issue #7743).
-// JIT-compiles a minimal host+device CUDA source, runs it, and verifies
-// the result — without relying on any system CUDA headers at JIT time.
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
 //===----------------------------------------------------------------------===//
 
 #include <cassert>
@@ -15,6 +17,9 @@
 #include <hostjit/jit_compiler.hpp>
 
 static const char* k_source = R"(
+
+#include <cuda/std/initializer_list>
+
 #include <cuda_runtime.h>
 
 #ifdef _WIN32
@@ -25,7 +30,8 @@ static const char* k_source = R"(
 
 __global__ void device_kernel(int* ptr)
 {
-  *ptr = 42;
+  ::cuda::std::initializer_list<::std::size_t> meow {42ull, 1337ull};
+  *ptr = static_cast<int>(::std::move(*meow.begin()));
 }
 
 extern "C" EXPORT void host_entry(int* ptr)

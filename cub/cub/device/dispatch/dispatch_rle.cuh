@@ -220,7 +220,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const
     -> non_trivial_runs::rle_non_trivial_runs_policy
   {
     using RleSweepPolicyT = typename PolicyHub::MaxPolicy::RleSweepPolicyT;
@@ -672,20 +672,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   using ScanTileStateT                     = ReduceByKeyScanTileState<length_t, local_offset_t>;
   static constexpr int init_kernel_threads = 128;
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  const non_trivial_runs::rle_non_trivial_runs_policy active_policy = policy_selector(arch_id);
+  const non_trivial_runs::rle_non_trivial_runs_policy active_policy = policy_selector(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST, ({
-      ::std::stringstream ss;
-      ss << active_policy;
-      _CubLog("Dispatching DeviceRle to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
-    }))
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceRle to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int block_threads    = active_policy.block_threads;

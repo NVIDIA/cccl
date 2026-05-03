@@ -1,6 +1,7 @@
 #!/bin/bash
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=ci/build_common.sh
 source "./build_common.sh"
 
 print_environment_details
@@ -8,9 +9,9 @@ print_environment_details
 "./build_libcudacxx.sh" "$@"
 
 PRESET="libcudacxx"
-CMAKE_OPTIONS="-DCMAKE_CXX_STANDARD=${CXX_STANDARD} -DCMAKE_CUDA_STANDARD=${CXX_STANDARD}"
+CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
 
-configure_preset libcudacxx "$PRESET" "$CMAKE_OPTIONS"
+configure_preset libcudacxx "$PRESET" "${CMAKE_OPTIONS[@]}"
 
 test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
 

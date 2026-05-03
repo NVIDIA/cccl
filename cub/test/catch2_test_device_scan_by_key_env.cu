@@ -11,7 +11,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__iterator/constant_iterator.h>
 
 #include "catch2_test_env_launch_helper.h"
@@ -59,7 +59,7 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
   REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
-    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
+    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};
@@ -106,7 +106,7 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
   REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
-    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
+    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};

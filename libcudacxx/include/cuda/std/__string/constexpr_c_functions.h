@@ -28,7 +28,9 @@
 
 #if _CCCL_HOSTED()
 #  include <cstring>
-#endif // _CCCL_HOSTED()
+#elif _CCCL_HOSTJIT()
+#  include <string.h>
+#endif // _CCCL_HOSTJIT()
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/tune.h>
+#include <cuda/execution.tune.h>
 
 #include "test_macros.h"
 
@@ -20,7 +20,7 @@ struct reduce_policy
 template <int BlockThreads, class T>
 struct reduce_policy_selector
 {
-  TEST_FUNC constexpr auto operator()(cuda::arch_id /*arch*/) const -> reduce_policy
+  TEST_FUNC constexpr auto operator()(cuda::compute_capability) const -> reduce_policy
   {
     return {BlockThreads / sizeof(T)};
   }
@@ -33,7 +33,7 @@ struct scan_policy
 
 struct scan_policy_selector
 {
-  TEST_FUNC constexpr auto operator()(cuda::arch_id /*arch*/) const -> scan_policy
+  TEST_FUNC constexpr auto operator()(cuda::compute_capability) const -> scan_policy
   {
     return {};
   }
@@ -50,8 +50,8 @@ TEST_FUNC void test()
   using reduce_policy_t = cuda::std::execution::__query_result_t<tuning_t, reduce_policy>;
   using scan_policy_t   = cuda::std::execution::__query_result_t<tuning_t, scan_policy>;
 
-  static_assert(reduce_policy_t{}(cuda::arch_id::sm_75).block_threads == block_threads);
-  static_assert(scan_policy_t{}(cuda::arch_id::sm_75).block_threads == 1);
+  static_assert(reduce_policy_t{}(cuda::compute_capability{7, 5}).block_threads == block_threads);
+  static_assert(scan_policy_t{}(cuda::compute_capability{7, 5}).block_threads == 1);
 }
 
 int main(int, char**)

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 X.Y[.Z[.W[...]]] <compare_op> A.B[.C[.D[...]]]
 
 Compares two version strings with the specified operator.
@@ -16,8 +16,9 @@ compare_ops:
   gt - greater than
 EOF
 )
+readonly usage
 
-if [ "$#" -ne 3 ]; then
+if [[ "$#" -ne 3 ]]; then
   echo "Error: Invalid arguments: $*" >&2
   echo "$usage" >&2
   exit 1
@@ -51,7 +52,7 @@ fi
 IFS='.' read -r -a ver_a_parts <<< "$version_a"
 IFS='.' read -r -a ver_b_parts <<< "$version_b"
 max_length=${#ver_a_parts[@]}
-if [ "${#ver_b_parts[@]}" -gt "$max_length" ]; then
+if [[ "${#ver_b_parts[@]}" -gt "$max_length" ]]; then
   max_length=${#ver_b_parts[@]}
 fi
 
@@ -78,6 +79,7 @@ case "$operator" in
   ne) [[ "$result" != "eq" ]] ;;
   ge) [[ "$result" == "gt" || "$result" == "eq" ]] ;;
   gt) [[ "$result" == "gt" ]] ;;
+  *) echo "Error: Unhandled operator '${operator}'." >&2; exit 1 ;;
 esac
 
 exit $?

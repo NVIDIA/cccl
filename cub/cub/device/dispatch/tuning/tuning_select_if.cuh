@@ -2511,13 +2511,13 @@ private:
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> select_if_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
   {
     const bool has_flags    = flag_size_bytes != 0;
     const bool keep_rejects = selection_impl == SelectImpl::Partition;
     const bool may_alias    = selection_impl == SelectImpl::SelectPotentiallyInPlace;
 
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (auto policy_opt = get_sm100_tuning(has_flags, keep_rejects, may_alias))
       {
@@ -2525,17 +2525,17 @@ public:
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       return get_sm90_tuning(has_flags, keep_rejects);
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return default_policy(may_alias ? LOAD_CA : LOAD_LDG);
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       return get_sm80_tuning(has_flags, keep_rejects);
     }
@@ -2552,7 +2552,7 @@ template <typename InputIteratorT,
           SelectImpl SelectionOpt>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> select_if_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
   {
     using input_t = it_value_t<InputIteratorT>;
     using flag_t  = it_value_t<FlagsInputIteratorT>;
@@ -2563,7 +2563,7 @@ struct policy_selector_from_types
       ::cuda::std::is_same_v<flag_t, NullType> ? 0 : sizeof(flag_t),
       SelectionOpt == SelectImpl::Partition ? sizeof(OffsetT) : sizeof(::cuda::std::int32_t),
       is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
-      SelectionOpt}(arch);
+      SelectionOpt}(cc);
   }
 };
 

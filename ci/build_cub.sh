@@ -10,14 +10,15 @@ ARTIFACT_TAGS=()
 
 ci_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-new_args=$("${ci_dir}/util/extract_switches.sh" \
+new_args="$("${ci_dir}/util/extract_switches.sh" \
   -no-lid \
   -lid0 \
   -lid1 \
   -lid2 \
-  -- "$@")
+  -- "$@")"
 
-eval set -- ${new_args}
+declare -a new_args="(${new_args})"
+set -- "${new_args[@]}"
 while true; do
   case "$1" in
   -no-lid)
@@ -51,6 +52,7 @@ while true; do
   esac
 done
 
+# shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
 
 print_environment_details
@@ -87,13 +89,13 @@ elif $LID2; then
 fi
 
 CMAKE_OPTIONS=(
-    -DCMAKE_CXX_STANDARD=$CXX_STANDARD
-    -DCMAKE_CUDA_STANDARD=$CXX_STANDARD
-    -DCCCL_ENABLE_BENCHMARKS=$ENABLE_CCCL_BENCHMARKS
-    -DCUB_ENABLE_RDC_TESTS=$ENABLE_CUB_RDC
+    "-DCMAKE_CXX_STANDARD=$CXX_STANDARD"
+    "-DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
+    "-DCCCL_ENABLE_BENCHMARKS=$ENABLE_CCCL_BENCHMARKS"
+    "-DCUB_ENABLE_RDC_TESTS=$ENABLE_CUB_RDC"
 )
 
-configure_and_build_preset "CUB" "$PRESET" "${CMAKE_OPTIONS[*]}"
+configure_and_build_preset "CUB" "$PRESET" "${CMAKE_OPTIONS[@]}"
 
 # Create test artifacts:
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
