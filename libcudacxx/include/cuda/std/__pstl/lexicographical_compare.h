@@ -37,7 +37,6 @@
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
-#  include <cuda/std/cstdint>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
 #    include <cuda/std/__pstl/cuda/find_if.h>
@@ -64,26 +63,26 @@ struct __lex_state_fn
   {}
 
   template <class _Tp, class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr int8_t operator()(const _Tp& __a, const _Up& __b) const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr int operator()(const _Tp& __a, const _Up& __b) const
   {
     if (__comp_(__a, __b))
     {
-      return int8_t{-1};
+      return -1;
     }
     if (__comp_(__b, __a))
     {
-      return int8_t{1};
+      return 1;
     }
-    return int8_t{0};
+    return 0;
   }
 };
 
 // Predicate handed to the find_if pass: locates the first non-equivalent pair.
 struct __lex_non_zero
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr bool operator()(int8_t __state) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr bool operator()(int __state) const noexcept
   {
-    return __state != int8_t{0};
+    return __state != 0;
   }
 };
 
@@ -143,11 +142,11 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_trav
     }
 
     // Pass 2: read back the state at the divergence position via a 1-element
-    // transform_reduce with identity transform and `plus<>` over `int8_t{0}`,
-    // which reduces to exactly the value at `*__k_iter`.
-    const int8_t __state =
-      __reduce_dispatch(__policy, __k_iter, 1, int8_t{0}, ::cuda::std::plus<int8_t>{}, ::cuda::std::identity{});
-    return __state < int8_t{0};
+    // transform_reduce with identity transform and `plus<>` over `0`, which
+    // reduces to exactly the value at `*__k_iter`. `int` is preferred over a
+    // narrower type so the device kernel and accumulator stay native 32-bit.
+    const int __state = __reduce_dispatch(__policy, __k_iter, 1, 0, ::cuda::std::plus<int>{}, ::cuda::std::identity{});
+    return __state < 0;
   }
   else
   {
