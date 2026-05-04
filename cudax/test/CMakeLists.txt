@@ -129,6 +129,11 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+cudax_add_catch2_test(test_target group.mapping.composite_mapping
+    group/mapping/composite_mapping.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
 cudax_add_catch2_test(test_target group.mapping.group_as
     group/mapping/group_as.cu
 )
