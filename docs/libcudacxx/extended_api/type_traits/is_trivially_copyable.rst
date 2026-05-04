@@ -13,14 +13,12 @@ Defined in the ``<cuda/type_traits>`` header.
    constexpr bool is_trivially_copyable_v = /* see below */;
 
    template <typename T>
-   using is_trivially_copyable = cuda::std::bool_constant<is_trivially_copyable_v<T>>;
+   using is_trivially_copyable = /* cuda::std::bool_constant */;
 
    } // namespace cuda
 
 ``cuda::is_trivially_copyable_v`` trait evaluates if a type can be copied by copying its underlying bytes.
 It extends ``cuda::std::is_trivially_copyable`` to also recognize CUDA extended floating-point vector types as trivially copyable.
-
-``cuda::is_trivially_copyable_v<T>`` relies on ``cuda::std::is_trivially_copyable`` but adds support for CUDA-specific types.
 
 The trait is true when ``T`` is any of the following:
 
