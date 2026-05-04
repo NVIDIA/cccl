@@ -23,7 +23,7 @@ def discover_examples():
     examples = []
 
     example_directories = [
-        ("Coop Numba CUDA", "coop/numba_cuda/examples"),
+        ("Coop Experimental", "coop/_experimental/examples"),
         ("Compute", "compute/examples"),
     ]
 
@@ -44,8 +44,8 @@ def discover_examples():
             rel_path = python_file.relative_to(tests_dir)
 
             # Convert path to module name (OS-agnostic)
-            # Example: coop/numba_cuda/examples/block/reduce.py
-            #          -> coop.numba_cuda.examples.block.reduce
+            # Example: coop/_experimental/examples/block/reduce.py
+            #          -> coop._experimental.examples.block.reduce
             module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display
