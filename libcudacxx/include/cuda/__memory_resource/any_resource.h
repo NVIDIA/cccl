@@ -1078,7 +1078,7 @@ template <class _Tp, class... _Properties>
 //!   destination resource type template argument).
 //! @param __src The source resource to cast from.
 //! @return A new type-erased resource wrapper with the destination properties.
-//! @throws __bad_any_cast if the runtime type does not support the destination
+//! @throws std::bad_any_cast if the runtime type does not support the destination
 //!   interface.
 template <class... _DstProperties, class... _SrcProperties>
 [[nodiscard]] _CCCL_HOST_API auto dynamic_resource_cast(any_resource<_SrcProperties...>&& __src)
