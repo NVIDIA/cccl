@@ -12,12 +12,15 @@ included, and do not require including a specific header file.
    :widths: 25 45 30 30
    :header-rows: 1
 
-   * - **Header**
+   * - **Macro**
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
 
-   * - :any:`CCCL_OS`
+   * - .. toctree::
+          :maxdepth: 1
+
+          ../api/macro_cccl_os
      - Detecting the current operating system.
      - CCCL 3.4.0
      - CUDA 13.3
