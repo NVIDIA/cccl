@@ -51,9 +51,11 @@
 
 #define _CCCL_OS(...) _CCCL_OS_##__VA_ARGS__##_()
 
+//! @def CCCL_OS(os) /* implementation defined */
+//!
 //! @brief Detect the current operating system.
 //!
-//! @param __os__ The name of the operating system to test.
+//! @param os The name of the operating system to test.
 //!
 //! @note This macro is made available when including any libcu++ header. Users that wish to
 //! include the smallest possible header for this macro should include `<cuda/std/version>`.
@@ -62,7 +64,7 @@
 //! if the current operating system matches, or false otherwise. These values may be used in
 //! boolean expressions (preprocessor or otherwise), but no other guarantees are made.
 //!
-//! Available values for `__os__` include:
+//! Available values for `os` include:
 //!
 //! - ``WINDOWS``: Windows, either in 32-bit or 64-bit mode.
 //! - ``LINUX``: Any kind of Linux installation. Note that other unix-based operating systems will
@@ -105,7 +107,11 @@
 //! @endcode
 //!
 //! @return true if the specified OS is begin compiled for, false otherwise.
-#define CCCL_OS(__os__) _CCCL_OS_##__os__##_()
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CCCL_OS(os) /* implementation defined */
+#else
+#  define CCCL_OS(__os__) _CCCL_OS_##__os__##_()
+#endif
 
 // Note: the public API is single-arg to constrain the API and allow for future expansion. The
 // implementation is duplicated to guard against the OS targets being accidentally defined by
