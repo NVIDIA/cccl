@@ -29,8 +29,8 @@
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/logarithms.h>
-#include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
+#include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/limits>
@@ -312,14 +312,6 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   return complex<double>(__ans_r, __ans_i);
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::exp(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_API inline complex<__half> exp(const complex<__half>& __x)
@@ -327,6 +319,14 @@ _CCCL_API inline complex<__half> exp(const complex<__half>& __x)
   return complex<__half>{::cuda::std::exp(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::exp(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 // pow
 

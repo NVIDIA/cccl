@@ -24,8 +24,8 @@
 #include <cuda/std/__complex/arg.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/math.h>
-#include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
+#include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/numbers>
@@ -251,16 +251,6 @@ template <class _Tp>
   return complex<_Tp>(__abs_rescaled, ::cuda::std::atan2(__x.imag(), __x.real()));
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-// The general template for log when generated for __nv_bfloat16 is both worse for
-// accuracy and slower than the fp32 version.
-_CCCL_API inline complex<__nv_bfloat16> log(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::log(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 // The general template for log when generated for __half is both worse for
@@ -271,6 +261,16 @@ _CCCL_API inline complex<__half> log(const complex<__half>& __x)
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+// The general template for log when generated for __nv_bfloat16 is both worse for
+// accuracy and slower than the fp32 version.
+_CCCL_API inline complex<__nv_bfloat16> log(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::log(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 // log10
 
 template <class _Tp>
@@ -279,14 +279,6 @@ template <class _Tp>
   return ::cuda::std::log(__x) * __numbers<_Tp>::__log10e();
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> log10(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::log10(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_API inline complex<__half> log10(const complex<__half>& __x)
@@ -294,6 +286,14 @@ _CCCL_API inline complex<__half> log10(const complex<__half>& __x)
   return complex<__half>{::cuda::std::log10(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> log10(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::log10(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
