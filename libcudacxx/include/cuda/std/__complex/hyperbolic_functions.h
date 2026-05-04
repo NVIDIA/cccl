@@ -308,8 +308,7 @@ template <class _Tp>
   const _Tp __ans_re = (__cosh_re_scaled * (__cos * __out_scale)) * __out_scale;
   const _Tp __ans_im = (__sinh_re_scaled * (__sin * __out_scale)) * __out_scale;
 
-  const complex __ans_abs{__ans_re, __ans_im};
-  return __ans_abs;
+  return complex<_Tp>{__ans_re, __ans_im};
 }
 
 // We have performance issues with extended floating point types
