@@ -116,14 +116,16 @@ def bench_heavy(state: bench.State):
         return
 
     op = _HEAVY_OPS[n_regs]
-    transform = cuda.compute.make_unary_transform(d_in, d_out, op)
+    transform = cuda.compute.make_unary_transform(d_in=d_in, d_out=d_out, op=op)
 
     state.add_element_count(size)
     state.add_global_memory_reads(size * d_in.dtype.itemsize)
     state.add_global_memory_writes(size * d_out.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        transform(d_in, d_out, op, size, launch.get_stream())
+        transform(
+            d_in=d_in, d_out=d_out, op=op, num_items=size, stream=launch.get_stream()
+        )
 
     state.exec(launcher, batched=False)
 

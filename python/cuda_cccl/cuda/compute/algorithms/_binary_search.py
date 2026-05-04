@@ -82,12 +82,13 @@ class _BinarySearch:
 
     def __call__(
         self,
+        *,
         d_data,
+        num_items: int,
         d_values,
+        num_values: int,
         d_out,
         comp: Operator | None,
-        num_items: int,
-        num_values: int,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_data_cccl, d_data)
@@ -127,6 +128,7 @@ def _make_binary_search(
 
 
 def make_lower_bound(
+    *,
     d_data: DeviceArrayLike,
     d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
@@ -165,6 +167,7 @@ def make_lower_bound(
 
 
 def make_upper_bound(
+    *,
     d_data: DeviceArrayLike,
     d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
@@ -203,11 +206,12 @@ def make_upper_bound(
 
 
 def lower_bound(
+    *,
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorT,
-    d_out: DeviceArrayLike,
     num_items: int,
+    d_values: DeviceArrayLike | IteratorT,
     num_values: int,
+    d_out: DeviceArrayLike,
     comp: Operator | None = None,
     stream=None,
 ):
@@ -222,23 +226,34 @@ def lower_bound(
 
     Args:
         d_data: Device array containing the sorted input range.
-        d_values: Device array or iterator containing the search values.
-        d_out: Device array to store the index results.
         num_items: Number of items in ``d_data``.
+        d_values: Device array or iterator containing the search values.
         num_values: Number of items in ``d_values``.
+        d_out: Device array to store the index results.
         comp: Optional comparison operator (default: ``OpKind.LESS``).
         stream: CUDA stream for the operation (optional).
     """
-    searcher = make_lower_bound(d_data, d_values, d_out, comp)
-    searcher(d_data, d_values, d_out, comp, num_items, num_values, stream)
+    searcher = make_lower_bound(
+        d_data=d_data, d_values=d_values, d_out=d_out, comp=comp
+    )
+    searcher(
+        d_data=d_data,
+        num_items=num_items,
+        d_values=d_values,
+        num_values=num_values,
+        d_out=d_out,
+        comp=comp,
+        stream=stream,
+    )
 
 
 def upper_bound(
+    *,
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorT,
-    d_out: DeviceArrayLike,
     num_items: int,
+    d_values: DeviceArrayLike | IteratorT,
     num_values: int,
+    d_out: DeviceArrayLike,
     comp: Operator | None = None,
     stream=None,
 ):
@@ -253,12 +268,22 @@ def upper_bound(
 
     Args:
         d_data: Device array containing the sorted input range.
-        d_values: Device array or iterator containing the search values.
-        d_out: Device array to store the index results.
         num_items: Number of items in ``d_data``.
+        d_values: Device array or iterator containing the search values.
         num_values: Number of items in ``d_values``.
+        d_out: Device array to store the index results.
         comp: Optional comparison operator (default: ``OpKind.LESS``).
         stream: CUDA stream for the operation (optional).
     """
-    searcher = make_upper_bound(d_data, d_values, d_out, comp)
-    searcher(d_data, d_values, d_out, comp, num_items, num_values, stream)
+    searcher = make_upper_bound(
+        d_data=d_data, d_values=d_values, d_out=d_out, comp=comp
+    )
+    searcher(
+        d_data=d_data,
+        num_items=num_items,
+        d_values=d_values,
+        num_values=num_values,
+        d_out=d_out,
+        comp=comp,
+        stream=stream,
+    )

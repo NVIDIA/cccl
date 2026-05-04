@@ -162,14 +162,6 @@ template <class _Tp>
 }
 
 // We have performance issues with extended floating point types
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) noexcept
-{
-  return complex<__nv_bfloat16>{::cuda::std::sinh(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_API inline complex<__half> sinh(const complex<__half>& __x) noexcept
@@ -177,6 +169,14 @@ _CCCL_API inline complex<__half> sinh(const complex<__half>& __x) noexcept
   return complex<__half>{::cuda::std::sinh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) noexcept
+{
+  return complex<__nv_bfloat16>{::cuda::std::sinh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 // cosh
 

@@ -20,7 +20,9 @@ def test_shuffle_iterator_bijectivity():
     shuffle_it = ShuffleIterator(num_items, seed)
 
     d_output = cp.empty(num_items, dtype=np.int64)
-    cuda.compute.unary_transform(shuffle_it, d_output, lambda x: x, num_items)
+    cuda.compute.unary_transform(
+        d_in=shuffle_it, d_out=d_output, op=lambda x: x, num_items=num_items
+    )
 
     result = d_output.get()
 
@@ -38,8 +40,12 @@ def test_shuffle_iterator_determinism():
     d_output1 = cp.empty(num_items, dtype=np.int64)
     d_output2 = cp.empty(num_items, dtype=np.int64)
 
-    cuda.compute.unary_transform(shuffle_it1, d_output1, lambda x: x, num_items)
-    cuda.compute.unary_transform(shuffle_it2, d_output2, lambda x: x, num_items)
+    cuda.compute.unary_transform(
+        d_in=shuffle_it1, d_out=d_output1, op=lambda x: x, num_items=num_items
+    )
+    cuda.compute.unary_transform(
+        d_in=shuffle_it2, d_out=d_output2, op=lambda x: x, num_items=num_items
+    )
 
     cp.testing.assert_array_equal(d_output1, d_output2)
 
@@ -51,7 +57,9 @@ def test_shuffle_iterator_various_sizes(num_items):
     shuffle_it = ShuffleIterator(num_items, seed)
 
     d_output = cp.empty(num_items, dtype=np.int64)
-    cuda.compute.unary_transform(shuffle_it, d_output, lambda x: x, num_items)
+    cuda.compute.unary_transform(
+        d_in=shuffle_it, d_out=d_output, op=lambda x: x, num_items=num_items
+    )
 
     result = d_output.get()
 
@@ -69,7 +77,9 @@ def test_shuffle_iterator_with_permutation_iterator():
     perm_it = PermutationIterator(d_values, shuffle_it)
 
     d_output = cp.empty(num_items, dtype=np.int32)
-    cuda.compute.unary_transform(perm_it, d_output, lambda x: x, num_items)
+    cuda.compute.unary_transform(
+        d_in=perm_it, d_out=d_output, op=lambda x: x, num_items=num_items
+    )
 
     result = d_output.get()
 

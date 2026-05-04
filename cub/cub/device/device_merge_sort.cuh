@@ -103,7 +103,7 @@ private:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
-    ValueIteratorT d_items,
+    ValueIteratorT d_values,
     OffsetT num_items,
     CompareOpT compare_op,
     cudaStream_t stream = nullptr)
@@ -114,9 +114,9 @@ private:
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
-      d_items,
+      d_values,
       d_keys,
-      d_items,
+      d_values,
       static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
@@ -197,7 +197,7 @@ public:
    * @param[in,out] d_keys
    *   Pointer to the input sequence of unsorted input keys
    *
-   * @param[in,out] d_items
+   * @param[in,out] d_values
    *   Pointer to the input sequence of unsorted input values
    *
    * @param[in] num_items
@@ -225,13 +225,13 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
-    ValueIteratorT d_items,
+    ValueIteratorT d_values,
     OffsetT num_items,
     CompareOpT compare_op,
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
+    return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, compare_op, stream);
   }
 
   //! @rst
@@ -276,7 +276,7 @@ public:
   //! @param[in,out] d_keys
   //!   Keys to sort
   //!
-  //! @param[in,out] d_items
+  //! @param[in,out] d_values
   //!   Values corresponding to keys
   //!
   //! @param[in] num_items
@@ -295,7 +295,7 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortPairs(KeyIteratorT d_keys, ValueIteratorT d_items, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  SortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -308,9 +308,9 @@ public:
           storage,
           bytes,
           d_keys,
-          d_items,
+          d_values,
           d_keys,
-          d_items,
+          d_values,
           static_cast<ChooseOffsetT>(num_items),
           compare_op,
           stream,
@@ -326,7 +326,7 @@ public:
    *   that `i` and `j` are equivalent: neither one is less than the
    *   other. It is not guaranteed that the relative order of these
    *   two elements will be preserved by sort.
-   * - Input arrays `d_input_keys` and `d_input_items` are not modified.
+   * - Input arrays `d_input_keys` and `d_input_values` are not modified.
    * - Note that the behavior is undefined if the input and output ranges
    *   overlap in any way.
    *
@@ -405,13 +405,13 @@ public:
    * @param[in] d_input_keys
    *   Pointer to the input sequence of unsorted input keys
    *
-   * @param[in] d_input_items
+   * @param[in] d_input_values
    *   Pointer to the input sequence of unsorted input values
    *
    * @param[out] d_output_keys
    *   Pointer to the output sequence of sorted input keys
    *
-   * @param[out] d_output_items
+   * @param[out] d_output_values
    *   Pointer to the output sequence of sorted input values
    *
    * @param[in] num_items
@@ -444,9 +444,9 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_input_keys,
-    ValueInputIteratorT d_input_items,
+    ValueInputIteratorT d_input_values,
     KeyIteratorT d_output_keys,
-    ValueIteratorT d_output_items,
+    ValueIteratorT d_output_values,
     OffsetT num_items,
     CompareOpT compare_op,
     cudaStream_t stream = nullptr)
@@ -458,9 +458,9 @@ public:
       d_temp_storage,
       temp_storage_bytes,
       d_input_keys,
-      d_input_items,
+      d_input_values,
       d_output_keys,
-      d_output_items,
+      d_output_values,
       static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
@@ -478,7 +478,7 @@ public:
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - SortPairsCopy is not guaranteed to be stable.
-  //! - Input arrays ``d_input_keys`` and ``d_input_items`` are not modified.
+  //! - Input arrays ``d_input_keys`` and ``d_input_values`` are not modified.
   //! - The behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! Snippet
@@ -516,13 +516,13 @@ public:
   //! @param[in] d_input_keys
   //!   Pointer to the input sequence of unsorted input keys
   //!
-  //! @param[in] d_input_items
+  //! @param[in] d_input_values
   //!   Pointer to the input sequence of unsorted input values
   //!
   //! @param[out] d_output_keys
   //!   Pointer to the output sequence of sorted input keys
   //!
-  //! @param[out] d_output_items
+  //! @param[out] d_output_values
   //!   Pointer to the output sequence of sorted input values
   //!
   //! @param[in] num_items
@@ -544,9 +544,9 @@ public:
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsCopy(
     KeyInputIteratorT d_input_keys,
-    ValueInputIteratorT d_input_items,
+    ValueInputIteratorT d_input_values,
     KeyIteratorT d_output_keys,
-    ValueIteratorT d_output_items,
+    ValueIteratorT d_output_values,
     OffsetT num_items,
     CompareOpT compare_op,
     EnvT env = {})
@@ -562,9 +562,9 @@ public:
           storage,
           bytes,
           d_input_keys,
-          d_input_items,
+          d_input_values,
           d_output_keys,
-          d_output_items,
+          d_output_values,
           static_cast<ChooseOffsetT>(num_items),
           compare_op,
           stream,
@@ -1077,7 +1077,7 @@ public:
    * @param[in,out] d_keys
    *   Pointer to the input sequence of unsorted input keys
    *
-   * @param[in,out] d_items
+   * @param[in,out] d_values
    *   Pointer to the input sequence of unsorted input values
    *
    * @param[in] num_items
@@ -1105,7 +1105,7 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
-    ValueIteratorT d_items,
+    ValueIteratorT d_values,
     OffsetT num_items,
     CompareOpT compare_op,
     cudaStream_t stream = nullptr)
@@ -1113,7 +1113,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, compare_op, stream);
   }
 
   //! @rst
@@ -1158,7 +1158,7 @@ public:
   //! @param[in,out] d_keys
   //!   Keys to sort
   //!
-  //! @param[in,out] d_items
+  //! @param[in,out] d_values
   //!   Values corresponding to keys
   //!
   //! @param[in] num_items
@@ -1177,7 +1177,7 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortPairs(KeyIteratorT d_keys, ValueIteratorT d_items, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  StableSortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1190,9 +1190,9 @@ public:
           storage,
           bytes,
           d_keys,
-          d_items,
+          d_values,
           d_keys,
-          d_items,
+          d_values,
           static_cast<ChooseOffsetT>(num_items),
           compare_op,
           stream,

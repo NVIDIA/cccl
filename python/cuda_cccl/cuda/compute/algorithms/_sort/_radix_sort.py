@@ -69,6 +69,7 @@ class _RadixSort:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in_keys: DeviceArrayLike | DoubleBuffer,
         d_out_keys: DeviceArrayLike | None,
@@ -139,6 +140,7 @@ class _RadixSort:
 
 @cache_with_registered_key_functions
 def make_radix_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,
     d_in_values: DeviceArrayLike | DoubleBuffer | None,
@@ -169,12 +171,13 @@ def make_radix_sort(
 
 
 def radix_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
-    order: SortOrder,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None = None,
+    d_out_values: DeviceArrayLike | None = None,
     num_items: int,
+    order: SortOrder,
     begin_bit: int | None = None,
     end_bit: int | None = None,
     stream=None,
@@ -204,33 +207,39 @@ def radix_sort(
         d_out_keys: Device array to store the sorted keys (optional)
         d_in_values: Device array or DoubleBuffer containing the input sequence of values (optional)
         d_out_values: Device array to store the sorted values (optional)
-        order: Sort order (ascending or descending)
         num_items: Number of items to sort
+        order: Sort order (ascending or descending)
         begin_bit: Beginning bit position for comparison (optional)
         end_bit: Ending bit position for comparison (optional)
         stream: CUDA stream for the operation (optional)
     """
-    sorter = make_radix_sort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
+    sorter = make_radix_sort(
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        order=order,
+    )
     tmp_storage_bytes = sorter(
-        None,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        begin_bit,
-        end_bit,
-        stream,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     sorter(
-        tmp_storage,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        begin_bit,
-        end_bit,
-        stream,
+        temp_storage=tmp_storage,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        stream=stream,
     )
