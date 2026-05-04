@@ -101,15 +101,12 @@ TEST_FUNC constexpr void test_noexcept()
 {
   static_assert(noexcept(cuda::__lazy_call_or(plus_one{}, throwing_fallback{}, 41)));
   static_assert(noexcept(cuda::__lazy_call_or(cuda::std::ignore, fallback_long{}, 41)));
-  // MSVC 19.39 and GCC 9 and lower compute the wrong answer for these
-#if (TEST_COMPILER(MSVC, <=, 19, 39) || TEST_COMPILER(GCC, <=, 9)) && (TEST_STD_VER <= 2017)
-#  define WRONG_ANSWER
-#endif // (msvc-19.39- || gcc-9-) && cpp17
 
-#ifndef WRONG_ANSWER
+  // MSVC 19.39 and GCC 9 and lower compute the wrong answer for these
+#if !((TEST_COMPILER(MSVC, <=, 19, 39) || TEST_COMPILER(GCC, <=, 9)) && (TEST_STD_VER <= 2017))
   static_assert(!noexcept(cuda::__lazy_call_or(throwing_plus_one{}, fallback_long{}, 41)));
   static_assert(!noexcept(cuda::__lazy_call_or(cuda::std::ignore, throwing_fallback{}, 41)));
-#endif // !WRONG_ANSWER
+#endif // !((msvc-19.39- || gcc-9-) && cpp17)
 }
 
 TEST_FUNC constexpr void test_constexpr()
