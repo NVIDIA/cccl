@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import re
 import sys
 
@@ -29,11 +32,16 @@ def main() -> int:
             # Not assert, pre-commit may compile with -O
             raise AssertionError(f"Failed to match shebang for {first_line}")
 
+        fixed = f"#!/usr/bin/env {m[1] or m[2]}".rstrip()
+        if rest := m[3].strip():
+            fixed += f" {rest}"
+        fixed += "\n"
+
         with open(f) as fd:
             # Read the remaining lines, we need them in order to overwrite
             lines = fd.readlines()
 
-        lines[0] = f"#!/usr/bin/env {m[1] or m[2]} {m[3]}\n"
+        lines[0] = fixed
 
         with open(f, "w") as fd:
             fd.writelines(lines)
