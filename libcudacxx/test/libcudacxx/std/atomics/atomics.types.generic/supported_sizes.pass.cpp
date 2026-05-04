@@ -51,9 +51,11 @@ int main(int, char**)
   check_supported_type(static_cast<uint32_t>(0));
   check_supported_type(static_cast<int64_t>(0));
   check_supported_type(static_cast<uint64_t>(0));
+#if _CCCL_HAS_INT128()
   NV_IF_TARGET(NV_IS_DEVICE,
                // Perform check only on device
                (check_supported_type(static_cast<__int128_t>(0)); check_supported_type(static_cast<__uint128_t>(0));))
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }
