@@ -120,12 +120,13 @@ class group
   }
 
 public:
-  using unit_type             = _Unit;
-  using level_type            = typename _ParentGroup::level_type;
-  using hierarchy_type        = typename _ParentGroup::hierarchy_type;
-  using mapping_type          = _Mapping;
-  using __mapping_result_type = _MappingResult;
-  using synchronizer_type     = _Synchronizer;
+  using unit_type                    = _Unit;
+  using level_type                   = typename _ParentGroup::level_type;
+  using hierarchy_type               = typename _ParentGroup::hierarchy_type;
+  using mapping_type                 = _Mapping;
+  using __mapping_result_type        = _MappingResult;
+  using synchronizer_type            = _Synchronizer;
+  using __synchronizer_instance_type = _SynchronizerInstance;
 
   _CCCL_DEVICE_API explicit group(
     const _Unit& __unit,
@@ -160,6 +161,11 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API const synchronizer_type& synchronizer() const noexcept
   {
     return __synchronizer_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
+  {
+    return __synchronizer_instance_;
   }
 
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want

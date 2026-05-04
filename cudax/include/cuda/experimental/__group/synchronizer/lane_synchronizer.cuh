@@ -55,6 +55,11 @@ public:
       return {0u};
     }
 
+    [[nodiscard]] _CCCL_DEVICE_API unsigned __lane_mask() const noexcept
+    {
+      return __lane_mask_;
+    }
+
     template <class _MappingResult>
     _CCCL_DEVICE_API void do_sync(const _MappingResult&, const lane_synchronizer&) const noexcept
     {
