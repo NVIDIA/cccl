@@ -140,7 +140,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

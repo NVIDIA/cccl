@@ -113,7 +113,7 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

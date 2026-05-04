@@ -102,7 +102,7 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

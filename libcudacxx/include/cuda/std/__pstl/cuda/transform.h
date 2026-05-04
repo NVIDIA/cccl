@@ -126,7 +126,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }
@@ -179,7 +179,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

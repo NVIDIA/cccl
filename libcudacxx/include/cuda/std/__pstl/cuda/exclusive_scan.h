@@ -118,7 +118,7 @@ struct __pstl_dispatch<__pstl_algorithm::__exclusive_scan, __execution_backend::
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

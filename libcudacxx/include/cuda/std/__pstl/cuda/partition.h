@@ -146,7 +146,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

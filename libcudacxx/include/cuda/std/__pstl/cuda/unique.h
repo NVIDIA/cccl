@@ -160,7 +160,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }
@@ -201,7 +201,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

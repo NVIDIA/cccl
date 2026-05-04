@@ -134,7 +134,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

@@ -156,7 +156,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

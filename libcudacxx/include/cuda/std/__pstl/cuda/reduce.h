@@ -144,7 +144,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }

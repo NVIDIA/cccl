@@ -150,7 +150,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
     }
