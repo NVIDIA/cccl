@@ -29,6 +29,7 @@ TEST_FUNC void test_roundtrip_through_buffer(T from)
   Buffer middle  = cuda::std::bit_cast<Buffer>(from);
   T to           = cuda::std::bit_cast<T>(middle);
   Buffer middle2 = cuda::std::bit_cast<Buffer>(to);
+  unused(middle2);
 
   assert((from == to) == (from == from)); // because NaN
 
@@ -52,6 +53,7 @@ TEST_FUNC void test_roundtrip_through_nested_T(T from)
   Nested middle  = cuda::std::bit_cast<Nested>(from);
   T to           = cuda::std::bit_cast<T>(middle);
   Nested middle2 = cuda::std::bit_cast<Nested>(to);
+  unused(middle2);
 
   assert((from == to) == (from == from)); // because NaN
 
@@ -71,6 +73,7 @@ TEST_FUNC void test_roundtrip_through(T from)
   Intermediate middle  = cuda::std::bit_cast<Intermediate>(from);
   T to                 = cuda::std::bit_cast<T>(middle);
   Intermediate middle2 = cuda::std::bit_cast<Intermediate>(to);
+  unused(middle2);
 
   assert((from == to) == (from == from)); // because NaN
 
