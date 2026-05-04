@@ -1,19 +1,19 @@
-.. _cuda_coop_numba_cuda-module:
+.. _cuda_coop_experimental-module:
 
-``cuda.coop.numba_cuda`` API Reference
-======================================
+``cuda.coop._experimental`` API Reference
+===========================================
 
 .. warning::
-  ``cuda.coop.numba_cuda`` is in public beta.
+  ``cuda.coop._experimental`` is in public beta.
   The API is subject to change without notice.
 
-.. automodule:: cuda.coop.numba_cuda.warp
+.. automodule:: cuda.coop._experimental.warp
   :members:
   :undoc-members:
   :imported-members:
 
 
-.. automodule:: cuda.coop.numba_cuda.block
+.. automodule:: cuda.coop._experimental.block
   :members:
   :undoc-members:
   :imported-members:

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Build Python cuda-cccl wheels for the cuda.compute and cuda.coop.numba_cuda packages
+    Build Python cuda-cccl wheels for the cuda.compute and cuda.coop._experimental packages
     on Windows.
 
 .DESCRIPTION

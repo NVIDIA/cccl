@@ -150,7 +150,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    .. code-block:: python
 //!
-//!        import cuda.coop.numba_cuda as coop
+//!        import cuda.coop._experimental as coop
 //!        from pynvjitlink import patch
 //!        patch.patch_numba_linker(lto=True)
 //!
