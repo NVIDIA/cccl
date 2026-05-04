@@ -4,7 +4,7 @@
 
 """
 cuda.coop._experimental.block_scan
-===========================
+==================================
 
 This module provides a set of :ref:`collective <collective-primitives>`
 for computing parallel prefix scans of items partitioned across CUDA

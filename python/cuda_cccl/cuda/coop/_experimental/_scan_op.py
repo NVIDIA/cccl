@@ -4,7 +4,7 @@
 
 """
 cuda.coop._experimental._scan_op
-==================
+================================
 
 This module implements the ``ScanOp`` class and related functions.
 """
