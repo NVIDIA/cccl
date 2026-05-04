@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -380,14 +380,6 @@ template <class _Tp>
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x) noexcept
-{
-  return complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_API inline complex<__half> asinh(const complex<__half>& __x) noexcept
@@ -395,6 +387,14 @@ _CCCL_API inline complex<__half> asinh(const complex<__half>& __x) noexcept
   return complex<__half>{::cuda::std::asinh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x) noexcept
+{
+  return complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 // acosh
 
@@ -669,14 +669,6 @@ template <class _Tp>
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::acosh(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
@@ -684,6 +676,14 @@ _CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
   return complex<__half>{::cuda::std::acosh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::acosh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 // atanh
 
@@ -798,14 +798,6 @@ template <class _Tp>
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::atanh(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_API inline complex<__half> atanh(const complex<__half>& __x)
@@ -813,6 +805,14 @@ _CCCL_API inline complex<__half> atanh(const complex<__half>& __x)
   return complex<__half>{::cuda::std::atanh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::atanh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

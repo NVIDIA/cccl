@@ -51,4 +51,64 @@
 
 #define _CCCL_OS(...) _CCCL_OS_##__VA_ARGS__##_()
 
+//! @brief Detect the current operating system.
+//!
+//! @param __os__ The name of the operating system to test.
+//!
+//! @note This macro is made available when including any libcu++ header. Users that wish to
+//! include the smallest possible header for this macro should include `<cuda/std/version>`.
+//!
+//! For supported operating systems, the macro expands to an implementation-defined true value
+//! if the current operating system matches, or false otherwise. These values may be used in
+//! boolean expressions (preprocessor or otherwise), but no other guarantees are made.
+//!
+//! Available values for `__os__` include:
+//!
+//! - ``WINDOWS``: Windows, either in 32-bit or 64-bit mode.
+//! - ``LINUX``: Any kind of Linux installation. Note that other unix-based operating systems will
+//!              also match against this.
+//! - ``ANDROID``: Android operating system.
+//! - ``QNX``: QNX real-time operating system.
+//! - ``APPLE``: macOS (Intel or Apple Silicon).
+//!
+//! Passing any other value will result in an undefined expansion, which may or may not be
+//! diagnosed by the compiler.
+//!
+//! @note Some operating systems may satisfy multiple conditions. For example macOS and Android
+//! satisfy both `APPLE`/`ANDROID` and `LINUX`.
+//!
+//! @par Example
+//! @code
+//! #define MY_OTHER_MACRO 1
+//!
+//! // Expansion value can be used in ordinary macro conditionals
+//! #if CCCL_OS(WINDOWS) && MY_OTHER_MACRO
+//!   // ...
+//! #endif
+//!
+//! // Can be negated as usual
+//! #if !CCCL_OS(QNX)
+//!   // ...
+//! #endif
+//!
+//! #if CCCL_OS(APPLE)
+//!   // Will be visible only on macOS
+//! #endif
+//!
+//! #if CCCL_OS(ANDROID)
+//!   // Will be visible only on Android
+//! #endif
+//!
+//! #if CCCL_OS(LINUX) && !CCCL_OS(APPLE) && !CCCL_OS(ANDROID)
+//!   // Only visible on Linux
+//! #endif
+//! @endcode
+//!
+//! @return true if the specified OS is begin compiled for, false otherwise.
+#define CCCL_OS(__os__) _CCCL_OS_##__os__##_()
+
+// Note: the public API is single-arg to constrain the API and allow for future expansion. The
+// implementation is duplicated to guard against the OS targets being accidentally defined by
+// the user.
+
 #endif // __CCCL_OS_H
