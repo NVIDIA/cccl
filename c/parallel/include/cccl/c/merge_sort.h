@@ -28,6 +28,8 @@ typedef struct cccl_device_merge_sort_build_result_t
   int cc;
   void* cubin;
   size_t cubin_size;
+  void* kernel_ltoir;
+  size_t kernel_ltoir_size;
   CUlibrary library;
   cccl_type_info key_type;
   cccl_type_info item_type;
@@ -35,6 +37,11 @@ typedef struct cccl_device_merge_sort_build_result_t
   CUkernel partition_kernel;
   CUkernel merge_kernel;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_merge_sort_cleanup():
+  char* block_sort_kernel_lowered_name;
+  char* partition_kernel_lowered_name;
+  char* merge_kernel_lowered_name;
 } cccl_device_merge_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_merge_sort_build(
@@ -67,6 +74,23 @@ CCCL_C_API CUresult cccl_device_merge_sort_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+CCCL_C_API CUresult cccl_device_merge_sort_compile(
+  cccl_device_merge_sort_build_result_t* build,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_merge_sort_load(cccl_device_merge_sort_build_result_t* build);
+
 CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,
@@ -78,6 +102,9 @@ CCCL_C_API CUresult cccl_device_merge_sort(
   uint64_t num_items,
   cccl_op_t op,
   CUstream stream);
+
+CCCL_C_API CUresult cccl_device_merge_sort_link_ltoir(
+  cccl_device_merge_sort_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
 
 CCCL_C_API CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr);
 

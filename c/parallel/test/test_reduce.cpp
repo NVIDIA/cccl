@@ -10,9 +10,13 @@
 
 #include <cstdint>
 #include <iostream> // std::cerr
+#include <memory>
+#include <numeric>
 #include <optional> // std::optional
 #include <string>
+#include <vector>
 
+#include <cuda.h>
 #include <cuda_runtime.h>
 
 #include "algorithm_execution.h"
@@ -537,7 +541,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  BuildResultT build;
+  BuildResultT build{};
   reduce_build_ex builder(extra_flags, 1, extra_includes, 1);
 
   REQUIRE(
@@ -576,6 +580,58 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
 
+C2H_TEST("Reduce build result has AoT metadata populated", "[reduce][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  operation_t op             = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input = generate<T>(16);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce_build(
+      &build,
+      input_ptr,
+      output_ptr,
+      op,
+      init,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  // cc field is packed as cc_major * 10 + cc_minor
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+
+  CHECK(build.cubin != nullptr);
+  CHECK(build.cubin_size > 0);
+
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+
+  REQUIRE(build.single_tile_kernel_lowered_name != nullptr);
+  CHECK(build.single_tile_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.single_tile_second_kernel_lowered_name != nullptr);
+  CHECK(build.single_tile_second_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.reduction_kernel_lowered_name != nullptr);
+  CHECK(build.reduction_kernel_lowered_name[0] != '\0');
+
+  // nondeterministic name is null for CCCL_RUN_TO_RUN builds
+  CHECK(build.nondeterministic_kernel_lowered_name == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
+}
+
 struct Reduce_Nondeterministic_Plus_Fixture_Tag;
 C2H_TEST("Reduce works with not_guaranteed determinism and plus", "[reduce][nondeterministic]")
 {
@@ -596,4 +652,153 @@ C2H_TEST("Reduce works with not_guaranteed determinism and plus", "[reduce][nond
   const T output   = output_ptr[0];
   const T expected = std::accumulate(input.begin(), input.end(), init.value);
   REQUIRE(output == expected);
+}
+
+C2H_TEST("Reduce compile/load round-trip", "[reduce][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation(); // plus
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op,
+      init,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE(build.cubin != nullptr);
+  REQUIRE(build.cubin_size > 0);
+  REQUIRE(build.single_tile_kernel_lowered_name != nullptr);
+  REQUIRE(build.single_tile_second_kernel_lowered_name != nullptr);
+  REQUIRE(build.reduction_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.single_tile_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_load(&build));
+
+  REQUIRE(build.library != nullptr);
+  CHECK(build.single_tile_kernel != nullptr);
+  CHECK(build.single_tile_second_kernel != nullptr);
+  CHECK(build.reduction_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_reduce(build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_reduce(
+            build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+
+  const T result   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), T{0});
+  REQUIRE(result == expected);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
+}
+
+C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Kernel-only compile: op has a name but no LTOIR (code_size == 0).
+  // compile() will produce kernel LTOIR with an unresolved external reference to "op".
+  cccl_op_t op_ko{};
+  op_ko.type      = CCCL_STATELESS;
+  op_ko.name      = "op";
+  op_ko.code      = nullptr;
+  op_ko.code_size = 0;
+  op_ko.code_type = CCCL_OP_LTOIR;
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op_ko,
+      init,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  // After kernel-only compile: kernel_ltoir is populated, cubin is not.
+  REQUIRE(build.kernel_ltoir != nullptr);
+  REQUIRE(build.kernel_ltoir_size > 0);
+  CHECK(build.cubin == nullptr);
+  CHECK(build.library == nullptr);
+
+  // Compile the operator LTOIR separately (this is the "user-supplied" op blob).
+  operation_t op_full = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const void* op_blob = op_full.code.data();
+  size_t op_size      = op_full.code.size();
+
+  // link_ltoir links kernel LTOIR + op LTOIR → CUBIN and loads the library.
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_link_ltoir(&build, &op_blob, &op_size, 1));
+
+  REQUIRE(build.cubin != nullptr);
+  REQUIRE(build.library != nullptr);
+  CHECK(build.kernel_ltoir == nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  cccl_op_t op_run    = op_full;
+  cccl_value_t init_v = init;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_reduce(build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
+
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_reduce(
+            build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
+
+  const T result   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), T{0});
+  REQUIRE(result == expected);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }

@@ -29,6 +29,8 @@ typedef struct cccl_device_scan_build_result_t
   int cc;
   void* cubin;
   size_t cubin_size;
+  void* kernel_ltoir;
+  size_t kernel_ltoir_size;
   CUlibrary library;
   cccl_type_info input_type;
   cccl_type_info output_type;
@@ -40,6 +42,10 @@ typedef struct cccl_device_scan_build_result_t
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_scan_cleanup():
+  char* init_kernel_lowered_name;
+  char* scan_kernel_lowered_name;
 } cccl_device_scan_build_result_t;
 
 CCCL_C_API CUresult cccl_device_scan_build(
@@ -73,6 +79,24 @@ CCCL_C_API CUresult cccl_device_scan_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_scan_compile(
+  cccl_device_scan_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_type_info init,
+  bool force_inclusive,
+  cccl_init_kind_t init_kind,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_scan_load(cccl_device_scan_build_result_t* build_ptr);
 
 CCCL_C_API CUresult cccl_device_exclusive_scan(
   cccl_device_scan_build_result_t build,
@@ -127,6 +151,9 @@ CCCL_C_API CUresult cccl_device_inclusive_scan_no_init(
   uint64_t num_items,
   cccl_op_t op,
   CUstream stream);
+
+CCCL_C_API CUresult cccl_device_scan_link_ltoir(
+  cccl_device_scan_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
 
 CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr);
 

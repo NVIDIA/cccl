@@ -77,7 +77,7 @@ static std::string get_device_for_kernel_name()
     "cub::detail::for_each::static_kernel<device_for_policy_selector, {0}, {1}>", offset_t, function_op_t);
 }
 
-CUresult cccl_device_for_build_ex(
+CUresult cccl_device_for_compile(
   cccl_device_for_build_result_t* build_ptr,
   cccl_iterator_t d_data,
   cccl_op_t op,
@@ -114,14 +114,11 @@ try
 
   std::string lowered_name;
 
-  // Collect all LTO-IRs to be linked
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
-  // Add operation if it's LTO-IR (C++ source not yet supported in for)
   appender.append_operation(op);
 
-  // Add iterator definitions if present
   if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
   {
     appender.append_operation(d_data.advance);
@@ -138,18 +135,53 @@ try
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, lowered_name.c_str()));
-
-  build_ptr->cc         = cc;
-  build_ptr->cubin      = (void*) result.data.release();
-  build_ptr->cubin_size = result.size;
+  build_ptr->cc                         = cc;
+  build_ptr->cubin                      = (void*) result.data.release();
+  build_ptr->cubin_size                 = result.size;
+  build_ptr->static_kernel_lowered_name = duplicate_c_string(lowered_name);
 
   return CUDA_SUCCESS;
 }
 catch (...)
 {
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_for_load(cccl_device_for_build_result_t* build_ptr)
+try
+{
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, build_ptr->static_kernel_lowered_name));
+  return CUDA_SUCCESS;
+}
+catch (...)
+{
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_for_build_ex(
+  cccl_device_for_build_result_t* build_ptr,
+  cccl_iterator_t d_data,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  CUresult r = cccl_device_for_compile(
+    build_ptr, d_data, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  return cccl_device_for_load(build_ptr);
 }
 
 CUresult cccl_device_for(
@@ -202,7 +234,11 @@ try
   }
 
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  check(cuLibraryUnload(build_ptr->library));
+  std::unique_ptr<char[]> kernel_name(build_ptr->static_kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }

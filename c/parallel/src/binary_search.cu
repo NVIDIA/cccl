@@ -116,7 +116,7 @@ struct binary_search_data_iterator_tag;
 struct binary_search_values_iterator_tag;
 struct binary_search_op_tag;
 
-CUresult cccl_device_binary_search_build_ex(
+CUresult cccl_device_binary_search_compile(
   cccl_device_binary_search_build_result_t* build_ptr,
   cccl_binary_search_mode_t mode,
   cccl_iterator_t d_data,
@@ -266,7 +266,7 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
   transform_op.extra_ltoir_sizes = extra_ltoir_sizes.data();
   transform_op.num_extra_ltoirs  = extra_ltoirs.size();
 
-  check(cccl_device_unary_transform_build_ex(
+  check(cccl_device_unary_transform_compile(
     &build_ptr->transform,
     d_values,
     d_out,
@@ -287,6 +287,51 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
 catch (...)
 {
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_binary_search_load(cccl_device_binary_search_build_result_t* build_ptr)
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  return cccl_device_transform_load(&build_ptr->transform);
+}
+
+CUresult cccl_device_binary_search_build_ex(
+  cccl_device_binary_search_build_result_t* build_ptr,
+  cccl_binary_search_mode_t mode,
+  cccl_iterator_t d_data,
+  cccl_iterator_t d_values,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  CUresult r = cccl_device_binary_search_compile(
+    build_ptr,
+    mode,
+    d_data,
+    d_values,
+    d_out,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  return cccl_device_binary_search_load(build_ptr);
 }
 
 CUresult cccl_device_binary_search(

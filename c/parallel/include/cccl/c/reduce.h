@@ -28,6 +28,8 @@ typedef struct cccl_device_reduce_build_result_t
   int cc;
   void* cubin;
   size_t cubin_size;
+  void* kernel_ltoir;
+  size_t kernel_ltoir_size;
   CUlibrary library;
   uint64_t accumulator_size;
   CUkernel single_tile_kernel;
@@ -36,6 +38,12 @@ typedef struct cccl_device_reduce_build_result_t
   CUkernel nondeterministic_atomic_kernel;
   cccl_determinism_t determinism;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_reduce_cleanup():
+  char* single_tile_kernel_lowered_name;
+  char* single_tile_second_kernel_lowered_name;
+  char* reduction_kernel_lowered_name;
+  char* nondeterministic_kernel_lowered_name;
 } cccl_device_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
@@ -69,6 +77,23 @@ CCCL_C_API CUresult cccl_device_reduce_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+CCCL_C_API CUresult cccl_device_reduce_compile(
+  cccl_device_reduce_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_value_t init,
+  cccl_determinism_t determinism,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build);
+
 CCCL_C_API CUresult cccl_device_reduce(
   cccl_device_reduce_build_result_t build,
   void* d_temp_storage,
@@ -90,6 +115,9 @@ CCCL_C_API CUresult cccl_device_reduce_nondeterministic(
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream);
+
+CCCL_C_API CUresult cccl_device_reduce_link_ltoir(
+  cccl_device_reduce_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
 
 CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr);
 

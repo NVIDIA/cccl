@@ -32,6 +32,7 @@ function(cccl_c_parallel_add_test target_name_var source)
 
   # Get the first CUDA include directory only
   list(GET CUDAToolkit_INCLUDE_DIRS 0 CUDA_FIRST_INCLUDE_DIR)
+
   target_compile_definitions(
     ${target_name}
     PRIVATE

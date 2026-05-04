@@ -16,9 +16,11 @@
 
 #include <exception>
 #include <format>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <type_traits> // std::is_same_v
+#include <unordered_map>
 #include <vector>
 
 #include "jit_templates/templates/input_iterator.h"
@@ -28,6 +30,7 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/nvjitlink.h"
 #include "util/types.h"
 #include <cccl/c/three_way_partition.h>
 #include <cccl/c/types.h>
@@ -114,7 +117,7 @@ struct three_way_partition_num_selected_output_iterator_tag;
 struct three_way_partition_select_first_part_operation_tag;
 struct three_way_partition_select_second_part_operation_tag;
 
-CUresult cccl_device_three_way_partition_build_ex(
+CUresult cccl_device_three_way_partition_compile(
   cccl_device_three_way_partition_build_result_t* build_ptr,
   cccl_iterator_t d_in,
   cccl_iterator_t d_first_part_out,
@@ -246,10 +249,15 @@ static_assert(
 
   cccl::detail::extend_args_with_build_config(args, config);
 
+  const bool kernel_only =
+    select_first_part_op.code_size == 0 && select_first_part_op.name != nullptr && select_first_part_op.name[0] != '\0'
+    && select_second_part_op.code_size == 0 && select_second_part_op.name != nullptr
+    && select_second_part_op.name[0] != '\0';
+
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  // Collect all LTO-IRs to be linked (empty ops when kernel_only — ops have no code).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
@@ -261,39 +269,131 @@ static_assert(
   appender.add_iterator_definition(d_unselected_out);
   appender.add_iterator_definition(d_num_selected_out);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({three_way_partition_init_kernel_name})
       ->add_expression({three_way_partition_kernel_name})
       ->compile_program({args.data(), args.size()})
       ->get_name({three_way_partition_init_kernel_name, three_way_partition_init_kernel_lowered_name})
-      ->get_name({three_way_partition_kernel_name, three_way_partition_kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({three_way_partition_kernel_name, three_way_partition_kernel_lowered_name});
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->three_way_partition_init_kernel,
-                           build_ptr->library,
-                           three_way_partition_init_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
+  build_ptr->cc                  = cc.get();
+  build_ptr->runtime_policy      = new cub::detail::three_way_partition::policy_selector{policy_sel};
+  build_ptr->runtime_policy_size = sizeof(cub::detail::three_way_partition::policy_selector);
+  build_ptr->three_way_partition_init_kernel_lowered_name =
+    duplicate_c_string(three_way_partition_init_kernel_lowered_name);
+  build_ptr->three_way_partition_kernel_lowered_name = duplicate_c_string(three_way_partition_kernel_lowered_name);
 
-  build_ptr->cc             = cc.get();
-  build_ptr->cubin          = (void*) result.data.release();
-  build_ptr->cubin_size     = result.size;
-  build_ptr->runtime_policy = new cub::detail::three_way_partition::policy_selector{policy_sel};
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->kernel_ltoir       = ltoir_data.release();
+    build_ptr->kernel_ltoir_size  = ltoir_size;
+  }
+  else
+  {
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->cubin         = (void*) result.data.release();
+    build_ptr->cubin_size    = result.size;
+  }
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_three_way_partition_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_three_way_partition_compile(): %s\n", exc.what());
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_three_way_partition_load(cccl_device_three_way_partition_build_result_t* build)
+try
+{
+  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  check(cuLibraryLoadData(&build->library, build->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  check(cuLibraryGetKernel(
+    &build->three_way_partition_init_kernel, build->library, build->three_way_partition_init_kernel_lowered_name));
+  check(cuLibraryGetKernel(
+    &build->three_way_partition_kernel, build->library, build->three_way_partition_kernel_lowered_name));
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_three_way_partition_load(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_three_way_partition_build_ex(
+  cccl_device_three_way_partition_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_first_part_out,
+  cccl_iterator_t d_second_part_out,
+  cccl_iterator_t d_unselected_out,
+  cccl_iterator_t d_num_selected_out,
+  cccl_op_t select_first_part_op,
+  cccl_op_t select_second_part_op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+    appender.append_operation(select_first_part_op);
+    appender.append_operation(select_second_part_op);
+    appender.add_iterator_definition(d_in);
+    appender.add_iterator_definition(d_first_part_out);
+    appender.add_iterator_definition(d_second_part_out);
+    appender.add_iterator_definition(d_unselected_out);
+    appender.add_iterator_definition(d_num_selected_out);
+    std::vector<const void*> blobs;
+    std::vector<size_t> sizes;
+    for (const auto& item : linkable_list)
+    {
+      if (std::holds_alternative<nvrtc_ltoir>(item))
+      {
+        const auto& l = std::get<nvrtc_ltoir>(item);
+        blobs.push_back(l.ltoir);
+        sizes.push_back(l.size);
+      }
+    }
+    return cccl_device_three_way_partition_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
+  }
+  CUresult result = cccl_device_three_way_partition_compile(
+    build_ptr,
+    d_in,
+    d_first_part_out,
+    d_second_part_out,
+    d_unselected_out,
+    d_num_selected_out,
+    select_first_part_op,
+    select_second_part_op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (result != CUDA_SUCCESS)
+  {
+    return result;
+  }
+  return cccl_device_three_way_partition_load(build_ptr);
 }
 
 CUresult cccl_device_three_way_partition(
@@ -373,9 +473,15 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
+  std::unique_ptr<char[]> kernel_ltoir(static_cast<char*>(bld_ptr->kernel_ltoir));
   std::unique_ptr<cub::detail::three_way_partition::policy_selector> policy(
     static_cast<cub::detail::three_way_partition::policy_selector*>(bld_ptr->runtime_policy));
-  check(cuLibraryUnload(bld_ptr->library));
+  std::unique_ptr<char[]> init_name(bld_ptr->three_way_partition_init_kernel_lowered_name);
+  std::unique_ptr<char[]> kernel_name(bld_ptr->three_way_partition_kernel_lowered_name);
+  if (bld_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(bld_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
@@ -420,4 +526,43 @@ CUresult cccl_device_three_way_partition_build(
     libcudacxx_path,
     ctk_path,
     nullptr);
+}
+
+CUresult cccl_device_three_way_partition_link_ltoir(
+  cccl_device_three_way_partition_build_result_t* build_ptr,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    all_blobs.push_back(build_ptr->kernel_ltoir);
+    all_sizes.push_back(build_ptr->kernel_ltoir_size);
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->kernel_ltoir);
+  build_ptr->kernel_ltoir      = nullptr;
+  build_ptr->kernel_ltoir_size = 0;
+  build_ptr->cubin             = (void*) cubin.release();
+  build_ptr->cubin_size        = cubin_size;
+  return cccl_device_three_way_partition_load(build_ptr);
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_three_way_partition_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }

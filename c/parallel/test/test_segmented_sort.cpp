@@ -723,3 +723,157 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   REQUIRE(expected_keys == std::vector<key_t>(output_keys));
   REQUIRE(expected_values == std::vector<item_t>(output_vals));
 }
+
+C2H_TEST("SegmentedSort build result has AoT metadata populated", "[segmented_sort][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  pointer_t<T> keys_in(1);
+  pointer_t<T> values_in(1);
+  pointer_t<T> begin_offsets(1);
+  pointer_t<T> end_offsets(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_sort_build(
+      &build,
+      CCCL_ASCENDING,
+      keys_in,
+      values_in,
+      begin_offsets,
+      end_offsets,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cubin != nullptr);
+  CHECK(build.cubin_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  CHECK(build.partition_runtime_policy != nullptr);
+  CHECK(build.partition_runtime_policy_size > 0);
+  REQUIRE(build.segmented_sort_fallback_kernel_lowered_name != nullptr);
+  CHECK(build.segmented_sort_fallback_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.segmented_sort_kernel_small_lowered_name != nullptr);
+  CHECK(build.segmented_sort_kernel_small_lowered_name[0] != '\0');
+  REQUIRE(build.three_way_partition_init_kernel_lowered_name != nullptr);
+  CHECK(build.three_way_partition_init_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.three_way_partition_kernel_lowered_name != nullptr);
+  CHECK(build.three_way_partition_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_sort_cleanup(&build));
+}
+
+C2H_TEST("SegmentedSort compile/load round-trip", "[segmented_sort][aot]")
+{
+  using T   = int32_t;
+  using Off = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  pointer_t<T> dummy_keys_in(1);
+  pointer_t<T> dummy_values_in(1);
+  pointer_t<Off> dummy_begin_offsets(1);
+  pointer_t<Off> dummy_end_offsets(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_sort_compile(
+      &build,
+      CCCL_ASCENDING,
+      dummy_keys_in,
+      dummy_values_in,
+      dummy_begin_offsets,
+      dummy_end_offsets,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE(build.cubin != nullptr);
+  REQUIRE(build.cubin_size > 0);
+  REQUIRE(build.segmented_sort_fallback_kernel_lowered_name != nullptr);
+  REQUIRE(build.segmented_sort_kernel_small_lowered_name != nullptr);
+  REQUIRE(build.three_way_partition_init_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.segmented_sort_fallback_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_sort_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.segmented_sort_fallback_kernel != nullptr);
+  CHECK(build.segmented_sort_kernel_small != nullptr);
+  CHECK(build.three_way_partition_init_kernel != nullptr);
+  CHECK(build.three_way_partition_kernel != nullptr);
+
+  constexpr std::size_t n          = 8;
+  constexpr std::size_t n_segments = 2;
+  const std::vector<T> input       = generate<T>(n);
+  pointer_t<T> keys_in(input);
+  pointer_t<T> keys_out(n);
+  pointer_t<T> values_in(n); // items not checked — just keys
+  pointer_t<T> values_out(n);
+  const std::vector<Off> begin_offsets_host = {0, static_cast<Off>(n / 2)};
+  const std::vector<Off> end_offsets_host   = {static_cast<Off>(n / 2), static_cast<Off>(n)};
+  pointer_t<Off> begin_offsets_ptr(begin_offsets_host);
+  pointer_t<Off> end_offsets_ptr(end_offsets_host);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int selector              = -1;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_sort(
+      build,
+      nullptr,
+      &temp_storage_bytes,
+      keys_in,
+      keys_out,
+      values_in,
+      values_out,
+      n,
+      n_segments,
+      begin_offsets_ptr,
+      end_offsets_ptr,
+      /*is_overwrite_okay=*/false,
+      &selector,
+      null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_segmented_sort(
+      build,
+      temp_storage.ptr,
+      &temp_storage_bytes,
+      keys_in,
+      keys_out,
+      values_in,
+      values_out,
+      n,
+      n_segments,
+      begin_offsets_ptr,
+      end_offsets_ptr,
+      /*is_overwrite_okay=*/false,
+      &selector,
+      null_stream));
+
+  auto& output_keys = (selector == 0) ? keys_in : keys_out;
+  std::vector<T> result(output_keys);
+  // Each segment should be sorted ascending
+  CHECK(std::is_sorted(result.begin(), result.begin() + n / 2));
+  CHECK(std::is_sorted(result.begin() + n / 2, result.end()));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_sort_cleanup(&build));
+}

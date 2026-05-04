@@ -522,3 +522,155 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
   REQUIRE(static_cast<std::size_t>(num_selected[1]) == std_result.num_items_in_second_part);
   REQUIRE(num_items - static_cast<std::size_t>(num_selected[0] + num_selected[1]) == std_result.num_unselected_items);
 }
+
+C2H_TEST("ThreeWayPartition build result has AoT metadata populated", "[three_way_partition][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, 21);
+  operation_t first_op         = make_operation("less_op", first_src);
+  operation_t second_op        = make_operation("greater_op", second_src);
+
+  pointer_t<T> in(1);
+  pointer_t<T> first_out(1);
+  pointer_t<T> second_out(1);
+  pointer_t<T> unselected_out(1);
+  pointer_t<T> num_selected_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition_build(
+      &build,
+      in,
+      first_out,
+      second_out,
+      unselected_out,
+      num_selected_out,
+      first_op,
+      second_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cubin != nullptr);
+  CHECK(build.cubin_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.three_way_partition_init_kernel_lowered_name != nullptr);
+  CHECK(build.three_way_partition_init_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.three_way_partition_kernel_lowered_name != nullptr);
+  CHECK(build.three_way_partition_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
+}
+
+C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+  constexpr T split_value = 21;
+
+  auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, split_value);
+  operation_t first_op         = make_operation("less_op", first_src);
+  operation_t second_op        = make_operation("greater_op", second_src);
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_first_out(1);
+  pointer_t<T> dummy_second_out(1);
+  pointer_t<T> dummy_unselected_out(1);
+  pointer_t<T> dummy_num_selected_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition_compile(
+      &build,
+      dummy_in,
+      dummy_first_out,
+      dummy_second_out,
+      dummy_unselected_out,
+      dummy_num_selected_out,
+      first_op,
+      second_op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE(build.cubin != nullptr);
+  REQUIRE(build.cubin_size > 0);
+  REQUIRE(build.three_way_partition_init_kernel_lowered_name != nullptr);
+  REQUIRE(build.three_way_partition_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.three_way_partition_init_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.three_way_partition_init_kernel != nullptr);
+  CHECK(build.three_way_partition_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> first_out(n);
+  pointer_t<T> second_out(n);
+  pointer_t<T> unselected_out(n);
+  pointer_t<int> num_selected_out(2);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition(
+      build,
+      nullptr,
+      &temp_storage_bytes,
+      input_ptr,
+      first_out,
+      second_out,
+      unselected_out,
+      num_selected_out,
+      first_op,
+      second_op,
+      n,
+      null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_three_way_partition(
+      build,
+      temp_storage.ptr,
+      &temp_storage_bytes,
+      input_ptr,
+      first_out,
+      second_out,
+      unselected_out,
+      num_selected_out,
+      first_op,
+      second_op,
+      n,
+      null_stream));
+
+  const int n_first      = num_selected_out[0];
+  const int n_second     = num_selected_out[1];
+  const int n_unselected = static_cast<int>(n) - n_first - n_second;
+  CHECK(n_first >= 0);
+  CHECK(n_second >= 0);
+  CHECK(n_unselected >= 0);
+  CHECK(n_first + n_second + n_unselected == static_cast<int>(n));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_three_way_partition_cleanup(&build));
+}

@@ -586,7 +586,7 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
   cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_merge_sort_build_result_t build;
+  cccl_device_merge_sort_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -684,7 +684,7 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
   const char* ctk_path        = TEST_CTK_PATH;
 
-  cccl_device_merge_sort_build_result_t build;
+  cccl_device_merge_sort_build_result_t build{};
   REQUIRE(
     CUDA_ERROR_UNKNOWN
     == cccl_device_merge_sort_build(
@@ -702,3 +702,117 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
       ctk_path));
 }
  */
+
+C2H_TEST("MergeSort build result has AoT metadata populated", "[merge_sort][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> keys_in(1);
+  pointer_t<T> items_in(1);
+  pointer_t<T> keys_out(1);
+  pointer_t<T> items_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_merge_sort_build(
+      &build,
+      keys_in,
+      items_in,
+      keys_out,
+      items_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cubin != nullptr);
+  CHECK(build.cubin_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.block_sort_kernel_lowered_name != nullptr);
+  CHECK(build.block_sort_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.partition_kernel_lowered_name != nullptr);
+  CHECK(build.partition_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.merge_kernel_lowered_name != nullptr);
+  CHECK(build.merge_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
+}
+
+C2H_TEST("MergeSort compile/load round-trip", "[merge_sort][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  cccl_op_t op = make_well_known_less_binary_predicate();
+  pointer_t<T> dummy_keys_in(1);
+  pointer_t<T> dummy_items_in(1);
+  pointer_t<T> dummy_keys_out(1);
+  pointer_t<T> dummy_items_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_merge_sort_compile(
+      &build,
+      dummy_keys_in,
+      dummy_items_in,
+      dummy_keys_out,
+      dummy_items_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE(build.cubin != nullptr);
+  REQUIRE(build.cubin_size > 0);
+  REQUIRE(build.block_sort_kernel_lowered_name != nullptr);
+  REQUIRE(build.partition_kernel_lowered_name != nullptr);
+  REQUIRE(build.merge_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.block_sort_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.block_sort_kernel != nullptr);
+  CHECK(build.partition_kernel != nullptr);
+  CHECK(build.merge_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> keys_in(input);
+  pointer_t<T> items_in(input);
+  pointer_t<T> keys_out(n);
+  pointer_t<T> items_out(n);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_merge_sort(
+            build, nullptr, &temp_storage_bytes, keys_in, items_in, keys_out, items_out, n, op, null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_merge_sort(
+            build, temp_storage.ptr, &temp_storage_bytes, keys_in, items_in, keys_out, items_out, n, op, null_stream));
+
+  std::vector<T> expected(input);
+  std::sort(expected.begin(), expected.end());
+  REQUIRE(expected == std::vector<T>(keys_out));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
+}

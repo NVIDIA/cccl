@@ -14,13 +14,16 @@
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 
 #include <format>
+#include <mutex>
 #include <sstream>
 #include <vector>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
 #include "util/context.h"
+#include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/nvjitlink.h"
 #include "util/tuning.h"
 #include "util/types.h"
 #include <cccl/c/merge_sort.h>
@@ -183,7 +186,7 @@ struct merge_sort_kernel_source
 };
 } // namespace merge_sort
 
-CUresult cccl_device_merge_sort_build_ex(
+CUresult cccl_device_merge_sort_compile(
   cccl_device_merge_sort_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
@@ -308,7 +311,9 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
+
+  // Collect all LTO-IRs to be linked (empty when op.code_size == 0 — kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender list_appender{linkable_list};
 
@@ -318,8 +323,8 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
   list_appender.add_iterator_definition(output_keys_it);
   list_appender.add_iterator_definition(output_items_it);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({block_sort_kernel_name})
       ->add_expression({partition_kernel_name})
@@ -327,32 +332,124 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
       ->compile_program({args.data(), args.size()})
       ->get_name({block_sort_kernel_name, block_sort_kernel_lowered_name})
       ->get_name({partition_kernel_name, partition_kernel_lowered_name})
-      ->get_name({merge_kernel_name, merge_kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({merge_kernel_name, merge_kernel_lowered_name});
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, block_sort_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
+  build_ptr->cc                             = cc.get();
+  build_ptr->key_type                       = input_keys_it.value_type;
+  build_ptr->item_type                      = input_items_it.value_type;
+  build_ptr->runtime_policy                 = new cub::detail::merge_sort::policy_selector{policy_sel};
+  build_ptr->runtime_policy_size            = sizeof(cub::detail::merge_sort::policy_selector);
+  build_ptr->block_sort_kernel_lowered_name = duplicate_c_string(block_sort_kernel_lowered_name);
+  build_ptr->partition_kernel_lowered_name  = duplicate_c_string(partition_kernel_lowered_name);
+  build_ptr->merge_kernel_lowered_name      = duplicate_c_string(merge_kernel_lowered_name);
 
-  build_ptr->cc             = cc.get();
-  build_ptr->cubin          = (void*) result.data.release();
-  build_ptr->cubin_size     = result.size;
-  build_ptr->key_type       = input_keys_it.value_type;
-  build_ptr->item_type      = input_items_it.value_type;
-  build_ptr->runtime_policy = new cub::detail::merge_sort::policy_selector{policy_sel};
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->kernel_ltoir       = ltoir_data.release();
+    build_ptr->kernel_ltoir_size  = ltoir_size;
+  }
+  else
+  {
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->cubin         = (void*) result.data.release();
+    build_ptr->cubin_size    = result.size;
+  }
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_merge_sort_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_merge_sort_compile(): %s\n", exc.what());
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_merge_sort_load(cccl_device_merge_sort_build_result_t* build_ptr)
+try
+{
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  check(
+    cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, build_ptr->block_sort_kernel_lowered_name));
+  check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, build_ptr->partition_kernel_lowered_name));
+  check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, build_ptr->merge_kernel_lowered_name));
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_merge_sort_load(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_merge_sort_build_ex(
+  cccl_device_merge_sort_build_result_t* build_ptr,
+  cccl_iterator_t input_keys_it,
+  cccl_iterator_t input_items_it,
+  cccl_iterator_t output_keys_it,
+  cccl_iterator_t output_items_it,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender list_appender{linkable_list};
+    list_appender.append_operation(op);
+    list_appender.add_iterator_definition(input_keys_it);
+    list_appender.add_iterator_definition(input_items_it);
+    list_appender.add_iterator_definition(output_keys_it);
+    list_appender.add_iterator_definition(output_items_it);
+    std::vector<const void*> blobs;
+    std::vector<size_t> sizes;
+    for (const auto& item : linkable_list)
+    {
+      if (std::holds_alternative<nvrtc_ltoir>(item))
+      {
+        const auto& l = std::get<nvrtc_ltoir>(item);
+        blobs.push_back(l.ltoir);
+        sizes.push_back(l.size);
+      }
+    }
+    return cccl_device_merge_sort_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
+  }
+  CUresult r = cccl_device_merge_sort_compile(
+    build_ptr,
+    input_keys_it,
+    input_items_it,
+    output_keys_it,
+    output_items_it,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  if (build_ptr->cubin == nullptr)
+  {
+    return CUDA_SUCCESS;
+  }
+  return cccl_device_merge_sort_load(build_ptr);
 }
 
 CUresult cccl_device_merge_sort(
@@ -459,9 +556,20 @@ try
   }
 
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> kernel_ltoir(static_cast<char*>(build_ptr->kernel_ltoir));
   std::unique_ptr<cub::detail::merge_sort::policy_selector> policy(
     static_cast<cub::detail::merge_sort::policy_selector*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
+
+  for (char* p : {build_ptr->block_sort_kernel_lowered_name,
+                  build_ptr->partition_kernel_lowered_name,
+                  build_ptr->merge_kernel_lowered_name})
+  {
+    delete[] p;
+  }
 
   return CUDA_SUCCESS;
 }
@@ -471,5 +579,44 @@ catch (const std::exception& exc)
   printf("\nEXCEPTION in cccl_device_merge_sort_cleanup(): %s\n", exc.what());
   fflush(stdout);
 
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_merge_sort_link_ltoir(
+  cccl_device_merge_sort_build_result_t* build_ptr,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    all_blobs.push_back(build_ptr->kernel_ltoir);
+    all_sizes.push_back(build_ptr->kernel_ltoir_size);
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->kernel_ltoir);
+  build_ptr->kernel_ltoir      = nullptr;
+  build_ptr->kernel_ltoir_size = 0;
+  build_ptr->cubin             = (void*) cubin.release();
+  build_ptr->cubin_size        = cubin_size;
+  return cccl_device_merge_sort_load(build_ptr);
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_merge_sort_link_ltoir(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }

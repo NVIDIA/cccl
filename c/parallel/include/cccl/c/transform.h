@@ -27,11 +27,16 @@ typedef struct cccl_device_transform_build_result_t
   int cc;
   void* cubin;
   size_t cubin_size;
+  void* kernel_ltoir;
+  size_t kernel_ltoir_size;
   CUlibrary library;
   CUkernel transform_kernel;
   int loaded_bytes_per_iteration;
   void* runtime_policy;
+  size_t runtime_policy_size;
   void* cache;
+  // Lowered (mangled) kernel name, heap-allocated, freed by cccl_device_transform_cleanup():
+  char* transform_kernel_lowered_name;
 } cccl_device_transform_build_result_t;
 
 CCCL_C_API CUresult cccl_device_unary_transform_build(
@@ -59,6 +64,21 @@ CCCL_C_API CUresult cccl_device_unary_transform_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_unary_transform_compile(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_transform_load(cccl_device_transform_build_result_t* build_ptr);
 
 CCCL_C_API CUresult cccl_device_unary_transform(
   cccl_device_transform_build_result_t build,
@@ -96,6 +116,20 @@ CCCL_C_API CUresult cccl_device_binary_transform_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+CCCL_C_API CUresult cccl_device_binary_transform_compile(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t d_in1,
+  cccl_iterator_t d_in2,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
 CCCL_C_API CUresult cccl_device_binary_transform(
   cccl_device_transform_build_result_t build,
   cccl_iterator_t d_in1,
@@ -104,6 +138,9 @@ CCCL_C_API CUresult cccl_device_binary_transform(
   uint64_t num_items,
   cccl_op_t op,
   CUstream stream);
+
+CCCL_C_API CUresult cccl_device_transform_link_ltoir(
+  cccl_device_transform_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
 
 CCCL_C_API CUresult cccl_device_transform_cleanup(cccl_device_transform_build_result_t* bld_ptr);
 

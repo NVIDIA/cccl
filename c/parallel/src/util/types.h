@@ -14,7 +14,10 @@
 
 #include <cuda/std/cstdint>
 
+#include <cstring>
+#include <memory>
 #include <string>
+#include <string_view>
 
 #include "errors.h"
 #include <cccl/c/types.h>
@@ -141,6 +144,14 @@ inline constexpr cub::detail::type_t cccl_type_enum_to_cub_type(cccl_type_enum t
     default:
       return cub::detail::type_t::other;
   }
+}
+
+inline char* duplicate_c_string(std::string_view s)
+{
+  auto p = std::make_unique<char[]>(s.size() + 1);
+  std::memcpy(p.get(), s.data(), s.size());
+  p[s.size()] = '\0';
+  return p.release();
 }
 
 inline constexpr cub::detail::op_kind_t cccl_op_kind_to_cub_op(cccl_op_kind_t type)

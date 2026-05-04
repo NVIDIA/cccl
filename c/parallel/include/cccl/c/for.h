@@ -30,6 +30,7 @@ typedef struct cccl_device_for_build_result_t
   size_t cubin_size;
   CUlibrary library;
   CUkernel static_kernel;
+  char* static_kernel_lowered_name;
 } cccl_device_for_build_result_t;
 
 CCCL_C_API CUresult cccl_device_for_build(
@@ -55,6 +56,20 @@ CCCL_C_API CUresult cccl_device_for_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_for_compile(
+  cccl_device_for_build_result_t* build,
+  cccl_iterator_t d_data,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_for_load(cccl_device_for_build_result_t* build);
 
 CCCL_C_API CUresult cccl_device_for(
   cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream stream);

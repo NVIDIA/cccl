@@ -19,6 +19,7 @@
 
 #include <format>
 #include <iostream>
+#include <mutex>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -27,6 +28,7 @@
 
 #include <nvrtc.h>
 
+#include "util/nvjitlink.h"
 #include <cccl/c/scan.h>
 #include <kernels/iterators.h>
 #include <kernels/operators.h>
@@ -238,7 +240,7 @@ struct scan_kernel_source
 };
 } // namespace scan
 
-CUresult cccl_device_scan_build_ex(
+CUresult cccl_device_scan_compile(
   cccl_device_scan_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -398,7 +400,9 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
+
+  // Collect all LTO-IRs to be linked (empty when op.code_size == 0 — kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
@@ -406,28 +410,19 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   appender.add_iterator_definition(input_it);
   appender.add_iterator_definition(output_it);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({init_kernel_name})
       ->add_expression({scan_kernel_name})
       ->compile_program({args.data(), args.size()})
       ->get_name({init_kernel_name, init_kernel_lowered_name})
-      ->get_name({scan_kernel_name, scan_kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
-
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
+      ->get_name({scan_kernel_name, scan_kernel_lowered_name});
 
   auto [description_bytes_per_tile,
         payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
 
   build_ptr->cc                         = cc.get();
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
   build_ptr->input_type                 = input_it.value_type;
   build_ptr->output_type                = output_it.value_type;
   build_ptr->accumulator_type           = accum_t;
@@ -436,13 +431,54 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   build_ptr->description_bytes_per_tile = description_bytes_per_tile;
   build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   build_ptr->runtime_policy             = new cub::detail::scan::policy_selector{policy_sel};
+  build_ptr->runtime_policy_size        = sizeof(cub::detail::scan::policy_selector);
+  build_ptr->init_kernel_lowered_name   = duplicate_c_string(init_kernel_lowered_name);
+  build_ptr->scan_kernel_lowered_name   = duplicate_c_string(scan_kernel_lowered_name);
+
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->kernel_ltoir       = ltoir_data.release();
+    build_ptr->kernel_ltoir_size  = ltoir_size;
+  }
+  else
+  {
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->cubin         = (void*) result.data.release();
+    build_ptr->cubin_size    = result.size;
+  }
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_scan_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_scan_compile(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_load(cccl_device_scan_build_result_t* build_ptr)
+try
+{
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  CUresult status = cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
+  check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, build_ptr->init_kernel_lowered_name));
+  check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, build_ptr->scan_kernel_lowered_name));
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_scan_load(): %s\n", exc.what());
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
@@ -582,6 +618,68 @@ CUresult cccl_device_inclusive_scan_no_init(
     build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, cub::NullType{}, stream);
 }
 
+CUresult cccl_device_scan_build_ex(
+  cccl_device_scan_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_type_info init,
+  bool force_inclusive,
+  cccl_init_kind_t init_kind,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+    appender.append_operation(op);
+    appender.add_iterator_definition(d_in);
+    appender.add_iterator_definition(d_out);
+    std::vector<const void*> blobs;
+    std::vector<size_t> sizes;
+    for (const auto& item : linkable_list)
+    {
+      if (std::holds_alternative<nvrtc_ltoir>(item))
+      {
+        const auto& l = std::get<nvrtc_ltoir>(item);
+        blobs.push_back(l.ltoir);
+        sizes.push_back(l.size);
+      }
+    }
+    return cccl_device_scan_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
+  }
+  CUresult r = cccl_device_scan_compile(
+    build_ptr,
+    d_in,
+    d_out,
+    op,
+    init,
+    force_inclusive,
+    init_kind,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  if (build_ptr->cubin == nullptr)
+  {
+    return CUDA_SUCCESS;
+  }
+  return cccl_device_scan_load(build_ptr);
+}
+
 CUresult cccl_device_scan_build(
   cccl_device_scan_build_result_t* build_ptr,
   cccl_iterator_t d_in,
@@ -622,9 +720,15 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> kernel_ltoir(static_cast<char*>(build_ptr->kernel_ltoir));
   std::unique_ptr<cub::detail::scan::policy_selector> policy(
     static_cast<cub::detail::scan::policy_selector*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::unique_ptr<char[]> init_name(build_ptr->init_kernel_lowered_name);
+  std::unique_ptr<char[]> scan_name(build_ptr->scan_kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
@@ -634,5 +738,41 @@ catch (const std::exception& exc)
   printf("\nEXCEPTION in cccl_device_scan_cleanup(): %s\n", exc.what());
   fflush(stdout);
 
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_link_ltoir(
+  cccl_device_scan_build_result_t* build_ptr, const void** input_blobs, const size_t* input_sizes, size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    all_blobs.push_back(build_ptr->kernel_ltoir);
+    all_sizes.push_back(build_ptr->kernel_ltoir_size);
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->kernel_ltoir);
+  build_ptr->kernel_ltoir      = nullptr;
+  build_ptr->kernel_ltoir_size = 0;
+  build_ptr->cubin             = (void*) cubin.release();
+  build_ptr->cubin_size        = cubin_size;
+  return cccl_device_scan_load(build_ptr);
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_scan_link_ltoir(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }

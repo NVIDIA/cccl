@@ -20,10 +20,13 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/memory>
 
+#include <cstring>
 #include <format>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 #include <stdio.h> // printf
@@ -32,6 +35,7 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
+#include "util/nvjitlink.h"
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
@@ -121,6 +125,10 @@ struct transform_kernel_source
   CacheAsyncConfiguration(const ActionT& action)
   {
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    if (cache == nullptr)
+    {
+      return action();
+    }
     if (!cache->async_config.has_value())
     {
       cache->async_config = action();
@@ -133,6 +141,10 @@ struct transform_kernel_source
   CachePrefetchConfiguration(const ActionT& action)
   {
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    if (cache == nullptr)
+    {
+      return action();
+    }
     if (!cache->prefetch_config.has_value())
     {
       cache->prefetch_config = action();
@@ -196,7 +208,7 @@ auto make_iterator_info(cccl_iterator_t it) -> cub::detail::iterator_info
 }
 } // namespace transform
 
-CUresult cccl_device_unary_transform_build_ex(
+CUresult cccl_device_unary_transform_compile(
   cccl_device_transform_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -300,7 +312,7 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  // Collect all LTO-IRs to be linked (empty when op.code_size == 0 — kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
@@ -308,38 +320,113 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
   appender.add_iterator_definition(input_it);
   appender.add_iterator_definition(output_it);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  // kernel-only mode: extract kernel LTOIR without linking the operator in.
+  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
+
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({kernel_name})
       ->compile_program({args.data(), args.size()})
-      ->get_name({kernel_name, kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({kernel_name, kernel_lowered_name});
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
-
-  build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
-  build_ptr->cc                         = cc_major * 10 + cc_minor;
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
-  build_ptr->cache                      = new transform::cache();
+  build_ptr->loaded_bytes_per_iteration    = static_cast<int>(input_it.value_type.size);
+  build_ptr->cc                            = cc_major * 10 + cc_minor;
+  build_ptr->cache                         = new transform::cache();
+  build_ptr->transform_kernel_lowered_name = duplicate_c_string(kernel_lowered_name);
 
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
-  build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy      = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy_size = sizeof(policy_sel);
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
+
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->kernel_ltoir       = ltoir_data.release();
+    build_ptr->kernel_ltoir_size  = ltoir_size;
+  }
+  else
+  {
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->cubin         = (void*) result.data.release();
+    build_ptr->cubin_size    = result.size;
+  }
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_unary_transform_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_unary_transform_compile(): %s\n", exc.what());
   fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_transform_load(cccl_device_transform_build_result_t* build_ptr)
+try
+{
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, build_ptr->transform_kernel_lowered_name));
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_transform_load(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_unary_transform_build_ex(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t input_it,
+  cccl_iterator_t output_it,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+    appender.append_operation(op);
+    appender.add_iterator_definition(input_it);
+    appender.add_iterator_definition(output_it);
+    std::vector<const void*> blobs;
+    std::vector<size_t> sizes;
+    for (const auto& item : linkable_list)
+    {
+      if (std::holds_alternative<nvrtc_ltoir>(item))
+      {
+        const auto& l = std::get<nvrtc_ltoir>(item);
+        blobs.push_back(l.ltoir);
+        sizes.push_back(l.size);
+      }
+    }
+    return cccl_device_transform_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
+  }
+  CUresult r = cccl_device_unary_transform_compile(
+    build_ptr, input_it, output_it, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  if (build_ptr->cubin == nullptr)
+  {
+    return CUDA_SUCCESS;
+  }
+  return cccl_device_transform_load(build_ptr);
 }
 
 CUresult cccl_device_unary_transform(
@@ -384,7 +471,7 @@ CUresult cccl_device_unary_transform(
   return error;
 }
 
-CUresult cccl_device_binary_transform_build_ex(
+CUresult cccl_device_binary_transform_compile(
   cccl_device_transform_build_result_t* build_ptr,
   cccl_iterator_t input1_it,
   cccl_iterator_t input2_it,
@@ -500,7 +587,7 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  // Collect all LTO-IRs to be linked (empty when op.code_size == 0 — kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
@@ -509,38 +596,107 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
   appender.add_iterator_definition(input2_it);
   appender.add_iterator_definition(output_it);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  // kernel-only mode: extract kernel LTOIR without linking the operator in.
+  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
+
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({kernel_name})
       ->compile_program({args.data(), args.size()})
-      ->get_name({kernel_name, kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({kernel_name, kernel_lowered_name});
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
-
-  build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
-  build_ptr->cc                         = cc_major * 10 + cc_minor;
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
-  build_ptr->cache                      = new transform::cache();
+  build_ptr->loaded_bytes_per_iteration    = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
+  build_ptr->cc                            = cc_major * 10 + cc_minor;
+  build_ptr->cache                         = new transform::cache();
+  build_ptr->transform_kernel_lowered_name = duplicate_c_string(kernel_lowered_name);
 
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
-  build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy      = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy_size = sizeof(policy_sel);
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
+
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->kernel_ltoir       = ltoir_data.release();
+    build_ptr->kernel_ltoir_size  = ltoir_size;
+  }
+  else
+  {
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->cubin         = (void*) result.data.release();
+    build_ptr->cubin_size    = result.size;
+  }
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_binary_transform_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_binary_transform_compile(): %s\n", exc.what());
   fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_binary_transform_build_ex(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t input1_it,
+  cccl_iterator_t input2_it,
+  cccl_iterator_t output_it,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+    appender.append_operation(op);
+    appender.add_iterator_definition(input1_it);
+    appender.add_iterator_definition(input2_it);
+    appender.add_iterator_definition(output_it);
+    std::vector<const void*> blobs;
+    std::vector<size_t> sizes;
+    for (const auto& item : linkable_list)
+    {
+      if (std::holds_alternative<nvrtc_ltoir>(item))
+      {
+        const auto& l = std::get<nvrtc_ltoir>(item);
+        blobs.push_back(l.ltoir);
+        sizes.push_back(l.size);
+      }
+    }
+    return cccl_device_transform_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
+  }
+  CUresult r = cccl_device_binary_transform_compile(
+    build_ptr,
+    input1_it,
+    input2_it,
+    output_it,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  if (build_ptr->cubin == nullptr)
+  {
+    return CUDA_SUCCESS;
+  }
+  return cccl_device_transform_load(build_ptr);
 }
 
 CUresult cccl_device_binary_transform(
@@ -631,9 +787,14 @@ try
   }
   using namespace cub::detail::transform;
   std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> kernel_ltoir(static_cast<char*>(build_ptr->kernel_ltoir));
   std::free(build_ptr->runtime_policy);
+  std::unique_ptr<char[]> kernel_name(build_ptr->transform_kernel_lowered_name);
   std::unique_ptr<transform::cache> cache(static_cast<transform::cache*>(build_ptr->cache));
-  check(cuLibraryUnload(build_ptr->library));
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
@@ -643,5 +804,44 @@ catch (const std::exception& exc)
   printf("\nEXCEPTION in cccl_device_transform_cleanup(): %s\n", exc.what());
   fflush(stdout);
 
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_transform_link_ltoir(
+  cccl_device_transform_build_result_t* build_ptr,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  {
+    all_blobs.push_back(build_ptr->kernel_ltoir);
+    all_sizes.push_back(build_ptr->kernel_ltoir_size);
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->kernel_ltoir);
+  build_ptr->kernel_ltoir      = nullptr;
+  build_ptr->kernel_ltoir_size = 0;
+  build_ptr->cubin             = (void*) cubin.release();
+  build_ptr->cubin_size        = cubin_size;
+  return cccl_device_transform_load(build_ptr);
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_transform_link_ltoir(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }

@@ -14,6 +14,7 @@
 
 #include <cuda_runtime.h>
 
+#include "algorithm_execution.h"
 #include "test_util.h"
 #include <cccl/c/histogram.h>
 
@@ -84,7 +85,7 @@ void histogram_even(
   int64_t num_rows,
   int64_t row_stride_samples)
 {
-  cccl_device_histogram_build_result_t build;
+  cccl_device_histogram_build_result_t build{};
   build_histogram(
     &build, d_samples, num_output_levels_val, d_output_histograms, lower_level, num_rows, row_stride_samples, true);
 
@@ -397,4 +398,143 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram][device]"
   {
     CHECK(h_histogram[c] == std::vector<counter_t>(d_single_histogram_ptr));
   }
+}
+
+C2H_TEST("Histogram build result has AoT metadata populated", "[histogram][device][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  pointer_t<T> samples(1);
+  pointer_t<T> histograms(1);
+  value_t<T> lower_level{T{0}};
+
+  cccl_device_histogram_build_result_t build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_histogram_build(
+      &build,
+      /*num_channels=*/1,
+      /*num_active_channels=*/1,
+      samples,
+      /*num_output_levels_val=*/3,
+      histograms,
+      lower_level,
+      /*num_rows=*/1,
+      /*row_stride_samples=*/1,
+      /*is_evenly_segmented=*/true,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cubin != nullptr);
+  CHECK(build.cubin_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.init_kernel_lowered_name != nullptr);
+  CHECK(build.init_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.sweep_kernel_lowered_name != nullptr);
+  CHECK(build.sweep_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_histogram_cleanup(&build));
+}
+
+C2H_TEST("Histogram compile/load round-trip", "[histogram][device][aot]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  pointer_t<T> dummy_samples(1);
+  pointer_t<T> dummy_histograms(1);
+  value_t<T> lower_level_val{T{0}};
+
+  cccl_device_histogram_build_result_t build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_histogram_compile(
+      &build,
+      /*num_channels=*/1,
+      /*num_active_channels=*/1,
+      dummy_samples,
+      /*num_output_levels_val=*/3,
+      dummy_histograms,
+      lower_level_val,
+      /*num_rows=*/1,
+      /*row_stride_samples=*/1,
+      /*is_evenly_segmented=*/true,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE(build.cubin != nullptr);
+  REQUIRE(build.cubin_size > 0);
+  REQUIRE(build.init_kernel_lowered_name != nullptr);
+  REQUIRE(build.sweep_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.init_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_histogram_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.init_kernel != nullptr);
+  CHECK(build.sweep_kernel != nullptr);
+
+  // 16 samples uniformly in [0, 4), 2 bins: [0,2) and [2,4)
+  constexpr std::size_t n_samples = 16;
+  const std::vector<T> samples    = {0, 0, 1, 1, 2, 2, 3, 3, 0, 1, 2, 3, 0, 1, 2, 3};
+  pointer_t<T> samples_ptr(samples);
+  pointer_t<T> histogram_ptr(2); // 2 bins
+  value_t<T> upper_level_val{T{4}};
+  value_t<int> num_levels_val{3}; // 3 level boundaries → 2 bins
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_histogram_even(
+      build,
+      nullptr,
+      &temp_storage_bytes,
+      samples_ptr,
+      histogram_ptr,
+      num_levels_val,
+      lower_level_val,
+      upper_level_val,
+      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_rows=*/1,
+      /*row_stride_samples=*/static_cast<int64_t>(n_samples),
+      null_stream));
+  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_histogram_even(
+      build,
+      temp_storage.ptr,
+      &temp_storage_bytes,
+      samples_ptr,
+      histogram_ptr,
+      num_levels_val,
+      lower_level_val,
+      upper_level_val,
+      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_rows=*/1,
+      /*row_stride_samples=*/static_cast<int64_t>(n_samples),
+      null_stream));
+
+  // samples {0,0,1,1,0,1,0,1} in bin 0 (8 samples) and {2,2,3,3,2,3,2,3} in bin 1 (8 samples)
+  REQUIRE(histogram_ptr[0] == 8);
+  REQUIRE(histogram_ptr[1] == 8);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_histogram_cleanup(&build));
 }
