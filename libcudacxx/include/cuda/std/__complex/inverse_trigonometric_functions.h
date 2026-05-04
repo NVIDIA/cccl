@@ -29,8 +29,8 @@
 #include <cuda/std/__complex/exponential_functions.h>
 #include <cuda/std/__complex/inverse_hyperbolic_functions.h>
 #include <cuda/std/__complex/logarithms.h>
-#include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__complex/nvbf16.h>
+#include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__complex/roots.h>
 #include <cuda/std/limits>
 #include <cuda/std/numbers>

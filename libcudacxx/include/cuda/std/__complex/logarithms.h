@@ -24,8 +24,8 @@
 #include <cuda/std/__complex/arg.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/math.h>
-#include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__complex/nvbf16.h>
+#include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/numbers>

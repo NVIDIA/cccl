@@ -29,8 +29,8 @@
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/logarithms.h>
-#include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__complex/nvbf16.h>
+#include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/limits>
