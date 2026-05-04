@@ -164,6 +164,11 @@ cudax_add_catch2_test(test_target group.make_this_group
 )
 target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
+cudax_add_catch2_test(test_target group.segmented_algorithm
+    group/segmented_algorithm.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
 )
