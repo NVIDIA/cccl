@@ -351,6 +351,40 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
       ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
       ->get_name_if(build_nondeterministic, {nondeterministic_kernel_name, nondeterministic_kernel_lowered_name});
 
+  std::unique_ptr<cub::detail::reduce::policy_selector> policy;
+  std::unique_ptr<cub::detail::reduce_nondeterministic::policy_selector> policy_nd;
+  if (build_nondeterministic)
+  {
+    policy_nd = std::make_unique<cub::detail::reduce_nondeterministic::policy_selector>(policy_sel_nd);
+  }
+  else
+  {
+    policy = std::make_unique<cub::detail::reduce::policy_selector>(policy_sel);
+  }
+  auto single_tile_name        = std::unique_ptr<char[]>(duplicate_c_string(single_tile_kernel_lowered_name));
+  auto single_tile_second_name = std::unique_ptr<char[]>(duplicate_c_string(single_tile_second_kernel_lowered_name));
+  auto reduction_name          = std::unique_ptr<char[]>(duplicate_c_string(reduction_kernel_lowered_name));
+  std::unique_ptr<char[]> nondeterministic_name(
+    build_nondeterministic ? duplicate_c_string(nondeterministic_kernel_lowered_name) : nullptr);
+
+  build->cc               = cc_major * 10 + cc_minor;
+  build->accumulator_size = accum_t.size;
+  build->determinism      = determinism;
+  if (build_nondeterministic)
+  {
+    build->runtime_policy      = policy_nd.release();
+    build->runtime_policy_size = sizeof(cub::detail::reduce_nondeterministic::policy_selector);
+  }
+  else
+  {
+    build->runtime_policy      = policy.release();
+    build->runtime_policy_size = sizeof(cub::detail::reduce::policy_selector);
+  }
+  build->single_tile_kernel_lowered_name        = single_tile_name.release();
+  build->single_tile_second_kernel_lowered_name = single_tile_second_name.release();
+  build->reduction_kernel_lowered_name          = reduction_name.release();
+  build->nondeterministic_kernel_lowered_name   = nondeterministic_name.release();
+
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
@@ -363,25 +397,6 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
     build->cubin             = (void*) result.data.release();
     build->cubin_size        = result.size;
   }
-
-  build->cc               = cc_major * 10 + cc_minor;
-  build->accumulator_size = accum_t.size;
-  build->determinism      = determinism;
-  if (build_nondeterministic)
-  {
-    build->runtime_policy      = new cub::detail::reduce_nondeterministic::policy_selector{policy_sel_nd};
-    build->runtime_policy_size = sizeof(cub::detail::reduce_nondeterministic::policy_selector);
-  }
-  else
-  {
-    build->runtime_policy      = new cub::detail::reduce::policy_selector{policy_sel};
-    build->runtime_policy_size = sizeof(cub::detail::reduce::policy_selector);
-  }
-  build->single_tile_kernel_lowered_name        = duplicate_c_string(single_tile_kernel_lowered_name);
-  build->single_tile_second_kernel_lowered_name = duplicate_c_string(single_tile_second_kernel_lowered_name);
-  build->reduction_kernel_lowered_name          = duplicate_c_string(reduction_kernel_lowered_name);
-  build->nondeterministic_kernel_lowered_name =
-    build_nondeterministic ? duplicate_c_string(nondeterministic_kernel_lowered_name) : nullptr;
 
   return CUDA_SUCCESS;
 }

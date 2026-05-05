@@ -260,11 +260,14 @@ static_assert(
       ->compile_program({args.data(), args.size()})
       ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name});
 
+  auto policy      = std::make_unique<cub::detail::segmented_reduce::policy_selector>(policy_sel);
+  auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(segmented_reduce_kernel_lowered_name));
+
   build_ptr->cc                                   = cc_major * 10 + cc_minor;
   build_ptr->accumulator_size                     = accum_t.size;
-  build_ptr->runtime_policy                       = new cub::detail::segmented_reduce::policy_selector{policy_sel};
+  build_ptr->runtime_policy                       = policy.release();
   build_ptr->runtime_policy_size                  = sizeof(cub::detail::segmented_reduce::policy_selector);
-  build_ptr->segmented_reduce_kernel_lowered_name = duplicate_c_string(segmented_reduce_kernel_lowered_name);
+  build_ptr->segmented_reduce_kernel_lowered_name = kernel_name.release();
 
   if (kernel_only)
   {

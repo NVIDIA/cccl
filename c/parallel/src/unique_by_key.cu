@@ -358,13 +358,17 @@ static_assert(
   auto [description_bytes_per_tile,
         payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args.data(), args.size(), arch);
 
+  auto policy     = std::make_unique<cub::detail::unique_by_key::policy_selector>(policy_sel);
+  auto init_name  = std::unique_ptr<char[]>(duplicate_c_string(compact_init_kernel_lowered_name));
+  auto sweep_name = std::unique_ptr<char[]>(duplicate_c_string(sweep_kernel_lowered_name));
+
   build_ptr->cc                               = cc.get();
   build_ptr->description_bytes_per_tile       = description_bytes_per_tile;
   build_ptr->payload_bytes_per_tile           = payload_bytes_per_tile;
-  build_ptr->runtime_policy                   = new cub::detail::unique_by_key::policy_selector{policy_sel};
+  build_ptr->runtime_policy                   = policy.release();
   build_ptr->runtime_policy_size              = sizeof(cub::detail::unique_by_key::policy_selector);
-  build_ptr->compact_init_kernel_lowered_name = duplicate_c_string(compact_init_kernel_lowered_name);
-  build_ptr->sweep_kernel_lowered_name        = duplicate_c_string(sweep_kernel_lowered_name);
+  build_ptr->compact_init_kernel_lowered_name = init_name.release();
+  build_ptr->sweep_kernel_lowered_name        = sweep_name.release();
 
   if (kernel_only)
   {

@@ -638,7 +638,14 @@ static_assert(
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  // populate build struct members
+  auto sort_policy      = std::make_unique<cub::detail::segmented_sort::policy_selector>(policy_sel);
+  auto partition_policy = std::make_unique<cub::detail::three_way_partition::policy_selector>(partition_policy_sel);
+  auto fallback_name    = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_fallback_kernel_lowered_name));
+  auto small_name       = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_small_lowered_name));
+  auto large_name       = std::unique_ptr<char[]>(duplicate_c_string(segmented_sort_kernel_large_lowered_name));
+  auto twp_init_name    = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_init_kernel_lowered_name));
+  auto twp_kernel_name  = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
+
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->large_segments_selector_op = large_selector_op;
   build_ptr->small_segments_selector_op = small_selector_op;
@@ -646,18 +653,16 @@ static_assert(
   build_ptr->cubin_size                 = result.size;
   build_ptr->key_type                   = keys_in_it.value_type;
   build_ptr->offset_type                = cccl_type_info{sizeof(OffsetT), alignof(OffsetT), cccl_type_enum::CCCL_INT64};
-  build_ptr->runtime_policy             = new cub::detail::segmented_sort::policy_selector{policy_sel};
+  build_ptr->runtime_policy             = sort_policy.release();
   build_ptr->runtime_policy_size        = sizeof(cub::detail::segmented_sort::policy_selector);
-  build_ptr->partition_runtime_policy   = new cub::detail::three_way_partition::policy_selector{partition_policy_sel};
-  build_ptr->partition_runtime_policy_size = sizeof(cub::detail::three_way_partition::policy_selector);
-  build_ptr->order                         = sort_order;
-  build_ptr->segmented_sort_fallback_kernel_lowered_name =
-    duplicate_c_string(segmented_sort_fallback_kernel_lowered_name);
-  build_ptr->segmented_sort_kernel_small_lowered_name = duplicate_c_string(segmented_sort_kernel_small_lowered_name);
-  build_ptr->segmented_sort_kernel_large_lowered_name = duplicate_c_string(segmented_sort_kernel_large_lowered_name);
-  build_ptr->three_way_partition_init_kernel_lowered_name =
-    duplicate_c_string(three_way_partition_init_kernel_lowered_name);
-  build_ptr->three_way_partition_kernel_lowered_name = duplicate_c_string(three_way_partition_kernel_lowered_name);
+  build_ptr->partition_runtime_policy   = partition_policy.release();
+  build_ptr->partition_runtime_policy_size                = sizeof(cub::detail::three_way_partition::policy_selector);
+  build_ptr->order                                        = sort_order;
+  build_ptr->segmented_sort_fallback_kernel_lowered_name  = fallback_name.release();
+  build_ptr->segmented_sort_kernel_small_lowered_name     = small_name.release();
+  build_ptr->segmented_sort_kernel_large_lowered_name     = large_name.release();
+  build_ptr->three_way_partition_init_kernel_lowered_name = twp_init_name.release();
+  build_ptr->three_way_partition_kernel_lowered_name      = twp_kernel_name.release();
 
   return CUDA_SUCCESS;
 }

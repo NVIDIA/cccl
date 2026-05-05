@@ -13,6 +13,7 @@
 #include <cub/util_device.cuh>
 
 #include <format>
+#include <memory>
 #include <type_traits>
 #include <vector>
 
@@ -135,10 +136,12 @@ try
       ->add_link_list(linkable_list)
       ->finalize_program();
 
+  auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(lowered_name));
+
   build_ptr->cc                         = cc;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
-  build_ptr->static_kernel_lowered_name = duplicate_c_string(lowered_name);
+  build_ptr->static_kernel_lowered_name = kernel_name.release();
 
   return CUDA_SUCCESS;
 }

@@ -334,14 +334,19 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
       ->get_name({partition_kernel_name, partition_kernel_lowered_name})
       ->get_name({merge_kernel_name, merge_kernel_lowered_name});
 
+  auto policy          = std::make_unique<cub::detail::merge_sort::policy_selector>(policy_sel);
+  auto block_sort_name = std::unique_ptr<char[]>(duplicate_c_string(block_sort_kernel_lowered_name));
+  auto partition_name  = std::unique_ptr<char[]>(duplicate_c_string(partition_kernel_lowered_name));
+  auto merge_name      = std::unique_ptr<char[]>(duplicate_c_string(merge_kernel_lowered_name));
+
   build_ptr->cc                             = cc.get();
   build_ptr->key_type                       = input_keys_it.value_type;
   build_ptr->item_type                      = input_items_it.value_type;
-  build_ptr->runtime_policy                 = new cub::detail::merge_sort::policy_selector{policy_sel};
+  build_ptr->runtime_policy                 = policy.release();
   build_ptr->runtime_policy_size            = sizeof(cub::detail::merge_sort::policy_selector);
-  build_ptr->block_sort_kernel_lowered_name = duplicate_c_string(block_sort_kernel_lowered_name);
-  build_ptr->partition_kernel_lowered_name  = duplicate_c_string(partition_kernel_lowered_name);
-  build_ptr->merge_kernel_lowered_name      = duplicate_c_string(merge_kernel_lowered_name);
+  build_ptr->block_sort_kernel_lowered_name = block_sort_name.release();
+  build_ptr->partition_kernel_lowered_name  = partition_name.release();
+  build_ptr->merge_kernel_lowered_name      = merge_name.release();
 
   if (kernel_only)
   {

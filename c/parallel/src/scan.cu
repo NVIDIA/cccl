@@ -422,6 +422,10 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   auto [description_bytes_per_tile,
         payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
 
+  auto policy    = std::make_unique<cub::detail::scan::policy_selector>(policy_sel);
+  auto init_name = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
+  auto scan_name = std::unique_ptr<char[]>(duplicate_c_string(scan_kernel_lowered_name));
+
   build_ptr->cc                         = cc.get();
   build_ptr->input_type                 = input_it.value_type;
   build_ptr->output_type                = output_it.value_type;
@@ -430,10 +434,10 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
   build_ptr->init_kind                  = init_kind;
   build_ptr->description_bytes_per_tile = description_bytes_per_tile;
   build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
-  build_ptr->runtime_policy             = new cub::detail::scan::policy_selector{policy_sel};
+  build_ptr->runtime_policy             = policy.release();
   build_ptr->runtime_policy_size        = sizeof(cub::detail::scan::policy_selector);
-  build_ptr->init_kernel_lowered_name   = duplicate_c_string(init_kernel_lowered_name);
-  build_ptr->scan_kernel_lowered_name   = duplicate_c_string(scan_kernel_lowered_name);
+  build_ptr->init_kernel_lowered_name   = init_name.release();
+  build_ptr->scan_kernel_lowered_name   = scan_name.release();
 
   if (kernel_only)
   {

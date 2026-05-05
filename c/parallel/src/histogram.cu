@@ -378,6 +378,10 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
       ->add_link_list(linkable_list)
       ->finalize_program();
 
+  auto policy     = std::make_unique<cub::detail::histogram::policy_selector>(policy_sel);
+  auto init_name  = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
+  auto sweep_name = std::unique_ptr<char[]>(duplicate_c_string(sweep_kernel_lowered_name));
+
   build_ptr->cc                  = cc.get();
   build_ptr->cubin               = (void*) result.data.release();
   build_ptr->cubin_size          = result.size;
@@ -387,10 +391,10 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   build_ptr->num_active_channels = num_active_channels;
   build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
                                    // it later.
-  build_ptr->runtime_policy            = new cub::detail::histogram::policy_selector{policy_sel};
+  build_ptr->runtime_policy            = policy.release();
   build_ptr->runtime_policy_size       = sizeof(cub::detail::histogram::policy_selector);
-  build_ptr->init_kernel_lowered_name  = duplicate_c_string(init_kernel_lowered_name);
-  build_ptr->sweep_kernel_lowered_name = duplicate_c_string(sweep_kernel_lowered_name);
+  build_ptr->init_kernel_lowered_name  = init_name.release();
+  build_ptr->sweep_kernel_lowered_name = sweep_name.release();
 
   return CUDA_SUCCESS;
 }

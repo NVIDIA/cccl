@@ -278,12 +278,15 @@ static_assert(
       ->get_name({three_way_partition_init_kernel_name, three_way_partition_init_kernel_lowered_name})
       ->get_name({three_way_partition_kernel_name, three_way_partition_kernel_lowered_name});
 
-  build_ptr->cc                  = cc.get();
-  build_ptr->runtime_policy      = new cub::detail::three_way_partition::policy_selector{policy_sel};
-  build_ptr->runtime_policy_size = sizeof(cub::detail::three_way_partition::policy_selector);
-  build_ptr->three_way_partition_init_kernel_lowered_name =
-    duplicate_c_string(three_way_partition_init_kernel_lowered_name);
-  build_ptr->three_way_partition_kernel_lowered_name = duplicate_c_string(three_way_partition_kernel_lowered_name);
+  auto policy      = std::make_unique<cub::detail::three_way_partition::policy_selector>(policy_sel);
+  auto init_name   = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_init_kernel_lowered_name));
+  auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
+
+  build_ptr->cc                                           = cc.get();
+  build_ptr->runtime_policy                               = policy.release();
+  build_ptr->runtime_policy_size                          = sizeof(cub::detail::three_way_partition::policy_selector);
+  build_ptr->three_way_partition_init_kernel_lowered_name = init_name.release();
+  build_ptr->three_way_partition_kernel_lowered_name      = kernel_name.release();
 
   if (kernel_only)
   {
