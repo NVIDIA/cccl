@@ -32,16 +32,21 @@ namespace detail::batched_topk
 // Atomic counters used by the small-segment kernel to (a) enqueue large segments into the large-segment work queue
 // and (b) elect the last block to run the epilogue scan over the queued tile counts. `alignas(128)` isolates each
 // counter on its own cache line for performance.
-template <class NumTilesT>
+template <class NumSegmentsT>
 struct batched_topk_counters
 {
-  using tile_count_t = detail::choose_offset_t<NumTilesT>;
+  // Force unsigned integer type for segment count.
+  using segment_count_t = detail::choose_offset_t<NumSegmentsT>;
   // Number of segments enqueued in the large-segment work queue. Atomically incremented (by 1) by the first thread
   // of each block that decides its segment is large.
-  alignas(128) tile_count_t large_segments_count;
+  alignas(128) segment_count_t large_segments_count;
 
   // Block retirement counter. Each block atomically increments by 1 when it has finished processing its segment, and
   // the block that observes `gridDim.x - 1` runs the epilogue on the queued large segments tile counts.
+  // Assumption: Future support for more than 2^31 - 1 segments will use multiple launches of a slightly modified
+  // small-segment kernel instead of additional grid dimensions. Therefore each grid will handle a maximum of 2^31 - 1
+  // segments per launch. The counter would not even have to be reset to 0 after each launch if we cleverly make use of
+  // its modulo arithmetic.
   alignas(128) unsigned retirement_count;
 };
 
@@ -334,6 +339,8 @@ struct agent_batched_topk_worker_per_segment
       }
       const auto num_large_segments = d_counters->large_segments_count;
       // For tracking the running total across tiles (loop iterations).
+      // Caution: The functor is only invoked by the first warp in the block, and the value returned by lane 0 in that
+      // warp is used as the initial value.
       const auto prefix_callback_op =
         [running_total = segment_size_val_t{0}](segment_size_val_t block_aggregate) mutable {
           auto old_running_total = running_total;
