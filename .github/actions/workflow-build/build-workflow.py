@@ -502,18 +502,7 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
 
 def generate_dispatch_job_environment(matrix_job, job_type):
-    if not matrix_job.get("environment"):
-        return "[]"
-
-    env = "'["
-    comma = ""
-
-    for environ in matrix_job["environment"]:
-        env += f'{comma}"{environ}"'
-        comma = ","
-
-    env += "]'"
-    return env
+    return matrix_job.get("environment") or []
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
