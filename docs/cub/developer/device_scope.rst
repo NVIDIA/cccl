@@ -9,6 +9,8 @@ Overview
 Device-scope functionality is provided by classes called ``DeviceAlgorithm``,
 where ``Algorithm`` is the implemented algorithm.
 These classes then contain static member functions providing corresponding API entry points.
+For example, device-level reduce will look like `cub::DeviceReduce::Sum`.
+Here is a generic example:
 
 .. code-block:: c++
 
@@ -32,7 +34,6 @@ These classes then contain static member functions providing corresponding API e
       }
     };
 
-For example, device-level reduce will look like `cub::DeviceReduce::Sum`.
 Device-scope APIs come in two flavors, two step APIs and environment APIs,
 both return ``cudaError_t`` and take algorithm specific arguments.
 The two step API accepts a ``stream`` as the last parameter (``NULL`` stream by default)
