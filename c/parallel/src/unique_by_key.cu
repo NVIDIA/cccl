@@ -482,10 +482,6 @@ CUresult cccl_device_unique_by_key_build_ex(
   {
     return result;
   }
-  if (build_ptr->cubin == nullptr)
-  {
-    return CUDA_SUCCESS;
-  }
   return cccl_device_unique_by_key_load(build_ptr);
 }
 

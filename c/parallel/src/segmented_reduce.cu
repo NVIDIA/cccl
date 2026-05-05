@@ -376,10 +376,6 @@ CUresult cccl_device_segmented_reduce_build_ex(
   {
     return r;
   }
-  if (build_ptr->cubin == nullptr)
-  {
-    return CUDA_SUCCESS;
-  }
   return cccl_device_segmented_reduce_load(build_ptr);
 }
 

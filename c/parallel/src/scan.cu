@@ -682,10 +682,6 @@ CUresult cccl_device_scan_build_ex(
   {
     return r;
   }
-  if (build_ptr->cubin == nullptr)
-  {
-    return CUDA_SUCCESS;
-  }
   return cccl_device_scan_load(build_ptr);
 }
 
