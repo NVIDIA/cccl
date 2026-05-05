@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+// the following test fails with nvcc 13.2 with the flags -rdc=true -dc
 // UNSUPPORTED: true
 
 // <cuda/ptx>
