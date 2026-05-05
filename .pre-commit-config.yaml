@@ -94,6 +94,17 @@ repos:
                "python/cuda_cccl/cuda/compute/"]
         pass_filenames: false
 
+  - repo: local
+    hooks:
+      - id: check-shebang
+        name: check-shebang
+        entry: ci/util/pre-commit/check_shebang.py
+        language: python
+        types: [shell]
+        exclude: |
+          (?x)^(
+            ^.*libcudacxx/cmake/config\.guess$
+          )
 
 default_language_version:
   python: python3

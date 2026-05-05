@@ -110,17 +110,21 @@ struct times_seven
   }
 };
 
-C2H_TEST("DeviceTransform::Transform with large input",
+// Exercises the 32-bit byte-offset overflow regime in transform_kernel_ublkcp (NVIDIA/cccl#8800).
+// num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
+// straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
+// and I64 offset types.
+C2H_TEST("DeviceTransform::Transform works with large input",
          "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
 try
 {
-  using type     = unsigned short;
+  using type     = std::uint32_t;
   using offset_t = c2h::get<0, TestType>;
 
-  // make size a few thread blocks below/beyond 4GiB. need to make sure I32 num_items stays below 2^31
-  constexpr offset_t num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
-  REQUIRE(num_items > 0);
+  const auto delta         = GENERATE(-123456, 123456);
+  const offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + delta);
+  CAPTURE(c2h::type_name<offset_t>(), num_items);
 
   c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(1), input);

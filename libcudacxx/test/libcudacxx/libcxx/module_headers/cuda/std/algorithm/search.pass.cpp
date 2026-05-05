@@ -15,7 +15,7 @@
 
 struct equal_to
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a == b;
   }
@@ -25,14 +25,14 @@ struct searcher
 {
   const int *pf, *pl;
   template <class It>
-  __host__ __device__ constexpr cuda::std::pair<It, It> operator()(It f, It l) const
+  TEST_FUNC constexpr cuda::std::pair<It, It> operator()(It f, It l) const
   {
     return cuda::std::__search(
       f, l, pf, pl, equal_to{}, cuda::std::random_access_iterator_tag{}, cuda::std::random_access_iterator_tag{});
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int h[] = {1, 2, 3, 4};
   constexpr int n[] = {2, 3};
