@@ -46,9 +46,9 @@ namespace cuda::experimental
 {
 namespace execution
 {
-template <int _BlockThreads, class _Tag, class _Rcvr>
+template <int _ThreadsPerBlock, class _Tag, class _Rcvr>
 //_CCCL_VISIBILITY_HIDDEN
-__launch_bounds__(_BlockThreads) __global__ void __stream_complete(_Tag, _Rcvr* __rcvr)
+__launch_bounds__(_ThreadsPerBlock) __global__ void __stream_complete(_Tag, _Rcvr* __rcvr)
 {
   _Tag{}(static_cast<_Rcvr&&>(*__rcvr));
 }

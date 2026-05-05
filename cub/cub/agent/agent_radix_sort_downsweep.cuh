@@ -42,7 +42,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortDownsweep
  *
- * @tparam NominalBlockThreads4B
+ * @tparam NominalThreadsPerBlock4B
  *   Threads per thread block
  *
  * @tparam NominalItemsPerThread4B
@@ -66,7 +66,7 @@ CUB_NAMESPACE_BEGIN
  * @tparam RadixBits
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           BlockLoadAlgorithm LoadAlgorithm,
@@ -74,7 +74,7 @@ template <int NominalBlockThreads4B,
           RadixRankAlgorithm RankAlgorithm,
           BlockScanAlgorithm ScanAlgorithm,
           int RadixBits,
-          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortDownsweepPolicy : ScalingType
 {
   /// The number of radix bits, i.e., log2(bins)

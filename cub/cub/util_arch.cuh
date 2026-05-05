@@ -137,11 +137,12 @@ scale_reg_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, i
   return {items_per_thread, block_threads};
 }
 
-template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
+template <int Nominal4ByteThreadsPerBlock, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
 {
 private:
-  static constexpr auto result = scale_reg_bound(Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, int{sizeof(T)});
+  static constexpr auto result =
+    scale_reg_bound(Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, int{sizeof(T)});
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
@@ -159,22 +160,23 @@ scale_mem_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, i
   return {items_per_thread, block_threads};
 }
 
-template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
+template <int Nominal4ByteThreadsPerBlock, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
 private:
-  static constexpr auto result = scale_mem_bound(Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, int{sizeof(T)});
+  static constexpr auto result =
+    scale_mem_bound(Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, int{sizeof(T)});
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
   static constexpr int BLOCK_THREADS    = result.block_threads;
 };
 
-template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename = void>
+template <int Nominal4ByteThreadsPerBlock, int Nominal4ByteItemsPerThread, typename = void>
 struct NoScaling
 {
   static constexpr int ITEMS_PER_THREAD = Nominal4ByteItemsPerThread;
-  static constexpr int BLOCK_THREADS    = Nominal4ByteBlockThreads;
+  static constexpr int BLOCK_THREADS    = Nominal4ByteThreadsPerBlock;
 };
 
 [[nodiscard]] _CCCL_API constexpr ::cuda::compute_capability current_tuning_cc() noexcept

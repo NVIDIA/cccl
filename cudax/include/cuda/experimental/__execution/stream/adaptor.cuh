@@ -118,8 +118,8 @@ using __dims_of_t = typename _Config::hierarchy_type;
 // sender. The receiver is where most algorithms do their work, so we want the receiver to
 // tell us how to launch the kernel that completes it. Thus, the launch configuration is
 // read from the outer receiver's environment.
-template <int _BlockThreads, class _Rcvr, class _Variant>
-_CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
+template <int _ThreadsPerBlock, class _Rcvr, class _Variant>
+_CCCL_VISIBILITY_HIDDEN __launch_bounds__(_ThreadsPerBlock) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");

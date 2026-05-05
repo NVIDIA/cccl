@@ -45,20 +45,20 @@ CUB_NAMESPACE_BEGIN
 // TODO(bgruber): deprecate once we publish the tuning API
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam NominalBlockThreads4B Threads per thread block
+ * @tparam NominalThreadsPerBlock4B Threads per thread block
  * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
  * @tparam VectorLoadLength Number of items per vectorized load
  * @tparam BlockAlgorithm Cooperative block-wide reduction algorithm to use
  * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
           BlockReduceAlgorithm BlockAlgorithm,
           CacheLoadModifier LoadModifier,
-          typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
