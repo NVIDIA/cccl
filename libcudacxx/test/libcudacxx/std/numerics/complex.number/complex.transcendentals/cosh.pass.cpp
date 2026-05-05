@@ -46,7 +46,19 @@ TEST_FUNC void test_edges()
     {
       assert(r.real() == T(1));
       assert(r.imag() == T(0));
-      assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
+
+      // From:
+      // cosh(conj(z)) == conj(cosh(z)),
+      // cosh(z) == cosh(-z),
+      // cosh(+0, +0) = (+0, +0)
+
+      // We need:
+      // cosh(+0, +0) == (+1, +0)
+      // cosh(-0, -0) == (+1, +0)
+      // cosh(+0, -0) == (+1, -0)
+      // cosh(-0, +0) == (+1, -0)
+      assert(cuda::std::signbit(r.imag())
+             == (cuda::std::signbit(testcases[i].imag()) ^ cuda::std::signbit(testcases[i].real())));
     }
     else if (testcases[i].real() == T(0) && cuda::std::isinf(testcases[i].imag()))
     {
