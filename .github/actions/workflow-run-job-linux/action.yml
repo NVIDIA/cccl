@@ -33,6 +33,7 @@ runs:
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        ENVIRONMENT: ${{ inputs.environment }}
         GH_TOKEN: ${{ github.token }}
       run: |
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
@@ -46,6 +47,16 @@ runs:
         echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
         echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
         echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
+        echo "JOB_ENVIRONMENT=${ENVIRONMENT}"      | tee -a $GITHUB_ENV
+
+        # Translate the JSON-string ENVIRONMENT input into `--env FOO=bar` args
+        # for the downstream `docker run` step:
+        if [[ -z "$ENVIRONMENT" || "$ENVIRONMENT" == "null" || "$ENVIRONMENT" == "[]" ]]; then
+          ENVARGS=""
+        else
+          ENVARGS=$(echo "$ENVIRONMENT" | jq -rj '.[] | "--env \(.) "')
+        fi
+        echo "ENVARGS=${ENVARGS}"                  | tee -a $GITHUB_ENV
 
         echo "::endgroup::"
 
@@ -86,27 +97,12 @@ runs:
         echo -e "\e[1;34mOverride matrix entry:\e[0m"
         echo -e "\e[1;34m    $matrix_job\e[0m"
 
-    - name: Process environment variables
-      id: process_env
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        if [[ -z "${{inputs.environment}}" || "${{inputs.environment}}" == "null" ]]; then
-          echo "ENVARGS=" >> "$GITHUB_ENV"
-        else
-          # Convert JSON array to --env arguments
-          ENVARGS=$(echo ${{inputs.environment}} | jq -rj '.[] | "--env \(.) "')
-          echo "ENVARGS=$ENVARGS" >> "$GITHUB_ENV"
-        fi
-
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         GH_TOKEN: ${{ github.token }}
         CI: true
-        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
-        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
-        ENV: "${{inputs.environment}}"
         COMMAND: "${{inputs.command}}"
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"

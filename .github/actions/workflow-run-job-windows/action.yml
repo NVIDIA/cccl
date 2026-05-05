@@ -39,7 +39,10 @@ runs:
     - name: Define and log job details
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
+        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        ENVIRONMENT: ${{ inputs.environment }}
         GH_TOKEN: ${{ github.token }}
       run: |
         echo "::group::️🔍 Job Vars"
@@ -51,6 +54,17 @@ runs:
         echo "JOB_IMAGE=${{inputs.image}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_CUDA=${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_HOST=${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_ENVIRONMENT=${ENVIRONMENT}" | tee -a "${GITHUB_ENV}"
+
+        # Translate the JSON-string ENVIRONMENT input into `--env FOO=bar` args
+        # for the downstream `docker run` step:
+        if [[ -z "$ENVIRONMENT" || "$ENVIRONMENT" == "null" || "$ENVIRONMENT" == "[]" ]]; then
+          ENVARGS=""
+        else
+          # Extra space is necessary to prevent jq from merging arguments
+          ENVARGS=$(echo "$ENVIRONMENT" | jq -rj '.[] | "--env \(.) "')
+        fi
+        echo "ENVARGS=${ENVARGS}" | tee -a "${GITHUB_ENV}"
 
         # SCCACHE config:
         echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
@@ -145,19 +159,6 @@ runs:
       run: |
         echo "HOST_REPO=${{ github.workspace }}\${{ github.event.repository.name }}".Replace('\', '/') | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-    - name: Process environment variables
-      id: process_env
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        if [[ -z "${{inputs.environment}}" || "${{inputs.environment}}" == "null" ]]; then
-          echo "ENVARGS=" >> "$GITHUB_ENV"
-        else
-          # Convert JSON array to --env arguments
-          # Extra space is necessary to prevent jq from merging arguments
-          ENVARGS=$(echo ${{inputs.environment}} | jq -rj '.[] | "--env \(.) "')
-          echo "ENVARGS=$ENVARGS" >> "$GITHUB_ENV"
-        fi
 
     - name: Fetch ${{ inputs.image }}
       shell: bash --noprofile --norc -euo pipefail {0}
