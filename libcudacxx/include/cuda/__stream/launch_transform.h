@@ -147,9 +147,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
     }
     else
     {
-      return _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
+      auto tmp = _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
         return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
       }));
+
+      return tmp;
     }
   }
 
