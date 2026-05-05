@@ -23,15 +23,18 @@
 
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/specializations/fp32x2_intrinsics.h>
-#include <cuda/std/__type_traits/enable_if.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
+template <__simd_size_type _Np>
+inline constexpr __simd_operations_kind __simd_operations_kind_v<float, __fixed_size<_Np>> =
+  (_Np >= 2) ? __simd_operations_kind::__fixed_size_float : __simd_operations_kind::__default;
+
 // Simd operations for fixed_size ABI with float elements and F32x2 fast paths.
 template <__simd_size_type _Np>
-struct __simd_operations<float, __fixed_size<_Np>, enable_if_t<__is_fixed_size_float_v<float, _Np>>>
+struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fixed_size_float>
     : __fixed_size_operations<float, _Np>
 {
   using __base       = __fixed_size_operations<float, _Np>;
@@ -42,12 +45,11 @@ struct __simd_operations<float, __fixed_size<_Np>, enable_if_t<__is_fixed_size_f
 #if _CCCL_HAS_SIMD_F32X2()
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      // clang-format off
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100,
-                   (constexpr _SimdStorage __one = __base::__broadcast(1.0f);
-                    __s                          = ::cuda::std::simd::__plus_f32x2(__s, __one);
-                    return;))
-      // clang-format on
+      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, ({
+                     constexpr _SimdStorage __one = __base::__broadcast(1.0f);
+                     __s                          = ::cuda::std::simd::__plus_f32x2(__s, __one);
+                     return;
+                   }));
     }
 #endif // _CCCL_HAS_SIMD_F32X2()
     __base::__increment(__s);
@@ -58,12 +60,11 @@ struct __simd_operations<float, __fixed_size<_Np>, enable_if_t<__is_fixed_size_f
 #if _CCCL_HAS_SIMD_F32X2()
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      // clang-format off
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100,
-                   (constexpr _SimdStorage __one = __base::__broadcast(1.0f);
-                    __s                          = ::cuda::std::simd::__minus_f32x2(__s, __one);
-                    return;))
-      // clang-format on
+      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, ({
+                     constexpr _SimdStorage __one = __base::__broadcast(1.0f);
+                     __s                          = ::cuda::std::simd::__minus_f32x2(__s, __one);
+                     return;
+                   }));
     }
 #endif // _CCCL_HAS_SIMD_F32X2()
     __base::__decrement(__s);
@@ -74,11 +75,10 @@ struct __simd_operations<float, __fixed_size<_Np>, enable_if_t<__is_fixed_size_f
 #if _CCCL_HAS_SIMD_F32X2()
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      // clang-format off
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100,
-                   (constexpr _SimdStorage __zero = __base::__broadcast(0.0f);
-                    return ::cuda::std::simd::__minus_f32x2(__zero, __s);))
-      // clang-format on
+      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, ({
+                     constexpr _SimdStorage __zero = __base::__broadcast(0.0f);
+                     return ::cuda::std::simd::__minus_f32x2(__zero, __s);
+                   }))
     }
 #endif // _CCCL_HAS_SIMD_F32X2()
     return __base::__unary_minus(__s);

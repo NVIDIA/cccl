@@ -24,7 +24,6 @@
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/specializations/fixed_size_mask.h>
 #include <cuda/std/__simd/specializations/fixed_size_storage.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -34,8 +33,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
 // Simd operations for fixed_size ABI
-template <typename _Tp, __simd_size_type _Np>
-inline constexpr bool __is_fixed_size_float_v = is_same_v<_Tp, float> && _Np >= 2;
 
 template <typename _Tp, __simd_size_type _Np>
 struct __fixed_size_operations
@@ -330,7 +327,7 @@ struct __fixed_size_operations
 
 // Default path (no optimizations)
 template <typename _Tp, __simd_size_type _Np>
-struct __simd_operations<_Tp, __fixed_size<_Np>, enable_if_t<!__is_fixed_size_float_v<_Tp, _Np>>>
+struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_kind::__default>
     : __fixed_size_operations<_Tp, _Np>
 {};
 
