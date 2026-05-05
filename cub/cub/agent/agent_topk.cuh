@@ -51,7 +51,7 @@ template <int ThreadsPerBlock,
           BlockScanAlgorithm ScanAlgorithm>
 struct AgentTopKPolicy
 {
-  static constexpr int block_threads                 = ThreadsPerBlock;
+  static constexpr int threads_per_block             = ThreadsPerBlock;
   static constexpr int items_per_thread              = ItemsPerThread;
   static constexpr int bits_per_pass                 = BitsPerPass;
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
@@ -244,22 +244,22 @@ struct AgentTopK
   using key_in_t   = it_value_t<KeyInputIteratorT>;
   using value_in_t = it_value_t<ValueInputIteratorT>;
 
-  static constexpr int block_threads    = AgentTopKPolicyT::block_threads;
-  static constexpr int items_per_thread = AgentTopKPolicyT::items_per_thread;
-  static constexpr int bits_per_pass    = AgentTopKPolicyT::bits_per_pass;
-  static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int num_buckets      = 1 << bits_per_pass;
+  static constexpr int threads_per_block = AgentTopKPolicyT::threads_per_block;
+  static constexpr int items_per_thread  = AgentTopKPolicyT::items_per_thread;
+  static constexpr int bits_per_pass     = AgentTopKPolicyT::bits_per_pass;
+  static constexpr int tile_items        = threads_per_block * items_per_thread;
+  static constexpr int num_buckets       = 1 << bits_per_pass;
 
   static constexpr bool keys_only      = ::cuda::std::is_same_v<value_in_t, NullType>;
-  static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
+  static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, threads_per_block);
 
   // Parameterized BlockLoad type for input data
-  using block_load_input_t = BlockLoad<key_in_t, block_threads, items_per_thread, AgentTopKPolicyT::load_algorithm>;
-  using block_load_trans_t = BlockLoad<OffsetT, block_threads, bins_per_thread, BLOCK_LOAD_TRANSPOSE>;
+  using block_load_input_t = BlockLoad<key_in_t, threads_per_block, items_per_thread, AgentTopKPolicyT::load_algorithm>;
+  using block_load_trans_t = BlockLoad<OffsetT, threads_per_block, bins_per_thread, BLOCK_LOAD_TRANSPOSE>;
   // Parameterized BlockScan type
-  using block_scan_t = BlockScan<OffsetT, block_threads, AgentTopKPolicyT::SCAN_ALGORITHM>;
+  using block_scan_t = BlockScan<OffsetT, threads_per_block, AgentTopKPolicyT::SCAN_ALGORITHM>;
   // Parameterized BlockStore type
-  using block_store_trans_t = BlockStore<OffsetT, block_threads, bins_per_thread, BLOCK_STORE_TRANSPOSE>;
+  using block_store_trans_t = BlockStore<OffsetT, threads_per_block, bins_per_thread, BLOCK_STORE_TRANSPOSE>;
 
   // Shared memory
   struct _TempStorage
@@ -415,12 +415,12 @@ struct AgentTopK
 
     // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       histogram[histo_offset + threadIdx.x] = 0;
     }
     // Finish up with guarded initialization if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       histogram[histo_offset + threadIdx.x] = 0;
     }
@@ -432,7 +432,7 @@ struct AgentTopK
 
     // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       if (temp_storage.histogram[histo_offset + threadIdx.x] != 0)
       {
@@ -441,7 +441,7 @@ struct AgentTopK
     }
 
     // Finish up with guarded merging if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       atomicAdd(global_histogram + (histo_offset + threadIdx.x), temp_storage.histogram[histo_offset + threadIdx.x]);
     }
@@ -621,12 +621,12 @@ struct AgentTopK
     };
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       body();
     }
     // Finish up with guarded initialization if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       body();
     }

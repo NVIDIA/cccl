@@ -317,7 +317,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       }
     }
     const int grid_dim      = static_cast<int>(num_segments.get_param(0));
-    constexpr int block_dim = worker_per_segment_policy.block_threads;
+    constexpr int block_dim = worker_per_segment_policy.threads_per_block;
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
             .doit(

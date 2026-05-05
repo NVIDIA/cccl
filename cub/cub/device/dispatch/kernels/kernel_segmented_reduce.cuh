@@ -110,7 +110,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) //
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) //
   void DeviceSegmentedReduceKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -134,13 +134,13 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
                       large_pol.vec_size,
                       large_pol.block_algorithm,
                       large_pol.load_modifier,
-                      NoScaling<large_pol.block_threads, large_pol.items_per_thread>>;
+                      NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
   static constexpr warp_reduce_policy med_pol = full_policy.medium_reduce;
   using medium_agent_policy_t =
-    AgentWarpReducePolicy<med_pol.block_threads,
+    AgentWarpReducePolicy<med_pol.threads_per_block,
                           med_pol.warp_threads,
                           med_pol.items_per_thread,
                           void,
@@ -152,7 +152,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
   // Small segment agent (one thread per segment)
   static constexpr warp_reduce_policy small_pol = full_policy.small_reduce;
   using small_agent_policy_t =
-    AgentWarpReducePolicy<small_pol.block_threads,
+    AgentWarpReducePolicy<small_pol.threads_per_block,
                           small_pol.warp_threads,
                           small_pol.items_per_thread,
                           void,
@@ -316,7 +316,7 @@ template <typename PolicySelector,
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) void DeviceFixedSizeSegmentedReduceKernel(
+__launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) void DeviceFixedSizeSegmentedReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const OffsetT segment_size,
@@ -340,13 +340,13 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) v
                       large_pol.vec_size,
                       large_pol.block_algorithm,
                       large_pol.load_modifier,
-                      NoScaling<large_pol.block_threads, large_pol.items_per_thread>>;
+                      NoScaling<large_pol.threads_per_block, large_pol.items_per_thread>>;
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
   static constexpr warp_reduce_policy med_pol = full_policy.medium_reduce;
   using medium_agent_policy_t =
-    AgentWarpReducePolicy<med_pol.block_threads,
+    AgentWarpReducePolicy<med_pol.threads_per_block,
                           med_pol.warp_threads,
                           med_pol.items_per_thread,
                           void,
@@ -357,7 +357,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) v
   // Small segment agent (one thread per segment)
   static constexpr warp_reduce_policy small_pol = full_policy.small_reduce;
   using small_agent_policy_t =
-    AgentWarpReducePolicy<small_pol.block_threads,
+    AgentWarpReducePolicy<small_pol.threads_per_block,
                           small_pol.warp_threads,
                           small_pol.items_per_thread,
                           void,

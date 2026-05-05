@@ -133,15 +133,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       // Read the launch configuration passed to us by the parent operation. When we launch
       // the completion kernel, we will be completing the parent's receiver, so we must let
       // the receiver tell us how to launch the kernel.
-      auto const __config           = get_launch_config(execution::get_env(__rcvr_));
-      constexpr int __block_threads = cuda::gpu_thread.count(cuda::block, __config);
-      int const __grid_blocks       = cuda::block.count(cuda::grid, __config);
-      static_assert(__block_threads != ::cuda::std::dynamic_extent);
+      auto const __config               = get_launch_config(execution::get_env(__rcvr_));
+      constexpr int __threads_per_block = cuda::gpu_thread.count(cuda::block, __config);
+      int const __grid_blocks           = cuda::block.count(cuda::grid, __config);
+      static_assert(__threads_per_block != ::cuda::std::dynamic_extent);
 
       // Launch the kernel that completes the receiver with the launch configuration from
       // the receiver.
-      __stream_complete<__block_threads, set_value_t, _Rcvr>
-        <<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(set_value, &__rcvr_);
+      __stream_complete<__threads_per_block, set_value_t, _Rcvr>
+        <<<__grid_blocks, __threads_per_block, 0, __stream_.get()>>>(set_value, &__rcvr_);
 
       if (auto __status = cudaGetLastError(); __status != cudaSuccess)
       {
@@ -152,12 +152,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
     // TODO: untested
     _CCCL_DEVICE_API void __device_start() noexcept
     {
-      auto __config                 = get_launch_config(execution::get_env(__rcvr_));
-      constexpr int __block_threads = cuda::gpu_thread.count(cuda::block, __config);
+      auto __config                     = get_launch_config(execution::get_env(__rcvr_));
+      constexpr int __threads_per_block = cuda::gpu_thread.count(cuda::block, __config);
 
       // without the following, the kernel in __host_start will fail to launch with
       // cudaErrorInvalidDeviceFunction.
-      ::cuda::std::ignore = &__stream_complete<__block_threads, set_value_t, _Rcvr>;
+      ::cuda::std::ignore = &__stream_complete<__threads_per_block, set_value_t, _Rcvr>;
 
       execution::set_value(static_cast<_Rcvr&&>(__rcvr_));
     }

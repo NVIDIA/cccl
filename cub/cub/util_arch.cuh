@@ -123,18 +123,19 @@ inline constexpr int largest_atomic_message_size = 16;
 struct scaling_result
 {
   int items_per_thread;
-  int block_threads;
+  int threads_per_block;
 };
 
 [[nodiscard]] _CCCL_API inline constexpr auto
-scale_reg_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
+scale_reg_bound(int nominal_4B_threads_per_block, int nominal_4B_items_per_thread, int target_type_size)
+  -> scaling_result
 {
   const int items_per_thread =
     (::cuda::std::max) (1, nominal_4B_items_per_thread * 4 / (::cuda::std::max) (4, target_type_size));
-  const int block_threads =
-    (::cuda::std::min) (nominal_4B_block_threads,
+  const int threads_per_block =
+    (::cuda::std::min) (nominal_4B_threads_per_block,
                         ::cuda::ceil_div(int{max_smem_per_block} / (target_type_size * items_per_thread), 32) * 32);
-  return {items_per_thread, block_threads};
+  return {items_per_thread, threads_per_block};
 }
 
 template <int Nominal4ByteThreadsPerBlock, int Nominal4ByteItemsPerThread, typename T>
@@ -146,18 +147,19 @@ private:
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
-  static constexpr int BLOCK_THREADS    = result.block_threads;
+  static constexpr int BLOCK_THREADS    = result.threads_per_block;
 };
 
 [[nodiscard]] _CCCL_API inline constexpr auto
-scale_mem_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
+scale_mem_bound(int nominal_4B_threads_per_block, int nominal_4B_items_per_thread, int target_type_size)
+  -> scaling_result
 {
   const int items_per_thread =
     ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / target_type_size, 1, nominal_4B_items_per_thread * 2);
-  const int block_threads =
-    (::cuda::std::min) (nominal_4B_block_threads,
+  const int threads_per_block =
+    (::cuda::std::min) (nominal_4B_threads_per_block,
                         ::cuda::round_up(int{max_smem_per_block} / (target_type_size * items_per_thread), 32));
-  return {items_per_thread, block_threads};
+  return {items_per_thread, threads_per_block};
 }
 
 template <int Nominal4ByteThreadsPerBlock, int Nominal4ByteItemsPerThread, typename T>
@@ -169,7 +171,7 @@ private:
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
-  static constexpr int BLOCK_THREADS    = result.block_threads;
+  static constexpr int BLOCK_THREADS    = result.threads_per_block;
 };
 
 template <int Nominal4ByteThreadsPerBlock, int Nominal4ByteItemsPerThread, typename = void>

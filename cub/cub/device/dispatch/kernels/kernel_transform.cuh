@@ -221,7 +221,7 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
 // function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
 // TODO(bgruber): In C++20, we should just pass transform_policy by value.
 template < // const transform_policy& Policy,
-  int block_threads,
+  int threads_per_block,
   int items_per_thread,
   int vec_size,
   int PrefetchByteStride,
@@ -238,18 +238,18 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorOut out,
   RandomAccessIteratorsIn... ins)
 {
-  // constexpr int block_threads    = Policy.vectorized.block_threads;
+  // constexpr int threads_per_block    = Policy.vectorized.threads_per_block;
   // constexpr int items_per_thread = Policy.vectorized.items_per_thread;
   // constexpr int vec_size         = Policy.vectorized.vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
-  constexpr int tile_size = block_threads * items_per_thread;
+  constexpr int tile_size = threads_per_block * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
 
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<block_threads, PrefetchByteStride, PrefetchUnrollFactor>(
+    transform_kernel_prefetch<threads_per_block, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
       always_true_predicate{},
@@ -294,7 +294,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
-          input_vec[i] = in_vec[i * block_threads];
+          input_vec[i] = in_vec[i * threads_per_block];
         }
       }
       else
@@ -306,7 +306,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j = 0; j < vec_size; ++j)
           {
-            input[i * vec_size + j] = in[i * vec_size * block_threads + j];
+            input[i * vec_size + j] = in[i * vec_size * threads_per_block + j];
           }
         }
       }
@@ -338,7 +338,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
-      out_vec[i * block_threads] = output_vec[i];
+      out_vec[i * threads_per_block] = output_vec[i];
     }
   }
   else
@@ -351,7 +351,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; ++j)
       {
-        out[i * vec_size * block_threads + j] = output[i * vec_size + j];
+        out[i * vec_size * threads_per_block + j] = output[i * vec_size + j];
       }
     }
   }
@@ -573,7 +573,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
 // TODO(bgruber): In C++20, we should just pass transform_policy by value.
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
 template < // const transform_policy& Policy,
-  int block_threads,
+  int threads_per_block,
   int UnrollFactor,
   typename Offset,
   typename Predicate,
@@ -593,8 +593,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   static_assert(ldgsts_size_and_align <= 16);
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(smem), "");
 
-  // constexpr int block_threads = Policy.async_copy.block_threads;
-  const int tile_size   = block_threads * num_elem_per_thread;
+  // constexpr int threads_per_block = Policy.async_copy.threads_per_block;
+  const int tile_size   = threads_per_block * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
@@ -604,8 +604,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
-    (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
-                  : copy_and_return_smem_dst_fallback<block_threads>(
+    (inner_blocks ? copy_and_return_smem_dst<threads_per_block>(aligned_ptrs, smem_offset, offset, smem, valid_items)
+                  : copy_and_return_smem_dst_fallback<threads_per_block>(
                       aligned_ptrs, smem_offset, offset, smem, valid_items, tile_size))...};
 
   asm volatile("cp.async.wait_group %0;" : : "n"(0)); // same as: __pipeline_wait_prior(0);
@@ -618,7 +618,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
 
   auto process_tile = [&](auto full_tile) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
-      const int idx = j * block_threads + threadIdx.x;
+      const int idx = j * threads_per_block + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         ::cuda::std::apply(
@@ -724,7 +724,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
 template < // const transform_policy& Policy,
-  int block_threads,
+  int threads_per_block,
   int bulk_copy_alignment,
   int UnrollFactor,
   typename Offset,
@@ -740,7 +740,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  // constexpr int block_threads       = Policy.async_copy.block_threads;
+  // constexpr int threads_per_block       = Policy.async_copy.threads_per_block;
   // constexpr int bulk_copy_alignment = Policy.async_copy.bulk_copy_alignment;
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
@@ -789,7 +789,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   namespace ptx = ::cuda::ptx;
 
-  const int tile_size   = block_threads * num_elem_per_thread;
+  const int tile_size   = threads_per_block * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
 
@@ -912,7 +912,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   auto process_tile = [&](auto full_tile) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
-      const int idx = j * block_threads + threadIdx.x;
+      const int idx = j * threads_per_block + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         char* smem         = smem_base;
@@ -990,27 +990,27 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_block_threads_helper() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_threads_per_block_helper() noexcept
 {
   constexpr transform_policy policy = current_policy<PolicySelector>();
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    return policy.prefetch.block_threads;
+    return policy.prefetch.threads_per_block;
   }
   else if constexpr (policy.algorithm == Algorithm::vectorized)
   {
-    return policy.vectorized.block_threads;
+    return policy.vectorized.threads_per_block;
   }
   else
   {
-    return policy.async_copy.block_threads;
+    return policy.async_copy.threads_per_block;
   }
 }
 
-// need a variable template to force constant evaluation of get_block_threads_helper(), otherwise nvcc will give us a
-// "bad attribute argument substitution" error
+// need a variable template to force constant evaluation of get_threads_per_block_helper(), otherwise nvcc will give us
+// a "bad attribute argument substitution" error
 template <typename PolicySelector>
-inline constexpr int get_block_threads = get_block_threads_helper<PolicySelector>();
+inline constexpr int get_threads_per_block = get_threads_per_block_helper<PolicySelector>();
 
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
 // with the same arguments for each algorithm. Only the device compiler will then select the implementation. This
@@ -1024,7 +1024,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires transform_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(get_block_threads<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES void transform_kernel(
+__launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES void transform_kernel(
   _CCCL_GRID_CONSTANT const Offset num_items,
   _CCCL_GRID_CONSTANT const int num_elem_per_thread,
   [[maybe_unused]] _CCCL_GRID_CONSTANT const bool can_vectorize,
@@ -1039,7 +1039,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES voi
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<policy.prefetch.block_threads,
+    transform_kernel_prefetch<policy.prefetch.threads_per_block,
                               policy.prefetch.prefetch_byte_stride,
                               policy.prefetch.unroll_factor>(
       num_items,
@@ -1054,7 +1054,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES voi
     static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
                   "Cannot vectorize transform with a predicate");
 
-    transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
+    transform_kernel_vectorized</*policy*/ policy.vectorized.threads_per_block,
                                 policy.vectorized.items_per_thread,
                                 policy.vectorized.vec_size,
                                 policy.prefetch.prefetch_byte_stride,
@@ -1070,7 +1070,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES voi
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads, policy.async_copy.unroll_factor>(
+      (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1082,7 +1082,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES voi
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads,
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy.threads_per_block,
                                policy.async_copy.bulk_copy_alignment,
                                policy.async_copy.unroll_factor>(
          num_items,

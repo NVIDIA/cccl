@@ -24,12 +24,12 @@ namespace detail::for_each
 {
 struct for_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
 
   _CCCL_API constexpr friend bool operator==(const for_policy& lhs, const for_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
   _CCCL_API constexpr friend bool operator!=(const for_policy& lhs, const for_policy& rhs)
@@ -40,7 +40,7 @@ struct for_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const for_policy& policy)
   {
-    return os << "for_policy { .block_threads = " << policy.block_threads
+    return os << "for_policy { .threads_per_block = " << policy.threads_per_block
               << ", .items_per_thread = " << policy.items_per_thread << " }";
   }
 #endif // _CCCL_HOSTED()

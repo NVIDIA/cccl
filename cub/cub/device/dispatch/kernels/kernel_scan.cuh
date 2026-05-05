@@ -123,7 +123,7 @@ template <typename PolicySelector>
     return num_total_threads(policy.warpspeed);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-  return policy.lookback.block_threads;
+  return policy.lookback.threads_per_block;
 }
 
 // need a variable template for clang in CUDA mode to avoid:
@@ -228,7 +228,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       policy.load_modifier,
       policy.store_algorithm,
       policy.scan_algorithm,
-      NoScaling<policy.block_threads, policy.items_per_thread>,
+      NoScaling<policy.threads_per_block, policy.items_per_thread>,
       delay_constructor_t<policy.delay_constructor.kind,
                           policy.delay_constructor.delay,
                           policy.delay_constructor.l2_write_latency>>;

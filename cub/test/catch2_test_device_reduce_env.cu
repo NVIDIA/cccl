@@ -55,7 +55,7 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 
   unsigned int target_block_size =
     cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(cc)
-      .single_tile.block_threads;
+      .single_tile.threads_per_block;
 
   num_items_t num_items = 1;
   c2h::device_vector<unsigned int> d_block_size(1);

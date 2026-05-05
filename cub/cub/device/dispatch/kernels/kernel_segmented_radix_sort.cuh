@@ -34,7 +34,7 @@ template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
-  return AltDigitBits ? policy.alt_segmented.block_threads : policy.segmented.block_threads;
+  return AltDigitBits ? policy.alt_segmented.threads_per_block : policy.segmented.threads_per_block;
 }
 
 /**
@@ -128,24 +128,24 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
   static constexpr radix_sort_policy policy                  = current_policy<PolicySelector>();
   static constexpr radix_sort_downsweep_policy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
 
-  static constexpr int block_threads = active_policy.block_threads;
-  static constexpr int radix_bits    = active_policy.radix_bits;
-  static constexpr int radix_digits  = 1 << radix_bits;
+  static constexpr int threads_per_block = active_policy.threads_per_block;
+  static constexpr int radix_bits        = active_policy.radix_bits;
+  static constexpr int radix_digits      = 1 << radix_bits;
 
   using ActiveUpsweepPolicyT =
-    AgentRadixSortUpsweepPolicy<active_policy.block_threads,
+    AgentRadixSortUpsweepPolicy<active_policy.threads_per_block,
                                 active_policy.items_per_thread,
                                 void,
                                 active_policy.load_modifier,
                                 active_policy.radix_bits,
-                                NoScaling<active_policy.block_threads, active_policy.items_per_thread>>;
+                                NoScaling<active_policy.threads_per_block, active_policy.items_per_thread>>;
 
   using BlockUpsweepT = AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, SegmentSizeT, DecomposerT>;
 
-  using DigitScanT = BlockScan<SegmentSizeT, block_threads>;
+  using DigitScanT = BlockScan<SegmentSizeT, threads_per_block>;
 
   using ActiveDownsweepPolicyT = AgentRadixSortDownsweepPolicy<
-    active_policy.block_threads,
+    active_policy.threads_per_block,
     active_policy.items_per_thread,
     void,
     active_policy.load_algorithm,
@@ -153,7 +153,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     active_policy.rank_algorithm,
     active_policy.scan_algorithm,
     active_policy.radix_bits,
-    NoScaling<active_policy.block_threads, active_policy.items_per_thread>>;
+    NoScaling<active_policy.threads_per_block, active_policy.items_per_thread>>;
 
   using BlockDownsweepT =
     AgentRadixSortDownsweep<ActiveDownsweepPolicyT, Order == SortOrder::Descending, KeyT, ValueT, SegmentSizeT, DecomposerT>;
@@ -215,7 +215,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     {
       int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
+      if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
         temp_storage.reverse_counts_in[bin_idx] = bin_count[track];
       }
@@ -228,7 +228,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     {
       int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
+      if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
         bin_count[track] = temp_storage.reverse_counts_in[radix_digits - bin_idx - 1];
       }
@@ -248,7 +248,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     {
       int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
+      if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
         temp_storage.reverse_counts_out[threadIdx.x] = bin_offset[track];
       }
@@ -261,7 +261,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     {
       int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
+      if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
         bin_offset[track] = temp_storage.reverse_counts_out[radix_digits - bin_idx - 1];
       }

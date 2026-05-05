@@ -35,31 +35,31 @@ template <typename PolicySelector, typename OffsetT, typename OpT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, for_policy active_policy)
 {
-  int block_threads = 256;
-  auto kernel       = detail::for_each::dynamic_kernel<PolicySelector, OffsetT, OpT>;
+  int threads_per_block = 256;
+  auto kernel           = detail::for_each::dynamic_kernel<PolicySelector, OffsetT, OpT>;
   NV_IF_TARGET(NV_IS_HOST, ({
                  int _{};
-                 if (const auto error = CubDebug(cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel)))
+                 if (const auto error = CubDebug(cudaOccupancyMaxPotentialBlockSize(&_, &threads_per_block, kernel)))
                  {
                    return error;
                  }
                }));
 
-  const auto tile_size = static_cast<OffsetT>(block_threads * active_policy.items_per_thread);
+  const auto tile_size = static_cast<OffsetT>(threads_per_block * active_policy.items_per_thread);
   const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking detail::for_each::dynamic_kernel<<<%d, %d, 0, %lld>>>(), "
           "%d items per thread\n",
           static_cast<int>(num_tiles),
-          static_cast<int>(block_threads),
+          static_cast<int>(threads_per_block),
           reinterpret_cast<long long>(stream),
           static_cast<int>(active_policy.items_per_thread));
 #endif
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(block_threads), 0, stream)
+          static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(threads_per_block), 0, stream)
           .doit(kernel, num_items, op)))
   {
     return error;
@@ -78,23 +78,23 @@ template <class PolicySelector, class OffsetT, class OpT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, for_policy active_policy)
 {
-  const int block_threads    = active_policy.block_threads;
-  const int items_per_thread = active_policy.items_per_thread;
-  const auto tile_size       = static_cast<OffsetT>(block_threads * items_per_thread);
-  const auto num_tiles       = ::cuda::ceil_div(num_items, tile_size);
+  const int threads_per_block = active_policy.threads_per_block;
+  const int items_per_thread  = active_policy.items_per_thread;
+  const auto tile_size        = static_cast<OffsetT>(threads_per_block * items_per_thread);
+  const auto num_tiles        = ::cuda::ceil_div(num_items, tile_size);
 
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking detail::for_each::static_kernel<<<%d, %d, 0, %lld>>>(), "
           "%d items per thread\n",
           static_cast<int>(num_tiles),
-          static_cast<int>(block_threads),
+          static_cast<int>(threads_per_block),
           reinterpret_cast<long long>(stream),
           static_cast<int>(items_per_thread));
 #endif
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(block_threads), 0, stream)
+          static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(threads_per_block), 0, stream)
           .doit(detail::for_each::static_kernel<PolicySelector, OffsetT, OpT>, num_items, op)))
   {
     return error;
@@ -127,7 +127,7 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
 
   return CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     constexpr for_policy active_policy = policy_getter();
-    if constexpr (active_policy.block_threads > 0)
+    if constexpr (active_policy.threads_per_block > 0)
     {
       return invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);
     }

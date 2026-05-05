@@ -54,7 +54,7 @@ struct epilogue_policy
 
 struct worker_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   BlockStoreAlgorithm store_algorithm;
@@ -63,7 +63,7 @@ struct worker_policy
 
   _CCCL_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm
         && lhs.epilogue == rhs.epilogue;
   }
@@ -76,7 +76,7 @@ struct worker_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
   {
-    return os << "worker_policy { .block_threads = " << p.block_threads
+    return os << "worker_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
               << ", .store_algorithm = " << p.store_algorithm << ", .epilogue = " << p.epilogue << " }";
   }

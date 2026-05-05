@@ -50,8 +50,8 @@ template <int ThreadsPerBlock,
           typename CompareOp>
 struct agent_t
 {
-  static constexpr int block_threads  = ThreadsPerBlock; // also used for kernel launch bounds and dispatch logic
-  static constexpr int items_per_tile = ItemsPerThread * ThreadsPerBlock; // also used by dispatch logic
+  static constexpr int threads_per_block = ThreadsPerBlock; // also used for kernel launch bounds and dispatch logic
+  static constexpr int items_per_tile    = ItemsPerThread * ThreadsPerBlock; // also used by dispatch logic
 
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
   using key_type  = it_value_t<KeysIt1>;

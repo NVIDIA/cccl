@@ -156,12 +156,12 @@ struct DispatchThreeWayPartitionIf
 
   template <typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(
-    int block_threads,
+    int threads_per_block,
     int items_per_thread,
     ScanInitKernelPtrT three_way_partition_init_kernel,
     SelectIfKernelPtrT three_way_partition_kernel)
   {
-    const int tile_size = block_threads * items_per_thread;
+    const int tile_size = threads_per_block * items_per_thread;
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
     auto const max_partition_size = static_cast<OffsetT>(
@@ -273,7 +273,7 @@ struct DispatchThreeWayPartitionIf
         if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
               range_select_sm_occupancy, // out
               three_way_partition_kernel,
-              block_threads)))
+              threads_per_block)))
         {
           return error;
         }
@@ -281,7 +281,7 @@ struct DispatchThreeWayPartitionIf
         _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
                 "items per thread, %d SM occupancy\n",
                 current_num_tiles,
-                block_threads,
+                threads_per_block,
                 reinterpret_cast<long long>(stream),
                 items_per_thread,
                 range_select_sm_occupancy);
@@ -290,7 +290,7 @@ struct DispatchThreeWayPartitionIf
 
       // Invoke select_if_kernel
       if (const auto error = CubDebug(
-            launcher_factory(current_num_tiles, block_threads, 0, stream)
+            launcher_factory(current_num_tiles, threads_per_block, 0, stream)
               .doit(three_way_partition_kernel,
                     d_in,
                     d_first_part_out,
@@ -332,9 +332,9 @@ struct DispatchThreeWayPartitionIf
          ScanInitKernelPtrT three_way_partition_init_kernel,
          SelectIfKernelPtrT three_way_partition_kernel)
   {
-    const int block_threads    = policy.ThreeWayPartition().ThreadsPerBlock();
-    const int items_per_thread = policy.ThreeWayPartition().ItemsPerThread();
-    return __invoke(block_threads, items_per_thread, three_way_partition_init_kernel, three_way_partition_kernel);
+    const int threads_per_block = policy.ThreeWayPartition().ThreadsPerBlock();
+    const int items_per_thread  = policy.ThreeWayPartition().ItemsPerThread();
+    return __invoke(threads_per_block, items_per_thread, three_way_partition_init_kernel, three_way_partition_kernel);
   }
 
   template <typename ActivePolicyT>
@@ -485,7 +485,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     kernel_source,
     launcher_factory};
   return dispatch.__invoke(
-    active_policy.block_threads,
+    active_policy.threads_per_block,
     active_policy.items_per_thread,
     kernel_source.ThreeWayPartitionInitKernel(),
     kernel_source.ThreeWayPartitionKernel());

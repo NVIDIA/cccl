@@ -232,7 +232,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const int block_threads     = active_policy.block_threads;
+  const int threads_per_block = active_policy.threads_per_block;
   const int pixels_per_thread = active_policy.pixels_per_thread;
 
   // Get SM count
@@ -245,7 +245,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // Get SM occupancy for sweep_kernel
   int histogram_sweep_sm_occupancy;
   if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, block_threads)))
+        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block)))
   {
     return error;
   }
@@ -262,7 +262,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
-  int pixels_per_tile = block_threads * pixels_per_thread;
+  int pixels_per_tile = threads_per_block * pixels_per_thread;
   int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
   int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
   int blocks_per_col =
@@ -321,21 +321,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  constexpr int histogram_init_block_threads = 256;
+  constexpr int histogram_init_threads_per_block = 256;
   int histogram_init_grid_dims =
-    (max_num_output_bins + histogram_init_block_threads - 1) / histogram_init_block_threads;
+    (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
 // Log DeviceHistogramInitKernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
           histogram_init_grid_dims,
-          histogram_init_block_threads,
+          histogram_init_threads_per_block,
           (long long) stream);
 #endif // CUB_DEBUG_LOG
 
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
-        launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream, true)
+        launcher_factory(histogram_init_grid_dims, histogram_init_threads_per_block, 0, stream, true)
           .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
   {
     return error;
@@ -354,14 +354,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           sweep_grid_dims.x,
           sweep_grid_dims.y,
           sweep_grid_dims.z,
-          block_threads,
+          threads_per_block,
           (long long) stream,
           pixels_per_thread,
           histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
-        launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
+        launcher_factory(sweep_grid_dims, threads_per_block, 0, stream, true)
           .doit(sweep_kernel,
                 d_samples,
                 num_output_bins_wrapper,

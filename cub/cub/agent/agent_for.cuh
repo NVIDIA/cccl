@@ -23,8 +23,8 @@ namespace detail::for_each
 template <int ThreadsPerBlock, int ItemsPerThread>
 struct policy_t
 {
-  static constexpr int block_threads    = ThreadsPerBlock;
-  static constexpr int items_per_thread = ItemsPerThread;
+  static constexpr int threads_per_block = ThreadsPerBlock;
+  static constexpr int items_per_thread  = ItemsPerThread;
 };
 
 template <class PolicyT, class OffsetT, class OpT>
@@ -36,12 +36,12 @@ struct agent_block_striped_t
   OpT op;
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int items_in_tile, int block_threads)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int items_in_tile, int threads_per_block)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; item++)
     {
-      const auto idx = static_cast<OffsetT>(block_threads * item + threadIdx.x);
+      const auto idx = static_cast<OffsetT>(threads_per_block * item + threadIdx.x);
 
       if (IsFullTile || idx < items_in_tile)
       {

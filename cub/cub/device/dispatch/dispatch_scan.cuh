@@ -656,7 +656,7 @@ struct DispatchScan
                                  "The memory consistency model does not apply to texture accesses");
 
     // Number of input tiles
-    const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+    const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
     auto tile_state = kernel_source.TileState();
@@ -719,8 +719,8 @@ struct DispatchScan
 
     // Get SM occupancy for scan_kernel
     int scan_sm_occupancy;
-    if (const auto error = CubDebug(
-          launcher_factory.MaxSmOccupancy(scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.block_threads)))
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
     {
       return error;
     }
@@ -742,7 +742,7 @@ struct DispatchScan
               "per thread, %d SM occupancy\n",
               start_tile,
               scan_grid_size,
-              active_policy.block_threads,
+              active_policy.threads_per_block,
               (long long) stream,
               active_policy.items_per_thread,
               scan_sm_occupancy);
@@ -750,7 +750,7 @@ struct DispatchScan
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream, /* use_pdl */ true)
+            launcher_factory(scan_grid_size, active_policy.threads_per_block, 0, stream, /* use_pdl */ true)
               .doit(kernel_source.ScanKernel(),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),

@@ -39,14 +39,14 @@ class choose_merge_agent
   static constexpr merge_policy active_policy = PolicyGetter{}();
 
   using default_load2sh_agent_t =
-    agent_t<active_policy.block_threads,
+    agent_t<active_policy.threads_per_block,
             active_policy.items_per_thread,
             active_policy.load_modifier,
             active_policy.store_algorithm,
             active_policy.use_block_load_to_shared,
             Args...>;
   using default_noload2sh_agent_t =
-    agent_t<active_policy.block_threads,
+    agent_t<active_policy.threads_per_block,
             active_policy.items_per_thread,
             active_policy.load_modifier,
             active_policy.store_algorithm,
@@ -133,7 +133,7 @@ __launch_bounds__(
                      KeyIt3,
                      ValueIt3,
                      Offset,
-                     CompareOp>::type::block_threads)
+                     CompareOp>::type::threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_merge_kernel(
     _CCCL_GRID_CONSTANT const KeyIt1 keys1,
     _CCCL_GRID_CONSTANT const ValueIt1 items1,
@@ -299,7 +299,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       if (const auto error = CubDebug(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              static_cast<int>(num_tiles), static_cast<int>(AgentT::block_threads), 0, stream)
+              static_cast<int>(num_tiles), static_cast<int>(AgentT::threads_per_block), 0, stream)
               .doit(
                 device_merge_kernel<PolicySelector, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
                 d_keys1,

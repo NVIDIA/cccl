@@ -60,17 +60,17 @@ private:
   // Whether to include all items tied with the k-th key when selecting top-k
   static constexpr bool expand_k_to_include_ties = false;
 
-  static constexpr int block_threads    = ThreadsPerBlock;
-  static constexpr int items_per_thread = ItemsPerThread;
-  static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int num_buckets      = int{1u << RadixBits};
+  static constexpr int threads_per_block = ThreadsPerBlock;
+  static constexpr int items_per_thread  = ItemsPerThread;
+  static constexpr int tile_items        = threads_per_block * items_per_thread;
+  static constexpr int num_buckets       = int{1u << RadixBits};
 
   // Calculate number of buckets processed per thread
-  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
+  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, threads_per_block);
   static constexpr bool keys_only         = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using histo_counter_t = ::cuda::std::uint32_t;
-  using block_scan_t    = BlockScan<histo_counter_t, block_threads, BLOCK_SCAN_WARP_SCANS>;
+  using block_scan_t    = BlockScan<histo_counter_t, threads_per_block, BLOCK_SCAN_WARP_SCANS>;
 
   using traits                 = detail::radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;
@@ -121,12 +121,12 @@ private:
 
     // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    for (; histo_offset + threads_per_block <= num_buckets; histo_offset += threads_per_block)
     {
       storage.stage.passes.histogram[histo_offset + threadIdx.x] = 0;
     }
     // Finish up with guarded initialization if necessary
-    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    if ((num_buckets % threads_per_block != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
       storage.stage.passes.histogram[histo_offset + threadIdx.x] = 0;
     }

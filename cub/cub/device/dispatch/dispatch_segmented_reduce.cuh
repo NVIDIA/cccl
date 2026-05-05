@@ -575,7 +575,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // Init kernel configuration (computes kernel occupancy)
   [[maybe_unused]] int sm_occupancy{};
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        sm_occupancy, kernel_source.SegmentedReduceKernel(), active_policy.large_reduce.block_threads)))
+        sm_occupancy, kernel_source.SegmentedReduceKernel(), active_policy.large_reduce.threads_per_block)))
   {
     return error;
   }
@@ -594,7 +594,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
             "%d items per thread, %d SM occupancy\n",
             num_current_segments,
-            active_policy.large_reduce.block_threads,
+            active_policy.large_reduce.threads_per_block,
             (long long) stream,
             active_policy.large_reduce.items_per_thread,
             sm_occupancy);
@@ -605,7 +605,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       ::cuda::ceil_div(num_current_segments, static_cast<::cuda::std::int64_t>(segments_per_block));
     if (const auto error = CubDebug(
           launcher_factory(
-            static_cast<::cuda::std::uint32_t>(num_blocks), active_policy.large_reduce.block_threads, 0, stream)
+            static_cast<::cuda::std::uint32_t>(num_blocks), active_policy.large_reduce.threads_per_block, 0, stream)
             .doit(kernel_source.SegmentedReduceKernel(),
                   d_in,
                   d_out,
@@ -751,7 +751,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
              ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-  const auto tile_size = active_policy.large_reduce.block_threads * active_policy.large_reduce.items_per_thread;
+  const auto tile_size = active_policy.large_reduce.threads_per_block * active_policy.large_reduce.items_per_thread;
 
   // Single-phase: segment fits in one tile
   if (segment_size < tile_size)
@@ -785,8 +785,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
       const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
 
       if (const auto error = CubDebug(
-            launcher_factory(
-              static_cast<::cuda::std::int32_t>(num_current_blocks), active_policy.large_reduce.block_threads, 0, stream)
+            launcher_factory(static_cast<::cuda::std::int32_t>(num_current_blocks),
+                             active_policy.large_reduce.threads_per_block,
+                             0,
+                             stream)
               .doit(kernel_source.FixedSizeSegmentedReduceKernel(),
                     d_in,
                     d_out,
@@ -853,7 +855,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
 
     // Phase 1: partial reductions
     if (const auto error = CubDebug(
-          launcher_factory(num_current_blocks, active_policy.large_reduce.block_threads, 0, stream)
+          launcher_factory(num_current_blocks, active_policy.large_reduce.threads_per_block, 0, stream)
             .doit(kernel_source.FixedSizeSegmentedReduceKernel(),
                   d_in,
                   d_out,
@@ -895,7 +897,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
 
     if (const auto error = CubDebug(
           launcher_factory(static_cast<::cuda::std::int32_t>(final_num_current_blocks),
-                           active_policy.large_reduce.block_threads,
+                           active_policy.large_reduce.threads_per_block,
                            0,
                            stream)
             .doit(kernel_source.FixedSizeSegmentedReduceKernelFinal(),

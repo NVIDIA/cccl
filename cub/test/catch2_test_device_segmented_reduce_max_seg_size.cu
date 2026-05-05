@@ -37,7 +37,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
 
   const int small_segment_size  = full_policy.small_reduce.items_per_tile();
   const int medium_segment_size = full_policy.medium_reduce.items_per_tile();
-  const int large_segment_size  = full_policy.large_reduce.block_threads * full_policy.large_reduce.items_per_thread;
+  const int large_segment_size = full_policy.large_reduce.threads_per_block * full_policy.large_reduce.items_per_thread;
 
   constexpr int min_items = 1;
   constexpr int max_items = 10000;

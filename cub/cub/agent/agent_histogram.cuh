@@ -173,12 +173,12 @@ template <typename AgentHistogramPolicyT,
 struct AgentHistogram
 {
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
-  static constexpr int block_threads               = AgentHistogramPolicyT::BLOCK_THREADS;
+  static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
   static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
   static constexpr int samples_per_thread          = pixels_per_thread * NumChannels;
   static constexpr int vecs_per_thread             = samples_per_thread / vec_size;
-  static constexpr int tile_pixels                 = pixels_per_thread * block_threads;
-  static constexpr int tile_samples                = samples_per_thread * block_threads;
+  static constexpr int tile_pixels                 = pixels_per_thread * threads_per_block;
+  static constexpr int tile_samples                = samples_per_thread * threads_per_block;
   static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
   static constexpr bool is_work_stealing           = AgentHistogramPolicyT::IS_WORK_STEALING;
   static constexpr CacheLoadModifier load_modifier = AgentHistogramPolicyT::LOAD_MODIFIER;
@@ -198,9 +198,11 @@ struct AgentHistogram
                      SampleIteratorT>;
   using WrappedPixelIteratorT = CacheModifiedInputIterator<load_modifier, PixelT, OffsetT>;
   using WrappedVecsIteratorT  = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
-  using BlockLoadSampleT = BlockLoad<SampleT, block_threads, samples_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadPixelT  = BlockLoad<PixelT, block_threads, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadVecT    = BlockLoad<VecT, block_threads, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadSampleT =
+    BlockLoad<SampleT, threads_per_block, samples_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadPixelT =
+    BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
   struct _TempStorage
   {
@@ -237,7 +239,7 @@ struct AgentHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      for (int bin = threadIdx.x; bin < num_privatized_bins[ch]; bin += block_threads)
+      for (int bin = threadIdx.x; bin < num_privatized_bins[ch]; bin += threads_per_block)
       {
         privatized_histograms[ch][bin] = 0;
       }
@@ -260,7 +262,7 @@ struct AgentHistogram
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       const int channel_bins = num_privatized_bins[ch];
-      for (int bin = threadIdx.x; bin < channel_bins; bin += block_threads)
+      for (int bin = threadIdx.x; bin < channel_bins; bin += threads_per_block)
       {
         int output_bin       = -1;
         const CounterT count = privatized_histograms[ch][bin];
@@ -419,7 +421,7 @@ struct AgentHistogram
     {
       if constexpr (IsStriped)
       {
-        is_valid[pixel] = IsFullTile || (((threadIdx.x + block_threads * pixel) * NumChannels) < valid_samples);
+        is_valid[pixel] = IsFullTile || (((threadIdx.x + threads_per_block * pixel) * NumChannels) < valid_samples);
       }
       else
       {

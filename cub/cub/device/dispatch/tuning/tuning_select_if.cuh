@@ -1593,7 +1593,7 @@ struct policy_hub
 
 struct select_if_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -1602,7 +1602,7 @@ struct select_if_policy
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const select_if_policy& lhs, const select_if_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
@@ -1616,8 +1616,8 @@ struct select_if_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const select_if_policy& p)
   {
     return os
-        << "select_if_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << "select_if_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -1654,14 +1654,14 @@ private:
   }
 
   [[nodiscard]] _CCCL_API constexpr auto make_scaled_policy(
-    int block_threads,
+    int threads_per_block,
     int nominal_4b_items,
     BlockLoadAlgorithm load_alg,
     CacheLoadModifier load_mod,
     delay_constructor_policy delay) const -> select_if_policy
   {
     const int items_per_thread = nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
-    return select_if_policy{block_threads, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
+    return select_if_policy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
   }
 
   [[nodiscard]] _CCCL_API constexpr auto get_sm80_tuning(bool has_flags, bool keep_rejects) const -> select_if_policy

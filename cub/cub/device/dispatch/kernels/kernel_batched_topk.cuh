@@ -52,7 +52,7 @@ private:
     else
     {
       constexpr worker_policy wp = active_policy.worker_per_segment_policies[Index];
-      constexpr auto tile_size   = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
+      constexpr auto tile_size   = ::cuda::std::int64_t{wp.threads_per_block} * wp.items_per_thread;
 
       struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
       {
@@ -123,7 +123,7 @@ __launch_bounds__(int(
     KParameterT,
     SelectDirectionParameterT,
     NumSegmentsParameterT,
-    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.block_threads)) __global__
+    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.threads_per_block)) __global__
   void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,

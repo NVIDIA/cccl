@@ -142,7 +142,7 @@ __launch_bounds__(
     OffsetT,
     CompareOpT,
     KeyT,
-    ValueT>::policy.block_threads)
+    ValueT>::policy.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     _CCCL_GRID_CONSTANT const bool ping,
     _CCCL_GRID_CONSTANT const KeyInputIteratorT keys_in,
@@ -243,7 +243,7 @@ __launch_bounds__(
     OffsetT,
     CompareOpT,
     KeyT,
-    ValueT>::policy.block_threads)
+    ValueT>::policy.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     _CCCL_GRID_CONSTANT const bool ping,
     _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,

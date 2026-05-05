@@ -89,7 +89,7 @@ struct policy_hub
 
 struct merge_sort_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -97,12 +97,12 @@ struct merge_sort_policy
 
   [[nodiscard]] _CCCL_API constexpr int items_per_tile() const
   {
-    return block_threads * items_per_thread;
+    return threads_per_block * items_per_thread;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const merge_sort_policy& lhs, const merge_sort_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm;
   }
@@ -115,7 +115,7 @@ struct merge_sort_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const merge_sort_policy& p)
   {
-    return os << "merge_sort_policy { .block_threads = " << p.block_threads
+    return os << "merge_sort_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
               << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
   }
