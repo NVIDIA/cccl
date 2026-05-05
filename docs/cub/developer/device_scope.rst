@@ -52,7 +52,7 @@ The following example illustrates this pattern:
 
     // First call: Determine temporary device storage requirements
     std::size_t temp_storage_bytes = 0;
-    cub::DeviceReduce::Sum(nullptr, temp_storage_bytes, d_in, d_out, num_items);
+    cub::DeviceReduce::Sum(/*d_temp_storage*/ nullptr, temp_storage_bytes, d_in, d_out, num_items);
 
     // Allocate temporary storage
     thrust::device_vector<unsigned char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -62,7 +62,8 @@ The following example illustrates this pattern:
 
 .. warning::
     Even if the algorithm doesn't need temporary storage as scratch space,
-    we still require one byte of memory to be allocated.
+    the overload with ``void *d_temp_storage, size_t &temp_storage_bytes``
+    still requires one byte of memory to be allocated.
 
 The environment overloads just require a single call, but setting up the environment may be more complex:
 
@@ -226,7 +227,7 @@ The policy getter is necessary to work around a C++17 limitation.
 Inside the lambda, ``policy_getter()`` returns the selected policy as a constant expression,
 so compile-time branching (i.e. ``if constexpr``) or static assertions using policy values is possible.
 
-Internally, ``dispatch_compute_cap`` uses ``__CUDA_ARCH_LIST__``/``NV_TARGET_SM_INTEGER_LIST`` (or all known compute capabilities as fallback)
+Internally, ``dispatch_compute_cap`` uses ``__CUDA_ARCH_LIST__`` / ``NV_TARGET_SM_INTEGER_LIST`` (or all known compute capabilities as fallback)
 to create one instantiation of ``f`` per distinct value of ``policy_selector(cc)`` (not per compute capability).
 This results in one template instantiation of ``f`` per distinct policy value.
 The kernel is then again only instantiated once using the type of the policy selector.
@@ -258,7 +259,7 @@ which is stateless and the same for all target architectures compiled for.
     }
 
 ``PolicySelector`` must be stateless (``is_empty_v<PolicySelector>`` is ``true``),
-so it can be default-constructed in device code.
+so it can be default-constructed in device code where needed.
 The utility function ``current_policy`` can only be called in device code.
 It selects the target compute capability based on compiler macros of the current device compilation pass
 and retrieves a tuning policy from the policy selector.
@@ -266,10 +267,9 @@ and retrieves a tuning policy from the policy selector.
 The kernel typically uses ``current_policy`` in two places,
 to get the block size to define the launch bounds,
 and inside the kernel to setup various sub algorithms (like agents).
-Since the policy selector is stateless, we can default-construct it from its type alone
-and always retrieve the ``policy`` as a compile-time value.
 
-Because of C++17 limits, we cannot easily pass the policy around to other functions,
+Because C++17 does not allow to pass structs as Non-Type Template Parameters (NTTPs),
+we cannot easily pass the policy around to other functions,
 so it will be converted to legacy agent policies in many places.
 Those are just structs with static data members holding the policy value as a type,
 so they can be passed to templates.
@@ -337,7 +337,7 @@ This policy is only used in the host code of the dispatch function.
 Because it is not stateless anymore, CCCL.C overrides the kernel launcher used by CUB,
 providing the kernel from a JIT-compiled instantiation that uses a proper stateless policy selector.
 
-So the kernel, and the dispatch function when not called from CCCL.C,
+The kernel, and the dispatch function when not called from CCCL.C,
 will use the second version of the policy selector, ``policy_selector_from_types``,
 which offers proper template parameters to pass type information.
 This type is stateless and delegates to a ``constexpr`` instance of the ``policy_selector``
