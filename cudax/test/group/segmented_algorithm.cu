@@ -88,9 +88,8 @@ C2H_TEST("Segmented algorithm", "[group]")
 
   const cuda::stream stream{device};
 
-  auto in  = cuda::make_device_buffer<int>(stream, device, 1024, cuda::no_init);
+  auto in  = cuda::make_device_buffer<int>(stream, device, 1024, 1);
   auto out = cuda::make_device_buffer<int>(stream, device, 8, cuda::no_init);
-  cuda::std::fill(cuda::execution::gpu.with(stream), in.begin(), in.end(), 1);
 
   device_segmented_sum(
     stream,
