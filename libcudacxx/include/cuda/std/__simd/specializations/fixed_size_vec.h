@@ -327,8 +327,7 @@ struct __fixed_size_operations
 
 // Default path (no optimizations)
 template <typename _Tp, __simd_size_type _Np>
-struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_kind::__default>
-    : __fixed_size_operations<_Tp, _Np>
+struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_kind::__default> : __fixed_size_operations<_Tp, _Np>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
