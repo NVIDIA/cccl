@@ -739,7 +739,7 @@ C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
-template <int BlockThreads, int ItemsPerPthread, typename T>
+template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
   // we trigger the next kernel's launch very soon and wait a bit for it to spin up before starting to write. this way
@@ -748,7 +748,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   NV_IF_TARGET(NV_PROVIDES_SM_70, __nanosleep(100'000);); // must be enough to cover the next kernel's launch overhead
 
-  const int tile_size = ItemsPerPthread * BlockThreads;
+  const int tile_size = ItemsPerPthread * ThreadsPerBlock;
   const size_t offset = size_t{blockIdx.x} * tile_size;
 
   data += offset;
@@ -756,7 +756,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {
-    const int i = threadIdx.x + j * BlockThreads;
+    const int i = threadIdx.x + j * ThreadsPerBlock;
     if (i < n)
     {
       data[i] = value;

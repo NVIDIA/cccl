@@ -147,12 +147,12 @@ C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
   REQUIRE(count == expected_count);
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct for_each_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::for_each::for_policy
   {
-    return {BlockThreads, 2};
+    return {ThreadsPerBlock, 2};
   }
 };
 

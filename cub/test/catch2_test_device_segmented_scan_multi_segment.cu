@@ -84,14 +84,14 @@ using itp_list =
                  cuda::std::integral_constant<int, 3>,
                  cuda::std::integral_constant<int, 8>>;
 
-template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock>
+template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock>
 struct policy_selector_t
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const
     -> cub::detail::segmented_scan::segmented_scan_policy
   {
     return cub::detail::segmented_scan::segmented_scan_policy{cub::detail::segmented_scan::block_segmented_scan_policy{
-      BlockThreads,
+      ThreadsPerBlock,
       ItemsPerThread,
       cub::BLOCK_LOAD_WARP_TRANSPOSE,
       cub::LOAD_DEFAULT,

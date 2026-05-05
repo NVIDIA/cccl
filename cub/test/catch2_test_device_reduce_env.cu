@@ -91,13 +91,13 @@ TEST_CASE("Device sum works with default environment", "[reduce][device]")
   REQUIRE(d_out[0] == num_items);
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct reduce_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::reduce::reduce_policy
   {
     const auto policy = cub::detail::reduce::agent_reduce_policy{
-      BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy, policy};
   }
 };

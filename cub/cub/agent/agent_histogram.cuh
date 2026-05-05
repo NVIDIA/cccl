@@ -56,7 +56,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPrefer
 
 //! Parameterizable tuning policy type for AgentHistogram
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   Threads per thread block
 //!
 //! @tparam PixelsPerThread
@@ -79,7 +79,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPrefer
 //!
 //! @tparam VecSize
 //!   Vector size for samples loading (1, 2, 4)
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int PixelsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
@@ -90,7 +90,7 @@ template <int BlockThreads,
 struct AgentHistogramPolicy
 {
   /// Threads per thread block
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
   /// Pixels per thread (per tile of input)
   static constexpr int PIXELS_PER_THREAD = PixelsPerThread;
 

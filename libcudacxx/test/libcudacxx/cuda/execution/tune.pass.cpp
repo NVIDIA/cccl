@@ -17,12 +17,12 @@ struct reduce_policy
   int block_threads;
 };
 
-template <int BlockThreads, class T>
+template <int ThreadsPerBlock, class T>
 struct reduce_policy_selector
 {
   TEST_FUNC constexpr auto operator()(cuda::compute_capability) const -> reduce_policy
   {
-    return {BlockThreads / sizeof(T)};
+    return {ThreadsPerBlock / sizeof(T)};
   }
 };
 

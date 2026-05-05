@@ -362,17 +362,17 @@ C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]
   REQUIRE(d_out == expected);
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct segmented_reduce_tuning
 {
   _CCCL_API constexpr auto operator()(::cuda::compute_capability) const
     -> cub::detail::segmented_reduce::segmented_reduce_policy
   {
     auto rp = cub::detail::reduce::agent_reduce_policy{
-      BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {rp,
-            cub::detail::segmented_reduce::warp_reduce_policy{BlockThreads, 1, 1, 1, cub::LOAD_DEFAULT},
-            cub::detail::segmented_reduce::warp_reduce_policy{BlockThreads, 32, 1, 1, cub::LOAD_DEFAULT}};
+            cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT},
+            cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT}};
   }
 };
 

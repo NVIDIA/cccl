@@ -20,10 +20,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each
 {
-template <int BlockThreads, int ItemsPerThread>
+template <int ThreadsPerBlock, int ItemsPerThread>
 struct policy_t
 {
-  static constexpr int block_threads    = BlockThreads;
+  static constexpr int block_threads    = ThreadsPerBlock;
   static constexpr int items_per_thread = ItemsPerThread;
 };
 

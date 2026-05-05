@@ -46,11 +46,11 @@ struct launch_config_test_info_t
 //----------------------------------------------------------------------------
 // Tuning policy definition
 //----------------------------------------------------------------------------
-template <int BlockThreads, int ItemsPerThread>
+template <int ThreadsPerBlock, int ItemsPerThread>
 struct agent_dummy_algorithm_policy_t
 {
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
 };
 
 //----------------------------------------------------------------------------

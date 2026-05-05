@@ -105,13 +105,13 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
   REQUIRE(d_out[1] == value_t{} + d_in[0]);
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct scan_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan::scan_policy
   {
     return {cub::detail::scan::scan_algorithm::lookback,
-            {BlockThreads,
+            {ThreadsPerBlock,
              1,
              cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
              cub::CacheLoadModifier::LOAD_DEFAULT,

@@ -52,7 +52,7 @@ struct compare_key_prefix_op
 //! the histogram in shared memory is updated. (2) Partitioning scatters the top-k items (key
 //! prefix <= k-th prefix) into shared memory via atomic counters, then each thread reads back
 //! its portion. Supports key-only and key-value selection.
-template <typename KeyT, int BlockThreads, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 8>
+template <typename KeyT, int ThreadsPerBlock, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 8>
 class block_topk_air
 {
 private:
@@ -60,7 +60,7 @@ private:
   // Whether to include all items tied with the k-th key when selecting top-k
   static constexpr bool expand_k_to_include_ties = false;
 
-  static constexpr int block_threads    = BlockThreads;
+  static constexpr int block_threads    = ThreadsPerBlock;
   static constexpr int items_per_thread = ItemsPerThread;
   static constexpr int tile_items       = block_threads * items_per_thread;
   static constexpr int num_buckets      = int{1u << RadixBits};
@@ -502,7 +502,7 @@ public:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
       : storage(storage.Alias())
-      , linear_tid(RowMajorTid(BlockThreads, 1, 1))
+      , linear_tid(RowMajorTid(ThreadsPerBlock, 1, 1))
   {}
 
   template <detail::topk::select SelectDirection, bool IsFullTile>

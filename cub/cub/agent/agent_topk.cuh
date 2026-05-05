@@ -29,7 +29,7 @@ namespace detail::topk
 {
 //! @brief Parameterizable tuning policy type for AgentTopK
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   Threads per thread block
 //!
 //! @tparam ItemsPerThread
@@ -44,14 +44,14 @@ namespace detail::topk
 //! @tparam ScanAlgorithm
 //!   The BlockScan algorithm to use
 //!
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           int BitsPerPass,
           BlockLoadAlgorithm LoadAlgorithm,
           BlockScanAlgorithm ScanAlgorithm>
 struct AgentTopKPolicy
 {
-  static constexpr int block_threads                 = BlockThreads;
+  static constexpr int block_threads                 = ThreadsPerBlock;
   static constexpr int items_per_thread              = ItemsPerThread;
   static constexpr int bits_per_pass                 = BitsPerPass;
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;

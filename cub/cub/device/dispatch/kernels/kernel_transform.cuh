@@ -114,7 +114,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void unrolled_for(int count, F&& body)
 // This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
 // parameter yields a global memory address.
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int PrefetchByteStride,
           int UnrollFactor,
           typename Offset,
@@ -130,10 +130,9 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_threads = BlockThreads;
-  const int tile_size         = block_threads * num_elem_per_thread;
-  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
+  const int tile_size   = ThreadsPerBlock * num_elem_per_thread;
+  const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -142,11 +141,11 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   }
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  (..., prefetch_tile<block_threads, PrefetchByteStride>(ins, valid_items));
+  (..., prefetch_tile<ThreadsPerBlock, PrefetchByteStride>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
-      const int idx = j * block_threads + threadIdx.x;
+      const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
         if (pred(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...))
@@ -420,7 +419,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
   return aligned_base_ptr<T>{base_ptr, static_cast<int>(raw_ptr - base_ptr)};
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int bytes_to_copy)
 {
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src), "");
@@ -430,7 +429,7 @@ _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int 
   // allowing unrolling generates a LOT more instructions and is usually slower (confirmed by benchmark)
   _CCCL_PRAGMA_NOUNROLL()
   for (unsigned int offset = threadIdx.x * ldgsts_size_and_align; offset < bytes_to_copy;
-       offset += BlockThreads * ldgsts_size_and_align)
+       offset += ThreadsPerBlock * ldgsts_size_and_align)
   {
     asm volatile(
       "cp.async.cg.shared.global [%0], [%1], %2, %3;"
@@ -447,7 +446,7 @@ _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int 
   asm volatile("cp.async.commit_group;"); // same as: __pipeline_commit();
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsigned int bytes_to_copy, int head_padding)
 {
   // early exiting if (head_padding == 0 && bytes_to_copy % ldgsts_size_and_align == 0) does not yield a benefit
@@ -476,7 +475,7 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
     _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst_ptr + head_bytes), "");
     _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src_ptr + head_bytes), "");
     _CCCL_ASSERT(aligned_bytes_to_copy % ldgsts_size_and_align == 0, "");
-    memcpy_async_aligned<BlockThreads>(dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
+    memcpy_async_aligned<ThreadsPerBlock>(dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
   }
 
   // TODO(bgruber): ahendriksen suggested to copy elements instead of bytes, but it generates about 20 instructions more
@@ -502,7 +501,7 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
 
 // Turning this function into a lambda will make nvcc generate it once for each iterator instead of for each distinct
 // value type (which may be less).
-template <int BlockThreads, typename AlignedPtr, typename Offset>
+template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
 _CCCL_DEVICE auto
 copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items)
 {
@@ -531,13 +530,13 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   }
 
   smem_offset += bytes_to_copy; // leaves aligned address for follow-up copy
-  memcpy_async_aligned<BlockThreads>(dst, src, bytes_to_copy);
+  memcpy_async_aligned<ThreadsPerBlock>(dst, src, bytes_to_copy);
   const char* const dst_start_of_data = dst + (alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
   return reinterpret_cast<const T*>(dst_start_of_data);
 }
 
-template <int BlockThreads, typename AlignedPtr, typename Offset>
+template <int ThreadsPerBlock, typename AlignedPtr, typename Offset>
 _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   AlignedPtr aligned_ptr, int& smem_offset, Offset offset, char* smem, int valid_items, int tile_size)
 {
@@ -560,7 +559,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
   const int bytes_to_copy = int{sizeof(T)} * valid_items;
-  memcpy_async_maybe_unaligned<BlockThreads>(dst, src, bytes_to_copy, head_padding);
+  memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
 
   // add ldgsts_size_and_align to account for this tile's head padding
   smem_offset += ldgsts_size_and_align + int{sizeof(T)} * tile_size;

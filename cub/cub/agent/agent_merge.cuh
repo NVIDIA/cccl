@@ -35,7 +35,7 @@ namespace detail::merge
 {
 // TODO(bgruber): can we unify this one with AgentMerge in agent_merge_sort.cuh?
 // TODO(bgruber): pass a merge_policy by value instead of individual template parameters in C++20
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           CacheLoadModifier LoadModifier,
           BlockStoreAlgorithm StoreAlgorithm,
@@ -50,16 +50,16 @@ template <int BlockThreads,
           typename CompareOp>
 struct agent_t
 {
-  static constexpr int block_threads  = BlockThreads; // also used for kernel launch bounds and dispatch logic
-  static constexpr int items_per_tile = ItemsPerThread * BlockThreads; // also used by dispatch logic
+  static constexpr int block_threads  = ThreadsPerBlock; // also used for kernel launch bounds and dispatch logic
+  static constexpr int items_per_tile = ItemsPerThread * ThreadsPerBlock; // also used by dispatch logic
 
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
   using key_type  = it_value_t<KeysIt1>;
   using item_type = it_value_t<ItemsIt1>;
 
-  using block_load_to_shared = BlockLoadToShared<BlockThreads>;
-  using block_store_keys     = BlockStore<key_type, BlockThreads, ItemsPerThread, StoreAlgorithm>;
-  using block_store_items    = BlockStore<item_type, BlockThreads, ItemsPerThread, StoreAlgorithm>;
+  using block_load_to_shared = BlockLoadToShared<ThreadsPerBlock>;
+  using block_store_keys     = BlockStore<key_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
+  using block_store_items    = BlockStore<item_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
 
   template <typename ValueT, typename Iter1, typename Iter2>
   static constexpr bool use_block_load_to_shared =
@@ -190,13 +190,13 @@ struct agent_t
     {
       auto keys1_in_cm = try_make_cache_modified_iterator<LoadModifier>(keys1_in);
       auto keys2_in_cm = try_make_cache_modified_iterator<LoadModifier>(keys2_in);
-      merge_sort::gmem_to_reg<BlockThreads, IsFullTile>(
+      merge_sort::gmem_to_reg<ThreadsPerBlock, IsFullTile>(
         keys_loc, keys1_in_cm + keys1_beg, keys2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
       keys1_shared = &storage.keys_shared[0];
       // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
       keys2_offset = keys1_count_tile;
       keys2_shared = keys1_shared + keys2_offset;
-      merge_sort::reg_to_shared<BlockThreads>(keys1_shared, keys_loc);
+      merge_sort::reg_to_shared<ThreadsPerBlock>(keys1_shared, keys_loc);
       __syncthreads();
     }
 
@@ -290,7 +290,7 @@ struct agent_t
         {
           auto items1_in_cm = try_make_cache_modified_iterator<LoadModifier>(items1_in);
           auto items2_in_cm = try_make_cache_modified_iterator<LoadModifier>(items2_in);
-          merge_sort::gmem_to_reg<BlockThreads, IsFullTile>(
+          merge_sort::gmem_to_reg<ThreadsPerBlock, IsFullTile>(
             items_loc, items1_in_cm + keys1_beg, items2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
           __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
           items1_shared = &storage.items_shared[0];
@@ -299,7 +299,7 @@ struct agent_t
             const int items2_offset = keys1_count_tile;
             translate_indices(items2_offset);
           }
-          merge_sort::reg_to_shared<BlockThreads>(items1_shared, items_loc);
+          merge_sort::reg_to_shared<ThreadsPerBlock>(items1_shared, items_loc);
           __syncthreads();
         }
       }
