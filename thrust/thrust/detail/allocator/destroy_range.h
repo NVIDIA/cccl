@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,11 +15,11 @@
 
 #include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/allocator/destroy_range.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -78,7 +65,7 @@ template <typename Allocator, typename Pointer, typename Size>
 _CCCL_HOST_DEVICE void
 destroy_range([[maybe_unused]] Allocator& a, [[maybe_unused]] Pointer p, [[maybe_unused]] Size n) noexcept
 {
-  using pe_t = typename pointer_element<Pointer>::type;
+  using pe_t = typename ::cuda::std::pointer_traits<Pointer>::element_type;
 
   // case 1: destroy via allocator
   if constexpr (has_effectful_member_destroy<Allocator, pe_t>)

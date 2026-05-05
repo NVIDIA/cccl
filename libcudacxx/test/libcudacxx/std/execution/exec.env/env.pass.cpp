@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/std/execution>
 
 // all other includes follow after <cuda/std/execution>
@@ -38,13 +41,13 @@
 
 struct custom_env
 {
-  __host__ __device__ constexpr auto query(query1_t) const noexcept
+  TEST_FUNC constexpr auto query(query1_t) const noexcept
   {
     return -1;
   }
 
   // A query that takes an extra argument:
-  __host__ __device__ constexpr auto query(query3_t, int i) const noexcept
+  TEST_FUNC constexpr auto query(query3_t, int i) const noexcept
   {
     return i;
   }
@@ -54,26 +57,26 @@ struct derived_env : cuda::std::execution::env<>
 {
   using env::query;
 
-  __host__ __device__ auto query(query1_t) const
+  TEST_FUNC auto query(query1_t) const
   {
     return 42;
   }
 };
 
 template <class Ty>
-__host__ __device__ constexpr bool is_trivial_aggregate()
+TEST_FUNC constexpr bool is_trivial_aggregate()
 {
   return cuda::std::is_aggregate_v<Ty> && cuda::std::is_standard_layout_v<Ty> && cuda::std::is_trivially_copyable_v<Ty>
       && cuda::std::is_trivially_constructible_v<Ty> && cuda::std::is_trivially_destructible_v<Ty>;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   [[maybe_unused]] cuda::std::execution::env e1{};
   static_assert(cuda::std::is_same_v<decltype(e1), cuda::std::execution::env<>>);
-  static_assert(is_trivial_aggregate<cuda::std::execution::env<>>(), "");
-  static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::env<>, query1_t>, "");
-  static_assert(sizeof(e1) == 1, "");
+  static_assert(is_trivial_aggregate<cuda::std::execution::env<>>());
+  static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::env<>, query1_t>);
+  static_assert(sizeof(e1) == 1);
 
   cuda::std::execution::env e2{cuda::std::execution::prop{query1, 42}};
   assert(e2.query(query1) == 42);
@@ -87,10 +90,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
                 float>);
   using expected_e2_t = cuda::std::execution::env<cuda::std::execution::prop<query1_t, int>>;
   static_assert(cuda::std::is_same_v<decltype(e2), expected_e2_t>);
-  static_assert(is_trivial_aggregate<expected_e2_t>(), "");
+  static_assert(is_trivial_aggregate<expected_e2_t>());
   static_assert(cuda::std::is_same_v<decltype(e2.query(query1)), const int&>);
-  static_assert(!cuda::std::execution::__queryable_with<expected_e2_t, query2_t>, "");
-  static_assert(sizeof(e2) == sizeof(int), "");
+  static_assert(!cuda::std::execution::__queryable_with<expected_e2_t, query2_t>);
+  static_assert(sizeof(e2) == sizeof(int));
 
   cuda::std::execution::env e3{cuda::std::execution::prop{query1, 42}, cuda::std::execution::prop{query2, 3.14}};
   assert(e3.query(query1) == 42);
@@ -98,7 +101,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   using expected_e3_t =
     cuda::std::execution::env<cuda::std::execution::prop<query1_t, int>, cuda::std::execution::prop<query2_t, double>>;
   static_assert(cuda::std::is_same_v<decltype(e3), expected_e3_t>);
-  static_assert(is_trivial_aggregate<expected_e3_t>(), "");
+  static_assert(is_trivial_aggregate<expected_e3_t>());
   static_assert(cuda::std::is_same_v<decltype(e3.query(query1)), const int&>);
   static_assert(cuda::std::is_same_v<decltype(e3.query(query2)), const double&>);
 
@@ -110,7 +113,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   using expected_e4_t = cuda::std::execution::
     env<custom_env, cuda::std::execution::prop<query1_t, int>, cuda::std::execution::prop<query2_t, double>>;
   static_assert(cuda::std::is_same_v<decltype(e4), expected_e4_t>);
-  static_assert(is_trivial_aggregate<expected_e4_t>(), "");
+  static_assert(is_trivial_aggregate<expected_e4_t>());
   static_assert(cuda::std::is_same_v<decltype(e4.query(query1)), int>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query2)), const double&>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query3, 42)), int>);

@@ -15,6 +15,9 @@
 // constexpr bool operator< (const month_day& x, const month_day& y) noexcept;
 //   Returns: x.month() < y.month()
 
+// XFAIL: enable-tile
+// Segmentation fault, see nvbug6072674
+
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
@@ -30,8 +33,8 @@ int main(int, char**)
   AssertComparisonsAreNoexcept<month_day_last>();
   AssertComparisonsReturnBool<month_day_last>();
 
-  static_assert(testComparisonsValues<month_day_last>(month{1}, month{1}), "");
-  static_assert(testComparisonsValues<month_day_last>(month{1}, month{2}), "");
+  static_assert(testComparisonsValues<month_day_last>(month{1}, month{1}));
+  static_assert(testComparisonsValues<month_day_last>(month{1}, month{2}));
 
   //  same day, different months
   for (unsigned i = 1; i < 12; ++i)

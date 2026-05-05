@@ -23,6 +23,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -35,6 +36,23 @@ enum BlockHistogramMemoryPreference
   SMEM,
   BLEND
 };
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+{
+  switch (mempref)
+  {
+    case GMEM:
+      return os << "GMEM";
+    case SMEM:
+      return os << "SMEM";
+    case BLEND:
+      return os << "BLEND";
+    default:
+      return os << "<unknown BlockHistogramMemoryPreference: " << static_cast<int>(mempref) << ">";
+  }
+}
+#endif // _CCCL_HOSTED()
 
 //! Parameterizable tuning policy type for AgentHistogram
 //!
@@ -94,29 +112,6 @@ struct AgentHistogramPolicy
   ///< Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  HistogramAgentPolicy,
-  (always_true),
-  (BLOCK_THREADS, BlockThreads, int),
-  (PIXELS_PER_THREAD, PixelsPerThread, int),
-  (IS_RLE_COMPRESS, IsRleCompress, bool),
-  (MEM_PREFERENCE, MemPreference, BlockHistogramMemoryPreference),
-  (IS_WORK_STEALING, IsWorkStealing, bool),
-  (VEC_SIZE, VecSize, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-} // namespace detail
-#endif
 
 namespace detail::histogram
 {
@@ -226,12 +221,14 @@ struct AgentHistogram
   _TempStorage& temp_storage;
   WrappedSampleIteratorT d_wrapped_samples; // with cache modifier applied, if possible
   SampleT* d_native_samples; // possibly nullptr if unavailable
-  int* num_output_bins; // one for each channel
-  int* num_privatized_bins; // one for each channel
+  const int* num_output_bins; // one for each channel
+  const int* num_privatized_bins; // one for each channel
   CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
   CounterT** d_output_histograms; // in global memory
-  OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each channel
-  PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
+  const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
+                                           // channel
+  const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
+                                                   // channel
   bool prefer_smem; // for privatized counterss
 
   template <typename TwoDimSubscriptableCounterT>
@@ -308,9 +305,9 @@ struct AgentHistogram
         {
           if (bins[pixel] >= 0)
           {
-            NV_IF_TARGET(NV_PROVIDES_SM_60,
-                         (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
-                         (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
+            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                              (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
+                              (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
           }
 
           accumulator = 0;
@@ -321,9 +318,9 @@ struct AgentHistogram
       // Last pixel
       if (bins[pixels_per_thread - 1] >= 0)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_60,
-                     (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
-                     (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                          (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
+                          (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
       }
     }
   }
@@ -346,9 +343,9 @@ struct AgentHistogram
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0)
         {
-          NV_IF_TARGET(NV_PROVIDES_SM_60,
-                       (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
-                       (atomicAdd(privatized_histograms[ch] + bin, 1);));
+          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                            (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
+                            (atomicAdd(privatized_histograms[ch] + bin, 1);));
         }
       }
     }
@@ -587,12 +584,12 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
     TempStorage& temp_storage,
     SampleIteratorT d_samples,
-    int* num_output_bins,
-    int* num_privatized_bins,
+    const int* num_output_bins,
+    const int* num_privatized_bins,
     CounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
-    OutputDecodeOpT* output_decode_op,
-    PrivatizedDecodeOpT* privatized_decode_op)
+    const OutputDecodeOpT* output_decode_op,
+    const PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
       , d_native_samples(NativePointer(d_wrapped_samples))
@@ -636,8 +633,8 @@ struct AgentHistogram
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
   {
     // Check whether all row starting offsets are vec-aligned (in single-channel) or pixel-aligned (in multi-channel)
-    constexpr int vec_mask   = AlignBytes<VecT>::ALIGN_BYTES - 1;
-    constexpr int pixel_mask = AlignBytes<PixelT>::ALIGN_BYTES - 1;
+    constexpr int vec_mask   = alignof(VecT) - 1;
+    constexpr int pixel_mask = alignof(PixelT) - 1;
     const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
 
     const bool vec_aligned_rows =

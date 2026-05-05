@@ -67,6 +67,8 @@ target_compile_options(
 
 cudax_add_catch2_test(test_target graph
     graph/graph_smoke.cu
+    graph/graph_node_ops_smoke.cu
+    graph/graph_buffer_smoke.cu
 )
 
 cudax_add_catch2_test(test_target stream
@@ -75,10 +77,27 @@ cudax_add_catch2_test(test_target stream
 
 cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
+    utility/optionally_static.cu
 )
 
 cudax_add_catch2_test(test_target containers
     containers/uninitialized_buffer.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes
+    copy_bytes/mdspan_d2h_h2d.cu
+    copy_bytes/mdspan_d2h_h2d_relaxed.cu
+)
+
+cudax_add_catch2_test(test_target copy
+    copy/copy.cu
+    copy/copy_edge_cases.cu
+    copy/copy_vectorize.cu
+    copy/copy_vectorize_5d.cu
+    copy/copy_llm.cu
+    copy/copy_nvmath.cu
+    copy/copy_nvmath_transpose.cu
+    copy/copy_shared_memory.cu
 )
 
 cudax_add_catch2_test(test_target cuco
@@ -110,6 +129,56 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+cudax_add_catch2_test(test_target group.mapping.composite_mapping
+    group/mapping/composite_mapping.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.mapping.group_as
+    group/mapping/group_as.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.mapping.group_by
+    group/mapping/group_by.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
+    group/synchronizer/lane_synchronizer.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
+    group/synchronizer/barrier_synchronizer.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.cooperative_algorithm
+    group/cooperative_algorithm.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.group
+    group/group.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.make_this_group
+    group/make_this_group.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.segmented_algorithm
+    group/segmented_algorithm.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.this_group
+    group/this_group.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
       cufile/driver_attributes.cu
@@ -135,6 +204,12 @@ if (cudax_ENABLE_CUFILE)
       cufile/open_mode.cu
   )
   target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+endif()
+
+# FIXME: Enable MSVC
+if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # Places tests are handled separately:
+  add_subdirectory(places)
 endif()
 
 # FIXME: Enable MSVC

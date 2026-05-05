@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 // <cuda/std/string_view>
 
 // size_type find_first_not_of(const basic_string& str, size_type pos = 0) const noexcept;
@@ -18,7 +21,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_find_first_not_of(const SV& sv, const SV& str, typename SV::size_type x)
+TEST_FUNC constexpr void test_find_first_not_of(const SV& sv, const SV& str, typename SV::size_type x)
 {
   assert(sv.find_first_not_of(str) == x);
   if (x != SV::npos)
@@ -28,7 +31,7 @@ __host__ __device__ constexpr void test_find_first_not_of(const SV& sv, const SV
 }
 
 template <class SV>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_find_first_not_of(const SV& sv, const SV& str, typename SV::size_type pos, typename SV::size_type x)
 {
   assert(sv.find_first_not_of(str, pos) == x);
@@ -44,7 +47,7 @@ test_find_first_not_of(const SV& sv, const SV& str, typename SV::size_type pos, 
                          __VA_ARGS__)
 
 template <class SV>
-__host__ __device__ constexpr void test_find_first_not_of()
+TEST_FUNC constexpr void test_find_first_not_of()
 {
   using SizeT = typename SV::size_type;
 
@@ -155,7 +158,7 @@ __host__ __device__ constexpr void test_find_first_not_of()
   TEST_FIND_FIRST_NOT_OF(SV, "lecfratdjkhnsmqpoigb", "tpflmdnoicjgkberhqsa", 21, SV::npos);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_find_first_not_of<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

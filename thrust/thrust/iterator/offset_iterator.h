@@ -80,7 +80,7 @@ THRUST_NAMESPACE_BEGIN
 //!
 //! In the above example, the offset is loaded from a device vector, transformed by a \p transform_iterator, and then
 //! applied to the underlying iterator, when the \p offset_iterator is accessed.
-template <typename Iterator, typename Offset = typename ::cuda::std::iterator_traits<Iterator>::difference_type>
+template <typename Iterator, typename Offset = ::cuda::std::iter_difference_t<Iterator>>
 class offset_iterator : public iterator_adaptor<offset_iterator<Iterator, Offset>, Iterator>
 {
   //! \cond

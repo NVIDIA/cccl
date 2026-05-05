@@ -23,6 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__cccl/host_std_lib.h>
 
@@ -37,7 +38,7 @@
 //! * MSVC needs manual handling, has no real way of checking builtins so all is manual
 //! * GCC  needs manual handling, before gcc-10 as that finally supports __has_builtin
 //!
-//! In case compiler support for a builtin is advertised but leads to regressions we explicitly #undef the macro
+//! In case compiler support for a builtin is advertised but leads to regressions we explicitly undef the macro
 //!
 //! Finally, because `_CCCL_CHECK_BUILTIN` may lead to false positives, we move detection of new builtins over towards
 //! just using _CCCL_HAS_BUILTIN
@@ -86,10 +87,6 @@
 #  define _CCCL_BUILTIN_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(array_rank)
 
-#if _CCCL_HAS_BUILTIN(__array_extent)
-#  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__array_extent)
-
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC, >=, 12, 3)
@@ -106,6 +103,11 @@
 #  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_BUILTIN_ASSUME
+#  define _CCCL_BUILTIN_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
+
 #if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
@@ -115,8 +117,15 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_expect)
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)
+#else // ^^^ has __builtin_expect ^^^ / vvv no __builtin_expect vvv
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
+#endif // ^^^ no __builtin_expect ^^^
+
+#if _CCCL_TILE_COMPILATION() // nvbug6100927:  __builtin_expect is unsupported in tile mode
+#  undef _CCCL_BUILTIN_EXPECT
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
+#endif // _CCCL_TILE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
@@ -146,6 +155,10 @@
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
+
+#if _CCCL_TILE_COMPILATION() // nvbug6067464: __builtin_is_constant_evaluated is unsupported in tile mode
+#  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // _CCCL_TILE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_corresponding_member)
 #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) \
@@ -281,10 +294,6 @@
 #  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
 
-#if _CCCL_HAS_BUILTIN(__is_const)
-#  define _CCCL_BUILTIN_IS_CONST(...) __is_const(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_const)
-
 #if _CCCL_CHECK_BUILTIN(is_constructible) || _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_constructible) && gcc >= 8.0
@@ -296,28 +305,6 @@
 #if _CCCL_CHECK_BUILTIN(is_destructible) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_destructible)
-
-#if _CCCL_CHECK_BUILTIN(is_function)
-#  define _CCCL_BUILTIN_IS_FUNCTION(...) __is_function(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_function)
-
-// All current versions of NVCC give wrong results with __is_function
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_IS_FUNCTION
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(is_fundamental)
-#  define _CCCL_BUILTIN_IS_FUNDAMENTAL(...) __is_fundamental(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_fundamental)
-
-// clang prior to clang-10 gives wrong results for __is_fundamental
-#if _CCCL_COMPILER(CLANG, <, 10)
-#  undef _CCCL_BUILTIN_IS_FUNDAMENTAL
-#endif // clang < 10
-
-#if _CCCL_HAS_BUILTIN(__is_integral)
-#  define _CCCL_BUILTIN_IS_INTEGRAL(...) __is_integral(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_integral)
 
 #if _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 #  define _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(...) __is_layout_compatible(__VA_ARGS__)
@@ -382,38 +369,9 @@
 #  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_scalar)
 
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_signed)
-#  define _CCCL_BUILTIN_IS_SIGNED(...) __is_signed(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_signed)
-
-#if _CCCL_CHECK_BUILTIN(is_unsigned)
-#  define _CCCL_BUILTIN_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_unsigned)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_void)
-#  define _CCCL_BUILTIN_IS_VOID(...) __is_void(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_void)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_volatile)
-#  define _CCCL_BUILTIN_IS_VOLATILE(...) __is_volatile(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_volatile)
-
 #if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
 #  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
 #endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__make_signed)
-#  define _CCCL_BUILTIN_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__make_signed)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__make_unsigned)
-#  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__make_unsigned)
 
 #if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
@@ -422,10 +380,6 @@
 #if _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
-
-#if _CCCL_HAS_BUILTIN(__remove_all_extents) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_all_extents)
 
 #if _CCCL_HAS_BUILTIN(__remove_const) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
@@ -469,6 +423,10 @@
 #  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
 #endif // _CCCL_HAS_BUILTIN(__type_pack_element)
 
+#if _CCCL_HAS_BUILTIN(__is_complete_type)
+#  define _CCCL_BUILTIN_IS_COMPLETE_TYPE(...) __is_complete_type(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_complete_type)
+
 // NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
 #if _CCCL_CUDACC_BELOW(12, 2)
 #  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
@@ -490,5 +448,12 @@
 #if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
+
+// The new __nv_atomic builtins are available when __CUDACC_DEVICE_ATOMIC_BUILTINS__ is defined
+#if defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && _CCCL_PTX_ARCH() >= 600 && !_CCCL_COMPILER(MSVC)
+#  define _CCCL_HAS_NV_ATOMIC_BUILTINS() 1
+#else // ^^^ has intrinsics ^^^ / vvv no intrinsics
+#  define _CCCL_HAS_NV_ATOMIC_BUILTINS() 0
+#endif // no intrinsics
 
 #endif // __CCCL_BUILTIN_H

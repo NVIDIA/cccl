@@ -7,18 +7,23 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 #include <cuda/std/__string/constexpr_c_functions.h>
 #include <cuda/std/cassert>
 
-template <class T>
-__host__ __device__ constexpr bool test_out_of_place();
+#include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr bool test_in_place();
+TEST_FUNC constexpr bool test_out_of_place();
+
+template <class T>
+TEST_FUNC constexpr bool test_in_place();
 
 #define TEST_SPECIALIZATION(T, P)                                          \
   template <>                                                              \
-  __host__ __device__ constexpr bool test_out_of_place<T>()                \
+  TEST_FUNC constexpr bool test_out_of_place<T>()                          \
   {                                                                        \
     T src[] = P##"1234567890";                                             \
                                                                            \
@@ -54,7 +59,7 @@ __host__ __device__ constexpr bool test_in_place();
   }                                                                        \
                                                                            \
   template <>                                                              \
-  __host__ __device__ bool test_in_place<T>()                              \
+  TEST_FUNC bool test_in_place<T>()                                        \
   {                                                                        \
     {                                                                      \
       T buf[] = P##"1234567890";                                           \
@@ -94,7 +99,7 @@ TEST_SPECIALIZATION(char8_t, u8)
 TEST_SPECIALIZATION(char16_t, u)
 TEST_SPECIALIZATION(char32_t, U)
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_out_of_place<char>();
 #if _CCCL_HAS_CHAR8_T()

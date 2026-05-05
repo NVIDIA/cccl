@@ -25,6 +25,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -115,6 +116,10 @@ inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVE
 // shared memory in a kernel. Note that dynamic shared memory may be larger than this amount.
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
+// The size in bytes of the largest machine word that can be atomically read/written in a single instruction, so we can
+// use it to pass messages from one thread to another using strong loads (acquire) and stores (release).
+inline constexpr int largest_atomic_message_size = 16;
+
 struct scaling_result
 {
   int items_per_thread;
@@ -171,6 +176,30 @@ struct NoScaling
   static constexpr int ITEMS_PER_THREAD = Nominal4ByteItemsPerThread;
   static constexpr int BLOCK_THREADS    = Nominal4ByteBlockThreads;
 };
+
+[[nodiscard]] _CCCL_API constexpr ::cuda::compute_capability current_tuning_cc() noexcept
+{
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+  return ::cuda::compute_capability(__NVCOMPILER_CUDA_ARCH__ / 10);
+#  elif _CCCL_DEVICE_COMPILATION()
+  return ::cuda::device::current_compute_capability();
+#  else
+  return {};
+#  endif
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <class PolicySelector>
+[[nodiscard]] _CCCL_API constexpr auto select_policy(::cuda::compute_capability cc)
+{
+  return PolicySelector{}(cc);
+}
+
+template <class PolicySelector>
+[[nodiscard]] _CCCL_API constexpr auto current_policy()
+{
+  return select_policy<PolicySelector>(current_tuning_cc());
+}
 } // namespace detail
 #endif // Do not document
 

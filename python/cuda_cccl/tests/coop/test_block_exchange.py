@@ -28,7 +28,7 @@ from cuda import coop
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 striped_to_blocked = partial(
-    coop.block.exchange,
+    coop.block.make_exchange,
     block_exchange_type=coop.block.BlockExchangeType.StripedToBlocked,
 )
 

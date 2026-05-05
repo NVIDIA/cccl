@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -63,10 +40,7 @@ template <typename Derived, typename InputIt, typename Size, typename OutputIt, 
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
-  using AccumT     = thrust::detail::it_value_t<InputIt>;
-  using Dispatch32 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint32_t, AccumT>;
-  using Dispatch64 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint64_t, AccumT>;
-
+  using AccumT        = thrust::detail::it_value_t<InputIt>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -79,10 +53,9 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<AccumT>,
       num_items,
       (nullptr, tmp_size, first, result, scan_op, cub::NullType{}, num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -95,10 +68,9 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<AccumT>,
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, cub::NullType{}, num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
@@ -119,15 +91,9 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
-  using ValueT      = cub::detail::it_value_t<InputIt>;
-  using AccumT      = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
-
-  using Dispatch32 =
-    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, AccumT, cub::ForceInclusive::Yes>;
-  using Dispatch64 =
-    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, AccumT, cub::ForceInclusive::Yes>;
-
+  using InputValueT   = cub::detail::InputValue<InitValueT>;
+  using ValueT        = cub::detail::it_value_t<InputIt>;
+  using AccumT        = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -140,10 +106,9 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
       num_items,
       (nullptr, tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -156,10 +121,9 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
@@ -180,10 +144,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
-  using Dispatch32  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, InitValueT>;
-  using Dispatch64  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, InitValueT>;
-
+  using InputValueT   = cub::detail::InputValue<InitValueT>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -196,10 +157,9 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<InitValueT>,
       num_items,
       (nullptr, tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -212,10 +172,9 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<InitValueT>,
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching exclusive_scan kernel");

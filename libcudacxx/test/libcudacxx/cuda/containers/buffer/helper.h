@@ -21,13 +21,15 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-#include "test_resources.h"
+#include <test_resources.h>
+
+#include "test_macros.h"
 
 // Default data to compare against
 
 inline constexpr ::cuda::std::initializer_list<int> compare_data_initializer_list{1, 42, 1337, 0, 12, -1};
-__device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
-constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
+TEST_GLOBAL_VARIABLE constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
+constexpr int host_data[]                        = {1, 42, 1337, 0, 12, -1};
 
 template <typename Iter>
 __global__ void check_equal_kernel(Iter ptr)
@@ -129,14 +131,14 @@ struct equal_to_value
       : value_(value)
   {}
 
-  __host__ __device__ bool operator()(const T lhs, const T) const noexcept
+  TEST_FUNC bool operator()(const T lhs, const T) const noexcept
   {
     return lhs == value_;
   }
 };
 
 template <class Buffer>
-bool equal_size_value(const Buffer& buf, const size_t size, const int value)
+bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffer::value_type value)
 {
   if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
@@ -189,11 +191,11 @@ struct extract_properties<cuda::buffer<T, Properties...>>
   {
     if constexpr (cuda::mr::__is_host_accessible<Properties...>)
     {
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
       return offset_by_alignment_resource(cuda::pinned_default_memory_pool());
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
       throw std::runtime_error("Host accessible memory pools are not supported");
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
     }
     else
     {
@@ -220,12 +222,17 @@ struct extract_properties<cuda::buffer<T, Properties...>>
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
-                                  cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#if _CCCL_CTK_AT_LEAST(12, 9)
+using test_types =
+  c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
+                 cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
+                 cuda::buffer<short, cuda::mr::device_accessible>,
+                 cuda::buffer<float, cuda::mr::device_accessible>,
+                 cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
+using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,
+                                  cuda::buffer<short, cuda::mr::device_accessible>,
+                                  cuda::buffer<float, cuda::mr::device_accessible>>;
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 #endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H

@@ -35,7 +35,6 @@ using segment_offset_t = int32_t;
 using primitive_t      = uint64_t;
 using element_types    = c2h::type_list<primitive_t, segment>;
 
-static_assert(!cub::detail::is_primitive_v<segment>);
 static_assert(cub::detail::is_primitive_v<primitive_t>);
 static_assert(sizeof(primitive_t) == 2 * sizeof(segment_offset_t));
 
@@ -57,6 +56,9 @@ struct segment
   }
 };
 
+static_assert(!cub::detail::is_primitive_v<segment>);
+// static_assert(!cuda::std::is_trivially_copyable_v<segment>); // TODO(bgruber): why is this important?
+
 // cuda::std::bitcast on platforms w/o __builtin_bit_cast needs To to have a trivial default constructor which segment
 // does not have by design.
 template <typename To, typename From>
@@ -67,6 +69,7 @@ __host__ __device__ To dangerous_bit_cast(const From& from)
   memcpy(static_cast<void*>(&to), &from, sizeof(To));
   return to;
 }
+
 // Needed for data input using fancy iterators
 template <typename WrapperT>
 struct tuple_to_wrapper_op

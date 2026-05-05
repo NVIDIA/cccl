@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085905: Segmentation fault (core dumped) tileiras
+
 // template <class charT>
 //     explicit bitset(const charT* str,
 //                     typename basic_string_view<charT>::size_type n = basic_string_view<charT>::npos, //
@@ -49,10 +52,10 @@ void test_exceptions()
 #endif
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_char_pointer_ctor()
+TEST_FUNC constexpr void test_char_pointer_ctor()
 {
-  static_assert(!cuda::std::is_convertible<const char*, cuda::std::bitset<N>>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::bitset<N>, const char*>::value, "");
+  static_assert(!cuda::std::is_convertible<const char*, cuda::std::bitset<N>>::value);
+  static_assert(cuda::std::is_constructible<cuda::std::bitset<N>, const char*>::value);
   {
     const char s[] = "1010101010";
     cuda::std::bitset<N> v(s);
@@ -115,7 +118,7 @@ __host__ __device__ constexpr void test_char_pointer_ctor()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_char_pointer_ctor<0>();
   test_char_pointer_ctor<1>();
@@ -137,7 +140,7 @@ int main(int, char**)
 #endif
 
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

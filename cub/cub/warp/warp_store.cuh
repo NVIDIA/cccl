@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -109,6 +110,25 @@ enum WarpStoreAlgorithm
   //! @endrst
   WARP_STORE_TRANSPOSE
 };
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algorithm)
+{
+  switch (algorithm)
+  {
+    case WARP_STORE_DIRECT:
+      return os << "WARP_STORE_DIRECT";
+    case WARP_STORE_STRIPED:
+      return os << "WARP_STORE_STRIPED";
+    case WARP_STORE_VECTORIZE:
+      return os << "WARP_STORE_VECTORIZE";
+    case WARP_STORE_TRANSPOSE:
+      return os << "WARP_STORE_TRANSPOSE";
+    default:
+      return os << "<unknown WarpStoreAlgorithm: " << static_cast<int>(algorithm) << ">";
+  }
+}
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The WarpStore class provides :ref:`collective <collective-primitives>`
@@ -374,6 +394,9 @@ public:
   //! @rst
   //! Store items into a linear segment of memory.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -431,6 +454,9 @@ public:
 
   //! @rst
   //! Store items into a linear segment of memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!

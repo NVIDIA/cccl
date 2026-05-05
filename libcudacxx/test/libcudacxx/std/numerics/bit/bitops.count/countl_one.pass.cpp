@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6084444: error: "call to non-tile function not supported!"
+
 // template <class T>
 //   constexpr int countl_one(T x) noexcept;
 
@@ -35,33 +38,33 @@ enum class E2 : unsigned char
 };
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   using nl = cuda::std::numeric_limits<T>;
 
-  static_assert(cuda::std::countl_one(nl::max()) == nl::digits, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 1)) == nl::digits - 1, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 2)) == nl::digits - 2, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 3)) == nl::digits - 2, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 4)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 5)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 6)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 7)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 8)) == nl::digits - 4, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 9)) == nl::digits - 4, "");
+  static_assert(cuda::std::countl_one(nl::max()) == nl::digits);
+  static_assert(cuda::std::countl_one(T(nl::max() - 1)) == nl::digits - 1);
+  static_assert(cuda::std::countl_one(T(nl::max() - 2)) == nl::digits - 2);
+  static_assert(cuda::std::countl_one(T(nl::max() - 3)) == nl::digits - 2);
+  static_assert(cuda::std::countl_one(T(nl::max() - 4)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 5)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 6)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 7)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 8)) == nl::digits - 4);
+  static_assert(cuda::std::countl_one(T(nl::max() - 9)) == nl::digits - 4);
 
   return true;
 }
 
 template <typename T>
-__host__ __device__ inline void assert_countl_one(T val, int expected)
+TEST_FUNC inline void assert_countl_one(T val, int expected)
 {
   volatile auto v = val;
   assert(cuda::std::countl_one(v) == expected);
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   static_assert(cuda::std::is_same_v<int, decltype(cuda::std::countl_one(T(0)))>);
   static_assert(noexcept(cuda::std::countl_one(T(0))));

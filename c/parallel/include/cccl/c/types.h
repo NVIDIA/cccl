@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -103,6 +104,9 @@ typedef struct cccl_op_t
   size_t size;
   size_t alignment;
   void* state;
+  const char** extra_ltoirs;
+  size_t* extra_ltoir_sizes;
+  size_t num_extra_ltoirs;
 } cccl_op_t;
 
 typedef struct cccl_build_config
@@ -172,3 +176,4 @@ typedef enum cccl_binary_search_mode_t
 } cccl_binary_search_mode_t;
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

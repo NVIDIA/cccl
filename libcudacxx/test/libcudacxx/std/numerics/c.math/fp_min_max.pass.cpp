@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/__floating_point/fp.h>
@@ -18,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_fmax(T val)
+TEST_FUNC constexpr void test_fmax(T val)
 {
   if constexpr (cuda::std::is_integral_v<T>)
   {
@@ -62,7 +65,7 @@ __host__ __device__ constexpr void test_fmax(T val)
 }
 
 template <class T>
-__host__ __device__ constexpr void test_fmin(T val)
+TEST_FUNC constexpr void test_fmin(T val)
 {
   if constexpr (cuda::std::is_integral_v<T>)
   {
@@ -107,7 +110,7 @@ __host__ __device__ constexpr void test_fmin(T val)
 }
 
 template <class T>
-__host__ __device__ constexpr bool test(T val)
+TEST_FUNC constexpr bool test(T val)
 {
   test_fmax<T>(val);
   test_fmin<T>(val);
@@ -115,7 +118,7 @@ __host__ __device__ constexpr bool test(T val)
   return true;
 }
 
-__host__ __device__ bool test(float val)
+TEST_FUNC bool test(float val)
 {
   test<float>(val);
   test<double>(val);
@@ -152,7 +155,7 @@ __host__ __device__ bool test(float val)
 }
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   if constexpr (cuda::std::is_integral_v<T>)
   {
@@ -168,7 +171,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   test<float>();
   test<double>();

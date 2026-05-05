@@ -30,7 +30,7 @@ struct Derived : public Base
 {};
 
 template <class FromT, class ToT>
-__host__ __device__ constexpr void test_conversion()
+TEST_FUNC constexpr void test_conversion()
 {
   cuda::std::default_accessor<FromT> acc_from{};
   static_assert(noexcept(cuda::std::default_accessor<ToT>(acc_from)));
@@ -38,7 +38,7 @@ __host__ __device__ constexpr void test_conversion()
   unused(acc_to);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // default accessor conversion largely behaves like pointer conversion
   test_conversion<int, int>();
@@ -75,6 +75,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

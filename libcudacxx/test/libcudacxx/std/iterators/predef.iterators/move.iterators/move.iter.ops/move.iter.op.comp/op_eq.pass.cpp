@@ -31,13 +31,13 @@ struct CustomIt
   using pointer           = int*;
   using iterator_category = cuda::std::input_iterator_tag;
   CustomIt()              = default;
-  __host__ __device__ constexpr explicit CustomIt(int* p)
+  TEST_FUNC constexpr explicit CustomIt(int* p)
       : p_(p)
   {}
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ CustomIt& operator++();
-  __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ constexpr friend bool operator==(const CustomIt& a, const CustomIt& b)
+  TEST_FUNC int& operator*() const;
+  TEST_FUNC CustomIt& operator++();
+  TEST_FUNC CustomIt operator++(int);
+  TEST_FUNC constexpr friend bool operator==(const CustomIt& a, const CustomIt& b)
   {
     return a.p_ == b.p_;
   }
@@ -45,7 +45,7 @@ struct CustomIt
 };
 
 template <class It>
-__host__ __device__ constexpr void test_one()
+TEST_FUNC constexpr void test_one()
 {
   int a[]                               = {3, 1, 4};
   const cuda::std::move_iterator<It> r1 = cuda::std::move_iterator<It>(It(a));
@@ -59,7 +59,7 @@ __host__ __device__ constexpr void test_one()
   assert(!(r3 == r1));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_one<CustomIt>();
   test_one<cpp17_input_iterator<int*>>();
@@ -80,7 +80,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

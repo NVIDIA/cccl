@@ -57,8 +57,7 @@ inline constexpr bool __is_global_access_property_v =
 #if _CCCL_CUDA_COMPILATION()
 
 template <typename _Property>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
-__associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
+[[nodiscard]] _CCCL_DEVICE_API void* __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 {
   if constexpr (::cuda::std::is_same_v<_Property, access_property::shared>)
   {
@@ -79,14 +78,14 @@ __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
   return __ptr;
 }
 
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_raw_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
+_CCCL_DEVICE_API inline void* __associate_raw_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__nv_associate_access_property(__ptr, __prop);))
   return __ptr;
 }
 
 template <typename _Property>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, _Property __prop)
+[[nodiscard]] _CCCL_DEVICE_API void* __associate_descriptor(void* __ptr, _Property __prop)
 {
   static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
   if constexpr (!::cuda::std::is_same_v<_Property, access_property::shared>)

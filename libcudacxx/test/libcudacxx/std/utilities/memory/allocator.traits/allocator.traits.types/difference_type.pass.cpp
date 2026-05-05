@@ -25,20 +25,20 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
-  typedef short difference_type;
+  using value_type      = T;
+  using difference_type = short;
 };
 
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct C
 {
-  typedef T value_type;
+  using value_type = T;
   struct pointer
   {};
   struct const_pointer
@@ -52,10 +52,10 @@ struct C
 template <class T>
 struct D
 {
-  typedef T value_type;
+  using value_type = T;
 
 private:
-  typedef void difference_type;
+  using difference_type = void;
 };
 
 namespace cuda::std
@@ -63,18 +63,18 @@ namespace cuda::std
 template <>
 struct pointer_traits<C<char>::pointer>
 {
-  typedef C<char>::pointer pointer;
-  typedef char element_type;
-  typedef signed char difference_type;
+  using pointer         = C<char>::pointer;
+  using element_type    = char;
+  using difference_type = signed char;
 };
 } // namespace cuda::std
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::difference_type, short>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::difference_type, short>::value));
   static_assert(
     (cuda::std::is_same<cuda::std::allocator_traits<B<char>>::difference_type, cuda::std::ptrdiff_t>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::difference_type, signed char>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::difference_type, signed char>::value));
   static_assert(
     (cuda::std::is_same<cuda::std::allocator_traits<D<char>>::difference_type, cuda::std::ptrdiff_t>::value), "");
 

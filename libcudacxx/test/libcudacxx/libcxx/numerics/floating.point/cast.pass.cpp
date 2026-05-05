@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
@@ -19,7 +22,7 @@
 #include "test_macros.h"
 
 template <class To, class From>
-__host__ __device__ void test_fp_cast()
+TEST_FUNC void test_fp_cast()
 {
   // 1.0 should be representable by all floating point types
   const From in     = cuda::std::__fp_cast<From>(1.f);
@@ -31,7 +34,7 @@ __host__ __device__ void test_fp_cast()
 }
 
 template <class T>
-__host__ __device__ void test_fp_cast()
+TEST_FUNC void test_fp_cast()
 {
   test_fp_cast<T, float>();
   test_fp_cast<T, double>();
@@ -64,7 +67,7 @@ __host__ __device__ void test_fp_cast()
 #endif // _CCCL_HAS_NVFP4_E2M1()
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_fp_cast<float>();
   test_fp_cast<double>();

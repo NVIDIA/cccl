@@ -3,8 +3,6 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
@@ -17,149 +15,75 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
-struct reduce_by_key_policy_hub
+struct bench_encode_policy_selector
 {
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce_by_key::reduce_by_key_policy
   {
-    using ReduceByKeyPolicyT =
-      cub::AgentReduceByKeyPolicy<TUNE_THREADS,
-                                  TUNE_ITEMS,
-                                  TUNE_LOAD_ALGORITHM,
-                                  TUNE_LOAD_MODIFIER,
-                                  cub::BLOCK_SCAN_WARP_SCANS,
-                                  delay_constructor_t>;
-  };
-
-  using MaxPolicy = Policy500;
+    return {
+      TUNE_THREADS,
+      TUNE_ITEMS,
+      TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+      cub::BLOCK_SCAN_WARP_SCANS,
+      delay_constructor_policy,
+    };
+  }
 };
 #endif // !TUNE_BASE
 
+//! @tparam RunLengthT Offset type large enough to represent the longest run in the sequence
 template <class T, class OffsetT, class RunLengthT>
 static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
-  // Offset type large enough to represent any offset into the input sequence
+  // Offset type large enough to represent any offset into the input sequence and the total number of runs
   using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;
-  // Offset type large enough to represent the longest run in the sequence
-  using run_length_t = RunLengthT;
-  // Offset type large enough to represent the total number of runs in the sequence
-  using num_runs_t = offset_t;
-
-  using keys_input_it_t            = const T*;
-  using unique_output_it_t         = T*;
-  using run_length_input_it_t      = thrust::constant_iterator<run_length_t, offset_t>;
-  using run_length_output_it_t     = run_length_t*;
-  using num_runs_output_iterator_t = num_runs_t*;
-  using equality_op_t              = ::cuda::std::equal_to<>;
-  using reduction_op_t             = ::cuda::std::plus<>;
-  using accum_t                    = run_length_t;
-
-#if !TUNE_BASE
-  using dispatch_t = cub::detail::reduce::DispatchStreamingReduceByKey<
-    keys_input_it_t,
-    unique_output_it_t,
-    run_length_input_it_t,
-    run_length_output_it_t,
-    num_runs_output_iterator_t,
-    equality_op_t,
-    reduction_op_t,
-    offset_t,
-    accum_t,
-    reduce_by_key_policy_hub>;
-#else
-  using policy_t   = cub::detail::rle::encode::policy_hub<accum_t, T>;
-  using dispatch_t = cub::detail::reduce::DispatchStreamingReduceByKey<
-    keys_input_it_t,
-    unique_output_it_t,
-    run_length_input_it_t,
-    run_length_output_it_t,
-    num_runs_output_iterator_t,
-    equality_op_t,
-    reduction_op_t,
-    offset_t,
-    accum_t,
-    policy_t>;
-#endif
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<num_runs_t> num_runs_out(1);
-  thrust::device_vector<run_length_t> out_vals(elements);
+  thrust::device_vector<offset_t> num_runs_out(1);
+  thrust::device_vector<RunLengthT> out_counts(elements);
   thrust::device_vector<T> out_keys(elements);
   thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  T* d_in_keys        = thrust::raw_pointer_cast(in_keys.data());
-  T* d_out_keys       = thrust::raw_pointer_cast(out_keys.data());
-  auto d_out_vals     = thrust::raw_pointer_cast(out_vals.data());
-  auto d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
-  run_length_input_it_t d_in_vals(run_length_t{1});
+  const T* d_in_keys       = thrust::raw_pointer_cast(in_keys.data());
+  T* d_out_keys            = thrust::raw_pointer_cast(out_keys.data());
+  RunLengthT* d_out_counts = thrust::raw_pointer_cast(out_counts.data());
+  offset_t* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
 
-  std::uint8_t* d_temp_storage{};
-  std::size_t temp_storage_bytes{};
-
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_keys,
-    d_in_vals,
-    d_out_vals,
-    d_num_runs_out,
-    equality_op_t{},
-    reduction_op_t{},
-    elements,
-    0);
-
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_keys,
-    d_in_vals,
-    d_out_vals,
-    d_num_runs_out,
-    equality_op_t{},
-    reduction_op_t{},
-    elements,
-    0);
+  // Run once to get num_runs for memory accounting
+  (void) cub::DeviceRunLengthEncode::Encode(
+    d_in_keys, d_out_keys, d_out_counts, d_num_runs_out, static_cast<OffsetT>(elements));
   cudaDeviceSynchronize();
-  const num_runs_t num_runs = num_runs_out[0];
+  const offset_t num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(num_runs);
-  state.add_global_memory_writes<run_length_t>(num_runs);
-  state.add_global_memory_writes<num_runs_t>(1);
+  state.add_global_memory_writes<RunLengthT>(num_runs);
+  state.add_global_memory_writes<offset_t>(1);
 
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_encode_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRunLengthEncode::Encode,
+      "Encode failed",
       d_in_keys,
       d_out_keys,
-      d_in_vals,
-      d_out_vals,
+      d_out_counts,
       d_num_runs_out,
-      equality_op_t{},
-      reduction_op_t{},
-      elements,
-      launch.get_stream());
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 

@@ -14,7 +14,7 @@
 // Because `fn_ptr` is possibly visible outside this translation unit, the
 // compiler must compile all the functions which are stored.
 
-__global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
+__global__ void test_cp_async_bulk_tensor_multicast_cta_group_1(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(
@@ -195,90 +195,6 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                const cuda::std::int32_t (&)[1],
                                cuda::std::uint64_t*,
                                const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[1],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[1],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[1],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[1],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[1],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[1],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -455,90 +371,6 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_global_t,
                                cuda::ptx::cta_group_1_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[2],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[2],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[2],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[2],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[2],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[2],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
                                void*,
                                const void*,
                                const cuda::std::int32_t (&)[2],
@@ -725,90 +557,6 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                const cuda::std::int32_t (&)[3],
                                cuda::std::uint64_t*,
                                const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[3],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[3],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[3],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[3],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[3],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[3],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -985,90 +733,6 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_global_t,
                                cuda::ptx::cta_group_1_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[4],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[4],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[4],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[4],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[4],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
-                               void*,
-                               const void*,
-                               const cuda::std::int32_t (&)[4],
-                               cuda::std::uint64_t*,
-                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
-        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::space_cluster_t,
-                               cuda::ptx::space_global_t,
-                               cuda::ptx::cta_group_2_t,
                                void*,
                                const void*,
                                const cuda::std::int32_t (&)[4],
@@ -1255,6 +919,830 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                const cuda::std::int32_t (&)[5],
                                cuda::std::uint64_t*,
                                const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+}
+
+__global__ void test_cp_async_bulk_tensor_multicast_cta_group_2(void** fn_ptr)
+{
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_90a,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_90a,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_90a,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_90a,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
+        // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::cta_group_2_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_90a,
+    (
+        // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
+        // [tensorMap, tensorCoords], [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
+#endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 800
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (

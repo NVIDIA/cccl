@@ -46,7 +46,7 @@ struct stream_ref : ::cuda::stream_ref
 
   stream_ref() = delete;
 
-  //! @brief Converting constructor from \c ::cuda::stream_ref
+  //! @brief Converting constructor from ``cuda::stream_ref``
   //!
   //! @post `*this == __other`
   _CCCL_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept

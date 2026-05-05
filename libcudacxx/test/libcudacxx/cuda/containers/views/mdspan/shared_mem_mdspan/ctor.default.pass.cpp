@@ -39,7 +39,7 @@ template <bool hc,
           class M,
           class A,
           cuda::std::enable_if_t<(M::extents_type::rank_dynamic() > 0) && hc && mc && ac, int> = 0>
-__device__ constexpr void test_mdspan_types(const H&, const M&, const A&)
+TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H&, const M&, const A&)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -64,7 +64,7 @@ template <bool hc,
           class M,
           class A,
           cuda::std::enable_if_t<!((M::extents_type::rank_dynamic() > 0) && hc && mc && ac), int> = 0>
-__device__ constexpr void test_mdspan_types(const H&, const M&, const A&)
+TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H&, const M&, const A&)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -76,20 +76,20 @@ __device__ constexpr void test_mdspan_types(const H&, const M&, const A&)
 }
 
 template <bool hc, bool mc, bool ac, class H, class L, class A>
-__device__ constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
+TEST_DEVICE_FUNC constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_types<hc, mc, ac>(handle, construct_mapping(layout, cuda::std::extents<int>()), acc);
-  test_mdspan_types<hc, mc, ac>(handle, construct_mapping(layout, cuda::std::extents<char, D>(7)), acc);
+  test_mdspan_types<hc, mc, ac>(handle, construct_mapping(layout, cuda::std::extents<signed char, D>(7)), acc);
   test_mdspan_types<hc, mc, ac>(handle, construct_mapping(layout, cuda::std::extents<unsigned, 7>()), acc);
   test_mdspan_types<hc, mc, ac>(handle, construct_mapping(layout, cuda::std::extents<size_t, D, 4, D>(2, 3)), acc);
-  test_mdspan_types<hc, mc, ac>(handle, construct_mapping(layout, cuda::std::extents<char, D, 7, D>(0, 3)), acc);
+  test_mdspan_types<hc, mc, ac>(handle, construct_mapping(layout, cuda::std::extents<signed char, D, 7, D>(0, 3)), acc);
   test_mdspan_types<hc, mc, ac>(
     handle, construct_mapping(layout, cuda::std::extents<int64_t, D, 7, D, 4, D, D>(1, 2, 3, 2)), acc);
 }
 
 template <bool hc, bool ac, class H, class A>
-__device__ constexpr void mixin_layout(const H& handle, const A& acc)
+TEST_DEVICE_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   mixin_extents<hc, true, ac>(handle, cuda::std::layout_left(), acc);
   mixin_extents<hc, true, ac>(handle, cuda::std::layout_right(), acc);
@@ -97,25 +97,25 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
   // Use weird layout, make sure it has the properties we want to test
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   static_assert(!cuda::std::is_default_constructible_v<
-                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<char, D>>>);
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<signed char, D>>>);
   mixin_extents<hc, false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ constexpr void mixin_accessor()
+TEST_DEVICE_FUNC constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   mixin_layout<true, true>(elements.data(), cuda::std::default_accessor<T>());
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ void mixin_accessor()
+TEST_DEVICE_FUNC void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   mixin_layout<true, true>(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   mixin_accessor<int>();
   mixin_accessor<const int>();
@@ -123,7 +123,7 @@ __device__ void test()
   mixin_accessor<const double>();
 }
 
-__device__ void test_evil()
+TEST_DEVICE_FUNC void test_evil()
 {
   mixin_accessor<MinimalElementType>();
   mixin_accessor<const MinimalElementType>();

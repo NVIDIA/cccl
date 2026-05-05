@@ -43,8 +43,6 @@ namespace cuda::experimental::stf
  *
  * @param ctx The backend context in which the task is executed. This context contains
  *            the execution stack and other execution-related information.
- * @param tsk The task to be prepared for execution. The task must be in the setup phase
- *            before calling this function.
  * @return An event_list containing all the input events and any additional events
  *         generated during the acquisition of dependencies. This list represents the
  *         prerequisites for the task to start execution.
@@ -66,7 +64,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   auto result = get_input_events();
 
   // Automatically set the appropriate context (device, SM affinity, ...)
-  pimpl->saved_place_ctx = eplace.activate();
+  pimpl->saved_place_ctx = exec_place_scope(eplace);
 
   auto& task_deps = pimpl->deps;
 
@@ -280,7 +278,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   }
 
   // Automatically reset the context to its original configuration (device, SM affinity, ...)
-  get_exec_place().deactivate(pimpl->saved_place_ctx);
+  pimpl->saved_place_ctx = exec_place_scope();
 
   auto& dot = *ctx.get_dot();
   if (dot.is_tracing())

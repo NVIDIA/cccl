@@ -24,7 +24,7 @@ static const bool integral_types_trap = false;
 #endif
 
 template <class T, bool expected>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::traps == expected, "traps test 1");
   static_assert(cuda::std::numeric_limits<const T>::traps == expected, "traps test 2");
@@ -39,9 +39,9 @@ int main(int, char**)
   test<signed char, integral_types_trap>();
   test<unsigned char, integral_types_trap>();
   test<wchar_t, integral_types_trap>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, integral_types_trap>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, integral_types_trap>();
   test<char32_t, integral_types_trap>();
   test<short, integral_types_trap>();

@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/remove_cv.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -71,6 +73,9 @@ inline constexpr bool __is_extended_floating_point_v<__nv_fp4_e2m1> = true;
 template <>
 inline constexpr bool __is_extended_floating_point_v<__float128> = true;
 #endif // _CCCL_HAS_FLOAT128()
+
+template <class _Tp>
+inline constexpr bool __is_cv_extended_floating_point_v = __is_extended_floating_point_v<::cuda::std::remove_cv_t<_Tp>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

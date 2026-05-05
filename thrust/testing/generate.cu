@@ -12,12 +12,12 @@ struct return_value
 {
   T val;
 
-  return_value() {}
+  return_value() = default;
   return_value(T v)
       : val(v)
   {}
 
-  _CCCL_HOST_DEVICE T operator()(void)
+  _CCCL_HOST_DEVICE T operator()()
   {
     return val;
   }

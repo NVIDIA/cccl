@@ -4,22 +4,10 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
+cccl_get_cudatoolkit()
+
 # Meta target for all configs' header builds:
 add_custom_target(libcudacxx.test.internal_headers)
-
-if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  find_package(NVHPC)
-else()
-  cccl_get_cudatoolkit()
-endif()
-
-# We need to handle atomic headers differently as they do not compile on architectures below sm70
-set(architectures_at_least_sm70)
-foreach (item IN LISTS CMAKE_CUDA_ARCHITECTURES)
-  if (item GREATER_EQUAL 70)
-    list(APPEND architectures_at_least_sm70 ${item})
-  endif()
-endforeach()
 
 # Grep all internal headers
 file(
@@ -43,100 +31,285 @@ list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 
-if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  set(cudart_name NVHPC::CUDART)
-else()
-  set(cudart_name CUDA::cudart)
+if (CCCL_ENABLE_TILE)
+  list(
+    # error: asm statement is unsupported in tile code
+    REMOVE_ITEM internal_headers
+    "cuda/__annotated_ptr/access_property.h"
+    "cuda/__annotated_ptr/access_property_encoding.h"
+    "cuda/__annotated_ptr/apply_access_property.h"
+    "cuda/__annotated_ptr/annotated_ptr.h"
+    "cuda/__annotated_ptr/annotated_ptr_base.h"
+    "cuda/__annotated_ptr/associate_access_property.h"
+    "cuda/__atomic/atomic.h"
+    "cuda/__barrier/barrier.h"
+    "cuda/__barrier/barrier_arrive_tx.h"
+    "cuda/__barrier/barrier_block_scope.h"
+    "cuda/__barrier/barrier_expect_tx.h"
+    "cuda/__barrier/barrier_thread_scope.h"
+    "cuda/__container/buffer.h"
+    "cuda/__container/make_buffer_with_pool.h"
+    "cuda/__latch/latch.h"
+    "cuda/__memcpy_async/cp_async_bulk_shared_global.h"
+    "cuda/__memcpy_async/cp_async_shared_global.h"
+    "cuda/__memcpy_async/dispatch_memcpy_async.h"
+    "cuda/__memcpy_async/elect_one.h"
+    "cuda/__memcpy_async/is_local_smem_barrier.h"
+    "cuda/__memcpy_async/memcpy_async.h"
+    "cuda/__memcpy_async/memcpy_async_barrier.h"
+    "cuda/__memcpy_async/memcpy_async_tx.h"
+    "cuda/__memcpy_async/memcpy_completion.h"
+    "cuda/__memcpy_async/try_get_barrier_handle.h"
+    "cuda/__memory/discard_memory.h"
+    "cuda/__memory_resource/shared_resource.h"
+    "cuda/__semaphore/counting_semaphore.h"
+    "cuda/std/__atomic/api/common.h"
+    "cuda/std/__atomic/api/owned.h"
+    "cuda/std/__atomic/api/reference.h"
+    "cuda/std/__atomic/functions.h"
+    "cuda/std/__atomic/functions/cuda_local.h"
+    "cuda/std/__atomic/functions/cuda_ptx_derived.h"
+    "cuda/std/__atomic/functions/cuda_ptx_generated.h"
+    "cuda/std/__atomic/types.h"
+    "cuda/std/__atomic/types/base.h"
+    "cuda/std/__atomic/types/common.h"
+    "cuda/std/__atomic/types/locked.h"
+    "cuda/std/__atomic/types/reference.h"
+    "cuda/std/__atomic/types/small.h"
+    "cuda/std/__atomic/wait/notify_wait.h"
+    "cuda/std/__atomic/wait/polling.h"
+    "cuda/std/__barrier/barrier.h"
+    "cuda/std/__latch/latch.h"
+    "cuda/std/__pstl/copy.h"
+    "cuda/std/__pstl/copy_if.h"
+    "cuda/std/__pstl/copy_n.h"
+    "cuda/std/__pstl/count.h"
+    "cuda/std/__pstl/count_if.h"
+    "cuda/std/__pstl/cuda/copy_if.h"
+    "cuda/std/__pstl/cuda/copy_n.h"
+    "cuda/std/__pstl/cuda/exclusive_scan.h"
+    "cuda/std/__pstl/cuda/generate_n.h"
+    "cuda/std/__pstl/cuda/inclusive_scan.h"
+    "cuda/std/__pstl/cuda/merge.h"
+    "cuda/std/__pstl/cuda/partition.h"
+    "cuda/std/__pstl/cuda/partition_copy.h"
+    "cuda/std/__pstl/cuda/reduce.h"
+    "cuda/std/__pstl/cuda/remove_if.h"
+    "cuda/std/__pstl/cuda/rotate.h"
+    "cuda/std/__pstl/cuda/rotate_copy.h"
+    "cuda/std/__pstl/cuda/transform.h"
+    "cuda/std/__pstl/cuda/transform_reduce.h"
+    "cuda/std/__pstl/cuda/unique.h"
+    "cuda/std/__pstl/exclusive_scan.h"
+    "cuda/std/__pstl/fill.h"
+    "cuda/std/__pstl/fill_n.h"
+    "cuda/std/__pstl/generate.h"
+    "cuda/std/__pstl/generate_n.h"
+    "cuda/std/__pstl/inclusive_scan.h"
+    "cuda/std/__pstl/merge.h"
+    "cuda/std/__pstl/partition.h"
+    "cuda/std/__pstl/partition_copy.h"
+    "cuda/std/__pstl/reduce.h"
+    "cuda/std/__pstl/remove.h"
+    "cuda/std/__pstl/remove_copy.h"
+    "cuda/std/__pstl/remove_copy_if.h"
+    "cuda/std/__pstl/remove_if.h"
+    "cuda/std/__pstl/replace.h"
+    "cuda/std/__pstl/replace_copy.h"
+    "cuda/std/__pstl/replace_copy_if.h"
+    "cuda/std/__pstl/replace_if.h"
+    "cuda/std/__pstl/reverse.h"
+    "cuda/std/__pstl/reverse_copy.h"
+    "cuda/std/__pstl/rotate.h"
+    "cuda/std/__pstl/rotate_copy.h"
+    "cuda/std/__pstl/swap_ranges.h"
+    "cuda/std/__pstl/transform.h"
+    "cuda/std/__pstl/transform_exclusive_scan.h"
+    "cuda/std/__pstl/transform_inclusive_scan.h"
+    "cuda/std/__pstl/transform_reduce.h"
+    "cuda/std/__pstl/unique.h"
+    "cuda/std/__pstl/unique_copy.h"
+    "cuda/std/__semaphore/atomic_semaphore.h"
+    "cuda/std/__semaphore/counting_semaphore.h"
+  )
+
+  list(
+    # error: global scope non-placement dynamic deallocation with operator delete is unsupported in tile code
+    REMOVE_ITEM internal_headers
+    "cuda/std/__random/seed_seq.h"
+  )
+
+  list(
+    # error: bit field read/write is unsupported in tile code
+    REMOVE_ITEM internal_headers
+    "cuda/std/__format/format_integral.h"
+    "cuda/std/__format/format_spec_parser.h"
+    "cuda/std/__format/output_utils.h"
+    "cuda/std/__format/formatters/bool.h"
+    "cuda/std/__format/formatters/char.h"
+    "cuda/std/__format/formatters/int.h"
+    "cuda/std/__format/formatters/fp.h"
+    "cuda/std/__format/formatters/ptr.h"
+    "cuda/std/__format/formatters/str.h"
+  )
+
+  list(
+    # error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+    REMOVE_ITEM internal_headers
+    "cuda/__annotated_ptr/annotated_ptr.h"
+    "cuda/__container/buffer.h"
+    "cuda/__memcpy_async/cp_async_bulk_shared_global.h"
+    "cuda/__memcpy_async/dispatch_memcpy_async.h"
+    "cuda/__memcpy_async/elect_one.h"
+    "cuda/__memcpy_async/memcpy_async.h"
+    "cuda/__memcpy_async/memcpy_async_barrier.h"
+    "cuda/std/__pstl/copy.h"
+    "cuda/std/__pstl/copy_if.h"
+    "cuda/std/__pstl/copy_n.h"
+    "cuda/std/__pstl/count.h"
+    "cuda/std/__pstl/count_if.h"
+    "cuda/std/__pstl/cuda/copy_if.h"
+    "cuda/std/__pstl/cuda/copy_n.h"
+    "cuda/std/__pstl/cuda/exclusive_scan.h"
+    "cuda/std/__pstl/cuda/generate_n.h"
+    "cuda/std/__pstl/cuda/inclusive_scan.h"
+    "cuda/std/__pstl/cuda/partition.h"
+    "cuda/std/__pstl/cuda/partition_copy.h"
+    "cuda/std/__pstl/cuda/reduce.h"
+    "cuda/std/__pstl/cuda/remove_if.h"
+    "cuda/std/__pstl/cuda/transform.h"
+    "cuda/std/__pstl/cuda/transform_reduce.h"
+    "cuda/std/__pstl/cuda/unique.h"
+    "cuda/std/__pstl/exclusive_scan.h"
+    "cuda/std/__pstl/fill.h"
+    "cuda/std/__pstl/fill_n.h"
+    "cuda/std/__pstl/generate.h"
+    "cuda/std/__pstl/generate_n.h"
+    "cuda/std/__pstl/inclusive_scan.h"
+    "cuda/std/__pstl/partition.h"
+    "cuda/std/__pstl/partition_copy.h"
+    "cuda/std/__pstl/reduce.h"
+    "cuda/std/__pstl/remove.h"
+    "cuda/std/__pstl/remove_copy.h"
+    "cuda/std/__pstl/remove_copy_if.h"
+    "cuda/std/__pstl/remove_if.h"
+    "cuda/std/__pstl/replace.h"
+    "cuda/std/__pstl/replace_copy.h"
+    "cuda/std/__pstl/replace_copy_if.h"
+    "cuda/std/__pstl/replace_if.h"
+    "cuda/std/__pstl/reverse.h"
+    "cuda/std/__pstl/reverse_copy.h"
+    "cuda/std/__pstl/swap_ranges.h"
+    "cuda/std/__pstl/transform.h"
+    "cuda/std/__pstl/transform_exclusive_scan.h"
+    "cuda/std/__pstl/transform_inclusive_scan.h"
+    "cuda/std/__pstl/transform_reduce.h"
+    "cuda/std/__pstl/unique.h"
+    "cuda/std/__pstl/unique_copy.h"
+  )
+
+  list(
+    # error: indirect call is unsupported in tile code
+    REMOVE_ITEM internal_headers
+    "cuda/__annotated_ptr/annotated_ptr.h"
+    "cuda/__barrier/barrier_arrive_tx.h"
+    "cuda/__barrier/barrier_block_scope.h"
+    "cuda/__barrier/barrier_expect_tx.h"
+    "cuda/__barrier/barrier_thread_scope.h"
+    "cuda/__memcpy_async/try_get_barrier_handle.h"
+    "cuda/__memcpy_async/memcpy_async.h"
+    "cuda/__memcpy_async/memcpy_async_barrier.h"
+    "cuda/__memcpy_async/memcpy_async_tx.h"
+    "cuda/__memcpy_async/memcpy_completion.h"
+  )
 endif()
 
-function(libcudacxx_create_internal_header_test header_name headertest_src)
-  # Create the default target for that file
-  add_library(internal_headertest_${header_name} SHARED "${headertest_src}.cu")
-  cccl_configure_target(internal_headertest_${header_name})
-  target_compile_definitions(
-    internal_headertest_${header_name}
-    PRIVATE _CCCL_HEADER_TEST
-  )
-  target_link_libraries(
-    internal_headertest_${header_name}
-    PUBLIC #
-      libcudacxx.compiler_interface
-      ${cudart_name}
-  )
-
-  # Ensure that if this is an atomic header, we only include the right architectures
-  string(
-    REGEX MATCH
-    "atomic|barrier|latch|semaphore|annotated_ptr|pipeline"
-    match
-    "${header}"
-  )
-  if (match)
-    # Ensure that we only compile the header when we have some architectures enabled
-    if (NOT architectures_at_least_sm70)
-      return()
-    endif()
-    set_target_properties(
-      internal_headertest_${header_name}
-      PROPERTIES CUDA_ARCHITECTURES "${architectures_at_least_sm70}"
-    )
+function(libcudacxx_add_internal_header_test_target target_name)
+  if (NOT ARGN)
+    return()
   endif()
 
-  add_dependencies(
-    libcudacxx.test.internal_headers
-    internal_headertest_${header_name}
+  cccl_generate_header_tests(
+    ${target_name}
+    libcudacxx/include
+    NO_METATARGETS
+    LANGUAGE CUDA
+    HEADER_TEMPLATE "${libcudacxx_SOURCE_DIR}/cmake/header_test.cpp.in"
+    HEADERS ${ARGN}
   )
+
+  target_compile_definitions(${target_name} PRIVATE _CCCL_HEADER_TEST)
+  target_link_libraries(
+    ${target_name}
+    PUBLIC #
+      libcudacxx.compiler_interface
+      CUDA::cudart
+  )
+  add_dependencies(libcudacxx.test.internal_headers ${target_name})
 endfunction()
 
-# We have fallbacks for some type traits that we want to explicitly test so that they do not bitrot
-function(
-  libcudacxx_create_internal_header_fallback_test
-  header_name
-  headertest_src
+libcudacxx_add_internal_header_test_target(
+  libcudacxx.test.internal_headers.base
+  ${internal_headers}
 )
-  # MSVC cannot handle some of the fallbacks
+
+# We have fallbacks for some type traits that we want to explicitly test so that they do not bitrot.
+set(internal_headers_fallback)
+set(internal_headers_fallback_per_header_defines)
+foreach (header IN LISTS internal_headers)
+  # MSVC cannot handle some of the fallbacks.
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     if (
       "${header}" MATCHES "is_base_of"
       OR "${header}" MATCHES "is_nothrow_destructible"
       OR "${header}" MATCHES "is_polymorphic"
     )
-      return()
+      continue()
     endif()
   endif()
 
-  # Search the file for a fallback definition
-  file(READ ${libcudacxx_SOURCE_DIR}/include/${header} header_file)
+  file(READ "${libcudacxx_SOURCE_DIR}/include/${header}" header_file)
   string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
   if (fallback)
-    # Adopt the filename for the fallback tests
-    set(header_name "${header_name}_fallback")
-    libcudacxx_create_internal_header_test(${header_name} ${headertest_src})
-    target_compile_definitions(
-      internal_headertest_${header_name}
-      PRIVATE "-D${fallback}"
+    list(APPEND internal_headers_fallback "${header}")
+    string(
+      REGEX REPLACE
+      "([][+.*^$()|?\\\\])"
+      "\\\\\\1"
+      header_regex
+      "${header}"
+    )
+    list(
+      APPEND internal_headers_fallback_per_header_defines
+      DEFINE
+      "${fallback}"
+      "^${header_regex}$"
     )
   endif()
-endfunction()
-
-function(libcudacxx_add_internal_header_test header)
-  # ${header} contains the "/" from the subfolder, replace by "_" for actual names
-  string(REPLACE "/" "_" header_name "${header}")
-
-  # Create the source file for the header target from the template and add the file to the global project
-  set(headertest_src "headers/${header_name}")
-  configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in"
-    "${headertest_src}.cu"
-  )
-
-  # Create the default target for that file
-  libcudacxx_create_internal_header_test(${header_name} ${headertest_src})
-
-  # Optionally create a fallback target for that file
-  libcudacxx_create_internal_header_fallback_test(${header_name} ${headertest_src})
-endfunction()
-
-foreach (header IN LISTS internal_headers)
-  libcudacxx_add_internal_header_test(${header})
 endforeach()
+
+if (internal_headers_fallback)
+  cccl_generate_header_tests(
+    libcudacxx.test.internal_headers.fallback
+    libcudacxx/include
+    NO_METATARGETS
+    LANGUAGE CUDA
+    HEADER_TEMPLATE "${libcudacxx_SOURCE_DIR}/cmake/header_test.cpp.in"
+    HEADERS ${internal_headers_fallback}
+    PER_HEADER_DEFINES ${internal_headers_fallback_per_header_defines}
+  )
+  target_compile_definitions(
+    libcudacxx.test.internal_headers.fallback
+    PRIVATE _CCCL_HEADER_TEST
+  )
+  target_link_libraries(
+    libcudacxx.test.internal_headers.fallback
+    PUBLIC #
+      libcudacxx.compiler_interface
+      CUDA::cudart
+  )
+  add_dependencies(
+    libcudacxx.test.internal_headers
+    libcudacxx.test.internal_headers.fallback
+  )
+endif()

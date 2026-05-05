@@ -26,6 +26,7 @@
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
@@ -33,8 +34,6 @@
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
-
-#include <stdexcept>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -440,7 +439,7 @@ private:
     const auto __in_range = ::cuda::in_range(__value, 4, 18);
     if (!__in_range)
     {
-      _CCCL_THROW(std::invalid_argument, __message);
+      _CCCL_THROW(::std::invalid_argument, __message);
     }
     return __precision;
   }

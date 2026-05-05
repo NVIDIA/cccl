@@ -51,6 +51,7 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/as_const.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -314,9 +315,9 @@ public:
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, dextents<char,1>, non_checking_layout> m =
         //        mdspan<int, dextents<unsigned, 1>, non_checking_layout>(ptr, 200); leads to an extent of -56 on m
-        _CCCL_ASSERT((static_extent(__r) == dynamic_extent)
-                       || (static_cast<index_type>(__other.extent(__r)) == static_cast<index_type>(static_extent(__r))),
-                     "mdspan: conversion mismatch of source dynamic extents with static extents");
+        _CCCL_ASSERT(
+          (static_extent(__r) == dynamic_extent) || ::cuda::std::cmp_equal(__other.extent(__r), static_extent(__r)),
+          "mdspan: conversion mismatch of source dynamic extents with static extents");
       }
     }
   }
@@ -351,9 +352,9 @@ public:
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, dextents<char,1>, non_checking_layout> m =
         //        mdspan<int, dextents<unsigned, 1>, non_checking_layout>(ptr, 200); leads to an extent of -56 on m
-        _CCCL_ASSERT((static_extent(__r) == dynamic_extent)
-                       || (static_cast<index_type>(__other.extent(__r)) == static_cast<index_type>(static_extent(__r))),
-                     "mdspan: conversion mismatch of source dynamic extents with static extents");
+        _CCCL_ASSERT(
+          (static_extent(__r) == dynamic_extent) || ::cuda::std::cmp_equal(__other.extent(__r), static_extent(__r)),
+          "mdspan: conversion mismatch of source dynamic extents with static extents");
       }
     }
   }
@@ -437,21 +438,19 @@ public:
     return accessor().access(data_handle(), mapping()(__indices...));
   }
 
-  [[nodiscard]] _CCCL_API static constexpr bool __mul_overflow(size_t x, size_t y, size_t* res) noexcept
-  {
-    *res = x * y;
-    return x && ((*res / x) != y);
-  }
-
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __check_size() const noexcept
   {
-    size_t __prod = 1;
-    for (size_t __r = 0; __r != extents_type::rank(); ++__r)
+    if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
     {
-      if (__mul_overflow(__prod, mapping().extents().extent(__r), &__prod))
+      size_t __prod = 1;
+      for (size_t __r = 0; __r < extents_type::rank(); ++__r)
       {
-        return false;
+        const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
+        if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
+        {
+          return false;
+        }
       }
     }
     return true;
@@ -539,7 +538,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const
   {
     const auto& __tmp = mapping(); // workaround for clang with nodiscard
-    return __tmp.stride(__r);
+    return static_cast<index_type>(__tmp.stride(__r));
   }
 };
 

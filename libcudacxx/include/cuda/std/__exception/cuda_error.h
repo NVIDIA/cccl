@@ -23,12 +23,12 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/source_location>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdio>
-#  include <stdexcept>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,7 +40,7 @@ using __cuda_error_t = ::cudaError_t;
 using __cuda_error_t = int;
 #endif
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 namespace __detail
 {
 static char* __format_cuda_error(
@@ -92,16 +92,7 @@ public:
 private:
   __cuda_error_t __status_;
 };
-#endif // !_CCCL_COMPILER(NVRTC)
-
-[[noreturn]] _CCCL_API inline void __throw_cuda_error(
-  [[maybe_unused]] const __cuda_error_t __status,
-  [[maybe_unused]] const char* __msg,
-  [[maybe_unused]] const char* __api                  = nullptr,
-  [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
-{
-  _CCCL_THROW(cuda::cuda_error, __status, __msg, __api, __loc);
-}
+#endif // _CCCL_HOSTED()
 
 _CCCL_END_NAMESPACE_CUDA
 

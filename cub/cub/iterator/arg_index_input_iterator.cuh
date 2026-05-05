@@ -23,9 +23,7 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -78,6 +76,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OutputValueT
  *   The paired value type of the <offset,value> tuple (Default: value type of input iterator)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <typename InputIteratorT,
           typename OffsetT      = ptrdiff_t,
@@ -219,12 +222,12 @@ public:
     offset = 0;
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 CUB_NAMESPACE_END

@@ -3,19 +3,14 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
-// %//RANGE//% TUNE_RADIX_BITS bits 8:9:1
-#define TUNE_RADIX_BITS 8
-
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
-
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector
 {
   using DominantT = cuda::std::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::detail::radix_sort::radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> ::cub::detail::radix_sort::radix_sort_policy
   {
     const auto onesweep = [] {
       const auto scaled =

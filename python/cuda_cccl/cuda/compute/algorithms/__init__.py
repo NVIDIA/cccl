@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from ._binary_search import lower_bound as lower_bound
 from ._binary_search import make_lower_bound as make_lower_bound
 from ._binary_search import make_upper_bound as make_upper_bound

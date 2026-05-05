@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -60,20 +37,16 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub::core::detail
 {
-#  ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
-#    define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
-#  endif
-
 #  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
 {
   extern __shared__ char shmem[];
   Agent::entry(args..., shmem);
 }
 
 template <class Agent, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
   _kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];
@@ -83,11 +56,11 @@ THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_TH
 
 #  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 template <class, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
 {}
 
 template <class, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
 {}
 #  endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 
@@ -163,7 +136,7 @@ struct AgentLauncher : Agent
     assert(plan.grid_size > 0);
   }
 
-  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = 0)
+  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = nullptr)
   {
     return get_agent_plan<Agent>(get_ptx_version());
   }

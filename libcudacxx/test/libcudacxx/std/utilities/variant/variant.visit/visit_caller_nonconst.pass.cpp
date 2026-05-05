@@ -9,6 +9,9 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/std/variant>
 // template <class Visitor, class... Variants>
 // constexpr see below visit(Visitor&& vis, Variants&&... vars);
@@ -24,13 +27,13 @@
 #include "variant_test_helpers.h"
 
 // See https://llvm.org/PR31916
-__host__ __device__ void test_caller_accepts_nonconst()
+TEST_FUNC void test_caller_accepts_nonconst()
 {
   struct A
   {};
   struct Visitor
   {
-    __host__ __device__ void operator()(A&) {}
+    TEST_FUNC void operator()(A&) {}
   };
   cuda::std::variant<A> v;
   cuda::std::visit(Visitor{}, v);

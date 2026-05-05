@@ -24,10 +24,10 @@
 #      include <arm_acle.h>
 #    endif // _CCCL_ARCH(ARM64) && defined(__ARM_ACLE)
 #  endif // !_CCCL_COMPILER(NVHPC)
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 int main(int, char**)
 {
-  static_assert(sizeof(void*) == 8, "");
+  static_assert(sizeof(void*) == 8);
   return 0;
 }

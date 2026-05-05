@@ -233,6 +233,11 @@ public:
    * equivalent: neither one is less than the other. It is not guaranteed
    * that the relative order of these two elements will be preserved by sort.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
    *   `CompareOp` is a model of [Strict Weak Ordering].
@@ -268,6 +273,11 @@ public:
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
    *   `CompareOp` is a model of [Strict Weak Ordering].
@@ -302,6 +312,11 @@ public:
    * Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are
    * equivalent: neither one is less than the other. It is not guaranteed
    * that the relative order of these two elements will be preserved by sort.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
@@ -340,6 +355,11 @@ public:
    *   sorts a fixed amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`
@@ -503,6 +523,11 @@ public:
    * and if the two elements are equivalent (neither `x < y` nor `y < x`) then
    * a postcondition of StableSort is that `x` still precedes `y`.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
    *   `CompareOp` is a model of [Strict Weak Ordering].
@@ -531,6 +556,11 @@ public:
    * elements. That is, if `x` and `y` are elements such that `x` precedes `y`,
    * and if the two elements are equivalent (neither `x < y` nor `y < x`) then
    * a postcondition of StableSort is that `x` still precedes `y`.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
@@ -571,6 +601,11 @@ public:
    *   `ItemsPerThread * BLOCK_THREADS`.
    *   If there is a value that is ordered after `oob_default`, it won't be
    *   placed within `valid_items` boundaries.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
@@ -613,6 +648,11 @@ public:
    *   sorts a fixed amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.

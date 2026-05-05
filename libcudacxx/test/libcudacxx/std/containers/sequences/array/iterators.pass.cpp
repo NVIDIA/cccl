@@ -33,11 +33,11 @@
 
 struct NoDefault
 {
-  __host__ __device__ constexpr NoDefault(int) {}
+  TEST_FUNC constexpr NoDefault(int) {}
 };
 
 template <class T>
-__host__ __device__ constexpr void check_noexcept(T& c)
+TEST_FUNC constexpr void check_noexcept(T& c)
 {
   static_assert(noexcept(c.begin()));
   static_assert(noexcept(c.end()));
@@ -57,15 +57,15 @@ __host__ __device__ constexpr void check_noexcept(T& c)
 }
 
 // gcc-7 and gcc-8 are really helpful here
-__host__ __device__
+TEST_FUNC
 #if !TEST_COMPILER(GCC, <, 8)
-  constexpr
+constexpr
 #endif // !TEST_COMPILER(GCC, <, 8)
   bool
   tests()
 {
   {
-    typedef cuda::std::array<int, 5> C;
+    using C = cuda::std::array<int, 5>;
     C array = {};
     check_noexcept(array);
     typename C::iterator i       = array.begin();
@@ -73,7 +73,7 @@ __host__ __device__
     assert(i == j);
   }
   {
-    typedef cuda::std::array<int, 0> C;
+    using C = cuda::std::array<int, 0>;
     C array = {};
     check_noexcept(array);
     typename C::iterator i       = array.begin();
@@ -82,7 +82,7 @@ __host__ __device__
   }
 
   {
-    typedef cuda::std::array<int, 0> C;
+    using C = cuda::std::array<int, 0>;
     C array = {};
     check_noexcept(array);
     typename C::iterator i       = array.begin();
@@ -92,7 +92,7 @@ __host__ __device__
     assert(j == array.cend());
   }
   {
-    typedef cuda::std::array<int, 1> C;
+    using C = cuda::std::array<int, 1>;
     C array = {1};
     check_noexcept(array);
     typename C::iterator i = array.begin();
@@ -102,7 +102,7 @@ __host__ __device__
     assert(array[0] == 99);
   }
   {
-    typedef cuda::std::array<int, 2> C;
+    using C = cuda::std::array<int, 2>;
     C array = {1, 2};
     check_noexcept(array);
     typename C::iterator i = array.begin();
@@ -113,7 +113,7 @@ __host__ __device__
     assert(array[1] == 2);
   }
   {
-    typedef cuda::std::array<double, 3> C;
+    using C = cuda::std::array<double, 3>;
     C array = {1, 2, 3.5};
     check_noexcept(array);
     typename C::iterator i = array.begin();
@@ -124,7 +124,7 @@ __host__ __device__
     assert(array[1] == 2.0);
   }
   {
-    typedef cuda::std::array<NoDefault, 0> C;
+    using C                 = cuda::std::array<NoDefault, 0>;
     C array                 = {};
     typename C::iterator ib = array.begin();
     typename C::iterator ie = array.end();
@@ -133,14 +133,14 @@ __host__ __device__
 
   { // N3644 testing
     {
-      typedef cuda::std::array<int, 5> C;
+      using C = cuda::std::array<int, 5>;
       C::iterator ii1{}, ii2{};
       C::iterator ii4 = ii1;
       C::const_iterator cii{};
       assert(ii1 == ii2);
       assert(ii1 == ii4);
-      static_assert(cuda::std::is_same_v<decltype(ii1), int*>, "");
-      static_assert(cuda::std::is_same_v<decltype(cii), const int*>, "");
+      static_assert(cuda::std::is_same_v<decltype(ii1), int*>);
+      static_assert(cuda::std::is_same_v<decltype(cii), const int*>);
       assert(ii1 == cii);
 
       assert(!(ii1 != ii2));
@@ -172,7 +172,7 @@ __host__ __device__
       }
     }
     {
-      typedef cuda::std::array<int, 0> C;
+      using C = cuda::std::array<int, 0>;
       C::iterator ii1{}, ii2{};
       C::iterator ii4 = ii1;
       C::const_iterator cii{};
@@ -233,7 +233,7 @@ int main(int, char**)
 {
   tests();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !TEST_COMPILER(GCC, <, 8)
-  static_assert(tests(), "");
+  static_assert(tests());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !TEST_COMPILER(GCC, <, 8)
   return 0;
 }

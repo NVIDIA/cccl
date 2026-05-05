@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // friend constexpr void iter_swap(const iterator& l, const iterator& r) noexcept(see below)
 //   requires (indirectly_swappable<iterator_t<maybe-const<Const, Views>>> && ...);
 
@@ -19,9 +22,9 @@
 
 struct ThrowingMove
 {
-  __host__ __device__ constexpr ThrowingMove() noexcept {}
-  __host__ __device__ constexpr ThrowingMove(ThrowingMove&&) noexcept(false) {}
-  __host__ __device__ ThrowingMove& operator=(ThrowingMove&&) noexcept(false)
+  TEST_FUNC constexpr ThrowingMove() noexcept {}
+  TEST_FUNC constexpr ThrowingMove(ThrowingMove&&) noexcept(false) {}
+  TEST_FUNC ThrowingMove& operator=(ThrowingMove&&) noexcept(false)
   {
     return *this;
   }
@@ -29,13 +32,13 @@ struct ThrowingMove
 
 struct ToThrowingMove
 {
-  __host__ __device__ constexpr ThrowingMove operator()(int) const noexcept
+  TEST_FUNC constexpr ThrowingMove operator()(int) const noexcept
   {
     return ThrowingMove{};
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int a[]    = {1, 2, 3, 4};
   double b[] = {0.1, 0.2, 0.3};

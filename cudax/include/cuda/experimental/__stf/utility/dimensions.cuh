@@ -25,7 +25,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
@@ -491,7 +490,7 @@ public:
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
     // Help the compiler which may not detect that a device lambda is calling a device lambda
-    CUDASTF_NO_DEVICE_STACK
+    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
     return make_tuple_indexwise<dimensions>([&](auto i) {
       // included
       const ::std::ptrdiff_t begin_i  = get_begin(i);
@@ -500,7 +499,7 @@ public:
       index /= extent_i;
       return result;
     });
-    CUDASTF_NO_DEVICE_STACK
+    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
   }
 
 private:

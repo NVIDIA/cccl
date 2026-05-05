@@ -21,10 +21,11 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <tuple>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
+#include "test_macros.h"
 // vvv MyPair & tuple protocol for MyPair vvv
 
 namespace my_namespace
@@ -37,7 +38,7 @@ struct MyPair
 };
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr auto& get(MyPair<A, B>& p)
+[[nodiscard]] TEST_FUNC constexpr auto& get(MyPair<A, B>& p)
 {
   if constexpr (I == 0)
   {
@@ -50,7 +51,7 @@ template <cuda::std::size_t I, class A, class B>
 }
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr auto&& get(MyPair<A, B>&& p)
+[[nodiscard]] TEST_FUNC constexpr auto&& get(MyPair<A, B>&& p)
 {
   if constexpr (I == 0)
   {
@@ -63,7 +64,7 @@ template <cuda::std::size_t I, class A, class B>
 }
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr const auto& get(const MyPair<A, B>& p)
+[[nodiscard]] TEST_FUNC constexpr const auto& get(const MyPair<A, B>& p)
 {
   if constexpr (I == 0)
   {
@@ -76,7 +77,7 @@ template <cuda::std::size_t I, class A, class B>
 }
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr const auto&& get(const MyPair<A, B>&& p)
+[[nodiscard]] TEST_FUNC constexpr const auto&& get(const MyPair<A, B>&& p)
 {
   if constexpr (I == 0)
   {
@@ -108,7 +109,7 @@ struct cuda::std::tuple_element<1, my_namespace::MyPair<A, B>>
 // ^^^ MyPair & tuple protocol for MyPair ^^^
 
 template <class T, bool is_noexcept, class TupleLike>
-__host__ __device__ constexpr void test_constructor_from_tuple_like(const TupleLike& tuple_like)
+TEST_FUNC constexpr void test_constructor_from_tuple_like(const TupleLike& tuple_like)
 {
   using C = cuda::complex<T>;
 
@@ -127,7 +128,7 @@ __host__ __device__ constexpr void test_constructor_from_tuple_like(const TupleL
 }
 
 template <class T>
-__host__ __device__ constexpr void test_constructor_from_tuple_like()
+TEST_FUNC constexpr void test_constructor_from_tuple_like()
 {
   T real_part(1);
   T imag_part(2);
@@ -148,7 +149,7 @@ __host__ __device__ constexpr void test_constructor_from_tuple_like()
   test_constructor_from_tuple_like<T, false>(my_namespace::MyPair<T&, T&&>{real_part, T{imag_part}});
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_constructor_from_tuple_like<float>();
   test_constructor_from_tuple_like<double>();
@@ -180,23 +181,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
-
-template <class... Args>
-struct cuda::std::tuple_size<std::tuple<Args...>> : cuda::std::integral_constant<cuda::std::size_t, sizeof...(Args)>
-{};
-
-template <std::size_t I, class... Args>
-struct cuda::std::tuple_element<I, std::tuple<Args...>> : std::tuple_element<I, cuda::std::tuple<Args...>>
-{};
-
-template <class A, class B>
-struct cuda::std::tuple_size<std::pair<A, B>> : cuda::std::integral_constant<cuda::std::size_t, 2>
-{};
-
-template <cuda::std::size_t I, class A, class B>
-struct cuda::std::tuple_element<I, std::pair<A, B>> : cuda::std::conditional<I == 0, A, B>
-{};
+#if _CCCL_HOSTED()
 
 template <class T>
 void test_constructor_from_host_tuple_like()
@@ -245,14 +230,14 @@ void test_host_types()
 #  endif // _CCCL_HAS_INT128()
 }
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 int main(int, char**)
 {
   test();
   static_assert(test());
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   NV_IF_TARGET(NV_IS_HOST, (test_host_types();))
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
   return 0;
 }

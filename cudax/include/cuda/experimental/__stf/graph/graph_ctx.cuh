@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
@@ -34,7 +35,7 @@
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 #include <mutex>
 
@@ -54,16 +55,16 @@ public:
   uncached_graph_allocator() = default;
 
   void*
-  allocate(backend_ctx_untyped& bctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     // This is not implemented yet
     EXPECT(!memory_node.is_composite(), "Composite data places are not implemented yet.");
 
     void* result = nullptr;
 
-    const size_t graph_stage                   = bctx.stage();
-    const cudaGraph_t graph                    = bctx.graph();
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_stage);
+    const size_t graph_stage                   = ctx.stage();
+    const cudaGraph_t graph                    = ctx.graph();
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
     cudaGraphNode_t out                        = nullptr;
 
     if (memory_node.is_host())
@@ -89,17 +90,17 @@ public:
       assert(s > 0);
     }
 
-    reserved::fork_from_graph_node(bctx, out, graph, graph_stage, prereqs, "alloc");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "alloc");
     return result;
   }
 
   void deallocate(
-    backend_ctx_untyped& bctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /*sz*/) override
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /*sz*/) override
   {
-    const cudaGraph_t graph                    = bctx.graph();
-    const size_t graph_stage                   = bctx.stage();
+    const cudaGraph_t graph                    = ctx.graph();
+    const size_t graph_stage                   = ctx.stage();
     cudaGraphNode_t out                        = nullptr;
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_stage);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
     if (memory_node.is_host())
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
@@ -109,7 +110,7 @@ public:
     {
       cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
     }
-    reserved::fork_from_graph_node(bctx, out, graph, graph_stage, prereqs, "dealloc");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "dealloc");
   }
 
   ::std::string to_string() const override
@@ -187,9 +188,23 @@ class graph_ctx : public backend_ctx<graph_ctx>
     }
 
     // Note that graph contexts with an explicit graph passed by the user cannot use stages
-    impl(cudaGraph_t g)
-        : _graph(wrap_cuda_graph(g))
+    impl(cudaGraph_t g, async_resources_handle _async_resources = async_resources_handle(nullptr))
+        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        , _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
+    {
+      reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
+    }
+
+    // Constructor with explicit graph, user stream, and async resources
+    impl(cudaGraph_t g,
+         cudaStream_t user_stream,
+         async_resources_handle _async_resources = async_resources_handle(nullptr))
+        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        , submitted_stream(user_stream)
+        , _graph(wrap_cuda_graph(g))
+        , explicit_graph(true)
+        , blocking_finalize(false)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
     }
@@ -211,6 +226,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
     {
       assert(_graph.get());
       return *_graph;
+    }
+
+    bool is_graph_ctx() const override
+    {
+      return true;
     }
 
     executable_graph_cache_stat* graph_get_cache_stat() override
@@ -280,8 +300,13 @@ public:
   }
 
   /// @brief Constructor taking a user-provided graph. User code is not supposed to destroy the graph later.
-  graph_ctx(cudaGraph_t g)
-      : backend_ctx<graph_ctx>(::std::make_shared<impl>(g))
+  graph_ctx(cudaGraph_t g, async_resources_handle handle = async_resources_handle(nullptr))
+      : backend_ctx<graph_ctx>(::std::make_shared<impl>(g, mv(handle)))
+  {}
+
+  /// @brief Constructor with explicit graph, support stream, and async resources
+  graph_ctx(cudaGraph_t g, cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
+      : backend_ctx<graph_ctx>(::std::make_shared<impl>(g, user_stream, mv(handle)))
   {}
   ///@}
 
@@ -460,7 +485,7 @@ public:
     {
       /* This will lookup in the cache (if any) and update an existing entry, or
        * instantiate a graph if none is found. */
-      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, *g);
       state.exec_graph  = query_result.first;
 
       hit = query_result.second; // indicate if this was a hit or miss in the cache

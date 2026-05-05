@@ -82,6 +82,7 @@
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
         "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_PLACES": true,
         "cudax_ENABLE_CUDASTF": true,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
@@ -102,6 +103,22 @@
         "CMAKE_CUDA_FLAGS": "-G",
         "CCCL_ENABLE_BENCHMARKS": false,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": true
+      }
+    },
+    {
+      "name": "all-tidy",
+      "displayName": "clang-tidy",
+      "inherits": "all-dev-debug",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17",
+        "THRUST_MULTICONFIG_WORKLOAD": "MEDIUM",
+        "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_CLANG_TIDY": true,
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CUDA_FLAGS": "",
+        "CMAKE_CUDA_COMPILER": "clang++"
       }
     },
     {
@@ -198,6 +215,122 @@
       }
     },
     {
+      "name": "cub-nolid",
+      "displayName": "CUB: No Launcher",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": true,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": false
+      }
+    },
+    {
+      "name": "cub-nolid-cpp17",
+      "displayName": "CUB: No Launcher C++17",
+      "inherits": "cub-nolid",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-nolid-cpp20",
+      "displayName": "CUB: No Launcher C++20",
+      "inherits": "cub-nolid",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
+      "name": "cub-lid0",
+      "displayName": "CUB: Host Launch",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": true,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": false
+      }
+    },
+    {
+      "name": "cub-lid0-cpp17",
+      "displayName": "CUB: Host Launch C++17",
+      "inherits": "cub-lid0",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-lid0-cpp20",
+      "displayName": "CUB: Host Launch C++20",
+      "inherits": "cub-lid0",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
+      "name": "cub-lid1",
+      "displayName": "CUB: Device Launch",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": true,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": false
+      }
+    },
+    {
+      "name": "cub-lid1-cpp17",
+      "displayName": "CUB: Device Launch C++17",
+      "inherits": "cub-lid1",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-lid1-cpp20",
+      "displayName": "CUB: Device Launch C++20",
+      "inherits": "cub-lid1",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
+      "name": "cub-lid2",
+      "displayName": "CUB: Graph Launch",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": true
+      }
+    },
+    {
+      "name": "cub-lid2-cpp17",
+      "displayName": "CUB: Graph Launch C++17",
+      "inherits": "cub-lid2",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-lid2-cpp20",
+      "displayName": "CUB: Graph Launch C++20",
+      "inherits": "cub-lid2",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
       "name": "thrust",
       "displayName": "Thrust",
       "inherits": "base",
@@ -237,6 +370,7 @@
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
         "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_PLACES": true,
         "cudax_ENABLE_CUDASTF": true,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
@@ -270,6 +404,14 @@
         "CCCL_ENABLE_C_PARALLEL": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
+      }
+    },
+    {
+      "name": "cccl-c-parallel-hostjit",
+      "displayName": "CCCL C Parallel Library (HostJIT)",
+      "inherits": "cccl-c-parallel",
+      "cacheVariables": {
+        "CCCL_C_Parallel_ENABLE_HOSTJIT": true
       }
     },
     {
@@ -330,13 +472,15 @@
     },
     {
       "name": "benchmark",
-      "displayName": "CUB/Thrust benchmarking",
+      "displayName": "CCCL benchmarking",
       "inherits": "cub-benchmark",
       "cacheVariables": {
         "CCCL_ENABLE_THRUST": true,
+        "CCCL_ENABLE_LIBCUDACXX": true,
         "THRUST_ENABLE_EXAMPLES": false,
         "THRUST_ENABLE_TESTING": false,
-        "THRUST_ENABLE_HEADER_TESTING": false
+        "THRUST_ENABLE_HEADER_TESTING": false,
+        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false
       }
     }
   ],
@@ -350,6 +494,13 @@
       "configurePreset": "all-dev-debug"
     },
     {
+      "name": "all-tidy",
+      "configurePreset": "all-tidy",
+      "targets": [
+        "cccl.tidy"
+      ]
+    },
+    {
       "name": "install",
       "configurePreset": "install"
     },
@@ -361,6 +512,7 @@
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
+        "libcudacxx.test.nvtarget",
         "libcudacxx.test.atomics.ptx",
         "libcudacxx.test.c2h_all"
       ]
@@ -419,6 +571,54 @@
       "configurePreset": "cub-cpp20"
     },
     {
+      "name": "cub-nolid",
+      "configurePreset": "cub-nolid"
+    },
+    {
+      "name": "cub-nolid-cpp17",
+      "configurePreset": "cub-nolid-cpp17"
+    },
+    {
+      "name": "cub-nolid-cpp20",
+      "configurePreset": "cub-nolid-cpp20"
+    },
+    {
+      "name": "cub-lid0",
+      "configurePreset": "cub-lid0"
+    },
+    {
+      "name": "cub-lid0-cpp17",
+      "configurePreset": "cub-lid0-cpp17"
+    },
+    {
+      "name": "cub-lid0-cpp20",
+      "configurePreset": "cub-lid0-cpp20"
+    },
+    {
+      "name": "cub-lid1",
+      "configurePreset": "cub-lid1"
+    },
+    {
+      "name": "cub-lid1-cpp17",
+      "configurePreset": "cub-lid1-cpp17"
+    },
+    {
+      "name": "cub-lid1-cpp20",
+      "configurePreset": "cub-lid1-cpp20"
+    },
+    {
+      "name": "cub-lid2",
+      "configurePreset": "cub-lid2"
+    },
+    {
+      "name": "cub-lid2-cpp17",
+      "configurePreset": "cub-lid2-cpp17"
+    },
+    {
+      "name": "cub-lid2-cpp20",
+      "configurePreset": "cub-lid2-cpp20"
+    },
+    {
       "name": "thrust",
       "configurePreset": "thrust"
     },
@@ -445,6 +645,10 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel"
+    },
+    {
+      "name": "cccl-c-parallel-hostjit",
+      "configurePreset": "cccl-c-parallel-hostjit"
     },
     {
       "name": "cccl-c-stf",
@@ -567,6 +771,7 @@
     },
     {
       "name": "cub-nolid",
+      "configurePreset": "cub-nolid",
       "inherits": "cub",
       "filter": {
         "exclude": {
@@ -576,16 +781,17 @@
     },
     {
       "name": "cub-nolid-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-nolid-cpp17",
       "inherits": "cub-nolid"
     },
     {
       "name": "cub-nolid-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-nolid-cpp20",
       "inherits": "cub-nolid"
     },
     {
       "name": "cub-lid0",
+      "configurePreset": "cub-lid0",
       "inherits": "cub",
       "filter": {
         "include": {
@@ -595,16 +801,17 @@
     },
     {
       "name": "cub-lid0-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-lid0-cpp17",
       "inherits": "cub-lid0"
     },
     {
       "name": "cub-lid0-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-lid0-cpp20",
       "inherits": "cub-lid0"
     },
     {
       "name": "cub-lid1",
+      "configurePreset": "cub-lid1",
       "inherits": "cub",
       "filter": {
         "include": {
@@ -614,16 +821,17 @@
     },
     {
       "name": "cub-lid1-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-lid1-cpp17",
       "inherits": "cub-lid1"
     },
     {
       "name": "cub-lid1-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-lid1-cpp20",
       "inherits": "cub-lid1"
     },
     {
       "name": "cub-lid2",
+      "configurePreset": "cub-lid2",
       "inherits": "cub",
       "filter": {
         "include": {
@@ -633,12 +841,12 @@
     },
     {
       "name": "cub-lid2-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-lid2-cpp17",
       "inherits": "cub-lid2"
     },
     {
       "name": "cub-lid2-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-lid2-cpp20",
       "inherits": "cub-lid2"
     },
     {
@@ -719,6 +927,11 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
+    },
+    {
+      "name": "cccl-c-parallel-hostjit",
+      "configurePreset": "cccl-c-parallel-hostjit",
       "inherits": "base"
     },
     {

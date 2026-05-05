@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cuda/std/complex>
 
 // template<class T>
@@ -20,14 +23,14 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   cuda::std::complex<T> z(3, 4);
   assert(abs(z) == T(5));
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

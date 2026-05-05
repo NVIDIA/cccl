@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from __future__ import annotations
 
+import inspect
+from typing import get_type_hints
+
 import numpy as np
 
 from ._bindings import TypeEnum, TypeInfo
@@ -28,9 +31,18 @@ class TypeDescriptor:
         self._type_info = TypeInfo(size, alignment, type_enum)
         self._dtype = _ENUM_TO_DTYPE.get(type_enum, np.dtype(f"V{size}"))
 
+    @property
     def info(self) -> TypeInfo:
         """Return the TypeInfo for this type."""
         return self._type_info
+
+    @property
+    def size(self):
+        return self._type_info.size
+
+    @property
+    def alignment(self):
+        return self._type_info.alignment
 
     @property
     def dtype(self) -> np.dtype:
@@ -89,11 +101,11 @@ class StructTypeDescriptor(TypeDescriptor):
         # Compare by fields (TypeDescriptors) to correctly distinguish structs
         # with different pointer pointee types, which have identical numpy dtypes
         # (both uint64) but different semantics.
-        return self._fields == other._fields
+        # Must compare as ordered items because field order matters for struct layout.
+        return list(self._fields.items()) == list(other._fields.items())
 
     def __hash__(self):
-        # Convert to a hashable tuple of (name, type_descriptor) pairs
-        return hash(tuple(sorted((k, v) for k, v in self._fields.items())))
+        return hash(tuple(self._fields.items()))
 
 
 class PointerTypeDescriptor(TypeDescriptor):
@@ -214,6 +226,50 @@ _DTYPE_TO_TD: dict[np.dtype, TypeDescriptor] = {
 def to_ctypes_type(td: TypeDescriptor):
     """Convert a TypeDescriptor to a ctypes type."""
     return np.ctypeslib.as_ctypes_type(td.dtype)
+
+
+def _annotation_to_type_descriptor(annotation):
+    """
+    Convert a type annotation to a TypeDescriptor.
+
+    Handles:
+    - TypeDescriptor: returns as-is
+    - gpu_struct classes: returns their _type_descriptor
+    - numpy dtypes/types: converts via from_numpy_dtype
+    """
+    from .struct import _is_struct_type
+
+    if isinstance(annotation, TypeDescriptor):
+        return annotation
+
+    if _is_struct_type(annotation):
+        return annotation._type_descriptor  # type: ignore[union-attr]
+
+    # numpy dtype or type
+    return from_numpy_dtype(np.dtype(annotation))
+
+
+def signature_from_annotations(py_func):
+    try:
+        annotations = get_type_hints(py_func)
+    except Exception:
+        annotations = py_func.__annotations__
+    spec = inspect.getfullargspec(py_func)
+    arg_names = list(spec.args)
+
+    input_tds = []
+    # Try to get input types from annotations
+    for name in arg_names:
+        if name in annotations:
+            input_tds.append(_annotation_to_type_descriptor(annotations[name]))
+            break
+
+    if "return" in annotations:
+        output_td = _annotation_to_type_descriptor(annotations["return"])
+    else:
+        output_td = None
+
+    return input_tds, output_td
 
 
 __all__ = [

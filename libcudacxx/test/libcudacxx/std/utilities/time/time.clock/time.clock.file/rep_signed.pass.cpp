@@ -23,7 +23,7 @@
 
 int main(int, char**)
 {
-  static_assert(cuda::std::is_signed<cuda::std::chrono::file_clock::rep>::value, "");
+  static_assert(cuda::std::is_signed<cuda::std::chrono::file_clock::rep>::value);
   assert(cuda::std::chrono::file_clock::duration::min() < cuda::std::chrono::file_clock::duration::zero());
 
   return 0;

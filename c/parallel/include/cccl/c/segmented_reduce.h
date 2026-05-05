@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -72,13 +73,15 @@ CCCL_C_API CUresult cccl_device_segmented_reduce(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  uint64_t num_offsets,
+  uint64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
   cccl_op_t op,
   cccl_value_t init,
+  size_t max_segment_size,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

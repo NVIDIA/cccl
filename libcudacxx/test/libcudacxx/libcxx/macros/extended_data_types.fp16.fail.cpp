@@ -6,6 +6,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// tile does not support access to members of `__half` or `__nv_bfloat16`
+
 #include <cuda/std/__cccl/extended_data_types.h>
 
 #include "test_macros.h"

@@ -110,7 +110,7 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
   }
 };
 
-inline _CCCL_HOST_DEVICE void
+_CCCL_API inline void
 atomic_thread_fence(memory_order __m, [[maybe_unused]] thread_scope _Scope = thread_scope::thread_scope_system)
 {
   NV_DISPATCH_TARGET(
@@ -133,7 +133,7 @@ atomic_thread_fence(memory_order __m, [[maybe_unused]] thread_scope _Scope = thr
     (::cuda::std::atomic_thread_fence(__m);))
 }
 
-inline _CCCL_HOST_DEVICE void atomic_signal_fence(memory_order __m)
+_CCCL_API inline void atomic_signal_fence(memory_order __m)
 {
   ::cuda::std::atomic_signal_fence(__m);
 }

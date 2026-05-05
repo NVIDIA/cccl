@@ -16,11 +16,11 @@
 struct A
 {};
 
-__host__ __device__ A source()
+TEST_FUNC A source()
 {
   return A();
 }
-__host__ __device__ const A csource()
+TEST_FUNC const A csource()
 {
   return A();
 }

@@ -12,6 +12,8 @@
 
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Token>
 struct Common
 {};
@@ -41,7 +43,7 @@ template <class Token>
 struct IndirectlyReadable
 {
   using value_type = T1<Token>;
-  __host__ __device__ T2<Token>& operator*() const;
+  TEST_FUNC T2<Token>& operator*() const;
 };
 
 #endif // LIBCXX_TEST_SUPPORT_INDIRECTLY_READABLE_H

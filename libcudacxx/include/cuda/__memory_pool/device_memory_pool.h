@@ -25,6 +25,7 @@
 
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -35,6 +36,10 @@
 //! The \c device_memory_pool class provides an asynchronous memory resource
 //! that allocates device memory in stream order.
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
@@ -56,7 +61,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!    exceeds the lifetime of the ``device_memory_pool_ref``.
 //!
 //! @endrst
-class device_memory_pool_ref : public __memory_pool_base
+class device_memory_pool_ref
+    : public __memory_pool_base
+    , public ::cuda::mr::memory_resource_base<device_memory_pool_ref>
 {
 public:
   //! @brief  Constructs the device_memory_pool_ref from a \c cudaMemPool_t.
@@ -81,11 +88,11 @@ public:
 //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
 //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
 //! @returns The default memory pool of the specified device.
-[[nodiscard]] inline device_memory_pool_ref device_default_memory_pool(::cuda::device_ref __device)
+[[nodiscard]] inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
 {
-  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-  return device_memory_pool_ref(__pool);
+  static device_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED)};
+  return __pool;
 }
 
 //! @rst
@@ -114,7 +121,7 @@ struct device_memory_pool : device_memory_pool_ref
   //! ``cudaMallocAsync``.
   //! @param __device_id The device id of the device the stream pool is
   //! constructed on.
-  //! @param __pool_properties Optional, additional properties of the pool to be
+  //! @param __properties Optional, additional properties of the pool to be
   //! created.
   _CCCL_HOST_API device_memory_pool(::cuda::device_ref __device_id, memory_pool_properties __properties = {})
       : device_memory_pool_ref(__create_cuda_mempool(
@@ -137,10 +144,10 @@ struct device_memory_pool : device_memory_pool_ref
   }
 
   //! @brief Returns a \c device_memory_pool_ref for this \c device_memory_pool.
-  //! The result is the same as if this object was cast to a \c device_memory_pool_ref.
-  [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref as_ref() noexcept
+  //! We return by reference to ensure that we can subsequently convert to a resource_ref
+  [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref& as_ref() noexcept
   {
-    return device_memory_pool_ref(__pool_);
+    return static_cast<device_memory_pool_ref&>(*this);
   }
 
   device_memory_pool(const device_memory_pool&)            = delete;
@@ -152,9 +159,11 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>);
 
-static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>);
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

@@ -12,6 +12,11 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(
+  CCCL_ENABLE_PRAGMA_SYSTEM_HEADER
+  "When OFF, disables the system header pragma in CCCL headers so that their warnings are visible."
+  OFF
+)
 option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
 
 function(
@@ -98,8 +103,10 @@ function(cccl_build_compiler_targets)
     list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   endif()
 
-  # Ensure that we build our tests without treating ourself as system header
-  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  if (NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
+    # Ensure that we build our tests without treating ourself as system header
+    list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  endif()
 
   if (NOT CCCL_ENABLE_EXCEPTIONS)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
@@ -178,6 +185,40 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Wunused-local-typedefs" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
 
+    # Clang-only
+    append_option_if_available("-Wnvcc-compat" cxx_compile_options)
+    append_option_if_available("-Wimplicit-fallthrough" cxx_compile_options)
+    append_option_if_available(
+      "-fdiagnostics-show-template-tree"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wignored-qualifiers" cxx_compile_options)
+    append_option_if_available(
+      "-Wmissing-field-initializers"
+      cxx_compile_options
+    )
+    # Inundated with error: ISO C++11 requires at least one argument for the "..." in a
+    # variadic macro for _CCCL_REQUIRES_EXPR(), so cannot enable this.
+    #
+    # append_option_if_available("-pedantic" cxx_compile_options)
+    append_option_if_available("-Wsign-compare" cxx_compile_options)
+    append_option_if_available(
+      "-Warray-bounds-pointer-arithmetic"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wassign-enum" cxx_compile_options)
+    append_option_if_available("-Wformat-pedantic" cxx_compile_options)
+    append_option_if_available("-Walloc-size" cxx_compile_options)
+    append_option_if_available("-Walloc-zero" cxx_compile_options)
+    append_option_if_available("-Wtsan" cxx_compile_options)
+    append_option_if_available("-Wenum-conversion" cxx_compile_options)
+    append_option_if_available("-Wpacked" cxx_compile_options)
+    # Clang and GCC
+    append_option_if_available(
+      "-ftemplate-backtrace-limit=0"
+      cxx_compile_options
+    )
+    append_option_if_available("-fmacro-backtrace-limit=0" cxx_compile_options)
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
     append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341

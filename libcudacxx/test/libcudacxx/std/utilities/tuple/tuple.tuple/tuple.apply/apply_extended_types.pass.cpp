@@ -6,7 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: gcc-6
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
 
 // <cuda/std/tuple>
 
@@ -32,17 +34,17 @@ TEST_GLOBAL_VARIABLE int count = 0;
 
 struct A_int_0
 {
-  __host__ __device__ A_int_0()
+  TEST_FUNC A_int_0()
       : obj1(0)
   {}
-  __host__ __device__ A_int_0(int x)
+  TEST_FUNC A_int_0(int x)
       : obj1(x)
   {}
-  __host__ __device__ int mem1()
+  TEST_FUNC int mem1()
   {
     return ++count;
   }
-  __host__ __device__ int mem2() const
+  TEST_FUNC int mem2() const
   {
     return ++count;
   }
@@ -51,13 +53,13 @@ struct A_int_0
 
 struct A_int_1
 {
-  __host__ __device__ A_int_1() {}
-  __host__ __device__ A_int_1(int) {}
-  __host__ __device__ int mem1(int x)
+  TEST_FUNC A_int_1() {}
+  TEST_FUNC A_int_1(int) {}
+  TEST_FUNC int mem1(int x)
   {
     return count += x;
   }
-  __host__ __device__ int mem2(int x) const
+  TEST_FUNC int mem2(int x) const
   {
     return count += x;
   }
@@ -65,13 +67,13 @@ struct A_int_1
 
 struct A_int_2
 {
-  __host__ __device__ A_int_2() {}
-  __host__ __device__ A_int_2(int) {}
-  __host__ __device__ int mem1(int x, int y)
+  TEST_FUNC A_int_2() {}
+  TEST_FUNC A_int_2(int) {}
+  TEST_FUNC int mem1(int x, int y)
   {
     return count += (x + y);
   }
-  __host__ __device__ int mem2(int x, int y) const
+  TEST_FUNC int mem2(int x, int y) const
   {
     return count += (x + y);
   }
@@ -80,15 +82,15 @@ struct A_int_2
 template <class A>
 struct A_wrap
 {
-  __host__ __device__ A_wrap() {}
-  __host__ __device__ A_wrap(int x)
+  TEST_FUNC A_wrap() {}
+  TEST_FUNC A_wrap(int x)
       : m_a(x)
   {}
-  __host__ __device__ A& operator*()
+  TEST_FUNC A& operator*()
   {
     return m_a;
   }
-  __host__ __device__ A const& operator*() const
+  TEST_FUNC A const& operator*() const
   {
     return m_a;
   }
@@ -102,10 +104,10 @@ using A_wrap_2 = A_wrap<A_int_2>;
 template <class A>
 struct A_base : public A
 {
-  __host__ __device__ A_base()
+  TEST_FUNC A_base()
       : A()
   {}
-  __host__ __device__ A_base(int x)
+  TEST_FUNC A_base(int x)
       : A(x)
   {}
 };
@@ -122,7 +124,7 @@ template <class Tuple,
           class ConstTupleWrap,
           class TupleBase,
           class ConstTupleBase>
-__host__ __device__ void test_ext_int_0()
+TEST_FUNC void test_ext_int_0()
 {
   count      = 0;
   using T    = A_int_0;
@@ -235,7 +237,7 @@ template <class Tuple,
           class ConstTupleWrap,
           class TupleBase,
           class ConstTupleBase>
-__host__ __device__ void test_ext_int_1()
+TEST_FUNC void test_ext_int_1()
 {
   count      = 0;
   using T    = A_int_1;
@@ -321,7 +323,7 @@ template <class Tuple,
           class ConstTupleWrap,
           class TupleBase,
           class ConstTupleBase>
-__host__ __device__ void test_ext_int_2()
+TEST_FUNC void test_ext_int_2()
 {
   count      = 0;
   using T    = A_int_2;

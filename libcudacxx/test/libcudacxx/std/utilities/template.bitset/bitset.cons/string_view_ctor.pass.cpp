@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085905: Segmentation fault (core dumped) tileiras
+
 //    template<class charT, class traits>
 //        explicit bitset(
 //            const basic_string_view<charT,traits>& str,
@@ -93,10 +96,10 @@ void test_exceptions()
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_string_ctor()
+TEST_FUNC constexpr void test_string_ctor()
 {
-  static_assert(!cuda::std::is_convertible_v<cuda::std::string_view, cuda::std::bitset<N>>, "");
-  static_assert(cuda::std::is_constructible_v<cuda::std::bitset<N>, cuda::std::string_view>, "");
+  static_assert(!cuda::std::is_convertible_v<cuda::std::string_view, cuda::std::bitset<N>>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::bitset<N>, cuda::std::string_view>);
   {
     cuda::std::string_view s("1010101010");
     cuda::std::bitset<N> v(s);
@@ -179,22 +182,26 @@ __host__ __device__ constexpr void test_string_ctor()
   }
 }
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct Nonsense
 {
-  __host__ __device__ virtual ~Nonsense() {}
+  TEST_FUNC virtual ~Nonsense() {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
-__host__ __device__ constexpr void test_for_non_eager_instantiation()
+TEST_FUNC constexpr void test_for_non_eager_instantiation()
 {
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
   // Ensure we don't accidentally instantiate `cuda::std::basic_string_view<Nonsense>`
   // since it may not be well formed and can cause an error in the
   // non-immediate context.
-  static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*>::value, "");
+  static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*>::value);
   static_assert(
     !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value, "");
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_string_ctor<0>();
   test_string_ctor<1>();
@@ -213,7 +220,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

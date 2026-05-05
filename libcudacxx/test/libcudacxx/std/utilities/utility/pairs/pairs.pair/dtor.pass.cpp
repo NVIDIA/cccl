@@ -27,12 +27,12 @@
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_trivially_destructible<cuda::std::pair<int, float>>::value), "");
+  static_assert((cuda::std::is_trivially_destructible<cuda::std::pair<int, float>>::value));
   /*
   static_assert((!cuda::std::is_trivially_destructible<
       cuda::std::pair<int, cuda::std::string> >::value), "");
   */
-  static_assert((!cuda::std::is_trivially_destructible<cuda::std::pair<int, DefaultOnly>>::value), "");
+  static_assert((!cuda::std::is_trivially_destructible<cuda::std::pair<int, DefaultOnly>>::value));
 
   return 0;
 }

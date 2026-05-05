@@ -26,11 +26,8 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,14 +37,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isfinite)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_ISFINITE
+#endif // _CCCL_TILE_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isfinite_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
+#if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isfinite(__x);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return !::cuda::std::isnan(__x) && !::cuda::std::isinf(__x);
 }
 
@@ -56,10 +59,12 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
+#  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isfinite(__x);
   }
+#  endif // !_CCCL_TILE_COMPILATION()
 #  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<float>) != __fp_exp_mask_of_v<float>;
 #  else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
@@ -73,10 +78,12 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
+#  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isfinite(__x);
   }
+#  endif // !_CCCL_TILE_COMPILATION()
 #  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
 #  else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv

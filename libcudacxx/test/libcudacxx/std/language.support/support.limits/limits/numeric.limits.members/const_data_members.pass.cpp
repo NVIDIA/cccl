@@ -42,11 +42,11 @@
 */
 
 template <class T>
-__host__ __device__ void test(T)
+TEST_FUNC void test(T)
 {}
 
 template <class T>
-__host__ __device__ void test_type_helper()
+TEST_FUNC void test_type_helper()
 {
   test(cuda::std::numeric_limits<T>::is_specialized);
   test(cuda::std::numeric_limits<T>::digits);
@@ -74,7 +74,7 @@ __host__ __device__ void test_type_helper()
 }
 
 template <class T>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_type_helper<T>();
   test_type_helper<const T>();
@@ -92,9 +92,9 @@ int main(int, char**)
   test_type<signed char>();
   test_type<unsigned char>();
   test_type<wchar_t>();
-#if TEST_STD_VER >= 2020 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test_type<char8_t>();
-#endif // TEST_STD_VER >= 2020 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
   test_type<char16_t>();
   test_type<char32_t>();
   test_type<short>();

@@ -18,7 +18,7 @@ struct A
   int ma1;
   unsigned ma2;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 struct B
@@ -26,7 +26,7 @@ struct B
   int mb1;
   unsigned mb2;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 union U
@@ -44,7 +44,7 @@ struct NonStandard
   int mns1;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
 #if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS)
   // 1. Only the first member of a class is pointer interconvertible with the class itself

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,11 +15,11 @@
 
 #include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/uninitialized_fill.h>
 
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -65,13 +52,15 @@ inline constexpr bool needs_default_construct_via_allocator<std::allocator<U>, T
 template <typename Allocator, typename Pointer, typename Size>
 _CCCL_HOST_DEVICE void value_initialize_range(Allocator& a, Pointer p, Size n)
 {
-  if constexpr (needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>)
+  if constexpr (needs_default_construct_via_allocator<Allocator,
+                                                      typename ::cuda::std::pointer_traits<Pointer>::element_type>)
   {
     thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, construct1_via_allocator<Allocator>{a});
   }
   else
   {
-    thrust::uninitialized_fill_n(allocator_system<Allocator>::get(a), p, n, typename pointer_element<Pointer>::type());
+    thrust::uninitialized_fill_n(
+      allocator_system<Allocator>::get(a), p, n, typename ::cuda::std::pointer_traits<Pointer>::element_type());
   }
 }
 } // namespace detail

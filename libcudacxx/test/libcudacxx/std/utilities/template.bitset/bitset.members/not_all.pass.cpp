@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085905: Segmentation fault (core dumped) tileiras
+
 // bitset<N> operator~() const; // constexpr since C++23
 
 #include <cuda/std/bitset>
@@ -18,7 +21,7 @@
 TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_not_all()
+TEST_FUNC constexpr void test_not_all()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -34,7 +37,7 @@ __host__ __device__ constexpr void test_not_all()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_not_all<0>();
   test_not_all<1>();
@@ -52,7 +55,7 @@ int main(int, char**)
 {
   test();
   test_not_all<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

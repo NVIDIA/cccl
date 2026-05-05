@@ -13,6 +13,9 @@
 
 // UNSUPPORTED: no_execute
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/barrier>
 
 #include <cuda/barrier>
@@ -22,7 +25,7 @@
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
-__device__ uint64_t bar_storage;
+TEST_DEVICE_FUNC uint64_t bar_storage;
 
 int main(int, char**)
 {

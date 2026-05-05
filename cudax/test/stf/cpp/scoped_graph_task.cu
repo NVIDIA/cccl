@@ -17,6 +17,8 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+
 using namespace cuda::experimental::stf;
 
 int main(int argc, char** argv)
@@ -93,7 +95,7 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    std::cout << "Generating DOT output in " << argv[1] << std::endl;
+    std::cout << "Generating DOT output in " << argv[1] << '\n';
     ctx.print_to_dot(argv[1]);
   }
 

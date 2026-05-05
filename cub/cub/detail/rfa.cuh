@@ -686,21 +686,6 @@ public:
     binned_renorm();
   }
 };
-
-_CCCL_TEMPLATE(typename FType = float)
-_CCCL_REQUIRES(::cuda::std::is_floating_point_v<FType>)
-struct rfa_float_transform_t
-{
-  _CCCL_DEVICE FType operator()(FType accum) const
-  {
-    return accum;
-  }
-
-  _CCCL_DEVICE FType operator()(ReproducibleFloatingAccumulator<FType> accum) const
-  {
-    return accum.conv_to_fp();
-  }
-};
 } // namespace detail::rfa
 
 CUB_NAMESPACE_END

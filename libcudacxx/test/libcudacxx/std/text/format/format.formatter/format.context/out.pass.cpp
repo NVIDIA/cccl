@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // iterator out();
@@ -17,8 +20,10 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class CharT>
-__host__ __device__ void test_out()
+TEST_FUNC void test_out()
 {
   using Container = cuda::std::inplace_vector<CharT, 3>;
   using OutIt     = cuda::std::__back_insert_iterator<Container>;
@@ -45,7 +50,7 @@ __host__ __device__ void test_out()
   }
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_out<char>();
 #if _CCCL_HAS_CHAR8_T()

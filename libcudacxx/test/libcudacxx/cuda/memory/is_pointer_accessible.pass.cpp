@@ -6,6 +6,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/__runtime/ensure_current_context.h>
@@ -18,8 +22,8 @@
 
 #include "test_macros.h"
 
-__device__ int device_ptr1[]              = {1, 2, 3, 4};
-__device__ __managed__ int managed_ptr1[] = {1, 2, 3, 4};
+TEST_GLOBAL_VARIABLE int device_ptr1[]      = {1, 2, 3, 4};
+_CCCL_DEVICE __managed__ int managed_ptr1[] = {1, 2, 3, 4};
 
 int host_ptr1[] = {1, 2, 3, 4};
 

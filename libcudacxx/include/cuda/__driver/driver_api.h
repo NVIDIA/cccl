@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,19 +23,23 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  if _CCCL_OS(WINDOWS)
-#    include <windows.h>
-#  else
-#    include <dlfcn.h>
-#  endif
-
-#  include <stdexcept>
+#  if _CCCL_HOSTED()
+#    if _CCCL_OS(WINDOWS)
+#      include <windows.h>
+#    else
+#      include <dlfcn.h>
+#    endif
+#  endif // _CCCL_HOSTED()
 
 #  include <cuda.h>
 
@@ -54,47 +58,63 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 // cudaGetDriverEntryPoint function is deprecated
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
+#  if _CCCL_HOSTED()
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
   const char* __fn_name = "cuGetProcAddress_v2";
-#  if _CCCL_OS(WINDOWS)
+#    if _CCCL_OS(WINDOWS)
   static auto __driver_library = ::LoadLibraryExA("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
   if (__driver_library == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load nvcuda.dll");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to load nvcuda.dll");
   }
   static void* __fn = ::GetProcAddress(__driver_library, __fn_name);
   if (__fn == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
   }
-#  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
-#    if _CCCL_OS(ANDROID)
+#    else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
+#      if _CCCL_OS(ANDROID)
   const char* __driver_library_name = "libcuda.so";
-#    else // ^^^ _CCCL_OS(ANDROID) ^^^ / vvv !_CCCL_OS(ANDROID) vvv
+#      else // ^^^ _CCCL_OS(ANDROID) ^^^ / vvv !_CCCL_OS(ANDROID) vvv
   const char* __driver_library_name = "libcuda.so.1";
-#    endif // ^^^ !_CCCL_OS(ANDROID) ^^^
+#      endif // ^^^ !_CCCL_OS(ANDROID) ^^^
   static void* __driver_library = ::dlopen(__driver_library_name, RTLD_NOW);
   if (__driver_library == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load libcuda.so.1");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to load libcuda.so.1");
   }
   static void* __fn = ::dlsym(__driver_library, __fn_name);
   if (__fn == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
   }
-#  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
+#    endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+[[nodiscard]]
+_CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn(decltype(cuGetProcAddress)* __ptr = nullptr, bool __set = false)
+  -> decltype(cuGetProcAddress)*
+{
+  static decltype(cuGetProcAddress)* __fn = __ptr;
+
+  if (__set)
+  {
+    __fn = __ptr;
+  }
+
+  return __fn;
+}
+#  endif // !_CCCL_HOSTED()
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 //! @brief Makes the driver version from major and minor version.
 [[nodiscard]] _CCCL_HOST_API constexpr int __make_version(int __major, int __minor) noexcept
 {
-  _CCCL_ASSERT(__major >= 12, "invalid major CUDA Driver version");
+  _CCCL_ASSERT(__major >= 2, "invalid major CUDA Driver version");
   _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
   return __major * 1000 + __minor * 10;
 }
@@ -120,15 +140,15 @@ _CCCL_SUPPRESS_DEPRECATED_POP
   {
     if (__status == ::CUDA_ERROR_INVALID_VALUE)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
     }
     if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API", __name);
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorNotSupported, "Driver does not support this API", __name);
     }
     else
     {
-      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API", __name);
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to access driver API", __name);
     }
   }
   return __fn;
@@ -147,7 +167,7 @@ _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args
   ::CUresult __status = __fn(__args...);
   if (__status != ::CUDA_SUCCESS)
   {
-    ::cuda::__throw_cuda_error(static_cast<::cudaError_t>(__status), __err_msg);
+    _CCCL_THROW(::cuda::cuda_error, static_cast<::cudaError_t>(__status), __err_msg);
   }
 }
 
@@ -251,6 +271,15 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __deviceTotalMem(int __ordinal)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceTotalMem);
+  ::std::size_t __result;
+  ::CUdevice __dev = __deviceGet(__ordinal);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query total memory of a device", &__result, __dev);
+  return static_cast<::cuda::std::size_t>(__result);
+}
+
 // Primary context management
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __primaryCtxRetain(::CUdevice __dev)
@@ -341,6 +370,31 @@ _CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
     1,
     __stream);
 }
+
+_CCCL_HOST_API inline void __memcpyBatchAsync(
+  void** __dsts,
+  const void** __srcs,
+  const ::cuda::std::size_t* __sizes,
+  ::cuda::std::size_t __count,
+  ::CUmemcpyAttributes* __attributes,
+  ::cuda::std::size_t* __attribute_indices,
+  ::cuda::std::size_t __num_attributes,
+  ::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to perform a memcpy with attributes",
+    reinterpret_cast<::CUdeviceptr*>(__dsts),
+    reinterpret_cast<::CUdeviceptr*>(__srcs),
+    const_cast<::cuda::std::size_t*>(__sizes),
+    __count,
+    __attributes,
+    __attribute_indices,
+    __num_attributes,
+    __stream);
+}
+
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename _Tp>
@@ -349,20 +403,23 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t 
   if constexpr (sizeof(_Tp) == 1)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD8Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned char>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else if constexpr (sizeof(_Tp) == 2)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD16Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned short>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else if constexpr (sizeof(_Tp) == 4)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD32Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned int>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else
   {
@@ -549,6 +606,15 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
   return __status;
 }
 
+template <::CUpointer_attribute _Attr>
+[[nodiscard]] _CCCL_HOST_API __pointer_attribute_value_type_t<_Attr> __pointerGetAttribute(const void* __ptr)
+{
+  __pointer_attribute_value_type_t<_Attr> __result;
+  _CCCL_TRY_CUDA_API(
+    ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>, "Failed to get attribute of a pointer", __result, __ptr);
+  return __result;
+}
+
 template <::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
 __pointerGetAttributesNoThrow(::CUpointer_attribute (&__attrs)[_Np], void* (&__results)[_Np], const void* __ptr)
@@ -586,7 +652,7 @@ _CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
   cudaError_t __status = __streamSynchronizeNoThrow(__stream);
   if (__status != cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "Failed to synchronize a stream");
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to synchronize a stream");
   }
 }
 
@@ -951,7 +1017,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
       if (__num_items > __max_size / 2)
       {
-        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 2");
+        _CCCL_THROW(::std::invalid_argument, "Number of items must be less than or equal to 2^64 / 2");
       }
       return __num_items * 2;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT32:
@@ -962,7 +1028,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32_FTZ:
       if (__num_items > __max_size / 4)
       {
-        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 4");
+        _CCCL_THROW(::std::invalid_argument, "Number of items must be less than or equal to 2^64 / 4");
       }
       return __num_items * 4;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
@@ -970,7 +1036,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
       if (__num_items > __max_size / 8)
       {
-        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 8");
+        _CCCL_THROW(::std::invalid_argument, "Number of items must be less than or equal to 2^64 / 8");
       }
       return __num_items * 8;
 #  if _CCCL_CTK_AT_LEAST(12, 8)

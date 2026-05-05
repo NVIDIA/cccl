@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/invoke.h>
@@ -66,6 +67,13 @@ reduce([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _T
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__reduce, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::reduce");
+
+    if (__first == __last)
+    {
+      return __init;
+    }
+
     return __dispatch(
       __policy,
       ::cuda::std::move(__first),
@@ -86,7 +94,11 @@ _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_P
 [[nodiscard]] _CCCL_HOST_API _Tp reduce(const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init)
 {
   return ::cuda::std::reduce(
-    __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__init), ::cuda::std::plus<>{});
+    __policy,
+    ::cuda::std::move(__first),
+    ::cuda::std::move(__last),
+    ::cuda::std::move(__init),
+    ::cuda::std::plus<_Tp>{});
 }
 
 _CCCL_TEMPLATE(class _Policy, class _Iter)
@@ -94,7 +106,11 @@ _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_P
 [[nodiscard]] _CCCL_HOST_API iter_value_t<_Iter> reduce(const _Policy& __policy, _Iter __first, _Iter __last)
 {
   return ::cuda::std::reduce(
-    __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), iter_value_t<_Iter>{}, ::cuda::std::plus<>{});
+    __policy,
+    ::cuda::std::move(__first),
+    ::cuda::std::move(__last),
+    iter_value_t<_Iter>{},
+    ::cuda::std::plus<iter_value_t<_Iter>>{});
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
@@ -103,6 +119,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_REDUCE_H

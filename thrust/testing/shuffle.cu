@@ -352,7 +352,7 @@ void TestShuffleUniformPermutationBase()
 
   double chi_squared    = 0.0;
   double expected_count = static_cast<double>(num_samples) / total_permutations;
-  for (auto kv : permutation_counts)
+  for (const auto& kv : permutation_counts)
   {
     chi_squared += std::pow(expected_count - kv.second, 2) / expected_count;
   }

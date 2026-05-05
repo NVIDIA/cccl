@@ -18,20 +18,15 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
+#include <cuda/std/concepts>
 #include <cuda/std/tuple>
-
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
@@ -65,7 +60,7 @@ enum class Algorithm
   ublkcp
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, const Algorithm& algorithm)
 {
   switch (algorithm)
@@ -82,7 +77,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, const Algorithm& algorithm
       return os << "Algorithm::<unknown>";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 struct prefetch_policy
 {
@@ -91,11 +86,16 @@ struct prefetch_policy
   int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
   int min_items_per_thread      = 1;
   int max_items_per_thread      = 32;
+  int prefetch_byte_stride      = 128; // somewhat of a cache line size
+  // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost, so prevent unrolling
+  // bgruber: but A6000 and H100 show small gains without pragma, so omitting pragma
+  int unroll_factor = -1; // -1 means we leave it to the compiler
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
-        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
+        && lhs.prefetch_byte_stride == rhs.prefetch_byte_stride && lhs.unroll_factor == rhs.unroll_factor;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
@@ -103,14 +103,16 @@ struct prefetch_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const prefetch_policy& policy)
   {
-    return os << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
-              << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
-              << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
+    return os
+        << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
+        << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .prefetch_byte_stride = "
+        << policy.prefetch_byte_stride << ", .unroll_factor = " << policy.unroll_factor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct vectorized_policy
@@ -118,18 +120,11 @@ struct vectorized_policy
   int block_threads;
   int items_per_thread;
   int vec_size;
-  // if we have to fall back to prefetching, use these values:
-  int prefetch_items_per_thread_no_input = 2;
-  int prefetch_min_items_per_thread      = 1;
-  int prefetch_max_items_per_thread      = 32;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.vec_size == rhs.vec_size
-        && lhs.prefetch_items_per_thread_no_input == rhs.prefetch_items_per_thread_no_input
-        && lhs.prefetch_min_items_per_thread == rhs.prefetch_min_items_per_thread
-        && lhs.prefetch_max_items_per_thread == rhs.prefetch_max_items_per_thread;
+        && lhs.vec_size == rhs.vec_size;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const vectorized_policy& lhs, const vectorized_policy& rhs)
@@ -137,17 +132,13 @@ struct vectorized_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const vectorized_policy& policy)
   {
-    return os
-        << "vectorized_policy { .block_threads = " << policy.block_threads
-        << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size
-        << ", .prefetch_items_per_thread_no_input = " << policy.prefetch_items_per_thread_no_input
-        << ", .prefetch_min_items_per_thread = " << policy.prefetch_min_items_per_thread
-        << ", .prefetch_max_items_per_thread = " << policy.prefetch_max_items_per_thread << " }";
+    return os << "vectorized_policy { .block_threads = " << policy.block_threads
+              << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct async_copy_policy
@@ -157,11 +148,14 @@ struct async_copy_policy
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   int min_items_per_thread = 1;
   int max_items_per_thread = 32;
+  // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
+  int unroll_factor = 1;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.bulk_copy_alignment == rhs.bulk_copy_alignment
-        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
+        && lhs.unroll_factor == rhs.unroll_factor;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const async_copy_policy& lhs, const async_copy_policy& rhs)
@@ -169,14 +163,16 @@ struct async_copy_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const async_copy_policy& policy)
   {
-    return os << "async_copy_policy { .block_threads = " << policy.block_threads << ", .bulk_copy_alignment = "
-              << policy.bulk_copy_alignment << ", .min_items_per_thread = " << policy.min_items_per_thread
-              << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
+    return os
+        << "async_copy_policy { .block_threads = " << policy.block_threads << ", .bulk_copy_alignment = "
+        << policy.bulk_copy_alignment << ", .min_items_per_thread = " << policy.min_items_per_thread
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
+        << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct transform_policy
@@ -198,14 +194,14 @@ struct transform_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const transform_policy& policy)
   {
     return os << "transform_policy { .min_bytes_in_flight = " << policy.min_bytes_in_flight
               << ", .algorithm = " << policy.algorithm << ", .prefetch = " << policy.prefetch
               << ", .vectorized = " << policy.vectorized << ", .async_copy = " << policy.async_copy << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -242,9 +238,9 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
 
 constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::arch_id arch) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(::cuda::compute_capability cc) -> int
 {
-  return arch < ::cuda::arch_id::sm_100 ? 128 : 16;
+  return (cc < ::cuda::compute_capability{10, 0}) ? 128 : 16;
 }
 
 template <int InputCount>
@@ -269,41 +265,42 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-[[nodiscard]] _CCCL_API constexpr int arch_to_min_bytes_in_flight(::cuda::arch_id arch)
+[[nodiscard]] _CCCL_API constexpr int cc_to_min_bytes_in_flight(::cuda::compute_capability cc)
 {
-  if (arch >= ::cuda::arch_id::sm_100)
+  if (cc >= ::cuda::compute_capability{10, 0})
   {
     return 64 * 1024; // B200
   }
-  if (arch >= ::cuda::arch_id::sm_90)
+  if (cc >= ::cuda::compute_capability{9, 0})
   {
     return 48 * 1024; // 32 for H100, 48 for H200
   }
-  if (arch >= ::cuda::arch_id::sm_80)
+  if (cc >= ::cuda::compute_capability{8, 0})
   {
     return 16 * 1024; // A100
   }
   return 12 * 1024; // V100 and below
 }
 
-[[nodiscard]] _CCCL_API constexpr auto tuned_vectorized_policy(::cuda::arch_id arch, int store_size, bool filling)
+[[nodiscard]] _CCCL_API constexpr auto
+tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool filling)
 {
   if (filling)
   {
     // manually tuned fill on RTX 5090
     // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
-    // if (arch >= ::cuda::arch_id::sm_120)
+    // if (cc >= ::cuda::compute_capability{12, 0})
     // {
     //   return vectorized_policy{256, 8, 4};
     // }
     // manually tuned fill on B200, same as H200
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       return vectorized_policy{
         store_size > 4 ? 128 : 256, 16, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
     }
     // manually tuned fill on A100
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       return vectorized_policy{256, 8, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
     }
@@ -311,7 +308,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
   else
   {
     // manually tuned triad on A100
-    if (arch == ::cuda::arch_id::sm_80)
+    if (cc == ::cuda::compute_capability{8, 0})
     {
       return vectorized_policy{128, 16, 4};
     }
@@ -329,7 +326,7 @@ struct policy_selector
   ::cuda::std::array<iterator_info, InputCount> inputs;
   iterator_info output;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> transform_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> transform_policy
   {
     const bool no_input_streams = InputCount == 0;
 
@@ -343,20 +340,21 @@ struct policy_selector
       all_input_values_trivially_reloc &= input.value_type_is_trivially_relocatable;
       // the vectorized kernel supports mixing contiguous and non-contiguous iterators
       can_memcpy_contiguous_inputs &= !input.is_contiguous || input.value_type_is_trivially_relocatable;
+      _CCCL_ASSERT(input.value_type_size > 0, "Iterators to inputs must not have a value_type of zero size");
       all_value_types_have_power_of_two_size &= ::cuda::is_power_of_two(input.value_type_size);
     }
     const bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
     const bool fallback_to_prefetch  = requires_stable_address || !can_memcpy_contiguous_inputs || !dense_output;
-    const int min_bytes_in_flight    = arch_to_min_bytes_in_flight(arch);
+    const int min_bytes_in_flight    = cc_to_min_bytes_in_flight(cc);
 
-    if (arch >= ::cuda::arch_id::sm_90) // handles sm_100 as well
+    if (cc >= ::cuda::compute_capability{9, 0}) // handles sm_100 as well
     {
-      const int async_block_size = arch < ::cuda::arch_id::sm_100 ? 256 : 128;
-      const int alignment        = bulk_copy_alignment(arch);
+      const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
+      const int alignment        = bulk_copy_alignment(cc);
 
       const auto prefetch = prefetch_policy{256};
       const auto vectorized =
-        tuned_vectorized_policy(arch, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+        tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       const auto async = async_copy_policy{async_block_size, alignment};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -383,7 +381,8 @@ struct policy_selector
       }
 
       // on Hopper, the vectorized kernel performs better for 1 and 2 byte values, except for BabelStream mul (1 input)
-      bool vector_kernel_is_faster = arch == ::cuda::arch_id::sm_90 && output.value_type_size < 4 && InputCount > 1;
+      bool vector_kernel_is_faster =
+        (cc == ::cuda::compute_capability{9, 0} && output.value_type_size < 4 && InputCount > 1);
       for (const auto& input : inputs)
       {
         vector_kernel_is_faster &= input.value_type_size < 4;
@@ -407,12 +406,12 @@ struct policy_selector
         async,
       };
     }
-    else if (arch >= ::cuda::arch_id::sm_80)
+    else if (cc >= ::cuda::compute_capability{8, 0})
     {
       const int block_threads = 256;
       const auto prefetch     = prefetch_policy{block_threads};
       const auto vectorized =
-        tuned_vectorized_policy(arch, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+        tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       const auto async = async_copy_policy{block_threads, ldgsts_size_and_align};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -452,7 +451,8 @@ struct policy_selector
       min_bytes_in_flight,
       (fallback_to_prefetch || !all_value_types_have_power_of_two_size) ? Algorithm::prefetch : Algorithm::vectorized,
       prefetch_policy{256},
-      tuned_vectorized_policy(::cuda::arch_id::sm_60, ::cuda::std::max(1, output.value_type_size), no_input_streams),
+      tuned_vectorized_policy(
+        ::cuda::compute_capability{6, 0}, ::cuda::std::max(1, output.value_type_size), no_input_streams),
       async_copy_policy{}, // never used
     };
   }
@@ -481,14 +481,19 @@ struct policy_selector_from_types<RequiresStableAddress,
                                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                   RandomAccessIteratorOut>
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> transform_policy
+  static_assert((!::cuda::std::is_void_v<it_value_t<RandomAccessIteratorsIn>> && ...),
+                "Iterators for inputs must not have a value_type of void. This can happen for multiple reasons. You "
+                "could pass an output iterator by accident, but it could also be a transform_iterator with a "
+                "__device__ callable and a deduced return type (which is void in host code).");
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> transform_policy
   {
     constexpr auto policies = policy_selector<sizeof...(RandomAccessIteratorsIn)>{
       RequiresStableAddress,
       DenseOutput,
       {make_iterator_info<RandomAccessIteratorsIn>()...},
       make_iterator_info<RandomAccessIteratorOut>()};
-    return policies(arch);
+    return policies(cc);
   }
 };
 } // namespace detail::transform

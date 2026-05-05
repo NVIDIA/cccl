@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -88,7 +89,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! // values is now {10, -1, -1, -1, 50, 60, -1, 80}
 //! @endcode
-template <class _Iter, class _Index = _Iter>
+template <class _Iter, class _Index>
 class permutation_iterator
 {
 private:
@@ -430,10 +431,12 @@ public:
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 _CCCL_TEMPLATE(class _Iter, class _Index)
 _CCCL_REQUIRES(
   ::cuda::std::__has_random_access_traversal<_Iter> _CCCL_AND ::cuda::std::__has_random_access_traversal<_Index>)
 _CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates an @c permutation_iterator from a base iterator and an iterator to an integral index
 //! @param __iter The iterator

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,10 +15,10 @@
 
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -67,7 +54,7 @@ _CCCL_HOST void return_temporary_buffer(
   using pointer         = typename alloc_traits::pointer;
   using size_type       = typename alloc_traits::size_type;
   using value_type      = typename alloc_traits::value_type;
-  using T               = typename thrust::detail::pointer_traits<Pointer>::element_type;
+  using T               = typename ::cuda::std::pointer_traits<Pointer>::element_type;
 
   size_type num_elements = ::cuda::ceil_div(sizeof(T) * n, sizeof(value_type));
 

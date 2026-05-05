@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/zip_iterator.h
 //! \brief An iterator which returns a tuple of the result of dereferencing a tuple of iterators when dereferenced
@@ -43,15 +30,16 @@
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -238,11 +226,11 @@ private:
 
   friend class iterator_core_access;
 
-  using index_seq = make_index_sequence<::cuda::std::tuple_size_v<IteratorTuple>>;
+  using index_seq = ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<IteratorTuple>>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(index_sequence<Is...>) const
+  _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(::cuda::std::index_sequence<Is...>) const
   {
     return {*::cuda::std::get<Is>(m_iterator_tuple)...};
   }
@@ -264,7 +252,7 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, index_sequence<Is...>)
+  inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, ::cuda::std::index_sequence<Is...>)
   {
     (..., ::cuda::std::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
   }
@@ -277,7 +265,7 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  inline _CCCL_HOST_DEVICE void increment_impl(index_sequence<Is...>)
+  inline _CCCL_HOST_DEVICE void increment_impl(::cuda::std::index_sequence<Is...>)
   {
     (..., ++::cuda::std::get<Is>(m_iterator_tuple));
   }
@@ -290,7 +278,7 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  inline _CCCL_HOST_DEVICE void decrement_impl(index_sequence<Is...>)
+  inline _CCCL_HOST_DEVICE void decrement_impl(::cuda::std::index_sequence<Is...>)
   {
     (..., --::cuda::std::get<Is>(m_iterator_tuple));
   }
@@ -306,7 +294,8 @@ private:
   inline _CCCL_HOST_DEVICE typename super_t::difference_type
   distance_to(const zip_iterator<OtherIteratorTuple>& other) const
   {
-    return ::cuda::std::get<0>(other.get_iterator_tuple()) - ::cuda::std::get<0>(get_iterator_tuple());
+    return ::cuda::std::distance(
+      ::cuda::std::get<0>(get_iterator_tuple()), ::cuda::std::get<0>(other.get_iterator_tuple()));
   }
 
   // The iterator tuple.
@@ -349,21 +338,3 @@ inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
-
-// libcu++ iterator traits fail for complex zip_iterators in C++17, see e.g.: https://godbolt.org/z/7jb4qG3bb
-// The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
-// language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
-#if _CCCL_STD_VER < 2020
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-template <typename IteratorTuple>
-struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
-{
-  using It                = THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>;
-  using value_type        = typename It::value_type;
-  using reference         = typename It::reference;
-  using pointer           = void;
-  using iterator_category = typename It::iterator_category;
-  using difference_type   = typename It::difference_type;
-};
-_CCCL_END_NAMESPACE_CUDA_STD
-#endif // _CCCL_STD_VER < 2020

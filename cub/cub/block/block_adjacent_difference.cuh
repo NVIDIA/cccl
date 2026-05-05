@@ -201,12 +201,23 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
+  //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
@@ -219,6 +230,9 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -303,6 +317,9 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -403,6 +420,9 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -513,6 +533,9 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -646,6 +669,9 @@ public:
   //!
   //! Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @rowmajor
   //! - @smemreuse
   //!
@@ -731,6 +757,9 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -829,6 +858,9 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair in range of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse

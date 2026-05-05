@@ -3,10 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""
-This module provides `gpu_struct`, a factory for producing struct types.
-
-"""
+from __future__ import annotations
 
 import functools
 from types import new_class
@@ -15,6 +12,11 @@ from typing import Any, ClassVar, TypeGuard, Union, cast, get_type_hints
 import numpy as np
 
 from . import types
+
+"""
+This module provides `gpu_struct`, a factory for producing struct types.
+
+"""
 
 
 def gpu_struct(
@@ -52,6 +54,13 @@ def gpu_struct(
 
     # At this point, field_dict must be a dict
     assert isinstance(field_dict, dict)
+
+    # Validate field names are valid Python identifiers
+    for key in field_dict:
+        if not isinstance(key, str) or not key.isidentifier():
+            raise ValueError(
+                f"gpu_struct field name {key!r} is not a valid Python identifier"
+            )
 
     # Normalize fields for storage on the struct class
     field_spec = {}
@@ -142,7 +151,7 @@ def _coerce_value(field_type, value: Any) -> Any:
         return field_type.type(value)
 
     if isinstance(field_type, type) and issubclass(field_type, np.generic):
-        return field_type(value)
+        return field_type(value)  # type: ignore[call-arg]
 
     if isinstance(value, tuple):
         return field_type(*value)

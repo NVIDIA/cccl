@@ -18,14 +18,14 @@
 
 #include "test_macros.h"
 
-// ensure that we allow `__device__` functions too
+// ensure that we allow `TEST_DEVICE_FUNC` functions too
 struct with_device_op
 {
-  __device__ friend constexpr with_device_op operator^(const with_device_op&, const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr with_device_op operator^(const with_device_op&, const with_device_op&)
   {
     return {};
   }
-  __device__ constexpr operator bool() const
+  TEST_DEVICE_FUNC constexpr operator bool() const
   {
     return true;
   }
@@ -40,12 +40,12 @@ __global__ void test_global_kernel()
 int main(int, char**)
 {
   {
-    typedef cuda::std::bit_xor<int> F;
+    using F   = cuda::std::bit_xor<int>;
     const F f = F();
 #if TEST_STD_VER <= 2017
-    static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
-    static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
-    static_assert((cuda::std::is_same<int, F::result_type>::value), "");
+    static_assert((cuda::std::is_same<int, F::first_argument_type>::value));
+    static_assert((cuda::std::is_same<int, F::second_argument_type>::value));
+    static_assert((cuda::std::is_same<int, F::result_type>::value));
 #endif // TEST_STD_VER <= 2017
     assert(f(0xEA95, 0xEA95) == 0);
     assert(f(0xEA95, 0x58D3) == 0xB246);
@@ -55,7 +55,7 @@ int main(int, char**)
   }
 
   {
-    typedef cuda::std::bit_xor<> F2;
+    using F2   = cuda::std::bit_xor<>;
     const F2 f = F2();
     assert(f(0xEA95, 0xEA95) == 0);
     assert(f(0xEA95L, 0xEA95) == 0);
@@ -77,10 +77,10 @@ int main(int, char**)
     assert(f(0xFFFFL, 0x58D3) == 0xA72C);
     assert(f(0xFFFF, 0x58D3L) == 0xA72C);
     constexpr int foo = cuda::std::bit_xor<int>()(0x58D3, 0xEA95);
-    static_assert(foo == 0xB246, "");
+    static_assert(foo == 0xB246);
 
     constexpr int bar = cuda::std::bit_xor<>()(0x58D3L, 0xEA95);
-    static_assert(bar == 0xB246, "");
+    static_assert(bar == 0xB246);
   }
 
   return 0;

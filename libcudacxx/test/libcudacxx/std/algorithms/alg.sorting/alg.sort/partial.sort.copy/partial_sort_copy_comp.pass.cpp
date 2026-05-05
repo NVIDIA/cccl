@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// CONSTEXPR_STEPS: 15000000
+
 // <algorithm>
 
 // template<InputIterator InIter, RandomAccessIterator RAIter, class Compare>
@@ -30,7 +32,7 @@
 #include "test_macros.h"
 
 template <class T, class Iter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int orig[15] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
   T work[15]   = {};
@@ -74,7 +76,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int i = 42;
   int j = 75;
@@ -99,13 +101,20 @@ __host__ __device__ constexpr bool test()
     test<MoveOnly, int*, MoveOnly*>();
   }
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<int, host_only_iterator<int*>, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<int, device_only_iterator<int*>, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

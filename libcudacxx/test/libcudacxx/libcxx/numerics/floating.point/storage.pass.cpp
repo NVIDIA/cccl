@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
@@ -21,7 +24,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fp_storage()
+TEST_FUNC void test_fp_storage()
 {
   using Storage = cuda::std::__fp_storage_of_t<T>;
   static_assert(cuda::std::is_integral_v<Storage>);

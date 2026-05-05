@@ -47,6 +47,16 @@
   }                              \
   _CCCL_END_NAMESPACE_NOVERSION(_NS)
 
+// Open a namespace for APIs that were version bumped in a minor release
+// Version bump namespace should be removed from the APIs at the next major release
+#define _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP                                           \
+  static_assert(_LIBCUDACXX_CUDA_ABI_VERSION == 4, "Version bump should be removed"); \
+  inline namespace __version_bump_ver4_                                               \
+  {
+#define _CCCL_END_NAMESPACE_ABI_VER4_BUMP                                             \
+  static_assert(_LIBCUDACXX_CUDA_ABI_VERSION == 4, "Version bump should be removed"); \
+  }
+
 // Standard namespaces with or without versioning
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION _CCCL_BEGIN_NAMESPACE_NOVERSION(cuda::std)
 #define _CCCL_END_NAMESPACE_CUDA_STD_NOVERSION   _CCCL_END_NAMESPACE_NOVERSION(cuda::std)
@@ -66,6 +76,10 @@
 #define _CCCL_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL   _CCCL_END_NAMESPACE(cuda::device::experimental)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER              _CCCL_BEGIN_NAMESPACE(cuda::__driver)
 #define _CCCL_END_NAMESPACE_CUDA_DRIVER                _CCCL_END_NAMESPACE(cuda::__driver)
+
+// Namespaces related to <simd>
+#define _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD _CCCL_BEGIN_NAMESPACE(cuda::std::simd)
+#define _CCCL_END_NAMESPACE_CUDA_STD_SIMD   _CCCL_END_NAMESPACE(cuda::std::simd)
 
 // Namespaces related to <ranges>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES _CCCL_BEGIN_NAMESPACE(cuda::std::ranges)
@@ -101,8 +115,10 @@
 #define _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION _CCCL_BEGIN_NAMESPACE(cuda::execution)
 #define _CCCL_END_NAMESPACE_CUDA_EXECUTION   _CCCL_END_NAMESPACE(cuda::execution)
 
-// Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
-#if _CCCL_COMPILER(CLANG, <=, 16)
+// Namespace to avoid name collisions with CPOs on clang-16 (see
+// https://godbolt.org/z/9TadonrdM for example). MSVC's ancient parser also gets confused with
+// __cccl_true in the main iter_move template.
+#if _CCCL_COMPILER(CLANG, <=, 16) || _CCCL_COMPILER(MSVC)
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE \
     namespace __hidden                              \
     {

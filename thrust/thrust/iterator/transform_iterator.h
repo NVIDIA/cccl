@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/transform_iterator.h
  *  \brief An iterator which adapts another iterator by applying a function to the result of its dereference
@@ -177,7 +164,7 @@ public:
 //!    thrust::reduce(thrust::make_transform_iterator(v.begin(), square()),
 //!                   thrust::make_transform_iterator(v.end(),   square()));
 //!
-//!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
+//!   std::cout << "sum of squares: " << sum_of_squares << '\n';
 //!   return 0;
 //! }
 //! \endcode
@@ -263,8 +250,8 @@ public:
   template <typename OtherAdaptableUnaryFunction, typename OtherIterator, typename OtherReference, typename OtherValue>
   _CCCL_HOST_DEVICE transform_iterator(
     const transform_iterator<OtherAdaptableUnaryFunction, OtherIterator, OtherReference, OtherValue>& other,
-    detail::enable_if_convertible_t<OtherIterator, Iterator>*                             = 0,
-    detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>* = 0)
+    detail::enable_if_convertible_t<OtherIterator, Iterator, int>                             = 0,
+    detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction, int> = 0)
       : super_t(other.base())
       , m_f(other.functor())
   {}

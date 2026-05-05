@@ -12,12 +12,15 @@
 
 // static time_point from_time_t(time_t t);
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/std/chrono>
 #include <cuda/std/ctime>
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::system_clock C;
+  using C                           = cuda::std::chrono::system_clock;
   [[maybe_unused]] C::time_point t1 = C::from_time_t(C::to_time_t(C::now()));
 
   return 0;

@@ -7,12 +7,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 constexpr int not_found = -1;
 
-__host__ __device__ void test(const char* ptr, int c, size_t n, int expected_pos)
+TEST_FUNC void test(const char* ptr, int c, size_t n, int expected_pos)
 {
   const void* ret = cuda::std::memchr(ptr, c, n);
 

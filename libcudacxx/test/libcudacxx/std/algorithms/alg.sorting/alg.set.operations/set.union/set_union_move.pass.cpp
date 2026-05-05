@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <algorithm>
 
 // template<InputIterator InIter1, InputIterator InIter2, typename OutIter,

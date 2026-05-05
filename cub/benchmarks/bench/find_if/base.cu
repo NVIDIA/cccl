@@ -34,9 +34,9 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     temp_storage_bytes,
     thrust::raw_pointer_cast(dinput.data()),
     thrust::raw_pointer_cast(d_result.data()),
-    thrust::detail::equal_to_value<T>(val),
+    cuda::equal_to_value<T>(val),
     static_cast<OffsetT>(dinput.size()),
-    0);
+    nullptr);
 
   thrust::device_vector<uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
@@ -47,7 +47,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       temp_storage_bytes,
       thrust::raw_pointer_cast(dinput.data()),
       thrust::raw_pointer_cast(d_result.data()),
-      thrust::detail::equal_to_value<T>(val),
+      cuda::equal_to_value<T>(val),
       static_cast<OffsetT>(dinput.size()),
       launch.get_stream());
   });

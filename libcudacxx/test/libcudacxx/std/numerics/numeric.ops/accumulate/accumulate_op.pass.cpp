@@ -31,26 +31,26 @@ struct rvalue_addable
   bool correctOperatorUsed = false;
 
   // make sure the predicate is passed an rvalue and an lvalue (so check that the first argument was moved)
-  __host__ __device__ constexpr rvalue_addable operator()(rvalue_addable&& r, rvalue_addable const&)
+  TEST_FUNC constexpr rvalue_addable operator()(rvalue_addable&& r, rvalue_addable const&)
   {
     r.correctOperatorUsed = true;
     return cuda::std::move(r);
   }
 };
 
-__host__ __device__ constexpr rvalue_addable operator+(rvalue_addable& lhs, rvalue_addable const&)
+TEST_FUNC constexpr rvalue_addable operator+(rvalue_addable& lhs, rvalue_addable const&)
 {
   lhs.correctOperatorUsed = false;
   return lhs;
 }
 
-__host__ __device__ constexpr rvalue_addable operator+(rvalue_addable&& lhs, rvalue_addable const&)
+TEST_FUNC constexpr rvalue_addable operator+(rvalue_addable&& lhs, rvalue_addable const&)
 {
   lhs.correctOperatorUsed = true;
   return cuda::std::move(lhs);
 }
 
-__host__ __device__ constexpr void test_use_move()
+TEST_FUNC constexpr void test_use_move()
 {
   rvalue_addable arr[100];
   auto res1 = cuda::std::accumulate(arr, arr + 100, rvalue_addable());
@@ -60,7 +60,7 @@ __host__ __device__ constexpr void test_use_move()
 }
 
 #ifdef _LIBCUDACXX_HAS_STRING
-__host__ __device__ constexpr void test_string()
+TEST_FUNC constexpr void test_string()
 {
   cuda::std::string sa[] = {"a", "b", "c"};
   assert(cuda::std::accumulate(sa, sa + 3, cuda::std::string()) == "abc");
@@ -69,13 +69,13 @@ __host__ __device__ constexpr void test_string()
 #endif // _LIBCUDACXX_HAS_STRING
 
 template <class Iter, class T>
-__host__ __device__ constexpr void test(Iter first, Iter last, T init, T x)
+TEST_FUNC constexpr void test(Iter first, Iter last, T init, T x)
 {
   assert(cuda::std::accumulate(first, last, init, cuda::std::multiplies<T>()) == x);
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]    = {1, 2, 3, 4, 5, 6};
   unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -89,13 +89,20 @@ __host__ __device__ constexpr void test()
   test(Iter(ia), Iter(ia + sa), 10, 7200);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>>();
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>>();
   test<const int*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
   test_use_move();
 
@@ -109,6 +116,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

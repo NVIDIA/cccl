@@ -213,16 +213,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _GetStream __get_stream)
       : __stream_{__get_stream(__sndr, execution::get_env(__rcvr))}
   {
-    NV_IF_TARGET(NV_IS_HOST,
-                 (__host_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));),
-                 (__device_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (__host_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));),
+                      (__device_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));));
   }
 
   _CCCL_IMMOVABLE(__opstate_t);
 
   _CCCL_API constexpr void start() noexcept
   {
-    NV_IF_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
   }
 
   // This is called by the continues_on adaptor after it has sync'ed the stream.
@@ -301,7 +301,11 @@ private:
 
     // without the following, the kernel in __host_start will fail to launch with
     // cudaErrorInvalidDeviceFunction.
+#ifndef _CCCL_CLANG_TIDY_INVOKED
+    // clang-tidy<22 errors when compiling this, complaining that we are taking a reference to
+    // __global__ function inside a __device__ function.
     ::__cccl_unused(&__completion_kernel<__block_threads, _Rcvr, __results_t>);
+#endif
     __state.__state_.__complete_inline_ = true;
     execution::start(__state.__opstate_);
   }

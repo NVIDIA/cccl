@@ -4,8 +4,6 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>

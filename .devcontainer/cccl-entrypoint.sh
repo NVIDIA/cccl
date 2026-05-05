@@ -5,7 +5,8 @@
 set -e;
 
 if ! test -n "${DISABLE_SCCACHE:+x}" && test -n "${DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST:+x}" && ! test -n "${SCCACHE_DIST_URL:+x}"; then
-    export SCCACHE_DIST_URL="https://$(dpkg --print-architecture).$(uname -s | tr '[:upper:]' '[:lower:]').sccache.rapids.nvidia.com";
+    SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com";
+    export SCCACHE_DIST_URL;
     echo "export SCCACHE_DIST_URL=$SCCACHE_DIST_URL" >> ~/.bashrc;
 fi
 

@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__functional/ranges_operations.h>
@@ -62,15 +63,25 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 //! @see proclaims_copyable_arguments
 template <typename F>
 [[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(F&& f)
-  -> __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>
 {
-  return {::cuda::std::forward<F>(f)};
+  if constexpr (proclaims_copyable_arguments<F>::value)
+  { // If F is already marked then we do not need to wrap it
+    return f;
+  }
+  else
+  {
+    return __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>{::cuda::std::forward<F>(f)};
+  }
 }
 
 // Specializations for libcu++ function objects are provided here to not pull this include into `<cuda/std/...>` headers
 
 template <typename _Fn>
 struct proclaims_copyable_arguments<::cuda::std::__not_fn_t<_Fn>> : proclaims_copyable_arguments<_Fn>
+{};
+
+template <typename _Fn>
+struct proclaims_copyable_arguments<zip_function<_Fn>> : proclaims_copyable_arguments<_Fn>
 {};
 
 template <typename _Tp>

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>
 #include <cuda/std/cassert>
@@ -17,8 +17,9 @@
 #include <cuda/std/type_traits>
 
 #include "hierarchy_queries.h"
+#include "test_macros.h"
 
-__device__ void test_thread()
+TEST_DEVICE_FUNC void test_thread()
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 
@@ -59,7 +60,13 @@ __device__ void test_thread()
     test_extents(cuda::std::dims<3, unsigned>{exp.x, exp.y, exp.z}, cuda::gpu_thread, cuda::grid);
   }
 
-  // 4. Test cuda::gpu_thread.count(x)
+  // 4. Test cuda::gpu_thread.static_count(x)
+  test_static_count(cuda::gpu_thread, cuda::warp);
+  test_static_count(cuda::gpu_thread, cuda::block);
+  test_static_count(cuda::gpu_thread, cuda::cluster);
+  test_static_count(cuda::gpu_thread, cuda::grid);
+
+  // 5. Test cuda::gpu_thread.count(x)
   test_count(32, cuda::gpu_thread, cuda::warp);
   test_count(cuda::std::size_t{blockDim.z} * blockDim.y * blockDim.x, cuda::gpu_thread, cuda::block);
   {
@@ -76,7 +83,7 @@ __device__ void test_thread()
     test_count(cuda::std::size_t{exp.z} * exp.y * exp.x, cuda::gpu_thread, cuda::grid);
   }
 
-  // 5. test cuda::gpu_thread.index(x)
+  // 6. test cuda::gpu_thread.index(x)
   test_index(uint3{cuda::ptx::get_sreg_laneid(), 0, 0}, cuda::gpu_thread, cuda::warp);
   test_index(threadIdx, cuda::gpu_thread, cuda::block);
   {
@@ -97,7 +104,7 @@ __device__ void test_thread()
     test_index(exp, cuda::gpu_thread, cuda::grid);
   }
 
-  // 6. Test cuda::gpu_thread.rank(x)
+  // 7. Test cuda::gpu_thread.rank(x)
   test_rank(cuda::ptx::get_sreg_laneid(), cuda::gpu_thread, cuda::warp);
   test_rank((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x, cuda::gpu_thread, cuda::block);
   {

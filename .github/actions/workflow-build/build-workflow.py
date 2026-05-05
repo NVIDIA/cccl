@@ -88,7 +88,7 @@ def generate_guids():
     i = 0
     while True:
         # Generates a base64 hash of an incrementing 16-bit integer:
-        hash = base64.b64encode(struct.pack(">H", i)).decode("ascii")
+        hash = base64.urlsafe_b64encode(struct.pack(">H", i)).decode("ascii")
         # Strips off up-to 2 leading 'A' characters and a single trailing '=' characters, if they exist:
         guid = re.sub(r"^A{0,2}", "", hash).removesuffix("=")
         yield guid

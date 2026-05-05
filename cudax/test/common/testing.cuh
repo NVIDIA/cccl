@@ -13,6 +13,7 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/std/__exception/terminate.h>
 
 #include <nv/target>
 
@@ -31,12 +32,19 @@ namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-al
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
-__device__ inline void cudax_require_impl(
-  bool condition,
-  [[maybe_unused]] const char* condition_text,
-  [[maybe_unused]] const char* filename,
-  [[maybe_unused]] unsigned int linenum,
-  [[maybe_unused]] const char* funcname)
+// Unlike nvcc, when clang parses CUDA, both the host and device sections are present (see
+// https://llvm.org/docs/CompileCudaWithLLVM.html#compilation-models). The upshot here is that
+// certain calls of CUDAX_REQUIRE() from host code will try to use device calls because
+// NV_IS_DEVICE is true.
+#if _CCCL_CUDA_COMPILER(CLANG)
+__host__
+#endif
+  __device__ inline void
+  cudax_require_impl(bool condition,
+                     [[maybe_unused]] const char* condition_text,
+                     [[maybe_unused]] const char* filename,
+                     [[maybe_unused]] unsigned int linenum,
+                     [[maybe_unused]] const char* funcname)
 {
   if (!condition)
   {
@@ -54,7 +62,7 @@ __device__ inline void cudax_require_impl(
            threadIdx.z,
            condition_text);
 #endif
-    __trap();
+    ::cuda::std::terminate();
   }
 }
 

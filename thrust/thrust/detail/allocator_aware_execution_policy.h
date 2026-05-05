@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,6 +15,7 @@
 #include <thrust/detail/alignment.h>
 #include <thrust/detail/execute_with_allocator_fwd.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__utility/move.h>
@@ -48,9 +36,8 @@ struct allocator_aware_execution_policy
   template <typename MemoryResource>
   struct execute_with_memory_resource_type
   {
-    using type =
-      thrust::detail::execute_with_allocator<thrust::mr::allocator<thrust::detail::max_align_t, MemoryResource>,
-                                             ExecutionPolicyCRTPBase>;
+    using type = thrust::detail::execute_with_allocator<thrust::mr::allocator<::cuda::std::max_align_t, MemoryResource>,
+                                                        ExecutionPolicyCRTPBase>;
   };
 
   template <typename Allocator>

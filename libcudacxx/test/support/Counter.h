@@ -83,8 +83,8 @@ namespace std
 template <class T>
 struct hash<Counter<T>>
 {
-  typedef Counter<T> argument_type;
-  typedef std::size_t result_type;
+  using argument_type = Counter<T>;
+  using result_type   = std::size_t;
 
   std::size_t operator()(const Counter<T>& x) const
   {

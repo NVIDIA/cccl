@@ -39,21 +39,27 @@ class JsonCache:
             cls._instance.device_cache = {}
         return cls._instance
 
+    def get_jsonlist(self, algname, listname):
+        benchmark_bin = os.path.join(".", "bin", algname + ".base")
+        if not os.path.exists(benchmark_bin):
+            raise Exception(f"Benchmark binary not found: {benchmark_bin}")
+        return subprocess.check_output([benchmark_bin, f"--jsonlist-{listname}"])
+
     def get_bench(self, algname):
         if algname not in self.bench_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-benches"]
-            )
+            result = self.get_jsonlist(algname, "benches")
             self.bench_cache[algname] = json.loads(result)
         return self.bench_cache[algname]
 
     def get_device(self, algname):
         if algname not in self.device_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-devices"]
-            )
-            devices = json.loads(result)["devices"]
-
+            result = self.get_jsonlist(algname, "devices")
+            data = json.loads(result)
+            if "devices" not in data:
+                raise Exception(
+                    "JSON returned from --jsonlist-devices does not contain 'devices' key"
+                )
+            devices = data["devices"]
             if len(devices) != 1:
                 raise Exception(
                     "NVBench doesn't work well with multiple GPUs, use `CUDA_VISIBLE_DEVICES`"

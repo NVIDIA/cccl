@@ -660,7 +660,7 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
 
 inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type_enum t, int compare_to)
 {
-  const std::string less_op_src = std::format(
+  std::string less_op_src = std::format(
     "#include <cuda_fp16.h>\n"
     "extern \"C\" __device__ void less_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
@@ -669,7 +669,7 @@ inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type
     "}}",
     type_enum_to_name(t),
     compare_to);
-  const std::string greater_or_equal_op_src = std::format(
+  std::string greater_or_equal_op_src = std::format(
     "#include <cuda_fp16.h>\n"
     "extern \"C\" __device__ void greater_op(void* x_void, void* out_void) {{ "
     "  {0}* x = reinterpret_cast<{0}*>(x_void); "
@@ -700,10 +700,7 @@ struct pointer_t
     size = vec.size();
   }
 
-  pointer_t()
-      : ptr(nullptr)
-      , size(0)
-  {}
+  pointer_t() = default;
 
   ~pointer_t()
   {
@@ -759,14 +756,17 @@ struct operation_t
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type      = cccl_op_kind_t::CCCL_STATELESS;
-    op.name      = name.c_str();
-    op.code      = code.c_str();
-    op.code_size = code.size();
-    op.code_type = code_type;
-    op.size      = 1;
-    op.alignment = 1;
-    op.state     = nullptr;
+    op.type              = cccl_op_kind_t::CCCL_STATELESS;
+    op.name              = name.c_str();
+    op.code              = code.c_str();
+    op.code_size         = code.size();
+    op.code_type         = code_type;
+    op.size              = 1;
+    op.alignment         = 1;
+    op.state             = nullptr;
+    op.extra_ltoirs      = nullptr;
+    op.extra_ltoir_sizes = nullptr;
+    op.num_extra_ltoirs  = 0;
     return op;
   }
 };
@@ -787,14 +787,17 @@ struct stateful_operation_t
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type      = cccl_op_kind_t::CCCL_STATEFUL;
-    op.size      = sizeof(OpT);
-    op.alignment = alignof(OpT);
-    op.state     = &op_state;
-    op.name      = name.c_str();
-    op.code      = code.c_str();
-    op.code_size = code.size();
-    op.code_type = CCCL_OP_LTOIR; // Stateful operations always use LTO-IR
+    op.type              = cccl_op_kind_t::CCCL_STATEFUL;
+    op.size              = sizeof(OpT);
+    op.alignment         = alignof(OpT);
+    op.state             = &op_state;
+    op.name              = name.c_str();
+    op.code              = code.c_str();
+    op.code_size         = code.size();
+    op.code_type         = CCCL_OP_LTOIR; // Stateful operations always use LTO-IR
+    op.extra_ltoirs      = nullptr;
+    op.extra_ltoir_sizes = nullptr;
+    op.num_extra_ltoirs  = 0;
     return op;
   }
 };
@@ -817,27 +820,27 @@ stateful_operation_t<OpT> make_operation(std::string_view name, const std::strin
 
 static cccl_op_t make_well_known_unary_operation()
 {
-  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
 }
 
 static cccl_op_t make_well_known_binary_operation()
 {
-  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
 }
 
 static cccl_op_t make_well_known_less_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
 }
 
 static cccl_op_t make_well_known_unique_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
 }
 
 static cccl_op_t make_well_known_greater_equal_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_GREATER_EQUAL, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_GREATER_EQUAL, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
 }
 
 template <class ValueT, class StateT>

@@ -21,7 +21,6 @@ function(libcudacxx_build_compiler_targets)
   # Set test specific flags
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_ASSERTIONS")
   list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_CPP_DIALECT")
-  list(APPEND cxx_compile_definitions "CCCL_ENABLE_OPTIONAL_REF")
   list(
     APPEND cxx_compile_definitions
     "CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER"
@@ -30,6 +29,10 @@ function(libcudacxx_build_compiler_targets)
     APPEND cxx_compile_definitions
     "CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER"
   )
+
+  if (CCCL_ENABLE_TILE)
+    list(APPEND cuda_compile_options "--enable-tile")
+  endif()
 
   cccl_build_compiler_interface(
     libcudacxx.compiler_flags

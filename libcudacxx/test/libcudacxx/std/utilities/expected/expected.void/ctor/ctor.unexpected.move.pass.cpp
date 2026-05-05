@@ -29,37 +29,37 @@
 #include "test_macros.h"
 
 // Test Constraints
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<int>>, "");
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, MoveOnly>, cuda::std::unexpected<MoveOnly>>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<int>>);
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, MoveOnly>, cuda::std::unexpected<MoveOnly>>);
 
 // !is_constructible_v<E, GF>
 struct foo
 {};
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<foo>>, "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<foo>>);
 
 // explicit(!is_convertible_v<G, E>)
 struct NotConvertible
 {
-  __host__ __device__ explicit NotConvertible(int);
+  TEST_FUNC explicit NotConvertible(int);
 };
-static_assert(cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, int>>, "");
+static_assert(cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, int>>);
 static_assert(!cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, NotConvertible>>,
               "");
 
 struct MyInt
 {
   int i;
-  __host__ __device__ constexpr MyInt(int ii)
+  TEST_FUNC constexpr MyInt(int ii)
       : i(ii)
   {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  TEST_FUNC friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i == rhs.i;
   };
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i != rhs.i;
   };
@@ -67,7 +67,7 @@ struct MyInt
 };
 
 template <class Err>
-__host__ __device__ constexpr void testInt()
+TEST_FUNC constexpr void testInt()
 {
   cuda::std::unexpected<int> u(5);
   cuda::std::expected<void, Err> e(cuda::std::move(u));
@@ -75,7 +75,7 @@ __host__ __device__ constexpr void testInt()
   assert(e.error() == 5);
 }
 
-__host__ __device__ constexpr void testMoveOnly()
+TEST_FUNC constexpr void testMoveOnly()
 {
   cuda::std::unexpected<MoveOnly> u(MoveOnly(5));
   cuda::std::expected<void, MoveOnly> e(cuda::std::move(u));
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void testMoveOnly()
   assert(u.error() == 0);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testInt<int>();
   testInt<MyInt>();
@@ -125,7 +125,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

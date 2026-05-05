@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // C++23 the formatter is a debug-enabled specialization.
@@ -27,7 +30,7 @@
 #include "literal.h"
 
 template <class CharT>
-__host__ __device__ void test_cstr_formatter(
+TEST_FUNC void test_cstr_formatter(
   cuda::std::basic_string_view<CharT> fmt,
   const CharT* value,
   cuda::std::size_t offset,
@@ -84,7 +87,7 @@ __host__ __device__ void test_cstr_formatter(
 }
 
 template <class CharT>
-__host__ __device__ void test_termination_condition(
+TEST_FUNC void test_termination_condition(
   cuda::std::basic_string_view<CharT> fmt, const CharT* value, cuda::std::basic_string_view<CharT> expected)
 {
   // The format-spec is valid if completely consumed or terminates at a '}'.
@@ -99,7 +102,7 @@ __host__ __device__ void test_termination_condition(
 }
 
 template <class CharT>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_termination_condition<CharT>(
     TEST_STRLIT(CharT, "}"), TEST_STRLIT(CharT, " azAZ09,./<>?"), TEST_STRLIT(CharT, " azAZ09,./<>?"));
@@ -123,7 +126,7 @@ __host__ __device__ void test_type()
     TEST_STRLIT(CharT, "%^7.7}"), TEST_STRLIT(CharT, "universe"), TEST_STRLIT(CharT, "univers"));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_type<char>();
 #if _CCCL_HAS_WCHAR_T()

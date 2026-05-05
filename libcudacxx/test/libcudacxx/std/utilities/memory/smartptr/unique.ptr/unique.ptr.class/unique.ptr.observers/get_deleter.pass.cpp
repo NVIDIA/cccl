@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // <memory>
 
 // unique_ptr
@@ -21,24 +22,24 @@
 
 struct Deleter
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX23 Deleter() {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter() {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 int test()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 int test()
   {
     return 5;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX23 int test() const
+  TEST_FUNC TEST_CONSTEXPR_CXX23 int test() const
   {
     return 6;
   }
 };
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<IsArray, int[], int>::type VT;
+  using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   {
     cuda::std::unique_ptr<int, Deleter> p;
     assert(p.get_deleter().test() == 5);
@@ -48,7 +49,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     assert(p.get_deleter().test() == 6);
   }
   {
-    typedef cuda::std::unique_ptr<VT, const Deleter&> UPtr;
+    using UPtr = cuda::std::unique_ptr<VT, const Deleter&>;
     const Deleter d;
     UPtr p(nullptr, d);
     const UPtr& cp = p;
@@ -58,7 +59,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     assert(cp.get_deleter().test() == 6);
   }
   {
-    typedef cuda::std::unique_ptr<VT, Deleter&> UPtr;
+    using UPtr = cuda::std::unique_ptr<VT, Deleter&>;
     Deleter d;
     UPtr p(nullptr, d);
     const UPtr& cp = p;
@@ -69,7 +70,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,6 +25,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -200,6 +201,46 @@ struct arch_traits_t
 //! @brief Gets the architecture traits for the given architecture id \c _Id.
 template <arch_id _Id>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits() noexcept;
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_50>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_50);
+  __traits.max_resident_grids                   = 32;
+  __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_52>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_52);
+  __traits.max_resident_grids                   = 32;
+  __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_53>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_53);
+  __traits.max_resident_grids                   = 32;
+  __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  __traits.max_registers_per_block              = 32 * 1024;
+  return __traits;
+};
 
 template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_60>() noexcept
@@ -455,68 +496,33 @@ template <>
 
 //! @brief Gets the architecture traits for the given architecture id \c __id.
 //!
-//! @throws \c cuda::cuda_error if the \c __id is not a known architecture.
+//! @throws cuda::cuda_error if the \c __id is not a known architecture.
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(arch_id __id)
 {
   switch (__id)
   {
-    case arch_id::sm_60:
-      return ::cuda::arch_traits<arch_id::sm_60>();
-    case arch_id::sm_61:
-      return ::cuda::arch_traits<arch_id::sm_61>();
-    case arch_id::sm_62:
-      return ::cuda::arch_traits<arch_id::sm_62>();
-    case arch_id::sm_70:
-      return ::cuda::arch_traits<arch_id::sm_70>();
-    case arch_id::sm_75:
-      return ::cuda::arch_traits<arch_id::sm_75>();
-    case arch_id::sm_80:
-      return ::cuda::arch_traits<arch_id::sm_80>();
-    case arch_id::sm_86:
-      return ::cuda::arch_traits<arch_id::sm_86>();
-    case arch_id::sm_87:
-      return ::cuda::arch_traits<arch_id::sm_87>();
-    case arch_id::sm_88:
-      return ::cuda::arch_traits<arch_id::sm_88>();
-    case arch_id::sm_89:
-      return ::cuda::arch_traits<arch_id::sm_89>();
-    case arch_id::sm_90:
-      return ::cuda::arch_traits<arch_id::sm_90>();
-    case arch_id::sm_90a:
-      return ::cuda::arch_traits<arch_id::sm_90a>();
-    case arch_id::sm_100:
-      return ::cuda::arch_traits<arch_id::sm_100>();
-    case arch_id::sm_100a:
-      return ::cuda::arch_traits<arch_id::sm_100a>();
-    case arch_id::sm_103:
-      return ::cuda::arch_traits<arch_id::sm_103>();
-    case arch_id::sm_103a:
-      return ::cuda::arch_traits<arch_id::sm_103a>();
-    case arch_id::sm_110:
-      return ::cuda::arch_traits<arch_id::sm_110>();
-    case arch_id::sm_110a:
-      return ::cuda::arch_traits<arch_id::sm_110a>();
-    case arch_id::sm_120:
-      return ::cuda::arch_traits<arch_id::sm_120>();
-    case arch_id::sm_120a:
-      return ::cuda::arch_traits<arch_id::sm_120a>();
-    case arch_id::sm_121:
-      return ::cuda::arch_traits<arch_id::sm_121>();
-    case arch_id::sm_121a:
-      return ::cuda::arch_traits<arch_id::sm_121a>();
+#define _CCCL_ARCH_TRAITS_FOR_CASE(_CC) \
+  case arch_id::sm_##_CC:               \
+    return ::cuda::arch_traits<arch_id::sm_##_CC>();
+#define _CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE(_CC) \
+  case arch_id::sm_##_CC##a:                     \
+    return ::cuda::arch_traits<arch_id::sm_##_CC##a>();
+    _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_CASE, _CCCL_KNOWN_CUDA_ARCH_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+#undef _CCCL_ARCH_TRAITS_FOR_CASE
+#undef _CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE
     default:
 #if _CCCL_HAS_CTK()
-      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
 #else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
-      ::cuda::__throw_cuda_error(/*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
+      _CCCL_THROW(::cuda::cuda_error, /*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
 #endif // ^^^ !_CCCL_HAS_CTK() ^^^
-      break;
   }
 }
 
 //! @brief Gets the architecture traits for the given compute capability \c __cc.
 //!
-//! @throws \c cuda::cuda_error if the \c __cc doesn't have a corresponding architecture id.
+//! @throws cuda::cuda_error if the \c __cc doesn't have a corresponding architecture id.
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(compute_capability __cc)
 {
   return ::cuda::arch_traits_for(::cuda::to_arch_id(__cc));

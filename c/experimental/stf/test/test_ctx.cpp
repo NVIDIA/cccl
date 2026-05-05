@@ -15,7 +15,7 @@
 
 C2H_TEST("basic stf context", "[context]")
 {
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
   stf_ctx_finalize(ctx);
 }

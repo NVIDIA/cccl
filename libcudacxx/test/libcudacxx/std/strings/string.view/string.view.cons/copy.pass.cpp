@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <cuda/std/string_view>
 
 // constexpr basic_string_view(const basic_string_view&) noexcept = default;
@@ -19,7 +22,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_copy_constructor()
+TEST_FUNC constexpr void test_copy_constructor()
 {
   using CharT = typename SV::value_type;
 
@@ -35,7 +38,7 @@ __host__ __device__ constexpr void test_copy_constructor()
   assert(sv_copy.size() == sv.size());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_copy_constructor<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

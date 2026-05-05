@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief An allocator which creates new elements in memory accessible by
@@ -80,13 +67,13 @@ public:
       : m_upstream(upstream)
   {}
 
-  [[nodiscard]] _CCCL_HOST virtual pointer
+  [[nodiscard]] _CCCL_HOST pointer
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return pointer(m_upstream->do_allocate(bytes, alignment).get());
   }
 
-  _CCCL_HOST virtual void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) override
+  _CCCL_HOST void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) override
   {
     m_upstream->do_deallocate(upstream_ptr(p.get()), bytes, alignment);
   }
@@ -133,7 +120,7 @@ public:
   };
 
   /*! Default constructor has no effect. */
-  _CCCL_HOST_DEVICE device_allocator() {}
+  device_allocator() = default;
 
   /*! Copy constructor has no effect. */
   _CCCL_HOST_DEVICE device_allocator(const device_allocator& other)
@@ -149,7 +136,7 @@ public:
   device_allocator& operator=(const device_allocator&) = default;
 
   /*! Destructor has no effect. */
-  _CCCL_HOST_DEVICE ~device_allocator() {}
+  ~device_allocator() = default;
 };
 
 /*! \} // allocators

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): Drop this entire test in CCCL 4.0 when we drop all CUB dispatchers
 // This file tests calling cub::DispatchReduce directly
 
 #include "insert_nested_NVTX_range_guard.h"
@@ -67,10 +68,11 @@ C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][devic
                         policy_hub_t<accum_t>>;
 
   size_t temp_storage_bytes = 0;
-  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, 0);
+  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, nullptr);
 
   c2h::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  dispatch_t::Dispatch(temp_storage.data().get(), temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, 0);
+  dispatch_t::Dispatch(
+    temp_storage.data().get(), temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, nullptr);
 
   // Verify result
   const T expected_result = static_cast<T>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));

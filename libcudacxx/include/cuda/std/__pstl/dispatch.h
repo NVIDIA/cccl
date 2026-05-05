@@ -32,42 +32,29 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 enum class __pstl_algorithm
 {
-  // The find_if family
-  __find,
-  __find_if,
-  __any_of,
-  __all_of,
-  __none_of,
-  __is_partitioned,
-
-  // merge family
-  // non implemented
-
-  // sort family
-  __sort,
-
-  // for_each family
-  __for_each_n,
-  __fill,
-  __fill_n,
-  __replace,
-  __replace_if,
-  __generate,
-  __generate_n,
-
-  // transform_reduce and transform_reduce_binary family
-  __count_if,
-  __count,
-  __equal,
-  __reduce,
-
-  // transform and transform_binary family
-  __replace_copy_if,
-  __replace_copy,
-  __move,
-  __copy,
+  __adjacent_difference,
+  __copy_if,
   __copy_n,
+  __exclusive_scan,
+  __find_if,
+  __for_each_n,
+  __generate_n,
+  __inclusive_scan,
+  __max_element,
+  __merge,
+  __min_element,
+  __partition,
+  __partition_copy,
+  __reduce,
+  __remove_if,
+  __rotate,
   __rotate_copy,
+  __shift_left,
+  __shift_right,
+  __stable_partition,
+  __transform,
+  __transform_reduce,
+  __unique,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially
@@ -97,7 +84,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Top layer dispatcher that returns a concrete dispatch if possible
 template <__pstl_algorithm _Algorithm, class _Policy>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __pstl_select_dispatch() noexcept
+[[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEVAL auto __pstl_select_dispatch() noexcept
 {
   // First extract the desired backend from the policy
   constexpr __execution_backend __backend = _Policy::__get_backend();

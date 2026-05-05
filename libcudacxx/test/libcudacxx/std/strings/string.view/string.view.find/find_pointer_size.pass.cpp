@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 // <cuda/std/string_view>
 
 // constexpr size_type find(const charT* s, size_type pos = 0) const;
@@ -19,7 +22,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_find(const SV& sv, const typename SV::value_type* str, typename SV::size_type x)
+TEST_FUNC constexpr void test_find(const SV& sv, const typename SV::value_type* str, typename SV::size_type x)
 {
   assert(sv.find(str) == x);
   if (x != SV::npos)
@@ -30,7 +33,7 @@ __host__ __device__ constexpr void test_find(const SV& sv, const typename SV::va
 }
 
 template <class SV>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_find(const SV& sv, const typename SV::value_type* str, typename SV::size_type pos, typename SV::size_type x)
 {
   assert(sv.find(str, pos) == x);
@@ -42,7 +45,7 @@ test_find(const SV& sv, const typename SV::value_type* str, typename SV::size_ty
 }
 
 template <class SV>
-__host__ __device__ constexpr void test_find()
+TEST_FUNC constexpr void test_find()
 {
   using CharT = typename SV::value_type;
   using SizeT = typename SV::size_type;
@@ -168,7 +171,7 @@ __host__ __device__ constexpr void test_find()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_find<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

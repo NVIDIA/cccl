@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cuda/std/complex>
 
 // template<Arithmetic T, Arithmetic U>
@@ -31,39 +34,39 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T, class U>
-__host__ __device__ void test(T x, const cuda::std::complex<U>& y)
+TEST_FUNC void test(T x, const cuda::std::complex<U>& y)
 {
   using promote_t = typename cuda::std::common_type<T, U>::type;
-  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value));
   assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x, 0), cuda::std::complex<promote_t>(y)));
 }
 
 template <class T, class U>
-__host__ __device__ void test(const cuda::std::complex<T>& x, U y)
+TEST_FUNC void test(const cuda::std::complex<T>& x, U y)
 {
   using promote_t = typename cuda::std::common_type<T, U>::type;
-  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value));
   assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x), cuda::std::complex<promote_t>(y, 0)));
 }
 
 template <class T, class U>
-__host__ __device__ void test(const cuda::std::complex<T>& x, const cuda::std::complex<U>& y)
+TEST_FUNC void test(const cuda::std::complex<T>& x, const cuda::std::complex<U>& y)
 {
   using promote_t = typename cuda::std::common_type<T, U>::type;
   assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x), cuda::std::complex<promote_t>(y)));
 }
 
 template <class T, class U>
-__host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type*  = 0,
-                              typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
+TEST_FUNC void test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type*  = 0,
+                    typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
 {
   test(T(3), cuda::std::complex<U>(4, 5));
   test(cuda::std::complex<U>(3, 4), T(5));
 }
 
 template <class T, class U>
-__host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0,
-                              typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
+TEST_FUNC void test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0,
+                    typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
 {
   test(T(3), cuda::std::complex<U>(4, 5));
   test(cuda::std::complex<T>(3, 4), U(5));

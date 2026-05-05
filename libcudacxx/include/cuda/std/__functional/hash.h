@@ -24,6 +24,7 @@
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__fwd/hash.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -638,7 +639,7 @@ using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;
 
 template <class _Type, class... _Keys>
 using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
-  __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
+  __enable_hash_helper_imp<_Type, enable_if_t<__fold_and_v<__has_enabled_hash<_Keys>::value...>>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

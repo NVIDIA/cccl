@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_offset()
+TEST_FUNC constexpr void test_offset()
 {
   ElementPool<cuda::std::remove_const_t<T>, 10> data;
   T* ptr = data.get_ptr();
@@ -36,7 +36,7 @@ __host__ __device__ constexpr void test_offset()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_offset<int>();
   test_offset<const int>();
@@ -51,7 +51,7 @@ int main(int, char**)
 #if TEST_STD_VER >= 2020
   NV_IF_TARGET(NV_IS_HOST,
                ( // This fails because we cannot allocate on device at compile time
-                 static_assert(test(), "");))
+                 static_assert(test());))
 #endif // TEST_STD_VER >= 2020
 
   return 0;

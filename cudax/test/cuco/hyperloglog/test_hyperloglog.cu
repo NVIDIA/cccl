@@ -11,6 +11,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
@@ -215,7 +216,7 @@ C2H_TEST("HyperLogLog precision constructor", "[hyperloglog]")
   REQUIRE(estimator.estimate() == 0);
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 6) // Pinned memory resource is only supported with CTK 12.6 and later
+#if _CCCL_CTK_AT_LEAST(12, 9) // Pinned memory resource is only supported with CTK 12.9 and later
 C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
 {
   using T              = int32_t;
@@ -243,4 +244,4 @@ C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
 
   REQUIRE(relative_error < tolerance_factor * relative_standard_deviation);
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)

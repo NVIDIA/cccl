@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file vector_base.h
  *  \brief Defines the interface to a base class for
@@ -39,6 +26,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
@@ -142,7 +130,7 @@ public:
   /*! Move constructor moves from another vector_base.
    *  \param v The vector_base to move.
    */
-  vector_base(vector_base&& v);
+  vector_base(vector_base&& v) noexcept;
 
   // FIXME: the internal Thrust machinery in range_init doesn't work with move
   // iterators, which is necessary for the following constructor to be implemented
@@ -157,7 +145,7 @@ public:
   /*! Move assign operator moves from another vector_base.
    *  \param v The vector_base to move.
    */
-  vector_base& operator=(vector_base&& v);
+  vector_base& operator=(vector_base&& v) noexcept;
 
   /*! This constructor builds a \p vector_base from an intializer_list.
    *  \param il The intializer_list.
@@ -440,7 +428,8 @@ public:
   /*! This method swaps the contents of this vector_base with another vector_base.
    *  \param v The vector_base with which to swap.
    */
-  void swap(vector_base& v)
+  void swap(vector_base& v) noexcept(::cuda::std::is_nothrow_swappable_v<storage_type>
+                                     && ::cuda::std::is_nothrow_swappable_v<size_type>)
   {
     using ::cuda::std::swap;
     swap(m_storage, v.m_storage);

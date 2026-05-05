@@ -20,20 +20,20 @@ template <class T>
 class nasty_vector
 {
 public:
-  typedef typename std::vector<T> nested_container;
-  typedef typename nested_container::value_type value_type;
-  typedef typename nested_container::reference reference;
-  typedef typename nested_container::const_reference const_reference;
-  typedef typename nested_container::iterator iterator;
-  typedef typename nested_container::const_iterator const_iterator;
+  using nested_container = typename std::vector<T>;
+  using value_type       = typename nested_container::value_type;
+  using reference        = typename nested_container::reference;
+  using const_reference  = typename nested_container::const_reference;
+  using iterator         = typename nested_container::iterator;
+  using const_iterator   = typename nested_container::const_iterator;
 
-  typedef typename nested_container::size_type size_type;
-  typedef typename nested_container::difference_type difference_type;
-  typedef typename nested_container::pointer pointer;
-  typedef typename nested_container::const_pointer const_pointer;
+  using size_type       = typename nested_container::size_type;
+  using difference_type = typename nested_container::difference_type;
+  using pointer         = typename nested_container::pointer;
+  using const_pointer   = typename nested_container::const_pointer;
 
-  typedef typename nested_container::reverse_iterator reverse_iterator;
-  typedef typename nested_container::const_reverse_iterator const_reverse_iterator;
+  using reverse_iterator       = typename nested_container::reverse_iterator;
+  using const_reverse_iterator = typename nested_container::const_reverse_iterator;
 
   nasty_vector()
       : v_()
@@ -285,20 +285,20 @@ template <class T>
 class nasty_list
 {
 public:
-  typedef typename std::list<T> nested_container;
-  typedef typename nested_container::value_type value_type;
-  typedef typename nested_container::reference reference;
-  typedef typename nested_container::const_reference const_reference;
-  typedef typename nested_container::iterator iterator;
-  typedef typename nested_container::const_iterator const_iterator;
+  using nested_container = typename std::list<T>;
+  using value_type       = typename nested_container::value_type;
+  using reference        = typename nested_container::reference;
+  using const_reference  = typename nested_container::const_reference;
+  using iterator         = typename nested_container::iterator;
+  using const_iterator   = typename nested_container::const_iterator;
 
-  typedef typename nested_container::size_type size_type;
-  typedef typename nested_container::difference_type difference_type;
-  typedef typename nested_container::pointer pointer;
-  typedef typename nested_container::const_pointer const_pointer;
+  using size_type       = typename nested_container::size_type;
+  using difference_type = typename nested_container::difference_type;
+  using pointer         = typename nested_container::pointer;
+  using const_pointer   = typename nested_container::const_pointer;
 
-  typedef typename nested_container::reverse_iterator reverse_iterator;
-  typedef typename nested_container::const_reverse_iterator const_reverse_iterator;
+  using reverse_iterator       = typename nested_container::reverse_iterator;
+  using const_reverse_iterator = typename nested_container::const_reverse_iterator;
 
   nasty_list()
       : l_()

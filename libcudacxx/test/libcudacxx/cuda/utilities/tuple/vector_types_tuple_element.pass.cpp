@@ -19,20 +19,20 @@ template <class VType, class BaseType, size_t Index>
 using expected_type = cuda::std::is_same<typename cuda::std::tuple_element<Index, VType>::type, BaseType>;
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index < VSize), int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
-  static_assert((expected_type<VType, BaseType, Index>::value), "");
-  static_assert((expected_type<const VType, const BaseType, Index>::value), "");
-  static_assert((expected_type<volatile VType, volatile BaseType, Index>::value), "");
-  static_assert((expected_type<const volatile VType, const volatile BaseType, Index>::value), "");
+  static_assert((expected_type<VType, BaseType, Index>::value));
+  static_assert((expected_type<const VType, const BaseType, Index>::value));
+  static_assert((expected_type<volatile VType, volatile BaseType, Index>::value));
+  static_assert((expected_type<const volatile VType, const volatile BaseType, Index>::value));
 }
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index >= VSize), int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {}
 
 template <class VType, class BaseType, size_t VSize>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test<VType, BaseType, VSize, 0>();
   test<VType, BaseType, VSize, 1>();
@@ -46,7 +46,7 @@ __host__ __device__ constexpr void test()
   test<Type##3, BaseType, 3>();            \
   test<Type##4, BaseType, 4>();
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);

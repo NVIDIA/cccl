@@ -20,47 +20,46 @@ struct NonTrivialCopy
 
   NonTrivialCopy() = default;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialCopy(NonTrivialCopy&& other) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialCopy(NonTrivialCopy&& other) noexcept
       : data(other.data)
       , copy_assigned_from(false)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialCopy(const NonTrivialCopy& other) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialCopy(const NonTrivialCopy& other) noexcept
       : data(other.data)
       , copy_assigned_from(false)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialCopy& operator=(const NonTrivialCopy& other) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialCopy& operator=(const NonTrivialCopy& other) noexcept
   {
     data               = other.data;
     copy_assigned_from = true;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialCopy& operator=(NonTrivialCopy&& other) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialCopy& operator=(NonTrivialCopy&& other) noexcept
   {
     data               = other.data;
     copy_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialCopy(const int val) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialCopy(const int val) noexcept
       : data(val)
       , copy_assigned_from(false)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialCopy& operator=(const int val) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialCopy& operator=(const int val) noexcept
   {
     data               = val;
     copy_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 friend bool
-  operator==(const NonTrivialCopy& lhs, const NonTrivialCopy& rhs) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 friend bool operator==(const NonTrivialCopy& lhs, const NonTrivialCopy& rhs) noexcept
   {
     // NOTE: This uses implicit knowledge that the right hand side has been copied from
     return lhs.data == rhs.data && !lhs.copy_assigned_from && rhs.copy_assigned_from;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
   {
     // NOTE: This uses implicit knowledge that the only elements we compare against were untouched
     return data == other && !copy_assigned_from;
@@ -77,30 +76,30 @@ struct NonTrivialDestructor
   NonTrivialDestructor(const NonTrivialDestructor&) noexcept            = default;
   NonTrivialDestructor& operator=(NonTrivialDestructor&&) noexcept      = default;
   NonTrivialDestructor& operator=(const NonTrivialDestructor&) noexcept = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~NonTrivialDestructor() noexcept {}
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~NonTrivialDestructor() noexcept {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor(const int val) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialDestructor(const int val) noexcept
       : data(val)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor& operator=(const int val) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 NonTrivialDestructor& operator=(const int val) noexcept
   {
     data = val;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 friend bool
+  TEST_FUNC TEST_CONSTEXPR_CXX20 friend bool
   operator==(const NonTrivialDestructor& lhs, const NonTrivialDestructor& rhs) noexcept
   {
     return lhs.data == rhs.data;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
   {
     return data == other;
   }
 };
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX20 __host__ __device__ void test()
+TEST_CONSTEXPR_CXX20 TEST_FUNC void test()
 {
   using value_type = typename cuda::std::iterator_traits<InIter>::value_type;
   {

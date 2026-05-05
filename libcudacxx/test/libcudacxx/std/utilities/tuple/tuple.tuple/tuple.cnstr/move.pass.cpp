@@ -21,16 +21,16 @@
 
 struct ConstructsWithTupleLeaf
 {
-  __host__ __device__ ConstructsWithTupleLeaf() {}
+  TEST_FUNC ConstructsWithTupleLeaf() {}
 
-  __host__ __device__ ConstructsWithTupleLeaf(ConstructsWithTupleLeaf const&)
+  TEST_FUNC ConstructsWithTupleLeaf(ConstructsWithTupleLeaf const&)
   {
     assert(false);
   }
-  __host__ __device__ ConstructsWithTupleLeaf(ConstructsWithTupleLeaf&&) {}
+  TEST_FUNC ConstructsWithTupleLeaf(ConstructsWithTupleLeaf&&) {}
 
   template <class T>
-  __host__ __device__ ConstructsWithTupleLeaf(T)
+  TEST_FUNC ConstructsWithTupleLeaf(T)
   {
     static_assert(!cuda::std::is_same<T, T>::value, "Constructor instantiated for type other than int");
   }
@@ -46,7 +46,7 @@ struct move_only_ebo
 // a move_only type which does not trigger the empty base optimization
 struct move_only_large final
 {
-  __host__ __device__ move_only_large()
+  TEST_FUNC move_only_large()
       : value(42)
   {}
   move_only_large(move_only_large&&) = default;
@@ -54,7 +54,7 @@ struct move_only_large final
 };
 
 template <class Elem>
-__host__ __device__ void test_sfinae()
+TEST_FUNC void test_sfinae()
 {
   using Tup = cuda::std::tuple<Elem>;
   // cuda::std::allocator not supported
@@ -62,31 +62,31 @@ __host__ __device__ void test_sfinae()
   // using Tag = cuda::std::allocator_arg_t;
   // special members
   {
-    static_assert(cuda::std::is_default_constructible<Tup>::value, "");
-    static_assert(cuda::std::is_move_constructible<Tup>::value, "");
-    static_assert(!cuda::std::is_copy_constructible<Tup>::value, "");
-    static_assert(!cuda::std::is_constructible<Tup, Tup&>::value, "");
+    static_assert(cuda::std::is_default_constructible<Tup>::value);
+    static_assert(cuda::std::is_move_constructible<Tup>::value);
+    static_assert(!cuda::std::is_copy_constructible<Tup>::value);
+    static_assert(!cuda::std::is_constructible<Tup, Tup&>::value);
   }
   // args constructors
   {
-    static_assert(cuda::std::is_constructible<Tup, Elem&&>::value, "");
-    static_assert(!cuda::std::is_constructible<Tup, Elem const&>::value, "");
-    static_assert(!cuda::std::is_constructible<Tup, Elem&>::value, "");
+    static_assert(cuda::std::is_constructible<Tup, Elem&&>::value);
+    static_assert(!cuda::std::is_constructible<Tup, Elem const&>::value);
+    static_assert(!cuda::std::is_constructible<Tup, Elem&>::value);
   }
   // cuda::std::allocator not supported
   /*
   // uses-allocator special member constructors
   {
-      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc>::value, "");
-      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Tup&&>::value, "");
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup const&>::value, "");
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup &>::value, "");
+      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc>::value);
+      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Tup&&>::value);
+      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup const&>::value);
+      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup &>::value);
   }
   // uses-allocator args constructors
   {
-      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Elem&&>::value, "");
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem const&>::value, "");
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem &>::value, "");
+      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Elem&&>::value);
+      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem const&>::value);
+      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem &>::value);
   }
   */
 }
