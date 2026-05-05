@@ -27,7 +27,7 @@ These classes then contain static member functions providing corresponding API e
         using default_policy_selector = detail::algorithm::policy_selector_from_types<...>;
         return dispatch_with_env_and_tuning<default_policy_selector>(
           env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-            return detail::algorithm::dispatch(d_temp_storage, temp_storage_bytes, ..., stream);
+            return detail::algorithm::dispatch(d_temp_storage, temp_storage_bytes, ..., stream, policy_selector);
           });
       }
     };
@@ -114,7 +114,10 @@ A more precise description is given later.
     }
 
     namespace detail::algorithm {
-      cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
+      cudaError_t dispatch(
+          void *d_temp_storage, size_t &temp_storage_bytes,
+          ...,
+          cudaStream_t stream, PolicySelector policy_selector = {}) { // (1)
         cuda::compute_capability cc{};
         ptx_compute_cap(cc);
         const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(cc); // (2)
@@ -157,7 +160,10 @@ There are two style of dispatch functions, depending on whether the policy is ne
 
     namespace detail::algorithm {
       // Dispatch version A - runtime policy
-      cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
+      cudaError_t dispatch(
+          void *d_temp_storage, size_t &temp_storage_bytes,
+          ...,
+          cudaStream_t stream, PolicySelector policy_selector = {}) { // (1)
         cuda::compute_capability cc{};
         ptx_compute_cap(cc);
         const auto active_policy = policy_selector(cc); // runtime-time policy
@@ -189,7 +195,10 @@ The policy getter is necessary to work around a C++17 limitation.
 
     namespace detail::algorithm {
       // Dispatch version B - compile-time policy
-      cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
+      cudaError_t dispatch(
+          void *d_temp_storage, size_t &temp_storage_bytes,
+          ...,
+          cudaStream_t stream, PolicySelector policy_selector = {}) { // (1)
         cuda::compute_capability cc{};
         ptx_compute_cap(cc);
         return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) { // calls (2)
