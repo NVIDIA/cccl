@@ -7,6 +7,9 @@ The ``cuda.coop._experimental`` library provides cooperative algorithms that ope
 at the level of blocks and warps. It is designed to be used within
 `Numba CUDA kernels <https://numba.readthedocs.io/en/stable/cuda/kernels.html>`_.
 
+Note: this API is marked as experimental, and we anticipate the Python package
+namespace and API details will change in a subsequent release.
+
 Here's an example showing how to use the ``cuda.coop._experimental`` library to
 perform block-level reduction within a Numba CUDA kernel.
 
