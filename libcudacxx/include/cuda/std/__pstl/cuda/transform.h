@@ -89,11 +89,8 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     return __result + __count;
   }
 
-  _CCCL_TEMPLATE(class _Policy,
-                 class _InputIterator,
-                 class _OutputIterator,
-                 class _UnaryOp,
-                 class _Predicate = ::cuda::always_true)
+  _CCCL_TEMPLATE(
+    class _Policy, class _InputIterator, class _OutputIterator, class _UnaryOp, class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
                    is_invocable_v<_UnaryOp, iter_reference_t<_InputIterator>>)
   [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(

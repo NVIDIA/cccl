@@ -79,11 +79,11 @@ struct DeviceTransform
 
     using tuning_env =
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-    using default_policy_selector = detail::transform::policy_selector_from_types<
-      StableAddress == detail::transform::requires_stable_address::yes,
-      ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
-      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-      RandomAccessIteratorOut>;
+    using default_policy_selector =
+      detail::transform::policy_selector_from_types<StableAddress == detail::transform::requires_stable_address::yes,
+                                                    ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
+                                                    ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                                    RandomAccessIteratorOut>;
 
     using policy_selector = ::cuda::std::execution::
       __query_result_or_t<tuning_env, detail::transform::transform_policy, default_policy_selector>;
