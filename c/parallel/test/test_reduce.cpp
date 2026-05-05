@@ -770,10 +770,10 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
   const void* op_blob = op_full.code.data();
   size_t op_size      = op_full.code.size();
 
-  // link_ltoir links kernel LTOIR + op LTOIR → CUBIN and loads the library.
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_link_ltoir(&build, &op_blob, &op_size, 1));
-
   REQUIRE(build.cubin != nullptr);
+  REQUIRE(build.library == nullptr);
+  REQUIRE(CUDA_SUCCESS == cccl_device_reduce_load(&build));
   REQUIRE(build.library != nullptr);
   CHECK(build.kernel_ltoir == nullptr);
 

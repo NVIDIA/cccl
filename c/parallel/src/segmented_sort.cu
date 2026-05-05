@@ -970,7 +970,7 @@ try
   build_ptr->kernel_ltoir_size = 0;
   build_ptr->cubin             = (void*) cubin.release();
   build_ptr->cubin_size        = cubin_size;
-  return cccl_device_segmented_sort_load(build_ptr);
+  return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {

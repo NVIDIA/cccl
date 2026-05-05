@@ -187,6 +187,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     size_t op_size      = op_full.code.size();
     t0                  = clk::now();
     REQUIRE(CUDA_SUCCESS == cccl_device_reduce_link_ltoir(&link_build, &op_blob, &op_size, 1));
+    REQUIRE(CUDA_SUCCESS == cccl_device_reduce_load(&link_build));
     WITH_TEMP([&](void* tmp, size_t* sz) {
       return cccl_device_reduce(link_build, tmp, sz, in_, out_, N, op_c, init_, nullptr);
     });
@@ -305,6 +306,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     size_t op_size      = op_full.code.size();
     t0                  = clk::now();
     REQUIRE(CUDA_SUCCESS == cccl_device_scan_link_ltoir(&link_build, &op_blob, &op_size, 1));
+    REQUIRE(CUDA_SUCCESS == cccl_device_scan_load(&link_build));
     WITH_TEMP([&](void* tmp, size_t* sz) {
       return cccl_device_exclusive_scan(link_build, tmp, sz, in_, out_, N, op_c, init_, nullptr);
     });
@@ -426,6 +428,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     size_t op_size      = op_full.code.size();
     t0                  = clk::now();
     REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_link_ltoir(&link_build, &op_blob, &op_size, 1));
+    REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_load(&link_build));
     WITH_TEMP([&](void* tmp, size_t* sz) {
       return cccl_device_merge_sort(link_build, tmp, sz, ki, null_items, ko, null_items, N, op_c, nullptr);
     });

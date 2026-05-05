@@ -371,7 +371,12 @@ CUresult cccl_device_three_way_partition_build_ex(
         sizes.push_back(l.size);
       }
     }
-    return cccl_device_three_way_partition_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
+    CUresult r = cccl_device_three_way_partition_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
+    if (r != CUDA_SUCCESS)
+    {
+      return r;
+    }
+    return cccl_device_three_way_partition_load(build_ptr);
   }
   CUresult result = cccl_device_three_way_partition_compile(
     build_ptr,
@@ -559,7 +564,7 @@ try
   build_ptr->kernel_ltoir_size = 0;
   build_ptr->cubin             = (void*) cubin.release();
   build_ptr->cubin_size        = cubin_size;
-  return cccl_device_three_way_partition_load(build_ptr);
+  return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
