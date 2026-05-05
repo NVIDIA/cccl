@@ -21,42 +21,18 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    # Mirror of every `msvc`/`msvc2022` job across `pull_request`,
-    # `pull_request_lite`, `nightly`, and `weekly`, retargeted at the
-    # `msvc_preview` host compiler so this PR exercises the new toolchain.
-    # CTK 12.X entries are intentionally omitted: the
-    # `{ctk: ['12.0', '12.9'], cxx: ['msvc_preview2026']}` exclusion drops them
-    # (NVCC <13.0 does not recognize MSVC 2026).
-    #
-    # All flagged entries pass `NVCC_PREPEND_FLAGS=--allow-unsupported-compiler`.
-    # Two unflagged "canary" build jobs (one per supported 13.X CTK) detect when
-    # the toolkit starts recognizing MSVC 2026 natively.
+    - {jobs: ['build'],                   std: 'all',                  cxx: 'msvc_preview'}
+    - {jobs: ['build'], project: 'cudax', std: 'all',                  cxx: 'msvc_preview'}
 
-    # Builds (default projects + cudax):
-    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: 'msvc_preview', environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-    - {jobs: ['build'], project: 'cudax', std: 'minmax', ctk: '13.0', cxx: 'msvc_preview', environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-    - {jobs: ['build'],                   std: 'all',                  cxx: 'msvc_preview', environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-    - {jobs: ['build'], project: 'cudax', std: 'all',                  cxx: 'msvc_preview', environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-
-    # Tests. Most msvc test variants are filtered by the no-Windows-GPU
-    # exclusion; the build dependency still produces meaningful coverage, and
-    # `thrust`, `python`, etc. expand into non-GPU/host-runnable variants via
-    # their project `job_map`s.
-    # Use std: 'minmax' to cover both C++17 and C++20 (matches weekly's scope).
-    - {jobs: ['test'], project: 'libcudacxx', std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtx2080',  environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtxa6000', environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-    - {jobs: ['test'], project: 'thrust',     std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtx4090',  environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-    - {jobs: ['test'], project: 'cudax',      std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtx2080',  environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
+    - {jobs: ['test'], project: 'libcudacxx', std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtx2080'}
+    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'thrust',     std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtx4090'}
+    - {jobs: ['test'], project: 'cudax',      std: 'minmax', ctk: '13.X', cxx: 'msvc_preview', gpu: 'rtx2080'}
     # c.parallel: the `test` job is excluded for windows-msvc so only the build runs.
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'msvc_preview', gpu: ['rtx2080', 'l4', 'h100'], environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'msvc_preview', gpu: ['rtx2080', 'l4', 'h100']}
     # Python: the `test` job_map expands to test_py_* (not in the exclude list), so these actually run.
-    - {jobs: ['test'], project: 'python', ctk: ['13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4',   cxx: 'msvc_preview', environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-    - {jobs: ['test'], project: 'python', ctk: '13.X',           py_version: '3.13',                          gpu: 'h100', cxx: 'msvc_preview', environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']}
-
-    # Canary builds (no `--allow-unsupported-compiler`): one per 13.X CTK so we
-    # learn which toolkits start recognizing MSVC 2026 without the override.
-    - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: 'msvc_preview'}
-    - {jobs: ['build'], std: 'all',              cxx: 'msvc_preview'}
+    - {jobs: ['test'], project: 'python', ctk: '13.X', py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4',   cxx: 'msvc_preview'}
+    - {jobs: ['test'], project: 'python', ctk: '13.X',           py_version: '3.13',                          gpu: 'h100', cxx: 'msvc_preview'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
