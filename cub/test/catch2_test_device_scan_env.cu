@@ -15,7 +15,7 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/iterator>
 
 #include "catch2_test_device_scan.cuh"
@@ -40,19 +40,7 @@ namespace stdexec = cuda::std::execution;
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-struct block_size_check_t
-{
-  int* ptr;
-
-  __device__ int operator()(int a, int b)
-  {
-    if (threadIdx.x == 0)
-    {
-      *ptr = blockDim.x;
-    }
-    return a + b;
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device scan exclusive scan works with default environment", "[scan][device]")
 {
@@ -67,11 +55,11 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
 
-  cuda::arch_id arch_id;
-  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
+  cuda::compute_capability cc;
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  const auto target_block_size = selector_t{}(cc).lookback.block_threads;
 
-  c2h::device_vector<int> d_block_size(1);
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto init = value_t{42};
@@ -80,7 +68,7 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   REQUIRE(d_out[1] == (init + value_t{1}));
 
   // Make sure we use default tuning
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 TEST_CASE("Device scan exclusive scan with FutureValue works with default environment", "[scan][device]")
@@ -120,7 +108,7 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
 template <int BlockThreads>
 struct scan_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::scan::scan_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan::scan_policy
   {
     return {cub::detail::scan::scan_algorithm::lookback,
             {BlockThreads,
@@ -140,7 +128,7 @@ struct unrelated_policy
 struct unrelated_tuning
 {
   // should never be called
-  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
+  auto operator()(cuda::compute_capability) const -> unrelated_policy
   {
     throw 1337;
   }
@@ -150,8 +138,8 @@ using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::
 
 C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<int> d_block_size(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 3;
@@ -170,13 +158,13 @@ C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_size
 
 C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
   auto num_items = target_block_size;
-  c2h::device_vector<int> d_block_size(1, 0);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
   // use block_size_recording_iterator to embed blockDim info in the input type and query after
   // since ExclusiveSum can not take a custom scan_op
-  auto d_in  = block_size_recording_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto d_out = c2h::device_vector<int>(num_items);
 
   // We are expecting that `unrelated_tuning` is ignored
@@ -217,11 +205,11 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
 
-  cuda::arch_id arch_id;
-  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
-  const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
+  cuda::compute_capability cc;
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  const auto target_block_size = selector_t{}(cc).lookback.block_threads;
 
-  c2h::device_vector<int> d_block_size(1);
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, num_items));
@@ -229,13 +217,13 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   REQUIRE(d_out[1] == d_in[0] + d_in[1]);
 
   // Make sure we use default tuning
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 C2H_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<int> d_block_size(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 3;
@@ -269,8 +257,8 @@ TEST_CASE("Device scan inclusive-scan-init works with default environment", "[sc
 
 C2H_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<int> d_block_size(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 3;

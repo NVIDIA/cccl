@@ -66,6 +66,7 @@ class _Histogram:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_samples: DeviceArrayLike | IteratorT,
         d_histogram: DeviceArrayLike,
@@ -140,6 +141,7 @@ def _make_histogram_even_impl(
 
 
 def make_histogram_even(
+    *,
     d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
     h_num_output_levels: np.ndarray,
@@ -192,6 +194,7 @@ def make_histogram_even(
 
 
 def histogram_even(
+    *,
     d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
     num_output_levels: int,
@@ -231,31 +234,31 @@ def histogram_even(
     h_upper_level = np.array([upper_level], dtype=type(upper_level))
 
     histogram = make_histogram_even(
-        d_samples,
-        d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
     )
     temp_storage_bytes = histogram(
-        None,
-        d_samples,
-        d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
-        stream,
+        temp_storage=None,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
+        stream=stream,
     )
     temp_storage = TempStorageBuffer(temp_storage_bytes, stream)
     histogram(
-        temp_storage,
-        d_samples,
-        d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
-        stream,
+        temp_storage=temp_storage,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
+        stream=stream,
     )

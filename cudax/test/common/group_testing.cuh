@@ -44,6 +44,54 @@ __device__ auto& get_barriers(const Level& level) noexcept
     return reinterpret_cast<Barrier(&)[N]>(global_barriers_storage<BarriersStorage, Id>);
   }
 }
+
+struct ThreadsInWarpMappingResult
+{
+  __device__ static constexpr ::cuda::std::size_t static_group_count()
+  {
+    return 1;
+  }
+
+  __device__ unsigned group_count() const
+  {
+    return 1;
+  }
+
+  __device__ unsigned group_rank() const
+  {
+    return 0;
+  }
+
+  __device__ static constexpr ::cuda::std::size_t static_count()
+  {
+    return 32;
+  }
+
+  __device__ unsigned count() const
+  {
+    return 32;
+  }
+
+  __device__ unsigned rank() const
+  {
+    return cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
+  }
+
+  __device__ bool is_valid() const
+  {
+    return true;
+  }
+
+  __device__ static constexpr bool is_always_exhaustive() noexcept
+  {
+    return true;
+  }
+
+  __device__ static constexpr bool is_always_contiguous() noexcept
+  {
+    return true;
+  }
+};
 } // namespace
 
 #endif // COMMON_GROUP_CUH

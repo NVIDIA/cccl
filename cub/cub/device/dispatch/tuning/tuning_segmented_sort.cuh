@@ -18,7 +18,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
@@ -175,13 +175,13 @@ struct policy_selector
       radix_bits};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_sort_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_sort_policy
   {
     const auto scale_items = [&](int nominal_4b_items_per_thread) {
       return nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
     };
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       const bool large_items = __dominant_size() > 4;
       const int radix_bits   = key_size > 1 ? 6 : 4;
@@ -196,7 +196,7 @@ struct policy_selector
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       const int radix_bits = key_size > 1 ? 6 : 4;
       const int small_itp  = scale_items(9);
@@ -210,7 +210,7 @@ struct policy_selector
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_70)
+    if (cc >= ::cuda::compute_capability{7, 0})
     {
       const int radix_bits = key_size > 1 ? 6 : 4;
       const int small_itp  = scale_items(7);
@@ -223,7 +223,7 @@ struct policy_selector
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_62)
+    if (cc >= ::cuda::compute_capability{6, 2})
     {
       const int radix_bits       = key_size > 1 ? 5 : 4;
       const int small_medium_itp = scale_items(9);
@@ -235,7 +235,7 @@ struct policy_selector
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_61)
+    if (cc >= ::cuda::compute_capability{6, 1})
     {
       const int radix_bits       = key_size > 1 ? 6 : 4;
       const int small_medium_itp = scale_items(9);
@@ -247,7 +247,7 @@ struct policy_selector
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{6, 0})
     {
       const int radix_bits       = key_size > 1 ? 6 : 4;
       const int small_medium_itp = scale_items(9);
@@ -278,9 +278,9 @@ static_assert(segmented_sort_policy_selector<policy_selector>);
 template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_sort_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_sort_policy
   {
-    return policy_selector{int{sizeof(KeyT)}, int{sizeof(ValueT)}, ::cuda::std::is_same_v<ValueT, NullType>}(arch);
+    return policy_selector{int{sizeof(KeyT)}, int{sizeof(ValueT)}, ::cuda::std::is_same_v<ValueT, NullType>}(cc);
   }
 };
 
@@ -304,21 +304,6 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
       : StaticPolicyT(base)
   {}
 
-  _CCCL_HOST_DEVICE static constexpr auto LargeSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto SmallSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto MediumSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
-  }
-
   _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
@@ -327,6 +312,21 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   _CCCL_HOST_DEVICE static constexpr int LargeSegmentRadixBits()
   {
     return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentBlockThreads()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::BLOCK_THREADS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentItemsPerThread()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::ITEMS_PER_THREAD;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int SmallSegmentBlockThreads()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::BLOCK_THREADS;
   }
 
   _CCCL_HOST_DEVICE static constexpr int SegmentsPerSmallBlock()

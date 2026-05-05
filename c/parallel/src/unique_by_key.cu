@@ -172,7 +172,7 @@ try
 {
   const char* name = "test";
 
-  const int cc                              = cc_major * 10 + cc_minor;
+  const cuda::compute_capability cc{cc_major, cc_minor};
   const auto input_keys_it_value_t          = cccl_type_enum_to_name(input_keys_it.value_type.type);
   const auto input_values_it_value_t        = cccl_type_enum_to_name(input_values_it.value_type.type);
   const auto output_keys_it_value_t         = cccl_type_enum_to_name(output_keys_it.value_type.type);
@@ -224,8 +224,7 @@ try
     input_keys_it.value_type.type != CCCL_STORAGE && input_keys_it.value_type.size <= 8,
     input_values_it.value_type.type != CCCL_STORAGE && input_values_it.value_type.size <= 8};
 
-  const auto arch_id       = cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor});
-  const auto active_policy = policy_sel(arch_id);
+  const auto active_policy = policy_sel(cc);
 
   std::stringstream policy_sel_str;
   policy_sel_str << active_policy;
@@ -259,10 +258,10 @@ using namespace cub;
 using namespace cub::detail::unique_by_key;
 using cub::detail::delay_constructor_policy;
 using cub::detail::delay_constructor_kind;
-static_assert(device_unique_by_key_policy()(detail::current_tuning_arch()) == {13}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_unique_by_key_policy()(detail::current_tuning_cc()) == {13}, "Host generated and JIT compiled policy mismatch");
 static_assert(
   cub::detail::unique_by_key::unique_by_key_vsmem_helper_t<
-    cub::detail::policy_getter<device_unique_by_key_policy, detail::current_tuning_arch()>,
+    cub::detail::policy_getter<device_unique_by_key_policy, detail::current_tuning_cc().get()>,
     {14},
     {15},
     {16},
@@ -271,7 +270,7 @@ static_assert(
     {18}>::selected_policy_fits_smem,
   "CCCL.C DeviceSelect::UniqueByKey does not support VSMEM-backed kernels");
 using device_unique_by_key_vsmem = cub::detail::unique_by_key::unique_by_key_vsmem_helper_t<
-  cub::detail::policy_getter<device_unique_by_key_policy, detail::current_tuning_arch()>,
+  cub::detail::policy_getter<device_unique_by_key_policy, detail::current_tuning_cc().get()>,
   {14},
   {15},
   {16},
@@ -363,7 +362,7 @@ static_assert(
   auto [description_bytes_per_tile,
         payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args.data(), args.size(), arch);
 
-  build_ptr->cc                         = cc;
+  build_ptr->cc                         = cc.get();
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
   build_ptr->description_bytes_per_tile = description_bytes_per_tile;

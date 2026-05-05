@@ -5,7 +5,7 @@
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -18,7 +18,8 @@
 #if !TUNE_BASE
 struct tuned_policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce::reduce_policy
   {
     cub::detail::reduce::agent_reduce_policy rp{
       TUNE_THREADS_PER_BLOCK,

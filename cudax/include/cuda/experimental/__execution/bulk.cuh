@@ -81,9 +81,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 
   [[nodiscard]] _CCCL_API constexpr auto query(get_launch_config_t) const noexcept -> __launch_config_t
   {
-    NV_IF_TARGET(NV_IS_HOST,
-                 (return __get_launch_config(__shape_);),
-                 (_CCCL_ASSERT(false, "cannot get a launch configuration from device"); ::cuda::std::terminate();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __get_launch_config(__shape_);), ({
+                        _CCCL_ASSERT(false, "cannot get a launch configuration from device");
+                        ::cuda::std::terminate();
+                      }))
   }
 
   _CCCL_EXEC_CHECK_DISABLE

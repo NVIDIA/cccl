@@ -1,0 +1,143 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+language: en-US
+tone_instructions: |
+  Be direct, technical, brief. No praise, emojis, headings, or collapsible menus.
+  Start each comment with one prefix:
+  - suggestion: optional improvement;
+  - important: must-fix/high-impact risk;
+  - critical: blocking correctness/security/data-loss.
+
+reviews:
+  profile: chill
+
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  poem: false
+  in_progress_fortune: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  collapse_walkthrough: true
+
+  # Reduce noisy status/details sections.
+  request_changes_workflow: false
+  review_status: false
+  review_details: false
+  enable_prompt_for_ai_agents: false
+
+  auto_review:
+    enabled: false
+    drafts: false
+    base_branches:
+      - "^main$"
+      - "^branch/[0-9]+\\.[0-9]+\\.x$"
+    ignore_usernames: ["copy-pr-bot", "dependabot[bot]", "github-actions[bot]", "nv-automation-bot"]
+
+  tools:
+    gitleaks:
+      enabled: true
+    markdownlint:
+      enabled: true
+    shellcheck:
+      enabled: true
+
+  # Keep Autofix available, but disable the other finishing touch actions.
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+    custom_checks: []
+
+  path_instructions:
+    - path: "libcudacxx/**/*"
+      instructions: |
+        Focus on correctness, ABI/API stability, standard-library conformance, host/device availability,
+        NVRTC compatibility, supported C++ standards, tests, and portability across supported CUDA toolchains.
+        Avoid style comments unless the requirement is explicitly mentioned in
+        .agent/skills/libcudacxx-style/SKILL.md.
+
+    - path: "cudax/**/*"
+      instructions: |
+        Focus on correctness, lifetime/resource ownership, stream ordering, host/device annotations, experimental
+        API clarity, tests, and compatibility with the supported CUDA toolchains. Use
+        .agent/skills/libcudacxx-style/SKILL.md as style context for cudax/include. Avoid style comments unless
+        the requirement is explicitly mentioned in that skill file.
+
+    - path: "cub/**/*"
+      instructions: |
+        Focus on algorithm correctness, temporary-storage protocol, dispatch/policy selection, stream behavior,
+        CUDA error handling, synchronization, memory access safety, performance regressions, and test coverage.
+        Prefer comments that catch real correctness, API, compile-time, or performance risks.
+
+    - path: "thrust/**/*"
+      instructions: |
+        Use docs/thrust/developer/systems.rst for execution policy and backend dispatch context. Focus on
+        correctness, API compatibility, dispatch behavior, synchronization, iterator/system interactions, and
+        regressions. Avoid architecture commentary unless it affects behavior or maintainability.
+
+    - path: "c/**/*"
+      instructions: |
+        Focus on C API/ABI stability, error/status handling, lifetime ownership, runtime policy handling,
+        build-result caching, C/C++ boundary behavior, and coverage for public C parallel APIs.
+
+    - path: "python/cuda_cccl/**/*"
+      instructions: |
+        Focus on Python API stability, CUDA array interoperability, memory ownership, JIT/NVRTC/nvJitLink
+        behavior, package boundaries, user-defined operator correctness, tests, and examples. Avoid style-only
+        comments that are already covered by pre-commit.
+
+    - path: "**/benchmarks/**/*"
+      instructions: |
+        Use docs/cub/benchmarking.rst for benchmark conventions. Check that benchmark changes measure meaningful
+        workloads, keep axes comparable, avoid excessive runtime, and preserve useful comparison data.
+
+    - path: "docs/**/*"
+      instructions: |
+        For documentation changes, focus on technical accuracy, buildable examples, API/version consistency,
+        migration impact, and whether public API changes have matching documentation updates.
+
+    - path: "ci/**/*"
+      instructions: |
+        For CI and build scripts, focus on matrix correctness, targeted build/test behavior, cache/artifact
+        handling, environment setup, GPU availability assumptions, clear failures, and avoiding unnecessary
+        expensive jobs.
+
+    - path: ".github/**/*"
+      instructions: |
+        For GitHub workflows and repository automation, focus on permissions, event triggers, matrix generation,
+        status/check behavior, security boundaries, and avoiding unnecessary CI fanout.
+
+knowledge_base:
+  opt_out: false
+  code_guidelines:
+    filePatterns:
+      - "AGENTS.md"
+      - "CONTRIBUTING.md"
+      - ".agent/skills/libcudacxx-style/SKILL.md"
+      - "docs/cccl/config_macros.rst"
+      - "docs/cccl/development/macro.rst"
+      - "docs/cccl/development/visibility.rst"
+      - "docs/cccl/development/testing.rst"
+      - "docs/libcudacxx/releases/versioning.rst"
+      - "docs/cub/developer_overview.rst"
+      - "docs/cub/developer/device_scope.rst"
+      - "docs/cub/test_overview.rst"
+      - "docs/cub/benchmarking.rst"
+      - "docs/thrust/developer/systems.rst"
+      - "docs/python/compute/index.rst"
+      - "docs/python/compute/developer_overview.rst"
+      - "cudax/README.md"

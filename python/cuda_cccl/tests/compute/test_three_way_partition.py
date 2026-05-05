@@ -91,14 +91,14 @@ def test_three_way_partition_basic(dtype, num_items, monkeypatch):
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int32)
     cuda.compute.three_way_partition(
-        d_in,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        less_than_op,
-        greater_equal_op,
-        num_items,
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_equal_op,
+        num_items=num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -133,14 +133,14 @@ def test_three_way_partition_empty():
         return x >= 42
 
     cuda.compute.three_way_partition(
-        d_in,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        less_than_op,
-        greater_equal_op,
-        0,
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_equal_op,
+        num_items=0,
     )
 
     np.testing.assert_array_equal(d_num_selected.get(), np.array([0, 0]))
@@ -170,14 +170,14 @@ def test_three_way_partition_with_iterators():
     d_num_selected = cp.empty(2, dtype=np.uint32)
 
     cuda.compute.three_way_partition(
-        in_it,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        less_than_op,
-        greater_equal_op,
-        num_items,
+        d_in=in_it,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_equal_op,
+        num_items=num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -232,14 +232,14 @@ def test_three_way_partition_struct_type():
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
     cuda.compute.three_way_partition(
-        d_in,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        less_than_op,
-        greater_equal_op,
-        num_items,
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_equal_op,
+        num_items=num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -278,14 +278,14 @@ def test_three_way_partition_with_stream(cuda_stream):
         d_num_selected = cp.empty(2, dtype=np.int64)
 
     cuda.compute.three_way_partition(
-        d_in,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        less_than_op,
-        greater_equal_op,
-        num_items,
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_equal_op,
+        num_items=num_items,
         stream=cuda_stream,
     )
 
@@ -320,14 +320,14 @@ def test_three_way_partition_no_selection():
     d_num_selected = cp.empty(2, dtype=np.int64)
 
     cuda.compute.three_way_partition(
-        d_in,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        less_than_op,
-        greater_equal_op,
-        num_items,
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_equal_op,
+        num_items=num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -357,14 +357,14 @@ def test_three_way_partition_same_predicate():
     d_num_selected = cp.empty(2, dtype=np.int64)
 
     cuda.compute.three_way_partition(
-        d_in,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        always_true,
-        always_true,
-        num_items,
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=always_true,
+        select_second_part_op=always_true,
+        num_items=num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -390,14 +390,14 @@ def test_three_way_partition_all_selected_first():
     d_num_selected = cp.empty(2, dtype=np.int64)
 
     cuda.compute.three_way_partition(
-        d_in,
-        d_first,
-        d_second,
-        d_unselected,
-        d_num_selected,
-        less_than_op,
-        greater_equal_op,
-        num_items,
+        d_in=d_in,
+        d_first_part_out=d_first,
+        d_second_part_out=d_second,
+        d_unselected_out=d_unselected,
+        d_num_selected_out=d_num_selected,
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_equal_op,
+        num_items=num_items,
     )
 
     num_selected = d_num_selected.get()

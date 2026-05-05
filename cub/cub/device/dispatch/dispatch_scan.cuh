@@ -186,14 +186,13 @@ private:
 
 public:
   // Called from host (compile-time) and device code during dispatch
-  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        const int ptx_version = static_cast<int>(arch) * 10;
                         scan_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
-                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+                        PolicyHub::MaxPolicy::Invoke(cc.get() * 10, dispatch);
                         return policy;
                       }),
                       ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
@@ -955,8 +954,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
                 "DispatchScan only supports unsigned offset types of at least 4-bytes");
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
@@ -964,8 +963,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;
-                 ss << policy_selector(arch_id);
-                 _CubLog("Dispatching DeviceScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceScan to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
@@ -974,7 +976,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     using MaxPolicy = void;
   };
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return DispatchScan<InputIteratorT,
                         OutputIteratorT,
                         ScanOpT,

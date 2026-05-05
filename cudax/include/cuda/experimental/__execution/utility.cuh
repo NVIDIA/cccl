@@ -133,7 +133,7 @@ template <class _Ty>
   return __attrs;
 }
 
-#define __debug_printf(...) (printf(__VA_ARGS__), [] NV_IF_TARGET(NV_IS_HOST, (fflush(stdout);), (void(0);))())
+#define __debug_printf(...) (printf(__VA_ARGS__), [] NV_IF_ELSE_TARGET(NV_IS_HOST, (fflush(stdout);), (void(0);))())
 
 // This function can only be called from a catch handler.
 [[nodiscard]] _CCCL_HOST_API inline auto __get_cuda_error_from_active_exception() -> ::cudaError_t

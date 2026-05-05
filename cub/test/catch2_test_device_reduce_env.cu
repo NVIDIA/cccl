@@ -39,20 +39,7 @@ namespace stdexec = cuda::std::execution;
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-struct block_size_check_t
-{
-  unsigned int* ptr;
-
-  __device__ int operator()(int a, int b)
-  {
-    if (threadIdx.x == 0)
-    {
-      // use an atomic operation to write the block dim in case multiple blocks are launched
-      atomicMax(ptr, blockDim.x);
-    }
-    return a + b;
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 {
@@ -63,11 +50,11 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  cuda::arch_id arch_id{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
 
   unsigned int target_block_size =
-    cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(arch_id)
+    cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(cc)
       .single_tile.block_threads;
 
   num_items_t num_items = 1;
@@ -107,7 +94,7 @@ TEST_CASE("Device sum works with default environment", "[reduce][device]")
 template <int BlockThreads>
 struct reduce_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::reduce::reduce_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::reduce::reduce_policy
   {
     const auto policy = cub::detail::reduce::agent_reduce_policy{
       BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
@@ -121,7 +108,7 @@ struct unrelated_policy
 struct unrelated_tuning
 {
   // should never be called
-  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
+  auto operator()(cuda::compute_capability) const -> unrelated_policy
   {
     throw 1337;
   }

@@ -47,17 +47,18 @@ class _Select:
 
         # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
-            d_in,
-            d_out,  # first_part_out - this is where selected items go
-            self.discard_second,  # second_part_out - discarded
-            self.discard_unselected,  # unselected_out - discarded
-            d_num_selected_out,
-            cond,  # select_first_part_op - user's select condition
-            self.false_op,  # select_second_part_op - always false
+            d_in=d_in,
+            d_first_part_out=d_out,
+            d_second_part_out=self.discard_second,
+            d_unselected_out=self.discard_unselected,
+            d_num_selected_out=d_num_selected_out,
+            select_first_part_op=cond,
+            select_second_part_op=self.false_op,
         )
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
@@ -67,21 +68,22 @@ class _Select:
         stream=None,
     ):
         return self.partitioner(
-            temp_storage,
-            d_in,
-            d_out,
-            self.discard_second,
-            self.discard_unselected,
-            d_num_selected_out,
-            make_op_adapter(cond),
-            self.false_op,
-            num_items,
-            stream,
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_first_part_out=d_out,
+            d_second_part_out=self.discard_second,
+            d_unselected_out=self.discard_unselected,
+            d_num_selected_out=d_num_selected_out,
+            select_first_part_op=make_op_adapter(cond),
+            select_second_part_op=self.false_op,
+            num_items=num_items,
+            stream=stream,
         )
 
 
 @cache_with_registered_key_functions
 def make_select(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
@@ -120,6 +122,7 @@ def make_select(
 
 
 def select(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
@@ -166,24 +169,26 @@ def select(
     """
     # Create adapter to support stateful ops
     cond_adapter = make_op_adapter(cond)
-    selector = make_select(d_in, d_out, d_num_selected_out, cond_adapter)
+    selector = make_select(
+        d_in=d_in, d_out=d_out, d_num_selected_out=d_num_selected_out, cond=cond_adapter
+    )
 
     tmp_storage_bytes = selector(
-        None,
-        d_in,
-        d_out,
-        d_num_selected_out,
-        cond_adapter,
-        num_items,
-        stream,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected_out,
+        cond=cond_adapter,
+        num_items=num_items,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     selector(
-        tmp_storage,
-        d_in,
-        d_out,
-        d_num_selected_out,
-        cond_adapter,
-        num_items,
-        stream,
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        d_num_selected_out=d_num_selected_out,
+        cond=cond_adapter,
+        num_items=num_items,
+        stream=stream,
     )

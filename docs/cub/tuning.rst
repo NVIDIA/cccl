@@ -114,51 +114,56 @@ a :code:`nvbench::type_list`. For more details on the benchmark signature, take 
   void algname(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   {...}
 
-.. @giannis: not sure if Policy Hub should be part of "Authoring Benchmarks" since it's attached to the Dispatch Layer. Policy Hub
-.. is not supposed to be used only when we run benchmarks, but in general when a primitive is invoked with specific compile time params.
+Before proceeding further with the benchmark authoring
+it is imperative to understand policy selectors and how they provide tuning values.
 
-Before proceeding further with the benchmark authoring it is imperative to understand the Policy Hub mechanism.
++++++++++++++++
+Policy Selector
++++++++++++++++
 
-++++++++++
-Policy Hub
-++++++++++
+The tuning value of all CUB device algorithms can be customized
+by providing a custom policy selector to the environment argument of a CUB API call.
+See :ref:`cub-policy-selectors` for a full explanation.
 
-Tuning relies on CUB's device algorithms to expose a dispatch layer which can be parameterized by a Policy Hub. The Policy Hub is an intermediate
-class that enables tuning. In other words it translates the SM architecture, the input types etc. which accepts at instantiation as input,
-into the parameter values that are optimal for when executing the specific compile time workload.
+The tuning infrastructure will use the :code:`TUNE_BASE` macro to distinguish between compiling the base version (i.e. baseline) of a benchmark
+and compiling a variant for a given set of tuning parameters.
+When base is used, no custom policy selector is specified, so CUB's default tunings are used.
+If :code:`TUNE_BASE` is not defined, we define a custom policy selector
+that specifies the values for the current variant (i.e. the current set of tuning parameters),
+which are derived from the parameter macros defined in the :code:`%RANGE%` comments, which define the search space.
+This custom policy selector is passed to :code:`cuda::execution::tune`,
+and the returned value is included in the environment passed to the CUB API.
 
-CUB usually provides a default policy hub, but when tuning we want to overwrite it, so we have to specialize the dispatch layer.
-**The tuning infrastructure will use the** :code:`TUNE_BASE` **macro to distinguish between compiling the base version (i.e. baseline) of a benchmark
-and compiling a variant for a given set of tuning parameters.**
-When base is used, no policy is specified, so that the default policy CUB provides is used.
-If :code:`TUNE_BASE` is not defined, we specify a custom policy
-using the parameter macros defined in the :code:`%RANGE%` comments which define the search space.
-
-The following code is included in the benchmark for the policy hub to be enabled and the parameters to have effect in execution:
+The following code is included in the benchmark for the policy selector to be enabled
+and the parameters to have effect in execution:
 
 ..
-    The following code is repeated further down as well. Please keep in sync!
-    TODO(bgruber): replace this example with the new tuning API design
+    TODO(bgruber): we have to update this example again after the reduce tuning API has been actually released
 
 .. code:: c++
 
-  #if TUNE_BASE
-    using dispatch_t = cub::DispatchReduce<T, OffsetT>; // uses default policy hub
-  #else
-    template <typename AccumT, typename OffsetT>
-    struct policy_hub_t {
-      struct MaxPolicy : cub::ChainedPolicy<300, policy_t, policy_t> {
-        static constexpr int threads_per_block  = TUNE_THREADS_PER_BLOCK;
-        static constexpr int items_per_thread   = TUNE_ITEMS_PER_THREAD;
-        ...
+  #if !TUNE_BASE
+  template <typename T>
+  struct policy_selector {
+    _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::ReducePolicy {
+      const auto [items, threads] = cub::detail::scale_mem_bound(
+                                     TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(T));
+      const auto policy = cub::detail::agent_reduce_policy{
+        .block_threads = threads,
+        .items_per_thread = items,
+        .vector_load_length = 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
+        .block_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+        .load_modifier = cub::LOAD_DEFAULT
       };
-    };
-
-    using dispatch_t = cub::DispatchReduce<T, OffsetT, policy_hub_t<accum_t, offset_t>>;
+      return {policy, policy, policy, policy};
+    }
+  };
   #endif
 
-The custom policy hub used for tuning should only expose a single :code:`MaxPolicy` for CUB to use.
-It must contain all parameters required for the full definition of the search space.
+The custom policy selector returns a fixed policy regardless of the compute capability,
+since tuning is usually done on a specific GPU and compiling only for that GPU's compute capability.
+The policy selector uses all tuning parameters from the search space to form the policy used by CUB.
+
 
 +++++++++
 Main Body
@@ -187,41 +192,26 @@ For this, you can optionally provide information on the memory reads and writes 
     state.add_global_memory_reads<T>(elements, "Size");
     state.add_global_memory_writes<T>(1);
 
-Most CUB algorithms need to be called twice:
-
-1. once to query the amount of temporary storage needed,
-2. once to run the actual algorithm.
-
-We perform the first call now and allocate temporary storage:
-
-.. code:: c++
-
-    std::size_t temp_size;
-    dispatch_t::Dispatch(nullptr,
-                         temp_size,
-                         d_in,
-                         d_out,
-                         static_cast<offset_t>(elements),
-                         0 /* stream */);
-
-    thrust::device_vector<char> temp(temp_size);
-    auto *temp_storage = thrust::raw_pointer_cast(temp.data());
-
-Finally, we can execute the timed region of the benchmark,
-which contains the second call to a CUB algorithm and performs the actual work we want to benchmark:
+Finally, the actual benchmark region then calls the public CUB API with an appropriate environment.
+Temporary storage allocation is handled automatically by a caching allocator provided through the environment.
+The CUDA stream is provided by the :code:`nvbench::launch` parameter of the benchmark lambda.
+When tuning (:code:`TUNE_BASE` is not defined),
+an instance of the custom policy selector is wrapped by :code:`cuda::execution::tune` and passed to the environment as well.
 
 .. code:: c++
 
+    caching_allocator_t alloc;
     state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch,
                [&](nvbench::launch &launch) {
-      dispatch_t::Dispatch(temp_storage,
-                           temp_size,
-                           d_in,
-                           d_out,
-                           static_cast<offset_t>(elements),
-                           launch.get_stream());
+      auto env = cub_bench_env(
+        alloc,
+        launch
+  #if !TUNE_BASE
+        , cuda::execution::tune(policy_selector<T>{})
+  #endif // !TUNE_BASE
+      );
+      cub::DeviceReduce::Reduce(d_in, d_out, elements, op_t{}, init, env);
     });
-  }
 
 This concludes defining the benchmark function.
 Now we need to tell NVBench about it.
@@ -526,7 +516,7 @@ For all these reasons, comparing the distribution of samples is the only reliabl
 whether a tuning provides a consistent speedup for all runtime workloads.
 
 
-Creating tuning policies
+Creating and extending tuning policies
 --------------------------------------------------------------------------------
 
 Once a suitable tuning result has been selected, we have to translate it into C++ code that will be picked up by CUB.
@@ -554,68 +544,65 @@ was thus compiled with ``-DTUNE_ITEMS_PER_THREAD=19 -DTUNE_THREADS_PER_BLOCK=512
 The meaning of these values is specific to the benchmark definition,
 and we have to check the benchmark’s source code for how they are applied.
 Equally named tuning parameters may not translate to different benchmarks (please double check).
-These tuning parameters are then typically used to create a policy hub,
-which is passed to the algorithm’s dispatcher, as :ref:`sketched above <cub-tuning-authoring-benchmarks>`,
-and repeated here:
+
+As a user of CUB, such a new set of tuning parameters (i.e. a variant) can then be used to define a policy selector,
+which is passed to the public CUB API through the environment,
+as :ref:`sketched above <cub-tuning-authoring-benchmarks>`:
 
 .. code:: c++
 
-  #if !TUNE_BASE
-    template <typename AccumT, typename OffsetT>
-    struct policy_hub_t {
-      struct MaxPolicy : cub::ChainedPolicy<300, policy_t, policy_t> {
-        static constexpr int threads_per_block  = TUNE_THREADS_PER_BLOCK;
-        static constexpr int items_per_thread   = TUNE_ITEMS_PER_THREAD;
-        using AlgorithmPolicy = AgentAlgorithmPolicy<threads_per_block, items_per_thread, ...>;
+  struct policy_selector {
+    _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::AlgorithmPolicy {
+      return {
+        .block_threads = 512,
+        .items_per_thread = 19,
+        ...
       };
-  #endif
+    }
+  };
 
-.. @giannis: sentences below are loaded simplify/expand them
+The default tunings defined inside CUB’s source use the same infrastructure
+but should only be changed and extended by the CCCL maintainers.
+All default tunings are found in the :code:`cub/device/detail/tuning/tuning_*.cuh` headers, organized by algorithm.
+CUB's policy selectors are highly parameterized on type information and traits of the input arguments to CUB algorithms
+(like accumulator type, offset size, and operation kind),
+which they turn into a policy for a given compute capability.
 
-The tunings defined in CUB's source are similar.
-However, they take predefined tuning values based on the template arguments of a CUB algorithm
-to build an agent policy for the policy hub.
 The way tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
-The general principles of the policy hub and tunings are documented in the :ref:`CUB device layer documentation <cub-developer-policies>`.
-There is typically a tuning class template specialization per variant or group of variants and per PTX version.
+The general principles of policy selectors and tunings are documented :ref:`here <cub-policy-selectors>`.
 For example, signed and unsigned integers of the same size are often represented by the same tuning.
 In general, variants for which the algorithmic behavior is expected to be the same
 (same arithmetic intensity, no special instructions for one of the data types, same amount of bytes to load/store, etc.)
 are covered by the same tuning.
 
-When new tuning values have been found and an existing tuning specialization exists for this variant,
-the tuning values can simply be updated in the corresponding CUB tuning header.
+When a better variant has been found and CUB already has a tuning for this variant,
+the tuning parameter values can simply be updated in the corresponding CUB tuning header.
 This is usually the case when a CUB algorithm has been reengineered and shows different performance characteristics,
 or more tuning parameters are exposed (e.g., a new load algorithm is available).
-For example, this existing radix sort tuning may exist:
+For example, an existing tuning selection function may contain code like:
 
 .. code:: c++
 
-    template <typename ValueT, size_t KeySize, size_t ValueSize, size_t OffsetSize>
-    struct sm100_small_key_tuning : sm90_small_key_tuning<KeySize, ValueSize, OffsetSize> {};
-    ...
-    template <typename ValueT>
-    struct sm100_small_key_tuning<ValueT, 1, 0, 8> {
-      static constexpr int threads = 256; // better value from tuning analysis: 512
-      static constexpr int items = 14;    // better value from tuning analysis: 19
-    };
+    constexpr auto get_sm90_tuning(type_t accum_t, op_kind_t op, int offset_size, int accum_size) {
+      if (op == op_kind_t::plus && offset_size == 4 && accum_size == 4)
+        return { .block_threads = 256, .items_per_thread = 14 }; // tuning variant proposes: 512 and 19
+      ...
+    }
 
-The template specialization applies when sorting 1-byte keys without values 8-byte offsets.
-However, the concrete value type is disregarded.
-Since we have found that 512 threads per block and 19 items per thread is better, we can update the values in place.
+Since we have found that 512 threads per block and 19 items per thread are better, we can update the value in place.
 
 A different case is when we tune beyond what's currently supported by CUB's existing tunings.
-This may be because we tune for a new hardware architecture,
-in which case a new tuning class template and specializations should be added.
+This may be because we tune for a new GPU architecture,
+in which case a new branch based on the :code:`cuda::compute_capability` passed to the :code:`policy_selector::operator()`
+should be introduced, handling this new GPU's compute capability.
 Or we tune for new key, value or offset types, etc.,
-in which case the existing policy hub and tuning class templates may need to be extended.
+in which case the existing tuning functions may need additional branches.
 There is no general rule on how this extension is done, though.
+The implementation may be different for each CUB algorithm.
 
-In the seldom case, that no tuning better than the existing one (baseline) has been found,
-it must be ensured that either the old tuning values are replicated in the new tuning specialization,
-or the new tuning specialization defers to the old one,
-or the tuning selection mechanism falls back accordingly.
-There is no general rule on how this is implemented.
+In the seldom case, that no variant outperforms the baseline,
+it must be ensured that any newly added logic correctly falls back to the old tuning values.
+There is again no general rule on how this is implemented.
 
 
 Verification
@@ -625,8 +612,8 @@ Once we have selected tunings and implemented them in CUB, we need to verify the
 This process consists of two steps.
 
 Firstly, we need to ensure that adding new tunings and policies did not break existing tunings.
-This is most relevant when tunings for new PTX versions have been added.
-To verify this, compile the corresponding benchmarks for the previous architecture
+This is most relevant when tunings for new compute capabilities have been added.
+To verify this, compile the corresponding benchmarks for the previous compute capabilities
 (excluding the new tunings) before and after modifying any tunings,
 and compare the generated SASS :code:(`cuobjdump -sass`).
 It should not have changed.

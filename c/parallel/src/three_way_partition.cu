@@ -134,7 +134,7 @@ try
 {
   const char* name = "device_three_way_partition";
 
-  const int cc = cc_major * 10 + cc_minor;
+  const cuda::compute_capability cc{cc_major, cc_minor};
 
   const auto [d_in_iterator_name, d_in_iterator_src] =
     get_specialization<three_way_partition_input_iterator_tag>(template_id<input_iterator_traits>(), d_in);
@@ -169,7 +169,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cc);
 
   const auto policy_selector_expr = std::format(
     R"XXX(cub::detail::three_way_partition::policy_selector_from_types<{0}, {1}>)XXX",
@@ -196,7 +196,7 @@ using namespace cub;
 using namespace cub::detail;
 using namespace cub::detail::three_way_partition;
 static_assert(
-  device_three_way_partition_policy_selector()(current_tuning_arch()) == {11},
+  device_three_way_partition_policy_selector()(current_tuning_cc()) == {11},
   "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
@@ -280,7 +280,7 @@ static_assert(
   check(cuLibraryGetKernel(
     &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
 
-  build_ptr->cc             = cc;
+  build_ptr->cc             = cc.get();
   build_ptr->cubin          = (void*) result.data.release();
   build_ptr->cubin_size     = result.size;
   build_ptr->runtime_policy = new cub::detail::three_way_partition::policy_selector{policy_sel};

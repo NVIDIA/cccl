@@ -248,7 +248,7 @@ C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
 // use a policy selector that prescribes to run with exactly 8 threads per block and 3 items per thread
 struct my_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::transform::transform_policy
   {
     constexpr int min_bytes_in_flight = 64 * 1024;
     constexpr auto algorithm          = cub::detail::transform::Algorithm::prefetch;

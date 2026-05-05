@@ -35,7 +35,7 @@ namespace stdexec = cuda::std::execution;
 template <int BlockThreads>
 struct merge_sort_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::merge_sort::merge_sort_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::merge_sort::merge_sort_policy
   {
     return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
   }
@@ -446,20 +446,7 @@ TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_sort
   REQUIRE(d_keys_out == expected_keys);
 }
 
-struct block_size_compare_t
-{
-  unsigned int* block_size;
-
-  __device__ bool operator()(int lhs, int rhs) const
-  {
-    if (threadIdx.x == 0)
-    {
-      // use an atomic operation to write the block dim in case multiple blocks are launched
-      atomicMax(block_size, blockDim.x);
-    }
-    return lhs < rhs;
-  }
-};
+using block_size_compare_t = block_size_extracting_op<cuda::std::less<>>;
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

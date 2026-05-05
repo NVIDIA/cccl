@@ -70,13 +70,14 @@ class _SegmentedReduce:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
         num_segments: int,
         start_offsets_in,
         end_offsets_in,
+        op: Callable | OpAdapter,
         h_init,
         max_segment_size: int | None = None,
         stream=None,
@@ -126,6 +127,7 @@ class _SegmentedReduce:
 
 @cache_with_registered_key_functions
 def make_segmented_reduce(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     start_offsets_in: DeviceArrayLike | IteratorT,
@@ -163,13 +165,14 @@ def make_segmented_reduce(
 
 
 def segmented_reduce(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
+    num_segments: int,
     start_offsets_in: DeviceArrayLike | IteratorT,
     end_offsets_in: DeviceArrayLike | IteratorT,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
-    num_segments: int,
     max_segment_size: int | None = None,
     stream=None,
 ):
@@ -189,43 +192,48 @@ def segmented_reduce(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array to store the result of the reduction for each segment
+        num_segments: Number of segments to reduce
         start_offsets_in: Device array or iterator containing the sequence of beginning offsets
         end_offsets_in: Device array or iterator containing the sequence of ending offsets
         op: Binary operator to apply.
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
         h_init: Initial value for the reduction
-        num_segments: Number of segments to reduce
         max_segment_size: The number of elements in the largest segment (optional)
             If provided, this information is used to dispatch to the
             optimal kernel for best performance.
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_segmented_reduce(
-        d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
+        d_in=d_in,
+        d_out=d_out,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
     )
     tmp_storage_bytes = reducer(
-        None,
-        d_in,
-        d_out,
-        op,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        h_init,
-        max_segment_size,
-        stream,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
+        max_segment_size=max_segment_size,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     reducer(
-        tmp_storage,
-        d_in,
-        d_out,
-        op,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        h_init,
-        max_segment_size,
-        stream,
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
+        max_segment_size=max_segment_size,
+        stream=stream,
     )

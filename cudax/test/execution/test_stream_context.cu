@@ -87,9 +87,9 @@ void stream_context_test2()
     | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
     | ex::then([] __host__ __device__(int i) -> int { // run a lambda on the CPU
         CUDAX_CHECK(!_is_on_device());
-        NV_IF_TARGET(NV_IS_HOST,
-                     (printf("Hello from lambda on host! i = %d\n", i);),
-                     (printf("OOPS! still on the device! i = %d\n", i);))
+        NV_IF_ELSE_TARGET(NV_IS_HOST,
+                          (printf("Hello from lambda on host! i = %d\n", i);),
+                          (printf("OOPS! still on the device! i = %d\n", i);))
         return i;
       });
 
@@ -117,9 +117,9 @@ void stream_ref_as_scheduler()
     | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
     | ex::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
         CUDAX_CHECK(!_is_on_device());
-        NV_IF_TARGET(NV_IS_HOST,
-                     (printf("Hello from lambda on host! i = %d\n", i);),
-                     (printf("OOPS! still on the device! i = %d\n", i);))
+        NV_IF_ELSE_TARGET(NV_IS_HOST,
+                          (printf("Hello from lambda on host! i = %d\n", i);),
+                          (printf("OOPS! still on the device! i = %d\n", i);))
         return i;
       });
 

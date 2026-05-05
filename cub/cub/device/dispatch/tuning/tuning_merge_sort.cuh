@@ -20,7 +20,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -131,7 +131,7 @@ struct policy_selector
 {
   int key_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> merge_sort_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> merge_sort_policy
   {
     // from SM60
     return merge_sort_policy{
@@ -150,9 +150,9 @@ static_assert(merge_sort_policy_selector<policy_selector>);
 template <typename KeyIteratorT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> merge_sort_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_sort_policy
   {
-    return policy_selector{int{sizeof(it_value_t<KeyIteratorT>)}}(arch);
+    return policy_selector{int{sizeof(it_value_t<KeyIteratorT>)}}(cc);
   }
 };
 
@@ -160,8 +160,8 @@ struct policy_selector_from_types
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  // this is only called in device code, so we can ignore the arch parameter
-  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const -> merge_sort_policy
+  // this is only called in device code, so we can ignore the cc parameter
+  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::compute_capability) const -> merge_sort_policy
   {
     using ap = typename PolicyHub::MaxPolicy::ActivePolicy;
     using mp = typename ap::MergeSortPolicy;

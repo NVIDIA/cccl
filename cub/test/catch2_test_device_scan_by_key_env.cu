@@ -11,7 +11,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__iterator/constant_iterator.h>
 
 #include "catch2_test_env_launch_helper.h"
@@ -28,16 +28,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_scan_inclusiv
 namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
-struct block_size_check_t
-{
-  int* ptr;
-
-  __device__ int operator()(int a, int b)
-  {
-    *ptr = blockDim.x;
-    return a + b;
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device scan exclusive-sum-by-key works with default environment", "[scan][by_key][device]")
 {
@@ -68,11 +59,11 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
   REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
-    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
+    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};
-  c2h::device_vector<int> d_block_size(1);
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
@@ -83,7 +74,7 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
     == cub::DeviceScan::ExclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, init, num_items));
 
   REQUIRE(d_out[0] == init);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 TEST_CASE("Device scan inclusive-sum-by-key works with default environment", "[scan][by_key][device]")
@@ -115,11 +106,11 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
   REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
-    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
+    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};
-  c2h::device_vector<int> d_block_size(1);
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
@@ -128,7 +119,7 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
           == cub::DeviceScan::InclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, num_items));
 
   REQUIRE(d_out[0] == value_t{1});
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 #endif

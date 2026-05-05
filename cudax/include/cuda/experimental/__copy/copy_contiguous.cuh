@@ -125,10 +125,8 @@ __global__ void __copy_contiguous_kernel(
 {
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
   const auto __dev    = ::cuda::devices[__dev_id];
-  const auto __major  = __dev.attribute<::cudaDevAttrComputeCapabilityMajor>();
-  const auto __minor  = __dev.attribute<::cudaDevAttrComputeCapabilityMinor>();
-  const auto __arch   = ::cuda::arch_id{__major * 10 + __minor};
-  return CUB_NS_QUALIFIER::detail::transform::arch_to_min_bytes_in_flight(__arch);
+  const auto __cc     = ::cuda::device_attributes::compute_capability(__dev);
+  return CUB_NS_QUALIFIER::detail::transform::cc_to_min_bytes_in_flight(__cc);
 }
 
 // Compute the number of elements each thread copies for a given vector width.

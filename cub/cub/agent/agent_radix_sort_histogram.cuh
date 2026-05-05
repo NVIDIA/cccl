@@ -73,28 +73,6 @@ struct AgentRadixSortExclusiveSumPolicy
   static constexpr int RADIX_BITS    = RadixBits;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(bgruber): remove
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortExclusiveSumAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (RADIX_BITS, RadixBits, int) )
-
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortHistogramAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (NUM_PARTS, NumParts, int),
-  (RADIX_BITS, RadixBits, int) )
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
-
 namespace detail::radix_sort
 {
 template <typename AgentRadixSortHistogramPolicy,
