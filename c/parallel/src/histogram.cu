@@ -551,7 +551,7 @@ CUresult cccl_device_histogram_even_impl(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_radix_sort(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_histogram_even_impl(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }

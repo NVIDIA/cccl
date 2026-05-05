@@ -601,7 +601,7 @@ CUresult cccl_device_reduce_nondeterministic(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_reduce_nondeterministic(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }

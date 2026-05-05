@@ -240,6 +240,28 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
   return selector_op;
 }
 
+struct owned_selector_op
+{
+  cccl_op_t op{};
+  owned_selector_op() = default;
+  explicit owned_selector_op(cccl_op_t o)
+      : op(o)
+  {}
+  ~owned_selector_op()
+  {
+    std::free(op.state);
+    std::free(const_cast<char*>(op.code));
+  }
+  owned_selector_op(const owned_selector_op&)            = delete;
+  owned_selector_op& operator=(const owned_selector_op&) = delete;
+  cccl_op_t release()
+  {
+    cccl_op_t r = op;
+    op          = {};
+    return r;
+  }
+};
+
 struct segmented_sort_kernel_source
 {
   cccl_device_segmented_sort_build_result_t& build;
@@ -450,7 +472,7 @@ try
   // We do this because we need to pass the selector ops to
   // DispatchThreeWayPartition eventually. This causes increased compilation
   // times, which might be avoidable.
-  cccl_op_t large_selector_op = segmented_sort::make_segments_selector_op(
+  segmented_sort::owned_selector_op large_selector_op{segmented_sort::make_segments_selector_op(
     0,
     start_offset_it,
     end_offset_it,
@@ -459,8 +481,8 @@ try
     selector_compilation_args.data(),
     selector_compilation_args.size(),
     lopts,
-    num_lto_args);
-  cccl_op_t small_selector_op = segmented_sort::make_segments_selector_op(
+    num_lto_args)};
+  segmented_sort::owned_selector_op small_selector_op{segmented_sort::make_segments_selector_op(
     0,
     start_offset_it,
     end_offset_it,
@@ -469,7 +491,7 @@ try
     selector_compilation_args.data(),
     selector_compilation_args.size(),
     lopts,
-    num_lto_args);
+    num_lto_args)};
 
   cccl_type_info selector_result_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
   cccl_type_info selector_input_t{
@@ -478,10 +500,10 @@ try
     cccl_type_enum::CCCL_UINT32};
 
   const auto [large_selector_name, large_selector_src] = get_specialization<segmented_sort_large_selector_tag>(
-    template_id<unary_user_operation_traits>(), large_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), large_selector_op.op, selector_result_t, selector_input_t);
 
   const auto [small_selector_name, small_selector_src] = get_specialization<segmented_sort_small_selector_tag>(
-    template_id<unary_user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), small_selector_op.op, selector_result_t, selector_input_t);
 
   const auto policy_sel = cub::detail::segmented_sort::policy_selector{
     static_cast<int>(keys_in_it.value_type.size),
@@ -617,8 +639,8 @@ static_assert(
   appender.add_iterator_definition(start_offset_it);
   appender.add_iterator_definition(end_offset_it);
 
-  appender.append_operation(large_selector_op);
-  appender.append_operation(small_selector_op);
+  appender.append_operation(large_selector_op.op);
+  appender.append_operation(small_selector_op.op);
 
   nvrtc_link_result result =
     begin_linking_nvrtc_program(num_lto_args, lopts)
@@ -647,8 +669,8 @@ static_assert(
   auto twp_kernel_name  = std::unique_ptr<char[]>(duplicate_c_string(three_way_partition_kernel_lowered_name));
 
   build_ptr->cc                         = cc_major * 10 + cc_minor;
-  build_ptr->large_segments_selector_op = large_selector_op;
-  build_ptr->small_segments_selector_op = small_selector_op;
+  build_ptr->large_segments_selector_op = large_selector_op.release();
+  build_ptr->small_segments_selector_op = small_selector_op.release();
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
   build_ptr->key_type                   = keys_in_it.value_type;
