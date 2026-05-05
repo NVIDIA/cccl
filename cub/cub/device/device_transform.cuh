@@ -97,11 +97,16 @@ struct DeviceTransform
 
     // Even when num_items fits in offset_t, the byte product (num_items * sizeof(T)) used for
     // pointer arithmetic inside the kernel may overflow 32-bit math. Promote to int64_t in that case.
+    // Only the input iterators are considered: the kernel's buggy expression
+    // `aligned_ptr.ptr + offset * unsigned{sizeof(T)}` (in transform_kernel_ublkcp) is on the input
+    // bulk-copy side; output writes use the output iterator's own arithmetic. Including the output
+    // iterator's value_type would also break compilation for write-only output iterators whose
+    // value_type is `void` (e.g. transform_output_iterator, tabulate_output_iterator).
     // todo(giannis): consider moving this to a helper function under choose_offset.cuh ?
-    if constexpr (sizeof(offset_t) < sizeof(::cuda::std::int64_t))
+    if constexpr (sizeof(offset_t) < sizeof(::cuda::std::int64_t) && sizeof...(RandomAccessIteratorsIn) > 0)
     {
-      constexpr ::cuda::std::size_t max_value_size = ::cuda::std::max(
-        {sizeof(detail::it_value_t<RandomAccessIteratorsIn>)..., sizeof(detail::it_value_t<RandomAccessIteratorOut>)});
+      constexpr ::cuda::std::size_t max_value_size =
+        ::cuda::std::max({sizeof(detail::it_value_t<RandomAccessIteratorsIn>)...});
       if (static_cast<::cuda::std::uint64_t>(num_items) * max_value_size > 0xFFFFFFFFull)
       {
         return detail::transform::dispatch<StableAddress>(
