@@ -112,35 +112,40 @@ A more precise description is given later.
 
     // Device-scope API
     cudaError_t cub::DeviceAlgorithm::Algorithm(d_temp_storage, temp_storage_bytes, ...) {
-      return detail::algorithm::dispatch(d_temp_storage, temp_storage_bytes, ...); // calls (1)
+      return detail::algorithm::dispatch(d_temp_storage, temp_storage_bytes, ...);
     }
 
     namespace detail::algorithm {
       cudaError_t dispatch(
           void *d_temp_storage, size_t &temp_storage_bytes,
           ...,
-          cudaStream_t stream, PolicySelector policy_selector = {}) { // (1)
+          cudaStream_t stream, PolicySelector policy_selector = {}) {
         cuda::compute_capability cc{};
         ptx_compute_cap(cc);
-        const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(cc); // (2)
+        const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(cc);
         // host-side implementation of algorithm, calls kernels
-        kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
+        kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...);
       }
 
-      // Kernel
       template <typename PolicySelector>
       __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
-      void kernel(...) { // (3)
-        static constexpr auto policy = current_policy<PolicySelector>(); // (4)
-        using agent_policy = LegacyAgentPolicy<policy.block_threads, policy.items_per_thread, ...>;
-        using agent = AgentAlgorithm<agent_policy, InputIteratorT, OffsetT, ...>; // instantiates (5)
+      void kernel(...) {
+        static constexpr auto policy = current_policy<PolicySelector>();
+        using agent_policy = AgentPolicy<policy.block_threads, policy.items_per_thread, ...>;
+        using agent = AgentAlgorithm<agent_policy, InputIteratorT, OffsetT, ...>;
         agent a{...};
-        a.Process(); // calls (6)
+        a.Process();
       }
 
-      template <typename Policy>
-      struct AlgorithmAgent {  // (5)
-        void Process() { ... } // (6)
+      template <int BlockThreads, ...>
+      struct AgentPolicy { // legacy
+        static constexpr block_threads = BlockThreads;
+        ...
+      };
+
+      template <typename Policy, ...>
+      struct AlgorithmAgent {
+        void Process() { ... }
       };
     }
 
@@ -165,12 +170,12 @@ There are two style of dispatch functions, depending on whether the policy is ne
       cudaError_t dispatch(
           void *d_temp_storage, size_t &temp_storage_bytes,
           ...,
-          cudaStream_t stream, PolicySelector policy_selector = {}) { // (1)
+          cudaStream_t stream, PolicySelector policy_selector = {}) {
         cuda::compute_capability cc{};
         ptx_compute_cap(cc);
         const auto active_policy = policy_selector(cc); // runtime-time policy
         // host-side implementation of algorithm, calls kernels
-        kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
+        kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...);
       }
     }
 
@@ -200,14 +205,14 @@ The policy getter is necessary to work around a C++17 limitation.
       cudaError_t dispatch(
           void *d_temp_storage, size_t &temp_storage_bytes,
           ...,
-          cudaStream_t stream, PolicySelector policy_selector = {}) { // (1)
+          cudaStream_t stream, PolicySelector policy_selector = {}) {
         cuda::compute_capability cc{};
         ptx_compute_cap(cc);
-        return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) { // calls (2)
+        return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
           constexpr auto active_policy = policy_getter(); // compile-time policy
           static_assert(active_policy.tile_size() * sizeof(T) <= 48 * 1024, "Not enough SMEM");
           // host-side implementation of algorithm, calls kernels
-          kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
+          kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...);
         });
       }
 
@@ -240,11 +245,10 @@ which is stateless and the same for all target architectures compiled for.
       __launch_bounds__(int(current_policy<PolicySelector>().reduce.block_threads))
       void DeviceReduceKernel(InputIteratorT d_in, OffsetT num_items, /* ... */) {
         static constexpr auto policy = current_policy<PolicySelector>();
-        using agent_policy = LegacyAgentPolicy<policy.block_threads, policy.items_per_thread, ...>;
+        using agent_policy = AgentPolicy<policy.block_threads, policy.items_per_thread, ...>;
         using agent = AgentAlgorithm<agent_policy, InputIteratorT, OffsetT, ...>;
         agent a{...};
         a.Process();
-        // ...
       }
 
       template <typename PolicySelector>
@@ -255,7 +259,7 @@ which is stateless and the same for all target architectures compiled for.
 
 ``PolicySelector`` must be stateless (``is_empty_v<PolicySelector>`` is ``true``),
 so it can be default-constructed in device code.
-The utility function ``current_policy`` should only be called in device code.
+The utility function ``current_policy`` can only be called in device code.
 It selects the target compute capability based on compiler macros of the current device compilation pass
 and retrieves a tuning policy from the policy selector.
 
@@ -266,11 +270,14 @@ Since the policy selector is stateless, we can default-construct it from its typ
 and always retrieve the ``policy`` as a compile-time value.
 
 Because of C++17 limits, we cannot easily pass the policy around to other functions,
-so it will be converted to the legacy agent policies in many places.
+so it will be converted to legacy agent policies in many places.
+Those are just structs with static data members holding the policy value as a type,
+so they can be passed to templates.
+Agent policy structs have historically been part of the public API, and should be removed in the future.
 
 .. warning::
     The kernel gets compiled for each target architecture (N many) that was provided to the compiler.
-    During each device pass, ``current_policy`` may return a different policy.```````````
+    During each device pass, ``current_policy`` may return a different policy.
     During the host pass, version A (runtime policy) compiles a single instantiation of the dispatch logic for all target architectures.
     Version B (using ``dispatch_compute_cap``) compiles the dispatch logic for each distinct tuning policy (M many).
     If we passed the selected tuning policy instead of the policy selector as a kernel template parameter,
@@ -295,7 +302,7 @@ a typeless and a typeful version.
 
 .. code-block:: c++
 
-    struct AlgorithmPolicy { ... };
+    struct AlgorithmPolicy { ... }; // unrelated to AgentPolicy
 
     namespace detail::algorithm {
       struct policy_selector {
@@ -323,16 +330,16 @@ a typeless and a typeful version.
       };
     }
 
-The ``policy_selector`` is intended to be used without type information based on template parameters
-and is thus suitable to be used in CCCL.C.
+The ``policy_selector`` is intended to be used without template-parameter-based type information
+and is thus suitable to be used in CCCL.C without a JIT compiler for host code.
 It contains the necessary information on the algorithm's input as data members.
 This policy is only used in the host code of the dispatch function.
 Because it is not stateless anymore, CCCL.C overrides the kernel launcher used by CUB,
 providing the kernel from a JIT-compiled instantiation that uses a proper stateless policy selector.
 
-So the kernel and the dispatch function when not called from CCCL.C,
+So the kernel, and the dispatch function when not called from CCCL.C,
 will use the second version of the policy selector, ``policy_selector_from_types``,
-which offers proper template parameters to specify type information.
+which offers proper template parameters to pass type information.
 This type is stateless and delegates to a ``constexpr`` instance of the ``policy_selector``
 with compile-time values derived from the template parameters.
 The policy selection logic is thus the same for CCCL.C and CUB,
@@ -348,8 +355,10 @@ Each dispatch function also has an associated concept for the policy selector it
       { pol_sel(cc) } -> std::same_as<Policy>;
     };
 
-    template <typename T>
-    concept algorithm_policy_selector = policy_selector<T, AlgorithmPolicy>;
+    namespace detail::algorithm {
+      template <typename T>
+      concept algorithm_policy_selector = policy_selector<T, AlgorithmPolicy>;
+    }
 
 The concept basically checks whether the policy selector can be called with a ``cuda::compute_capability``
 and returns the expected policy struct.
@@ -408,15 +417,16 @@ Tunings
 ====================================
 
 Because the values to parameterize an agent may vary a lot for different compile-time parameters,
-the selection of values can be further delegated to tunings.
+the selection of values can involve complex logic.
 Often, such tunings are found by experimentation or heuristic search.
 See also :ref:`cub-tuning`.
 
 Tunings are expressed as logic and values inside the ``constexpr operator()`` of a policy selector.
-Because of the complexity of some policy selectors, nested functions are sometimes used.
+Because of the complexity of some policy selectors, nested functions may be used.
 Many policy selectors also implement a fallback logic,
 where they try to find a matching tuning based on the input characteristics (policy selector data members),
 but if no match is found, they fall back to an older target compute capability.
+Here is an example:
 
 .. code-block:: c++
 
@@ -435,7 +445,7 @@ but if no match is found, they fall back to an older target compute capability.
         if (offset_size == 4 && accum_size == 8)
           return sm90_tuning_values{15, 512, 2};
       }
-      return {}; // no tuning available, fall back
+      return {}; // no tuning available, causes fallback
     }
 
     struct policy_selector {
@@ -462,7 +472,7 @@ In general, tunings are not exhaustive and usually only apply for specific combi
 of parameter values and a single compute capability.
 This is because they originate from tuning benchmarks running for specific workloads on specific target architectures.
 Generic fallbacks are often just retained from earlier days of CUB to not risk regressions,
-or are based on heuristics trying provide reasonable performance based on a model of the GPU architecture or algorithm.
+or are based on heuristics trying to provide reasonable performance based on a model of the GPU architecture or algorithm.
 
 Tunings for CUB algorithms reside in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
 
