@@ -13,7 +13,7 @@ Defined in the ``<cuda/type_traits>`` header.
    constexpr bool is_trivially_copyable_v = /* see below */;
 
    template <typename T>
-   using is_trivially_copyable = /* cuda::std::bool_constant */;
+   using is_trivially_copyable = cuda::std::bool_constant<cuda::std::is_trivially_copyable_v<T>>;
 
    } // namespace cuda
 

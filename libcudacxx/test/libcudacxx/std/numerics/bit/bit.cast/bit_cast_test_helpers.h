@@ -26,10 +26,9 @@ TEST_FUNC void test_roundtrip_through_buffer(T from)
   {
     char buffer[sizeof(T)];
   };
-  Buffer middle  = cuda::std::bit_cast<Buffer>(from);
-  T to           = cuda::std::bit_cast<T>(middle);
-  Buffer middle2 = cuda::std::bit_cast<Buffer>(to);
-  unused(middle2);
+  Buffer middle                   = cuda::std::bit_cast<Buffer>(from);
+  T to                            = cuda::std::bit_cast<T>(middle);
+  [[maybe_unused]] Buffer middle2 = cuda::std::bit_cast<Buffer>(to);
 
   assert((from == to) == (from == from)); // because NaN
 
@@ -50,10 +49,9 @@ TEST_FUNC void test_roundtrip_through_nested_T(T from)
   };
   static_assert(sizeof(Nested) == sizeof(T));
 
-  Nested middle  = cuda::std::bit_cast<Nested>(from);
-  T to           = cuda::std::bit_cast<T>(middle);
-  Nested middle2 = cuda::std::bit_cast<Nested>(to);
-  unused(middle2);
+  Nested middle                   = cuda::std::bit_cast<Nested>(from);
+  T to                            = cuda::std::bit_cast<T>(middle);
+  [[maybe_unused]] Nested middle2 = cuda::std::bit_cast<Nested>(to);
 
   assert((from == to) == (from == from)); // because NaN
 
@@ -70,10 +68,9 @@ TEST_FUNC void test_roundtrip_through(T from)
 {
   static_assert(sizeof(Intermediate) == sizeof(T));
 
-  Intermediate middle  = cuda::std::bit_cast<Intermediate>(from);
-  T to                 = cuda::std::bit_cast<T>(middle);
-  Intermediate middle2 = cuda::std::bit_cast<Intermediate>(to);
-  unused(middle2);
+  Intermediate middle                   = cuda::std::bit_cast<Intermediate>(from);
+  T to                                  = cuda::std::bit_cast<T>(middle);
+  [[maybe_unused]] Intermediate middle2 = cuda::std::bit_cast<Intermediate>(to);
 
   assert((from == to) == (from == from)); // because NaN
 
