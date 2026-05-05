@@ -16,16 +16,13 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__stream/get_stream.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/cstdint>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
@@ -94,31 +91,6 @@ struct DeviceTransform
 #if _CCCL_HAS_CONCEPTS()
     static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
-
-    // Even when num_items fits in offset_t, the byte product (num_items * sizeof(T)) used for
-    // pointer arithmetic inside the kernel may overflow 32-bit math. Promote to int64_t in that case.
-    // Only the input iterators are considered: the kernel's buggy expression
-    // `aligned_ptr.ptr + offset * unsigned{sizeof(T)}` (in transform_kernel_ublkcp) is on the input
-    // bulk-copy side; output writes use the output iterator's own arithmetic. Including the output
-    // iterator's value_type would also break compilation for write-only output iterators whose
-    // value_type is `void` (e.g. transform_output_iterator, tabulate_output_iterator).
-    // todo(giannis): consider moving this to a helper function under choose_offset.cuh ?
-    if constexpr (sizeof(offset_t) < sizeof(::cuda::std::int64_t) && sizeof...(RandomAccessIteratorsIn) > 0)
-    {
-      constexpr ::cuda::std::size_t max_value_size =
-        ::cuda::std::max({sizeof(detail::it_value_t<RandomAccessIteratorsIn>)...});
-      if (static_cast<::cuda::std::uint64_t>(num_items) * max_value_size > 0xFFFFFFFFull)
-      {
-        return detail::transform::dispatch<StableAddress>(
-          ::cuda::std::move(inputs),
-          ::cuda::std::move(output),
-          static_cast<::cuda::std::int64_t>(num_items),
-          ::cuda::std::move(predicate),
-          ::cuda::std::move(transform_op),
-          stream,
-          policy_selector{});
-      }
-    }
 
     return detail::transform::dispatch<StableAddress>(
       ::cuda::std::move(inputs),

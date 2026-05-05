@@ -14,6 +14,7 @@
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
 
+#include <numeric>
 #include <sstream>
 
 #include "catch2_large_problem_helper.cuh"
@@ -132,6 +133,41 @@ try
   c2h::host_vector<type> input_h = input;
   c2h::host_vector<type> reference_h(static_cast<size_t>(num_items), thrust::no_init);
   std::transform(input_h.begin(), input_h.end(), reference_h.begin(), times_seven{});
+  REQUIRE((reference_h == result));
+}
+catch (const std::bad_alloc&)
+{
+  // allocation failure is not a test failure, so we can run tests on smaller GPUs
+}
+
+// Regression for byte-offset overflow (NVIDIA/cccl#8800). With int32 Offset and
+// num_items * sizeof(T) > 2^32, transform_kernel_ublkcp's byte-offset multiply wrapped in 32-bit
+// math, corrupting tail outputs. The "large input" test above uses unsigned short (2 bytes), which
+// keeps the byte product under 4 GiB even at int32 num_items max — so it does not cover this regime.
+// This test does, with a 4-byte type pushed past 2^30 elements.
+C2H_TEST("DeviceTransform::Transform byte-product exceeds 4 GiB",
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
+try
+{
+  using type     = std::uint32_t;
+  using offset_t = c2h::get<0, TestType>;
+
+  // Just past 2^30 elements: num_items * sizeof(type) > 2^32 bytes, but num_items fits in int32.
+  constexpr offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + 13'229'464);
+  REQUIRE(static_cast<std::uint64_t>(num_items) * sizeof(type) > 0xFFFFFFFFull);
+
+  c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
+  thrust::sequence(input.begin(), input.end(), type{1000});
+
+  c2h::device_vector<type> result(static_cast<size_t>(num_items), thrust::no_init);
+  transform_many(cuda::std::make_tuple(input.begin()), result.begin(), num_items, cuda::std::identity{});
+
+  // Match the verification pattern of the "large input" test above: build the host reference and
+  // compare. Allocates ~4.35 GiB on host, same scale as the existing test, so likely runs wherever
+  // that one does.
+  c2h::host_vector<type> reference_h(static_cast<size_t>(num_items), thrust::no_init);
+  std::iota(reference_h.begin(), reference_h.end(), type{1000});
   REQUIRE((reference_h == result));
 }
 catch (const std::bad_alloc&)
