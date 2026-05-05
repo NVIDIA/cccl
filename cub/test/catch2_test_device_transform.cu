@@ -113,8 +113,7 @@ struct times_seven
 // Exercises the 32-bit byte-offset overflow regime in transform_kernel_ublkcp (NVIDIA/cccl#8800).
 // num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
 // straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
-// and I64 offset types. The earlier version of this test (PR #5176) used unsigned short, which
-// kept the byte product under 4 GiB even at I32 num_items max and missed the bug.
+// and I64 offset types.
 C2H_TEST("DeviceTransform::Transform works with large input",
          "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
