@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 #include <cuda/std/algorithm.ranges.for_each_n.h>
 #include <cuda/std/cassert>
 
