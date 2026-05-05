@@ -18,7 +18,7 @@
 #if !TUNE_BASE
 struct bench_scan_by_key_policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::scan_by_key::scan_by_key_policy
   {
     return {TUNE_THREADS,

@@ -25,7 +25,7 @@
 template <class KeyT>
 struct device_seg_sort_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
   {
     constexpr int tune_sw_threads     = 1 << TUNE_SW_THREADS_POW2;
     constexpr int tune_mw_threads     = 1 << TUNE_MW_THREADS_POW2;

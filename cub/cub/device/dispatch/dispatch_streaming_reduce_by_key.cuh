@@ -67,20 +67,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  const reduce_by_key_policy policy = policy_selector(arch_id);
+  const reduce_by_key_policy policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
                  ss << policy;
-                 _CubLog("Dispatching streaming reduce by key to arch %d with tuning: %s\n",
-                         static_cast<int>(arch_id),
+                 _CubLog("Dispatching streaming reduce by key to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
                          ss.str().c_str());
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)

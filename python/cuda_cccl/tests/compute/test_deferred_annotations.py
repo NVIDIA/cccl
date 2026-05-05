@@ -30,7 +30,13 @@ def test_transform_iterator_future_annotations():
     h_init = np.array([0], dtype=np.int32)
 
     transform_it = TransformIterator(d_in, add_one)
-    reduce_into(transform_it, d_out, OpKind.PLUS, d_in.size, h_init)
+    reduce_into(
+        d_in=transform_it,
+        d_out=d_out,
+        num_items=d_in.size,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
 
     expected = int(cp.sum(d_in + 1).get())
     assert int(d_out.get()[0]) == expected

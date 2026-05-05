@@ -7,7 +7,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   exit 1
 fi
 
-if [ -z "${GITHUB_ACTIONS:-}" ]; then
+if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
   echo "This script must be run in a GitHub Actions environment." >&2
   exit 1
 fi
@@ -34,6 +34,6 @@ export ARTIFACT_UPLOAD_REGISTERY="${ARTIFACT_UPLOAD_STAGE}/artifact_upload_regis
 
 mkdir -p "$ARTIFACT_UPLOAD_STAGE" "$ARTIFACT_ARCHIVES"
 
-if [ ! -f "$ARTIFACT_UPLOAD_REGISTERY" ]; then
+if [[ ! -f "$ARTIFACT_UPLOAD_REGISTERY" ]]; then
   echo "[]" > "$ARTIFACT_UPLOAD_REGISTERY"
 fi

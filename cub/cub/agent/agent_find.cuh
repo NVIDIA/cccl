@@ -23,7 +23,7 @@ namespace detail::find
 {
 template <int BlockThreads,
           int ItemsPerThread,
-          int VectorLoadLength,
+          int VecSize,
           CacheLoadModifier LoadModifier,
           typename InputIteratorT,
           typename OffsetT,
@@ -34,14 +34,14 @@ struct agent_t
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
   // Vector type of InputT for data movement
-  using VectorT = typename CubVector<InputT, VectorLoadLength>::Type;
+  using VectorT = typename CubVector<InputT, VecSize>::Type;
 
   static constexpr int tile_size = BlockThreads * ItemsPerThread;
 
   // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
   static constexpr bool attempt_vectorization =
-    (VectorLoadLength > 1) && (ItemsPerThread % VectorLoadLength == 0)
-    && (::cuda::std::contiguous_iterator<InputIteratorT>) && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>;
+    (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (::cuda::std::contiguous_iterator<InputIteratorT>)
+    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>;
 
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 
@@ -70,7 +70,7 @@ struct agent_t
 
       // Retrieve the value type from the iterator to determine the vector type
       using InputT  = typename ::cuda::std::iterator_traits<Iterator>::value_type;
-      using VectorT = typename CubVector<InputT, VectorLoadLength>::Type;
+      using VectorT = typename CubVector<InputT, VecSize>::Type;
 
       const bool full_tile = (tile_offset + tile_size) <= num_items;
 
@@ -87,16 +87,16 @@ struct agent_t
   ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
   {
     using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
-    using VectorT = typename CubVector<InputT, VectorLoadLength>::Type;
+    using VectorT = typename CubVector<InputT, VecSize>::Type;
 
     // vectorized loads begin
-    auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VectorLoadLength));
+    auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
     CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
 
     alignas(InputT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
     auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);
 
-    constexpr int number_of_vectors = ItemsPerThread / VectorLoadLength;
+    constexpr int number_of_vectors = ItemsPerThread / VecSize;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < number_of_vectors; ++i)
     {
@@ -105,11 +105,11 @@ struct agent_t
 
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      OffsetT nth_vector_of_thread = i / VectorLoadLength;
-      OffsetT element_in_vector    = i % VectorLoadLength;
+      OffsetT nth_vector_of_thread = i / VecSize;
+      OffsetT element_in_vector    = i % VecSize;
       OffsetT vector_of_tile       = nth_vector_of_thread * BlockThreads + threadIdx.x;
 
-      OffsetT index = tile_offset + vector_of_tile * VectorLoadLength + element_in_vector;
+      OffsetT index = tile_offset + vector_of_tile * VecSize + element_in_vector;
 
       auto* input_items = reinterpret_cast<InputT*>(input_bytes);
       if (index < num_items && predicate(input_items[i]))

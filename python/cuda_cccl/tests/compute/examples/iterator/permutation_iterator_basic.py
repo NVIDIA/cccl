@@ -27,7 +27,9 @@ d_output = cp.empty(1, dtype=np.int32)
 
 # Perform the reduction on the permuted values.
 num_items = len(d_indices)
-cuda.compute.reduce_into(perm_it, d_output, OpKind.PLUS, num_items, h_init)
+cuda.compute.reduce_into(
+    d_in=perm_it, d_out=d_output, num_items=num_items, op=OpKind.PLUS, h_init=h_init
+)
 
 # Verify the result:
 expected_output = d_values[d_indices].sum()

@@ -339,13 +339,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   KernelLauncherFactory launcher_factory = {})
 {
   // Get arch ID
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const rfa_policy active_policy = policy_selector(arch_id);
+  const rfa_policy active_policy = policy_selector(cc);
   const auto tile_items =
     static_cast<OffsetT>(active_policy.single_tile.block_threads * active_policy.single_tile.items_per_thread);
 

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__execution/env.h>
@@ -62,14 +62,14 @@ template <class... _PolicySelectors>
 {
   static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Policy selectors must be stateless");
   static_assert((::cuda::std::semiregular<_PolicySelectors> && ...), "Policy selectors must be semiregular types");
-  static_assert((::cuda::std::is_invocable_v<_PolicySelectors, ::cuda::arch_id> && ...),
-                "Policy selectors must be invocable with cuda::arch_id");
+  static_assert((::cuda::std::is_invocable_v<_PolicySelectors, ::cuda::compute_capability> && ...),
+                "Policy selectors must be invocable with cuda::compute_capability");
 
   // since all the tunings are stateless, let's ignore incoming parameters
 
   // we use the return type of the policy_selector as tag
   using tuning_env = ::cuda::std::execution::env<
-    ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::arch_id{})), _PolicySelectors>...>;
+    ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::compute_capability{})), _PolicySelectors>...>;
 
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }

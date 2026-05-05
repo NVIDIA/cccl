@@ -30,7 +30,7 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
@@ -922,14 +922,14 @@ struct policy_selector
     return policy;
   }
 
-  _CCCL_API constexpr auto get_warpspeed_policy(::cuda::arch_id arch) const
+  _CCCL_API constexpr auto get_warpspeed_policy(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<scan_warpspeed_policy>
   {
-    if (arch >= ::cuda::arch_id::sm_120)
+    if (cc >= ::cuda::compute_capability{12, 0})
     {
       return get_sm120_fallback_warpspeed_policy();
     }
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       // tunings from cub/benchmarks/bench/scan/exclusive/sum.warpspeed.cu
       if (operation_t == op_kind_t::plus && accum_is_primitive_or_trivially_copy_constructible)
@@ -1013,11 +1013,11 @@ struct policy_selector
 #endif
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
-      const auto warpspeed_policy_opt = get_warpspeed_policy(arch);
+      const auto warpspeed_policy_opt = get_warpspeed_policy(cc);
       if (warpspeed_policy_opt && can_use_warpspeed(*warpspeed_policy_opt))
       {
         return {scan_algorithm::warpspeed, scan_lookback_policy{}, *warpspeed_policy_opt};
@@ -1035,7 +1035,7 @@ struct policy_selector
       large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
     const auto default_delay = default_delay_constructor_policy(accum_is_primitive_or_trivially_copy_constructible);
 
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes)
       {
@@ -1143,7 +1143,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (primitive_op_t == primitive_op::yes)
       {
@@ -1239,7 +1239,7 @@ struct policy_selector
     }
 
     // Keep sm_86 aligned with legacy policy_hub behavior: policy_hub resets to default policy for 86.
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return make_mem_scaled_lookback_scan_policy(
         128,
@@ -1252,7 +1252,7 @@ struct policy_selector
         default_delay);
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (primitive_op_t == primitive_op::yes)
       {
@@ -1347,7 +1347,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_75)
+    if (cc >= ::cuda::compute_capability{7, 5})
     {
       if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes
           && offset_size == 8 && input_value_size == 4)
@@ -1375,7 +1375,7 @@ struct policy_selector
         default_delay);
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{6, 0})
     {
       return make_mem_scaled_lookback_scan_policy(
         128,
@@ -1427,7 +1427,7 @@ struct benchmark_match_for_policy_selector<
 template <typename InputIteratorT, typename OutputIteratorT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
     using InputValueT  = it_value_t<InputIteratorT>;
     using OutputValueT = it_value_t<OutputIteratorT>;
@@ -1456,7 +1456,7 @@ struct policy_selector_from_types
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match};
-    return policies(arch);
+    return policies(cc);
   }
 };
 } // namespace detail::scan

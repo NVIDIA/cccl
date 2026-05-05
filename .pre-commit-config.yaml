@@ -30,6 +30,14 @@ repos:
         exclude_types: [python]
       - id: check-yaml
 
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        exclude: |
+          (?x)^(
+            ^.*libcudacxx/cmake/config\.guess$
+          )
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v20.1.7

@@ -12,7 +12,6 @@ CUB
    benchmarking
    tuning
    developer_overview
-   releases
    API documentation <api>
    API reference <api/index>
 
@@ -477,20 +476,6 @@ and relies heavily on C++ template metaprogramming for situational specializatio
 
 CUB and MGPU are complementary in that MGPU serves as an excellent descriptive source
 for many of the algorithmic techniques used by CUB.
-
-
-Stable releases
-==================================================
-
-CUB releases are labeled using version identifiers having three fields:
-``<epoch>.<feature>.<update>``. The *epoch* field
-corresponds to support for a major change or update to the CUDA programming model.
-The *feature* field corresponds to a stable set of features,
-functionality, and interface. The *update* field corresponds to a
-bug-fix or performance update for that feature set.  At the moment, we do
-not publicly provide non-stable releases such as development snapshots,
-beta releases or rolling releases. (Feel free to contact us if you would
-like access to such things.)
 
 
 Contributors

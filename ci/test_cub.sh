@@ -12,7 +12,7 @@ ARTIFACT_TAGS=()
 
 ci_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-new_args=$("${ci_dir}/util/extract_switches.sh" \
+new_args="$("${ci_dir}/util/extract_switches.sh" \
   -no-lid \
   -lid0 \
   -lid1 \
@@ -22,9 +22,10 @@ new_args=$("${ci_dir}/util/extract_switches.sh" \
   -compute-sanitizer-racecheck \
   -compute-sanitizer-initcheck \
   -compute-sanitizer-synccheck \
-  -- "$@")
+  -- "$@")"
 
-eval set -- ${new_args}
+declare -a new_args="(${new_args})"
+set -- "${new_args[@]}"
 while true; do
   case "$1" in
   -no-lid)
@@ -88,7 +89,7 @@ if $LIMITED; then
 
   export C2H_SEED_COUNT_OVERRIDE=1
   readonly device_mem_GiB=8
-  export C2H_DEVICE_MEMORY_LIMIT=$((${device_mem_GiB} * 1024 * 1024 * 1024))
+  export C2H_DEVICE_MEMORY_LIMIT=$((device_mem_GiB * 1024 * 1024 * 1024))
   export C2H_DEBUG_CHECKED_ALLOC_FAILURES=1
 
   echo "Configuring limited environment:"
@@ -98,6 +99,7 @@ if $LIMITED; then
   echo
 fi
 
+# shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
 
 print_environment_details
@@ -108,7 +110,7 @@ if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
 else
   producer_id=$(util/workflow/get_producer_id.sh)
   for tag in "${ARTIFACT_TAGS[@]}"; do
-    artifact="z_cub-test-artifacts-$DEVCONTAINER_NAME-$producer_id-$tag"
+    artifact="z_cub-test-artifacts-${DEVCONTAINER_NAME:?}-$producer_id-$tag"
     run_command "📦  Unpacking artifact '$artifact'" \
       "${ci_dir}/util/artifacts/download_packed.sh" "$artifact" /home/coder/cccl
   done
@@ -133,8 +135,8 @@ if $COMPUTE_SANITIZER; then
   export C2H_SEED_COUNT_OVERRIDE=1
 fi
 
-for PRESET in ${PRESETS[@]}; do
-  test_preset "CUB (${PRESET})" ${PRESET}
+for PRESET in "${PRESETS[@]}"; do
+  test_preset "CUB (${PRESET})" "${PRESET}"
 done
 
 print_time_summary

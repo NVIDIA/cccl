@@ -2,10 +2,12 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+readonly ci_dir
+# shellcheck source=ci/util/artifacts/common.sh
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <artifact_name>
 
 Packs a staged artifact (created using artifact/stage.sh) into a tar.zst archive.
@@ -17,8 +19,9 @@ Example Usages:
   - $0 test_artifact
 EOF
 )
+readonly usage
 
-if [ "$#" -ne 1 ]; then
+if [[ "$#" -ne 1 ]]; then
   echo "Error: Invalid number of arguments." >&2
   echo "$usage" >&2
   exit 1
@@ -36,7 +39,7 @@ readonly artifact_cwd_file="$artifact_stage_path/artifact_index_cwd.txt"
 readonly artifact_archive="${ARTIFACT_UPLOAD_STAGE}/${artifact_name}/${artifact_name}.tar.zst"
 
 echo "Packing artifact '$artifact_stage_path' into '$artifact_archive'"
-echo "Using zstd: `which zstd`"
+echo "Using zstd: $(command -v zstd)"
 echo "Pulling artifacts from working directory: $(cat "$artifact_cwd_file")"
 
 tar -cv -C "$(cat "$artifact_cwd_file")" -T "$artifact_index_file" \

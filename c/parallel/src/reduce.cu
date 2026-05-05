@@ -232,7 +232,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   auto policy_hub_expr =
     std::format("cub::detail::reduce::policy_selector_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
@@ -251,7 +251,7 @@ struct __align__({2}) storage_t {{
 using device_reduce_policy = {6};
 using namespace cub;
 using namespace cub::detail::reduce;
-static_assert(device_reduce_policy()(detail::current_tuning_arch()) == {7}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {7}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1

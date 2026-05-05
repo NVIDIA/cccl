@@ -8,6 +8,6 @@ print_environment_details
 
 PRESET="cudax"
 
-test_preset "CUDA Experimental" ${PRESET}
+test_preset "CUDA Experimental" "${PRESET}"
 
 print_time_summary

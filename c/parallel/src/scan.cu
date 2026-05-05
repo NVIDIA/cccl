@@ -257,7 +257,7 @@ try
 {
   const char* name = "test";
 
-  const int cc                 = cc_major * 10 + cc_minor;
+  const cuda::compute_capability cc{cc_major, cc_minor};
   const cccl_type_info accum_t = scan::get_accumulator_type(op, input_it, init);
   const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
   const auto input_it_value_t  = cccl_type_enum_to_name(input_it.value_type.type);
@@ -329,8 +329,7 @@ try
       benchmark_match};
   }();
 
-  const auto arch_id       = cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor});
-  const auto active_policy = policy_sel(arch_id);
+  const auto active_policy = policy_sel(cc);
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
@@ -361,7 +360,7 @@ using namespace cub;
 using namespace cub::detail::scan;
 using cub::detail::delay_constructor_policy;
 using cub::detail::delay_constructor_kind;
-static_assert(device_scan_policy()(detail::current_tuning_arch()) == {6}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_it.value_type.size, // 0
     input_it.value_type.alignment, // 1
@@ -428,7 +427,7 @@ static_assert(device_scan_policy()(detail::current_tuning_arch()) == {6}, "Host 
   auto [description_bytes_per_tile,
         payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
 
-  build_ptr->cc                         = cc;
+  build_ptr->cc                         = cc.get();
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
   build_ptr->input_type                 = input_it.value_type;

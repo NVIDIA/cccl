@@ -9,7 +9,6 @@ libcu++
 
    Overview <self>
    setup
-   releases
    standard_api
    extended_api
    runtime

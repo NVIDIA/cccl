@@ -423,7 +423,7 @@ as an example:
 #. In the first stage, ``cuda.compute.make_reduce_into(...)`` constructs
    a reusable reduction object:
 
-   ``reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)``
+   ``reducer = cuda.compute.make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init)``
 
    Here ``op`` is a Python function that must be made available to the
    CUDA kernel. As in the simplified prototype above, this stage
@@ -437,7 +437,7 @@ as an example:
 #. In the second stage, that reduction object is used to query the
    amount of temporary storage required by the algorithm:
 
-   ``temp_storage_size = reducer(None, d_input, d_output, op, num_items, h_init)``
+   ``temp_storage_size = reducer(temp_storage=None, d_in=d_input, d_out=d_output, num_items=num_items, op=op, h_init=h_init)``
 
    This returns the size of the temporary storage buffer, which must be
    allocated in device-accessible memory. No kernels are launched at
@@ -446,7 +446,7 @@ as an example:
 #. In the third stage, the algorithm is executed using the allocated
    temporary storage:
 
-   ``reducer(temp_storage, d_input, d_output, op, num_items, h_init)``
+   ``reducer(temp_storage=temp_storage, d_in=d_input, d_out=d_output, num_items=num_items, op=op, h_init=h_init)``
 
    At this point, the kernels stored in the reduction object are
    launched and the reduction is performed.

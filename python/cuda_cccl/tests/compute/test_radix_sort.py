@@ -71,15 +71,15 @@ def radix_sort_device(
 ):
     # Use the new single-phase API with automatic temp storage allocation
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        order,
-        num_items,
-        begin_bit,
-        end_bit,
-        stream,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        order=order,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        stream=stream,
     )
 
 
@@ -438,12 +438,12 @@ def test_radix_sort_large_num_items(dtype, monkeypatch):
     d_out_keys = cp.empty(num_items, dtype=dtype)
 
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        None,
-        None,
-        SortOrder.ASCENDING,
-        num_items,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=None,
+        d_out_values=None,
+        num_items=num_items,
+        order=SortOrder.ASCENDING,
     )
 
     h_out_keys = d_out_keys.get()
@@ -498,12 +498,12 @@ def test_radix_sort(monkeypatch):
 
     # Call single-phase API directly with num_items parameter
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        SortOrder.ASCENDING,
-        d_in_keys.size,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=d_in_keys.size,
+        order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct
@@ -550,12 +550,12 @@ def test_radix_sort_double_buffer(monkeypatch):
 
     # Call single-phase API directly with num_items parameter
     cuda.compute.radix_sort(
-        keys_double_buffer,
-        None,
-        values_double_buffer,
-        None,
-        SortOrder.ASCENDING,
-        d_in_keys.size,
+        d_in_keys=keys_double_buffer,
+        d_out_keys=None,
+        d_in_values=values_double_buffer,
+        d_out_values=None,
+        num_items=d_in_keys.size,
+        order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct

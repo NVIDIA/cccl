@@ -18,7 +18,7 @@
 #if !TUNE_BASE
 struct bench_rle_policy_selector
 {
-  [[nodiscard]] constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
     return {
