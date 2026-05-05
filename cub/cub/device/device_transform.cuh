@@ -42,7 +42,8 @@ struct __return_constant
 } // namespace detail
 CUB_NAMESPACE_END
 
-namespace cuda {
+namespace cuda
+{
 template <typename T>
 struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
