@@ -835,8 +835,8 @@ private:
               large_and_medium_segments_indices.get(),                                  \
               small_segments_indices.get(),                                             \
               launcher_factory,                                                         \
-              wrapped_policy.large_segment.BlockThreads(),                              \
-              wrapped_policy.small_segment.BlockThreads(),                              \
+              wrapped_policy.large_segment.ThreadsPerBlock(),                           \
+              wrapped_policy.small_segment.ThreadsPerBlock(),                           \
               wrapped_policy.medium_segment.SegmentsPerBlock(),                         \
               wrapped_policy.small_segment.SegmentsPerBlock())))                        \
     {                                                                                   \

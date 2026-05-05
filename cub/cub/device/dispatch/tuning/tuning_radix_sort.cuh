@@ -827,7 +827,7 @@ struct RadixSortPolicyWrapper<
   }
 
   template <typename PolicyT>
-  _CCCL_HOST_DEVICE static constexpr int BlockThreads(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int ThreadsPerBlock(PolicyT /*policy*/)
   {
     return PolicyT::BLOCK_THREADS;
   }

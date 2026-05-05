@@ -301,15 +301,17 @@ struct DispatchSegmentedReduce
         _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
                 "%d items per thread, %d SM occupancy\n",
                 num_current_segments,
-                policy.SegmentedReduce().BlockThreads(),
+                policy.SegmentedReduce().ThreadsPerBlock(),
                 (long long) stream,
                 policy.SegmentedReduce().ItemsPerThread(),
                 segmented_reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
         // Invoke DeviceSegmentedReduceKernel
-        launcher_factory(
-          static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
+        launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
+                         policy.SegmentedReduce().ThreadsPerBlock(),
+                         0,
+                         stream)
           .doit(segmented_reduce_kernel,
                 d_in,
                 d_out,

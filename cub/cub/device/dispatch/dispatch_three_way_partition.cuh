@@ -364,7 +364,7 @@ struct DispatchThreeWayPartitionIf
          ScanInitKernelPtrT three_way_partition_init_kernel,
          SelectIfKernelPtrT three_way_partition_kernel)
   {
-    const int block_threads    = policy.ThreeWayPartition().BlockThreads();
+    const int block_threads    = policy.ThreeWayPartition().ThreadsPerBlock();
     const int items_per_thread = policy.ThreeWayPartition().ItemsPerThread();
     return __invoke(block_threads, items_per_thread, three_way_partition_init_kernel, three_way_partition_kernel);
   }

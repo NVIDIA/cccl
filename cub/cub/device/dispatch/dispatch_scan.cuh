@@ -366,7 +366,7 @@ struct DispatchScan
     policy.CheckLoadModifier();
 
     // Number of input tiles
-    const int tile_size = policy.Scan().BlockThreads() * policy.Scan().ItemsPerThread();
+    const int tile_size = policy.Scan().ThreadsPerBlock() * policy.Scan().ItemsPerThread();
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
     auto tile_state = kernel_source.TileState();
@@ -429,7 +429,7 @@ struct DispatchScan
     // Get SM occupancy for scan_kernel
     int scan_sm_occupancy;
     if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().BlockThreads())))
+          CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().ThreadsPerBlock())))
     {
       return error;
     }
@@ -451,7 +451,7 @@ struct DispatchScan
               "per thread, %d SM occupancy\n",
               start_tile,
               scan_grid_size,
-              policy.Scan().BlockThreads(),
+              policy.Scan().ThreadsPerBlock(),
               (long long) stream,
               policy.Scan().ItemsPerThread(),
               scan_sm_occupancy);
@@ -459,7 +459,7 @@ struct DispatchScan
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
+            launcher_factory(scan_grid_size, policy.Scan().ThreadsPerBlock(), 0, stream, /* use_pdl */ true)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),

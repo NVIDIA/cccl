@@ -283,13 +283,13 @@ struct DispatchReduce
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
-            policy.SingleTile().BlockThreads(),
+            policy.SingleTile().ThreadsPerBlock(),
             (long long) stream,
             policy.SingleTile().ItemsPerThread());
 #endif // CUB_DEBUG_LOG
 
     // Invoke single_reduce_sweep_kernel
-    launcher_factory(1, policy.SingleTile().BlockThreads(), 0, stream)
+    launcher_factory(1, policy.SingleTile().ThreadsPerBlock(), 0, stream)
       .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
 
     // Check for failure to launch
@@ -382,14 +382,14 @@ struct DispatchReduce
     _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
             (unsigned long) reduce_grid_size,
-            active_policy.Reduce().BlockThreads(),
+            active_policy.Reduce().ThreadsPerBlock(),
             (long long) stream,
             active_policy.Reduce().ItemsPerThread(),
             reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
     // Invoke DeviceReduceKernel
-    launcher_factory(reduce_grid_size, active_policy.Reduce().BlockThreads(), 0, stream)
+    launcher_factory(reduce_grid_size, active_policy.Reduce().ThreadsPerBlock(), 0, stream)
       .doit(reduce_kernel, d_in, d_block_reductions, num_items, even_share, reduction_op, transform_op);
 
     // Check for failure to launch
@@ -408,13 +408,13 @@ struct DispatchReduce
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
-            active_policy.SingleTile().BlockThreads(),
+            active_policy.SingleTile().ThreadsPerBlock(),
             (long long) stream,
             active_policy.SingleTile().ItemsPerThread());
 #endif // CUB_DEBUG_LOG
 
     // Invoke DeviceReduceSingleTileKernel
-    launcher_factory(1, active_policy.SingleTile().BlockThreads(), 0, stream)
+    launcher_factory(1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream)
       .doit(
         single_tile_kernel, d_block_reductions, d_out, reduce_grid_size, reduction_op, init, ::cuda::std::identity{});
 
@@ -438,7 +438,7 @@ struct DispatchReduce
   {
     auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(active_policy);
     if (num_items <= static_cast<OffsetT>(
-          wrapped_policy.SingleTile().BlockThreads() * wrapped_policy.SingleTile().ItemsPerThread()))
+          wrapped_policy.SingleTile().ThreadsPerBlock() * wrapped_policy.SingleTile().ItemsPerThread()))
     {
       // Small, single tile size
       return InvokeSingleTile(kernel_source.SingleTileKernel(), wrapped_policy);

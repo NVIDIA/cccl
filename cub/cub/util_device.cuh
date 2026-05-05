@@ -678,7 +678,7 @@ _CCCL_CONCEPT always_true = true;
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
+  GenericAgentPolicy, (always_true), (BLOCK_THREADS, ThreadsPerBlock, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 _CCCL_TEMPLATE(typename PolicyT)
@@ -727,7 +727,7 @@ struct KernelConfig
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
+    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).ThreadsPerBlock();
     items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
