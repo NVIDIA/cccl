@@ -212,10 +212,10 @@ C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with greater comparator"
 // example-begin sort-pairs-policy-selector
 struct MergeSortPolicySelector
 {
-  __host__ __device__ constexpr auto operator()(cuda::arch_id arch) const -> cub::MergeSortPolicy
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::MergeSortPolicy
   {
     return {.block_threads    = 256,
-            .items_per_thread = arch > cuda::arch_id::sm_90 ? 17 : 14,
+            .items_per_thread = cc > cuda::compute_capability{9, 0} ? 17 : 14,
             .load_algorithm   = cub::BLOCK_LOAD_DIRECT,
             .load_modifier    = cub::LOAD_DEFAULT,
             .store_algorithm  = cub::BLOCK_STORE_DIRECT};
