@@ -21,23 +21,37 @@ __device__ __forceinline__ static T generate_random_data()
   return ret;
 }
 
-__device__ static int device_var[16];
+__device__ static int device_var[128];
 
 template <typename T>
 __device__ __forceinline__ static void sink(T value)
 {
+  static_assert(sizeof(T) <= sizeof(device_var), "value type too large to fit in device_var");
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
     *reinterpret_cast<T*>(device_var) = value;
   }
 }
 
-template <int BlockThreads, int UnrollFactor, typename ActionT, typename T>
-__launch_bounds__(BlockThreads) __global__ static void benchmark_kernel(_CCCL_GRID_CONSTANT const ActionT action)
+template <int UnrollFactor, typename T, typename ActionT>
+__device__ __forceinline__ static void benchmark_kernel_body(const ActionT& action)
 {
   auto data = generate_random_data<T>();
   cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {
     data = action(data);
   });
   sink(data);
+}
+
+template <int BlockThreads, int UnrollFactor, typename ActionT, typename T>
+__launch_bounds__(BlockThreads) __global__ static void benchmark_kernel(_CCCL_GRID_CONSTANT const ActionT action)
+{
+  benchmark_kernel_body<UnrollFactor, T>(action);
+}
+
+template <int BlockThreads, int SmBlocks, int UnrollFactor, typename ActionT, typename T>
+__launch_bounds__(BlockThreads, SmBlocks) __global__
+  static void benchmark_kernel_full_bounds(_CCCL_GRID_CONSTANT const ActionT action)
+{
+  benchmark_kernel_body<UnrollFactor, T>(action);
 }
