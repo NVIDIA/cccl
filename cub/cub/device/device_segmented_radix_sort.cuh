@@ -458,7 +458,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-pairs-env
@@ -612,7 +612,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-pairs-db-env
@@ -926,7 +926,6 @@ public:
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
-  //!   not to be modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
   //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
@@ -1111,7 +1110,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-pairs-descending-env
@@ -1265,7 +1264,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-pairs-descending-db-env
@@ -1738,7 +1737,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-keys-env
@@ -1879,7 +1878,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-keys-db-env
@@ -2340,7 +2339,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-keys-descending-env
@@ -2479,7 +2478,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-keys-descending-db-env
