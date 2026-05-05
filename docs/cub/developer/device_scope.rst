@@ -116,7 +116,7 @@ A more precise description is given later.
     namespace detail::algorithm {
       cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
         cuda::compute_capability cc{};
-        ptx_cc(cc);
+        ptx_compute_cap(cc);
         const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(cc); // (2)
         // host-side implementation of algorithm, calls kernels
         kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
@@ -159,7 +159,7 @@ There are two style of dispatch functions, depending on whether the policy is ne
       // Dispatch version A - runtime policy
       cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
         cuda::compute_capability cc{};
-        ptx_cc(cc);
+        ptx_compute_cap(cc);
         const auto active_policy = policy_selector(cc); // runtime-time policy
         // host-side implementation of algorithm, calls kernels
         kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
@@ -167,7 +167,7 @@ There are two style of dispatch functions, depending on whether the policy is ne
     }
 
 The dispatch function starts by querying the target compute capability for which compiled GPU code (PTX or SASS) is available,
-by calling ``ptx_cc``.
+by calling ``ptx_compute_cap``.
 If the host code does not require the policy for this compute capability at compile-time (version A),
 we can just pass the compute capability to the :ref:`policy selector <cub-policy-selectors>` to obtain the tuning policy at runtime.
 The values from the policy are then used to setup resources and the kernel.
@@ -175,12 +175,12 @@ The kernel is then instantiated using only the type of the policy selector (not 
 so there is only one kernel instantiation across all target architectures compiled for.
 More on that later.
 
-If the host code needs the policy as a compile-time value (version B), we have to use ``dispatch_arch``.
+If the host code needs the policy as a compile-time value (version B), we have to use ``dispatch_compute_cap``.
 
-dispatch_arch
+dispatch_compute_cap
 ------------------------------------
 
-``dispatch_arch`` maps a runtime ``cuda::compute_capability`` to a compile-time policy value
+``dispatch_compute_cap`` maps a runtime ``cuda::compute_capability`` to a compile-time policy value
 and calls the user-provided functor ``f`` with a nullary callable (a ``policy_getter``)
 that returns the policy as a compile-time constant.
 The policy getter is necessary to work around a C++17 limitation.
@@ -191,8 +191,8 @@ The policy getter is necessary to work around a C++17 limitation.
       // Dispatch version B - compile-time policy
       cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
         cuda::compute_capability cc{};
-        ptx_cc(cc);
-        return dispatch_arch(policy_selector, cc, [&](auto policy_getter) { // calls (2)
+        ptx_compute_cap(cc);
+        return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) { // calls (2)
           constexpr auto active_policy = policy_getter(); // compile-time policy
           static_assert(active_policy.tile_size() * sizeof(T) <= 48 * 1024, "Not enough SMEM");
           // host-side implementation of algorithm, calls kernels
@@ -201,7 +201,7 @@ The policy getter is necessary to work around a C++17 limitation.
       }
 
       template <typename PolicySelector, typename F>
-      cudaError_t dispatch_arch(PolicySelector, cuda::compute_capability cc, F&& f) { // (2)
+      cudaError_t dispatch_compute_cap(PolicySelector, cuda::compute_capability cc, F&& f) { // (2)
         // fold over __CUDA_ARCH_LIST__, calling f with a policy_getter
         // that returns the policy for the matching arch as a compile-time value
       }
@@ -210,7 +210,7 @@ The policy getter is necessary to work around a C++17 limitation.
 Inside the lambda, ``policy_getter()`` returns the selected policy as a constant expression,
 so compile-time branching (i.e. ``if constexpr``) or static assertions using policy values is possible.
 
-Internally, ``dispatch_arch`` uses ``__CUDA_ARCH_LIST__``/``NV_TARGET_SM_INTEGER_LIST`` (or all known compute capabilities as fallback)
+Internally, ``dispatch_compute_cap`` uses ``__CUDA_ARCH_LIST__``/``NV_TARGET_SM_INTEGER_LIST`` (or all known compute capabilities as fallback)
 to create one instantiation of ``f`` per distinct value of ``policy_selector(cc)`` (not per compute capability).
 This results in one template instantiation of ``f`` per distinct policy value.
 The kernel is then again only instantiated once using the type of the policy selector.
@@ -259,9 +259,9 @@ so it will be converted to the legacy agent policies in many places.
 
 .. warning::
     The kernel gets compiled for each target architecture (N many) that was provided to the compiler.
-    During each device pass, ``current_policy`` may return a different policy.
+    During each device pass, ``current_policy`` may return a different policy.```````````
     During the host pass, version A (runtime policy) compiles a single instantiation of the dispatch logic for all target architectures.
-    Version B (using ``dispatch_arch``) compiles the dispatch logic for each distinct tuning policy (M many).
+    Version B (using ``dispatch_compute_cap``) compiles the dispatch logic for each distinct tuning policy (M many).
     If we passed the selected tuning policy instead of the policy selector as a kernel template parameter,
     the kernel template instantiation would be different for each tuning policy value and
     we would compile O(M*N) kernels for version B instead of O(N).
