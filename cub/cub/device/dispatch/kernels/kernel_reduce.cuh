@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_nondeterministic.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_arch.cuh>
 
@@ -284,18 +285,17 @@ template <typename PolicySelector,
           typename InitT,
           typename TransformOpT>
 #if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_selector<PolicySelector>
+  requires reduce_nondeterministic::reduce_nondeterministic_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  current_policy<PolicySelector>()
-    .reduce_nondeterministic
-    .threads_per_block)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-                                                                       _CCCL_GRID_CONSTANT const OffsetT num_items,
-                                                                       GridEvenShare<OffsetT> even_share,
-                                                                       ReductionOpT reduction_op,
-                                                                       _CCCL_GRID_CONSTANT const InitT init,
-                                                                       TransformOpT transform_op)
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void NondeterministicDeviceReduceAtomicKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  GridEvenShare<OffsetT> even_share,
+  ReductionOpT reduction_op,
+  _CCCL_GRID_CONSTANT const InitT init,
+  TransformOpT transform_op)
 {
   // todo: This static_assert fails with nvc++ CUDA compilation.
   NV_IF_ELSE_TARGET(
@@ -319,7 +319,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   }
 
   // Thread block type for reducing input tiles
-  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce_nondeterministic;
+  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.threads_per_block,

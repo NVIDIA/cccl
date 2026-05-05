@@ -98,7 +98,7 @@ struct reduce_tuning
   {
     const auto policy = cub::detail::reduce::agent_reduce_policy{
       ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {policy, policy, policy};
+    return {policy, policy};
   }
 };
 
@@ -212,7 +212,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 
       REQUIRE(
         cudaSuccess
-        == cub::detail::reduce::dispatch_nondeterministic(
+        == cub::detail::reduce_nondeterministic::dispatch(
           nullptr,
           expected_bytes_allocated,
           d_in,
@@ -338,7 +338,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
 
       REQUIRE(
         cudaSuccess
-        == cub::detail::reduce::dispatch_nondeterministic(
+        == cub::detail::reduce_nondeterministic::dispatch(
           nullptr,
           expected_bytes_allocated,
           d_in,
