@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: enable-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // <algorithm>
