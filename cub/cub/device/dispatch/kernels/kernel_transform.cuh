@@ -489,7 +489,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   {
     smem_offset = ::cuda::round_up(smem_offset, int{alignof(T)});
   }
-  const char* const src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
+  const char* const src = aligned_ptr.ptr + offset * sizeof(T);
   char* const dst       = smem + smem_offset;
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % ldgsts_size_and_align == 0, "");
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % ldgsts_size_and_align == 0, "");
@@ -530,9 +530,8 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(alignof(T) < ldgsts_size_and_align || aligned_ptr.head_padding == 0, "");
   const int head_padding = alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0;
 
-  const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
-                                                                                   // Offset==I32
-  char* dst = smem + smem_offset + head_padding;
+  const char* src = aligned_ptr.ptr + offset * sizeof(T) + head_padding;
+  char* dst       = smem + smem_offset + head_padding;
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(src) % alignof(T) == 0, "");
   _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(dst) % alignof(T) == 0, "");
   const int bytes_to_copy = int{sizeof(T)} * valid_items;
@@ -772,7 +771,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // turning this lambda into a function does not change SASS
       auto bulk_copy_tile = [&](auto aligned_ptr) {
         using T         = typename decltype(aligned_ptr)::value_type;
-        const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
+        const char* src = aligned_ptr.ptr + offset * sizeof(T);
         char* dst       = smem;
         _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
         _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
@@ -839,9 +838,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
       const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
 
-      const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
-                                                                                       // Offset==I32
-      char* dst = smem + head_padding;
+      const char* src = aligned_ptr.ptr + offset * sizeof(T) + head_padding;
+      char* dst       = smem + head_padding;
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
       _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
       const int bytes_to_copy = int{sizeof(T)} * valid_items;
