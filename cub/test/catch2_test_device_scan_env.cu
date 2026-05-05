@@ -342,7 +342,7 @@ TEST_CASE("Device scan exclusive scan with FutureValue in-place works with defau
   REQUIRE(d_data == expected);
 }
 
-#endif // TEST_LAUCH != 1
+#endif // TEST_LAUNCH != 1
 
 C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
 {
