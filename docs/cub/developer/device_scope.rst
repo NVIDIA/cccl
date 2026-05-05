@@ -90,6 +90,8 @@ The device layer handles the extraction of the:
 from the environment argument, or provide default values in case the environment does not contain them.
 They typically use helper functions like ``dispatch_with_env`` and ``dispatch_with_env_and_tuning``.
 
+Some CUB APIs require no temporary storage and may omit the ``void *d_temp_storage, size_t &temp_storage_bytes`` parameters.
+Their environment overloads will also ignore any passed memory resource.
 
 Dispatch layer
 ====================================
