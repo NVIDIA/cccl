@@ -15,6 +15,12 @@
 
 #if _CCCL_STD_VER >= 2020
 
+// nvcc turns the `.member = value,` C++ syntax into GNU's `member: value,` when clang (14 - 21) is used
+_CCCL_DIAG_PUSH
+#  if _CCCL_COMPILER(CLANG)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-designator")
+#  endif // _CCCL_COMPILER(CLANG)
+
 // example-begin transform-policy-selector
 struct MyTransformPolicySelector
 {
@@ -28,6 +34,8 @@ struct MyTransformPolicySelector
   }
 };
 // example-end transform-policy-selector
+
+_CCCL_DIAG_POP
 
 C2H_TEST("cub::DeviceTransform::Transform env-based API with tuning", "[transform][env]")
 {
