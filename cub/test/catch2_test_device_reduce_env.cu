@@ -35,62 +35,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 namespace stdexec = cuda::std::execution;
 
-// Launcher helper always passes an environment.
-// We need a test of simple use to check if default environment works.
-// ifdef it out not to spend time compiling and running it twice.
-#if TEST_LAUNCH == 0
-using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
-
-TEST_CASE("Device reduce works with default environment", "[reduce][device]")
-{
-  using num_items_t = int;
-  using value_t     = int;
-  using offset_t    = cub::detail::choose_offset_t<num_items_t>;
-
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
-  cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
-
-  unsigned int target_block_size =
-    cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(cc)
-      .single_tile.threads_per_block;
-
-  num_items_t num_items = 1;
-  c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
-  auto d_in  = cuda::constant_iterator(value_t{1});
-  auto d_out = thrust::device_vector<value_t>(1);
-
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, value_t{0}));
-  REQUIRE(d_out[0] == num_items);
-
-  // Make sure we use default tuning
-  REQUIRE(d_block_size[0] == target_block_size);
-}
-
-TEST_CASE("Device sum works with default environment", "[reduce][device]")
-{
-  using num_items_t = int;
-  using value_t     = int;
-  using offset_t    = cub::detail::choose_offset_t<num_items_t>;
-
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
-  int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
-
-  num_items_t num_items = 1;
-
-  auto d_in  = cuda::constant_iterator(value_t{1});
-  auto d_out = thrust::device_vector<value_t>(1);
-
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items));
-  REQUIRE(d_out[0] == num_items);
-}
-
 template <int ThreadsPerBlock>
 struct reduce_tuning
 {
@@ -126,6 +70,62 @@ struct unrelated_tuning
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
+// Launcher helper always passes an environment.
+// We need a test of simple use to check if default environment works.
+// ifdef it out not to spend time compiling and running it twice.
+#if TEST_LAUNCH == 0
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
+
+TEST_CASE("Device reduce works with default environment", "[reduce][device]")
+{
+  using num_items_t = int;
+  using value_t     = int;
+  using offset_t    = cub::detail::choose_offset_t<num_items_t>;
+
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+
+  unsigned int target_block_size =
+    cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(cc)
+      .single_tile.threads_per_block;
+
+  num_items_t num_items = 1;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  auto d_in  = cuda::constant_iterator(value_t{1});
+  auto d_out = thrust::device_vector<value_t>(1);
+
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, value_t{0}));
+  REQUIRE(d_out[0] == num_items);
+
+  // Make sure we use default tuning
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+TEST_CASE("Device Sum works with default environment", "[reduce][device]")
+{
+  using num_items_t = int;
+  using value_t     = int;
+  using offset_t    = cub::detail::choose_offset_t<num_items_t>;
+
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  int ptx_version{};
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
+
+  num_items_t num_items = 1;
+
+  auto d_in  = cuda::constant_iterator(value_t{1});
+  auto d_out = thrust::device_vector<value_t>(1);
+
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items));
+  REQUIRE(d_out[0] == num_items);
+}
+
 C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -152,14 +152,61 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   REQUIRE(d_out[0] == num_items);
   REQUIRE(d_block_size[0] == target_block_size);
 }
+#endif
 
-C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
+#if TEST_LAUNCH != 1
+C2H_TEST("Device Sum can be tuned", "[reduce][device]", block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
 
-  auto num_items = 1;
-  auto d_in      = cuda::constant_iterator(1);
-  auto d_out     = thrust::device_vector<int>(1);
+  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+
+  device_reduce_sum(d_in, d_out.begin(), 1, env);
+  REQUIRE(d_out[0] == 1);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Device Min can be tuned", "[reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in  = block_size_extracting_constant_iterator(42, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+
+  device_reduce_min(d_in, d_out.begin(), 1, env);
+  REQUIRE(d_out[0] == 42);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Device Max can be tuned", "[reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in  = block_size_extracting_constant_iterator(42, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = c2h::device_vector<int>(1);
+
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+
+  device_reduce_max(d_in, d_out.begin(), 1, env);
+  REQUIRE(d_out[0] == 42);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Device TransformReduce can be tuned", "[reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = c2h::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(
@@ -173,10 +220,52 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
 #  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
   );
 
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
-  REQUIRE(d_out[0] == num_items);
+  device_transform_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, env);
+  REQUIRE(d_out[0] == -1);
+  REQUIRE(d_block_size[0] == target_block_size);
 }
-#endif
+
+C2H_TEST("Device ArgMin can be tuned", "[reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  using compare_t = block_size_extracting_op<cuda::std::less<>>;
+  compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto input        = c2h::device_vector<int>{3, 1, 4, 0, 2};
+  auto min_output   = c2h::device_vector<int>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+
+  device_arg_min(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), compare_op, env);
+  REQUIRE(min_output[0] == 0);
+  REQUIRE(index_output[0] == 3);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Device ArgMax can be tuned", "[reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  using compare_t = block_size_extracting_op<cuda::std::less<>>;
+  compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto input        = c2h::device_vector<int>{3, 1, 4, 0, 2};
+  auto max_output   = c2h::device_vector<int>(1);
+  auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
+
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{});
+
+  device_arg_max(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), compare_op, env);
+  REQUIRE(max_output[0] == 4);
+  REQUIRE(index_output[0] == 2);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1
 
 using requirements =
   c2h::type_list<cuda::execution::determinism::gpu_to_gpu_t,
