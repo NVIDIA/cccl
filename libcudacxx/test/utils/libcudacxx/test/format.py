@@ -211,6 +211,11 @@ class LibcxxTestFormat(object):
 
         if test.path_in_suite[:2] == ("cuda", "ptx") and test_cxx.type == "nvcc":
             test_cxx.compile_flags += ["-rdc=true", "-dc"]
+            test_cxx.link_flags += [
+                flag
+                for flag in test_cxx.compile_flags
+                if flag.startswith("-gencode=") or flag.startswith("--generate-code=")
+            ]
 
         # Dispatch the test based on its suffix.
         if is_sh_test:
