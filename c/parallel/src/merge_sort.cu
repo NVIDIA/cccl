@@ -383,10 +383,20 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
-  check(
-    cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, build_ptr->block_sort_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, build_ptr->partition_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, build_ptr->merge_kernel_lowered_name));
+  try
+  {
+    check(
+      cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, build_ptr->block_sort_kernel_lowered_name));
+    check(
+      cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, build_ptr->partition_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, build_ptr->merge_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build_ptr->library);
+    build_ptr->library = nullptr;
+    throw;
+  }
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -394,7 +404,6 @@ catch (const std::exception& exc)
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_merge_sort_load(): %s\n", exc.what());
   fflush(stdout);
-
   return CUDA_ERROR_UNKNOWN;
 }
 

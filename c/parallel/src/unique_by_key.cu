@@ -408,8 +408,17 @@ try
   {
     return status;
   }
-  check(cuLibraryGetKernel(&build->compact_init_kernel, build->library, build->compact_init_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build->sweep_kernel, build->library, build->sweep_kernel_lowered_name));
+  try
+  {
+    check(cuLibraryGetKernel(&build->compact_init_kernel, build->library, build->compact_init_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build->sweep_kernel, build->library, build->sweep_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build->library);
+    build->library = nullptr;
+    throw;
+  }
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -417,7 +426,6 @@ catch (const std::exception& exc)
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_unique_by_key_load(): %s\n", exc.what());
   fflush(stdout);
-
   return CUDA_ERROR_UNKNOWN;
 }
 

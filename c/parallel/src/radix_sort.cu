@@ -447,30 +447,44 @@ try
       || invalid_name(build_ptr->alt_downsweep_kernel_lowered_name)
       || invalid_name(build_ptr->histogram_kernel_lowered_name)
       || invalid_name(build_ptr->exclusive_sum_kernel_lowered_name)
+      || invalid_name(build_ptr->init_bins_and_counters_kernel_lowered_name)
+      || invalid_name(build_ptr->init_lookback_kernel_lowered_name)
       || invalid_name(build_ptr->onesweep_kernel_lowered_name))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
   check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
-  check(
-    cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, build_ptr->single_tile_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, build_ptr->upsweep_kernel_lowered_name));
-  check(
-    cuLibraryGetKernel(&build_ptr->alt_upsweep_kernel, build_ptr->library, build_ptr->alt_upsweep_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->scan_bins_kernel, build_ptr->library, build_ptr->scan_bins_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->downsweep_kernel, build_ptr->library, build_ptr->downsweep_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build_ptr->alt_downsweep_kernel, build_ptr->library, build_ptr->alt_downsweep_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, build_ptr->histogram_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build_ptr->exclusive_sum_kernel, build_ptr->library, build_ptr->exclusive_sum_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build_ptr->init_bins_and_counters_kernel,
-    build_ptr->library,
-    build_ptr->init_bins_and_counters_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build_ptr->init_lookback_kernel, build_ptr->library, build_ptr->init_lookback_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, build_ptr->onesweep_kernel_lowered_name));
+  try
+  {
+    check(cuLibraryGetKernel(
+      &build_ptr->single_tile_kernel, build_ptr->library, build_ptr->single_tile_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, build_ptr->upsweep_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build_ptr->alt_upsweep_kernel, build_ptr->library, build_ptr->alt_upsweep_kernel_lowered_name));
+    check(
+      cuLibraryGetKernel(&build_ptr->scan_bins_kernel, build_ptr->library, build_ptr->scan_bins_kernel_lowered_name));
+    check(
+      cuLibraryGetKernel(&build_ptr->downsweep_kernel, build_ptr->library, build_ptr->downsweep_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build_ptr->alt_downsweep_kernel, build_ptr->library, build_ptr->alt_downsweep_kernel_lowered_name));
+    check(
+      cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, build_ptr->histogram_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build_ptr->exclusive_sum_kernel, build_ptr->library, build_ptr->exclusive_sum_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build_ptr->init_bins_and_counters_kernel,
+      build_ptr->library,
+      build_ptr->init_bins_and_counters_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build_ptr->init_lookback_kernel, build_ptr->library, build_ptr->init_lookback_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, build_ptr->onesweep_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build_ptr->library);
+    build_ptr->library = nullptr;
+    throw;
+  }
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -478,7 +492,6 @@ catch (const std::exception& exc)
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_radix_sort_load(): %s\n", exc.what());
   fflush(stdout);
-
   return CUDA_ERROR_UNKNOWN;
 }
 

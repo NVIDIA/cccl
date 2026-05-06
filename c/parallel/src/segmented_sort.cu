@@ -717,16 +717,25 @@ try
   {
     return status;
   }
-  check(cuLibraryGetKernel(
-    &build->segmented_sort_fallback_kernel, build->library, build->segmented_sort_fallback_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build->segmented_sort_kernel_small, build->library, build->segmented_sort_kernel_small_lowered_name));
-  check(cuLibraryGetKernel(
-    &build->segmented_sort_kernel_large, build->library, build->segmented_sort_kernel_large_lowered_name));
-  check(cuLibraryGetKernel(
-    &build->three_way_partition_init_kernel, build->library, build->three_way_partition_init_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build->three_way_partition_kernel, build->library, build->three_way_partition_kernel_lowered_name));
+  try
+  {
+    check(cuLibraryGetKernel(
+      &build->segmented_sort_fallback_kernel, build->library, build->segmented_sort_fallback_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->segmented_sort_kernel_small, build->library, build->segmented_sort_kernel_small_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->segmented_sort_kernel_large, build->library, build->segmented_sort_kernel_large_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->three_way_partition_init_kernel, build->library, build->three_way_partition_init_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->three_way_partition_kernel, build->library, build->three_way_partition_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build->library);
+    build->library = nullptr;
+    throw;
+  }
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -734,7 +743,6 @@ catch (const std::exception& exc)
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_segmented_sort_load(): %s\n", exc.what());
   fflush(stdout);
-
   return CUDA_ERROR_UNKNOWN;
 }
 

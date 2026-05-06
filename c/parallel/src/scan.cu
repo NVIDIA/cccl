@@ -477,8 +477,17 @@ try
   {
     return status;
   }
-  check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, build_ptr->init_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, build_ptr->scan_kernel_lowered_name));
+  try
+  {
+    check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, build_ptr->init_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, build_ptr->scan_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build_ptr->library);
+    build_ptr->library = nullptr;
+    throw;
+  }
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -486,7 +495,6 @@ catch (const std::exception& exc)
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_scan_load(): %s\n", exc.what());
   fflush(stdout);
-
   return CUDA_ERROR_UNKNOWN;
 }
 

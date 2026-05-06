@@ -325,10 +325,19 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   check(cuLibraryLoadData(&build->library, build->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
-  check(cuLibraryGetKernel(
-    &build->three_way_partition_init_kernel, build->library, build->three_way_partition_init_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build->three_way_partition_kernel, build->library, build->three_way_partition_kernel_lowered_name));
+  try
+  {
+    check(cuLibraryGetKernel(
+      &build->three_way_partition_init_kernel, build->library, build->three_way_partition_init_kernel_lowered_name));
+    check(cuLibraryGetKernel(
+      &build->three_way_partition_kernel, build->library, build->three_way_partition_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build->library);
+    build->library = nullptr;
+    throw;
+  }
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -336,7 +345,6 @@ catch (const std::exception& exc)
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_three_way_partition_load(): %s\n", exc.what());
   fflush(stdout);
-
   return CUDA_ERROR_UNKNOWN;
 }
 

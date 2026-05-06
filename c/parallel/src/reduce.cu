@@ -421,14 +421,23 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   check(cuLibraryLoadData(&build->library, build->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
-  check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, build->single_tile_kernel_lowered_name));
-  check(cuLibraryGetKernel(
-    &build->single_tile_second_kernel, build->library, build->single_tile_second_kernel_lowered_name));
-  check(cuLibraryGetKernel(&build->reduction_kernel, build->library, build->reduction_kernel_lowered_name));
-  if (build->nondeterministic_kernel_lowered_name != nullptr)
+  try
   {
+    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, build->single_tile_kernel_lowered_name));
     check(cuLibraryGetKernel(
-      &build->nondeterministic_atomic_kernel, build->library, build->nondeterministic_kernel_lowered_name));
+      &build->single_tile_second_kernel, build->library, build->single_tile_second_kernel_lowered_name));
+    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, build->reduction_kernel_lowered_name));
+    if (build->nondeterministic_kernel_lowered_name != nullptr)
+    {
+      check(cuLibraryGetKernel(
+        &build->nondeterministic_atomic_kernel, build->library, build->nondeterministic_kernel_lowered_name));
+    }
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build->library);
+    build->library = nullptr;
+    throw;
   }
   return CUDA_SUCCESS;
 }
@@ -437,7 +446,6 @@ catch (const std::exception& exc)
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_reduce_load(): %s\n", exc.what());
   fflush(stdout);
-
   return CUDA_ERROR_UNKNOWN;
 }
 

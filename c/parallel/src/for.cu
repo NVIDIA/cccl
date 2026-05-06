@@ -159,7 +159,16 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
-  check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, build_ptr->static_kernel_lowered_name));
+  try
+  {
+    check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, build_ptr->static_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build_ptr->library);
+    build_ptr->library = nullptr;
+    throw;
+  }
   return CUDA_SUCCESS;
 }
 catch (...)
