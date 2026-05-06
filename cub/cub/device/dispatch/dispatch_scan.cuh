@@ -150,15 +150,15 @@ struct DeviceScanKernelSource
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> scan_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanPolicy
 {
   // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
   // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
   // the policy_selector.
   using scan_policy_t = typename LegacyActivePolicy::ScanPolicyT;
-  return scan_policy{
-    scan_algorithm::lookback,
-    scan_lookback_policy{
+  return ScanPolicy{
+    ScanAlgorithm::lookback,
+    ScanLookbackPolicy{
       scan_policy_t::BLOCK_THREADS,
       scan_policy_t::ITEMS_PER_THREAD,
       scan_policy_t::LOAD_ALGORITHM,
@@ -166,14 +166,14 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> scan_policy
       scan_policy_t::STORE_ALGORITHM,
       scan_policy_t::SCAN_ALGORITHM,
       detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
-    scan_warpspeed_policy{}};
+    ScanWarpspeedPolicy{}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> scan_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ScanPolicy
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
@@ -488,7 +488,7 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_warpspeed_policy warpspeed_policy = policy_getter().warpspeed;
+    CUB_DETAIL_CONSTEXPR_ISH const ScanWarpspeedPolicy warpspeed_policy = policy_getter().warpspeed;
 
     const int grid_dim =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
@@ -657,7 +657,7 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookback_algorithm(PolicyGetter policy_getter)
   {
-    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_lookback_policy active_policy = policy_getter().lookback;
+    CUB_DETAIL_CONSTEXPR_ISH const ScanLookbackPolicy active_policy = policy_getter().lookback;
 
     CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
@@ -791,7 +791,7 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
   {
-    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::warpspeed)
     {
       return __invoke_warpspeed_algorithm(policy_getter);
     }

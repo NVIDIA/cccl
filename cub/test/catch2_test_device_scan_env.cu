@@ -129,9 +129,9 @@ TEST_CASE("Device scan inclusive-scan-init works with default environment", "[sc
 template <int ThreadsPerBlock>
 struct scan_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan::scan_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
   {
-    return {cub::detail::scan::scan_algorithm::lookback,
+    return {cub::ScanAlgorithm::lookback,
             {ThreadsPerBlock,
              1,
              cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
@@ -592,3 +592,52 @@ C2H_TEST("Device scan inclusive-scan in-place uses environment", "[scan][device]
   auto expected = c2h::device_vector<int>{1, 3, 6, 10};
   REQUIRE(d_data == expected);
 }
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("ScanPolicy", "[scan][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ScanPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ScanPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ScanLookbackPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ScanLookbackPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::ScanWarpspeedPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::ScanWarpspeedPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::ScanPolicy{
+    cub::ScanAlgorithm::lookback,
+    cub::ScanLookbackPolicy{
+      256,
+      11,
+      cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+      cub::CacheLoadModifier::LOAD_DEFAULT,
+      cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
+      cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+      cub::detail::delay_constructor_policy{}},
+    cub::ScanWarpspeedPolicy{}};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::ScanPolicy{
+    .algorithm = cub::ScanAlgorithm::lookback,
+    .lookback =
+      cub::ScanLookbackPolicy{
+        .threads_per_block = 256,
+        .items_per_thread  = 11,
+        .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+        .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+        .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
+        .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+        .delay_constructor = cub::detail::delay_constructor_policy{}},
+    .warpspeed = cub::ScanWarpspeedPolicy{}};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

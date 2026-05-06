@@ -66,8 +66,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  constexpr scan_policy policy = current_policy<PolicySelectorT>();
-  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
+  constexpr ScanPolicy policy = current_policy<PolicySelectorT>();
+  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
   {
     device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
   }
@@ -116,9 +116,9 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
-  constexpr scan_policy policy = current_policy<PolicySelector>();
+  constexpr ScanPolicy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
+  if constexpr (policy.algorithm == ScanAlgorithm::warpspeed)
   {
     return num_total_threads(policy.warpspeed);
   }
@@ -201,8 +201,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   _CCCL_GRID_CONSTANT const int num_stages)
 {
-  static constexpr scan_policy active_policy = current_policy<PolicySelector>();
-  if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
+  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
+  if constexpr (active_policy.algorithm == ScanAlgorithm::warpspeed)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
@@ -218,7 +218,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   }
   else
   {
-    static constexpr scan_lookback_policy policy = active_policy.lookback;
+    static constexpr ScanLookbackPolicy policy = active_policy.lookback;
     static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                   "The memory consistency model does not apply to texture accesses");
     using ScanPolicyT = AgentScanPolicy<

@@ -148,21 +148,21 @@ __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_blo
   _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
     _CCCL_GRID_CONSTANT OffsetT* const d_spine, _CCCL_GRID_CONSTANT const int num_counts)
 {
-  static constexpr scan_policy active_policy = current_policy<PolicySelector>().scan;
-  static_assert(active_policy.algorithm == scan_algorithm::lookback);
-  static constexpr scan_lookback_policy policy = active_policy.lookback;
-  using ScanPolicy                             = AgentScanPolicy<
-                                0,
-                                0,
-                                void,
-                                policy.load_algorithm,
-                                policy.load_modifier,
-                                policy.store_algorithm,
-                                policy.scan_algorithm,
-                                NoScaling<policy.threads_per_block, policy.items_per_thread>,
-                                delay_constructor_t<policy.delay_constructor.kind,
-                                                    policy.delay_constructor.delay,
-                                                    policy.delay_constructor.l2_write_latency>>;
+  static constexpr ScanPolicy active_policy = current_policy<PolicySelector>().scan;
+  static_assert(active_policy.algorithm == ScanAlgorithm::lookback);
+  static constexpr ScanLookbackPolicy policy = active_policy.lookback;
+  using ScanPolicy                           = AgentScanPolicy<
+                              0,
+                              0,
+                              void,
+                              policy.load_algorithm,
+                              policy.load_modifier,
+                              policy.store_algorithm,
+                              policy.scan_algorithm,
+                              NoScaling<policy.threads_per_block, policy.items_per_thread>,
+                              delay_constructor_t<policy.delay_constructor.kind,
+                                                  policy.delay_constructor.delay,
+                                                  policy.delay_constructor.l2_write_latency>>;
 
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT = scan::AgentScan<ScanPolicy, OffsetT*, OffsetT*, ::cuda::std::plus<>, OffsetT, OffsetT, OffsetT>;
