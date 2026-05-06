@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -180,6 +180,16 @@ struct radix_sort_kernel_source
   {
     return build.value_type.size;
   }
+
+  indirect_arg_t* AdvanceKeys(indirect_arg_t* ptr, OffsetT offset) const
+  {
+    return reinterpret_cast<indirect_arg_t*>(reinterpret_cast<char*>(ptr) + offset * build.key_type.size);
+  }
+
+  indirect_arg_t* AdvanceValues(indirect_arg_t* ptr, OffsetT offset) const
+  {
+    return reinterpret_cast<indirect_arg_t*>(reinterpret_cast<char*>(ptr) + offset * build.value_type.size);
+  }
 };
 } // namespace radix_sort
 
@@ -213,29 +223,19 @@ try
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
-  // TODO(bgruber): generalize this somewhere
-  const auto key_type = [&] {
-    switch (input_keys_it.value_type.type)
-    {
-      case CCCL_FLOAT32:
-        return cub::detail::type_t::float32;
-      case CCCL_FLOAT64:
-        return cub::detail::type_t::float64;
-      default:
-        return cub::detail::type_t::other;
-    }
-  }();
+  const auto key_type = cccl_type_enum_to_cub_type(input_keys_it.value_type.type);
 
   const auto policy_sel = cub::detail::radix_sort::policy_selector{
     static_cast<int>(input_keys_it.value_type.size),
     // FIXME(bgruber): input_values_it.value_type.size is 4 when it represents cub::NullType, which is very odd
+    // TODO(bgruber): instead of 0 we should probably use int{sizeof(cub::NullType)}
     keys_only ? 0 : static_cast<int>(input_values_it.value_type.size),
     int{sizeof(OffsetT)},
     key_type};
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   auto policy_hub_expr =
     std::format("cub::detail::radix_sort::policy_selector_from_types<{}, {}, {}>", key_cpp, value_cpp, offset_t);
@@ -255,8 +255,11 @@ struct __align__({3}) values_storage_t {{
 {4}
 using device_radix_sort_policy = {5};
 using namespace cub;
+using namespace cub::detail;
 using namespace cub::detail::radix_sort;
-static_assert(device_radix_sort_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6}, "Host generated and JIT compiled policy mismatch");
+using cub::detail::delay_constructor_policy;
+using cub::detail::delay_constructor_kind;
+static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_keys_it.value_type.size, // 0
     input_keys_it.value_type.alignment, // 1

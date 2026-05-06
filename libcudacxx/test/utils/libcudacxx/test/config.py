@@ -288,7 +288,6 @@ class Configuration(object):
         self.configure_use_thread_safety()
         self.configure_no_execute()
         self.configure_execute_external()
-        self.configure_ccache()
         self.configure_compile_flags()
         self.configure_filesystem_compile_flags()
         self.configure_link_flags()
@@ -303,6 +302,7 @@ class Configuration(object):
             self.configure_coroutines()
             self.configure_substitutions()
             self.configure_features()
+        self.configure_ccache()
 
     def print_config_info(self):
         # Print the final compile and link flags.
@@ -640,6 +640,8 @@ class Configuration(object):
     def configure_ccache(self):
         use_ccache_default = os.environ.get("CMAKE_CUDA_COMPILER_LAUNCHER") is not None
         use_ccache = self.get_lit_bool("use_ccache", use_ccache_default)
+        if "enable-tile" in self.config.available_features:
+            return
         if use_ccache and not self.cxx.type == "nvrtcc":
             self.cxx.use_ccache = True
             self.lit_config.note("enabling ccache")
@@ -725,6 +727,9 @@ class Configuration(object):
         if self.get_lit_bool("has_libatomic", False):
             self.config.available_features.add("libatomic")
 
+        if self.get_lit_bool("enable_tile", False):
+            self.config.available_features.add("enable-tile")
+
         if "msvc" not in self.config.available_features:
             macros = self._dump_macros_verbose()
             if "__cpp_if_constexpr" not in macros:
@@ -769,7 +774,8 @@ class Configuration(object):
         # Configure extra flags
         compile_flags_str = self.get_lit_conf("compile_flags", "")
         self.cxx.compile_flags += shlex.split(compile_flags_str)
-        self.cxx.compile_flags += ["-D_CCCL_NO_SYSTEM_HEADER"]
+        if self.get_lit_bool("enable_pedantic_warnings", default=True):
+            self.cxx.compile_flags += ["-D_CCCL_NO_SYSTEM_HEADER"]
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ["-D_CRT_SECURE_NO_WARNINGS"]
@@ -823,6 +829,7 @@ class Configuration(object):
                 compute_archs = self.get_all_major_compute_capabilities()
 
             compute_archs = sorted(set(re.split("\\s|;|,", compute_archs)))
+            arch_flags = []
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
@@ -845,10 +852,11 @@ class Configuration(object):
                     pre_sm_90 = True
                 if arch < 90 or (arch == 90 and subarchitecture < "a"):
                     pre_sm_90a = True
-                arch_flag = real_arch_format.format(str(arch) + subarchitecture)
+                arch = str(arch) + subarchitecture
+                arch_flags += [real_arch_format.format(arch)]
                 if mode.count("virtual"):
-                    arch_flag = virt_arch_format.format(str(arch) + subarchitecture)
-                self.cxx.compile_flags += [arch_flag]
+                    arch_flags += [virt_arch_format.format(arch)]
+            self.cxx.compile_flags += sorted(arch_flags)
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
         if pre_sm_60:
@@ -1382,12 +1390,16 @@ class Configuration(object):
             or "nvcc" in self.config.available_features
         )
         enable_warnings = self.get_lit_bool("enable_warnings", default_enable_warnings)
+        enable_pedantic = self.get_lit_bool("enable_pedantic_warnings", default=True)
         self.cxx.useWarnings(enable_warnings)
         if "nvcc" in self.config.available_features:
             self.cxx.warning_flags += ["-Xcudafe", "--display_error_number"]
-            self.cxx.warning_flags += ["-Werror=all-warnings"]
+            if enable_pedantic:
+                self.cxx.warning_flags += ["-Werror=all-warnings"]
             if "msvc" in self.config.available_features:
-                self.cxx.warning_flags += ["-Xcompiler", "/W4", "-Xcompiler", "/WX"]
+                self.cxx.warning_flags += ["-Xcompiler", "/W4"]
+                if enable_pedantic:
+                    self.cxx.warning_flags += ["-Xcompiler", "/WX"]
                 # warning C4100: 'quack': unreferenced formal parameter
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4100"]
                 # warning C4127: conditional expression is constant
@@ -1396,6 +1408,9 @@ class Configuration(object):
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4180"]
                 # warning C4309: 'moo': truncation of constant value
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4309"]
+                # warning C4505: unreferenced local function has been removed
+                # CUDA's host_runtime.h emits this for __cudaUnregisterBinaryUtil.
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4505"]
                 # warning C4996: deprecation warnings
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4996"]
             else:
@@ -1408,7 +1423,8 @@ class Configuration(object):
 
                 addIfHostSupports("-Wall")
                 addIfHostSupports("-Wextra")
-                addIfHostSupports("-Werror")
+                if enable_pedantic:
+                    addIfHostSupports("-Werror")
                 if "gcc" in self.config.available_features:
                     addIfHostSupports(
                         "-Wno-literal-suffix"
@@ -1430,17 +1446,21 @@ class Configuration(object):
 
                 # TODO: port the warning disables from the non-NVCC path?
 
-                self.cxx.warning_flags += [
-                    "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER"
-                ]
+                if enable_pedantic:
+                    self.cxx.warning_flags += [
+                        "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER"
+                    ]
                 pass
         else:
             self.cxx.warning_flags += [
-                "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER",
                 "-Wall",
                 "-Wextra",
-                "-Werror",
             ]
+            if enable_pedantic:
+                self.cxx.warning_flags += [
+                    "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER",
+                    "-Werror",
+                ]
             if self.cxx.hasWarningFlag("-Wuser-defined-warnings"):
                 self.cxx.warning_flags += ["-Wuser-defined-warnings"]
                 self.config.available_features.add("diagnose-if-support")

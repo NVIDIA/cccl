@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -46,7 +33,7 @@ _CCCL_HOST_DEVICE void linear_feedback_shift_engine<UIntType, w, k, q, s>::seed(
 
 template <typename UIntType, size_t w, size_t k, size_t q, size_t s>
 _CCCL_HOST_DEVICE typename linear_feedback_shift_engine<UIntType, w, k, q, s>::result_type
-linear_feedback_shift_engine<UIntType, w, k, q, s>::operator()(void)
+linear_feedback_shift_engine<UIntType, w, k, q, s>::operator()()
 {
   const UIntType b    = (((m_value << q) ^ m_value) & wordmask) >> (k - s);
   const UIntType mask = ((~static_cast<UIntType>(0)) << (w - k)) & wordmask;

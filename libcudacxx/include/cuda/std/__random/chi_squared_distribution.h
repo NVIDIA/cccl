@@ -133,7 +133,7 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const chi_squared_distribution& __x)
@@ -142,7 +142,7 @@ public:
     using ios_base                            = typename ostream_type::ios_base;
     const typename ios_base::fmtflags __flags = __os.flags();
     const _CharT __fill                       = __os.fill();
-    const ::std::streamsize __precision       = __os.precision();
+    const auto __precision                    = __os.precision();
     __os.flags(ios_base::dec | ios_base::left | ios_base::scientific);
     __os.precision(numeric_limits<result_type>::max_digits10);
     __os << __x.n();
@@ -169,7 +169,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

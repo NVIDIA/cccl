@@ -9,6 +9,9 @@
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: gcc-6
 
+// UNSUPPORTED: enable-tile
+// TypeID is unsupported un tile mode
+
 // <cuda/std/tuple>
 
 // template <class T, class Tuple> constexpr T make_from_tuple(Tuple&&);
@@ -33,7 +36,7 @@ template <class Tuple>
 struct ConstexprConstructibleFromTuple
 {
   template <class... Args>
-  __host__ __device__ explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
+  TEST_FUNC explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
       : args{cuda::std::forward<Args>(xargs)...}
   {}
   Tuple args;
@@ -46,7 +49,7 @@ template <template <class...> class Tuple, class... Types>
 struct ConstructibleFromTuple<Tuple<Types...>>
 {
   template <class... Args>
-  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
+  TEST_FUNC explicit ConstructibleFromTuple(Args&&... xargs)
       : args(xargs...)
       , arg_types(&makeArgumentID<Args&&...>())
   {}
@@ -58,7 +61,7 @@ template <class Tp, size_t N>
 struct ConstructibleFromTuple<cuda::std::array<Tp, N>>
 {
   template <class... Args>
-  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
+  TEST_FUNC explicit ConstructibleFromTuple(Args&&... xargs)
       : args{xargs...}
       , arg_types(&makeArgumentID<Args&&...>())
   {}
@@ -67,7 +70,7 @@ struct ConstructibleFromTuple<cuda::std::array<Tp, N>>
 };
 
 template <class Tuple>
-__host__ __device__ constexpr bool do_constexpr_test(Tuple&& tup)
+TEST_FUNC constexpr bool do_constexpr_test(Tuple&& tup)
 {
   using RawTuple = cuda::std::decay_t<Tuple>;
   using Tp       = ConstexprConstructibleFromTuple<RawTuple>;
@@ -76,13 +79,13 @@ __host__ __device__ constexpr bool do_constexpr_test(Tuple&& tup)
 
 // Needed by do_forwarding_test() since it compares pairs of different types.
 template <class T1, class T2, class U1, class U2>
-__host__ __device__ inline bool operator==(const cuda::std::pair<T1, T2>& lhs, const cuda::std::pair<U1, U2>& rhs)
+TEST_FUNC inline bool operator==(const cuda::std::pair<T1, T2>& lhs, const cuda::std::pair<U1, U2>& rhs)
 {
   return lhs.first == rhs.first && lhs.second == rhs.second;
 }
 
 template <class... ExpectTypes, class Tuple>
-__host__ __device__ bool do_forwarding_test(Tuple&& tup)
+TEST_FUNC bool do_forwarding_test(Tuple&& tup)
 {
   using RawTuple = cuda::std::decay_t<Tuple>;
   using Tp       = ConstructibleFromTuple<RawTuple>;
@@ -90,34 +93,34 @@ __host__ __device__ bool do_forwarding_test(Tuple&& tup)
   return value.args == tup && value.arg_types == &makeArgumentID<ExpectTypes...>();
 }
 
-__host__ __device__ void test_constexpr_construction()
+TEST_FUNC void test_constexpr_construction()
 {
   {
     constexpr cuda::std::tuple<> tup;
-    static_assert(do_constexpr_test(tup), "");
+    static_assert(do_constexpr_test(tup));
   }
   {
     constexpr cuda::std::tuple<int> tup(42);
-    static_assert(do_constexpr_test(tup), "");
+    static_assert(do_constexpr_test(tup));
   }
   {
     constexpr cuda::std::tuple<int, long, void*> tup(42, 101, nullptr);
-    static_assert(do_constexpr_test(tup), "");
+    static_assert(do_constexpr_test(tup));
   }
   {
     constexpr cuda::std::pair<int, const char*> p(42, "hello world");
-    static_assert(do_constexpr_test(p), "");
+    static_assert(do_constexpr_test(p));
   }
   {
     using Tuple             = cuda::std::array<int, 3>;
     using ValueTp           = ConstexprConstructibleFromTuple<Tuple>;
     constexpr Tuple arr     = {42, 101, -1};
     constexpr ValueTp value = cuda::std::make_from_tuple<ValueTp>(arr);
-    static_assert(value.args[0] == arr[0] && value.args[1] == arr[1] && value.args[2] == arr[2], "");
+    static_assert(value.args[0] == arr[0] && value.args[1] == arr[1] && value.args[2] == arr[2]);
   }
 }
 
-__host__ __device__ void test_perfect_forwarding()
+TEST_FUNC void test_perfect_forwarding()
 {
   {
     using Tup = cuda::std::tuple<>;
@@ -169,19 +172,19 @@ __host__ __device__ void test_perfect_forwarding()
   }
 }
 
-__host__ __device__ void test_noexcept()
+TEST_FUNC void test_noexcept()
 {
   struct NothrowMoveable
   {
     NothrowMoveable() = default;
-    __host__ __device__ NothrowMoveable(NothrowMoveable const&) {}
-    __host__ __device__ NothrowMoveable(NothrowMoveable&&) noexcept {}
+    TEST_FUNC NothrowMoveable(NothrowMoveable const&) {}
+    TEST_FUNC NothrowMoveable(NothrowMoveable&&) noexcept {}
   };
   struct TestType
   {
-    __host__ __device__ TestType(int, NothrowMoveable) noexcept {}
-    __host__ __device__ TestType(int, int, int) noexcept(false) {}
-    __host__ __device__ TestType(long, long, long) noexcept {}
+    TEST_FUNC TestType(int, NothrowMoveable) noexcept {}
+    TEST_FUNC TestType(int, int, int) noexcept(false) {}
+    TEST_FUNC TestType(long, long, long) noexcept {}
   };
   {
     using Tuple = cuda::std::tuple<int, NothrowMoveable>;

@@ -71,15 +71,15 @@ def radix_sort_device(
 ):
     # Use the new single-phase API with automatic temp storage allocation
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        order,
-        num_items,
-        begin_bit,
-        end_bit,
-        stream,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        order=order,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        stream=stream,
     )
 
 
@@ -181,15 +181,13 @@ def test_radix_sort_keys(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
-    if cc_major >= 9 or np.isdtype(dtype, (np.int8, np.uint8, np.int16, np.uint32)):
-        import cuda.compute._cccl_interop
+    import cuda.compute._cccl_interop
 
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
 
     order = SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
@@ -416,6 +414,44 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items, monkeypatch
         np.testing.assert_array_equal(h_out_values, h_in_values)
 
 
+@pytest.mark.large
+@pytest.mark.parametrize("dtype", [np.int32, np.float32])
+def test_radix_sort_large_num_items(dtype, monkeypatch):
+    """Regression test for https://github.com/NVIDIA/cccl/issues/7938.
+
+    Radix sort produces incorrect output for large inputs that require
+    multiple "portions" internally (roughly >= 2**28 elements, depending
+    on the tuning policy chosen for the current GPU).
+    """
+    import cuda.compute._cccl_interop
+
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    num_items = 2**28
+
+    h_in_keys = np.arange(num_items - 1, -1, -1, dtype=dtype)
+
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.empty(num_items, dtype=dtype)
+
+    cuda.compute.radix_sort(
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=None,
+        d_out_values=None,
+        num_items=num_items,
+        order=SortOrder.ASCENDING,
+    )
+
+    h_out_keys = d_out_keys.get()
+    h_expected, _ = host_sort(h_in_keys, None, SortOrder.ASCENDING)
+
+    np.testing.assert_array_equal(h_out_keys, h_expected)
+
+
 def test_radix_sort_with_stream(cuda_stream):
     cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
     num_items = 10000
@@ -462,12 +498,12 @@ def test_radix_sort(monkeypatch):
 
     # Call single-phase API directly with num_items parameter
     cuda.compute.radix_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        SortOrder.ASCENDING,
-        d_in_keys.size,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=d_in_keys.size,
+        order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct
@@ -514,12 +550,12 @@ def test_radix_sort_double_buffer(monkeypatch):
 
     # Call single-phase API directly with num_items parameter
     cuda.compute.radix_sort(
-        keys_double_buffer,
-        None,
-        values_double_buffer,
-        None,
-        SortOrder.ASCENDING,
-        d_in_keys.size,
+        d_in_keys=keys_double_buffer,
+        d_out_keys=None,
+        d_in_values=values_double_buffer,
+        d_out_values=None,
+        num_items=d_in_keys.size,
+        order=SortOrder.ASCENDING,
     )
 
     # Check the result is correct

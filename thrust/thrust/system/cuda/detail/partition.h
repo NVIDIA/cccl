@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -44,6 +21,7 @@
 #  include <cub/util_device.cuh>
 #  include <cub/util_math.cuh>
 
+#  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/partition.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -53,9 +31,11 @@
 #  include <thrust/system/cuda/detail/uninitialized_copy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
+#  include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -388,13 +368,47 @@ stable_partition(execution_policy<Derived>& policy, Iterator first, Iterator las
   return ret;
 }
 
+// Functor for the single-pass is_partitioned check.
+// Returns true for an adjacent pair (a[i], a[i+1]) where pred(a[i]) is false
+// and pred(a[i+1]) is true — i.e., a "false → true" transition that violates
+// the partitioning invariant.
+template <class Predicate>
+struct __is_partitioned_fn
+{
+  Predicate pred_;
+
+  // Not const-qualified: a const operator() would propagate const onto pred_
+  // and reject predicates whose own operator() is non-const (Thrust permits these).
+  template <class Tuple>
+  [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple)
+  {
+    const bool lhs = pred_(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
+    const bool rhs = pred_(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
+    return !lhs && rhs;
+  }
+};
+
+// Single-pass implementation: zip adjacent elements and find any "false → true"
+// transition. Two-pass (find_if_not + find_if) required two kernel launches;
+// this approach uses one find_if over (a[i], a[i+1]) pairs, cutting kernel
+// launch overhead roughly in half for typical inputs.
+// See: https://github.com/NVIDIA/cccl/issues/8085
 template <class Derived, class ItemsIt, class Predicate>
 bool _CCCL_HOST_DEVICE
 is_partitioned(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Predicate predicate)
 {
-  ItemsIt boundary = cuda_cub::find_if_not(policy, first, last, predicate);
-  ItemsIt end      = cuda_cub::find_if(policy, boundary, last, predicate);
-  return end == last;
+  if (first == last)
+  {
+    return true;
+  }
+  // Build a range of adjacent pairs: (a[0],a[1]), (a[1],a[2]), ..., (a[n-2],a[n-1]).
+  // The distance of this zip range is min(n, n-1) = n-1 (via zip_iterator::operator-).
+  const auto first_zip = ::cuda::make_zip_iterator(first, first + 1);
+  const auto last_zip  = ::cuda::make_zip_iterator(last, last);
+  const auto result    = cuda_cub::find_if(policy, first_zip, last_zip, __is_partitioned_fn<Predicate>{predicate});
+  // Checking get<1>(result) == last (rather than result == last_zip) correctly
+  // handles the n==1 edge case where find_if_n returns first_zip (num_items==0).
+  return ::cuda::std::get<1>(result.__iterators()) == last;
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

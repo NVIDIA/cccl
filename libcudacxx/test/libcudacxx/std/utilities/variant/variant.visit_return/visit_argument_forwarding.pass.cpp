@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 // UNSUPPORTED: gcc-6
@@ -28,18 +31,18 @@ struct almost_string
 {
   const char* ptr;
 
-  __host__ __device__ almost_string(const char* ptr)
+  TEST_FUNC almost_string(const char* ptr)
       : ptr(ptr)
   {}
 
-  __host__ __device__ friend bool operator==(const almost_string& lhs, const almost_string& rhs)
+  TEST_FUNC friend bool operator==(const almost_string& lhs, const almost_string& rhs)
   {
     return lhs.ptr == rhs.ptr;
   }
 };
 
 template <typename ReturnType>
-__host__ __device__ void test_argument_forwarding()
+TEST_FUNC void test_argument_forwarding()
 {
   using Fn = ForwardingCallObject;
   Fn obj{};

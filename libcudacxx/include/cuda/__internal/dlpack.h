@@ -23,10 +23,14 @@
 
 #if _CCCL_HAS_DLPACK()
 
-#  include <dlpack/dlpack.h>
+#  if __has_include(<dlpack/dlpack.h>)
+#    include <dlpack/dlpack.h>
+#  elif __has_include(<dlpack.h>)
+#    include <dlpack.h>
+#  endif
 
 #  define _CCCL_DLPACK_AT_LEAST(_MAJOR, _MINOR) \
-    (DLPACK_MAJOR_VERSION > (_MAJOR) || (DLPACK_MAJOR_VERSION == (_MAJOR) && DLPACK_VERSION_MINOR >= (_MINOR)))
+    (DLPACK_MAJOR_VERSION > (_MAJOR) || (DLPACK_MAJOR_VERSION == (_MAJOR) && DLPACK_MINOR_VERSION >= (_MINOR)))
 #  define _CCCL_DLPACK_BELOW(_MAJOR, _MINOR) (!_CCCL_DLPACK_AT_LEAST(_MAJOR, _MINOR))
 
 #  if DLPACK_MAJOR_VERSION != 1

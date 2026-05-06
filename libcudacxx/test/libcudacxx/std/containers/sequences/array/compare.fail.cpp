@@ -25,7 +25,7 @@
 template <class Array>
 void test_compare(const Array& LHS, const Array& RHS)
 {
-  typedef cuda::std::vector<typename Array::value_type> Vector;
+  using Vector = cuda::std::vector<typename Array::value_type>;
   const Vector LHSV(LHS.begin(), LHS.end());
   const Vector RHSV(RHS.begin(), RHS.end());
   assert((LHS == RHS) == (LHSV == RHSV));
@@ -43,25 +43,25 @@ struct NoCompare
 int main(int, char**)
 {
   {
-    typedef NoCompare<0> T;
-    typedef cuda::std::array<T, 3> C;
-    C c1 = {{}};
+    using T = NoCompare<0>;
+    using C = cuda::std::array<T, 3>;
+    C c1    = {{}};
     // expected-error@*:* 2 {{invalid operands to binary expression}}
     TEST_IGNORE_NODISCARD(c1 == c1);
     TEST_IGNORE_NODISCARD(c1 < c1);
   }
   {
-    typedef NoCompare<1> T;
-    typedef cuda::std::array<T, 3> C;
-    C c1 = {{}};
+    using T = NoCompare<1>;
+    using C = cuda::std::array<T, 3>;
+    C c1    = {{}};
     // expected-error@*:* 2 {{invalid operands to binary expression}}
     TEST_IGNORE_NODISCARD(c1 != c1);
     TEST_IGNORE_NODISCARD(c1 > c1);
   }
   {
-    typedef NoCompare<2> T;
-    typedef cuda::std::array<T, 0> C;
-    C c1 = {{}};
+    using T = NoCompare<2>;
+    using C = cuda::std::array<T, 0>;
+    C c1    = {{}};
     // expected-error@*:* 2 {{invalid operands to binary expression}}
     TEST_IGNORE_NODISCARD(c1 == c1);
     TEST_IGNORE_NODISCARD(c1 < c1);

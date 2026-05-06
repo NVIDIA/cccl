@@ -23,33 +23,26 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
-
 C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_types)
 {
-  using TestT           = c2h::get<0, TestType>;
-  using Resource        = typename extract_properties<TestT>::resource;
-  using Buffer          = typename extract_properties<TestT>::buffer;
-  using T               = typename Buffer::value_type;
-  using reference       = typename Buffer::reference;
-  using const_reference = typename Buffer::const_reference;
-  using pointer         = typename Buffer::pointer;
-  using const_pointer   = typename Buffer::const_pointer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
+  using T        = typename Buffer::value_type;
+
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
 
   cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer::get_unsynchronized")
   {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)), reference>);
-    static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().get_unsynchronized(1ull)), const_reference>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)),
+                                       typename Buffer::reference>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().get_unsynchronized(1ull)),
+                                       typename Buffer::const_reference>);
 
     {
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
@@ -67,8 +60,9 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
 
   SECTION("cuda::buffer::data")
   {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().data()), pointer>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().data()), const_pointer>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().data()), typename Buffer::pointer>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().data()), typename Buffer::const_pointer>);
 
     { // Works without allocation
       Buffer buf{stream, resource};
@@ -84,6 +78,81 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
       CCCLRT_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CCCLRT_CHECK(cuda::std::as_const(buf).data() == buf.data());
     }
+  }
+
+  SECTION("cuda::buffer::first")
+  {
+    Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+    buf.stream().sync();
+
+    auto span = buf.first(2);
+    static_assert(cuda::std::is_same_v<decltype(span), cuda::std::span<T>>);
+    CCCLRT_CHECK(span.size() == 2);
+    CCCLRT_CHECK(span.data() == buf.data());
+
+    auto const_span = cuda::std::as_const(buf).first(2);
+    static_assert(cuda::std::is_same_v<decltype(const_span), cuda::std::span<const T>>);
+    CCCLRT_CHECK(const_span.size() == 2);
+    CCCLRT_CHECK(const_span.data() == buf.data());
+
+    // first(0) is valid
+    auto empty_span = buf.first(0);
+    CCCLRT_CHECK(empty_span.size() == 0);
+
+    // first(size()) returns the whole buffer
+    auto full_span = buf.first(buf.size());
+    CCCLRT_CHECK(full_span.size() == buf.size());
+  }
+
+  SECTION("cuda::buffer::last")
+  {
+    Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+    buf.stream().sync();
+
+    auto span = buf.last(2);
+    static_assert(cuda::std::is_same_v<decltype(span), cuda::std::span<T>>);
+    CCCLRT_CHECK(span.size() == 2);
+    CCCLRT_CHECK(span.data() == buf.data() + 2);
+
+    auto const_span = cuda::std::as_const(buf).last(2);
+    static_assert(cuda::std::is_same_v<decltype(const_span), cuda::std::span<const T>>);
+    CCCLRT_CHECK(const_span.size() == 2);
+    CCCLRT_CHECK(const_span.data() == buf.data() + 2);
+
+    // last(0) is valid
+    auto empty_span = buf.last(0);
+    CCCLRT_CHECK(empty_span.size() == 0);
+  }
+
+  SECTION("cuda::buffer::subspan")
+  {
+    Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+    buf.stream().sync();
+
+    // subspan with offset and count
+    auto span = buf.subspan(1, 2);
+    static_assert(cuda::std::is_same_v<decltype(span), cuda::std::span<T>>);
+    CCCLRT_CHECK(span.size() == 2);
+    CCCLRT_CHECK(span.data() == buf.data() + 1);
+
+    auto const_span = cuda::std::as_const(buf).subspan(1, 2);
+    static_assert(cuda::std::is_same_v<decltype(const_span), cuda::std::span<const T>>);
+    CCCLRT_CHECK(const_span.size() == 2);
+    CCCLRT_CHECK(const_span.data() == buf.data() + 1);
+
+    // subspan with offset only (to end)
+    auto tail = buf.subspan(2);
+    CCCLRT_CHECK(tail.size() == 2);
+    CCCLRT_CHECK(tail.data() == buf.data() + 2);
+
+    // subspan(0) returns the whole buffer
+    auto full = buf.subspan(0);
+    CCCLRT_CHECK(full.size() == buf.size());
+    CCCLRT_CHECK(full.data() == buf.data());
+
+    // subspan(size()) returns empty
+    auto empty = buf.subspan(buf.size());
+    CCCLRT_CHECK(empty.size() == 0);
   }
 
   SECTION("cuda::buffer::memory_resource")
@@ -105,7 +174,7 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
     { // Returns same resource after move assignment
       Buffer buf1{stream, resource, {T(1), T(42)}};
 
-      Resource other_resource = extract_properties<TestT>::get_resource();
+      Resource other_resource = extract_properties<Buffer>::get_resource();
       Buffer buf2{stream, other_resource, {T(99), T(88)}};
 
       buf1 = cuda::std::move(buf2);

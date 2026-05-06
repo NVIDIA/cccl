@@ -4,6 +4,8 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
+cccl_get_cudatoolkit()
+
 # Meta target for all configs' header builds:
 add_custom_target(cudax.all.headers)
 
@@ -24,6 +26,9 @@ function(cudax_add_header_test label definitions)
       # cuFile headers are compiled separately:
       "cuda/experimental/cufile.cuh"
       "cuda/experimental/__cufile/*"
+      # Places headers are compiled separately:
+      "cuda/experimental/places.cuh"
+      "cuda/experimental/__places/*"
       # STF headers are compiled separately:
       "cuda/experimental/stf.cuh"
       "cuda/experimental/__stf/*"
@@ -46,6 +51,28 @@ function(cudax_add_header_test label definitions)
   endif()
 
   # FIXME: Enable MSVC
+  if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    ##################
+    # Places headers #
+    set(headertest_target cudax.headers.${label}.places)
+    cccl_generate_header_tests(
+      ${headertest_target}
+      cudax/include
+      GLOBS #
+        "cuda/experimental/places.cuh"
+        "cuda/experimental/__places/*.cuh"
+      HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+    )
+    target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
+    target_compile_options(
+      ${headertest_target}
+      PRIVATE
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+    )
+  endif()
+
+  # FIXME: Enable MSVC
   if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     ###############
     # STF headers #
@@ -62,7 +89,10 @@ function(cudax_add_header_test label definitions)
       # the following line removed:
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
     )
-    target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
+    target_link_libraries(
+      ${headertest_target}
+      PUBLIC cudax.compiler_interface CUDA::cuda_driver
+    )
     target_compile_options(
       ${headertest_target}
       PRIVATE

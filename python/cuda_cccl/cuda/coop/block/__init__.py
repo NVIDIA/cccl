@@ -4,36 +4,36 @@
 
 from ._block_exchange import (
     BlockExchangeType,
-    exchange,
+    make_exchange,
 )
-from ._block_load_store import load, store
-from ._block_merge_sort import merge_sort_keys
+from ._block_load_store import make_load, make_store
+from ._block_merge_sort import make_merge_sort_keys
 from ._block_radix_sort import (
-    radix_sort_keys,
-    radix_sort_keys_descending,
+    make_radix_sort_keys,
+    make_radix_sort_keys_descending,
 )
-from ._block_reduce import reduce, sum
+from ._block_reduce import make_reduce, make_sum
 from ._block_scan import (
-    exclusive_scan,
-    exclusive_sum,
-    inclusive_scan,
-    inclusive_sum,
-    scan,
+    make_exclusive_scan,
+    make_exclusive_sum,
+    make_inclusive_scan,
+    make_inclusive_sum,
+    make_scan,
 )
 
 __all__ = [
     "BlockExchangeType",
-    "exchange",
-    "exclusive_scan",
-    "exclusive_sum",
-    "inclusive_scan",
-    "inclusive_sum",
-    "load",
-    "merge_sort_keys",
-    "radix_sort_keys",
-    "radix_sort_keys_descending",
-    "reduce",
-    "scan",
-    "store",
-    "sum",
+    "make_exchange",
+    "make_exclusive_scan",
+    "make_exclusive_sum",
+    "make_inclusive_scan",
+    "make_inclusive_sum",
+    "make_load",
+    "make_merge_sort_keys",
+    "make_radix_sort_keys",
+    "make_radix_sort_keys_descending",
+    "make_reduce",
+    "make_scan",
+    "make_store",
+    "make_sum",
 ]

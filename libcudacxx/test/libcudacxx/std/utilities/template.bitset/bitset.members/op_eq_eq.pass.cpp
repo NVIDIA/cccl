@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 // test:
 
 // bool operator==(const bitset<N>& rhs) const; // constexpr since C++23
@@ -19,7 +22,7 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_equality()
+TEST_FUNC constexpr void test_equality()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -35,7 +38,7 @@ __host__ __device__ constexpr void test_equality()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_equality<0>();
   test_equality<1>();
@@ -53,7 +56,7 @@ int main(int, char**)
 {
   test();
   test_equality<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

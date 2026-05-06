@@ -60,10 +60,49 @@ using __iset_flatten _CCCL_NODEBUG_ALIAS = ::cuda::std::__as_type_list<
 // using __iset _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call<
 //   ::cuda::std::__type_unique<::cuda::std::__type_sort<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>>,
 //   ::cuda::std::__type_quote<__iset_>>;
+// GCC 7 had a problem with the original implementation, so we use a workaround.
+#if _CCCL_COMPILER(GCC, <, 10)
+template <class _Lhs, class _Rhs>
+struct __iset_cat;
+
+template <class... _Lhs, class... _Rhs>
+struct __iset_cat<::cuda::std::__type_list<_Lhs...>, ::cuda::std::__type_list<_Rhs...>>
+{
+  using type = ::cuda::std::__type_list<_Lhs..., _Rhs...>;
+};
+
+template <class... _Interfaces>
+struct __iset_flatten_all;
+
+template <>
+struct __iset_flatten_all<>
+{
+  using type = ::cuda::std::__type_list<>;
+};
+
+template <class... _Nested, class... _Rest>
+struct __iset_flatten_all<__iset_<_Nested...>, _Rest...>
+{
+  using type = typename __iset_cat<typename __iset_flatten_all<_Nested...>::type,
+                                   typename __iset_flatten_all<_Rest...>::type>::type;
+};
+
+template <class _Interface, class... _Rest>
+struct __iset_flatten_all<_Interface, _Rest...>
+{
+  using type =
+    typename __iset_cat<::cuda::std::__type_list<_Interface>, typename __iset_flatten_all<_Rest...>::type>::type;
+};
+
+template <class... _Interfaces>
+using __iset = ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
+                                        ::cuda::std::__type_quote<__iset_>>;
+#else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv _CCCL_COMPILER(GCC, >=, 10) vvv
 template <class... _Interfaces>
 using __iset =
   ::cuda::std::__type_call<::cuda::std::__type_unique<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>,
                            ::cuda::std::__type_quote<__iset_>>;
+#endif // _CCCL_COMPILER(GCC, >=, 10)
 
 //!
 //! Virtual table pointers
@@ -90,7 +129,7 @@ struct __iset_vptr : __base_vptr
   _CCCL_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
       : __base_vptr(__vptr->__query_interface(__iunknown()))
   {
-    static_assert(::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Others...>, _Interfaces...>, "");
+    static_assert(::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Others...>, _Interfaces...>);
     _CCCL_ASSERT(__vptr_->__kind_ == __vtable_kind::__rtti && __vptr_->__cookie_ == 0xDEADBEEF,
                  "query_interface returned a bad pointer to the __iunknown vtable");
   }
@@ -124,6 +163,7 @@ struct __tagged_ptr<__iset_vptr<_Interfaces...>>
 
   [[nodiscard]] _CCCL_NODEBUG_API auto __get() const noexcept -> __iset_vptr<_Interfaces...>
   {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return __iset_vptr<_Interfaces...>{reinterpret_cast<__rtti_base const*>(__ptr_ & ~uintptr_t(1))};
   }
 

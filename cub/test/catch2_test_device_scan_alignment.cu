@@ -39,7 +39,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value
   constexpr offset_t max_num_items = 8192;
 
   const auto offset    = GENERATE_COPY(values({0, 1, 3, 4, 7, 8, 11, 12, 16}), take(3, random(0, max_offset)));
-  const auto num_items = GENERATE_COPY(values({1, max_num_items}), take(64, random(0, max_num_items)));
+  const auto num_items = GENERATE_COPY(values({0, 1, max_num_items}), take(64, random(2, max_num_items - 1)));
 
   CAPTURE(num_items, offset);
 

@@ -29,34 +29,30 @@ struct alloc_id
   }
 };
 
-THRUST_NAMESPACE_BEGIN
-namespace detail
-{
 template <>
-struct pointer_traits<alloc_id>
+struct cuda::std::pointer_traits<alloc_id>
 {
   template <typename>
-  struct rebind
-  {
-    using other = alloc_id;
-  };
+  using rebind = alloc_id;
 
   // implemented for the purposes of alignment test in disjoint pool's do_deallocate
   static void* get(const alloc_id& id)
   {
-    return reinterpret_cast<void*>(id.alignment);
+    return reinterpret_cast<void*>(id.alignment); // NOLINT(performance-no-int-to-ptr)
+  }
+
+  [[nodiscard]] static void* to_address(const alloc_id& id) noexcept
+  {
+    return reinterpret_cast<void*>(id.alignment); // NOLINT(performance-no-int-to-ptr)
   }
 };
-} // end namespace detail
-
-THRUST_NAMESPACE_END
 
 class dummy_resource final : public thrust::mr::memory_resource<alloc_id>
 {
 public:
   dummy_resource() = default;
 
-  ~dummy_resource()
+  ~dummy_resource() override
   {
     ASSERT_EQUAL(id_to_allocate, 0u);
     ASSERT_EQUAL(id_to_deallocate, 0u);
@@ -73,7 +69,7 @@ public:
     id_to_deallocate = 0;
   }
 
-  virtual alloc_id do_allocate(std::size_t bytes, std::size_t alignment) override
+  alloc_id do_allocate(std::size_t bytes, std::size_t alignment) override
   {
     if (bytes > free_bytes)
     {
@@ -98,7 +94,7 @@ public:
     return ret;
   }
 
-  virtual void do_deallocate(alloc_id p, std::size_t bytes, std::size_t alignment) override
+  void do_deallocate(alloc_id p, std::size_t bytes, std::size_t alignment) override
   {
     ASSERT_EQUAL(p.size, bytes);
     ASSERT_EQUAL(p.alignment, alignment);

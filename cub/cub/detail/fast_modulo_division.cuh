@@ -17,7 +17,7 @@
 #include <cub/util_type.cuh> // _CCCL_HAS_INT128()
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -102,13 +102,12 @@ multiply_extract_higher_bits(T value, R multiplier)
   using unsigned_t             = unsigned_implicit_prom_t<DivisorType>;
   using larger_t               = larger_unsigned_type_t<DivisorType>;
   // clang-format off
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_IS_HOST,
       (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);),
-    //NV_IS_DEVICE
-      (return (sizeof(T) == 8)
+      ({return (sizeof(T) == 8)
         ? static_cast<unsigned_t>(__umul64hi(value, multiplier))
-        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);));
+        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);}));
   // clang-format on
 }
 
@@ -139,14 +138,14 @@ public:
 
   fast_div_mod() = delete;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
+  _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
       : _divisor{static_cast<unsigned_t>(divisor)}
   {
     using larger_t = larger_unsigned_type_t<T>;
     _CCCL_ASSERT(divisor > 0, "divisor must be positive");
     auto udivisor = static_cast<unsigned_t>(divisor);
     // the following branches are needed to avoid negative shift
-    if (::cuda::std::has_single_bit(udivisor)) // power of two
+    if (::cuda::is_power_of_two(udivisor))
     {
       _shift_right = ::cuda::std::bit_width(udivisor) - 1;
       return;
@@ -159,7 +158,7 @@ public:
     constexpr int BitOffset = BitSize / 16; // 2
     int num_bits            = ::cuda::std::bit_width(udivisor) + 1;
     _CCCL_ASSERT(static_cast<size_t>(num_bits + BitSize - BitOffset) < sizeof(larger_t) * CHAR_BIT, "overflow error");
-    // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::std::has_single_bit(udivisor)
+    // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::is_power_of_two(udivisor)
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;

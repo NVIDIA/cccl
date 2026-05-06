@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -30,6 +17,7 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -75,7 +63,7 @@ struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 
 template <typename T>
 struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>>
-    : ::cuda::std::add_lvalue_reference<typename pointer_element<typename T::pointer>::type>
+    : ::cuda::std::add_lvalue_reference<typename ::cuda::std::pointer_traits<typename T::pointer>::element_type>
 {};
 
 template <typename T>

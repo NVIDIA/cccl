@@ -26,6 +26,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__numeric/saturating_sub.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -66,7 +67,7 @@ enum class __l2_descriptor_mode_t : uint32_t
 
 #if !_CCCL_CUDA_COMPILER(NVRTC)
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI uint64_t __block_encoding_host(
+[[nodiscard]] _CCCL_HOST_API inline uint64_t __block_encoding_host(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_bytes, uint32_t __total_bytes)
 {
   _CCCL_ASSERT(__primary_bytes > 0, "primary_size must be greater than 0");
@@ -75,8 +76,7 @@ enum class __l2_descriptor_mode_t : uint32_t
                "secondary policy must be evict_first or evict_unchanged");
   auto __raw_ptr         = ::cuda::std::bit_cast<uintptr_t>(__ptr);
   auto __log2_total_size = ::cuda::ceil_ilog2(__total_bytes);
-  // replace with ::cuda::std::add_sat when available PR #3449
-  auto __block_size_enum = static_cast<uint32_t>(::cuda::std::max(__log2_total_size - 19, 0)); // min block size = 4K
+  auto __block_size_enum = ::cuda::std::saturating_sub<uint32_t>(__log2_total_size, 19); // min block size = 4K
   auto __log2_block_size = 12u + __block_size_enum;
   auto __block_size      = 1u << __log2_block_size;
   auto __block_start     = static_cast<uint32_t>(__raw_ptr >> __log2_block_size); // ptr / block_size

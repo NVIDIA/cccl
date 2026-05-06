@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <typename Span, size_t Offset, size_t Count>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset, Count>()));
   static_assert(noexcept(sp.subspan(Offset, Count)));
@@ -34,13 +34,13 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
   using S2 = decltype(s2);
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
-  static_assert(S1::extent == Count, "");
-  static_assert(S2::extent == cuda::std::dynamic_extent, "");
+  static_assert(S1::extent == Count);
+  static_assert(S2::extent == cuda::std::dynamic_extent);
   return s1.data() == s2.data() && s1.size() == s2.size();
 }
 
 template <typename Span, size_t Offset>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset>()));
   static_assert(noexcept(sp.subspan(Offset)));
@@ -52,12 +52,12 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(
     S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset), "");
-  static_assert(S2::extent == cuda::std::dynamic_extent, "");
+  static_assert(S2::extent == cuda::std::dynamic_extent);
   return s1.data() == s2.data() && s1.size() == s2.size();
 }
 
 template <typename Span, size_t Offset, size_t Count>
-__host__ __device__ void testRuntimeSpan(Span sp)
+TEST_FUNC void testRuntimeSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset, Count>()));
   static_assert(noexcept(sp.subspan(Offset, Count)));
@@ -67,14 +67,14 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   using S2 = decltype(s2);
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
-  static_assert(S1::extent == Count, "");
-  static_assert(S2::extent == cuda::std::dynamic_extent, "");
+  static_assert(S1::extent == Count);
+  static_assert(S2::extent == cuda::std::dynamic_extent);
   assert(s1.data() == s2.data());
   assert(s1.size() == s2.size());
 }
 
 template <typename Span, size_t Offset>
-__host__ __device__ void testRuntimeSpan(Span sp)
+TEST_FUNC void testRuntimeSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset>()));
   static_assert(noexcept(sp.subspan(Offset)));
@@ -86,67 +86,67 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(
     S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset), "");
-  static_assert(S2::extent == cuda::std::dynamic_extent, "");
+  static_assert(S2::extent == cuda::std::dynamic_extent);
   assert(s1.data() == s2.data());
   assert(s1.size() == s2.size());
 }
 
-TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
-__device__ int arr1[]                      = {5, 6, 7};
-
 int main(int, char**)
 {
+  constexpr int carr1[] = {1, 2, 3, 4};
+  int arr1[]            = {5, 6, 7};
+
   {
     using Sp = cuda::std::span<const int>;
-    static_assert(testConstexprSpan<Sp, 0>(Sp{}), "");
+    static_assert(testConstexprSpan<Sp, 0>(Sp{}));
 
-    static_assert(testConstexprSpan<Sp, 0, 4>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 3>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 2>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 1>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 0>(Sp{carr1}), "");
+    static_assert(testConstexprSpan<Sp, 0, 4>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 3>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 2>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 1>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 0>(Sp{carr1}));
 
-    static_assert(testConstexprSpan<Sp, 1, 3>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 2, 2>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 3, 1>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 4, 0>(Sp{carr1}), "");
+    static_assert(testConstexprSpan<Sp, 1, 3>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 2, 2>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 3, 1>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 4, 0>(Sp{carr1}));
   }
 
   {
     using Sp = cuda::std::span<const int, 4>;
 
-    static_assert(testConstexprSpan<Sp, 0, 4>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 3>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 2>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 1>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 0, 0>(Sp{carr1}), "");
+    static_assert(testConstexprSpan<Sp, 0, 4>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 3>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 2>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 1>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 0, 0>(Sp{carr1}));
 
-    static_assert(testConstexprSpan<Sp, 1, 3>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 2, 2>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 3, 1>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 4, 0>(Sp{carr1}), "");
+    static_assert(testConstexprSpan<Sp, 1, 3>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 2, 2>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 3, 1>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 4, 0>(Sp{carr1}));
   }
 
   {
     using Sp = cuda::std::span<const int>;
-    static_assert(testConstexprSpan<Sp, 0>(Sp{}), "");
+    static_assert(testConstexprSpan<Sp, 0>(Sp{}));
 
-    static_assert(testConstexprSpan<Sp, 0>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 1>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 2>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 3>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 4>(Sp{carr1}), "");
+    static_assert(testConstexprSpan<Sp, 0>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 1>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 2>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 3>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 4>(Sp{carr1}));
   }
 
   {
     using Sp = cuda::std::span<const int, 4>;
 
-    static_assert(testConstexprSpan<Sp, 0>(Sp{carr1}), "");
+    static_assert(testConstexprSpan<Sp, 0>(Sp{carr1}));
 
-    static_assert(testConstexprSpan<Sp, 1>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 2>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 3>(Sp{carr1}), "");
-    static_assert(testConstexprSpan<Sp, 4>(Sp{carr1}), "");
+    static_assert(testConstexprSpan<Sp, 1>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 2>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 3>(Sp{carr1}));
+    static_assert(testConstexprSpan<Sp, 4>(Sp{carr1}));
   }
 
   {

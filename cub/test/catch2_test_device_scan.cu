@@ -80,10 +80,12 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
+    1, // hits small copy path for bulk copies (below 16 bytes)
     10,
     1337,
-    1 * 31 * 128, // int64 tile size for lookahead
-    10'000, // a handful of tiles for lookahead
+    3000,
+    1 * 31 * 128, // tile size for int64s for warpspeed scan
+    10'000, // a handful of tiles for warpspeed scan
     take(3, random(min_items, max_items)),
     values({
       min_items,
@@ -133,7 +135,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -162,7 +164,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -197,7 +199,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
@@ -233,7 +235,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
@@ -267,7 +269,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
@@ -306,7 +308,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
-    if constexpr (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same_v<input_t, output_t>)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
 

@@ -20,7 +20,7 @@
 #include "testing.cuh" // IWYU pragma: keep
 
 // Workaround for https://github.com/llvm/llvm-project/issues/113087
-#if defined(__clang__) && defined(__cpp_lib_tuple_like)
+#if defined(__clang__) && __cpp_lib_tuple_like >= 202207L
 #  define C2H_CHECK_TUPLE(...) CHECK((__VA_ARGS__))
 #else
 #  define C2H_CHECK_TUPLE(...) CHECK(__VA_ARGS__)
@@ -67,13 +67,16 @@ struct potentially_throwing
 
   _CCCL_HOST_DEVICE potentially_throwing(potentially_throwing&&) noexcept(false) {}
 
-  _CCCL_HOST_DEVICE potentially_throwing(const potentially_throwing&) noexcept(false) {}
+  _CCCL_HOST_DEVICE
+  potentially_throwing(const potentially_throwing&) noexcept(false) // NOLINT(modernize-use-equals-default)
+  {}
 
   _CCCL_HOST_DEVICE potentially_throwing& operator=(potentially_throwing&&) noexcept(false)
   {
     return *this;
   }
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE potentially_throwing& operator=(const potentially_throwing&) noexcept(false)
   {
     return *this;

@@ -12,9 +12,9 @@
 template <class T, template <class> class CompareTemplate>
 void do_pointer_comparison_test()
 {
-  typedef CompareTemplate<T*> Compare;
-  typedef CompareTemplate<std::uintptr_t> UIntCompare;
-  typedef CompareTemplate<void> VoidCompare;
+  using Compare     = CompareTemplate<T*>;
+  using UIntCompare = CompareTemplate<std::uintptr_t>;
+  using VoidCompare = CompareTemplate<void>;
 
   std::vector<std::shared_ptr<T>> pointers;
   const std::size_t test_size = 100;

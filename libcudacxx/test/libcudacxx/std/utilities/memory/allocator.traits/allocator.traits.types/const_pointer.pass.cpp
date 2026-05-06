@@ -29,14 +29,14 @@ struct Ptr
 template <class T>
 struct A
 {
-  typedef T value_type;
-  typedef Ptr<T> pointer;
+  using value_type = T;
+  using pointer    = Ptr<T>;
 };
 
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
@@ -46,26 +46,26 @@ struct CPtr
 template <class T>
 struct C
 {
-  typedef T value_type;
-  typedef CPtr<T> pointer;
-  typedef CPtr<const T> const_pointer;
+  using value_type    = T;
+  using pointer       = CPtr<T>;
+  using const_pointer = CPtr<const T>;
 };
 
 template <class T>
 struct D
 {
-  typedef T value_type;
+  using value_type = T;
 
 private:
-  typedef void const_pointer;
+  using const_pointer = void;
 };
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::const_pointer, Ptr<const char>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::const_pointer, const char*>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::const_pointer, CPtr<const char>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char>>::const_pointer, const char*>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::const_pointer, Ptr<const char>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::const_pointer, const char*>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::const_pointer, CPtr<const char>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char>>::const_pointer, const char*>::value));
 
   return 0;
 }

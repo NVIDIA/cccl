@@ -15,8 +15,8 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline _B16 shr(_B16 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  static_assert(sizeof(_B16) == 2, "");
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   ::cuda::std::uint16_t __dest;
   asm("shr.b16 %0, %1, %2;"
@@ -45,8 +45,8 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline _B32 shr(_B32 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  static_assert(sizeof(_B32) == 4, "");
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   ::cuda::std::uint32_t __dest;
   asm("shr.b32 %0, %1, %2;"
@@ -75,8 +75,8 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline _B64 shr(_B64 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  static_assert(sizeof(_B64) == 8, "");
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   ::cuda::std::uint64_t __dest;
   asm("shr.b64 %0, %1, %2;"

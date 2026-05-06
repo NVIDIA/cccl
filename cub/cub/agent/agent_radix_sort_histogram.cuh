@@ -36,10 +36,10 @@
 CUB_NAMESPACE_BEGIN
 
 //! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
-template <int BlockThreads, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
 struct AgentRadixSortHistogramPolicy
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   // need to discard sizeof(ComputeType) in case it's void
@@ -66,34 +66,12 @@ struct AgentRadixSortHistogramPolicy
   static constexpr int RADIX_BITS = RadixBits;
 };
 
-template <int BlockThreads, int RadixBits>
+template <int ThreadsPerBlock, int RadixBits>
 struct AgentRadixSortExclusiveSumPolicy
 {
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
   static constexpr int RADIX_BITS    = RadixBits;
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortExclusiveSumAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (RADIX_BITS, RadixBits, int) )
-
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortHistogramAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (NUM_PARTS, NumParts, int),
-  (RADIX_BITS, RadixBits, int) )
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 namespace detail::radix_sort
 {
@@ -149,7 +127,7 @@ struct AgentRadixSortHistogram
   int begin_bit, end_bit;
 
   // number of sorting passes
-  int num_passes;
+  int num_passes; // NOLINT(modernize-use-default-member-init)
 
   DecomposerT decomposer;
 

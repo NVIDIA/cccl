@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
@@ -20,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_eq(const T tested, const T expected)
+TEST_FUNC constexpr void test_eq(const T tested, const T expected)
 {
   if (cuda::std::isnan(expected))
   {
@@ -41,7 +44,7 @@ __host__ __device__ constexpr void test_eq(const T tested, const T expected)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
+TEST_FUNC void constexpr test_fabs_abs(const T pos)
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::fabs(T{}))>);
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::abs(T{}))>);
@@ -89,7 +92,7 @@ __host__ __device__ void constexpr test_fabs_abs(const T pos)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ void constexpr test_fabs_abs(const T pos)
+TEST_FUNC void constexpr test_fabs_abs(const T pos)
 {
   static_assert(cuda::std::is_same_v<double, decltype(cuda::std::fabs(T{}))>);
 
@@ -109,7 +112,7 @@ __host__ __device__ void constexpr test_fabs_abs(const T pos)
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type(float val)
+TEST_FUNC constexpr void test_type(float val)
 {
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
@@ -154,7 +157,7 @@ __host__ __device__ constexpr void test_type(float val)
   }
 }
 
-__host__ __device__ constexpr bool test(float val)
+TEST_FUNC constexpr bool test(float val)
 {
   test_type<float>(val);
   test_type<double>(val);

@@ -14,7 +14,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   // 1. Test signature.
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::__is_specific_arch(cuda::arch_id{}))>);

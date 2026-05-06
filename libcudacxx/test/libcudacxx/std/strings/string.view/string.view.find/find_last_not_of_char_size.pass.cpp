@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 // <cuda/std/string_view>
 
 // constexpr size_type find_last_not_of(charT c, size_type pos = 0) const noexcept;
@@ -18,8 +21,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void
-test_find_last_not_of(const SV& sv, typename SV::value_type c, typename SV::size_type x)
+TEST_FUNC constexpr void test_find_last_not_of(const SV& sv, typename SV::value_type c, typename SV::size_type x)
 {
   assert(sv.find_last_not_of(c) == x);
   if (x != SV::npos)
@@ -29,7 +31,7 @@ test_find_last_not_of(const SV& sv, typename SV::value_type c, typename SV::size
 }
 
 template <class SV>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_find_last_not_of(const SV& sv, typename SV::value_type c, typename SV::size_type pos, typename SV::size_type x)
 {
   assert(sv.find_last_not_of(c, pos) == x);
@@ -40,7 +42,7 @@ test_find_last_not_of(const SV& sv, typename SV::value_type c, typename SV::size
 }
 
 template <class SV>
-__host__ __device__ constexpr void test_find_last_not_of()
+TEST_FUNC constexpr void test_find_last_not_of()
 {
   using CharT = typename SV::value_type;
   using SizeT = typename SV::size_type;
@@ -82,7 +84,7 @@ __host__ __device__ constexpr void test_find_last_not_of()
   test_find_last_not_of(SV(TEST_STRLIT(CharT, "oselktgbcapndfjihrmq")), c, 21, 19);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_find_last_not_of<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

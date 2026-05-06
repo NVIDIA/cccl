@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <bool Count, class It>
-__host__ __device__ constexpr void check_assignable(int* first, int* last, int* expected)
+TEST_FUNC constexpr void check_assignable(int* first, int* last, int* expected)
 {
   {
     It it(first);
@@ -41,7 +41,7 @@ __host__ __device__ constexpr void check_assignable(int* first, int* last, int* 
 }
 
 template <bool Count, class It>
-__host__ __device__ constexpr void check_sized_sentinel(int* first, int* last, int* expected)
+TEST_FUNC constexpr void check_sized_sentinel(int* first, int* last, int* expected)
 {
   auto size = (last - first);
 
@@ -71,7 +71,7 @@ __host__ __device__ constexpr void check_sized_sentinel(int* first, int* last, i
 }
 
 template <bool Count, class It>
-__host__ __device__ constexpr void check_sentinel(int* first, int* last, int* expected)
+TEST_FUNC constexpr void check_sentinel(int* first, int* last, int* expected)
 {
   auto size = (last - first);
   unused(size);
@@ -94,7 +94,7 @@ __host__ __device__ constexpr void check_sentinel(int* first, int* last, int* ex
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 

@@ -64,7 +64,7 @@ struct merge_sort_closure
       , inplace(inplace)
   {}
 
-  void operator()(void) const
+  void operator()() const
   {
     merge_sort(exec, first1, last1, first2, comp, inplace);
   }
@@ -172,7 +172,7 @@ struct merge_sort_by_key_closure
       , inplace(inplace)
   {}
 
-  void operator()(void) const
+  void operator()() const
   {
     merge_sort_by_key(exec, first1, last1, first2, first3, first4, comp, inplace);
   }

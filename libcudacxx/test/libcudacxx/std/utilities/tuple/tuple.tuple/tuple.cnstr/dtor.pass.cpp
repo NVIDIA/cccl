@@ -22,16 +22,18 @@
 
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // virtual function is unsupported in tile code
 struct not_trivially_destructible
 {
-  __host__ __device__ virtual ~not_trivially_destructible() {}
+  TEST_FUNC virtual ~not_trivially_destructible() {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {
-  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<>>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<void*>>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<int, float>>::value, "");
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<>>::value);
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<void*>>::value);
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<int, float>>::value);
   // cuda::std::string is not supported
   /*
   static_assert(!cuda::std::is_trivially_destructible<
@@ -40,7 +42,10 @@ int main(int, char**)
       cuda::std::tuple<int, not_trivially_destructible> >::value, "");
   */
   // non-string check
-  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<not_trivially_destructible>>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<int, not_trivially_destructible>>::value, "");
+
+#if !_CCCL_TILE_COMPILATION() // virtual function is unsupported in tile code
+  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<not_trivially_destructible>>::value);
+  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<int, not_trivially_destructible>>::value);
+#endif // !_CCCL_TILE_COMPILATION()
   return 0;
 }

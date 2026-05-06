@@ -24,7 +24,7 @@
 
 struct Callable
 {
-  __host__ __device__ void operator()(int);
+  TEST_FUNC void operator()(int);
 };
 
 template <class Iter, class = void>
@@ -55,7 +55,7 @@ static_assert(!HasForEachItFunc<IndirectUnaryPredicateNotCopyConstructible>);
 struct with_mutable_arg
 {
   int i = 0;
-  __host__ __device__ constexpr void operator()(int& a) noexcept
+  TEST_FUNC constexpr void operator()(int& a) noexcept
   {
     a += i++;
   }
@@ -63,7 +63,7 @@ struct with_mutable_arg
 
 struct Always_false
 {
-  __host__ __device__ constexpr Always_false(const bool val) noexcept
+  TEST_FUNC constexpr Always_false(const bool val) noexcept
   {
     assert(val);
   }
@@ -72,7 +72,7 @@ struct Always_false
 struct should_not_be_called
 {
   template <class T>
-  __host__ __device__ constexpr void operator()(T&) const noexcept
+  TEST_FUNC constexpr void operator()(T&) const noexcept
   {
     Always_false{false};
   }
@@ -80,14 +80,14 @@ struct should_not_be_called
 
 struct zeroes_out
 {
-  __host__ __device__ constexpr void operator()(int& a) noexcept
+  TEST_FUNC constexpr void operator()(int& a) noexcept
   {
     a = 0;
   }
 };
 
 template <class Iter>
-__host__ __device__ constexpr void test_iterator()
+TEST_FUNC constexpr void test_iterator()
 {
   { // simple test
     int a[]            = {1, 6, 3, 4};
@@ -110,7 +110,7 @@ __host__ __device__ constexpr void test_iterator()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_iterator<cpp17_input_iterator<int*>>();
   test_iterator<cpp20_input_iterator<int*>>();

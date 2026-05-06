@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -83,3 +84,4 @@ CCCL_C_API CUresult cccl_device_unique_by_key(
 CCCL_C_API CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

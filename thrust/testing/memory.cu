@@ -23,6 +23,9 @@
 class my_memory_system : public thrust::device_execution_policy<my_memory_system>
 {
 public:
+  // disallow default construction
+  my_memory_system() = delete;
+
   my_memory_system(int)
       : correctly_dispatched(false)
       , num_copies(0)
@@ -49,9 +52,6 @@ private:
   // count the number of copies so that we can validate
   // that dispatch does not introduce any
   unsigned int num_copies;
-
-  // disallow default construction
-  my_memory_system();
 };
 
 namespace my_old_namespace
@@ -71,7 +71,7 @@ get_temporary_buffer(my_old_temporary_allocation_system, std::ptrdiff_t)
 template <typename Pointer>
 void return_temporary_buffer(my_old_temporary_allocation_system, Pointer p)
 {
-  using RP = typename thrust::detail::pointer_traits<Pointer>::raw_pointer;
+  using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(4217));
 }
 } // namespace my_old_namespace
@@ -101,7 +101,7 @@ void return_temporary_buffer(my_new_temporary_allocation_system, Pointer)
 template <typename Pointer>
 void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std::ptrdiff_t n)
 {
-  using RP = typename thrust::detail::pointer_traits<Pointer>::raw_pointer;
+  using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(1742));
   ASSERT_EQUAL(n, 413);
 }

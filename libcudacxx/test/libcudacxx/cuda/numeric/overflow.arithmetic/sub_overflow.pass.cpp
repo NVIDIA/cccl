@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085768: compiler hangs
+
 #include <cuda/numeric>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -17,15 +20,20 @@
 #include "test_macros.h"
 
 template <typename Result, typename Lhs, typename Rhs>
-__host__ __device__ constexpr void test_sub_overflow(Lhs lhs, Rhs rhs, bool overflow, bool skip_special_cases = false)
+TEST_FUNC constexpr void test_sub_overflow(Lhs lhs, Rhs rhs, bool overflow)
 {
+  using UResult         = cuda::std::make_unsigned_t<Result>;
+  const auto ref_result = static_cast<Result>(static_cast<UResult>(lhs) - static_cast<UResult>(rhs));
+
   // test overflow_result<Result> sub_overflow(Lhs lhs, Rhs rhs) overload
   {
     const auto result = cuda::sub_overflow<Result>(lhs, rhs);
-    // overflow result is well-defined only for unsigned types
-    if ((!overflow && !skip_special_cases) || cuda::std::is_unsigned_v<Result>)
+    // nvcc 12.0 seems not to be able to compute this correctly during constant evaluation.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
+    if (!overflow || cuda::std::is_unsigned_v<Result>)
+#endif // _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     {
-      assert(result.value == static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs)));
+      assert(result.value == ref_result);
     }
     assert(result.overflow == overflow);
   }
@@ -33,17 +41,19 @@ __host__ __device__ constexpr void test_sub_overflow(Lhs lhs, Rhs rhs, bool over
   {
     Result result{};
     bool has_overflow = cuda::sub_overflow<Result>(result, lhs, rhs);
-    // overflow result is well-defined only for unsigned types
-    if ((!overflow && !skip_special_cases) || cuda::std::is_unsigned_v<Result>)
+    // nvcc 12.0 seems not to be able to compute this correctly during constant evaluation.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
+    if (!overflow || cuda::std::is_unsigned_v<Result>)
+#endif // _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     {
-      assert(result == static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs)));
+      assert(result == ref_result);
     }
     assert(has_overflow == overflow);
   }
 }
 
 template <typename Lhs, typename Rhs, typename Result>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   using cuda::std::is_same_v;
   using cuda::std::is_signed_v;
@@ -97,15 +107,7 @@ __host__ __device__ constexpr void test_type()
   }
   else // rhs_max > lhs_max, negative result: lhs_max - rhs_max < result_min -> lhs_max < result_min + rhs_max
   {
-    // *** very special case ***: test case cannot be validated in a constexpr context
-    // example: int - unsigned = int
-    // the expression 'static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs))' translate to:
-    // INT_MAX - UINT_MAX = INT_MIN -> no overflow, but
-    // INT_MIN - 1 -> is less than INT_MIN and constexpr fails to compile
-    bool skip_special_case = sizeof(Lhs) == sizeof(Rhs) && sizeof(Rhs) == sizeof(Result) && is_signed_v<Lhs>
-                          && is_unsigned_v<Rhs> && cuda::std::__cccl_default_is_constant_evaluated();
-    test_sub_overflow<Result>(
-      lhs_max, rhs_max, cuda::std::cmp_greater(rhs_max - lhs_max, neg_result_min), skip_special_case);
+    test_sub_overflow<Result>(lhs_max, rhs_max, cuda::std::cmp_greater(rhs_max - lhs_max, neg_result_min));
   }
   //--------------------------------------------------------------------------------------------------------------------
   // min cases
@@ -167,7 +169,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <typename T, typename R>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<T, R, cuda::std::common_type_t<T, R>>();
   test_type<T, R, unsigned>();
@@ -182,7 +184,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <typename T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<T, signed char>();
   test_type<T, unsigned char>();
@@ -200,7 +202,7 @@ __host__ __device__ constexpr void test_type()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using cuda::std::is_same_v;
   static_assert(noexcept(cuda::sub_overflow(int{}, int{})));

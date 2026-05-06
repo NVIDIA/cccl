@@ -27,27 +27,27 @@
 // then this destructor is a trivial destructor.
 struct NonTrivial
 {
-  __host__ __device__ ~NonTrivial() {}
+  TEST_FUNC ~NonTrivial() {}
 };
 
-static_assert(cuda::std::is_trivially_destructible_v<cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, int>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<int, NonTrivial>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, NonTrivial>>, "");
+static_assert(cuda::std::is_trivially_destructible_v<cuda::std::expected<int, int>>);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, int>>);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<int, NonTrivial>>);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, NonTrivial>>);
 
 struct TrackedDestroy
 {
   bool& destroyed;
-  __host__ __device__ constexpr TrackedDestroy(bool& b)
+  TEST_FUNC constexpr TrackedDestroy(bool& b)
       : destroyed(b)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~TrackedDestroy()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~TrackedDestroy()
   {
     destroyed = true;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // has value
   {

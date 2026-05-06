@@ -13,6 +13,7 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/limits>
 
@@ -25,15 +26,6 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-
-struct equal_to_default_t
-{
-  template <typename T>
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a == T{};
-  }
-};
 
 struct always_false_t
 {
@@ -186,7 +178,7 @@ C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
 
   // Ensure that we did not overwrite other elements
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
@@ -213,7 +205,7 @@ C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
 C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
@@ -237,7 +229,7 @@ C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
 C2H_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
@@ -306,7 +298,7 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
 }
 
 C2H_TEST("DeviceSelect::If works for very large number of items",

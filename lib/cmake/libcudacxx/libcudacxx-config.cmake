@@ -150,29 +150,12 @@ function(libcudacxx_update_language_compat_flags)
   message(DEBUG "libcudacxx:   CMAKE_CUDA_HOST_COMPILER_VERSION: ${CMAKE_CUDA_HOST_COMPILER_VERSION}")
   # gersemi: on
 
-  if (NOT cxx_warned AND NOT CXX IN_LIST langs)
-    # gersemi: off
-    message(VERBOSE "libcudacxx: - CXX language not enabled.")
-    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CXX targets.")
-    message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CXX to enable compatibility flags.")
-    # gersemi: on
-    _libcudacxx_define_internal_global_property(_libcudacxx_cxx_warned)
-  endif()
-
-  if (NOT cuda_warned AND NOT CUDA IN_LIST langs)
-    # gersemi: off
-    message(VERBOSE "libcudacxx: - CUDA language not enabled.")
-    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CUDA targets.")
-    message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CUDA to enable compatibility flags.")
-    # gersemi: on
-    _libcudacxx_define_internal_global_property(_libcudacxx_cuda_warned)
-  endif()
-
   if (CXX IN_LIST langs)
     set(msvc_cxx_id ${CMAKE_CXX_COMPILER_ID})
     set(msvc_cxx_version ${CMAKE_CXX_COMPILER_VERSION})
   endif()
 
+  # Best effort detection of CUDA host compiler on all supported CMake versions:
   if (CUDA IN_LIST langs)
     option(
       libcudacxx_MISMATCHED_HOST_COMPILER
@@ -205,6 +188,29 @@ function(libcudacxx_update_language_compat_flags)
       set(msvc_cuda_host_version ${CMAKE_CXX_COMPILER_VERSION})
     endif()
     # gersemi: on
+  endif()
+
+  # Only MSVC needs these flags. Exit before printing warnings / etc.
+  if (NOT (msvc_cxx_id STREQUAL "MSVC" OR msvc_cuda_host_id STREQUAL "MSVC"))
+    return()
+  endif()
+
+  if (NOT cxx_warned AND NOT CXX IN_LIST langs)
+    # gersemi: off
+    message(VERBOSE "libcudacxx: - CXX language not enabled.")
+    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CXX targets.")
+    message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CXX to enable compatibility flags.")
+    # gersemi: on
+    _libcudacxx_define_internal_global_property(_libcudacxx_cxx_warned)
+  endif()
+
+  if (NOT cuda_warned AND NOT CUDA IN_LIST langs)
+    # gersemi: off
+    message(VERBOSE "libcudacxx: - CUDA language not enabled.")
+    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CUDA targets.")
+    message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CUDA to enable compatibility flags.")
+    # gersemi: on
+    _libcudacxx_define_internal_global_property(_libcudacxx_cuda_warned)
   endif()
 
   function(_libcudacxx_get_msvc_flags_for_version out_var msvc_version)

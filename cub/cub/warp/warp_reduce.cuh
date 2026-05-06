@@ -28,9 +28,9 @@
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -134,7 +134,7 @@ class WarpReduce
                 "LogicalWarpThreads must be in the range [1, 32]");
 
   static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
-  static constexpr bool is_power_of_two = ::cuda::std::has_single_bit(uint32_t{LogicalWarpThreads});
+  static constexpr bool is_power_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -178,6 +178,9 @@ public:
   //! @rst
   //! Computes a warp-wide sum in the calling warp.
   //! The output is valid in warp *lane*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -258,6 +261,9 @@ public:
   //! All threads across the calling warp must agree on the same value for ``valid_items``.
   //! Otherwise the result is undefined.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -321,6 +327,9 @@ public:
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -375,6 +384,9 @@ public:
   //! Computes a segmented sum in the calling warp where segments are defined by tail-flags.
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -434,6 +446,9 @@ public:
   //! functor. The output is valid in warp *lane*\ :sub:`0`.
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -500,6 +515,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -560,6 +578,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -618,6 +639,9 @@ public:
   //! (which always includes *lane*\ :sub:`0`).
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -706,7 +730,7 @@ public:
 
   using TempStorage = typename InternalWarpReduce::TempStorage;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {

@@ -71,6 +71,10 @@ struct hierarchy_query_result
     }
   }
 
+  // Hide SFINAE conversion operators from Doxygen. The _CCCL_TEMPLATE/_CCCL_REQUIRES
+  // macros expand to enable_if_t expressions that Breathe renders as invalid C++ template
+  // parameter lists, causing Sphinx parse errors on the generated struct page.
+#  ifndef _CCCL_DOXYGEN_INVOKED
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Tp2, signed char>)
   _CCCL_API constexpr operator char3() const noexcept
@@ -140,6 +144,7 @@ struct hierarchy_query_result
   {
     return {static_cast<unsigned long long>(x), static_cast<unsigned long long>(y), static_cast<unsigned long long>(z)};
   }
+#  endif // !_CCCL_DOXYGEN_INVOKED
 };
 
 _CCCL_END_NAMESPACE_CUDA

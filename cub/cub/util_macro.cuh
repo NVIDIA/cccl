@@ -23,8 +23,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#  define CUB_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 #endif
 
 /**
@@ -47,6 +47,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
     }
 #endif
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the public dispatchers
 #ifndef CUB_DEFINE_SUB_POLICY_GETTER
 #  define CUB_DEFINE_SUB_POLICY_GETTER(name)                            \
     _CCCL_HOST_DEVICE static constexpr auto name()                      \

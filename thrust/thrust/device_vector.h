@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A dynamically-sizable array of elements which resides in memory
@@ -89,9 +76,8 @@ public:
 
   /*! The destructor erases the elements.
    */
-  //  Define an empty destructor to explicitly specify
-  //  its execution space qualifier, as a workaround for nvcc warning
-  ~device_vector() {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST ~device_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p device_vector with the given
    *  size.
@@ -161,7 +147,7 @@ public:
   /*! Move constructor moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector(device_vector&& v)
+  device_vector(device_vector&& v) noexcept
       : Parent(::cuda::std::move(v))
   {}
 
@@ -185,7 +171,7 @@ public:
   /*! Move assign operator moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector& operator=(device_vector&& v)
+  device_vector& operator=(device_vector&& v) noexcept
   {
     Parent::operator=(::cuda::std::move(v));
     return *this;

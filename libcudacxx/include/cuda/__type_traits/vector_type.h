@@ -25,6 +25,7 @@
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__floating_point/cuda_fp_types.h>
+#  include <cuda/std/__tuple_dir/vector_types.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
 #  if !_CCCL_CUDA_COMPILATION()
@@ -465,10 +466,16 @@ template <class _Tp, ::cuda::std::size_t _Size>
 }
 
 template <class _Tp, ::cuda::std::size_t _Size>
-using __vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
+using vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
 
 template <class _Tp, ::cuda::std::size_t _Size>
-inline constexpr bool __has_vector_type_v = !::cuda::std::is_same_v<__vector_type_t<_Tp, _Size>, void>;
+inline constexpr bool has_vector_type_v = !::cuda::std::is_same_v<vector_type_t<_Tp, _Size>, void>;
+
+template <class _Tp>
+using scalar_type_t = ::cuda::std::tuple_element_t<0, _Tp>;
+
+template <class _Tp>
+inline constexpr auto vector_size_v = ::cuda::std::tuple_size_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA
 

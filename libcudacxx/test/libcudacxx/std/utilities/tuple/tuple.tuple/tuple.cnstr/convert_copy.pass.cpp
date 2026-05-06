@@ -22,7 +22,7 @@
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };
@@ -30,19 +30,19 @@ struct Explicit
 struct Implicit
 {
   int value;
-  __host__ __device__ Implicit(int x)
+  TEST_FUNC Implicit(int x)
       : value(x)
   {}
 };
 
 struct ExplicitTwo
 {
-  __host__ __device__ ExplicitTwo() {}
-  __host__ __device__ ExplicitTwo(ExplicitTwo const&) {}
-  __host__ __device__ ExplicitTwo(ExplicitTwo&&) {}
+  TEST_FUNC ExplicitTwo() {}
+  TEST_FUNC ExplicitTwo(ExplicitTwo const&) {}
+  TEST_FUNC ExplicitTwo(ExplicitTwo&&) {}
 
   template <class T, class = typename cuda::std::enable_if<!cuda::std::is_same<T, ExplicitTwo>::value>::type>
-  __host__ __device__ explicit ExplicitTwo(T)
+  TEST_FUNC explicit ExplicitTwo(T)
   {}
 };
 
@@ -50,14 +50,14 @@ struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i)
+  TEST_FUNC explicit B(int i)
       : id_(i)
   {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };
@@ -66,10 +66,10 @@ struct A
 {
   int id_;
 
-  __host__ __device__ constexpr A(int i)
+  TEST_FUNC constexpr A(int i)
       : id_(i)
   {}
-  __host__ __device__ friend constexpr bool operator==(const A& x, const A& y)
+  TEST_FUNC friend constexpr bool operator==(const A& x, const A& y)
   {
     return x.id_ == y.id_;
   }
@@ -79,10 +79,10 @@ struct C
 {
   int id_;
 
-  __host__ __device__ constexpr explicit C(int i)
+  TEST_FUNC constexpr explicit C(int i)
       : id_(i)
   {}
-  __host__ __device__ friend constexpr bool operator==(const C& x, const C& y)
+  TEST_FUNC friend constexpr bool operator==(const C& x, const C& y)
   {
     return x.id_ == y.id_;
   }
@@ -102,14 +102,14 @@ int main(int, char**)
     using T1 = cuda::std::tuple<A>;
     constexpr T0 t0(2);
     constexpr T1 t1 = t0;
-    static_assert(cuda::std::get<0>(t1) == 2, "");
+    static_assert(cuda::std::get<0>(t1) == 2);
   }
   {
     using T0 = cuda::std::tuple<int>;
     using T1 = cuda::std::tuple<C>;
     constexpr T0 t0(2);
     constexpr T1 t1{t0};
-    static_assert(cuda::std::get<0>(t1) == C(2), "");
+    static_assert(cuda::std::get<0>(t1) == C(2));
   }
   {
     using T0 = cuda::std::tuple<long, char>;
@@ -159,7 +159,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t2).value == 42);
   }
   {
-    static_assert(cuda::std::is_convertible<ExplicitTwo&&, ExplicitTwo>::value, "");
+    static_assert(cuda::std::is_convertible<ExplicitTwo&&, ExplicitTwo>::value);
     static_assert(
       cuda::std::is_convertible<cuda::std::tuple<ExplicitTwo&&>&&, const cuda::std::tuple<ExplicitTwo>&>::value, "");
 

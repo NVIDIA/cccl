@@ -28,6 +28,8 @@
 #  include <cuda/__numeric/overflow_cast.h>
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
@@ -65,7 +67,7 @@ template <__detail::launch_option_kind Kind>
 struct find_option_in_tuple_impl
 {
   template <typename Option, typename... Options>
-  _CCCL_DEVICE auto& operator()(const Option& opt, const Options&... rest)
+  _CCCL_DEVICE_API auto& operator()(const Option& opt, const Options&... rest)
   {
     if constexpr (Option::kind == Kind)
     {
@@ -77,14 +79,14 @@ struct find_option_in_tuple_impl
     }
   }
 
-  _CCCL_DEVICE auto operator()()
+  _CCCL_DEVICE_API auto operator()()
   {
     return option_not_found();
   }
 };
 
 template <__detail::launch_option_kind Kind, typename... Options>
-_CCCL_DEVICE auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
+_CCCL_DEVICE_API auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
 {
   return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
 }
@@ -268,10 +270,12 @@ public:
   {
     if constexpr (::cuda::std::is_unbounded_array_v<_Tp>)
     {
+#  if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::get_sreg_dynamic_smem_size();))
       }
+#  endif // !_CCCL_TILE_COMPILATION()
       return __base_type::__n_ * sizeof(value_type);
     }
     else
@@ -391,7 +395,7 @@ _CCCL_REQUIRES((!::cuda::std::is_unbounded_array_v<_Tp>) )
  * @brief Function that creates dynamic_shared_memory_option for non-unbounded array types with non-portable flag
  *
  * @tparam _Tp Type intended to be stored in dynamic shared memory (must not be an unbounded array)
- * @param __non_portable Flag indicating non-portable size
+ * @note Pass cuda::non_portable to opt in to non-portable shared memory sizes.
  * @return dynamic_shared_memory_option<_Tp> instance
  */
 _CCCL_TEMPLATE(class _Tp)
@@ -415,7 +419,7 @@ _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
   using value_type = typename dynamic_shared_memory_option<_Tp>::value_type;
   if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
   {
-    ::cuda::std::__throw_invalid_argument("portable dynamic shared memory limit exceeded");
+    _CCCL_THROW(::std::invalid_argument, "portable dynamic shared memory limit exceeded");
   }
   return dynamic_shared_memory_option<_Tp>::__create(__n, false);
 }
@@ -425,7 +429,7 @@ _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
  *
  * @tparam _Tp Unbounded array type
  * @param __n Number of elements in the dynamic shared memory
- * @param __non_portable Flag indicating non-portable size
+ * @note Pass cuda::non_portable to opt in to non-portable shared memory sizes.
  * @return dynamic_shared_memory_option<_Tp> instance
  */
 _CCCL_TEMPLATE(class _Tp)
@@ -550,8 +554,8 @@ struct kernel_config
    * Returns a new kernel_config that has all option and dimensions from this
    * kernel_config with the option from the argument added to it
    *
-   * @param new_option
-   * Option to be added to the configuration
+   * @param new_options
+   * Options to be added to the configuration
    */
   template <typename... NewOptions>
   [[nodiscard]] auto add(const NewOptions&... new_options) const

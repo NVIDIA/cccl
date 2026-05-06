@@ -45,7 +45,7 @@ int main(int, char**)
 #define CHECK_ALIGNMENT(T) \
   do                       \
   {                        \
-    typedef T type;        \
+    using type = T;        \
     atomic_test<type> t;   \
   } while (0)
 

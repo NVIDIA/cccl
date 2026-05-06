@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: gcc-4
-
 #include <cuda/functional>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
@@ -18,15 +16,23 @@
 
 #if _CCCL_CUDACC_AT_LEAST(12, 3)
 template <typename ReturnT>
-__host__ __device__ void test_lambda_return_type()
+TEST_FUNC void test_lambda_return_type()
 {
-  // Ensure type can be queried from cuda::std::invoke_result_t
-  auto d_lm = [] __device__() -> ReturnT {
+// Ensure type can be queried from cuda::std::invoke_result_t
+#  if _CCCL_TILE_COMPILATION()
+  auto d_lm = [] _CCCL_TILE() -> ReturnT {
     return ReturnT{};
   };
-  auto hd_lm = [] __host__ __device__() -> ReturnT { return ReturnT{}; };
-  using Td   = decltype(d_lm);
-  using Thd  = decltype(hd_lm);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
+  auto d_lm = [] TEST_DEVICE_FUNC() -> ReturnT {
+    return ReturnT{};
+  };
+#  endif // !_CCCL_TILE_COMPILATION()
+  auto hd_lm = [] TEST_FUNC() -> ReturnT {
+    return ReturnT{};
+  };
+  using Td  = decltype(d_lm);
+  using Thd = decltype(hd_lm);
 
   static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Td>, ReturnT>);
   static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Thd>, ReturnT>);
@@ -41,7 +47,7 @@ struct custom_type
 #endif // _CCCL_CUDACC_AT_LEAST(12, 3)
 
 template <class T, class Fn, class... As>
-__host__ __device__ void test_proclaim_return_type(Fn&& fn, T expected, As... as)
+TEST_FUNC void test_proclaim_return_type(Fn&& fn, T expected, As... as)
 {
   {
     auto f1 = cuda::proclaim_return_type<T>(cuda::std::forward<Fn>(fn));
@@ -64,11 +70,11 @@ __host__ __device__ void test_proclaim_return_type(Fn&& fn, T expected, As... as
 
 struct hd_callable
 {
-  __host__ __device__ int operator()() const&
+  TEST_FUNC int operator()() const&
   {
     return 42;
   }
-  __host__ __device__ int operator()() const&&
+  TEST_FUNC int operator()() const&&
   {
     return 42;
   }
@@ -77,11 +83,11 @@ struct hd_callable
 #if !TEST_COMPILER(NVRTC)
 struct h_callable
 {
-  __host__ int operator()() const&
+  int operator()() const&
   {
     return 42;
   }
-  __host__ int operator()() const&&
+  int operator()() const&&
   {
     return 42;
   }
@@ -90,11 +96,11 @@ struct h_callable
 
 struct d_callable
 {
-  __device__ int operator()() const&
+  TEST_DEVICE_FUNC int operator()() const&
   {
     return 42;
   }
-  __device__ int operator()() const&&
+  TEST_DEVICE_FUNC int operator()() const&&
   {
     return 42;
   }
@@ -132,44 +138,44 @@ int main(int argc, char** argv)
   NV_IF_TARGET(
     NV_IS_DEVICE,
     (test_proclaim_return_type<double>(
-       [] __device__ {
+       [] TEST_DEVICE_FUNC {
          return 42.0;
        },
        42.0);
      test_proclaim_return_type<int>(
-       [] __device__(const int v) {
+       [] TEST_DEVICE_FUNC(const int v) {
          return v * 2;
        },
        42,
        21);
      test_proclaim_return_type<int&>(
-       [vp] __device__() -> int& {
+       [vp] TEST_DEVICE_FUNC() -> int& {
          return *vp;
        },
        v);
 
      test_proclaim_return_type<double>(
-       [] __host__ __device__ {
+       [] TEST_FUNC {
          return 42.0;
        },
        42.0);
      test_proclaim_return_type<int>(
-       [] __host__ __device__(const int v) {
+       [] TEST_FUNC(const int v) {
          return v * 2;
        },
        42,
        21);
      test_proclaim_return_type<int&>(
-       [vp] __host__ __device__() -> int& {
+       [vp] TEST_FUNC() -> int& {
          return *vp;
        },
        v);))
 
   // Ensure that we can always declare functions even on host
-  auto f = cuda::proclaim_return_type<bool>([] __device__() {
+  auto f = cuda::proclaim_return_type<bool>([] TEST_DEVICE_FUNC() {
     return false;
   });
-  auto g = cuda::proclaim_return_type<bool>([f] __device__() {
+  auto g = cuda::proclaim_return_type<bool>([f] TEST_DEVICE_FUNC() {
     return f();
   });
   unused(f);

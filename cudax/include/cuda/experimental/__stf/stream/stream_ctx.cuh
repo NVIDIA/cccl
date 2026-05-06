@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
@@ -34,7 +35,7 @@
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
@@ -61,7 +62,7 @@ public:
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream();
 
     if (!memory_node.allocation_is_stream_ordered())
     {
@@ -83,7 +84,7 @@ public:
   void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream();
 
     if (!memory_node.allocation_is_stream_ordered())
     {
@@ -219,7 +220,7 @@ public:
     decorated_stream dstream =
       (user_dstream.has_value())
         ? user_dstream.value()
-        : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
+        : exec_place::current_device().getStream(true /* stream for computation */);
 
     auto prereqs = get_state().insert_fence(*get_dot());
 

@@ -15,9 +15,9 @@
 //     : public iterator<input_iterator_tag, T, Distance, const T*, const T&>
 // {
 // public:
-//     typedef charT char_type;
-//     typedef traits traits_type;
-//     typedef basic_istream<charT,traits> istream_type;
+//     using char_type    = charT;
+//     using traits_type  = traits;
+//     using istream_type = basic_istream<charT,traits>;
 //     ...
 //
 // Before C++17, we have:
@@ -42,35 +42,35 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::istream_iterator<double> I1; // double is trivially destructible
+  using I1 = cuda::std::istream_iterator<double>; // double is trivially destructible
 
-  static_assert((cuda::std::is_same<I1::iterator_category, cuda::std::input_iterator_tag>::value), "");
-  static_assert((cuda::std::is_same<I1::value_type, double>::value), "");
-  static_assert((cuda::std::is_same<I1::difference_type, cuda::std::ptrdiff_t>::value), "");
-  static_assert((cuda::std::is_same<I1::pointer, const double*>::value), "");
-  static_assert((cuda::std::is_same<I1::reference, const double&>::value), "");
-  static_assert((cuda::std::is_same<I1::char_type, char>::value), "");
-  static_assert((cuda::std::is_same<I1::traits_type, cuda::std::char_traits<char>>::value), "");
-  static_assert((cuda::std::is_same<I1::istream_type, cuda::std::istream>::value), "");
-  static_assert(cuda::std::is_trivially_copy_constructible<I1>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<I1>::value, "");
+  static_assert((cuda::std::is_same<I1::iterator_category, cuda::std::input_iterator_tag>::value));
+  static_assert((cuda::std::is_same<I1::value_type, double>::value));
+  static_assert((cuda::std::is_same<I1::difference_type, cuda::std::ptrdiff_t>::value));
+  static_assert((cuda::std::is_same<I1::pointer, const double*>::value));
+  static_assert((cuda::std::is_same<I1::reference, const double&>::value));
+  static_assert((cuda::std::is_same<I1::char_type, char>::value));
+  static_assert((cuda::std::is_same<I1::traits_type, cuda::std::char_traits<char>>::value));
+  static_assert((cuda::std::is_same<I1::istream_type, cuda::std::istream>::value));
+  static_assert(cuda::std::is_trivially_copy_constructible<I1>::value);
+  static_assert(cuda::std::is_trivially_destructible<I1>::value);
 
-  typedef cuda::std::istream_iterator<unsigned, wchar_t> I2; // unsigned is trivially destructible
+  using I2 = cuda::std::istream_iterator<unsigned, wchar_t>; // unsigned is trivially destructible
 
-  static_assert((cuda::std::is_same<I2::iterator_category, cuda::std::input_iterator_tag>::value), "");
-  static_assert((cuda::std::is_same<I2::value_type, unsigned>::value), "");
-  static_assert((cuda::std::is_same<I2::difference_type, cuda::std::ptrdiff_t>::value), "");
-  static_assert((cuda::std::is_same<I2::pointer, const unsigned*>::value), "");
-  static_assert((cuda::std::is_same<I2::reference, const unsigned&>::value), "");
-  static_assert((cuda::std::is_same<I2::char_type, wchar_t>::value), "");
-  static_assert((cuda::std::is_same<I2::traits_type, cuda::std::char_traits<wchar_t>>::value), "");
-  static_assert((cuda::std::is_same<I2::istream_type, cuda::std::wistream>::value), "");
-  static_assert(cuda::std::is_trivially_copy_constructible<I2>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<I2>::value, "");
+  static_assert((cuda::std::is_same<I2::iterator_category, cuda::std::input_iterator_tag>::value));
+  static_assert((cuda::std::is_same<I2::value_type, unsigned>::value));
+  static_assert((cuda::std::is_same<I2::difference_type, cuda::std::ptrdiff_t>::value));
+  static_assert((cuda::std::is_same<I2::pointer, const unsigned*>::value));
+  static_assert((cuda::std::is_same<I2::reference, const unsigned&>::value));
+  static_assert((cuda::std::is_same<I2::char_type, wchar_t>::value));
+  static_assert((cuda::std::is_same<I2::traits_type, cuda::std::char_traits<wchar_t>>::value));
+  static_assert((cuda::std::is_same<I2::istream_type, cuda::std::wistream>::value));
+  static_assert(cuda::std::is_trivially_copy_constructible<I2>::value);
+  static_assert(cuda::std::is_trivially_destructible<I2>::value);
 
-  typedef cuda::std::istream_iterator<cuda::std::string> I3; // string is NOT trivially destructible
-  static_assert(!cuda::std::is_trivially_copy_constructible<I3>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<I3>::value, "");
+  using I3 = cuda::std::istream_iterator<cuda::std::string>; // string is NOT trivially destructible
+  static_assert(!cuda::std::is_trivially_copy_constructible<I3>::value);
+  static_assert(!cuda::std::is_trivially_destructible<I3>::value);
 
   return 0;
 }

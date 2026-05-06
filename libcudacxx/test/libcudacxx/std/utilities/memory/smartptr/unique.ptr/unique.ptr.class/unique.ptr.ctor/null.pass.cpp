@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -23,7 +26,7 @@
 #include "unique_ptr_test_helper.h"
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer_ctor()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_pointer_ctor()
 {
   {
     cuda::std::unique_ptr<VT> p(0);
@@ -37,7 +40,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer_ctor()
 }
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer_deleter_ctor()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_pointer_deleter_ctor()
 {
   {
     cuda::std::default_delete<VT> d;
@@ -63,7 +66,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer_deleter_ctor()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     // test_pointer_ctor<int>();

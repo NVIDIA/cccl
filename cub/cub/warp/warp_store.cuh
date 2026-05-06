@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -110,6 +111,25 @@ enum WarpStoreAlgorithm
   WARP_STORE_TRANSPOSE
 };
 
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algorithm)
+{
+  switch (algorithm)
+  {
+    case WARP_STORE_DIRECT:
+      return os << "WARP_STORE_DIRECT";
+    case WARP_STORE_STRIPED:
+      return os << "WARP_STORE_STRIPED";
+    case WARP_STORE_VECTORIZE:
+      return os << "WARP_STORE_VECTORIZE";
+    case WARP_STORE_TRANSPOSE:
+      return os << "WARP_STORE_TRANSPOSE";
+    default:
+      return os << "<unknown WarpStoreAlgorithm: " << static_cast<int>(algorithm) << ">";
+  }
+}
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
 //! @rst
 //! The WarpStore class provides :ref:`collective <collective-primitives>`
 //! data movement methods for writing a :ref:`blocked arrangement <flexible-data-arrangement>`
@@ -156,7 +176,7 @@ enum WarpStoreAlgorithm
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
+//!        constexpr int threads_per_block = 256;
 //!        constexpr int items_per_thread = 4;
 //!
 //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
@@ -165,7 +185,7 @@ enum WarpStoreAlgorithm
 //!                                     cub::WARP_STORE_TRANSPOSE,
 //!                                     warp_threads>;
 //!
-//!        constexpr int warps_in_block = block_threads / warp_threads;
+//!        constexpr int warps_in_block = threads_per_block / warp_threads;
 //!        constexpr int tile_size = items_per_thread * warp_threads;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
@@ -374,6 +394,9 @@ public:
   //! @rst
   //! Store items into a linear segment of memory.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -393,7 +416,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
@@ -402,7 +425,7 @@ public:
   //!                                     cub::WARP_STORE_TRANSPOSE,
   //!                                     warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -432,6 +455,9 @@ public:
   //! @rst
   //! Store items into a linear segment of memory, guarded by range.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -451,7 +477,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
@@ -460,7 +486,7 @@ public:
   //!                                     cub::WARP_STORE_TRANSPOSE,
   //!                                     warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!

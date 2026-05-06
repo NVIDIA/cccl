@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>
 #include <cuda/std/cassert>
@@ -17,8 +17,9 @@
 #include <cuda/std/type_traits>
 
 #include "hierarchy_queries.h"
+#include "test_macros.h"
 
-__device__ void test_warp()
+TEST_DEVICE_FUNC void test_warp()
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 
@@ -61,7 +62,12 @@ __device__ void test_warp()
     test_extents(cuda::std::dims<3, unsigned>{exp.x, exp.y, exp.z}, cuda::warp, cuda::grid);
   }
 
-  // 4. Test cuda::warp.count(x)
+  // 4. Test cuda::warp.static_count(x)
+  test_static_count(cuda::warp, cuda::block);
+  test_static_count(cuda::warp, cuda::cluster);
+  test_static_count(cuda::warp, cuda::grid);
+
+  // 5. Test cuda::warp.count(x)
   test_count(count_in_block, cuda::warp, cuda::block);
   {
     uint3 exp = dims_in_block;
@@ -77,7 +83,7 @@ __device__ void test_warp()
     test_count(cuda::std::size_t{exp.z} * exp.y * exp.x, cuda::warp, cuda::grid);
   }
 
-  // 5. test cuda::warp.index(x)
+  // 6. test cuda::warp.index(x)
   test_index(index_in_block, cuda::warp, cuda::block);
   {
     uint3 exp = index_in_block;
@@ -97,7 +103,7 @@ __device__ void test_warp()
     test_index(exp, cuda::warp, cuda::grid);
   }
 
-  // 6. Test cuda::warp.rank(x)
+  // 7. Test cuda::warp.rank(x)
   test_rank(rank_in_block, cuda::warp, cuda::block);
   {
     cuda::std::size_t exp = 0;

@@ -20,28 +20,30 @@
 
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i = 0)
+  TEST_FUNC explicit B(int i = 0)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct E
 {
   E() = default;
-  __host__ __device__ E& operator=(int)
+  TEST_FUNC E& operator=(int)
   {
     return *this;
   }
@@ -66,6 +68,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1) == int('a'));
   }
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
   {
     using T0 = cuda::std::tuple<long, char, D>;
     using T1 = cuda::std::tuple<long long, int, B>;
@@ -99,6 +102,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == int('a'));
     assert(cuda::std::get<2>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     // Test that tuple evaluates correctly applies an lvalue reference

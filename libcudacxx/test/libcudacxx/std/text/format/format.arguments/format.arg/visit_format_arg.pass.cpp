@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // template<class Visitor, class Context>
@@ -28,7 +31,7 @@ template <class Context, class To>
 struct Visitor
 {
   template <class T>
-  __host__ __device__ To operator()([[maybe_unused]] T v) const
+  TEST_FUNC To operator()([[maybe_unused]] T v) const
   {
     constexpr auto fmt_arg =
       (cuda::std::is_same_v<To, HandleTag>)
@@ -56,7 +59,7 @@ struct Visitor
 };
 
 template <class CharT, class To, class From>
-__host__ __device__ void test_visit_format_arg(From value)
+TEST_FUNC void test_visit_format_arg(From value)
 {
   using Context = cuda::std::basic_format_context<CharT*, CharT>;
 
@@ -82,14 +85,14 @@ __host__ __device__ void test_visit_format_arg(From value)
 }
 
 template <class CharT>
-__host__ __device__ void test_boolean()
+TEST_FUNC void test_boolean()
 {
   test_visit_format_arg<CharT, bool>(true);
   test_visit_format_arg<CharT, bool>(false);
 }
 
 template <class CharT>
-__host__ __device__ void test_char()
+TEST_FUNC void test_char()
 {
   test_visit_format_arg<CharT, CharT, CharT>('a');
   test_visit_format_arg<CharT, CharT, CharT>('z');
@@ -117,7 +120,7 @@ __host__ __device__ void test_char()
 }
 
 template <class CharT>
-__host__ __device__ void test_signed_integers()
+TEST_FUNC void test_signed_integers()
 {
   test_visit_format_arg<CharT, int, signed char>(cuda::std::numeric_limits<signed char>::min());
   test_visit_format_arg<CharT, int, signed char>(0);
@@ -167,7 +170,7 @@ __host__ __device__ void test_signed_integers()
 }
 
 template <class CharT>
-__host__ __device__ void test_unsigned_integers()
+TEST_FUNC void test_unsigned_integers()
 {
   test_visit_format_arg<CharT, unsigned, unsigned char>(0);
   test_visit_format_arg<CharT, unsigned, unsigned char>(cuda::std::numeric_limits<unsigned char>::max());
@@ -205,7 +208,7 @@ __host__ __device__ void test_unsigned_integers()
 }
 
 template <class CharT>
-__host__ __device__ void test_floating_point_types()
+TEST_FUNC void test_floating_point_types()
 {
   test_visit_format_arg<CharT, float>(-cuda::std::numeric_limits<float>::max());
   test_visit_format_arg<CharT, float>(-cuda::std::numeric_limits<float>::min());
@@ -232,14 +235,14 @@ __host__ __device__ void test_floating_point_types()
 }
 
 template <class CharT>
-__host__ __device__ void test_const_char_pointers()
+TEST_FUNC void test_const_char_pointers()
 {
   test_visit_format_arg<CharT, const CharT*>(TEST_STRLIT(CharT, ""));
   test_visit_format_arg<CharT, const CharT*>(TEST_STRLIT(CharT, "abc"));
 }
 
 template <class CharT>
-__host__ __device__ void test_string_view()
+TEST_FUNC void test_string_view()
 {
   constexpr auto empty = TEST_STRLIT(CharT, "");
   constexpr auto str   = TEST_STRLIT(CharT, "abc");
@@ -263,7 +266,7 @@ __host__ __device__ void test_string_view()
 }
 
 template <class CharT>
-__host__ __device__ void test_pointers()
+TEST_FUNC void test_pointers()
 {
   test_visit_format_arg<CharT, const void*>(nullptr);
   int i = 0;
@@ -273,7 +276,7 @@ __host__ __device__ void test_pointers()
 }
 
 template <class CharT>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_boolean<CharT>();
   test_char<CharT>();
@@ -285,7 +288,7 @@ __host__ __device__ void test()
   test_pointers<CharT>();
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<char>();
 #if _CCCL_HAS_WCHAR_T()

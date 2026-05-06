@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -17,6 +21,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct prop_with_value
 {
   using value_type = int;
@@ -26,12 +32,12 @@ struct prop
 
 struct upstream_with_valueless_property
 {
-  __host__ __device__ friend constexpr void get_property(const upstream_with_valueless_property&, prop) {}
+  TEST_FUNC friend constexpr void get_property(const upstream_with_valueless_property&, prop) {}
 };
 
 struct upstream_with_stateful_property
 {
-  __host__ __device__ friend constexpr int get_property(const upstream_with_stateful_property&, prop_with_value)
+  TEST_FUNC friend constexpr int get_property(const upstream_with_stateful_property&, prop_with_value)
   {
     return 42;
   }
@@ -39,14 +45,14 @@ struct upstream_with_stateful_property
 
 struct upstream_with_both_properties
 {
-  __host__ __device__ friend constexpr void get_property(const upstream_with_both_properties&, prop) {}
-  __host__ __device__ friend constexpr int get_property(const upstream_with_both_properties&, prop_with_value)
+  TEST_FUNC friend constexpr void get_property(const upstream_with_both_properties&, prop) {}
+  TEST_FUNC friend constexpr int get_property(const upstream_with_both_properties&, prop_with_value)
   {
     return 42;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   upstream_with_valueless_property with_valueless{};
   get_property(with_valueless, prop{});
@@ -63,6 +69,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

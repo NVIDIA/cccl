@@ -11,7 +11,7 @@ cccl_get_c2h()
 set(c2h_all_target "libcudacxx.test.c2h_all")
 add_custom_target(${c2h_all_target})
 
-if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
+if (NOT LIBCUDACXX_TEST_WITH_NVRTC AND NOT CCCL_ENABLE_TILE)
   file(
     GLOB_RECURSE test_srcs
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
@@ -25,8 +25,13 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
     string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
     set(${target_name_var} ${target_name} PARENT_SCOPE)
 
-    add_executable(${target_name} "${source}")
-    cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+    cccl_add_executable(
+      ${target_name}
+      ADD_CTEST
+      NO_METATARGETS
+      DIALECT ${CMAKE_CUDA_STANDARD}
+      SOURCES "${source}"
+    )
     target_include_directories(
       ${target_name}
       PRIVATE
@@ -40,9 +45,11 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
         cccl.c2h.main
     )
 
-    add_dependencies(${c2h_all_target} ${target_name})
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      target_compile_options(${target_name} PRIVATE "-Wno-attributes")
+    endif()
 
-    add_test(NAME ${target_name} COMMAND ${target_name})
+    add_dependencies(${c2h_all_target} ${target_name})
   endfunction()
 
   foreach (test_src IN LISTS test_srcs)
@@ -65,15 +72,7 @@ cccl_get_dlpack()
 
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
-foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
-  set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
-  set(
-    LIBCUDACXX_COMPUTE_ARCHS_STRING
-    "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}"
-  )
-endforeach()
-
-message(STATUS "Lit enabled CUDA architectures:${_compute_message}")
+message(STATUS "Lit enabled CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
@@ -108,9 +107,6 @@ endif()
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -I ${dlpack_SOURCE_DIR}/include")
 
-# enable optional<T&>
-string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
-
 # Disable dialect deprecation
 string(
   APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
@@ -120,6 +116,14 @@ string(
   APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
   " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI"
 )
+
+# enable tile support
+if (CCCL_ENABLE_TILE)
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --enable-tile")
+  set(LIBCUDACXX_ENABLE_TILE True)
+else()
+  set(LIBCUDACXX_ENABLE_TILE False)
+endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
@@ -177,8 +181,6 @@ elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -stdpar")
 endif()
 
-set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
-
 include(AddLLVM)
 
 set(LIBCUDACXX_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
@@ -209,6 +211,13 @@ set(
 )
 
 set(LIBCUDACXX_TEST_STANDARD_VER "c++${CMAKE_CUDA_STANDARD}")
+
+# Pedantic = werror ON and system header pragma OFF (both at their cmake defaults)
+if (CCCL_ENABLE_WERROR AND NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
+  set(LIBCUDACXX_ENABLE_PEDANTIC_WARNINGS True)
+else()
+  set(LIBCUDACXX_ENABLE_PEDANTIC_WARNINGS False)
+endif()
 
 set(lit_site_cfg_path "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg")
 configure_lit_site_cfg(
@@ -258,6 +267,7 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
           "-Dexecutor=\"NoopExecutor()\""
           "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
     # gersemi: on
+    USES_TERMINAL
   )
 endif()
 
@@ -279,13 +289,14 @@ add_test(
         ${libcudacxx_LIT_FLAGS}
         -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
         "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
-  # gersemi: on
+    # gersemi: on
+    USES_TERMINAL
 )
 
 set_tests_properties(
   libcudacxx.test.lit
   PROPERTIES
-    # 3hr, some CI machines are slow
-    TIMEOUT 10800
+    # 6hr to match CI timeout
+    TIMEOUT 21600
     RUN_SERIAL TRUE
 )

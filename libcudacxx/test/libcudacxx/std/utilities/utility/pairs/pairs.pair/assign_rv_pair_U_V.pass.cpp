@@ -22,21 +22,23 @@
 #include "archetypes.h"
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct Base
 {
-  __host__ __device__ virtual ~Base() {}
+  TEST_FUNC virtual ~Base() {}
 };
 
 struct Derived : public Base
 {};
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {
   // cuda/std/memory not supported
   /*
   {
-      typedef cuda::std::pair<cuda::std::unique_ptr<Derived>, short> P1;
-      typedef cuda::std::pair<cuda::std::unique_ptr<Base>, long> P2;
+      using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, short>;
+      using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
       P1 p1(cuda::std::unique_ptr<Derived>(), static_cast<short>(4));
       P2 p2;
       p2 = cuda::std::move(p1);

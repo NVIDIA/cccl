@@ -332,6 +332,8 @@ using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 template <class _List, class... _Ts>
 using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_list, _Ts...>>;
 
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
+
 namespace __detail
 {
 template <template <class...> class _Fn, class... _Ts>
@@ -358,6 +360,40 @@ _CCCL_API inline auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
 //!     `_Fn<R, As...>`.
 template <class _List>
 using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
+
+#  else // ^^^ if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9) / vvv if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) vvv
+
+namespace __detail
+{
+template <class _Ret, class... _Args>
+using __fn_ptr_t = _Ret (*)(_Args...);
+
+template <class _List>
+extern __undefined<_List> __as_type_list_v;
+
+template <template <class...> class _Cy, class... _Ts>
+extern __fn_ptr_t<__type_list<_Ts...>> __as_type_list_v<_Cy<_Ts...>>;
+
+template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
+extern __fn_ptr_t<__type_list<std::integral_constant<_Ty, _Us>...>> __as_type_list_v<_Fn<_Ty, _Us...>>;
+
+template <class _Ret, class... _Args>
+extern __fn_ptr_t<__type_list<_Ret, _Args...>> __as_type_list_v<_Ret(_Args...)>;
+} // namespace __detail
+
+//! \brief Given a type that can be interpreted as a type list, return its
+//! type list interpretation. Types that can be interpreted as a type
+//! list are of the following forms:
+//!
+//! \li `C<Ts...>`, for any class template `C` and types `Ts...`.
+//! \li `C<T, T... Vs>`, for any class template `C`, type `T` and values `Vs...`.
+//!     The resulting type is `_Fn<integral_constant<T, Vs>...>`.
+//! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
+//!     `_Fn<R, As...>`.
+template <class _List>
+using __as_type_list = decltype(__detail::__as_type_list_v<_List>());
+
+#  endif // if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
 
 //! \brief Given a type that can be interpreted as a type list and a
 //! meta-callable, invoke the meta-callable with the types in the list.

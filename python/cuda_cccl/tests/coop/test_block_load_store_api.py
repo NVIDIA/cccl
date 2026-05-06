@@ -18,10 +18,10 @@ def test_block_load_store():
     # example-begin load_store
     threads_per_block = 32
     items_per_thread = 4
-    block_load = coop.block.load(
+    block_load = coop.block.make_load(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
-    block_store = coop.block.store(
+    block_store = coop.block.make_store(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
 

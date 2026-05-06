@@ -20,13 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/gamma_distribution.h>
 #include <cuda/std/__random/is_valid.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <iosfwd>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -147,7 +145,7 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const fisher_f_distribution& __x)
@@ -156,7 +154,7 @@ public:
     using ios_base                            = typename ostream_type::ios_base;
     const typename ios_base::fmtflags __flags = __os.flags();
     const _CharT __fill                       = __os.fill();
-    const ::std::streamsize __precision       = __os.precision();
+    const auto __precision                    = __os.precision();
     __os.flags(ios_base::dec | ios_base::left | ios_base::scientific);
     _CharT __sp = __os.widen(' ');
     __os.fill(__sp);
@@ -186,7 +184,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

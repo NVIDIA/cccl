@@ -41,7 +41,9 @@ h_init = np.asarray([(-1, -1)], dtype=dtype)
 d_output = cp.empty(1, dtype=dtype)
 
 # Perform the reduction.
-cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
+cuda.compute.reduce_into(
+    d_in=zip_it, d_out=d_output, num_items=num_items, op=max_by_value, h_init=h_init
+)
 
 result = d_output.get()[0]
 expected_index = 4

@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -126,7 +128,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, 
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y) noexcept(is_nothrow_swappable_v<_Elem1>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
   }
@@ -149,6 +151,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
       , __base2()
   {}
 
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(const __mdspan_ebco&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(__mdspan_ebco&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(const __mdspan_ebco&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(__mdspan_ebco&&)      = default;
+
   template <class _Arg1>
   static constexpr bool __is_constructible_from_one_arg =
     is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2>;
@@ -157,9 +164,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
     is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
 
+  // The converting constructor's constraint __is_constructible_from_one_arg<const __mdspan_ebco&> creates a circular
+  // dependency in C++20 concepts evaluation on Clang
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
-  _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
+  _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
@@ -211,7 +220,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
@@ -240,6 +250,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
       , __base3()
   {}
 
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(const __mdspan_ebco&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco(__mdspan_ebco&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(const __mdspan_ebco&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mdspan_ebco& operator=(__mdspan_ebco&&)      = default;
+
   template <class _Arg1>
   static constexpr bool __is_constructible_from_one_arg =
     is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2> && is_default_constructible_v<_Elem3>;
@@ -251,7 +266,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
-  _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
+  _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
@@ -333,7 +348,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y)
+  _CCCL_API friend constexpr void swap(__mdspan_ebco& __x, __mdspan_ebco& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2> && is_nothrow_swappable_v<_Elem3>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());

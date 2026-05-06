@@ -20,6 +20,4 @@
 #endif
 
 // This file tests that the respective header is includable on its own with a cuda compiler
-#include <${header}>
-
-int main(int, char**) { return 0; }
+#include <@header@>

@@ -10,6 +10,9 @@
 // Some early versions (cl.exe 14.16 / VC141) do not identify correct constructors
 // UNSUPPORTED: msvc
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <cuda/std/tuple>
 
 // template <class TupleLike> tuple(TupleLike&&); // libc++ extension
@@ -25,13 +28,13 @@ TEST_GLOBAL_VARIABLE int count = 0;
 struct Explicit
 {
   Explicit() = default;
-  __host__ __device__ explicit Explicit(int) {}
+  TEST_FUNC explicit Explicit(int) {}
 };
 
 struct Implicit
 {
   Implicit() = default;
-  __host__ __device__ Implicit(int) {}
+  TEST_FUNC Implicit(int) {}
 };
 
 template <class T>
@@ -39,7 +42,7 @@ struct Derived : cuda::std::tuple<T>
 {
   using cuda::std::tuple<T>::tuple;
   template <class U>
-  __host__ __device__ operator cuda::std::tuple<U>() &&
+  TEST_FUNC operator cuda::std::tuple<U>() &&
   {
     ++count;
     return {};
@@ -51,7 +54,7 @@ struct ExplicitDerived : cuda::std::tuple<T>
 {
   using cuda::std::tuple<T>::tuple;
   template <class U>
-  __host__ __device__ explicit operator cuda::std::tuple<U>() &&
+  TEST_FUNC explicit operator cuda::std::tuple<U>() &&
   {
     ++count;
     return {};
@@ -75,7 +78,7 @@ int main(int, char**)
   }
   count = 0;
   {
-    static_assert(!cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value, "");
+    static_assert(!cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value);
     [[maybe_unused]] cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42});
     assert(count == 1);
   }

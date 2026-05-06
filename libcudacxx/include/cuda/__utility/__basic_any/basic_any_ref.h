@@ -60,7 +60,6 @@ struct __ireference : ::cuda::std::remove_const_t<_Interface>
   using interface _CCCL_NODEBUG_ALIAS = ::cuda::std::remove_const_t<_Interface>;
 };
 
-#if !_CCCL_HAS_CONCEPTS()
 //!
 //! A base class for __basic_any<__ireference<_Interface>> that provides a
 //! conversion to __basic_any<__ireference<_Interface const>>. Only used
@@ -79,7 +78,6 @@ struct __basic_any_reference_conversion_base
 template <class _Interface>
 struct __basic_any_reference_conversion_base<_Interface const>
 {};
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _CCCL_DIAG_PUSH
 // "operator __basic_any<...> will not be called for implicit or explicit conversions"
@@ -100,9 +98,7 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(554)
 template <class _Interface>
 struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
     : __interface_of<__ireference<_Interface>>
-#if !_CCCL_HAS_CONCEPTS()
     , __basic_any_reference_conversion_base<_Interface>
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 {
   static_assert(::cuda::std::is_class_v<_Interface>, "expecting a class type");
   using interface_type                 = ::cuda::std::remove_const_t<_Interface>;
@@ -113,16 +109,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
 
   auto operator=(__basic_any&&) -> __basic_any&      = delete;
   auto operator=(__basic_any const&) -> __basic_any& = delete;
-
-#if _CCCL_HAS_CONCEPTS()
-  //! \brief A non-const __basic_any reference can be implicitly converted to a
-  //! const __basic_any reference.
-  [[nodiscard]] _CCCL_API operator __basic_any<__ireference<_Interface const>>() const noexcept
-    requires(!__is_const_ref)
-  {
-    return __basic_any<__ireference<_Interface const>>(*this);
-  }
-#endif // _CCCL_HAS_CONCEPTS()
 
   //! \brief Returns a const reference to the type_info for the decayed type
   //! of the type-erased object.

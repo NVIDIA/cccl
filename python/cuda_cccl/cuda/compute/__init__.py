@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from ._bindings import _BINDINGS_AVAILABLE  # type: ignore[attr-defined]
 
 if not _BINDINGS_AVAILABLE:
@@ -56,6 +58,7 @@ else:
         DiscardIterator,
         PermutationIterator,
         ReverseIterator,
+        ShuffleIterator,
         TransformIterator,
         TransformOutputIterator,
         ZipIterator,
@@ -99,6 +102,7 @@ else:
         "radix_sort",
         "reduce_into",
         "ReverseIterator",
+        "ShuffleIterator",
         "segmented_reduce",
         "segmented_sort",
         "select",

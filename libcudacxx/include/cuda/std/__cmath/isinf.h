@@ -24,13 +24,10 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,14 +37,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isinf)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_ISINF
+#endif // _CCCL_TILE_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isinf_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
+#if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isinf(__x);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   if (::cuda::std::isnan(__x))
   {
     return false;
@@ -67,10 +70,12 @@ template <class _Tp>
   }
   return _CCCL_BUILTIN_ISINF(__x) && !_CCCL_BUILTIN_ISNAN(__x);
 #elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
+#  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isinf(__x);
   }
+#  endif // !_CCCL_TILE_COMPILATION()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<float>) == __fp_exp_mask_of_v<float>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return ::cuda::std::__isinf_impl(__x);
@@ -89,10 +94,12 @@ template <class _Tp>
   }
   return _CCCL_BUILTIN_ISINF(__x) && !_CCCL_BUILTIN_ISNAN(__x);
 #elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
+#  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isinf(__x);
   }
+#  endif // !_CCCL_TILE_COMPILATION()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return ::cuda::std::__isinf_impl(__x);

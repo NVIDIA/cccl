@@ -44,7 +44,7 @@ private:
   type* __f_{};
 
   static _CCCL_API void __fun(_Tp&) noexcept;
-  static void __fun(_Tp&&) = delete;
+  static void __fun(_Tp&&) = delete; // NOLINT(modernize-use-equals-delete)
 
 public:
   template <

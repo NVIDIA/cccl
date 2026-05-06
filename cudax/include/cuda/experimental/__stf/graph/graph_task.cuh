@@ -83,15 +83,15 @@ public:
   {
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
-    prereqs.optimize(ctx);
+    ready_prereqs.optimize(ctx);
 
     // Reserve for better performance
-    ready_dependencies.reserve(prereqs.size());
+    ready_dependencies.reserve(ready_prereqs.size());
 
-    for (auto& e : prereqs)
+    for (auto& e : ready_prereqs)
     {
       auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
       if (ge->stage == stage)
@@ -103,8 +103,10 @@ public:
     if (is_capture_enabled())
     {
       // Select a stream from the pool
-      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      capture_stream = get_exec_place().getStream(true).stream;
+      // Use relaxed capture mode to allow capturing workloads that lazily initialize
+      // resources (e.g., set up memory pools)
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
     }
 
     auto& dot = *ctx.get_dot();
@@ -112,6 +114,8 @@ public:
     {
       dot.template add_vertex<task, logical_data_untyped>(*this);
     }
+
+    set_ready_prereqs(mv(ready_prereqs));
 
     return *this;
   }
@@ -216,14 +220,22 @@ public:
         const cudaGraphNode_t* deps = ready_dependencies.data();
 
         assert(ctx_graph);
-        /* This will duplicate the childGraph so we can destroy it after */
+#if _CCCL_CTK_AT_LEAST(13, 0)
+        // Move ownership so child graphs with memory alloc/free nodes
+        // (e.g. from cudaMallocAsync during stream capture) are accepted.
+        cudaGraphNodeParams nodeParams = {};
+        nodeParams.type                = cudaGraphNodeTypeGraph;
+        nodeParams.graph.graph         = childGraph;
+        nodeParams.graph.ownership     = cudaGraphChildGraphOwnershipMove;
+        cuda_safe_call(cudaGraphAddNode(&n, ctx_graph, deps, nullptr, ready_dependencies.size(), &nodeParams));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
         cuda_safe_call(cudaGraphAddChildGraphNode(&n, ctx_graph, deps, ready_dependencies.size(), childGraph));
-
         // Destroy the child graph unless we should not
         if (must_destroy_child_graph)
         {
           cuda_safe_call(cudaGraphDestroy(childGraph));
         }
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
         auto gnp = reserved::graph_event(n, stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
@@ -362,10 +374,12 @@ public:
       //
 
       // Get a stream from the pool associated to the execution place
-      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      capture_stream = get_exec_place().getStream(true).stream;
 
       cudaGraph_t childGraph = nullptr;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      // Use relaxed capture mode to allow capturing workloads that lazily initialize
+      // resources (e.g., set up memory pools)
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
 
       // Launch the user provided function
       f(capture_stream);
@@ -427,11 +441,6 @@ public:
     return chained_task_nodes;
   }
 
-  const auto& get_ready_dependencies() const
-  {
-    return ready_dependencies;
-  }
-
   void add_done_node(cudaGraphNode_t n)
   {
     done_nodes.push_back(n);
@@ -448,19 +457,29 @@ public:
     return ::std::unique_lock<::std::mutex>(graph_mutex);
   }
 
-  void set_current_place(pos4 p)
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * Returns an exec_place_scope RAII guard. The sub-place is automatically
+   * deactivated when the guard is destroyed.
+   *
+   * @param p The position within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(pos4 p)
   {
-    get_exec_place().as_grid().set_current_place(p);
+    return get_exec_place().activate(get_exec_place().get_dims().get_index(p));
   }
 
-  void unset_current_place()
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * @param idx The linear index within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(size_t idx)
   {
-    get_exec_place().as_grid().unset_current_place();
-  }
-
-  const exec_place& get_current_place() const
-  {
-    return get_exec_place().as_grid().get_current_place();
+    return get_exec_place().activate(idx);
   }
 
 private:
@@ -500,9 +519,10 @@ private:
 
   size_t stage = 0;
 
+  // same as ready_prereqs converted to a vector of cudaGraphNode_t
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
-  // If we are building our graph by hand, and using get_ready_dependencies()
+  // If we are building our graph by hand
   ::std::vector<cudaGraphNode_t> done_nodes;
 
   backend_ctx_untyped ctx;
@@ -515,7 +535,11 @@ private:
  * are typed appropriately.
  */
 template <typename... Deps>
-class graph_task : public graph_task<>
+class graph_task
+// Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
+    : public graph_task<>
+#endif
 {
 public:
   graph_task(backend_ctx_untyped ctx,
@@ -622,10 +646,12 @@ public:
       auto lock = lock_ctx_graph();
 
       // Get a stream from the pool associated to the execution place
-      cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      cudaStream_t capture_stream = get_exec_place().getStream(true).stream;
 
       cudaGraph_t childGraph = nullptr;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      // Use relaxed capture mode to allow capturing workloads that lazily initialize
+      // resources (e.g., set up memory pools)
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
 
       // Launch the user provided function
       if constexpr (fun_invocable_stream_deps)

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*
  * Copyright Jens Maurer 2000-2001
@@ -87,20 +74,6 @@ template <typename RealType>
 class normal_distribution_portable
 {
 protected:
-  normal_distribution_portable()
-      : m_r1()
-      , m_r2()
-      , m_cached_rho()
-      , m_valid(false)
-  {}
-
-  normal_distribution_portable(const normal_distribution_portable& other)
-      : m_r1(other.m_r1)
-      , m_r2(other.m_r2)
-      , m_cached_rho(other.m_cached_rho)
-      , m_valid(other.m_valid)
-  {}
-
   void reset()
   {
     m_valid = false;
@@ -139,8 +112,8 @@ protected:
   }
 
 private:
-  RealType m_r1, m_r2, m_cached_rho;
-  bool m_valid;
+  RealType m_r1{}, m_r2{}, m_cached_rho{};
+  bool m_valid{false};
 };
 
 template <typename RealType>

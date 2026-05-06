@@ -26,11 +26,8 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -152,7 +149,7 @@ enum BlockReduceAlgorithm
   BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
 {
   switch (alg)
@@ -169,7 +166,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm
       return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a
@@ -316,6 +313,11 @@ public:
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary
   //! storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -323,6 +325,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -339,6 +346,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
@@ -389,6 +399,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
   //! functor. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -445,6 +458,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
   //! functor. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread<sub>0</sub>.
   //! - @rowmajor
@@ -511,6 +527,9 @@ public:
   //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
   //! Each thread contributes one input element.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
   //! - @smemreuse
@@ -553,6 +572,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction
   //! operator. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -603,6 +625,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction
   //! operator. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor

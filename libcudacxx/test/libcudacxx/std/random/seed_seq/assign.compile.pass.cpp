@@ -8,10 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__random_>
-#include <cuda/std/cassert>
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 
-__host__ __device__ void test()
+#include <cuda/std/cassert>
+#include <cuda/std/random>
+
+#include "test_macros.h"
+
+TEST_FUNC void test()
 {
   static_assert(!cuda::std::is_copy_assignable_v<cuda::std::seed_seq>);
   static_assert(!cuda::std::is_move_assignable_v<cuda::std::seed_seq>);

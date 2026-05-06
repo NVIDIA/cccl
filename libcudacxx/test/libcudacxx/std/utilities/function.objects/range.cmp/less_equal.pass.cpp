@@ -22,7 +22,7 @@
 
 struct NotTotallyOrdered
 {
-  __host__ __device__ friend bool operator<(const NotTotallyOrdered&, const NotTotallyOrdered&);
+  TEST_FUNC friend bool operator<(const NotTotallyOrdered&, const NotTotallyOrdered&);
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::less_equal, NotTotallyOrdered, NotTotallyOrdered>);
@@ -41,7 +41,7 @@ inline constexpr bool is_transparent<T, cuda::std::void_t<typename T::is_transpa
 static_assert(is_transparent<cuda::std::ranges::less_equal>);
 #endif
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   auto fn = cuda::std::ranges::less_equal();
 

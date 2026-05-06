@@ -37,8 +37,7 @@ struct __copy_chunk
 };
 
 template <::cuda::std::size_t _Alignment, typename _Group>
-inline _CCCL_HOST_DEVICE void
-__cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, ::cuda::std::size_t __size)
+_CCCL_API void __cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, ::cuda::std::size_t __size)
 {
   // Maximal copy size is 16 bytes
   constexpr ::cuda::std::size_t __copy_size = (_Alignment > 16) ? 16 : _Alignment;

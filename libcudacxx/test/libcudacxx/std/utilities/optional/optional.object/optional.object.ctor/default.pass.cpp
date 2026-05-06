@@ -21,9 +21,9 @@
 using cuda::std::optional;
 
 template <class Opt>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
-  static_assert(cuda::std::is_nothrow_default_constructible<Opt>::value, "");
+  static_assert(cuda::std::is_nothrow_default_constructible<Opt>::value);
   static_assert(cuda::std::is_trivially_destructible<Opt>::value
                   == cuda::std::is_trivially_destructible<typename Opt::value_type>::value,
                 "");
@@ -37,7 +37,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<optional<int>>();
   test<optional<int*>>();
@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   test<optional<NonLiteralTypes::NoCtors>>();
 

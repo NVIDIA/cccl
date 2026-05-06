@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// CONSTEXPR_STEPS: 15000000
+
 // <algorithm>
 
 // template<ForwardIterator Iter, class T, CopyConstructible Compare>
@@ -24,7 +26,7 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ constexpr void test(Iter first, Iter last, const T& value)
+TEST_FUNC constexpr void test(Iter first, Iter last, const T& value)
 {
   cuda::std::pair<Iter, Iter> i = cuda::std::equal_range(first, last, value, cuda::std::less<int>());
   for (Iter j = first; j != i.first; ++j)
@@ -46,7 +48,7 @@ __host__ __device__ constexpr void test(Iter first, Iter last, const T& value)
 }
 
 template <class Iter>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int M = 10;
   auto v          = get_data(M);
@@ -57,7 +59,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int d[] = {0, 1, 2, 3};
   for (int* e = d; e < d + 4; ++e)
@@ -72,6 +74,13 @@ __host__ __device__ constexpr bool test()
   test<bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
@@ -79,8 +88,8 @@ int main(int, char**)
 {
   test();
   test<const int*>();
-  static_assert(test(), "");
-  static_assert(test<const int*>(), ""); // clang otherwise hits the evaluation limit
+  static_assert(test());
+  static_assert(test<const int*>()); // clang otherwise hits the evaluation limit
 
   return 0;
 }

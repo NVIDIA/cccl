@@ -1,0 +1,14 @@
+// Minimal cstddef stub for CUDA JIT compilation
+// Compatible with libcu++ which expects to pull types from global namespace
+#ifndef _HOSTJIT_CSTDDEF
+#define _HOSTJIT_CSTDDEF
+
+#include <stddef.h>
+
+namespace std {
+    using ::size_t;
+    using ::ptrdiff_t;
+    using nullptr_t = decltype(nullptr);
+}
+
+#endif // _HOSTJIT_CSTDDEF

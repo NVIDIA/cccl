@@ -3,25 +3,20 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
-// %//RANGE//% TUNE_RADIX_BITS bits 8:9:1
-#define TUNE_RADIX_BITS 8
-
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
-
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector
 {
   using DominantT = cuda::std::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::detail::radix_sort::radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> ::cub::detail::radix_sort::radix_sort_policy
   {
     const auto onesweep = [] {
       const auto scaled =
         cub::detail::scale_reg_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(DominantT));
       return radix_sort_onesweep_policy{
-        scaled.block_threads,
+        scaled.threads_per_block,
         scaled.items_per_thread,
         1,
         ONESWEEP_RADIX_BITS,
@@ -37,7 +32,7 @@ struct policy_selector
 
     const auto scan = [] {
       const auto scaled = cub::detail::scale_mem_bound(512, 23, sizeof(OffsetT));
-      return scan{scaled.block_threads,
+      return scan{scaled.threads_per_block,
                   scaled.items_per_thread,
                   cub::BLOCK_LOAD_WARP_TRANSPOSE,
                   cub::LOAD_DEFAULT,
@@ -52,7 +47,7 @@ struct policy_selector
     const auto single_tile = [] {
       const auto scaled = cub::detail::scale_reg_bound(256, 19, sizeof(DominantT));
       return cub::detail::radix_sort::radix_sort_downsweep_policy{
-        scaled.block_threads,
+        scaled.threads_per_block,
         scaled.items_per_thread,
         single_tile_radix_bits,
         cub::BLOCK_LOAD_DIRECT,

@@ -1,3 +1,10 @@
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from __future__ import annotations
+
 from typing import Callable
 
 import numpy as np
@@ -16,9 +23,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
 class _SegmentedReduce:
@@ -29,16 +35,15 @@ class _SegmentedReduce:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
         "h_init_cccl",
-        "op",
         "op_cccl",
     ]
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
-        start_offsets_in: DeviceArrayLike | IteratorBase,
-        end_offsets_in: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
+        start_offsets_in: DeviceArrayLike | IteratorT,
+        end_offsets_in: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
     ):
@@ -46,31 +51,11 @@ class _SegmentedReduce:
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
-
-        # set host advance functions
-        cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
-        cccl.cccl_iterator_set_host_advance(
-            self.start_offsets_in_cccl, start_offsets_in
-        )
-        if (
-            self.start_offsets_in_cccl.is_kind_iterator()
-            and self.end_offsets_in_cccl.is_kind_iterator()
-            and isinstance(start_offsets_in, IteratorBase)
-            and isinstance(end_offsets_in, IteratorBase)
-            and start_offsets_in.kind == end_offsets_in.kind
-        ):
-            self.end_offsets_in_cccl.host_advance_fn = (
-                self.start_offsets_in_cccl.host_advance_fn
-            )
-        else:
-            cccl.cccl_iterator_set_host_advance(
-                self.end_offsets_in_cccl, end_offsets_in
-            )
-
         self.h_init_cccl = cccl.to_cccl_value(h_init)
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
+
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
@@ -85,19 +70,34 @@ class _SegmentedReduce:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
         num_segments: int,
         start_offsets_in,
         end_offsets_in,
+        op: Callable | OpAdapter,
         h_init,
+        max_segment_size: int | None = None,
         stream=None,
     ):
+        if num_segments > np.iinfo(np.int32).max:
+            raise RuntimeError(
+                "Segmented sort does not currently support more than 2^31-1 segments."
+            )
+
+        if max_segment_size is None:
+            max_segment_size = 0  # CCCL.c treats 0 as "not specified"
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
+
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
+
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
         stream_handle = validate_and_get_stream(stream)
@@ -119,6 +119,7 @@ class _SegmentedReduce:
             self.end_offsets_in_cccl,
             self.op_cccl,
             self.h_init_cccl,
+            max_segment_size,
             stream_handle,
         )
         return temp_storage_bytes
@@ -126,11 +127,12 @@ class _SegmentedReduce:
 
 @cache_with_registered_key_functions
 def make_segmented_reduce(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    start_offsets_in: DeviceArrayLike | IteratorT,
+    end_offsets_in: DeviceArrayLike | IteratorT,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
@@ -148,7 +150,9 @@ def make_segmented_reduce(
         d_out: Device array that will store the result of the reduction
         start_offsets_in: Device array or iterator containing offsets to start of segments
         end_offsets_in: Device array or iterator containing offsets to end of segments
-        op: Callable or OpKind representing the binary operator to apply
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
 
     Returns:
@@ -161,13 +165,15 @@ def make_segmented_reduce(
 
 
 def segmented_reduce(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
-    h_init: np.ndarray | GpuStruct,
+    *,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     num_segments: int,
+    start_offsets_in: DeviceArrayLike | IteratorT,
+    end_offsets_in: DeviceArrayLike | IteratorT,
+    op: Operator,
+    h_init: np.ndarray | GpuStruct,
+    max_segment_size: int | None = None,
     stream=None,
 ):
     """
@@ -186,34 +192,48 @@ def segmented_reduce(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array to store the result of the reduction for each segment
+        num_segments: Number of segments to reduce
         start_offsets_in: Device array or iterator containing the sequence of beginning offsets
         end_offsets_in: Device array or iterator containing the sequence of ending offsets
-        op: Binary reduction operator
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         h_init: Initial value for the reduction
-        num_segments: Number of segments to reduce
+        max_segment_size: The number of elements in the largest segment (optional)
+            If provided, this information is used to dispatch to the
+            optimal kernel for best performance.
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_segmented_reduce(
-        d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
+        d_in=d_in,
+        d_out=d_out,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
     )
     tmp_storage_bytes = reducer(
-        None,
-        d_in,
-        d_out,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        h_init,
-        stream,
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
+        max_segment_size=max_segment_size,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     reducer(
-        tmp_storage,
-        d_in,
-        d_out,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        h_init,
-        stream,
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        op=op,
+        h_init=h_init,
+        max_segment_size=max_segment_size,
+        stream=stream,
     )

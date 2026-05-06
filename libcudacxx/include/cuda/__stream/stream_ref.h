@@ -31,6 +31,7 @@
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
@@ -47,7 +48,7 @@ enum class stream_id : unsigned long long
 class stream_ref
 {
 protected:
-  ::cudaStream_t __stream{0};
+  ::cudaStream_t __stream{nullptr};
 
 public:
   using value_type = ::cudaStream_t;
@@ -103,7 +104,6 @@ public:
   //! `stream_ref`.
   //!
   //! @param __lhs The `stream_ref` to compare
-  //! @param __rhs The `invalid_stream_t` to compare
   //! @return true if equal, false if unequal
   [[nodiscard]] _CCCL_API friend bool operator==(const stream_ref& __lhs, const invalid_stream_t&) noexcept
   {
@@ -115,7 +115,6 @@ public:
   //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
   //! `stream_ref`.
   //!
-  //! @param __lhs The `invalid_stream_t` to compare
   //! @param __rhs The `stream_ref` to compare
   //! @return true if equal, false if unequal
   [[nodiscard]] _CCCL_API friend bool operator==(const invalid_stream_t&, const stream_ref& __rhs) noexcept
@@ -142,7 +141,6 @@ public:
   //! `stream_ref`.
   //!
   //! @param __lhs The `stream_ref` to compare
-  //! @param __rhs The `invalid_stream_t` to compare
   //! @return false if equal, true if unequal
   [[nodiscard]] _CCCL_API friend bool operator!=(const stream_ref& __lhs, const invalid_stream_t&) noexcept
   {
@@ -154,7 +152,6 @@ public:
   //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
   //! `stream_ref`.
   //!
-  //! @param __lhs The `invalid_stream_t` to compare
   //! @param __rhs The `stream_ref` to compare
   //! @return false if equal, true if unequal
   [[nodiscard]] _CCCL_API friend bool operator!=(const invalid_stream_t&, const stream_ref& __rhs) noexcept
@@ -229,7 +226,7 @@ public:
       case ::cudaSuccess:
         return true;
       default:
-        ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
+        _CCCL_THROW(::cuda::cuda_error, __result, "Failed to query stream.");
     }
   }
 
@@ -341,11 +338,14 @@ _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags 
   record(__stream);
 }
 
+// Hide from Doxygen — __ensure_current_context is an internal symbol excluded by EXCLUDE_SYMBOLS.
+#  ifndef _CCCL_DOXYGEN_INVOKED
 _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
   auto __ctx = __driver::__streamGetCtx(__stream.get());
   ::cuda::__driver::__ctxPush(__ctx);
 }
+#  endif // !_CCCL_DOXYGEN_INVOKED
 
 _CCCL_END_NAMESPACE_CUDA
 

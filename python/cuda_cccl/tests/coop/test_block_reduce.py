@@ -42,7 +42,7 @@ def test_block_reduction_of_user_defined_type_without_temp_storage(
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
+    block_reduce = coop.block.make_reduce(
         dtype=complex_type,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -103,7 +103,7 @@ def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
+    block_reduce = coop.block.make_reduce(
         dtype=complex_type,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -166,7 +166,7 @@ def test_block_reduction_of_integral_type(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
+    block_reduce = coop.block.make_reduce(
         dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -215,7 +215,7 @@ def test_block_reduction_valid(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
+    block_reduce = coop.block.make_reduce(
         dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -268,7 +268,7 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread, alg
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
+    block_reduce = coop.block.make_reduce(
         dtype=T,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -332,7 +332,7 @@ def test_block_reduction_array_global(
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
+    block_reduce = coop.block.make_reduce(
         dtype=T,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -387,7 +387,7 @@ def test_block_sum(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
+    block_reduce = coop.block.make_sum(
         dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -433,7 +433,7 @@ def test_block_sum_valid(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
+    block_reduce = coop.block.make_sum(
         dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -483,7 +483,7 @@ def test_block_sum_array_local(T, threads_per_block, items_per_thread, algorithm
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
+    block_reduce = coop.block.make_sum(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -541,7 +541,7 @@ def test_block_sum_array_global(T, threads_per_block, items_per_thread, algorith
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
+    block_reduce = coop.block.make_sum(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -590,7 +590,7 @@ def test_block_reduce_invalid_items_per_thread(threads_per_block, items_per_thre
         return a if a < b else b
 
     with pytest.raises(ValueError):
-        coop.block.reduce(
+        coop.block.make_reduce(
             dtype=numba.int32,
             binary_op=op,
             threads_per_block=threads_per_block,
@@ -604,7 +604,7 @@ def test_block_reduce_invalid_items_per_thread(threads_per_block, items_per_thre
 @pytest.mark.parametrize("items_per_thread", [0, -1, -127])
 def test_block_sum_invalid_items_per_thread(threads_per_block, items_per_thread):
     with pytest.raises(ValueError):
-        coop.block.sum(
+        coop.block.make_sum(
             dtype=numba.int32,
             threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
@@ -616,7 +616,7 @@ def test_block_reduce_invalid_algorithm():
         return a if a < b else b
 
     with pytest.raises(ValueError):
-        coop.block.reduce(
+        coop.block.make_reduce(
             dtype=numba.int32,
             binary_op=op,
             threads_per_block=128,
@@ -626,7 +626,7 @@ def test_block_reduce_invalid_algorithm():
 
 def test_block_sum_invalid_algorithm():
     with pytest.raises(ValueError):
-        coop.block.sum(
+        coop.block.make_sum(
             dtype=numba.int32,
             threads_per_block=128,
             algorithm="invalid_algorithm",
@@ -634,17 +634,17 @@ def test_block_sum_invalid_algorithm():
 
 
 def test_sum_alignment():
-    sum1 = coop.block.sum(
+    sum1 = coop.block.make_sum(
         dtype=types.int32,
         threads_per_block=256,
     )
 
-    sum2 = coop.block.sum(
+    sum2 = coop.block.make_sum(
         dtype=types.float64,
         threads_per_block=256,
     )
 
-    sum3 = coop.block.sum(
+    sum3 = coop.block.make_sum(
         dtype=types.int8,
         threads_per_block=256,
     )

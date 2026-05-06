@@ -35,7 +35,7 @@
 #include "test_macros.h"
 
 template <class E, class S, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e, S s)
+TEST_FUNC constexpr void test_construction(E e, S s)
 {
   using M = cuda::std::layout_stride::mapping<E>;
   static_assert(noexcept(M{e, s}));
@@ -68,7 +68,7 @@ __host__ __device__ constexpr void test_construction(E e, S s)
   }
 }
 template <class E, class S, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e, S s)
+TEST_FUNC constexpr void test_construction(E e, S s)
 {
   using M = cuda::std::layout_stride::mapping<E>;
   static_assert(noexcept(M{e, s}));
@@ -86,7 +86,7 @@ __host__ __device__ constexpr void test_construction(E e, S s)
   static_assert(noexcept(m.strides()));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   {
@@ -149,7 +149,7 @@ __host__ __device__ constexpr bool test()
   {
     // not no-throw constructible index_type from stride
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned char, 2>>;
-    static_assert(cuda::std::is_convertible<IntType, unsigned char>::value, "");
+    static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
     static_assert(
       !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<IntType, 2>>::value, "");
   }
@@ -160,6 +160,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

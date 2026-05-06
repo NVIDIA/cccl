@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__new_>
@@ -45,14 +46,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //!
 //! ``shared_resource`` holds a reference counted instance of a memory resource. This allows
 //! the user to pass a resource around with reference semantics while avoiding lifetime issues.
+//! Shared resource works with both synchronous and stream-ordered resources. Depending if the contained resource
+//! satisfies the `cuda::mr::synchronous_resource` concept or the `cuda::mr::resource` concept, the shared resource
+//! will also satisfy the respective concept.
 //!
-//! @note ``shared_resource`` satisfies the ``cuda::mr::resource`` concept iff \tparam _Resource satisfies it.
 //! @tparam _Resource The resource type to hold.
 //! @endrst
 template <class _Resource>
-struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
+struct shared_resource
+    : ::cuda::mr::__copy_default_queries<_Resource>
+    , ::cuda::forward_property<shared_resource<_Resource>, _Resource>
+    , ::cuda::mr::memory_resource_base<shared_resource<_Resource>>
 {
-  static_assert(::cuda::mr::synchronous_resource<_Resource>, "");
+  static_assert(::cuda::mr::synchronous_resource<_Resource>);
 
   //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
   //! that has been constructed with arguments \c __args. The \c _Resource object is
@@ -130,7 +136,8 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   }
 
   //! @brief Swaps a \c shared_resource with another one.
-  //! @param __other The other \c shared_resource.
+  //! @param __left The first \c shared_resource.
+  //! @param __right The second \c shared_resource.
   friend void swap(shared_resource& __left, shared_resource& __right) noexcept
   {
     __left.swap(__right);
@@ -199,6 +206,7 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   //! @brief Enqueues an allocation of memory of size at least \p __bytes using
   //! the wrapped resource. The allocation is performed asynchronously on stream \c __stream.
   //! @pre \c _Resource must satisfy \c resource.
+  //! @param __stream The stream on which the allocation is enqueued.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory.
@@ -214,6 +222,7 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
   //! performed asynchronously on stream \c __stream.
   //! @pre \c _Resource must satisfy \c resource.
+  //! @param __stream The stream on which the deallocation is enqueued.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
@@ -252,19 +261,6 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   [[nodiscard]] friend bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
   {
     return !(__lhs == __rhs);
-  }
-
-  //! @brief Forwards the stateless properties
-  _CCCL_TEMPLATE(class _Property)
-  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND(has_property<_Resource, _Property>))
-  friend void get_property(const shared_resource&, _Property) noexcept {}
-
-  //! @brief Forwards the stateful properties
-  _CCCL_TEMPLATE(class _Property)
-  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND(has_property<_Resource, _Property>))
-  [[nodiscard]] friend __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
-  {
-    return get_property(__self.__control_block->__resource, _Property{});
   }
 
 private:

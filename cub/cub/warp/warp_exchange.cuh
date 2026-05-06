@@ -84,9 +84,9 @@ using InternalWarpExchangeImpl =
  * __global__ void ExampleKernel(int *d_data, ...)
  * {
  *     constexpr int warp_threads = 16;
- *     constexpr int block_threads = 256;
+ *     constexpr int threads_per_block = 256;
  *     constexpr int items_per_thread = 4;
- *     constexpr int warps_per_block = block_threads / warp_threads;
+ *     constexpr int warps_per_block = threads_per_block / warp_threads;
  *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
  *
  *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
@@ -144,6 +144,11 @@ public:
    * @brief Transposes data items from <em>blocked</em> arrangement to
    *        <em>striped</em> arrangement.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @par
    * @smemwarpreuse
    *
@@ -158,9 +163,9 @@ public:
    * __global__ void ExampleKernel(int *d_data, ...)
    * {
    *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
+   *     constexpr int threads_per_block = 256;
    *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
+   *     constexpr int warps_per_block = threads_per_block / warp_threads;
    *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
    *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
@@ -201,6 +206,11 @@ public:
    * @brief Transposes data items from <em>striped</em> arrangement to
    *        <em>blocked</em> arrangement.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @par
    * @smemwarpreuse
    *
@@ -215,9 +225,9 @@ public:
    * __global__ void ExampleKernel(int *d_data, ...)
    * {
    *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
+   *     constexpr int threads_per_block = 256;
    *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
+   *     constexpr int warps_per_block = threads_per_block / warp_threads;
    *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
    *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
@@ -256,6 +266,11 @@ public:
    * @brief Exchanges valid data items annotated by rank
    *        into <em>striped</em> arrangement.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @par
    * @smemwarpreuse
    *
@@ -270,9 +285,9 @@ public:
    * __global__ void ExampleKernel(int *d_data, ...)
    * {
    *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
+   *     constexpr int threads_per_block = 256;
    *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
+   *     constexpr int warps_per_block = threads_per_block / warp_threads;
    *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
    *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
@@ -313,6 +328,11 @@ public:
    * @brief Exchanges valid data items annotated by rank
    *        into <em>striped</em> arrangement.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @par
    * @smemwarpreuse
    *
@@ -327,9 +347,9 @@ public:
    * __global__ void ExampleKernel(int *d_data, ...)
    * {
    *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
+   *     constexpr int threads_per_block = 256;
    *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
+   *     constexpr int warps_per_block = threads_per_block / warp_threads;
    *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
    *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each

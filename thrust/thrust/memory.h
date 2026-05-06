@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/memory.h
  *  \brief Abstractions for Thrust's memory model.
@@ -232,6 +219,7 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *  \param system The Thrust system with which the storage is associated.
  *  \param p A pointer previously returned by \p thrust::get_temporary_buffer. If \p ptr is null, \p
  * return_temporary_buffer does nothing.
+ *  \param n The number of elements in the buffer.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *
@@ -287,7 +275,7 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(
  *  \endverbatim
  */
 template <typename Pointer>
-_CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr);
+_CCCL_HOST_DEVICE auto* raw_pointer_cast(Pointer ptr);
 
 /*! \p raw_reference_cast creates a "raw" reference from a wrapped reference type,
  *  simply returning the underlying reference, should it exist.

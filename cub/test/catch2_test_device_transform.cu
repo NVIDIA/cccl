@@ -7,6 +7,7 @@
 #include <cub/device/device_transform.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 
+#include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
@@ -109,17 +110,21 @@ struct times_seven
   }
 };
 
-C2H_TEST("DeviceTransform::Transform with large input",
+// Exercises the 32-bit byte-offset overflow regime in transform_kernel_ublkcp (NVIDIA/cccl#8800).
+// num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
+// straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
+// and I64 offset types.
+C2H_TEST("DeviceTransform::Transform works with large input",
          "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
 try
 {
-  using type     = unsigned short;
+  using type     = std::uint32_t;
   using offset_t = c2h::get<0, TestType>;
 
-  // make size a few thread blocks below/beyond 4GiB. need to make sure I32 num_items stays below 2^31
-  constexpr offset_t num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
-  REQUIRE(num_items > 0);
+  const auto delta         = GENERATE(-123456, 123456);
+  const offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + delta);
+  CAPTURE(c2h::type_name<offset_t>(), num_items);
 
   c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(1), input);
@@ -183,8 +188,8 @@ using uncommon_types = c2h::type_list<
   overaligned_t<32>, // exceeds the memcpy_async (Hopper/Blackwell) and bulk copy alignments (only Blackwell)
 #if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
   overaligned_t<256>, // exceeds copy alignment on Hopper
-                      // and exhausts guaranteed shared memory on Hopper (block_threads = 256, req. smem = 64KiB)
-  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (block_threads = 128, req. smem = 64KiB)
+                      // and exhausts guaranteed shared memory on Hopper (threads_per_block = 256, req. smem = 64KiB)
+  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (threads_per_block = 128, req. smem = 64KiB)
 #endif // !_CCCL_COMPILER(MSVC)
   huge_t>;
 
@@ -435,22 +440,42 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type with void value 
   REQUIRE(result == c2h::device_vector<type>(num_items, 3));
 }
 
-C2H_TEST("DeviceTransform::Transform mixed input iterator types", "[device][transform]")
+struct plus_mul_neg
 {
-  using type          = int;
+  template <typename T>
+  __host__ __device__ auto operator()(T a, T b) const
+  {
+    return cuda::std::tuple{a + b, a * b, -a};
+  }
+};
+
+C2H_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][transform]")
+{
+  using type          = unsigned; // overflow is defined
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   cuda::counting_iterator<type> a{0};
   c2h::device_vector<type> b(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), b);
 
-  c2h::device_vector<type> result(num_items, thrust::no_init);
-  transform_many(cuda::std::make_tuple(a, b.begin()), result.begin(), num_items, cuda::std::plus<type>{});
+  c2h::device_vector<type> result_a(num_items, thrust::no_init);
+  c2h::device_vector<type> result_b(num_items, thrust::no_init);
+  c2h::device_vector<type> result_c(num_items, thrust::no_init);
+  transform_many(
+    cuda::std::make_tuple(a, b.begin()),
+    cuda::std::make_tuple(
+      result_a.begin(), result_b.begin(), thrust::make_transform_output_iterator(result_c.begin(), cuda::std::negate{})),
+    num_items,
+    plus_mul_neg{});
 
   // compute reference and verify
   c2h::host_vector<type> b_h = b;
-  c2h::host_vector<type> reference_h(num_items);
-  std::transform(a, a + num_items, b_h.begin(), reference_h.begin(), std::plus<type>{});
-  REQUIRE(reference_h == result);
+  c2h::host_vector<type> reference_a_h(num_items, thrust::no_init);
+  std::transform(a, a + num_items, b_h.begin(), reference_a_h.begin(), cuda::std::plus<type>{});
+  c2h::host_vector<type> reference_b_h(num_items, thrust::no_init);
+  std::transform(a, a + num_items, b_h.begin(), reference_b_h.begin(), cuda::std::multiplies<type>{});
+  CHECK(reference_a_h == result_a);
+  CHECK(reference_b_h == result_b);
+  CHECK(thrust::equal(a, a + num_items, result_c.begin()));
 }
 
 struct plus_needs_stable_address
@@ -500,10 +525,12 @@ struct non_trivial
       : data(data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ non_trivial(const non_trivial& nt)
       : data(nt.data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ auto operator=(const non_trivial& nt) -> non_trivial&
   {
     data = nt.data;
@@ -712,7 +739,7 @@ C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
-template <int BlockThreads, int ItemsPerPthread, typename T>
+template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
   // we trigger the next kernel's launch very soon and wait a bit for it to spin up before starting to write. this way
@@ -721,7 +748,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   NV_IF_TARGET(NV_PROVIDES_SM_70, __nanosleep(100'000);); // must be enough to cover the next kernel's launch overhead
 
-  const int tile_size = ItemsPerPthread * BlockThreads;
+  const int tile_size = ItemsPerPthread * ThreadsPerBlock;
   const size_t offset = size_t{blockIdx.x} * tile_size;
 
   data += offset;
@@ -729,7 +756,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {
-    const int i = threadIdx.x + j * BlockThreads;
+    const int i = threadIdx.x + j * ThreadsPerBlock;
     if (i < n)
     {
       data[i] = value;
@@ -740,13 +767,13 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 template <typename T>
 void fill_pdl(T* data, size_t n, T value)
 {
-  constexpr auto block_threads    = 256;
-  constexpr auto items_per_thread = 4;
-  const auto blocks               = static_cast<unsigned>(::cuda::ceil_div(n, block_threads * items_per_thread));
+  constexpr auto threads_per_block = 256;
+  constexpr auto items_per_thread  = 4;
+  const auto blocks                = static_cast<unsigned>(::cuda::ceil_div(n, threads_per_block * items_per_thread));
 
   THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-    blocks, block_threads, /* smem */ 0, /*stream*/ 0, /* pdl */ true)
-    .doit(fill_pdl_kernel<block_threads, items_per_thread, T>, data, n, value);
+    blocks, threads_per_block, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
+    .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
 
 C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")

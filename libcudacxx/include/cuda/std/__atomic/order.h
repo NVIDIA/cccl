@@ -96,7 +96,7 @@ using memory_order = enum memory_order {
 
 #endif // _CCCL_STD_VER >= 2020
 
-_CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
+_CCCL_API inline int __stronger_order_cuda(int __a, int __b)
 {
   int const __max = __a > __b ? __a : __b;
   if (__max != __ATOMIC_RELEASE)
@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
   return __xform[__a < __b ? __a : __b];
 }
 
-_CCCL_HOST_DEVICE inline constexpr int __atomic_order_to_int(memory_order __order)
+_CCCL_API constexpr int __atomic_order_to_int(memory_order __order)
 {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed
@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_order_to_int(memory_order __orde
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQ_REL : __ATOMIC_CONSUME))));
 }
 
-_CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_order __order)
+_CCCL_API constexpr int __atomic_failure_order_to_int(memory_order __order)
 {
   // Avoid switch statement to make this a constexpr.
   return __order == memory_order_relaxed

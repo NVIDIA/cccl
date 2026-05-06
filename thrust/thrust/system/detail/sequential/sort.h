@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file sort.h
  *  \brief Sequential implementations of sort algorithms.
@@ -47,6 +34,10 @@ namespace sort_detail
 template <typename KeyType, typename Compare>
 inline constexpr bool use_primitive_sort =
   ::cuda::std::is_arithmetic_v<KeyType>
+  // RadixEncoder is not specialized for long double
+  && !::cuda::std::is_same_v<KeyType, long double>
+  // radix_sort_dispatcher only supports key sizes of 1, 2, 4, or 8 bytes
+  && (sizeof(KeyType) == 1 || sizeof(KeyType) == 2 || sizeof(KeyType) == 4 || sizeof(KeyType) == 8)
   && (::cuda::std::is_same_v<Compare, ::cuda::std::less<KeyType>>
       || ::cuda::std::is_same_v<Compare, ::cuda::std::greater<KeyType>>);
 

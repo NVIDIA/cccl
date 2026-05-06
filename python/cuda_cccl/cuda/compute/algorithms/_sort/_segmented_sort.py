@@ -1,8 +1,11 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
+import numpy as np
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
@@ -49,11 +52,6 @@ class _SegmentedSort:
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
-        cccl.cccl_iterator_set_host_advance(
-            self.start_offsets_in_cccl, start_offsets_in
-        )
-        cccl.cccl_iterator_set_host_advance(self.end_offsets_in_cccl, end_offsets_in)
-
         self.build_result = call_build(
             _bindings.DeviceSegmentedSortBuildResult,
             _bindings.SortOrder.ASCENDING
@@ -67,6 +65,7 @@ class _SegmentedSort:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in_keys,
         d_out_keys,
@@ -78,6 +77,10 @@ class _SegmentedSort:
         end_offsets_in,
         stream=None,
     ):
+        if num_segments > np.iinfo(np.int32).max:
+            raise RuntimeError(
+                "Segmented sort does not currently support more than 2^31-1 segments."
+            )
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
         )
@@ -132,10 +135,11 @@ class _SegmentedSort:
 
 @cache_with_registered_key_functions
 def make_segmented_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | None = None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None = None,
+    d_out_values: DeviceArrayLike | None = None,
     start_offsets_in: DeviceArrayLike,
     end_offsets_in: DeviceArrayLike,
     order: SortOrder,
@@ -174,10 +178,11 @@ def make_segmented_sort(
 
 
 def segmented_sort(
+    *,
     d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | None = None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None = None,
+    d_out_values: DeviceArrayLike | None = None,
     num_items: int,
     num_segments: int,
     start_offsets_in: DeviceArrayLike,
@@ -198,7 +203,7 @@ def segmented_sort(
             :start-after: # example-begin
 
 
-        In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer` for reduced temporary storage.
+        In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer`` for reduced temporary storage.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_buffer.py
             :language: python
@@ -217,36 +222,36 @@ def segmented_sort(
         stream: CUDA stream for the operation (optional)
     """
     sorter = make_segmented_sort(
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        start_offsets_in,
-        end_offsets_in,
-        order,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        order=order,
     )
     tmp_storage_bytes = sorter(
-        None,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        stream,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     sorter(
-        tmp_storage,
-        d_in_keys,
-        d_out_keys,
-        d_in_values,
-        d_out_values,
-        num_items,
-        num_segments,
-        start_offsets_in,
-        end_offsets_in,
-        stream,
+        temp_storage=tmp_storage,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_values=d_in_values,
+        d_out_values=d_out_values,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets_in,
+        end_offsets_in=end_offsets_in,
+        stream=stream,
     )

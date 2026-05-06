@@ -13,7 +13,9 @@
 #include <cuda/std/cassert>
 #include <cuda/stream>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+TEST_FUNC void test()
 {
   cudaStream_t stream = reinterpret_cast<cudaStream_t>(42);
   cuda::stream_ref ref{stream};

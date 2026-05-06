@@ -45,7 +45,7 @@ using __declfn_t _CCCL_NODEBUG_ALIAS = _Tp (*)() noexcept(_Noexcept);
 // than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE and
 // MSVC < 19.39 to miscompile so we use the fallback instead. The use of the
 // `__declfn_t` alias is help MSVC parse the declaration correctly.
-#if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 4) && !_CCCL_COMPILER(MSVC, <, 19, 39)
+#if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 4) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_TILE_COMPILATION()
 
 template <class _Tp, class = void>
 extern __declfn_t<void> declval;

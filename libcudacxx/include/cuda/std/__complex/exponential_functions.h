@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -88,7 +88,7 @@ template <class _Tp>
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   float __r_reduced;
-  __r_reduced = ::cuda::std::fmaf(-__j, 0.693147182464599609375f, __r);
+  __r_reduced = ::cuda::std::fmaf(-__j, 0.693147182464599609375f, __r); // NOLINT(modernize-use-std-numbers)
   __r_reduced = ::cuda::std::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
@@ -118,7 +118,7 @@ template <class _Tp>
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   double __r_reduced;
-  __r_reduced = ::cuda::std::fma(-__j, 0.6931471805599453972491, __r);
+  __r_reduced = ::cuda::std::fma(-__j, 0.6931471805599453972491, __r); // NOLINT(modernize-use-std-numbers)
   __r_reduced = ::cuda::std::fma(-__j, -8.78318343240526554e-17, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
@@ -312,14 +312,6 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   return complex<double>(__ans_r, __ans_i);
 }
 
-#if _LIBCUDACXX_HAS_NVBF16()
-template <>
-_CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
-{
-  return complex<__nv_bfloat16>{::cuda::std::exp(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
 _CCCL_API inline complex<__half> exp(const complex<__half>& __x)
@@ -327,6 +319,14 @@ _CCCL_API inline complex<__half> exp(const complex<__half>& __x)
   return complex<__half>{::cuda::std::exp(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{::cuda::std::exp(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 // pow
 

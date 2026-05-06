@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 #include <cuda/std/cassert>
 #include <cuda/std/mdspan>
 
@@ -18,7 +21,7 @@ int main(int, char**)
     cuda::std::dextents<index_t, 3> e0{1, 2, 3};
     cuda::std::dims<3> e1{1, 2, 3};
 
-    static_assert(cuda::std::is_same<decltype(e0), decltype(e1)>::value, "");
+    static_assert(cuda::std::is_same<decltype(e0), decltype(e1)>::value);
     assert(e0 == e1);
   }
 

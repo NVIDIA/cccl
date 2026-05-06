@@ -40,7 +40,6 @@
 namespace cuda::experimental::stf
 {
 class logical_data_untyped;
-class data_place;
 class task;
 template <typename T>
 class shape_of;
@@ -158,6 +157,7 @@ public:
    * @brief Allocate data and return a prerequisite event list.
    *
    * @param ctx Backend context state
+   * @param custom_allocator Allocator used for data allocation
    * @param memory_node The memory node where the data is stored
    * @param instance_id The ID of the data instance
    * @param s Pointer to the size of the allocated data
@@ -177,6 +177,7 @@ public:
    * @brief Deallocate data and return a prerequisite event list.
    *
    * @param ctx Backend context state
+   * @param custom_allocator Allocator used for data deallocation
    * @param memory_node The memory node where the data is stored
    * @param instance_id The ID of the data instance
    * @param extra_args Additional arguments required for deallocation
@@ -198,7 +199,6 @@ public:
    * @param dst_instance_id The destination instance ID
    * @param src_memory_node The source memory node
    * @param src_instance_id The source instance ID
-   * @param arg Additional arguments required for copying data
    * @param prereqs Prerequisite event list, will be updated as a side effect
    */
   virtual void data_copy(
@@ -215,7 +215,7 @@ public:
    * @param instance_id The ID of the data instance
    * @return true if the instance was pinned, false otherwise
    */
-  virtual bool pin_host_memory(instance_id_t /*instance_id*/)
+  virtual bool pin_host_memory(instance_id_t instance_id)
   {
     return false;
   }
@@ -228,7 +228,7 @@ public:
   /// @brief Unpin host memory.
   ///
   /// @param instance_id The ID of the data instance
-  virtual void unpin_host_memory(instance_id_t /*instance_id*/) {}
+  virtual void unpin_host_memory(instance_id_t instance_id) {}
 
   /**
    * @brief Get the hash of the data representation for the given instance ID.
@@ -310,11 +310,13 @@ public:
    *
    * @param ctx The backend context state
    * @param d The logical data_untyped
+   * @param tp The current task
    * @return The ID of the data instance for this logical data
    */
   template <typename backend_ctx_untyped>
-  instance_id_t get_default_instance_id(backend_ctx_untyped&, const logical_data_untyped& d, task& tp) const
+  instance_id_t get_default_instance_id(backend_ctx_untyped& ctx, const logical_data_untyped& d, task& tp) const
   {
+    (void) ctx;
     return tp.find_data_instance_id(d);
   }
 

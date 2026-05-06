@@ -13,8 +13,10 @@
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <cuda::std::__fp_format Fmt, class Int>
-__host__ __device__ constexpr void test_int_conversion_operator()
+TEST_FUNC constexpr void test_int_conversion_operator()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -29,7 +31,7 @@ __host__ __device__ constexpr void test_int_conversion_operator()
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_format()
+TEST_FUNC constexpr void test_format()
 {
   test_int_conversion_operator<Fmt, bool>();
 
@@ -60,7 +62,7 @@ __host__ __device__ constexpr void test_format()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_format<cuda::std::__fp_format::__binary16>();
   test_format<cuda::std::__fp_format::__binary32>();

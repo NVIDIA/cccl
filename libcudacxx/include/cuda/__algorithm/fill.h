@@ -27,6 +27,8 @@
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -53,7 +55,7 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
   // Check if the mdspan is exhaustive
   if (!__dst.is_exhaustive())
   {
-    ::cuda::std::__throw_invalid_argument("fill_bytes supports only exhaustive mdspans");
+    _CCCL_THROW(::std::invalid_argument, "fill_bytes supports only exhaustive mdspans");
   }
 
   ::cuda::__detail::__fill_bytes_impl(
@@ -79,20 +81,8 @@ _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std:
     __stream, ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
 
-//! @brief Launches an operation to bytewise fill the memory into the provided stream.
-//!
-//! Destination needs to be or launch_transform to an instance of `cuda::std::mdspan`.
-//! It can also convert to `cuda::std::mdspan`, but the type needs to
-//! contain `mdspan` template arguments as member aliases named `value_type`,
-//! `extents_type`, `layout_type` and `accessor_type`. The resulting mdspan is required to
-//! be exhaustive. The element type of the destination is required to be trivially
-//! copyable.
-//!
-//! The destination cannot reside in pagable host memory.
-//!
-//! @param __stream Stream that the copy should be inserted into
-//! @param __dst Destination memory to fill
-//! @param __value Value to fill into every byte in the destination
+//! @overload
+//! @note This overload accepts mdspan-compatible types.
 _CCCL_TEMPLATE(typename _DstTy)
 _CCCL_REQUIRES(__mdspannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)

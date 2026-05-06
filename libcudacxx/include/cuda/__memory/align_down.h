@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -41,14 +42,13 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API inline _Tp* align_down(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
+[[nodiscard]] _CCCL_API _Tp* align_down(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
   using ::cuda::std::uintptr_t;
-  _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
+  _CCCL_ASSERT(::cuda::__is_valid_alignment<_Tp>(__alignment), "invalid alignment");
   if constexpr (!::cuda::std::is_void_v<_Tp>)
   {
-    _CCCL_ASSERT(__alignment >= alignof(_Tp), "wrong alignment");
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
+    _CCCL_ASSERT(::cuda::is_aligned(__ptr, alignof(_Tp)), "__ptr is not aligned for _Tp");
     if (__alignment == alignof(_Tp))
     {
       return __ptr;
@@ -61,7 +61,8 @@ template <typename _Tp>
   using _Up                = ::cuda::std::remove_cv_t<_Tp>;
   const auto __char_ptr    = reinterpret_cast<char*>(const_cast<_Up*>(__ptr));
   const auto __tmp         = static_cast<uintptr_t>(__alignment - 1);
-  const auto __aligned_ptr = reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(__ptr) & ~__tmp);
+  const auto __aligned_ptr = reinterpret_cast<char*>( // NOLINT(performance-no-int-to-ptr)
+    reinterpret_cast<uintptr_t>(__ptr) & ~__tmp);
   // __aligned_ptr and __ptr must be pointers (not values) to apply the optimization
   // __ptr - (ptr - aligned_ptr) -> __ptr + (aligned_ptr - ptr)
   const auto __diff = static_cast<::cuda::std::size_t>(__aligned_ptr - __char_ptr);

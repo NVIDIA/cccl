@@ -21,12 +21,12 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   using BoundedIter       = cuda::std::__bounded_iter<Iter>;
   using PointerTraits     = cuda::std::pointer_traits<BoundedIter>;
   using BasePointerTraits = cuda::std::pointer_traits<Iter>;
-  static_assert(cuda::std::is_same<typename PointerTraits::pointer, BoundedIter>::value, "");
+  static_assert(cuda::std::is_same<typename PointerTraits::pointer, BoundedIter>::value);
   static_assert(
     cuda::std::is_same<typename PointerTraits::element_type, typename BasePointerTraits::element_type>::value, "");
   static_assert(
@@ -53,11 +53,11 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests<int*>();
-  static_assert(tests<int*>(), "");
+  static_assert(tests<int*>());
 
 #if TEST_STD_VER > 2017
   tests<contiguous_iterator<int*>>();
-  static_assert(tests<contiguous_iterator<int*>>(), "");
+  static_assert(tests<contiguous_iterator<int*>>());
 #endif // TEST_STD_VER > 2017
 
   return 0;

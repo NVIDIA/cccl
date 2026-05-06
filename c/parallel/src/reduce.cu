@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -215,45 +215,24 @@ try
   const auto [output_iterator_name, output_iterator_src] =
     get_specialization<reduce_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
 
-  const auto [op_name, op_src] =
-    get_specialization<reduction_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
+  const auto [op_name, op_src] = get_specialization<reduction_operation_tag>(
+    template_id<binary_user_operation_traits>(), op, accum_t, accum_t, accum_t);
 
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
   const auto policy_sel = [&] {
-    using namespace cub::detail::reduce;
+    using namespace cub::detail;
 
-    auto accum_type = accum_type::other;
-    if (accum_t.type == CCCL_FLOAT32)
-    {
-      accum_type = accum_type::float32;
-    }
-    else if (accum_t.type == CCCL_FLOAT64)
-    {
-      accum_type = accum_type::float64;
-    }
-
-    auto operation_t = op_type::unknown;
-    switch (op.type)
-    {
-      case CCCL_PLUS:
-        operation_t = op_type::plus;
-        break;
-      case CCCL_MINIMUM:
-      case CCCL_MAXIMUM:
-        operation_t = op_type::min_or_max;
-        break;
-      default:
-        break;
-    }
+    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
+    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
 
     const int offset_size = int{sizeof(OffsetT)};
-    return policy_selector{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+    return cub::detail::reduce::policy_selector{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
   }();
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   auto policy_hub_expr =
     std::format("cub::detail::reduce::policy_selector_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
@@ -272,7 +251,7 @@ struct __align__({2}) storage_t {{
 using device_reduce_policy = {6};
 using namespace cub;
 using namespace cub::detail::reduce;
-static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {7}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1

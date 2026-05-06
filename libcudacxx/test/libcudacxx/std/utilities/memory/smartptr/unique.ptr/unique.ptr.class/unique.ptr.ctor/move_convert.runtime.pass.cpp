@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -24,64 +27,64 @@
 template <int ID = 0>
 struct GenericDeleter
 {
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
 template <int ID = 0>
 struct GenericConvertingDeleter
 {
   template <int OID>
-  __host__ __device__ GenericConvertingDeleter(GenericConvertingDeleter<OID>)
+  TEST_FUNC GenericConvertingDeleter(GenericConvertingDeleter<OID>)
   {}
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   { // Disallow copying
     using U1 = cuda::std::unique_ptr<A[], GenericConvertingDeleter<0>>;
     using U2 = cuda::std::unique_ptr<A[], GenericConvertingDeleter<1>>;
-    static_assert(cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, U2&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, const U2&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, const U2&&>::value, "");
+    static_assert(cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(!cuda::std::is_constructible<U1, U2&>::value);
+    static_assert(!cuda::std::is_constructible<U1, const U2&>::value);
+    static_assert(!cuda::std::is_constructible<U1, const U2&&>::value);
   }
   { // Disallow illegal qualified conversions
     using U1 = cuda::std::unique_ptr<const A[]>;
     using U2 = cuda::std::unique_ptr<A[]>;
-    static_assert(cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U2, U1&&>::value, "");
+    static_assert(cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(!cuda::std::is_constructible<U2, U1&&>::value);
   }
   { // Disallow base-to-derived conversions.
     using UA = cuda::std::unique_ptr<A[]>;
     using UB = cuda::std::unique_ptr<B[]>;
-    static_assert(!cuda::std::is_constructible<UA, UB&&>::value, "");
+    static_assert(!cuda::std::is_constructible<UA, UB&&>::value);
   }
   { // Disallow base-to-derived conversions.
     using UA = cuda::std::unique_ptr<A[], GenericConvertingDeleter<0>>;
     using UB = cuda::std::unique_ptr<B[], GenericConvertingDeleter<1>>;
-    static_assert(!cuda::std::is_constructible<UA, UB&&>::value, "");
+    static_assert(!cuda::std::is_constructible<UA, UB&&>::value);
   }
   { // Disallow invalid deleter initialization
     using U1 = cuda::std::unique_ptr<A[], GenericDeleter<0>>;
     using U2 = cuda::std::unique_ptr<A[], GenericDeleter<1>>;
-    static_assert(!cuda::std::is_constructible<U1, U2&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, U2&&>::value);
   }
   { // Disallow reference deleters with different qualifiers
     using U1 = cuda::std::unique_ptr<A[], Deleter<A[]>&>;
     using U2 = cuda::std::unique_ptr<A[], const Deleter<A[]>&>;
-    static_assert(!cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U2, U1&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(!cuda::std::is_constructible<U2, U1&&>::value);
   }
   {
     using U1 = cuda::std::unique_ptr<A[]>;
     using U2 = cuda::std::unique_ptr<A>;
-    static_assert(!cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U2, U1&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(!cuda::std::is_constructible<U2, U1&&>::value);
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_sfinae();
 

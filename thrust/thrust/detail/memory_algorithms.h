@@ -1,7 +1,5 @@
-// Copyright (c) 2018 NVIDIA Corporation
-// Author: Bryce Adelstein Lelbach <brycelelbach@gmail.com>
-//
-// Distributed under the Boost Software License v1.0 (boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation
+// SPDX-License-Identifier: BSL-1.0
 
 // TODO: These need to be turned into proper Thrust algorithms (dispatch layer,
 // backends, etc).
@@ -20,7 +18,7 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__new/device_new.h>
@@ -67,7 +65,8 @@ _CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, For
   using traits =
     typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
-  typename traits::allocator_type alloc_T(alloc);
+  // allocator_type might not be same as Allocator
+  const typename traits::allocator_type alloc_T(alloc); // NOLINT(performance-unnecessary-copy-initialization)
 
   for (; first != last; ++first)
   {
@@ -95,7 +94,8 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, S
   using traits =
     typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
-  typename traits::allocator_type alloc_T(alloc);
+  // allocator_type might not be same as Allocator
+  const typename traits::allocator_type alloc_T(alloc); // NOLINT(performance-unnecessary-copy-initialization)
 
   for (; n > 0; (void) ++first, --n)
   {

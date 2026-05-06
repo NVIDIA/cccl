@@ -42,47 +42,47 @@ constexpr bool canCstrFromExpected =
 
 struct CtorFromInt
 {
-  __host__ __device__ CtorFromInt(int);
+  TEST_FUNC CtorFromInt(int);
 };
 
-static_assert(canCstrFromExpected<void, CtorFromInt, void, int>, "");
+static_assert(canCstrFromExpected<void, CtorFromInt, void, int>);
 
 struct NoCtorFromInt
 {};
 
 // !is_void_v<U>
-static_assert(!canCstrFromExpected<void, int, int, int>, "");
+static_assert(!canCstrFromExpected<void, int, int, int>);
 
 // !is_constructible_v<E, GF>
-static_assert(!canCstrFromExpected<void, NoCtorFromInt, void, int>, "");
+static_assert(!canCstrFromExpected<void, NoCtorFromInt, void, int>);
 
 template <class T>
 struct CtorFrom
 {
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
-  __host__ __device__ explicit CtorFrom(int);
-  __host__ __device__ explicit CtorFrom(T);
+  TEST_FUNC explicit CtorFrom(int);
+  TEST_FUNC explicit CtorFrom(T);
   template <class U>
-  __host__ __device__ explicit CtorFrom(U&&) = delete;
+  TEST_FUNC explicit CtorFrom(U&&) = delete;
 };
 
 // Note for below 4 tests, because their E is constructible from cvref of cuda::std::expected<void, int>,
 // unexpected<E> will be constructible from cvref of cuda::std::expected<void, int>
 // is_constructible_v<unexpected<E>, expected<U, G>&>
-static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int>&>, void, int>, "");
+static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int>&>, void, int>);
 
 // is_constructible_v<unexpected<E>, expected<U, G>>
-static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int>&&>, void, int>, "");
+static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int>&&>, void, int>);
 
 // is_constructible_v<unexpected<E>, const expected<U, G>&> is false
-static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int> const&>, void, int>, "");
+static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int> const&>, void, int>);
 
 // is_constructible_v<unexpected<E>, const expected<U, G>>
-static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int> const&&>, void, int>, "");
+static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int> const&&>, void, int>);
 
 // test explicit
-static_assert(cuda::std::is_convertible_v<cuda::std::expected<void, int>&&, cuda::std::expected<void, long>>, "");
+static_assert(cuda::std::is_convertible_v<cuda::std::expected<void, int>&&, cuda::std::expected<void, long>>);
 
 // !is_convertible_v<GF, E>.
 static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, CtorFrom<int>>, cuda::std::expected<void, int>&&>,
@@ -93,12 +93,12 @@ static_assert(!cuda::std::is_convertible_v<cuda::std::expected<void, int>&&, cud
 struct Data
 {
   MoveOnly data;
-  __host__ __device__ constexpr Data(MoveOnly&& m)
+  TEST_FUNC constexpr Data(MoveOnly&& m)
       : data(cuda::std::move(m))
   {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // convert the error
   {
@@ -146,7 +146,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

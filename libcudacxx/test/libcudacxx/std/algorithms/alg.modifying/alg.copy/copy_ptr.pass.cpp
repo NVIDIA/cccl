@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <algorithm>
 
 // template<InputIterator InIter, OutputIterator<auto, InIter::reference> OutIter>
@@ -18,7 +21,7 @@
 
 #include "copy_common.h"
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
+TEST_CONSTEXPR_CXX20 TEST_FUNC bool test()
 {
   test<const int*, cpp17_output_iterator<int*>>();
   test<const int*, cpp17_input_iterator<int*>>();

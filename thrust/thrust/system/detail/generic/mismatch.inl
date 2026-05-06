@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -29,6 +16,9 @@
 #include <thrust/find.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/mismatch.h>
+
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -62,6 +52,40 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 
   return ::cuda::std::make_pair(
     ::cuda::std::get<0>(result.get_iterator_tuple()), ::cuda::std::get<1>(result.get_iterator_tuple()));
+} // end mismatch()
+
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2,
+  BinaryPredicate pred)
+{
+  const auto n1 = ::cuda::std::distance(first1, last1);
+  const auto n2 = ::cuda::std::distance(first2, last2);
+
+  if (n2 < n1)
+  {
+    // Range2 is shorter: limit range1 to n2 elements
+    InputIterator1 bounded_last1 = first1;
+    ::cuda::std::advance(bounded_last1, n2);
+    return thrust::system::detail::generic::mismatch(exec, first1, bounded_last1, first2, pred);
+  }
+  return thrust::system::detail::generic::mismatch(exec, first1, last1, first2, pred);
+} // end mismatch()
+
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2)
+{
+  using namespace thrust::placeholders;
+  return thrust::system::detail::generic::mismatch(exec, first1, last1, first2, last2, _1 == _2);
 } // end mismatch()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

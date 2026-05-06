@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 // UNSUPPORTED: nvcc-11, nvcc-12
@@ -25,7 +25,7 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     // Fetch min
     {

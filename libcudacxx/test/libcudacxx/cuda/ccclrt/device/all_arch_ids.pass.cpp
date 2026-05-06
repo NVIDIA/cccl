@@ -13,7 +13,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   // 1. Test signature.
   static_assert(cuda::std::__is_cuda_std_array_v<decltype(cuda::__all_arch_ids())>);
@@ -23,6 +25,9 @@ __host__ __device__ constexpr bool test()
   const auto all_arch_ids = cuda::__all_arch_ids();
 
   cuda::std::size_t i = 0;
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_50);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_52);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_53);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_60);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_61);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_62);

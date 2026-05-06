@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -43,6 +44,46 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @addtogroup iterators
 //! @{
+
+template <class _Fn, class _Index>
+class __tabulate_proxy
+{
+private:
+  template <class, class>
+  friend class tabulate_output_iterator;
+
+  _Fn& __func_;
+  _Index __index_;
+
+  _CCCL_API constexpr explicit __tabulate_proxy(_Fn& __func, _Index __index) noexcept
+      : __func_(__func)
+      , __index_(__index)
+  {}
+
+public:
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy(const __tabulate_proxy&)            = default;
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy& operator=(const __tabulate_proxy&) = default;
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy(__tabulate_proxy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy& operator=(__tabulate_proxy&&)      = default;
+
+  _CCCL_TEMPLATE(class _Arg)
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_Fn&, _Index, _Arg>)
+  _CCCL_API constexpr const __tabulate_proxy&
+  operator=(_Arg&& __arg) noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, _Index, _Arg>)
+  {
+    ::cuda::std::invoke(__func_, __index_, ::cuda::std::forward<_Arg>(__arg));
+    return *this;
+  }
+
+  _CCCL_TEMPLATE(class _Arg)
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<const _Fn&, _Index, _Arg>)
+  _CCCL_API constexpr const __tabulate_proxy& operator=(_Arg&& __arg) const
+    noexcept(::cuda::std::is_nothrow_invocable_v<const _Fn&, _Index, _Arg>)
+  {
+    ::cuda::std::invoke(__func_, __index_, ::cuda::std::forward<_Arg>(__arg));
+    return *this;
+  }
+};
 
 //! @brief @c tabulate_output_iterator is a special kind of output iterator which, whenever a value is assigned to a
 //! dereferenced iterator, calls the given callable with the index that corresponds to the offset of the dereferenced
@@ -71,46 +112,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!   tabulate_it[9] =  5.0f;    // prints: 9: 5.0
 //! }
 //! @endcode
-template <class _Fn, class _Index = ::cuda::std::ptrdiff_t>
-class tabulate_output_iterator;
-
-template <class _Fn, class _Index>
-class __tabulate_proxy
-{
-private:
-  template <class, class>
-  friend class tabulate_output_iterator;
-
-  _Fn& __func_;
-  _Index __index_;
-
-public:
-  _CCCL_API constexpr explicit __tabulate_proxy(_Fn& __func, _Index __index) noexcept
-      : __func_(__func)
-      , __index_(__index)
-  {}
-
-  _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_Fn&, _Index, _Arg> _CCCL_AND(
-    !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __tabulate_proxy>))
-  _CCCL_API constexpr const __tabulate_proxy&
-  operator=(_Arg&& __arg) noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, _Index, _Arg>)
-  {
-    ::cuda::std::invoke(__func_, __index_, ::cuda::std::forward<_Arg>(__arg));
-    return *this;
-  }
-
-  _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(::cuda::std::is_invocable_v<const _Fn&, _Index, _Arg> _CCCL_AND(
-    !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __tabulate_proxy>))
-  _CCCL_API constexpr const __tabulate_proxy& operator=(_Arg&& __arg) const
-    noexcept(::cuda::std::is_nothrow_invocable_v<const _Fn&, _Index, _Arg>)
-  {
-    ::cuda::std::invoke(__func_, __index_, ::cuda::std::forward<_Arg>(__arg));
-    return *this;
-  }
-};
-
 template <class _Fn, class _Index>
 class tabulate_output_iterator
 {
@@ -188,7 +189,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) const noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), __index() + __n};
+    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), static_cast<difference_type>(__index() + __n)};
   }
 
   //! @brief Subscripts the @c tabulate_output_iterator with a given offset
@@ -196,7 +197,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{__func(), __index() + __n};
+    return __tabulate_proxy<_Fn, _Index>{__func(), static_cast<difference_type>(__index() + __n)};
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
@@ -238,7 +239,7 @@ public:
   operator+(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() + __n)};
   }
 
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
@@ -249,7 +250,7 @@ public:
   operator+(difference_type __n, const tabulate_output_iterator& __iter) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() + __n)};
   }
 
   //! @brief Advances the @c tabulate_output_iterator by a given number of elements
@@ -267,7 +268,7 @@ public:
   operator-(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() - __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() - __n)};
   }
 
   //! @brief Returns the distance between two @c tabulate_output_iterator 's
@@ -339,12 +340,14 @@ public:
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Fn>
 _CCCL_HOST_DEVICE tabulate_output_iterator(_Fn) -> tabulate_output_iterator<_Fn, ::cuda::std::ptrdiff_t>;
 
 _CCCL_TEMPLATE(class _Fn, class _Index)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Index>)
 _CCCL_HOST_DEVICE tabulate_output_iterator(_Fn, _Index) -> tabulate_output_iterator<_Fn, _Index>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c tabulate_output_iterator from an output function and an optional index.
 //! @param __func The output function

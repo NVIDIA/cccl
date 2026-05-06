@@ -1,15 +1,17 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <thrust/detail/internal_functional.h>
 #include <thrust/device_vector.h>
-#include <thrust/fill.h>
 #include <thrust/find.h>
+
+#include <cuda/functional>
+#include <cuda/memory_pool>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 
 template <typename T>
-void find_if(nvbench::state& state, nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   T val = 1;
   // set up input
@@ -24,13 +26,16 @@ void find_if(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
 
-  caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::find_if(policy(alloc, launch), dinput.begin(), dinput.end(), thrust::detail::equal_to_value<T>(val));
-  });
+  caching_allocator_t alloc{};
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(
+                 thrust::find_if(policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_value<T>{val}));
+             });
 }
 
-NVBENCH_BENCH_TYPES(find_if, NVBENCH_TYPE_AXES(fundamental_types))
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("base")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
-  .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.0});
+  .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});

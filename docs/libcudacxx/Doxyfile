@@ -13,14 +13,17 @@ INPUT                  = ../../libcudacxx/include/cuda/__algorithm \
                          ../../libcudacxx/include/cuda/__container \
                          ../../libcudacxx/include/cuda/__device \
                          ../../libcudacxx/include/cuda/__event \
+                         ../../libcudacxx/include/cuda/__hierarchy \
                          ../../libcudacxx/include/cuda/__iterator \
+                         ../../libcudacxx/include/cuda/__launch \
                          ../../libcudacxx/include/cuda/__memory_pool \
                          ../../libcudacxx/include/cuda/__memory_resource \
                          ../../libcudacxx/include/cuda/__stream \
-                         ../../libcudacxx/include/nv
+                         ../../libcudacxx/include/nv \
+                         ../../libcudacxx/include/cuda/std/__cccl/os.h
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/*
+EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/* */std/__cccl/compiler.h
 EXCLUDE_SYMBOLS        = *detail* *__* _LIBCUDACXX_*
 
 FILE_PATTERNS          = *.h *.hpp *.cuh
@@ -78,7 +81,19 @@ PREDEFINED = \
     "__cccl_lib_mdspan" \
     "_CCCL_AND=&&" \
     "_CCCL_API=inline" \
+    "_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT="\
+    "_CCCL_BEGIN_NAMESPACE_CUDA=namespace cuda {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE=namespace cuda::device {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL=namespace cuda::device::experimental {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_DRIVER=namespace cuda::__driver {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION=namespace cuda::execution {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_MR=namespace cuda::mr {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_PTX =namespace cuda::ptx {" \
     "_CCCL_BEGIN_NAMESPACE_CUDA_STD=namespace cuda::std {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION=namespace cuda::std::execution {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES=namespace cuda::std::ranges {" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS=namespace cuda::std::ranges::views {" \
+    "_CCCL_BEGIN_NAMESPACE_STD=namespace std {" \
     "_CCCL_CATCH=catch" \
     "_CCCL_CATCH_ALL=catch (...)" \
     "_CCCL_CATCH_FALLTHROUGH=" \
@@ -95,7 +110,19 @@ PREDEFINED = \
     "_CCCL_DIAG_SUPPRESS_GCC(x)=" \
     "_CCCL_DIAG_SUPPRESS_MSVC(x)=" \
     "_CCCL_DIAG_SUPPRESS_NVHPC(x)=" \
+    "_CCCL_END_NAMESPACE_ARCH_DEPENDENT="\
+    "_CCCL_END_NAMESPACE_CUDA=}" \
+    "_CCCL_END_NAMESPACE_CUDA_DEVICE=}" \
+    "_CCCL_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL=}" \
+    "_CCCL_END_NAMESPACE_CUDA_DRIVER=}" \
+    "_CCCL_END_NAMESPACE_CUDA_EXECUTION=}" \
+    "_CCCL_END_NAMESPACE_CUDA_MR=}" \
+    "_CCCL_END_NAMESPACE_CUDA_PTX=}" \
     "_CCCL_END_NAMESPACE_CUDA_STD=}" \
+    "_CCCL_END_NAMESPACE_CUDA_STD_EXECUTION=}" \
+    "_CCCL_END_NAMESPACE_CUDA_STD_RANGES=}" \
+    "_CCCL_END_NAMESPACE_CUDA_STD_VIEWS=}" \
+    "_CCCL_END_NAMESPACE_STD=}" \
     "_CCCL_EXEC_CHECK_DISABLE=" \
     "_CCCL_GLOBAL_CONSTANT=inline constexpr" \
     "_CCCL_HAS_CTK()=1" \
@@ -143,7 +170,9 @@ ALIASES += "inlinerst=\verbatim embed:rst:inline"
 
 # Quiet mode
 QUIET                  = YES
-WARNINGS               = NO
+WARNINGS               = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
 WARN_IF_UNDOCUMENTED   = NO
 WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = NO
 WARN_NO_PARAMDOC       = NO

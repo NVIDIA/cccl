@@ -201,3 +201,297 @@ C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
+
+// example-begin topk-custom-type
+struct custom_t
+{
+  float f;
+  int unused;
+  long long int lli;
+
+  custom_t() = default;
+  custom_t(float f, long long int lli)
+      : f(f)
+      , unused(42)
+      , lli(lli)
+  {}
+};
+
+struct decomposer_t
+{
+  __host__ __device__ cuda::std::tuple<float&, long long int&> operator()(custom_t& key) const
+  {
+    return {key.f, key.lli};
+  }
+};
+// example-end topk-custom-type
+
+static __host__ std::ostream& operator<<(std::ostream& os, const custom_t& self)
+{
+  return os << "{ " << self.f << ", " << self.lli << " }";
+}
+
+static __host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
+{
+  return lhs.f == rhs.f && lhs.lli == rhs.lli;
+}
+
+static __host__ __device__ bool operator<(const custom_t& lhs, const custom_t& rhs)
+{
+  return lhs.lli == rhs.lli ? lhs.f < rhs.f : lhs.lli < rhs.lli;
+}
+
+static __host__ __device__ bool operator>(const custom_t& lhs, const custom_t& rhs)
+{
+  return rhs < lhs;
+}
+
+C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
+{
+  SECTION("MaxKeys")
+  {
+    // example-begin topk-max-keys-custom-type
+    constexpr int num_items = 6;
+    constexpr int k         = 3;
+
+    thrust::device_vector<custom_t> in = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
+
+    thrust::device_vector<custom_t> out(k);
+
+    const custom_t* d_in = thrust::raw_pointer_cast(in.data());
+    custom_t* d_out      = thrust::raw_pointer_cast(out.data());
+
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+    // 1) Get temp storage size
+    std::uint8_t* d_temp_storage{};
+    std::size_t temp_storage_bytes{};
+
+    cub::DeviceTopK::MaxKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+
+    // 2) Allocate temp storage
+    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+    // 3) Find the top-k largest keys
+    cub::DeviceTopK::MaxKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+
+    // Sort output for comparison (output order is not guaranteed)
+    thrust::sort(out.begin(), out.end(), cuda::std::greater<>{});
+    thrust::device_vector<custom_t> expected = {
+      {+3.7f, 5}, //
+      {+2.5f, 4}, //
+      {+1.1f, 3} //
+    };
+    // example-end topk-max-keys-custom-type
+
+    REQUIRE(expected == out);
+  }
+
+  SECTION("MinKeys")
+  {
+    // example-begin topk-min-keys-custom-type
+    constexpr int num_items = 6;
+    constexpr int k         = 3;
+
+    thrust::device_vector<custom_t> in = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
+
+    thrust::device_vector<custom_t> out(k);
+
+    const custom_t* d_in = thrust::raw_pointer_cast(in.data());
+    custom_t* d_out      = thrust::raw_pointer_cast(out.data());
+
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+    std::uint8_t* d_temp_storage{};
+    std::size_t temp_storage_bytes{};
+
+    cub::DeviceTopK::MinKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+
+    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+    cub::DeviceTopK::MinKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+
+    // Sort output for comparison (output order is not guaranteed)
+    thrust::sort(out.begin(), out.end());
+    thrust::device_vector<custom_t> expected = {
+      {-2.5f, 0}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2} //
+    };
+    // example-end topk-min-keys-custom-type
+
+    REQUIRE(expected == out);
+  }
+
+  SECTION("MaxPairs")
+  {
+    // example-begin topk-max-pairs-custom-type
+    constexpr int num_items = 6;
+    constexpr int k         = 3;
+
+    thrust::device_vector<custom_t> keys_in = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
+
+    thrust::device_vector<custom_t> keys_out(k);
+
+    const custom_t* d_keys_in = thrust::raw_pointer_cast(keys_in.data());
+    custom_t* d_keys_out      = thrust::raw_pointer_cast(keys_out.data());
+
+    thrust::device_vector<int> vals_in = {0, 1, 2, 3, 4, 5};
+    thrust::device_vector<int> vals_out(k);
+
+    const int* d_vals_in = thrust::raw_pointer_cast(vals_in.data());
+    int* d_vals_out      = thrust::raw_pointer_cast(vals_out.data());
+
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+    std::uint8_t* d_temp_storage{};
+    std::size_t temp_storage_bytes{};
+
+    cub::DeviceTopK::MaxPairs(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
+
+    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+    cub::DeviceTopK::MaxPairs(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
+
+    // Sort by key for comparison (output order is not guaranteed)
+    thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin(), cuda::std::greater<>{});
+
+    thrust::device_vector<custom_t> expected_keys = {
+      {+3.7f, 5}, //
+      {+2.5f, 4}, //
+      {+1.1f, 3} //
+    };
+
+    thrust::device_vector<int> expected_vals = {5, 0, 2};
+    // example-end topk-max-pairs-custom-type
+
+    REQUIRE(expected_keys == keys_out);
+    REQUIRE(expected_vals == vals_out);
+  }
+
+  SECTION("MinPairs")
+  {
+    // example-begin topk-min-pairs-custom-type
+    constexpr int num_items = 6;
+    constexpr int k         = 3;
+
+    thrust::device_vector<custom_t> keys_in = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
+
+    thrust::device_vector<custom_t> keys_out(k);
+
+    const custom_t* d_keys_in = thrust::raw_pointer_cast(keys_in.data());
+    custom_t* d_keys_out      = thrust::raw_pointer_cast(keys_out.data());
+
+    thrust::device_vector<int> vals_in = {0, 1, 2, 3, 4, 5};
+    thrust::device_vector<int> vals_out(k);
+
+    const int* d_vals_in = thrust::raw_pointer_cast(vals_in.data());
+    int* d_vals_out      = thrust::raw_pointer_cast(vals_out.data());
+
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+    std::uint8_t* d_temp_storage{};
+    std::size_t temp_storage_bytes{};
+
+    cub::DeviceTopK::MinPairs(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
+
+    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+    cub::DeviceTopK::MinPairs(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
+
+    // Sort by key for comparison (output order is not guaranteed)
+    thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin());
+
+    thrust::device_vector<custom_t> expected_keys = {
+      {-2.5f, 0}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2} //
+    };
+
+    thrust::device_vector<int> expected_vals = {1, 3, 4};
+    // example-end topk-min-pairs-custom-type
+
+    REQUIRE(expected_keys == keys_out);
+    REQUIRE(expected_vals == vals_out);
+  }
+}
