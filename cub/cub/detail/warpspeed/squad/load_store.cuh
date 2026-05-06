@@ -259,7 +259,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       // Copy the middle part. Starting at byte 0 or 16 in shared memory. This
       // is the large copy. We perform this one first, so that the compiler can
       // (hopefully) hide all the arithmetic behind this instruction.
-      if (::cuda::ptx::elect_sync(~0))
+      if (cpAsyncOobInfo.underCopySizeBytes > 0 && ::cuda::ptx::elect_sync(~0))
       {
         // need to work around another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8644
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
@@ -274,14 +274,20 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       }
       if (doStartCopy)
       {
+        auto ptrGmemStartAlignDown = cpAsyncOobInfo.ptrGmemStartAlignDown;
+        auto ptrSmemStart          = srcSmem;
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+        asm volatile("" : "+l"(ptrGmemStartAlignDown));
+        asm volatile("" : "+l"(ptrSmemStart));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         // Copy a subset of the first 16 bytes
         if (::cuda::ptx::elect_sync(~0))
         {
           ::cuda::ptx::cp_async_bulk_cp_mask(
             ::cuda::ptx::space_global,
             ::cuda::ptx::space_shared,
-            cpAsyncOobInfo.ptrGmemStartAlignDown,
-            srcSmem,
+            ptrGmemStartAlignDown,
+            ptrSmemStart,
             /*size*/ 16,
             byteMaskStart);
         }
