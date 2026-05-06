@@ -615,7 +615,7 @@ C2H_TEST("ScanPolicy", "[scan][device]")
       cub::CacheLoadModifier::LOAD_DEFAULT,
       cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
       cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
-      cub::detail::delay_constructor_policy{}},
+      cub::LookbackDelayPolicy{}},
     cub::ScanWarpspeedPolicy{}};
 
 #  if _CCCL_STD_VER >= 2020
@@ -630,7 +630,7 @@ C2H_TEST("ScanPolicy", "[scan][device]")
         .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
         .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
         .scan_algorithm    = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
-        .delay_constructor = cub::detail::delay_constructor_policy{}},
+        .delay_constructor = cub::LookbackDelayPolicy{}},
     .warpspeed = cub::ScanWarpspeedPolicy{}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;

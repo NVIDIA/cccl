@@ -42,7 +42,7 @@ struct scan_by_key_policy
   CacheLoadModifier load_modifier;
   BlockStoreAlgorithm store_algorithm;
   BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
+  LookbackDelayPolicy delay_constructor;
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
   {

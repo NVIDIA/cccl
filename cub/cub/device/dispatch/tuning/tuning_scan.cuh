@@ -74,7 +74,7 @@ struct ScanLookbackPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
-  detail::delay_constructor_policy delay_constructor; //!< The delay constructor policy
+  LookbackDelayPolicy delay_constructor; //!< The policy configuring the delay used in decoupled lookback
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs)
   {
@@ -695,7 +695,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   CacheLoadModifier load_modifier,
   BlockStoreAlgorithm store_algorithm,
   BlockScanAlgorithm scan_algorithm,
-  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450}) -> ScanPolicy
+  LookbackDelayPolicy delay_constructor = {LookbackDelayAlgorithm::fixed_delay, 350, 450}) -> ScanPolicy
 {
   const auto scaled = scale_mem_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return ScanPolicy{
@@ -1074,7 +1074,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 768, 820});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 768, 820});
             case 2:
               // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
               return make_mem_scaled_lookback_scan_policy(
@@ -1085,7 +1085,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1384, 720});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1384, 720});
             case 4:
               // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
               return make_mem_scaled_lookback_scan_policy(
@@ -1096,7 +1096,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1904, 830});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 1904, 830});
             case 8:
               // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
               return make_mem_scaled_lookback_scan_policy(
@@ -1107,7 +1107,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 772, 710});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 772, 710});
             default:
               break;
           }
@@ -1126,7 +1126,7 @@ struct policy_selector
                 LOAD_CA,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 228, 775});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 228, 775});
             case 2:
               // todo(gonidelis): Regresses for large inputs. Find better tuning.
               // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
@@ -1141,7 +1141,7 @@ struct policy_selector
                 LOAD_CA,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 956, 550});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 956, 550});
             case 8:
               if (accum_type == type_t::float64)
               {
@@ -1156,7 +1156,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backoff, 328, 965});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, 328, 965});
             default:
               break;
           }
@@ -1181,7 +1181,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 168, 1140});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 168, 1140});
             case 2:
               return make_mem_scaled_lookback_scan_policy(
                 512,
@@ -1191,7 +1191,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 376, 1125});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 376, 1125});
             case 4:
               if (accum_type == type_t::float32)
               {
@@ -1203,7 +1203,7 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 688, 1140});
+                  LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 688, 1140});
               }
               return make_mem_scaled_lookback_scan_policy(
                 128,
@@ -1213,7 +1213,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 648, 1245});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 648, 1245});
             case 8:
               if (accum_type == type_t::float64)
               {
@@ -1225,7 +1225,7 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 576, 1215});
+                  LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 576, 1215});
               }
               return make_mem_scaled_lookback_scan_policy(
                 224,
@@ -1235,7 +1235,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 632, 1290});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 632, 1290});
             default:
               break;
           }
@@ -1253,7 +1253,7 @@ struct policy_selector
             LOAD_DEFAULT,
             BLOCK_STORE_WARP_TRANSPOSE,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 860, 630});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 860, 630});
         }
 #endif
       }
@@ -1290,7 +1290,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 368, 725});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 368, 725});
             case 2:
               return make_mem_scaled_lookback_scan_policy(
                 352,
@@ -1300,7 +1300,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 488, 1040});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 488, 1040});
             case 4:
               if (accum_type == type_t::float32)
               {
@@ -1312,7 +1312,7 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 724, 1050});
+                  LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 724, 1050});
               }
               return make_mem_scaled_lookback_scan_policy(
                 320,
@@ -1322,7 +1322,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 268, 1180});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 268, 1180});
             case 8:
               if (accum_type == type_t::float64)
               {
@@ -1334,7 +1334,7 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 388, 1100});
+                  LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 388, 1100});
               }
               return make_mem_scaled_lookback_scan_policy(
                 288,
@@ -1344,7 +1344,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 716, 785});
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 716, 785});
             default:
               break;
           }
@@ -1362,7 +1362,7 @@ struct policy_selector
             LOAD_DEFAULT,
             BLOCK_STORE_DIRECT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1200});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1200});
         }
 #endif
       }
@@ -1382,7 +1382,7 @@ struct policy_selector
           LOAD_DEFAULT,
           BLOCK_STORE_WARP_TRANSPOSE,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 628, 520});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 628, 520});
       }
 
       return make_mem_scaled_lookback_scan_policy(

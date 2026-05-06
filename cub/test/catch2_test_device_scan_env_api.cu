@@ -434,7 +434,7 @@ struct MyPolicySelector
           .load_modifier     = cub::LOAD_DEFAULT,
           .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
           .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-          .delay_constructor = cub::detail::delay_constructor_policy{}},
+          .delay_constructor = cub::LookbackDelayPolicy{}},
       .warpspeed = cub::ScanWarpspeedPolicy{} // ignored since algorithm is lookback
     };
   }
