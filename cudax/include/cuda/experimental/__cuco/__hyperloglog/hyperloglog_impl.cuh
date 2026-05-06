@@ -34,8 +34,10 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
 
@@ -71,6 +73,9 @@ class __hyperloglog_impl
 {
   using __fp_type         = double; ///< Floating point type used for reduction
   using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_Tp>())); ///< Hash value type
+
+  static_assert(::cuda::std::is_unsigned_v<__hash_value_type>,
+                "HyperLogLog requires an unsigned hash value type");
 
 public:
   using __value_type    = _Tp; ///< Type of items to count
@@ -157,16 +162,18 @@ public:
 
   //! @brief Adds an item to the estimator.
   //!
+  //! @note Bit slicing matches Apache Spark's HyperLogLog++: register index is taken from the
+  //! high `__precision` bits of the hash, and rho is computed from the remaining low bits with
+  //! a one-bit padding to bound the leading-zero count at `hash_bits - __precision`.
+  //!
   //! @param __item The item to be counted
   _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
-    const auto __h      = __hash(__item);
-    const auto __reg    = __h & __register_mask();
-    const auto __zeroes = ::cuda::std::countl_zero(__h | __register_mask()) + 1;
-
-    // reversed order (same one as Spark uses)
-    // const auto __reg    = __h >> ((sizeof(__hash_value_type) * 8) - __precision);
-    // const auto __zeroes = ::cuda::std::countl_zero(__h << __precision) + 1;
+    constexpr auto __hash_bits = ::cuda::std::numeric_limits<__hash_value_type>::digits;
+    const auto __h             = __hash(__item);
+    const auto __reg           = static_cast<int>(__h >> (__hash_bits - __precision));
+    const auto __w_padding     = __hash_value_type{1} << static_cast<__hash_value_type>(__precision - 1);
+    const auto __zeroes        = ::cuda::std::countl_zero((__h << __precision) | __w_padding) + 1;
 
     __update_max(__reg, __zeroes);
   }
@@ -561,15 +568,6 @@ public:
   }
 
 private:
-  //!
-  //! @brief Gets the register mask used to separate register index from count.
-  //!
-  //! @return The register mask
-  [[nodiscard]] _CCCL_API constexpr __hash_value_type __register_mask() const noexcept
-  {
-    return (1ull << __precision) - 1;
-  }
-
   //! @brief Atomically updates the register at position `i` with `max(reg[i], value)`.
   //!
   //! @param __i Register index

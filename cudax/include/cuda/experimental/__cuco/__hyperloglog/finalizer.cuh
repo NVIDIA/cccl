@@ -24,11 +24,9 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/midpoint.h>
 
 #include <cuda/experimental/__cuco/__hyperloglog/tuning.cuh>
@@ -154,13 +152,11 @@ private:
     const auto __estimates = __raw_estimate_data(__precision);
     const auto __n         = static_cast<int>(__raw_estimate_data_size(__precision));
     int __left             = 0;
-    int __right            = static_cast<int>(__n) - 1;
-    int __mid              = -1;
-    int __candidate_index  = 0; // Index of the closest element found
+    int __right            = __n - 1;
 
     while (__left <= __right)
     {
-      __mid = ::cuda::std::midpoint(__left, __right);
+      const int __mid = ::cuda::std::midpoint(__left, __right);
 
       if (__estimates[__mid] < __e)
       {
@@ -177,20 +173,9 @@ private:
       }
     }
 
-    // At this point, '__left' is the insertion point. We need to compare the elements at '__left' and
-    // '__left - 1' to find the closest one, taking care of boundary conditions.
-
-    constexpr auto __max_double = ::cuda::std::numeric_limits<double>::max();
-
-    // Distance from '__e' to the element at '__left', if within bounds
-    const double __dist_lhs =
-      __left < static_cast<int>(__n) ? ::cuda::std::abs(__estimates[__left] - __e) : __max_double;
-    // Distance from '__e' to the element at '__left - 1', if within bounds
-    const double __dist_rhs = __left - 1 >= 0 ? ::cuda::std::abs(__estimates[__left - 1] - __e) : __max_double;
-
-    __candidate_index = (__dist_lhs < __dist_rhs) ? __left : __left - 1;
-
-    return __candidate_index;
+    // At this point, '__left' is the binary-search insertion point. Spark uses the insertion
+    // point as the anchor index when the exact estimate is not present in the table.
+    return __left;
   }
 
   static constexpr auto __k = 6; ///< Number of interpolation points to consider
