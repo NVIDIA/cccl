@@ -435,7 +435,19 @@ catch (const std::exception& exc)
 CUresult cccl_device_radix_sort_load(cccl_device_radix_sort_build_result_t* build_ptr)
 try
 {
-  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  auto invalid_name = [](const char* n) {
+    return n == nullptr || n[0] == '\0';
+  };
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0
+      || invalid_name(build_ptr->single_tile_kernel_lowered_name)
+      || invalid_name(build_ptr->upsweep_kernel_lowered_name)
+      || invalid_name(build_ptr->alt_upsweep_kernel_lowered_name)
+      || invalid_name(build_ptr->scan_bins_kernel_lowered_name)
+      || invalid_name(build_ptr->downsweep_kernel_lowered_name)
+      || invalid_name(build_ptr->alt_downsweep_kernel_lowered_name)
+      || invalid_name(build_ptr->histogram_kernel_lowered_name)
+      || invalid_name(build_ptr->exclusive_sum_kernel_lowered_name)
+      || invalid_name(build_ptr->onesweep_kernel_lowered_name))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

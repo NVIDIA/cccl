@@ -397,7 +397,9 @@ catch (const std::exception& exc)
 CUresult cccl_device_unique_by_key_load(cccl_device_unique_by_key_build_result_t* build)
 try
 {
-  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0)
+  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0
+      || build->compact_init_kernel_lowered_name == nullptr || build->compact_init_kernel_lowered_name[0] == '\0'
+      || build->sweep_kernel_lowered_name == nullptr || build->sweep_kernel_lowered_name[0] == '\0')
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

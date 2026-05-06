@@ -412,7 +412,11 @@ catch (const std::exception& exc)
 CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build)
 try
 {
-  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0)
+  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0
+      || build->single_tile_kernel_lowered_name == nullptr || build->single_tile_kernel_lowered_name[0] == '\0'
+      || build->single_tile_second_kernel_lowered_name == nullptr
+      || build->single_tile_second_kernel_lowered_name[0] == '\0' || build->reduction_kernel_lowered_name == nullptr
+      || build->reduction_kernel_lowered_name[0] == '\0')
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

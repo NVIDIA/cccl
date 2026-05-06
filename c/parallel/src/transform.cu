@@ -377,7 +377,8 @@ catch (const std::exception& exc)
 CUresult cccl_device_transform_load(cccl_device_transform_build_result_t* build_ptr)
 try
 {
-  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0
+      || build_ptr->transform_kernel_lowered_name == nullptr || build_ptr->transform_kernel_lowered_name[0] == '\0')
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

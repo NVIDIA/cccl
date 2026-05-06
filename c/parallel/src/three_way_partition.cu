@@ -315,7 +315,12 @@ catch (const std::exception& exc)
 CUresult cccl_device_three_way_partition_load(cccl_device_three_way_partition_build_result_t* build)
 try
 {
-  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0)
+  auto invalid_name = [](const char* n) {
+    return n == nullptr || n[0] == '\0';
+  };
+  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0
+      || invalid_name(build->three_way_partition_init_kernel_lowered_name)
+      || invalid_name(build->three_way_partition_kernel_lowered_name))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

@@ -409,7 +409,9 @@ catch (const std::exception& exc)
 CUresult cccl_device_histogram_load(cccl_device_histogram_build_result_t* build_ptr)
 try
 {
-  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0
+      || build_ptr->init_kernel_lowered_name == nullptr || build_ptr->init_kernel_lowered_name[0] == '\0'
+      || build_ptr->sweep_kernel_lowered_name == nullptr || build_ptr->sweep_kernel_lowered_name[0] == '\0')
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

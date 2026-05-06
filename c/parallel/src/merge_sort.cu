@@ -375,7 +375,10 @@ catch (const std::exception& exc)
 CUresult cccl_device_merge_sort_load(cccl_device_merge_sort_build_result_t* build_ptr)
 try
 {
-  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0)
+  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0
+      || build_ptr->block_sort_kernel_lowered_name == nullptr || build_ptr->block_sort_kernel_lowered_name[0] == '\0'
+      || build_ptr->partition_kernel_lowered_name == nullptr || build_ptr->partition_kernel_lowered_name[0] == '\0'
+      || build_ptr->merge_kernel_lowered_name == nullptr || build_ptr->merge_kernel_lowered_name[0] == '\0')
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
