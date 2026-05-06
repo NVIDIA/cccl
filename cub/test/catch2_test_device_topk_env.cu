@@ -37,12 +37,12 @@ auto topk_requirements()
     cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 }
 
-template <unsigned int BlockThreads>
+template <unsigned int ThreadsPerBlock>
 struct topk_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::topk::topk_policy
   {
-    return {BlockThreads, 1, 8, cub::BLOCK_LOAD_DIRECT, cub::BLOCK_SCAN_WARP_SCANS};
+    return {ThreadsPerBlock, 1, 8, cub::BLOCK_LOAD_DIRECT, cub::BLOCK_SCAN_WARP_SCANS};
   }
 };
 
