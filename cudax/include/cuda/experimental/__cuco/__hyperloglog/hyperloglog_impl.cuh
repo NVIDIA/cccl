@@ -74,8 +74,7 @@ class __hyperloglog_impl
   using __fp_type         = double; ///< Floating point type used for reduction
   using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_Tp>())); ///< Hash value type
 
-  static_assert(::cuda::std::is_unsigned_v<__hash_value_type>,
-                "HyperLogLog requires an unsigned hash value type");
+  static_assert(::cuda::std::is_unsigned_v<__hash_value_type>, "HyperLogLog requires an unsigned hash value type");
 
 public:
   using __value_type    = _Tp; ///< Type of items to count
