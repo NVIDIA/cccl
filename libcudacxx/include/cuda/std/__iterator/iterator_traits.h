@@ -154,23 +154,24 @@ struct __iter_traits_cache
 template <class _Iter>
 using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
 
-#if defined(_GLIBCXX_DEBUG)
+#if _CCCL_HOSTED()
+#  if defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::value)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#endif // _GLIBCXX_DEBUG
-#if _CCCL_HOST_STD_LIB(LIBSTDCXX)
+#  endif // _GLIBCXX_DEBUG
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
-#if _CCCL_HOST_STD_LIB(LIBCXX)
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
+#  if _CCCL_HOST_STD_LIB(LIBCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
 _CCCL_API inline auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
-#elif _CCCL_HOST_STD_LIB(STL)
+#  elif _CCCL_HOST_STD_LIB(STL)
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
@@ -195,7 +196,9 @@ _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-#endif // _CCCL_HOST_STD_LIB(STL)
+#  endif // _CCCL_HOST_STD_LIB(STL)
+#endif // _CCCL_HOSTED()
+
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
 _CCCL_API inline auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;

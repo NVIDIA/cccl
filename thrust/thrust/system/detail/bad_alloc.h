@@ -13,8 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <new>
-#include <string>
+#if _CCCL_HOSTED()
+#  include <new>
+#  include <string>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail
@@ -43,4 +44,7 @@ private:
   std::string m_what;
 }; // end bad_alloc
 } // namespace system::detail
+
 THRUST_NAMESPACE_END
+
+#endif // _CCCL_HOSTED()

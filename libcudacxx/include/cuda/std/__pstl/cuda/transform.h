@@ -107,7 +107,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         const auto __count = ::cuda::std::distance(__first, __last);
         return __par_impl(
@@ -118,7 +118,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
           ::cuda::std::move(__func),
           ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -126,9 +126,10 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {
@@ -160,7 +161,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
                   && ::cuda::std::__has_random_access_traversal<_InputIterator2>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         const auto __count = ::cuda::std::distance(__first1, __last1);
         return __par_impl(
@@ -171,7 +172,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
           ::cuda::std::move(__func),
           ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -179,9 +180,10 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

@@ -95,9 +95,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
-  const int block_threads    = policy.block_threads;
-  const int items_per_thread = policy.items_per_thread;
-  const auto tile_size       = static_cast<global_offset_t>(block_threads * items_per_thread);
+  const int threads_per_block = policy.threads_per_block;
+  const int items_per_thread  = policy.items_per_thread;
+  const auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
 
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
@@ -173,7 +173,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
             num_current_tiles,
-            block_threads,
+            threads_per_block,
             (long long) stream,
             items_per_thread);
 #endif
@@ -207,7 +207,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         &tmp_num_uniques[buffer_selector],
         &tmp_num_uniques[buffer_selector ^ 0x01]};
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,
@@ -228,7 +228,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     else
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,

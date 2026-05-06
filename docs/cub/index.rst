@@ -10,6 +10,7 @@ CUB
    Overview <self>
    test_overview
    benchmarking
+   policy_selectors
    tuning
    developer_overview
    API documentation <api>

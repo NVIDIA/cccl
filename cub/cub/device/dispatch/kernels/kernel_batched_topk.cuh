@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
@@ -34,6 +34,11 @@ template <typename PolicySelector, typename SegmentSizeParameterT, typename... A
 struct find_smallest_covering_policy
 {
 private:
+  struct policy_t
+  {
+    worker_policy worker_per_segment_policy;
+    multi_worker_policy multi_worker_per_segment_policy;
+  };
   static constexpr ::cuda::std::int64_t max_segment_size = params::static_max_value_v<SegmentSizeParameterT>;
   static constexpr batched_topk_policy active_policy     = current_policy<PolicySelector>();
 
@@ -47,13 +52,14 @@ private:
     else
     {
       constexpr worker_policy wp = active_policy.worker_per_segment_policies[Index];
-      constexpr auto tile_size   = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
+      constexpr auto tile_size   = ::cuda::std::int64_t{wp.threads_per_block} * wp.items_per_thread;
 
       struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
       {
         _CCCL_API constexpr auto operator()() const
         {
-          return active_policy.worker_per_segment_policies[Index];
+          return policy_t{active_policy.worker_per_segment_policies[Index],
+                          active_policy.multi_worker_per_segment_policy};
         }
       };
       using candidate_agent_t  = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
@@ -76,7 +82,8 @@ private:
 public:
   // TODO (elstehle): extend support for variable-size segments
   static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
-  static constexpr worker_policy policy = active_policy.worker_per_segment_policies[selected_index];
+  static constexpr policy_t policy = {
+    active_policy.worker_per_segment_policies[selected_index], active_policy.multi_worker_per_segment_policy};
 
   struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
   {
@@ -99,7 +106,8 @@ template <typename PolicySelector,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename SelectDirectionParameterT,
-          typename NumSegmentsParameterT>
+          typename NumSegmentsParameterT,
+          typename LargeSegmentTileOffsetT>
 #if _CCCL_HAS_CONCEPTS()
   requires batched_topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -114,7 +122,8 @@ __launch_bounds__(int(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>::policy.block_threads)) __global__
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.threads_per_block)) __global__
   void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
@@ -123,7 +132,10 @@ __launch_bounds__(int(
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments)
+    NumSegmentsParameterT num_segments,
+    batched_topk_counters<typename NumSegmentsParameterT::value_type>* d_counters,
+    typename NumSegmentsParameterT::value_type* d_large_segments_ids,
+    LargeSegmentTileOffsetT* d_large_segments_tile_offsets)
 {
   using agent_t = typename find_smallest_covering_policy<
     PolicySelector,
@@ -135,7 +147,8 @@ __launch_bounds__(int(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>::agent_t;
+    NumSegmentsParameterT,
+    LargeSegmentTileOffsetT>::agent_t;
 
   // Static Assertions (Constraints)
   static_assert(agent_t::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,
@@ -156,7 +169,10 @@ __launch_bounds__(int(
     segment_sizes,
     k,
     select_directions,
-    num_segments);
+    num_segments,
+    d_counters,
+    d_large_segments_ids,
+    d_large_segments_tile_offsets);
 
   // Process segments
   agent.Process();

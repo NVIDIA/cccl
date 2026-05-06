@@ -93,7 +93,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   operator()(_Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
+#if _CCCL_TILE_COMPILATION()
+    _CCCL_VERIFY(false, "Cannot call delete[] in a tile program");
+#else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
     delete[] __ptr;
+#endif // !_CCCL_TILE_COMPILATION()
   }
 };
 

@@ -42,9 +42,12 @@ struct __return_constant
 } // namespace detail
 CUB_NAMESPACE_END
 
+namespace cuda
+{
 template <typename T>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
+} // namespace cuda
 
 CUB_NAMESPACE_BEGIN
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input

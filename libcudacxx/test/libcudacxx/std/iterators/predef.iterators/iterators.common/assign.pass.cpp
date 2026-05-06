@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// nvbug6076227: ICE when validating tile
+
 // template<class I2, class S2>
 //   requires convertible_to<const I2&, I> && convertible_to<const S2&, S> &&
 //            assignable_from<I&, const I2&> && assignable_from<S&, const S2&>

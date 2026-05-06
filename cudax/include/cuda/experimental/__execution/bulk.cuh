@@ -71,9 +71,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
   [[nodiscard]] _CCCL_HOST_API static constexpr auto __get_launch_config(_Shape __shape) noexcept
   {
-    constexpr int __block_threads = 256;
-    const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape), __block_threads);
-    auto __dims                   = ::cuda::make_hierarchy(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+    constexpr int __threads_per_block = 256;
+    const int __grid_blocks           = ::cuda::ceil_div(static_cast<int>(__shape), __threads_per_block);
+    auto __dims = ::cuda::make_hierarchy(block_dims<__threads_per_block>(), grid_dims(__grid_blocks));
     return make_config(__dims, cooperative_launch());
   }
 

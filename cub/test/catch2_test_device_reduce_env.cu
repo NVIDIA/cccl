@@ -55,7 +55,7 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 
   unsigned int target_block_size =
     cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(cc)
-      .single_tile.block_threads;
+      .single_tile.threads_per_block;
 
   num_items_t num_items = 1;
   c2h::device_vector<unsigned int> d_block_size(1);
@@ -91,13 +91,13 @@ TEST_CASE("Device sum works with default environment", "[reduce][device]")
   REQUIRE(d_out[0] == num_items);
 }
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct reduce_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::reduce::reduce_policy
   {
     const auto policy = cub::detail::reduce::agent_reduce_policy{
-      BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy, policy};
   }
 };

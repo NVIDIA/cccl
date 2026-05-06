@@ -42,10 +42,12 @@ struct always_true_predicate
 } // namespace detail::transform
 CUB_NAMESPACE_END
 
+namespace cuda
+{
 template <>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
-    : ::cuda::std::true_type
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
 {};
+} // namespace cuda
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
@@ -81,7 +83,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, const Algorithm& algorithm
 
 struct prefetch_policy
 {
-  int block_threads;
+  int threads_per_block;
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
   int min_items_per_thread      = 1;
@@ -93,7 +95,8 @@ struct prefetch_policy
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
+    return lhs.threads_per_block == rhs.threads_per_block
+        && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
         && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
         && lhs.prefetch_byte_stride == rhs.prefetch_byte_stride && lhs.unroll_factor == rhs.unroll_factor;
   }
@@ -107,7 +110,7 @@ struct prefetch_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const prefetch_policy& policy)
   {
     return os
-        << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
+        << "prefetch_policy { .threads_per_block = " << policy.threads_per_block << ", .items_per_thread_no_input = "
         << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
         << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .prefetch_byte_stride = "
         << policy.prefetch_byte_stride << ", .unroll_factor = " << policy.unroll_factor << " }";
@@ -117,13 +120,13 @@ struct prefetch_policy
 
 struct vectorized_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   int vec_size;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size;
   }
 
@@ -135,7 +138,7 @@ struct vectorized_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const vectorized_policy& policy)
   {
-    return os << "vectorized_policy { .block_threads = " << policy.block_threads
+    return os << "vectorized_policy { .threads_per_block = " << policy.threads_per_block
               << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -143,7 +146,7 @@ struct vectorized_policy
 
 struct async_copy_policy
 {
-  int block_threads;
+  int threads_per_block;
   int bulk_copy_alignment; // TODO(bgruber): this should probably be removed from the tuning policy
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   int min_items_per_thread = 1;
@@ -153,7 +156,7 @@ struct async_copy_policy
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.bulk_copy_alignment == rhs.bulk_copy_alignment
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.bulk_copy_alignment == rhs.bulk_copy_alignment
         && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
         && lhs.unroll_factor == rhs.unroll_factor;
   }
@@ -167,7 +170,7 @@ struct async_copy_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const async_copy_policy& policy)
   {
     return os
-        << "async_copy_policy { .block_threads = " << policy.block_threads << ", .bulk_copy_alignment = "
+        << "async_copy_policy { .threads_per_block = " << policy.threads_per_block << ", .bulk_copy_alignment = "
         << policy.bulk_copy_alignment << ", .min_items_per_thread = " << policy.min_items_per_thread
         << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
         << " }";
@@ -408,18 +411,18 @@ struct policy_selector
     }
     else if (cc >= ::cuda::compute_capability{8, 0})
     {
-      const int block_threads = 256;
-      const auto prefetch     = prefetch_policy{block_threads};
+      const int threads_per_block = 256;
+      const auto prefetch         = prefetch_policy{threads_per_block};
       const auto vectorized =
         tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
-      const auto async = async_copy_policy{block_threads, ldgsts_size_and_align};
+      const auto async = async_copy_policy{threads_per_block, ldgsts_size_and_align};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
       // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
       const bool exhaust_smem =
         memcpy_async_dyn_smem_for_tile_size<InputCount>(
-          inputs, block_threads * async.min_items_per_thread, ldgsts_size_and_align)
+          inputs, threads_per_block * async.min_items_per_thread, ldgsts_size_and_align)
         > int{max_smem_per_block};
 
       // on Ampere, the vectorized kernel performs better for 1 and 2 byte values

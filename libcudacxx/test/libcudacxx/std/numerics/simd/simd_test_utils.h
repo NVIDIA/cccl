@@ -66,7 +66,7 @@ template <int Val>
 struct is_index
 {
   template <typename I>
-  __host__ __device__ constexpr bool operator()(I i) const noexcept
+  TEST_FUNC constexpr bool operator()(I i) const noexcept
   {
     return i == Val;
   }
@@ -76,7 +76,7 @@ template <int Val>
 struct is_greater_equal_than_index
 {
   template <typename I>
-  __host__ __device__ constexpr bool operator()(I i) const noexcept
+  TEST_FUNC constexpr bool operator()(I i) const noexcept
   {
     return i >= Val;
   }
@@ -86,7 +86,7 @@ template <int Val>
 struct is_less_than_index
 {
   template <typename I>
-  __host__ __device__ constexpr bool operator()(I i) const noexcept
+  TEST_FUNC constexpr bool operator()(I i) const noexcept
   {
     return i < Val;
   }

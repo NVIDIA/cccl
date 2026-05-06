@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 ## Usage: dump_and_check test.a test.cu PREFIX

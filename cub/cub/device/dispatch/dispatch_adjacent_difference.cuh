@@ -65,7 +65,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
   static constexpr adjacent_difference_policy policy = current_policy<PolicySelector>();
   using AdjacentDifferencePolicyT =
-    AgentAdjacentDifferencePolicy<policy.block_threads,
+    AgentAdjacentDifferencePolicy<policy.threads_per_block,
                                   policy.items_per_thread,
                                   policy.load_algorithm,
                                   policy.load_modifier,
@@ -356,7 +356,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+  const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
   size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(InputT);
@@ -423,12 +423,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   _CubLog("Invoking DeviceAdjacentDifferenceDifferenceKernel"
           "<<<%d, %d, 0, %lld>>>()\n",
           num_tiles,
-          active_policy.block_threads,
+          active_policy.threads_per_block,
           reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.block_threads, 0, stream)
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.threads_per_block, 0, stream)
           .doit(DeviceAdjacentDifferenceDifferenceKernel < PolicySelector,
                 InputIteratorT,
                 OutputIteratorT,

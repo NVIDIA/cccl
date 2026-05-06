@@ -55,9 +55,9 @@ def test_warp_merge_sort(T, items_per_thread):
 def test_warp_merge_sort_multiple_warps():
     T = types.int32
     items_per_thread = 3
-    block_threads = 1024
+    threads_per_block = 1024
     warp_threads = 32
-    items_per_tile = block_threads * items_per_thread
+    items_per_tile = threads_per_block * items_per_thread
 
     def op(a, b):
         return a < b
@@ -81,11 +81,11 @@ def test_warp_merge_sort_multiple_warps():
     h_input = random_int(items_per_tile, dtype)
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(items_per_tile, dtype=dtype)
-    kernel[1, block_threads](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
-    for wid in range(block_threads // warp_threads):
+    for wid in range(threads_per_block // warp_threads):
         warp_offset = wid * warp_threads * items_per_thread
         reference = sorted(
             h_input[warp_offset : warp_offset + warp_threads * items_per_thread]

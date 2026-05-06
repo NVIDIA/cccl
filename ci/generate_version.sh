@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Generate a version number string using metadata from git or JSON.
 # Use the PyPi package versioning convention for pre-release or

@@ -44,7 +44,7 @@ struct host_policy_provider
     _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
       unique_by_key_policy policy = PolicyGetter{}();
-      policy.block_threads        = 64;
+      policy.threads_per_block    = 64;
       policy.items_per_thread     = 1;
       return policy;
     }
@@ -63,7 +63,7 @@ struct device_policy_provider
     _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
       unique_by_key_policy policy = PolicyGetter{}();
-      policy.block_threads        = 64;
+      policy.threads_per_block    = 64;
       policy.items_per_thread     = 1;
       return policy;
     }
@@ -84,7 +84,7 @@ class unique_by_key_vsmem_helper_impl
   static constexpr unique_by_key_policy selected_policy = PolicyProvider::selected_policy;
 
   using selected_policy_t = AgentUniqueByKeyPolicy<
-    selected_policy.block_threads,
+    selected_policy.threads_per_block,
     selected_policy.items_per_thread,
     selected_policy.load_algorithm,
     selected_policy.load_modifier,
@@ -96,7 +96,7 @@ class unique_by_key_vsmem_helper_impl
   static constexpr unique_by_key_policy fallback_policy = PolicyProvider::fallback_policy;
 
   using fallback_policy_t = AgentUniqueByKeyPolicy<
-    fallback_policy.block_threads,
+    fallback_policy.threads_per_block,
     fallback_policy.items_per_thread,
     fallback_policy.load_algorithm,
     fallback_policy.load_modifier,
@@ -243,7 +243,7 @@ __launch_bounds__(
     KeyOutputIteratorT,
     ValueOutputIteratorT,
     EqualityOpT,
-    OffsetT>::policy.block_threads)
+    OffsetT>::policy.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
