@@ -9,19 +9,19 @@ Defined in the header ``<cuda/functional>``.
 
     struct always_true {
         template <typename... Ts>
-        [[nodiscard]] __host__ __device__ consteval bool operator()(Ts&&...) const noexcept;
+        [[nodiscard]] __host__ __device__ constexpr bool operator()(Ts&&...) const noexcept;
     };
 
     struct always_false {
         template <typename... Ts>
-        [[nodiscard]] __host__ __device__ consteval bool operator()(Ts&&...) const noexcept;
+        [[nodiscard]] __host__ __device__ constexpr bool operator()(Ts&&...) const noexcept;
     };
 
 ``cuda::always_true`` is a function object that always returns ``true`` regardless of the number and type of arguments
 passed. ``cuda::always_false`` is a function object that always returns ``false`` regardless of the number and type of
 arguments passed.
 
-Both types are empty, trivially copyable, and their ``operator()`` is ``consteval`` and ``noexcept``.
+Both types are empty, trivially copyable, and their ``operator()`` is ``constexpr`` and ``noexcept``.
 
 Example
 -------

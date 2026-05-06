@@ -29,7 +29,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 struct always_true
 {
   template <typename... _Ts>
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool operator()(_Ts&&...) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Ts&&...) const noexcept
   {
     return true;
   }
@@ -39,7 +39,7 @@ struct always_true
 struct always_false
 {
   template <typename... _Ts>
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool operator()(_Ts&&...) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Ts&&...) const noexcept
   {
     return false;
   }
