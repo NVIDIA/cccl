@@ -155,19 +155,10 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam InputIteratorT
-  //!   @rst
-  //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
-  //!   and ``x`` and ``y`` are objects of ``InputIteratorT``'s ``value_type``, then
-  //!   ``x - y`` is defined, and ``InputIteratorT``'s ``value_type`` is convertible to
-  //!   a type in ``OutputIteratorT``'s set of ``value_types``, and the return type
-  //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
-  //!   ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
   //!
   //! @tparam OutputIteratorT
-  //!   @rst
-  //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
-  //!   @endrst
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s set of `value_types`.
@@ -277,13 +268,7 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
-  //!   @rst
-  //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
-  //!   ``RandomAccessIteratorT`` is mutable. If ``x`` and ``y`` are objects of
-  //!   ``RandomAccessIteratorT``'s ``value_type``, and ``x - y`` is defined, then the
-  //!   return type of ``x - y`` should be convertible to a type in
-  //!   ``RandomAccessIteratorT``'s set of ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access iterator type for reading and writing elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
@@ -394,22 +379,13 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam InputIteratorT
-  //!   @rst
-  //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
-  //!   and ``x`` and ``y`` are objects of ``InputIteratorT``'s ``value_type``, then
-  //!   ``x - y`` is defined, and ``InputIteratorT``'s ``value_type`` is convertible to
-  //!   a type in ``OutputIteratorT``'s set of ``value_types``, and the return type
-  //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
-  //!   ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
   //!
   //! @tparam OutputIteratorT
-  //!   @rst
-  //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
-  //!   @endrst
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
   //!
   //! @tparam DifferenceOpT
-  //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
+  //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s
   //!   set of `value_types`.
   //!
   //! @tparam NumItemsT
@@ -507,13 +483,7 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
-  //!   @rst
-  //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
-  //!   ``RandomAccessIteratorT`` is mutable. If ``x`` and ``y`` are objects of
-  //!   ``RandomAccessIteratorT``'s `value_type`, and ``x - y`` is defined, then the
-  //!   return type of ``x - y`` should be convertible to a type in
-  //!   ``RandomAccessIteratorT``'s set of ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access iterator type for reading and writing elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
