@@ -12,20 +12,22 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-__host__ __device__ void test_size_and_alignment()
+#include "test_macros.h"
+
+TEST_FUNC void test_size_and_alignment()
 {
   using arr_t = cuda::__uninitialized_array<int, 4>;
   static_assert(sizeof(arr_t) >= 4 * sizeof(int), "");
   static_assert(alignof(arr_t) == alignof(int), "");
 }
 
-__host__ __device__ void test_custom_alignment()
+TEST_FUNC void test_custom_alignment()
 {
   using arr_t = cuda::__uninitialized_array<int, 4, 32>;
   static_assert(alignof(arr_t) == 32, "");
 }
 
-__host__ __device__ void test_element_access()
+TEST_FUNC void test_element_access()
 {
   cuda::__uninitialized_array<int, 4> arr{};
   arr[0] = 10;
@@ -38,7 +40,7 @@ __host__ __device__ void test_element_access()
   assert(arr[3] == 40);
 }
 
-__host__ __device__ void test_data_pointer_const_correctness()
+TEST_FUNC void test_data_pointer_const_correctness()
 {
   using arr_t = cuda::__uninitialized_array<int, 4>;
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<arr_t&>().data()), int*>::value, "");
@@ -47,7 +49,7 @@ __host__ __device__ void test_data_pointer_const_correctness()
   assert(arr.data() != nullptr);
 }
 
-__host__ __device__ void test_no_value_initialization()
+TEST_FUNC void test_no_value_initialization()
 {
   struct with_default_member_t
   {
@@ -61,7 +63,7 @@ __host__ __device__ void test_no_value_initialization()
   }
 }
 
-__host__ __device__ void test_basic_integers()
+TEST_FUNC void test_basic_integers()
 {
   cuda::__uninitialized_array<char, 4> arr_char{};
   cuda::__uninitialized_array<short, 4> arr_short{};
@@ -81,7 +83,7 @@ __host__ __device__ void test_basic_integers()
   assert(arr_longlong[0] == 999LL);
 }
 
-__host__ __device__ void test_floating_point()
+TEST_FUNC void test_floating_point()
 {
   cuda::__uninitialized_array<float, 4> arr_float{};
   cuda::__uninitialized_array<double, 4> arr_double{};
@@ -92,7 +94,7 @@ __host__ __device__ void test_floating_point()
   assert(arr_double[0] == 2.718);
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_size_and_alignment();
   test_custom_alignment();
