@@ -636,8 +636,16 @@ try
     all_blobs.push_back(build_ptr->kernel_ltoir);
     all_sizes.push_back(build_ptr->kernel_ltoir_size);
   }
+  if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   for (size_t i = 0; i < num_inputs; ++i)
   {
+    if (input_blobs[i] == nullptr || input_sizes[i] == 0)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
     all_blobs.push_back(input_blobs[i]);
     all_sizes.push_back(input_sizes[i]);
   }
