@@ -613,8 +613,8 @@ C2H_TEST("Reduce build result has AoT metadata populated", "[reduce][aot]")
   // cc field is packed as cc_major * 10 + cc_minor
   CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
 
-  CHECK(build.cubin != nullptr);
-  CHECK(build.cubin_size > 0);
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
 
   CHECK(build.runtime_policy != nullptr);
   CHECK(build.runtime_policy_size > 0);
@@ -684,8 +684,8 @@ C2H_TEST("Reduce compile/load round-trip", "[reduce][aot]")
       build_info.get_ctk_path(),
       nullptr));
 
-  REQUIRE(build.cubin != nullptr);
-  REQUIRE(build.cubin_size > 0);
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
   REQUIRE(build.single_tile_kernel_lowered_name != nullptr);
   REQUIRE(build.single_tile_second_kernel_lowered_name != nullptr);
   REQUIRE(build.reduction_kernel_lowered_name != nullptr);
@@ -760,9 +760,9 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
       nullptr));
 
   // After kernel-only compile: kernel_ltoir is populated, cubin is not.
-  REQUIRE(build.kernel_ltoir != nullptr);
-  REQUIRE(build.kernel_ltoir_size > 0);
-  CHECK(build.cubin == nullptr);
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_LTOIR));
+  REQUIRE(build.payload_size > 0);
+  CHECK((build.payload_kind != CCCL_PAYLOAD_CUBIN));
   CHECK(build.library == nullptr);
 
   // Compile the operator LTOIR separately (this is the "user-supplied" op blob).
@@ -771,11 +771,11 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][aot]")
   size_t op_size      = op_full.code.size();
 
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_link_ltoir(&build, &op_blob, &op_size, 1));
-  REQUIRE(build.cubin != nullptr);
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   REQUIRE(build.library == nullptr);
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_load(&build));
   REQUIRE(build.library != nullptr);
-  CHECK(build.kernel_ltoir == nullptr);
+  CHECK((build.payload_kind != CCCL_PAYLOAD_LTOIR));
 
   constexpr std::size_t n    = 16;
   const std::vector<T> input = generate<T>(n);

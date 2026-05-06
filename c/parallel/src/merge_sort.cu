@@ -13,6 +13,8 @@
 #include <cub/device/device_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 
+#include <chrono>
+#include <cstdio>
 #include <format>
 #include <mutex>
 #include <sstream>
@@ -351,14 +353,16 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
-    build_ptr->kernel_ltoir       = ltoir_data.release();
-    build_ptr->kernel_ltoir_size  = ltoir_size;
+    build_ptr->payload            = ltoir_data.release();
+    build_ptr->payload_size       = ltoir_size;
+    build_ptr->payload_kind       = CCCL_PAYLOAD_LTOIR;
   }
   else
   {
     nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
-    build_ptr->cubin         = (void*) result.data.release();
-    build_ptr->cubin_size    = result.size;
+    build_ptr->payload       = (void*) result.data.release();
+    build_ptr->payload_size  = result.size;
+    build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
 
   return CUDA_SUCCESS;
@@ -375,21 +379,32 @@ catch (const std::exception& exc)
 CUresult cccl_device_merge_sort_load(cccl_device_merge_sort_build_result_t* build_ptr)
 try
 {
-  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0
-      || build_ptr->block_sort_kernel_lowered_name == nullptr || build_ptr->block_sort_kernel_lowered_name[0] == '\0'
-      || build_ptr->partition_kernel_lowered_name == nullptr || build_ptr->partition_kernel_lowered_name[0] == '\0'
-      || build_ptr->merge_kernel_lowered_name == nullptr || build_ptr->merge_kernel_lowered_name[0] == '\0')
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_CUBIN || build_ptr->block_sort_kernel_lowered_name == nullptr
+      || build_ptr->block_sort_kernel_lowered_name[0] == '\0' || build_ptr->partition_kernel_lowered_name == nullptr
+      || build_ptr->partition_kernel_lowered_name[0] == '\0' || build_ptr->merge_kernel_lowered_name == nullptr
+      || build_ptr->merge_kernel_lowered_name[0] == '\0')
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  auto t0 = std::chrono::steady_clock::now();
+  check(cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  const double load_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
   try
   {
+    auto tk = std::chrono::steady_clock::now();
     check(
       cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, build_ptr->block_sort_kernel_lowered_name));
     check(
       cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, build_ptr->partition_kernel_lowered_name));
     check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, build_ptr->merge_kernel_lowered_name));
+    const double kget_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tk).count();
+    std::fprintf(stderr,
+                 "    [merge_sort.load] cuLibraryLoadData: %.3f ms  3x cuLibraryGetKernel: %.3f ms (payload=%zu B)\n",
+                 load_ms,
+                 kget_ms,
+                 build_ptr->payload_size);
+    std::fflush(stderr);
   }
   catch (...)
   {
@@ -546,8 +561,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<char[]> kernel_ltoir(static_cast<char*>(build_ptr->kernel_ltoir));
+  std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
   std::unique_ptr<cub::detail::merge_sort::policy_selector> policy(
     static_cast<cub::detail::merge_sort::policy_selector*>(build_ptr->runtime_policy));
   if (build_ptr->library != nullptr)
@@ -588,10 +602,10 @@ try
   const int cc_minor = build_ptr->cc % 10;
   std::vector<const void*> all_blobs;
   std::vector<size_t> all_sizes;
-  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  if (build_ptr->payload != nullptr && build_ptr->payload_size > 0 && build_ptr->payload_kind == CCCL_PAYLOAD_LTOIR)
   {
-    all_blobs.push_back(build_ptr->kernel_ltoir);
-    all_sizes.push_back(build_ptr->kernel_ltoir_size);
+    all_blobs.push_back(build_ptr->payload);
+    all_sizes.push_back(build_ptr->payload_size);
   }
   if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
   {
@@ -606,12 +620,29 @@ try
     all_blobs.push_back(input_blobs[i]);
     all_sizes.push_back(input_sizes[i]);
   }
+  size_t total_in = 0;
+  for (auto s : all_sizes)
+  {
+    total_in += s;
+  }
+  auto t0                  = std::chrono::steady_clock::now();
   auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
-  delete[] static_cast<char*>(build_ptr->kernel_ltoir);
-  build_ptr->kernel_ltoir      = nullptr;
-  build_ptr->kernel_ltoir_size = 0;
-  build_ptr->cubin             = (void*) cubin.release();
-  build_ptr->cubin_size        = cubin_size;
+  const double nvjit_ms    = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+  std::fprintf(
+    stderr,
+    "    [merge_sort.link_ltoir] nvjitlink_link: %.3f ms  (in: %zu blobs, %zu B; out: %zu B)\n",
+    nvjit_ms,
+    all_blobs.size(),
+    total_in,
+    cubin_size);
+  std::fflush(stderr);
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = nullptr;
+  build_ptr->payload_size = 0;
+  build_ptr->payload_kind = CCCL_PAYLOAD_LTOIR;
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

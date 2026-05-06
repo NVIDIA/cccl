@@ -132,7 +132,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
         TEST_LIBCUDACXX_PATH,
         TEST_CTK_PATH,
         nullptr));
-    REQUIRE(link_build.kernel_ltoir != nullptr);
+    REQUIRE((link_build.payload != nullptr && link_build.payload_kind == CCCL_PAYLOAD_LTOIR));
 
     // ── Pre-compile: full op into cubin (for Full AoT timed path) ────────────
     cccl_device_reduce_build_result_t full_build{};
@@ -152,7 +152,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
         TEST_LIBCUDACXX_PATH,
         TEST_CTK_PATH,
         nullptr));
-    REQUIRE(full_build.cubin != nullptr);
+    REQUIRE((full_build.payload != nullptr && full_build.payload_kind == CCCL_PAYLOAD_CUBIN));
     REQUIRE(full_build.library == nullptr);
 
     // ── JIT ──────────────────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
         TEST_LIBCUDACXX_PATH,
         TEST_CTK_PATH,
         nullptr));
-    REQUIRE(link_build.kernel_ltoir != nullptr);
+    REQUIRE((link_build.payload != nullptr && link_build.payload_kind == CCCL_PAYLOAD_LTOIR));
 
     // ── Pre-compile: full op into cubin ───────────────────────────────────────
     cccl_device_scan_build_result_t full_build{};
@@ -269,7 +269,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
         TEST_LIBCUDACXX_PATH,
         TEST_CTK_PATH,
         nullptr));
-    REQUIRE(full_build.cubin != nullptr);
+    REQUIRE((full_build.payload != nullptr && full_build.payload_kind == CCCL_PAYLOAD_CUBIN));
     REQUIRE(full_build.library == nullptr);
 
     // ── JIT ──────────────────────────────────────────────────────────────────
@@ -371,7 +371,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
         TEST_LIBCUDACXX_PATH,
         TEST_CTK_PATH,
         nullptr));
-    REQUIRE(link_build.kernel_ltoir != nullptr);
+    REQUIRE((link_build.payload != nullptr && link_build.payload_kind == CCCL_PAYLOAD_LTOIR));
 
     // ── Pre-compile: full op into cubin ───────────────────────────────────────
     cccl_device_merge_sort_build_result_t full_build{};
@@ -391,7 +391,7 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
         TEST_LIBCUDACXX_PATH,
         TEST_CTK_PATH,
         nullptr));
-    REQUIRE(full_build.cubin != nullptr);
+    REQUIRE((full_build.payload != nullptr && full_build.payload_kind == CCCL_PAYLOAD_CUBIN));
     REQUIRE(full_build.library == nullptr);
 
     // ── JIT ──────────────────────────────────────────────────────────────────
@@ -428,11 +428,21 @@ C2H_TEST("AoT vs JIT first-execution latency", "[bench_aot]")
     size_t op_size      = op_full.code.size();
     t0                  = clk::now();
     REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_link_ltoir(&link_build, &op_blob, &op_size, 1));
+    const double ms_link_only = ms_since(t0);
+    auto t_load               = clk::now();
     REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_load(&link_build));
+    const double ms_load_only = ms_since(t_load);
+    auto t_exec               = clk::now();
     WITH_TEMP([&](void* tmp, size_t* sz) {
       return cccl_device_merge_sort(link_build, tmp, sz, ki, null_items, ko, null_items, N, op_c, nullptr);
     });
-    const double link_ms = ms_since(t0);
+    const double ms_exec_only = ms_since(t_exec);
+    const double link_ms      = ms_since(t0);
+    std::printf("  [merge_sort breakdown] link=%.3f ms  load=%.3f ms  exec+sync=%.3f ms (total=%.3f ms)\n",
+                ms_link_only,
+                ms_load_only,
+                ms_exec_only,
+                link_ms);
     REQUIRE(d_keys_out[0] == int32_t(1));
     REQUIRE(d_keys_out[int(N) - 1] == int32_t(N));
     REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&link_build));

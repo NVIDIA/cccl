@@ -291,14 +291,16 @@ static_assert(
   if (kernel_only)
   {
     auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
-    build_ptr->kernel_ltoir       = ltoir_data.release();
-    build_ptr->kernel_ltoir_size  = ltoir_size;
+    build_ptr->payload            = ltoir_data.release();
+    build_ptr->payload_size       = ltoir_size;
+    build_ptr->payload_kind       = CCCL_PAYLOAD_LTOIR;
   }
   else
   {
     nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
-    build_ptr->cubin         = (void*) result.data.release();
-    build_ptr->cubin_size    = result.size;
+    build_ptr->payload       = (void*) result.data.release();
+    build_ptr->payload_size  = result.size;
+    build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
   }
 
   return CUDA_SUCCESS;
@@ -318,13 +320,13 @@ try
   auto invalid_name = [](const char* n) {
     return n == nullptr || n[0] == '\0';
   };
-  if (build == nullptr || build->cubin == nullptr || build->cubin_size == 0
-      || invalid_name(build->three_way_partition_init_kernel_lowered_name)
+  if (build == nullptr || build->payload == nullptr || build->payload_size == 0
+      || build->payload_kind != CCCL_PAYLOAD_CUBIN || invalid_name(build->three_way_partition_init_kernel_lowered_name)
       || invalid_name(build->three_way_partition_kernel_lowered_name))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  check(cuLibraryLoadData(&build->library, build->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  check(cuLibraryLoadData(&build->library, build->payload, nullptr, nullptr, 0, nullptr, nullptr, 0));
   try
   {
     check(cuLibraryGetKernel(
@@ -464,8 +466,7 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-  std::unique_ptr<char[]> kernel_ltoir(static_cast<char*>(bld_ptr->kernel_ltoir));
+  std::unique_ptr<char[]> payload(reinterpret_cast<char*>(bld_ptr->payload));
   std::unique_ptr<cub::detail::three_way_partition::policy_selector> policy(
     static_cast<cub::detail::three_way_partition::policy_selector*>(bld_ptr->runtime_policy));
   std::unique_ptr<char[]> init_name(bld_ptr->three_way_partition_init_kernel_lowered_name);
@@ -535,10 +536,10 @@ try
   const int cc_minor = build_ptr->cc % 10;
   std::vector<const void*> all_blobs;
   std::vector<size_t> all_sizes;
-  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
+  if (build_ptr->payload != nullptr && build_ptr->payload_size > 0 && build_ptr->payload_kind == CCCL_PAYLOAD_LTOIR)
   {
-    all_blobs.push_back(build_ptr->kernel_ltoir);
-    all_sizes.push_back(build_ptr->kernel_ltoir_size);
+    all_blobs.push_back(build_ptr->payload);
+    all_sizes.push_back(build_ptr->payload_size);
   }
   if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
   {
@@ -554,11 +555,13 @@ try
     all_sizes.push_back(input_sizes[i]);
   }
   auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
-  delete[] static_cast<char*>(build_ptr->kernel_ltoir);
-  build_ptr->kernel_ltoir      = nullptr;
-  build_ptr->kernel_ltoir_size = 0;
-  build_ptr->cubin             = (void*) cubin.release();
-  build_ptr->cubin_size        = cubin_size;
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = nullptr;
+  build_ptr->payload_size = 0;
+  build_ptr->payload_kind = CCCL_PAYLOAD_LTOIR;
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

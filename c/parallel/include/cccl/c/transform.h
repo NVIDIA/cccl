@@ -25,10 +25,9 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_transform_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
-  void* kernel_ltoir;
-  size_t kernel_ltoir_size;
+  void* payload;
+  size_t payload_size;
+  cccl_payload_kind_t payload_kind;
   CUlibrary library;
   CUkernel transform_kernel;
   int loaded_bytes_per_iteration;

@@ -139,8 +139,9 @@ try
   auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(lowered_name));
 
   build_ptr->cc                         = cc;
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
+  build_ptr->payload                    = (void*) result.data.release();
+  build_ptr->payload_size               = result.size;
+  build_ptr->payload_kind               = CCCL_PAYLOAD_CUBIN;
   build_ptr->static_kernel_lowered_name = kernel_name.release();
 
   return CUDA_SUCCESS;
@@ -153,12 +154,13 @@ catch (...)
 CUresult cccl_device_for_load(cccl_device_for_build_result_t* build_ptr)
 try
 {
-  if (build_ptr == nullptr || build_ptr->cubin == nullptr || build_ptr->cubin_size == 0
-      || build_ptr->static_kernel_lowered_name == nullptr || build_ptr->static_kernel_lowered_name[0] == '\0')
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_CUBIN || build_ptr->static_kernel_lowered_name == nullptr
+      || build_ptr->static_kernel_lowered_name[0] == '\0')
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  check(cuLibraryLoadData(&build_ptr->library, build_ptr->cubin, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  check(cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0));
   try
   {
     check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, build_ptr->static_kernel_lowered_name));
@@ -246,7 +248,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
   std::unique_ptr<char[]> kernel_name(build_ptr->static_kernel_lowered_name);
   if (build_ptr->library != nullptr)
   {

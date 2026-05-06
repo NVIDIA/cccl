@@ -26,10 +26,9 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_three_way_partition_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
-  void* kernel_ltoir;
-  size_t kernel_ltoir_size;
+  void* payload;
+  size_t payload_size;
+  cccl_payload_kind_t payload_kind;
   CUlibrary library;
   CUkernel three_way_partition_init_kernel;
   CUkernel three_way_partition_kernel;

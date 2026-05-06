@@ -123,7 +123,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  std::string sass = inspect_sass(build.cubin, build.cubin_size);
+  std::string sass = inspect_sass(build.payload, build.payload_size);
   CHECK(sass.find("UBLKCP") != std::string::npos);
 
   op = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -142,7 +142,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  sass = inspect_sass(build.cubin, build.cubin_size);
+  sass = inspect_sass(build.payload, build.payload_size);
   CHECK(sass.find("UBLKCP") != std::string::npos);
 }
 
@@ -846,8 +846,8 @@ C2H_TEST("Transform build result has AoT metadata populated", "[transform][aot]"
       build_info.get_ctk_path()));
 
   CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
-  CHECK(build.cubin != nullptr);
-  CHECK(build.cubin_size > 0);
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);
   CHECK(build.runtime_policy_size > 0);
   REQUIRE(build.transform_kernel_lowered_name != nullptr);
@@ -883,8 +883,8 @@ C2H_TEST("Transform compile/load round-trip", "[transform][aot]")
       build_info.get_ctk_path(),
       nullptr));
 
-  REQUIRE(build.cubin != nullptr);
-  REQUIRE(build.cubin_size > 0);
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
   REQUIRE(build.transform_kernel_lowered_name != nullptr);
   CHECK(build.library == nullptr);
   CHECK(build.transform_kernel == nullptr);

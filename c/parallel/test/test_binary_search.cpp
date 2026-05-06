@@ -222,8 +222,8 @@ C2H_TEST("BinarySearch build result has AoT metadata populated", "[binary_search
       build_info.get_ctk_path()));
 
   CHECK(build.transform.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
-  CHECK(build.transform.cubin != nullptr);
-  CHECK(build.transform.cubin_size > 0);
+  CHECK((build.transform.payload != nullptr && build.transform.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.transform.payload_size > 0);
   REQUIRE(build.transform.transform_kernel_lowered_name != nullptr);
   CHECK(build.transform.transform_kernel_lowered_name[0] != '\0');
 
@@ -260,8 +260,8 @@ C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][aot]")
       build_info.get_ctk_path(),
       nullptr));
 
-  REQUIRE(build.transform.cubin != nullptr);
-  REQUIRE(build.transform.cubin_size > 0);
+  REQUIRE((build.transform.payload != nullptr && build.transform.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.transform.payload_size > 0);
   REQUIRE(build.transform.transform_kernel_lowered_name != nullptr);
   CHECK(build.transform.library == nullptr);
   CHECK(build.transform.transform_kernel == nullptr);

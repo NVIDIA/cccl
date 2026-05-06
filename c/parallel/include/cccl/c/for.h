@@ -26,8 +26,9 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_for_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
+  cccl_payload_kind_t payload_kind;
   CUlibrary library;
   CUkernel static_kernel;
   char* static_kernel_lowered_name;

@@ -433,8 +433,8 @@ C2H_TEST("Histogram build result has AoT metadata populated", "[histogram][devic
       build_info.get_ctk_path()));
 
   CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
-  CHECK(build.cubin != nullptr);
-  CHECK(build.cubin_size > 0);
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);
   CHECK(build.runtime_policy_size > 0);
   REQUIRE(build.init_kernel_lowered_name != nullptr);
@@ -478,8 +478,8 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][aot]")
       build_info.get_ctk_path(),
       nullptr));
 
-  REQUIRE(build.cubin != nullptr);
-  REQUIRE(build.cubin_size > 0);
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
   REQUIRE(build.init_kernel_lowered_name != nullptr);
   REQUIRE(build.sweep_kernel_lowered_name != nullptr);
   CHECK(build.library == nullptr);
