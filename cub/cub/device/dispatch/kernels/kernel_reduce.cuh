@@ -287,15 +287,16 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_nondeterministic::reduce_nondeterministic_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void NondeterministicDeviceReduceAtomicKernel(
-  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-  _CCCL_GRID_CONSTANT const OffsetT num_items,
-  GridEvenShare<OffsetT> even_share,
-  ReductionOpT reduction_op,
-  _CCCL_GRID_CONSTANT const InitT init,
-  TransformOpT transform_op)
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  current_policy<PolicySelector>()
+    .reduce
+    .threads_per_block)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+                                                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+                                                                       _CCCL_GRID_CONSTANT const OffsetT num_items,
+                                                                       GridEvenShare<OffsetT> even_share,
+                                                                       ReductionOpT reduction_op,
+                                                                       _CCCL_GRID_CONSTANT const InitT init,
+                                                                       TransformOpT transform_op)
 {
   // todo: This static_assert fails with nvc++ CUDA compilation.
   NV_IF_ELSE_TARGET(
