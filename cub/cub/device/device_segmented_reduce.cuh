@@ -643,6 +643,11 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - Does not support binary reduction operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
   //!
   //! Snippet
@@ -1017,7 +1022,8 @@ public:
   }
 
   //! @rst
-  //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //! Computes a device-wide segmented sum using the addition (``+``) operator
+  //! and a fixed segment size.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -1390,7 +1396,8 @@ public:
   }
 
   //! @rst
-  //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
+  //! Computes a device-wide segmented minimum using the less-than (``<``) operator
+  //! and a fixed segment size.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -1815,7 +1822,8 @@ public:
 
   //! @rst
   //! Finds the first device-wide minimum in each segment using the
-  //! less-than (``<``) operator, also returning the in-segment index of that item.
+  //! less-than (``<``) operator, also returning the in-segment index of that item,
+  //! with a fixed segment size.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -2182,7 +2190,8 @@ public:
   }
 
   //! @rst
-  //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
+  //! Computes a device-wide segmented maximum using the greater-than (``>``) operator
+  //! and a fixed segment size.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -2611,7 +2620,8 @@ public:
 
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
-  //! greater-than (``>``) operator, also returning the in-segment index of that item
+  //! greater-than (``>``) operator, also returning the in-segment index of that item,
+  //! with a fixed segment size.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
