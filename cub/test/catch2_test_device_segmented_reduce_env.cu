@@ -370,9 +370,11 @@ struct segmented_reduce_tuning
   {
     auto rp = cub::detail::reduce::agent_reduce_policy{
       ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {rp,
-            cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT},
-            cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT}};
+    // need the repetition of the return type for GCC9
+    return cub::detail::segmented_reduce::segmented_reduce_policy{
+      rp,
+      cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT},
+      cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT}};
   }
 };
 
