@@ -1575,6 +1575,115 @@ struct sm120_tuning<Input,
 
 // I64/I64/DistinctPartitions=true: no benchmark data available, falls back to SM100
 
+// partition::flagged
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::yes,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_1,
+                    may_alias::no,
+                    distinct_partitions::no>
+{
+  // trp_0.ld_1.ipt_22.tpb_256.ns_164.dcid_6.l2w_320
+  static constexpr int nominal_4b_items              = 22;
+  static constexpr int threads                       = 256;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
+  using delay_constructor                            = exponential_backon_jitter_constructor_t<164, 320>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::yes,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_1,
+                    may_alias::no,
+                    distinct_partitions::yes>
+{
+  // trp_0.ld_0.ipt_20.tpb_192.ns_384.dcid_5.l2w_270
+  static constexpr int nominal_4b_items              = 20;
+  static constexpr int threads                       = 192;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = exponential_backon_jitter_window_constructor_t<384, 270>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::yes,
+                    keep_rejects::yes,
+                    offset_size::_8,
+                    primitive::yes,
+                    input_size::_1,
+                    may_alias::no,
+                    distinct_partitions::no>
+{
+  // trp_0.ld_0.ipt_12.tpb_384.ns_812.dcid_0.l2w_585  (2nd-best; 1st was absurd)
+  static constexpr int nominal_4b_items              = 12;
+  static constexpr int threads                       = 384;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = no_delay_constructor_t<585>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::yes,
+                    keep_rejects::yes,
+                    offset_size::_8,
+                    primitive::yes,
+                    input_size::_1,
+                    may_alias::no,
+                    distinct_partitions::yes>
+{
+  // trp_0.ld_0.ipt_20.tpb_192.ns_444.dcid_0.l2w_1195
+  static constexpr int nominal_4b_items              = 20;
+  static constexpr int threads                       = 192;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = no_delay_constructor_t<1195>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::yes,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_2,
+                    may_alias::no,
+                    distinct_partitions::no>
+{
+  // trp_0.ld_0.ipt_16.tpb_128.ns_268.dcid_1.l2w_1040
+  static constexpr int nominal_4b_items              = 16;
+  static constexpr int threads                       = 128;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = fixed_delay_constructor_t<268, 1040>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::yes,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_2,
+                    may_alias::no,
+                    distinct_partitions::yes>
+{
+  // trp_0.ld_0.ipt_17.tpb_128.ns_212.dcid_0.l2w_1080
+  static constexpr int nominal_4b_items              = 17;
+  static constexpr int threads                       = 128;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = no_delay_constructor_t<1080>;
+};
+
 // TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
 constexpr primitive is_primitive()
