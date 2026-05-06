@@ -271,7 +271,7 @@ private:
     _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
             "%d, bit_grain %d\n",
             1,
-            policy.block_threads,
+            policy.threads_per_block,
             (long long) stream,
             policy.items_per_thread,
             1,
@@ -280,7 +280,7 @@ private:
 #endif
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(1, policy.block_threads, 0, stream)
+    launcher_factory(1, policy.threads_per_block, 0, stream)
       .doit(single_tile_kernel,
             d_keys.Current(),
             d_keys.Alternate(),
@@ -337,7 +337,7 @@ public:
     _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
             "bit_grain %d\n",
             pass_config.even_share.grid_size,
-            pass_config.upsweep_config.block_threads,
+            pass_config.upsweep_config.threads_per_block,
             (long long) stream,
             pass_config.upsweep_config.items_per_thread,
             pass_config.upsweep_config.sm_occupancy,
@@ -349,7 +349,7 @@ public:
     int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
+    launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
       .doit(pass_config.upsweep_kernel,
             d_keys_in,
             d_spine,
@@ -375,13 +375,13 @@ public:
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
             1,
-            pass_config.scan_config.block_threads,
+            pass_config.scan_config.threads_per_block,
             (long long) stream,
             pass_config.scan_config.items_per_thread);
 #endif
 
     // Invoke scan_kernel
-    launcher_factory(1, pass_config.scan_config.block_threads, 0, stream)
+    launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
       .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
 
     // Check for failure to launch
@@ -400,14 +400,14 @@ public:
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
             pass_config.even_share.grid_size,
-            pass_config.downsweep_config.block_threads,
+            pass_config.downsweep_config.threads_per_block,
             (long long) stream,
             pass_config.downsweep_config.items_per_thread,
             pass_config.downsweep_config.sm_occupancy);
 #endif
 
     // Invoke downsweep_kernel
-    launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
+    launcher_factory(pass_config.even_share.grid_size, pass_config.downsweep_config.threads_per_block, 0, stream)
       .doit(pass_config.downsweep_kernel,
             d_keys_in,
             d_keys_out,
@@ -548,7 +548,7 @@ private:
     const int RADIX_BITS                = policy.onesweep.radix_bits;
     const int RADIX_DIGITS              = 1 << RADIX_BITS;
     const int ONESWEEP_ITEMS_PER_THREAD = policy.onesweep.items_per_thread;
-    const int ONESWEEP_BLOCK_THREADS    = policy.onesweep.block_threads;
+    const int ONESWEEP_BLOCK_THREADS    = policy.onesweep.threads_per_block;
     const int ONESWEEP_TILE_ITEMS       = ONESWEEP_ITEMS_PER_THREAD * ONESWEEP_BLOCK_THREADS;
     // portions handle inputs with >=2**30 elements, due to the way lookback works
     // for testing purposes, one portion is <= 2**28 elements
@@ -616,7 +616,7 @@ private:
       return error;
     }
 
-    const int HISTO_BLOCK_THREADS = policy.histogram.block_threads;
+    const int HISTO_BLOCK_THREADS = policy.histogram.threads_per_block;
     int histo_blocks_per_sm       = 1;
     auto histogram_kernel         = kernel_source.RadixSortHistogramKernel();
 
@@ -651,7 +651,7 @@ private:
     }
 
     // exclusive sums to determine starts
-    const int SCAN_BLOCK_THREADS = policy.exclusive_sum.block_threads;
+    const int SCAN_BLOCK_THREADS = policy.exclusive_sum.threads_per_block;
 
 // log exclusive_sum_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -1057,7 +1057,7 @@ public:
     }
 
     // Force kernel code-generation in all compiler passes
-    if (num_items <= static_cast<OffsetT>(policy.single_tile.block_threads * policy.single_tile.items_per_thread))
+    if (num_items <= static_cast<OffsetT>(policy.single_tile.threads_per_block * policy.single_tile.items_per_thread))
     {
       // Small, single tile size
       return __invoke_single_tile(kernel_source.RadixSortSingleTileKernel(), policy.single_tile);

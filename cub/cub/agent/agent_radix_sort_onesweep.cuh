@@ -66,7 +66,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm al
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           /** Number of private histograms to use in the ranker;
@@ -78,7 +78,7 @@ template <int NominalBlockThreads4B,
           BlockScanAlgorithm ScanAlgorithm,
           RadixSortStoreAlgorithm StoreAlgorithm,
           int RadixBits,
-          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   static constexpr int RANK_NUM_PARTS                      = RankNumParts;

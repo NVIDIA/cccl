@@ -130,7 +130,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().large_segment.block_threads)
+__launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortFallbackKernel(
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
@@ -152,10 +152,10 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.block_threads)
                                large_policy.rank_algorithm,
                                large_policy.scan_algorithm,
                                large_policy.radix_bits,
-                               NoScaling<large_policy.block_threads, large_policy.items_per_thread>>;
+                               NoScaling<large_policy.threads_per_block, large_policy.items_per_thread>>;
   static constexpr auto medium_policy = active_policy.medium_segment;
   using MediumPolicyT =
-    AgentSubWarpMergeSortPolicy<medium_policy.block_threads,
+    AgentSubWarpMergeSortPolicy<medium_policy.threads_per_block,
                                 medium_policy.warp_threads,
                                 medium_policy.items_per_thread,
                                 medium_policy.load_algorithm,
@@ -327,7 +327,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().small_segment.block_threads)
+__launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
     _CCCL_GRID_CONSTANT const local_segment_index_t small_segments,
     _CCCL_GRID_CONSTANT const local_segment_index_t medium_segments,
@@ -349,7 +349,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.block_threads)
   static constexpr segmented_sort_policy active_policy = current_policy<PolicySelector>();
   static constexpr auto small_policy                   = active_policy.small_segment;
   using SmallPolicyT =
-    AgentSubWarpMergeSortPolicy<small_policy.block_threads,
+    AgentSubWarpMergeSortPolicy<small_policy.threads_per_block,
                                 small_policy.warp_threads,
                                 small_policy.items_per_thread,
                                 small_policy.load_algorithm,
@@ -357,7 +357,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.block_threads)
                                 small_policy.store_algorithm>;
   static constexpr auto medium_policy = active_policy.medium_segment;
   using MediumPolicyT =
-    AgentSubWarpMergeSortPolicy<medium_policy.block_threads,
+    AgentSubWarpMergeSortPolicy<medium_policy.threads_per_block,
                                 medium_policy.warp_threads,
                                 medium_policy.items_per_thread,
                                 medium_policy.load_algorithm,
@@ -465,7 +465,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().large_segment.block_threads)
+__launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
     _CCCL_GRID_CONSTANT const local_segment_index_t* const d_segments_indices,
     const KeyT* d_keys_in_orig,
@@ -487,7 +487,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.block_threads)
                                     large_policy.rank_algorithm,
                                     large_policy.scan_algorithm,
                                     large_policy.radix_bits,
-                                    NoScaling<large_policy.block_threads, large_policy.items_per_thread>>;
+                                    NoScaling<large_policy.threads_per_block, large_policy.items_per_thread>>;
 
   using local_segment_index_t = local_segment_index_t;
 

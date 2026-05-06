@@ -59,7 +59,7 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
   REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
-    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).block_threads;
+    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).threads_per_block;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};
@@ -106,7 +106,7 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
   REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
-    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).block_threads;
+    selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).threads_per_block;
 
   num_items_t num_items = 1;
   auto d_keys           = thrust::device_vector<key_t>{0};

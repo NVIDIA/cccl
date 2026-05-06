@@ -293,7 +293,7 @@ struct DispatchSegmentedRadixSort
         "%lld items per thread, %lld SM occupancy, "
         "current segment offset %lld, current bit %d, bit_grain %d\n",
         (long long) num_current_segments,
-        (long long) pass_config.segmented_config.block_threads,
+        (long long) pass_config.segmented_config.threads_per_block,
         (long long) stream,
         (long long) pass_config.segmented_config.items_per_thread,
         (long long) pass_config.segmented_config.sm_occupancy,
@@ -303,7 +303,7 @@ struct DispatchSegmentedRadixSort
 #endif
 
       launcher_factory(
-        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.block_threads, 0, stream)
+        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
@@ -761,7 +761,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix
         "%lld items per thread, %lld SM occupancy, "
         "current segment offset %lld, current bit %d, bit_grain %d\n",
         (long long) num_current_segments,
-        (long long) config.block_threads,
+        (long long) config.threads_per_block,
         (long long) stream,
         (long long) config.items_per_thread,
         (long long) config.sm_occupancy,
@@ -771,7 +771,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix
 #endif
 
       if (const auto err = CubDebug(
-            launcher_factory(static_cast<unsigned int>(num_current_segments), config.block_threads, 0, stream)
+            launcher_factory(static_cast<unsigned int>(num_current_segments), config.threads_per_block, 0, stream)
               .doit(kernel,
                     d_keys_in,
                     d_keys_out,

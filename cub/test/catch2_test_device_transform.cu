@@ -188,8 +188,8 @@ using uncommon_types = c2h::type_list<
   overaligned_t<32>, // exceeds the memcpy_async (Hopper/Blackwell) and bulk copy alignments (only Blackwell)
 #if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
   overaligned_t<256>, // exceeds copy alignment on Hopper
-                      // and exhausts guaranteed shared memory on Hopper (block_threads = 256, req. smem = 64KiB)
-  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (block_threads = 128, req. smem = 64KiB)
+                      // and exhausts guaranteed shared memory on Hopper (threads_per_block = 256, req. smem = 64KiB)
+  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (threads_per_block = 128, req. smem = 64KiB)
 #endif // !_CCCL_COMPILER(MSVC)
   huge_t>;
 
@@ -739,7 +739,7 @@ C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
-template <int BlockThreads, int ItemsPerPthread, typename T>
+template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
   // we trigger the next kernel's launch very soon and wait a bit for it to spin up before starting to write. this way
@@ -748,7 +748,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   NV_IF_TARGET(NV_PROVIDES_SM_70, __nanosleep(100'000);); // must be enough to cover the next kernel's launch overhead
 
-  const int tile_size = ItemsPerPthread * BlockThreads;
+  const int tile_size = ItemsPerPthread * ThreadsPerBlock;
   const size_t offset = size_t{blockIdx.x} * tile_size;
 
   data += offset;
@@ -756,7 +756,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {
-    const int i = threadIdx.x + j * BlockThreads;
+    const int i = threadIdx.x + j * ThreadsPerBlock;
     if (i < n)
     {
       data[i] = value;
@@ -767,13 +767,13 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 template <typename T>
 void fill_pdl(T* data, size_t n, T value)
 {
-  constexpr auto block_threads    = 256;
-  constexpr auto items_per_thread = 4;
-  const auto blocks               = static_cast<unsigned>(::cuda::ceil_div(n, block_threads * items_per_thread));
+  constexpr auto threads_per_block = 256;
+  constexpr auto items_per_thread  = 4;
+  const auto blocks                = static_cast<unsigned>(::cuda::ceil_div(n, threads_per_block * items_per_thread));
 
   THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-    blocks, block_threads, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
-    .doit(fill_pdl_kernel<block_threads, items_per_thread, T>, data, n, value);
+    blocks, threads_per_block, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
+    .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
 
 C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")

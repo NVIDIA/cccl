@@ -36,10 +36,10 @@
 CUB_NAMESPACE_BEGIN
 
 //! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
-template <int BlockThreads, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
 struct AgentRadixSortHistogramPolicy
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   // need to discard sizeof(ComputeType) in case it's void
@@ -66,10 +66,10 @@ struct AgentRadixSortHistogramPolicy
   static constexpr int RADIX_BITS = RadixBits;
 };
 
-template <int BlockThreads, int RadixBits>
+template <int ThreadsPerBlock, int RadixBits>
 struct AgentRadixSortExclusiveSumPolicy
 {
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
   static constexpr int RADIX_BITS    = RadixBits;
 };
 

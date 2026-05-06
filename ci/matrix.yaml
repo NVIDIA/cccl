@@ -141,6 +141,8 @@ workflows:
     - {project: 'packaging', jobs: ['install']}
     # NVBench Helper testing:
     - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
+    # c.parallel with HostJIT
+    - {jobs: ['test'], project: 'cccl_c_parallel_hostjit', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
