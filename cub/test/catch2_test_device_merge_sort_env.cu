@@ -576,11 +576,11 @@ C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::MergeSortPolicy{
-    .block_threads    = 256,
-    .items_per_thread = 11,
-    .load_algorithm   = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-    .load_modifier    = cub::CacheLoadModifier::LOAD_DEFAULT,
-    .store_algorithm  = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
+    .threads_per_block = 256,
+    .items_per_thread  = 11,
+    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+    .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

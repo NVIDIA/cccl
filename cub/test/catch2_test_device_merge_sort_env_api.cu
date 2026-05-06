@@ -214,11 +214,11 @@ struct MergeSortPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::MergeSortPolicy
   {
-    return {.block_threads    = 256,
-            .items_per_thread = cc > cuda::compute_capability{9, 0} ? 17 : 14,
-            .load_algorithm   = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier    = cub::LOAD_DEFAULT,
-            .store_algorithm  = cub::BLOCK_STORE_DIRECT};
+    return {.threads_per_block = 256,
+            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 17 : 14,
+            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+            .load_modifier     = cub::LOAD_DEFAULT,
+            .store_algorithm   = cub::BLOCK_STORE_DIRECT};
   }
 };
 // example-end sort-pairs-policy-selector
