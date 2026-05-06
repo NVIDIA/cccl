@@ -1505,24 +1505,6 @@ template <class Input>
 struct sm120_tuning<Input,
                     flagged::no,
                     keep_rejects::yes,
-                    offset_size::_8,
-                    primitive::yes,
-                    input_size::_1,
-                    may_alias::no,
-                    distinct_partitions::yes>
-{
-  // trp_0.ld_1.ipt_21.tpb_288.ns_1040.dcid_0.l2w_1005 1.234842  1.003906  1.243359  1.333333
-  static constexpr int nominal_4b_items              = 21;
-  static constexpr int threads                       = 288;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  using delay_constructor                            = no_delay_constructor_t<1005>;
-};
-
-template <class Input>
-struct sm120_tuning<Input,
-                    flagged::no,
-                    keep_rejects::yes,
                     offset_size::_4,
                     primitive::yes,
                     input_size::_2,
@@ -1679,24 +1661,6 @@ struct sm120_tuning<Input,
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
   using delay_constructor                            = exponential_backon_jitter_constructor_t<76, 960>;
-};
-
-template <class Input>
-struct sm120_tuning<Input,
-                    flagged::no,
-                    keep_rejects::yes,
-                    offset_size::_4,
-                    primitive::yes,
-                    input_size::_8,
-                    may_alias::no,
-                    distinct_partitions::yes>
-{
-  // trp_1.ld_1.ipt_11.tpb_128.ns_124.dcid_1.l2w_270 1.027870  0.988938  1.026912  1.166667
-  static constexpr int nominal_4b_items              = 11;
-  static constexpr int threads                       = 128;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  using delay_constructor                            = fixed_delay_constructor_t<124, 270>;
 };
 
 template <class Input>
