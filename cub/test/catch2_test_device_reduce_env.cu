@@ -138,7 +138,15 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(
-    reduce_tuning<target_block_size>{}, unrelated_tuning{}, unrelated_nondeterminisitc_reduce_tuning{});
+    reduce_tuning<target_block_size>{},
+    unrelated_tuning{}
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+    // some rare combinations, like nvcc 12.0 + clang-14 in C++20, or nvcc 12.0 + GCC12 fail with:
+    // pod_tuple.h(130): error: Internal Compiler Error (codegen): "internal error during structure layout!"
+    ,
+    unrelated_nondeterminisitc_reduce_tuning{}
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+  );
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
@@ -155,7 +163,15 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(
-    reduce_tuning<target_block_size>{}, unrelated_tuning{}, unrelated_nondeterminisitc_reduce_tuning{});
+    reduce_tuning<target_block_size>{},
+    unrelated_tuning{}
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+    // some rare combinations, like nvcc 12.0 + clang-14 in C++20, or nvcc 12.0 + GCC12 fail with:
+    // pod_tuple.h(130): error: Internal Compiler Error (codegen): "internal error during structure layout!"
+    ,
+    unrelated_nondeterminisitc_reduce_tuning{}
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+  );
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);
