@@ -68,11 +68,6 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
 
   auto& task_deps = pimpl->deps;
 
-  // Whether any (merged) dependency reads from existing data. This is updated
-  // in the main loop below and then used to decide whether to merge the
-  // context's start events into the task's prereqs.
-  bool has_input_dep = false;
-
   for (auto index : each(task_deps.size()))
   {
     assert(task_deps[index].get_data().is_initialized());
@@ -130,17 +125,6 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     size_t d_index = it - task_deps.begin();
     pimpl->unskipped_indexes.push_back(::std::make_pair(d_index, mode));
 
-    // Track whether this task actually reads from existing data. Modes that
-    // read (and therefore chain back to previous writers / the context start
-    // events through ``fetch_data``) include read, rw, reduce and relaxed.
-    // Write-only modes (write, reduce_no_init) do not.
-    if (!has_input_dep
-        && (mode == access_mode::read || mode == access_mode::rw || mode == access_mode::reduce
-            || mode == access_mode::relaxed))
-    {
-      has_input_dep = true;
-    }
-
     /* Make sure the logical data is locked until the task is released */
     d.get_mutex().lock();
 
@@ -170,16 +154,28 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     reserved::fetch_data(ctx, d, instance_id, *this, mode, eplace, dplace, result);
   }
 
-  // A task without any "input" dependency (ie. a dep whose access mode reads
-  // from existing data) has no runtime prerequisites chained back from previous
-  // tasks, so it would otherwise run concurrently with (or before) the context
-  // entry events. Merge the context's start events in that case so that such
-  // tasks still depend on the context's entry point. This is required for
-  // correctness when the context stream is participating in a CUDA graph
-  // capture: without this, tasks dispatched to pool streams would never issue
-  // the ``cudaStreamWaitEvent`` that forks the pool stream into the capture,
-  // and later work on these pool streams would be considered uncaptured.
-  if (!has_input_dep && ctx.has_start_events())
+  // A task that ends up with no actual runtime prerequisite chained back from
+  // previous tasks must instead depend on the context's entry point. This
+  // covers two situations that need the same treatment:
+  //   * tasks whose only deps are write-mode (no input dep at all), and
+  //   * tasks reading from logical data that have no previous writer in this
+  //     context yet -- e.g. an in-capture ``token().read()`` of a token that
+  //     has not been ``.write()``-n by any task in this context. In that case
+  //     ``enforce_stf_deps_before`` returns an empty event list because there
+  //     is no prior writer/reader to chain back to, and ``fetch_data`` adds
+  //     no allocation/MSI prereqs for void-interface (token) data.
+  //
+  // Both cases are observable as ``result`` still being empty after the
+  // dependency loop above. Merging the context's start events here is the
+  // only thing tying the task back to the context's entry point.
+  //
+  // This is required for correctness when the context's user stream is
+  // participating in a CUDA graph capture: the pool stream picked for the
+  // task would otherwise never issue the ``cudaStreamWaitEvent`` that forks
+  // it into the capture, and subsequent waits from the (captured) user
+  // stream onto events recorded on that (uncaptured) pool stream would fail
+  // with ``cudaErrorStreamCaptureIsolation``.
+  if (result.size() == 0 && ctx.has_start_events())
   {
     result.merge(ctx.get_start_events());
   }
