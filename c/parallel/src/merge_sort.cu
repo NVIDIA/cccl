@@ -440,14 +440,6 @@ CUresult cccl_device_merge_sort_build_ex(
   {
     return r;
   }
-  if (build_ptr->cubin == nullptr)
-  {
-    r = cccl_device_merge_sort_link_ltoir(build_ptr, nullptr, nullptr, 0);
-    if (r != CUDA_SUCCESS)
-    {
-      return r;
-    }
-  }
   return cccl_device_merge_sort_load(build_ptr);
 }
 

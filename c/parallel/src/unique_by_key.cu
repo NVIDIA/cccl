@@ -464,14 +464,6 @@ CUresult cccl_device_unique_by_key_build_ex(
   {
     return result;
   }
-  if (build_ptr->cubin == nullptr)
-  {
-    result = cccl_device_unique_by_key_link_ltoir(build_ptr, nullptr, nullptr, 0);
-    if (result != CUDA_SUCCESS)
-    {
-      return result;
-    }
-  }
   return cccl_device_unique_by_key_load(build_ptr);
 }
 

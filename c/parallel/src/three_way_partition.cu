@@ -385,14 +385,6 @@ CUresult cccl_device_three_way_partition_build_ex(
   {
     return result;
   }
-  if (build_ptr->cubin == nullptr)
-  {
-    result = cccl_device_three_way_partition_link_ltoir(build_ptr, nullptr, nullptr, 0);
-    if (result != CUDA_SUCCESS)
-    {
-      return result;
-    }
-  }
   return cccl_device_three_way_partition_load(build_ptr);
 }
 

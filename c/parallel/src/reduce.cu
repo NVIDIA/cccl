@@ -482,14 +482,6 @@ CUresult cccl_device_reduce_build_ex(
   {
     return r;
   }
-  if (build->cubin == nullptr)
-  {
-    r = cccl_device_reduce_link_ltoir(build, nullptr, nullptr, 0);
-    if (r != CUDA_SUCCESS)
-    {
-      return r;
-    }
-  }
   return cccl_device_reduce_load(build);
 }
 
