@@ -19,10 +19,11 @@ INPUT                  = ../../libcudacxx/include/cuda/__algorithm \
                          ../../libcudacxx/include/cuda/__memory_pool \
                          ../../libcudacxx/include/cuda/__memory_resource \
                          ../../libcudacxx/include/cuda/__stream \
-                         ../../libcudacxx/include/nv
+                         ../../libcudacxx/include/nv \
+                         ../../libcudacxx/include/cuda/std/__cccl/os.h
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/*
+EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/* */std/__cccl/compiler.h
 EXCLUDE_SYMBOLS        = *detail* *__* _LIBCUDACXX_*
 
 FILE_PATTERNS          = *.h *.hpp *.cuh

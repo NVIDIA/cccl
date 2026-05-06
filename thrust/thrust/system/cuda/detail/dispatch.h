@@ -22,8 +22,10 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
-#include <stdexcept>
-#include <string>
+#if _CCCL_HOSTED()
+#  include <stdexcept>
+#  include <string>
+#endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

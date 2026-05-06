@@ -20,9 +20,6 @@
 //      Otherwise, if x.month() > y.month() returns false.
 //      Otherwise, returns x.day() < y.day()
 
-// XFAIL: enable-tile
-// Segmentation fault, see nvbug6072674
-
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>

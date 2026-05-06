@@ -38,6 +38,7 @@ struct __atomic_ref_storage
 #if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
   static_assert(is_trivially_copyable_v<_Tp>, "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
+  static_assert(sizeof(__underlying_t) <= 16, "cuda::std::atomic_ref<Tp> only supports sizeof(Tp) <= 16");
 
   _Tp* __a_value;
 

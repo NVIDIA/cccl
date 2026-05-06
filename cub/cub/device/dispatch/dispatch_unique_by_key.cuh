@@ -235,11 +235,11 @@ struct DispatchUniqueByKey
   __invoke(detail::unique_by_key::unique_by_key_policy policy, ::cuda::std::size_t vsmem_per_block)
   {
     // Number of input tiles
-    const auto block_threads    = policy.block_threads;
-    const auto items_per_thread = policy.items_per_thread;
-    int tile_size               = block_threads * items_per_thread;
-    int num_tiles               = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
-    const auto vsmem_size       = num_tiles * vsmem_per_block;
+    const auto threads_per_block = policy.threads_per_block;
+    const auto items_per_thread  = policy.items_per_thread;
+    int tile_size                = threads_per_block * items_per_thread;
+    int num_tiles                = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+    const auto vsmem_size        = num_tiles * vsmem_per_block;
 
     // Specify temporary storage allocation requirements
     size_t allocation_sizes[2] = {0, vsmem_size};
@@ -317,7 +317,7 @@ struct DispatchUniqueByKey
       if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
             sweep_sm_occupancy, // out
             kernel_source.UniqueByKeySweepKernel(),
-            block_threads)))
+            threads_per_block)))
       {
         return error;
       }
@@ -327,7 +327,7 @@ struct DispatchUniqueByKey
               scan_grid_size.x,
               scan_grid_size.y,
               scan_grid_size.z,
-              block_threads,
+              threads_per_block,
               (long long) stream,
               items_per_thread,
               sweep_sm_occupancy);
@@ -336,7 +336,7 @@ struct DispatchUniqueByKey
 
     // Invoke select_if_kernel
     if (const auto error = CubDebug(
-          launcher_factory(scan_grid_size, block_threads, 0, stream)
+          launcher_factory(scan_grid_size, threads_per_block, 0, stream)
             .doit(kernel_source.UniqueByKeySweepKernel(),
                   d_keys_in,
                   d_values_in,

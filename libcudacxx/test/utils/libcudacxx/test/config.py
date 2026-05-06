@@ -1408,6 +1408,9 @@ class Configuration(object):
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4180"]
                 # warning C4309: 'moo': truncation of constant value
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4309"]
+                # warning C4505: unreferenced local function has been removed
+                # CUDA's host_runtime.h emits this for __cudaUnregisterBinaryUtil.
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4505"]
                 # warning C4996: deprecation warnings
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4996"]
             else:

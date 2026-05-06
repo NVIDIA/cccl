@@ -548,7 +548,7 @@ struct policy_hub
 
 struct scan_lookback_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -558,7 +558,7 @@ struct scan_lookback_policy
 
   _CCCL_API constexpr friend bool operator==(const scan_lookback_policy& lhs, const scan_lookback_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
         && lhs.delay_constructor == rhs.delay_constructor;
@@ -573,7 +573,7 @@ struct scan_lookback_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_lookback_policy& p)
   {
     return os
-        << "scan_lookback_policy { .block_threads = " << p.block_threads
+        << "scan_lookback_policy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
@@ -666,7 +666,7 @@ concept scan_policy_selector = policy_selector<T, scan_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 _CCCL_API constexpr auto make_mem_scaled_lookback_scan_policy(
-  int nominal_4b_block_threads,
+  int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
   BlockLoadAlgorithm load_algorithm,
@@ -675,11 +675,11 @@ _CCCL_API constexpr auto make_mem_scaled_lookback_scan_policy(
   BlockScanAlgorithm scan_algorithm,
   delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450}) -> scan_policy
 {
-  const auto scaled = scale_mem_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
+  const auto scaled = scale_mem_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return scan_policy{
     scan_algorithm::lookback,
     scan_lookback_policy{
-      scaled.block_threads,
+      scaled.threads_per_block,
       scaled.items_per_thread,
       load_algorithm,
       load_modifier,

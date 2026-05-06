@@ -77,7 +77,9 @@ def test_device_reduce(dtype, num_items, op):
     h_input = random_int(num_items, dtype)
     d_input = numba.cuda.to_device(h_input)
 
-    cuda.compute.reduce_into(d_input, d_output, op, d_input.size, h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input, d_out=d_output, num_items=d_input.size, op=op, h_init=h_init
+    )
     h_output = d_output.copy_to_host()
     assert h_output[0] == pytest.approx(
         sum(h_input) + init_value, rel=0.08 if dtype == np.float16 else 0
@@ -98,7 +100,11 @@ def test_device_reduce_with_lambda():
 
     # Use a lambda function directly as the reducer
     cuda.compute.reduce_into(
-        d_input, d_output, lambda a, b: a + b, d_input.size, h_init
+        d_in=d_input,
+        d_out=d_output,
+        num_items=d_input.size,
+        op=lambda a, b: a + b,
+        h_init=h_init,
     )
     h_output = d_output.copy_to_host()
     assert h_output[0] == sum(h_input) + init_value
@@ -117,7 +123,13 @@ def test_device_reduce_with_lambda_variable():
     d_input = numba.cuda.to_device(h_input)
 
     # Use a lambda function assigned to a variable as the reducer
-    cuda.compute.reduce_into(d_input, d_output, add_op_lambda, d_input.size, h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=d_input.size,
+        op=add_op_lambda,
+        h_init=h_init,
+    )
     h_output = d_output.copy_to_host()
     assert h_output[0] == sum(h_input) + init_value
 
@@ -131,7 +143,9 @@ def test_complex_device_reduce():
         h_input = real_imag[0] + 1j * real_imag[1]
         d_input = numba.cuda.to_device(h_input)
         assert d_input.size == num_items
-        cuda.compute.reduce_into(d_input, d_output, add_op, num_items, h_init)
+        cuda.compute.reduce_into(
+            d_in=d_input, d_out=d_output, num_items=num_items, op=add_op, h_init=h_init
+        )
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
@@ -155,7 +169,9 @@ def _test_device_sum_with_iterator(
 
     h_init = np.array([start_sum_with], dtype_out)
 
-    cuda.compute.reduce_into(d_input, d_output, add_op, len(l_varr), h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input, d_out=d_output, num_items=len(l_varr), op=add_op, h_init=h_init
+    )
 
     h_output = d_output.copy_to_host()
     assert h_output[0] == expected_result
@@ -321,93 +337,93 @@ def test_reducer_caching():
 
     # inputs are device arrays
     reducer_1 = cuda.compute.make_reduce_into(
-        cp.zeros(3, dtype="int64"),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(3, dtype="int64"),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        cp.zeros(3, dtype="int64"),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(3, dtype="int64"),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
     # inputs are device arrays of different dtype:
     reducer_1 = cuda.compute.make_reduce_into(
-        cp.zeros(3, dtype="int64"),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(3, dtype="int64"),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        cp.zeros(3, dtype="int32"),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(3, dtype="int32"),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
     # outputs are of different dtype:
     reducer_1 = cuda.compute.make_reduce_into(
-        cp.zeros(3, dtype="int64"),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(3, dtype="int64"),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        cp.zeros(3, dtype="int64"),
-        cp.zeros(1, dtype="int32"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(3, dtype="int64"),
+        d_out=cp.zeros(1, dtype="int32"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
     # inputs are of same dtype but different size
     # (should still use cached reducer):
     reducer_1 = cuda.compute.make_reduce_into(
-        cp.zeros(3, dtype="int64"),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(3, dtype="int64"),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        cp.zeros(5, dtype="int64"),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=cp.zeros(5, dtype="int64"),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
     # inputs are counting iterators of the
     # same value type:
     reducer_1 = cuda.compute.make_reduce_into(
-        CountingIterator(np.int32(0)),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=CountingIterator(np.int32(0)),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        CountingIterator(np.int32(0)),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=CountingIterator(np.int32(0)),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
     # inputs are counting iterators of different value type:
     reducer_1 = cuda.compute.make_reduce_into(
-        CountingIterator(np.int32(0)),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=CountingIterator(np.int32(0)),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        CountingIterator(np.int64(0)),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=CountingIterator(np.int64(0)),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
@@ -422,63 +438,63 @@ def test_reducer_caching():
 
     # inputs are TransformIterators
     reducer_1 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
     # inputs are TransformIterators with different
     # op:
     reducer_1 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op2),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op2),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
     # inputs are TransformIterators with same op
     # but different name:
     reducer_1 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op3),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op3),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
 
     # inputs are CountingIterators of same kind
     # but different state:
     reducer_1 = cuda.compute.make_reduce_into(
-        CountingIterator(np.int32(0)),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=CountingIterator(np.int32(0)),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        CountingIterator(np.int32(1)),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=CountingIterator(np.int32(1)),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
 
     assert reducer_1 is reducer_2
@@ -488,47 +504,47 @@ def test_reducer_caching():
     ary1 = cp.asarray([0, 1, 2], dtype="int64")
     ary2 = cp.asarray([0, 1], dtype="int64")
     reducer_1 = cuda.compute.make_reduce_into(
-        TransformIterator(ary1, op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(ary1, op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        TransformIterator(ary2, op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(ary2, op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
     # inputs are TransformIterators of same kind
     # but different state:
     reducer_1 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(1)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(1)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
     # inputs are TransformIterators with different kind:
     reducer_1 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int32(0)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int32(0)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     reducer_2 = cuda.compute.make_reduce_into(
-        TransformIterator(CountingIterator(np.int64(0)), op1),
-        cp.zeros(1, dtype="int64"),
-        sum_op,
-        np.zeros(1, dtype="int64"),
+        d_in=TransformIterator(CountingIterator(np.int64(0)), op1),
+        d_out=cp.zeros(1, dtype="int64"),
+        op=sum_op,
+        h_init=np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
@@ -553,7 +569,9 @@ def test_reduce_2d_array(array_2d):
     d_out = cp.empty(1, dtype=array_2d.dtype)
     h_init = np.asarray([0], dtype=array_2d.dtype)
     d_in = array_2d
-    cuda.compute.reduce_into(d_in, d_out, binary_op, d_in.size, h_init)
+    cuda.compute.reduce_into(
+        d_in=d_in, d_out=d_out, num_items=d_in.size, op=binary_op, h_init=h_init
+    )
     np.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
 
@@ -567,11 +585,15 @@ def test_reduce_non_contiguous():
 
     d_in = cp.zeros((size, 2))[:, 0]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
-        _ = cuda.compute.make_reduce_into(d_in, d_out, binary_op, h_init)
+        _ = cuda.compute.make_reduce_into(
+            d_in=d_in, d_out=d_out, op=binary_op, h_init=h_init
+        )
 
     d_in = cp.zeros(size)[::2]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
-        _ = cuda.compute.make_reduce_into(d_in, d_out, binary_op, h_init)
+        _ = cuda.compute.make_reduce_into(
+            d_in=d_in, d_out=d_out, op=binary_op, h_init=h_init
+        )
 
 
 def test_reduce_with_stream(cuda_stream):
@@ -586,7 +608,14 @@ def test_reduce_with_stream(cuda_stream):
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=cuda_stream)
+    cuda.compute.reduce_into(
+        d_in=d_in,
+        d_out=d_out,
+        num_items=d_in.size,
+        op=add_op,
+        h_init=h_init,
+        stream=cuda_stream,
+    )
     with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
@@ -619,13 +648,15 @@ def test_reduce_invalid_stream():
     d_out = cp.empty(1)
     h_init = np.empty(1)
     d_in = cp.empty(1)
-    reduce_into = cuda.compute.make_reduce_into(d_in, d_out, add_op, h_init)
+    reduce_into = cuda.compute.make_reduce_into(
+        d_in=d_in, d_out=d_out, op=add_op, h_init=h_init
+    )
 
     with pytest.raises(
         TypeError, match="does not implement the '__cuda_stream__' protocol"
     ):
         _ = reduce_into(
-            None,
+            temp_storage=None,
             d_in=d_in,
             d_out=d_out,
             op=add_op,
@@ -638,7 +669,7 @@ def test_reduce_invalid_stream():
         TypeError, match="could not obtain __cuda_stream__ protocol version and handle"
     ):
         _ = reduce_into(
-            None,
+            temp_storage=None,
             d_in=d_in,
             d_out=d_out,
             op=add_op,
@@ -649,7 +680,7 @@ def test_reduce_invalid_stream():
 
     with pytest.raises(TypeError, match="invalid stream handle"):
         _ = reduce_into(
-            None,
+            temp_storage=None,
             d_in=d_in,
             d_out=d_out,
             op=add_op,
@@ -665,7 +696,13 @@ def test_device_reduce_well_known_plus():
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(d_input, d_output, OpKind.PLUS, len(d_input), h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=len(d_input),
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
 
     expected_output = 15
     assert (d_output == expected_output).all()
@@ -677,7 +714,13 @@ def test_device_reduce_well_known_minimum():
     d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(d_input, d_output, OpKind.MINIMUM, len(d_input), h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=len(d_input),
+        op=OpKind.MINIMUM,
+        h_init=h_init,
+    )
 
     expected_output = 0
     assert (d_output == expected_output).all()
@@ -689,7 +732,13 @@ def test_device_reduce_well_known_maximum():
     d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(d_input, d_output, OpKind.MAXIMUM, len(d_input), h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=len(d_input),
+        op=OpKind.MAXIMUM,
+        h_init=h_init,
+    )
 
     expected_output = 9
     assert (d_output == expected_output).all()
@@ -707,7 +756,9 @@ def test_cache_modified_input_iterator():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(iterator, d_output, add_op, len(values), h_init)
+    cuda.compute.reduce_into(
+        d_in=iterator, d_out=d_output, num_items=len(values), op=add_op, h_init=h_init
+    )
 
     expected_output = functools.reduce(lambda a, b: a + b, values)
     assert (d_output == expected_output).all()
@@ -724,7 +775,9 @@ def test_constant_iterator():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(constant_it, d_output, add_op, num_items, h_init)
+    cuda.compute.reduce_into(
+        d_in=constant_it, d_out=d_output, num_items=num_items, op=add_op, h_init=h_init
+    )
 
     expected_output = functools.reduce(lambda a, b: a + b, [value] * num_items)
     assert (d_output == expected_output).all()
@@ -741,7 +794,9 @@ def test_counting_iterator():
     h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
-    cuda.compute.reduce_into(first_it, d_output, add_op, num_items, h_init)
+    cuda.compute.reduce_into(
+        d_in=first_it, d_out=d_output, num_items=num_items, op=add_op, h_init=h_init
+    )
 
     expected_output = functools.reduce(
         lambda a, b: a + b, range(first_item, first_item + num_items)
@@ -763,7 +818,9 @@ def test_transform_iterator():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(transform_it, d_output, add_op, num_items, h_init)
+    cuda.compute.reduce_into(
+        d_in=transform_it, d_out=d_output, num_items=num_items, op=add_op, h_init=h_init
+    )
 
     expected_output = functools.reduce(
         lambda a, b: a + b, [a**2 for a in range(first_item, first_item + num_items)]
@@ -786,7 +843,9 @@ def test_reduce_struct_type():
 
     h_init = Pixel(0, 0, 0)
 
-    cuda.compute.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
+    cuda.compute.reduce_into(
+        d_in=d_rgb, d_out=d_out, num_items=d_rgb.size, op=max_g_value, h_init=h_init
+    )
 
     h_rgb = d_rgb.get()
     expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
@@ -826,7 +885,9 @@ def test_reduce_struct_type_minmax():
     h_init = MinMax(np.inf, -np.inf)
 
     # run the reduction algorithm
-    cuda.compute.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
+    cuda.compute.reduce_into(
+        d_in=tr_it, d_out=d_out, num_items=nelems, op=minmax_op, h_init=h_init
+    )
 
     # display values computed on the device
     actual = d_out.get()
@@ -851,7 +912,13 @@ def test_reduce_transform_output_iterator(floating_array):
 
     d_out_it = TransformOutputIterator(d_output, sqrt)
 
-    cuda.compute.reduce_into(d_input, d_out_it, OpKind.PLUS, len(d_input), h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_out_it,
+        num_items=len(d_input),
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
 
     expected = cp.sqrt(cp.sum(d_input))
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
@@ -865,11 +932,11 @@ def test_reduce_with_not_guaranteed_determinism(floating_array):
     d_output = cp.empty(1, dtype=dtype)
 
     cuda.compute.reduce_into(
-        d_input,
-        d_output,
-        OpKind.PLUS,
-        len(d_input),
-        h_init,
+        d_in=d_input,
+        d_out=d_output,
+        num_items=len(d_input),
+        op=OpKind.PLUS,
+        h_init=h_init,
         determinism=Determinism.NOT_GUARANTEED,
     )
 
@@ -880,7 +947,13 @@ def test_reduce_bool():
     d_output = cp.empty_like(d_input, shape=(1,))
 
     # Perform the reduction.
-    cuda.compute.reduce_into(d_input, d_output, OpKind.MAXIMUM, len(d_input), h_init)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=len(d_input),
+        op=OpKind.MAXIMUM,
+        h_init=h_init,
+    )
 
     expected = True
     assert d_output.get()[0] == expected

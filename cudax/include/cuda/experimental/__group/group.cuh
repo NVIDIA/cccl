@@ -37,6 +37,7 @@
 #include <cuda/experimental/__group/concepts.cuh>
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/mapping/group_by.cuh>
+#include <cuda/experimental/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/__group/this_group.cuh>
 #include <cuda/experimental/__group/traits.cuh>
 
@@ -57,8 +58,26 @@ class group
 
   // todo(dabayer): static_assert that _Unit is (under) typename _ParentGroup::unit_type
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
+  __get_initial_mapping_result(const _ParentGroup& __parent) noexcept
+  {
+    using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
+    using _MappingResult =
+      ::cuda::experimental::__mapping_result<1,
+                                             ::cuda::experimental::__static_count_query_group<_Unit, _ParentGroup>(),
+                                             _ParentMappingResult::is_always_exhaustive(),
+                                             _ParentMappingResult::is_always_contiguous()>;
+    return _MappingResult{
+      1,
+      0,
+      ::cuda::experimental::__count_query_group<unsigned, _Unit>(__parent),
+      ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__parent)};
+  }
+
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
-  using _MappingResult       = __group_mapping_result_t<_Mapping, _Unit, _ParentGroup>;
+  using _MappingResult       = decltype(::cuda::std::declval<const _Mapping&>().map(
+    ::cuda::std::declval<const _ParentGroup&>(),
+    __get_initial_mapping_result(::cuda::std::declval<const _ParentGroup&>())));
   using _SynchronizerInstance =
     __group_synchronizer_instance_t<_Synchronizer, _Unit, _ParentGroup, _Mapping, _MappingResult>;
   static_assert(__group_mapping_result<_MappingResult>);
@@ -72,16 +91,7 @@ class group
   [[nodiscard]] _CCCL_DEVICE_API static _MappingResult
   __do_mapping(const _Mapping& __mapping, const _ParentGroup& __parent) noexcept
   {
-    // Do not invoke the mapping for threads that are not part of the parent group.
-    if constexpr (!_ParentMappingResult::is_always_exhaustive())
-    {
-      if (!__parent.__mapping_result().is_valid())
-      {
-        return _MappingResult::invalid();
-      }
-    }
-
-    const auto __mapping_result = __mapping.map(_Unit{}, __parent);
+    const auto __mapping_result = __mapping.map(__parent, __get_initial_mapping_result(__parent));
     if (__mapping_result.is_valid())
     {
       _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");

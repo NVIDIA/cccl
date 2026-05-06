@@ -29,7 +29,7 @@ namespace detail::reduce
 // TODO(bgruber): bikeshed name before we make the tuning API public
 struct agent_reduce_policy // equivalent of AgentReducePolicy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   int vec_size;
   BlockReduceAlgorithm block_algorithm;
@@ -37,7 +37,7 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
 
   _CCCL_API constexpr friend bool operator==(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.block_algorithm == rhs.block_algorithm
         && lhs.load_modifier == rhs.load_modifier;
   }
@@ -50,7 +50,7 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
   {
-    return os << "agent_reduce_policy { .block_threads = " << p.block_threads
+    return os << "agent_reduce_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
               << ", .block_algorithm = " << p.block_algorithm << ", .load_modifier = " << p.load_modifier << " }";
   }

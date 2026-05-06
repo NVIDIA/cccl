@@ -37,6 +37,10 @@
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/cstddef>
 
+#  if _CCCL_HOSTED()
+#    include <vector>
+#  endif // _CCCL_HOSTED()
+
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
