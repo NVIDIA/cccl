@@ -97,10 +97,11 @@ struct TransformPrefetchPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const TransformPrefetchPolicy& policy)
   {
     return os
-        << "TransformPrefetchPolicy { .threads_per_block = " << policy.threads_per_block << ", .items_per_thread_no_input = "
-        << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
-        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .prefetch_byte_stride = "
-        << policy.prefetch_byte_stride << ", .unroll_factor = " << policy.unroll_factor << " }";
+        << "TransformPrefetchPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .items_per_thread_no_input = " << policy.items_per_thread_no_input << ", .min_items_per_thread = "
+        << policy.min_items_per_thread << ", .max_items_per_thread = " << policy.max_items_per_thread
+        << ", .prefetch_byte_stride = " << policy.prefetch_byte_stride << ", .unroll_factor = " << policy.unroll_factor
+        << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -161,9 +162,9 @@ struct TransformAsyncCopyPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const TransformAsyncCopyPolicy& policy)
   {
-    return os << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block << ", .min_items_per_thread = "
-              << policy.min_items_per_thread << ", .max_items_per_thread = " << policy.max_items_per_thread
-              << ", .unroll_factor = " << policy.unroll_factor << " }";
+    return os << "TransformAsyncCopyPolicy { .threads_per_block = " << policy.threads_per_block
+              << ", .min_items_per_thread = " << policy.min_items_per_thread << ", .max_items_per_thread = "
+              << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor << " }";
   }
 #endif // _CCCL_HOSTED()
 };

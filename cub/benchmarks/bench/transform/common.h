@@ -57,13 +57,13 @@ struct policy_selector
 #  elif TUNE_ALGORITHM == 2
     constexpr auto algorithm = cub::TransformAlgorithm::ldgsts;
     auto policy              = cub::TransformAsyncCopyPolicy{};
-    policy.threads_per_block     = TUNE_THREADS;
+    policy.threads_per_block = TUNE_THREADS;
     policy.unroll_factor     = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  elif TUNE_ALGORITHM == 3
     constexpr auto algorithm = cub::TransformAlgorithm::ublkcp;
     auto policy              = cub::TransformAsyncCopyPolicy{};
-    policy.threads_per_block     = TUNE_THREADS;
+    policy.threads_per_block = TUNE_THREADS;
     policy.unroll_factor     = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else // TUNE_ALGORITHM

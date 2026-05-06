@@ -201,7 +201,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, nullptr)), decltype(kernel_source.TransformKernel()), int>>
 {
   CUB_DETAIL_CONSTEXPR_ISH const TransformPolicy policy = policy_getter();
-  CUB_DETAIL_CONSTEXPR_ISH int threads_per_block            = policy.async_copy.threads_per_block;
+  CUB_DETAIL_CONSTEXPR_ISH int threads_per_block        = policy.async_copy.threads_per_block;
 
   _CCCL_ASSERT(threads_per_block % alignment == 0, "threads_per_block needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
