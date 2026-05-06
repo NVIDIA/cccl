@@ -21,26 +21,22 @@
 #include "test_resources.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
-
 C2H_CCCLRT_TEST("cuda::buffer conversion", "[container][buffer]", test_types)
 {
-  using TestT    = c2h::get<0, TestType>;
-  using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::buffer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
   using T        = typename Buffer::value_type;
 
-  cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
-
   // Convert from a buffer that has more properties than the current one
-  using MatchingBuffer = typename extract_properties<TestT>::matching_vector;
+  using MatchingBuffer = typename extract_properties<Buffer>::matching_buffer;
+
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
+
+  cuda::stream stream{cuda::device_ref{0}};
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer construction with matching buffer")
   {
