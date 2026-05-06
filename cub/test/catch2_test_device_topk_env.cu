@@ -22,7 +22,7 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_LAUNCH lid 0:2
 
 #include <c2h/catch2_test_helper.h>
 
