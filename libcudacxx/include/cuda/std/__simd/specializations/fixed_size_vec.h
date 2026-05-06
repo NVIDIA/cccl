@@ -25,7 +25,6 @@
 #include <cuda/std/__simd/specializations/fixed_size_mask.h>
 #include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/std/__cccl/prologue.h>

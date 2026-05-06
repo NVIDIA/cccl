@@ -21,11 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#define _CCCL_HAS_SIMD_F32X2_INTRINSICS() (_CCCL_CUDACC_AT_LEAST(12, 8) && _CCCL_HAS_CTK() && !_CCCL_COMPILER(CLANG))
-#define _CCCL_HAS_SIMD_F32X2_PTX()        (__cccl_ptx_isa >= 860ULL)
-
-#define _CCCL_HAS_SIMD_F32X2() (_CCCL_HAS_SIMD_F32X2_INTRINSICS() || _CCCL_HAS_SIMD_F32X2_PTX())
-
+// automatic vectorization for float2 is not supported (until CUDA 13.2)
+// TODO(fbusato): extend for other GPU archs in the future
+// TODO(fbusato): check 5361571, remove this path once the feature is supported
 #if _CCCL_HAS_SIMD_F32X2()
 
 #  include <cuda/std/__simd/specializations/fixed_size_storage.h>
@@ -127,7 +125,7 @@ __plus_f32x2(const __simd_storage_f32<_Np>& __lhs, const __simd_storage_f32<_Np>
     __result.__data[__i]     = __value.x;
     __result.__data[__i + 1] = __value.y;
   }
-  if (_Np % 2 != 0)
+  if constexpr (_Np % 2 != 0)
   {
     __result.__data[_Np - 1] = __lhs.__data[_Np - 1] + __rhs.__data[_Np - 1];
   }
