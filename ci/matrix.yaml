@@ -21,14 +21,6 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    - {jobs: ['build'],                   std: 'all',                  cxx: 'msvc2026'}
-    - {jobs: ['build'], project: 'cudax', std: 'all',                  cxx: 'msvc2026'}
-
-    - {jobs: ['test'], project: 'libcudacxx', std: 'minmax', ctk: '13.X', cxx: 'msvc2026', gpu: 'rtx2080'}
-    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'minmax', ctk: '13.X', cxx: 'msvc2026', gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'thrust',     std: 'minmax', ctk: '13.X', cxx: 'msvc2026', gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'cudax',      std: 'minmax', ctk: '13.X', cxx: 'msvc2026', gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'msvc2026', gpu: ['rtx2080', 'l4', 'h100']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
