@@ -314,15 +314,15 @@ C2H_TEST("TransformPolicy", "[transform][device]")
     .algorithm           = cub::TransformAlgorithm::prefetch,
     .prefetch =
       cub::TransformPrefetchPolicy{
-        .block_threads             = 256,
+        .threads_per_block         = 256,
         .items_per_thread_no_input = 2,
         .min_items_per_thread      = 1,
         .max_items_per_thread      = 32,
         .prefetch_byte_stride      = 128,
         .unroll_factor             = 0},
-    .vectorized = cub::TransformVectorizedPolicy{.block_threads = 256, .items_per_thread = 8, .vec_size = 4},
+    .vectorized = cub::TransformVectorizedPolicy{.threads_per_block = 256, .items_per_thread = 8, .vec_size = 4},
     .async_copy = cub::TransformAsyncCopyPolicy{
-      .block_threads = 256, .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1}};
+      .threads_per_block = 256, .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1}};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

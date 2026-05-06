@@ -28,7 +28,7 @@ struct MyTransformPolicySelector
   {
     return {.min_bytes_in_flight = 64 * 1024,
             .algorithm           = cub::TransformAlgorithm::prefetch,
-            .prefetch            = {.block_threads = 256},
+            .prefetch            = {.threads_per_block = 256},
             .vectorized          = {},
             .async_copy          = {}};
   }
