@@ -139,9 +139,9 @@ A more precise description is given later.
         a.Process();
       }
 
-      template <int BlockThreads, ...>
+      template <int ThreadsPerBlock, ...>
       struct AgentPolicy { // legacy
-        static constexpr threads_per_block = BlockThreads;
+        static constexpr threads_per_block = ThreadsPerBlock;
         ...
       };
 
