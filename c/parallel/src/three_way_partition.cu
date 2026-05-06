@@ -365,35 +365,6 @@ CUresult cccl_device_three_way_partition_build_ex(
   const char* ctk_path,
   cccl_build_config* config)
 {
-  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
-  {
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
-    appender.append_operation(select_first_part_op);
-    appender.append_operation(select_second_part_op);
-    appender.add_iterator_definition(d_in);
-    appender.add_iterator_definition(d_first_part_out);
-    appender.add_iterator_definition(d_second_part_out);
-    appender.add_iterator_definition(d_unselected_out);
-    appender.add_iterator_definition(d_num_selected_out);
-    std::vector<const void*> blobs;
-    std::vector<size_t> sizes;
-    for (const auto& item : linkable_list)
-    {
-      if (std::holds_alternative<nvrtc_ltoir>(item))
-      {
-        const auto& l = std::get<nvrtc_ltoir>(item);
-        blobs.push_back(l.ltoir);
-        sizes.push_back(l.size);
-      }
-    }
-    CUresult r = cccl_device_three_way_partition_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
-    if (r != CUDA_SUCCESS)
-    {
-      return r;
-    }
-    return cccl_device_three_way_partition_load(build_ptr);
-  }
   CUresult result = cccl_device_three_way_partition_compile(
     build_ptr,
     d_in,
@@ -413,6 +384,14 @@ CUresult cccl_device_three_way_partition_build_ex(
   if (result != CUDA_SUCCESS)
   {
     return result;
+  }
+  if (build_ptr->cubin == nullptr)
+  {
+    result = cccl_device_three_way_partition_link_ltoir(build_ptr, nullptr, nullptr, 0);
+    if (result != CUDA_SUCCESS)
+    {
+      return result;
+    }
   }
   return cccl_device_three_way_partition_load(build_ptr);
 }

@@ -445,34 +445,6 @@ CUresult cccl_device_unique_by_key_build_ex(
   const char* ctk_path,
   cccl_build_config* config)
 {
-  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
-  {
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
-    appender.append_operation(op);
-    appender.add_iterator_definition(input_keys_it);
-    appender.add_iterator_definition(input_values_it);
-    appender.add_iterator_definition(output_keys_it);
-    appender.add_iterator_definition(output_values_it);
-    appender.add_iterator_definition(output_num_selected_it);
-    std::vector<const void*> blobs;
-    std::vector<size_t> sizes;
-    for (const auto& item : linkable_list)
-    {
-      if (std::holds_alternative<nvrtc_ltoir>(item))
-      {
-        const auto& l = std::get<nvrtc_ltoir>(item);
-        blobs.push_back(l.ltoir);
-        sizes.push_back(l.size);
-      }
-    }
-    CUresult r = cccl_device_unique_by_key_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
-    if (r != CUDA_SUCCESS)
-    {
-      return r;
-    }
-    return cccl_device_unique_by_key_load(build_ptr);
-  }
   CUresult result = cccl_device_unique_by_key_compile(
     build_ptr,
     input_keys_it,
@@ -491,6 +463,14 @@ CUresult cccl_device_unique_by_key_build_ex(
   if (result != CUDA_SUCCESS)
   {
     return result;
+  }
+  if (build_ptr->cubin == nullptr)
+  {
+    result = cccl_device_unique_by_key_link_ltoir(build_ptr, nullptr, nullptr, 0);
+    if (result != CUDA_SUCCESS)
+    {
+      return result;
+    }
   }
   return cccl_device_unique_by_key_load(build_ptr);
 }

@@ -422,33 +422,6 @@ CUresult cccl_device_merge_sort_build_ex(
   const char* ctk_path,
   cccl_build_config* config)
 {
-  if (build_ptr->kernel_ltoir != nullptr && build_ptr->kernel_ltoir_size > 0)
-  {
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender list_appender{linkable_list};
-    list_appender.append_operation(op);
-    list_appender.add_iterator_definition(input_keys_it);
-    list_appender.add_iterator_definition(input_items_it);
-    list_appender.add_iterator_definition(output_keys_it);
-    list_appender.add_iterator_definition(output_items_it);
-    std::vector<const void*> blobs;
-    std::vector<size_t> sizes;
-    for (const auto& item : linkable_list)
-    {
-      if (std::holds_alternative<nvrtc_ltoir>(item))
-      {
-        const auto& l = std::get<nvrtc_ltoir>(item);
-        blobs.push_back(l.ltoir);
-        sizes.push_back(l.size);
-      }
-    }
-    CUresult r = cccl_device_merge_sort_link_ltoir(build_ptr, blobs.data(), sizes.data(), blobs.size());
-    if (r != CUDA_SUCCESS)
-    {
-      return r;
-    }
-    return cccl_device_merge_sort_load(build_ptr);
-  }
   CUresult r = cccl_device_merge_sort_compile(
     build_ptr,
     input_keys_it,
@@ -466,6 +439,14 @@ CUresult cccl_device_merge_sort_build_ex(
   if (r != CUDA_SUCCESS)
   {
     return r;
+  }
+  if (build_ptr->cubin == nullptr)
+  {
+    r = cccl_device_merge_sort_link_ltoir(build_ptr, nullptr, nullptr, 0);
+    if (r != CUDA_SUCCESS)
+    {
+      return r;
+    }
   }
   return cccl_device_merge_sort_load(build_ptr);
 }

@@ -464,31 +464,6 @@ CUresult cccl_device_reduce_build_ex(
   const char* ctk_path,
   cccl_build_config* config)
 {
-  if (build->kernel_ltoir != nullptr && build->kernel_ltoir_size > 0)
-  {
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
-    appender.append_operation(op);
-    appender.add_iterator_definition(input_it);
-    appender.add_iterator_definition(output_it);
-    std::vector<const void*> blobs;
-    std::vector<size_t> sizes;
-    for (const auto& item : linkable_list)
-    {
-      if (std::holds_alternative<nvrtc_ltoir>(item))
-      {
-        const auto& l = std::get<nvrtc_ltoir>(item);
-        blobs.push_back(l.ltoir);
-        sizes.push_back(l.size);
-      }
-    }
-    CUresult r = cccl_device_reduce_link_ltoir(build, blobs.data(), sizes.data(), blobs.size());
-    if (r != CUDA_SUCCESS)
-    {
-      return r;
-    }
-    return cccl_device_reduce_load(build);
-  }
   CUresult r = cccl_device_reduce_compile(
     build,
     input_it,
@@ -506,6 +481,14 @@ CUresult cccl_device_reduce_build_ex(
   if (r != CUDA_SUCCESS)
   {
     return r;
+  }
+  if (build->cubin == nullptr)
+  {
+    r = cccl_device_reduce_link_ltoir(build, nullptr, nullptr, 0);
+    if (r != CUDA_SUCCESS)
+    {
+      return r;
+    }
   }
   return cccl_device_reduce_load(build);
 }
