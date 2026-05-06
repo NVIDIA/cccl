@@ -35,7 +35,6 @@ typedef struct cccl_device_segmented_reduce_build_result_t
   CUkernel segmented_reduce_kernel;
   void* runtime_policy;
   size_t runtime_policy_size;
-  // Lowered (mangled) kernel name, heap-allocated, freed by cccl_device_segmented_reduce_cleanup():
   char* segmented_reduce_kernel_lowered_name;
 } cccl_device_segmented_reduce_build_result_t;
 

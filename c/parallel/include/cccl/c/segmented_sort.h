@@ -46,7 +46,6 @@ typedef struct cccl_device_segmented_sort_build_result_t
   void* partition_runtime_policy;
   size_t partition_runtime_policy_size;
   cccl_sort_order_t order;
-  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_segmented_sort_cleanup():
   char* segmented_sort_fallback_kernel_lowered_name;
   char* segmented_sort_kernel_small_lowered_name;
   char* segmented_sort_kernel_large_lowered_name;

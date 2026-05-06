@@ -48,7 +48,6 @@ typedef struct cccl_device_radix_sort_build_result_t
   cccl_sort_order_t order;
   void* runtime_policy;
   size_t runtime_policy_size;
-  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_radix_sort_cleanup():
   char* single_tile_kernel_lowered_name;
   char* upsweep_kernel_lowered_name;
   char* alt_upsweep_kernel_lowered_name;

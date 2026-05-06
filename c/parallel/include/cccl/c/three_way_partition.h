@@ -35,7 +35,6 @@ typedef struct cccl_device_three_way_partition_build_result_t
   CUkernel three_way_partition_kernel;
   void* runtime_policy;
   size_t runtime_policy_size;
-  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_three_way_partition_cleanup():
   char* three_way_partition_init_kernel_lowered_name;
   char* three_way_partition_kernel_lowered_name;
 } cccl_device_three_way_partition_build_result_t;
