@@ -17,17 +17,17 @@ template <typename AccumT>
 struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::reduce::reduce_policy
+    -> cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy
   {
     const auto [items, threads] =
       cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
-    const auto policy = cub::agent_reduce_policy{
+    const auto policy = cub::detail::reduce::agent_reduce_policy{
       threads,
       items,
       1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
       cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
       cub::LOAD_DEFAULT};
-    return {{}, {}, {}, policy}; // Only reduce_nondeterministic is used
+    return {policy};
   }
 };
 #endif // !TUNE_BASE

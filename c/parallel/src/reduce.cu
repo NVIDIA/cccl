@@ -368,11 +368,11 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
   build->determinism      = determinism;
   if (build_nondeterministic)
   {
-    build->runtime_policy = new cub::detail::reduce::policy_selector{policy_sel};
+    build->runtime_policy = new cub::detail::reduce_nondeterministic::policy_selector{policy_sel_nd};
   }
   else
   {
-    build->runtime_policy = new cub::detail::reduce_nondeterministic::policy_selector{policy_sel_nd};
+    build->runtime_policy = new cub::detail::reduce::policy_selector{policy_sel};
   }
 
   return CUDA_SUCCESS;

@@ -191,7 +191,9 @@ private:
     using default_policy_selector =
       detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
     using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT,
+                                                  detail::reduce_nondeterministic::reduce_nondeterministic_policy,
+                                                  default_policy_selector>;
 
     return detail::reduce_nondeterministic::dispatch<accum_t>(
       d_temp_storage,

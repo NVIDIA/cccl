@@ -102,6 +102,15 @@ struct reduce_tuning
   }
 };
 
+struct unrelated_nondeterminisitc_reduce_tuning
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy
+  {
+    return {}; // just zero everything
+  }
+};
+
 struct unrelated_policy
 {};
 
@@ -128,7 +137,8 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(
+    reduce_tuning<target_block_size>{}, unrelated_tuning{}, unrelated_nondeterminisitc_reduce_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
@@ -144,7 +154,8 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(
+    reduce_tuning<target_block_size>{}, unrelated_tuning{}, unrelated_nondeterminisitc_reduce_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);
@@ -207,7 +218,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+      using policy_t = cub::detail::reduce_nondeterministic::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
       REQUIRE(
@@ -333,7 +344,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+      using policy_t = cub::detail::reduce_nondeterministic::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
       REQUIRE(
