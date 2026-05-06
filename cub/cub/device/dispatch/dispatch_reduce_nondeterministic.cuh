@@ -230,9 +230,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
           "per thread, %d SM occupancy\n",
           (unsigned long long) reduce_grid_size,
-          active_policy.reduce_nondeterministic.threads_per_block,
+          active_policy.reduce.threads_per_block,
           (void*) stream,
-          active_policy.reduce_nondeterministic.items_per_thread,
+          active_policy.reduce.items_per_thread,
           sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
