@@ -126,14 +126,14 @@ A more precise description is given later.
         ptx_compute_cap(cc);
         const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(cc);
         // host-side implementation of algorithm, calls kernels
-        kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...);
+        kernel<PolicySelector><<<grid_size, active_policy.threads_per_block>>>(...);
       }
 
       template <typename PolicySelector>
-      __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+      __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       void kernel(...) {
         static constexpr auto policy = current_policy<PolicySelector>();
-        using agent_policy = AgentPolicy<policy.block_threads, policy.items_per_thread, ...>;
+        using agent_policy = AgentPolicy<policy.threads_per_block, policy.items_per_thread, ...>;
         using agent = AgentAlgorithm<agent_policy, InputIteratorT, OffsetT, ...>;
         agent a{...};
         a.Process();
@@ -141,7 +141,7 @@ A more precise description is given later.
 
       template <int BlockThreads, ...>
       struct AgentPolicy { // legacy
-        static constexpr block_threads = BlockThreads;
+        static constexpr threads_per_block = BlockThreads;
         ...
       };
 
@@ -177,7 +177,7 @@ There are two style of dispatch functions, depending on whether the policy is ne
         ptx_compute_cap(cc);
         const auto active_policy = policy_selector(cc); // runtime-time policy
         // host-side implementation of algorithm, calls kernels
-        kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...);
+        kernel<PolicySelector><<<grid_size, active_policy.threads_per_block>>>(...);
       }
     }
 
@@ -214,7 +214,7 @@ The policy getter is necessary to work around a C++17 limitation.
           constexpr auto active_policy = policy_getter(); // compile-time policy
           static_assert(active_policy.tile_size() * sizeof(T) <= 48 * 1024, "Not enough SMEM");
           // host-side implementation of algorithm, calls kernels
-          kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...);
+          kernel<PolicySelector><<<grid_size, active_policy.threads_per_block>>>(...);
         });
       }
 
@@ -244,10 +244,10 @@ which is stateless and the same for all target architectures compiled for.
 
     namespace detail::algorithm {
       template <typename PolicySelector, typename InputIteratorT, typename OffsetT, /* ... */>
-      __launch_bounds__(int(current_policy<PolicySelector>().reduce.block_threads))
+      __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block))
       void DeviceReduceKernel(InputIteratorT d_in, OffsetT num_items, /* ... */) {
         static constexpr auto policy = current_policy<PolicySelector>();
-        using agent_policy = AgentPolicy<policy.block_threads, policy.items_per_thread, ...>;
+        using agent_policy = AgentPolicy<policy.threads_per_block, policy.items_per_thread, ...>;
         using agent = AgentAlgorithm<agent_policy, InputIteratorT, OffsetT, ...>;
         agent a{...};
         a.Process();
@@ -400,7 +400,7 @@ and with designated initializers:
 .. code-block:: c++
 
     struct AlgorithmPolicy {
-      int block_threads;
+      int threads_per_block;
       int items_per_thread;
       cub::BlockLoadAlgorithm load_algorithm;
       cub::CacheLoadModifier load_modifier;

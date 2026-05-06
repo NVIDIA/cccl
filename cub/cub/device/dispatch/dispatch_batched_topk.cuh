@@ -232,7 +232,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   constexpr multi_worker_policy multi_worker_per_segment_policy = policy.multi_worker_per_segment_policy;
 
   static constexpr int worker_per_segment_tile_size =
-    worker_per_segment_policy.block_threads * worker_per_segment_policy.items_per_thread;
+    worker_per_segment_policy.threads_per_block * worker_per_segment_policy.items_per_thread;
   static constexpr bool any_small_segments =
     params::static_min_value_v<SegmentSizeParameterT> <= worker_per_segment_tile_size;
   static constexpr bool only_small_segments =
@@ -252,7 +252,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using segment_size_scan_input_op_t =
     segment_size_to_tile_count_op<SegmentSizeParameterT, large_segment_tile_offset_t>;
   static constexpr auto multi_worker_per_segment_tile_size =
-    multi_worker_per_segment_policy.block_threads * multi_worker_per_segment_policy.items_per_thread;
+    multi_worker_per_segment_policy.threads_per_block * multi_worker_per_segment_policy.items_per_thread;
   const segment_size_scan_input_op_t segment_size_scan_input_op{segment_sizes, multi_worker_per_segment_tile_size};
   // Transform iterator over [0, num_segments) producing the tile-count for each segment.
   [[maybe_unused]] const auto segment_size_scan_input_it = ::cuda::transform_iterator(

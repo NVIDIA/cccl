@@ -85,12 +85,12 @@ struct worker_policy
 
 struct multi_worker_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
 
   _CCCL_API constexpr friend bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
   _CCCL_API constexpr friend bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
@@ -101,7 +101,7 @@ struct multi_worker_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const multi_worker_policy& p)
   {
-    return os << "multi_worker_policy { .block_threads = " << p.block_threads
+    return os << "multi_worker_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << " }";
   }
 #endif // _CCCL_HOSTED()

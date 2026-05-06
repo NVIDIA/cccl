@@ -86,12 +86,12 @@ struct agent_batched_topk_worker_per_segment
 
   // For block-scan (and offsets load/store):
   static constexpr int epilogue_items_per_thread = active_policy.epilogue.items_per_thread;
-  static constexpr int epilogue_tile_size        = block_threads * epilogue_items_per_thread;
+  static constexpr int epilogue_tile_size        = threads_per_block * epilogue_items_per_thread;
 
   // Number used for preprocessing segment-size data, not for tuning => should not affect performance of this agent.
   static constexpr multi_worker_policy multi_worker_per_segment_policy = policy.multi_worker_per_segment_policy;
   static constexpr int multi_worker_per_segment_tile_size =
-    multi_worker_per_segment_policy.block_threads * multi_worker_per_segment_policy.items_per_thread;
+    multi_worker_per_segment_policy.threads_per_block * multi_worker_per_segment_policy.items_per_thread;
 
   // Check if there could be large segments present
   static constexpr bool only_small_segments = params::static_max_value_v<SegmentSizeParameterT> <= tile_size;
@@ -113,10 +113,10 @@ struct agent_batched_topk_worker_per_segment
   using block_store_vals_t = BlockStore<value_t, threads_per_block, items_per_thread, active_policy.store_algorithm>;
 
   using block_load_epilogue_t =
-    BlockLoad<segment_size_val_t, block_threads, epilogue_items_per_thread, active_policy.epilogue.load_algorithm>;
-  using block_scan_epilogue_t = BlockScan<int, block_threads, active_policy.epilogue.scan_algorithm>;
+    BlockLoad<segment_size_val_t, threads_per_block, epilogue_items_per_thread, active_policy.epilogue.load_algorithm>;
+  using block_scan_epilogue_t = BlockScan<int, threads_per_block, active_policy.epilogue.scan_algorithm>;
   using block_store_epilogue_t =
-    BlockStore<segment_size_val_t, block_threads, epilogue_items_per_thread, active_policy.epilogue.store_algorithm>;
+    BlockStore<segment_size_val_t, threads_per_block, epilogue_items_per_thread, active_policy.epilogue.store_algorithm>;
 
   // -------------------------------------------------------------------------
   // Shared Memory Storage
