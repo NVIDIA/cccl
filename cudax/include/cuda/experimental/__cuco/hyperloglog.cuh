@@ -372,7 +372,7 @@ public:
   //! @return Device ref object of the current `hyperloglog` host object
   [[nodiscard]] constexpr ref_type<> ref() const noexcept
   {
-    return {sketch(), hash_function()};
+    return {sketch(), policy()};
   }
 
   //! @brief Get hash function.

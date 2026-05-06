@@ -473,10 +473,10 @@ public:
 
   //! @brief Gets the hash function.
   //!
-  //! @return The hash function
+  //! @return The hash function, as exposed by the policy via `hash_function()`.
   [[nodiscard]] _CCCL_API constexpr auto __hash_function() const noexcept
   {
-    return __policy.hasher_;
+    return __policy.hash_function();
   }
 
   //! @brief Gets the policy.

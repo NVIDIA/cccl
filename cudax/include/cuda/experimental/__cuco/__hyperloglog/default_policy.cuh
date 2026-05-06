@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__bit/countl.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
@@ -54,8 +54,17 @@ struct default_hll_policy
   using register_type    = int;
 
   static_assert(::cuda::std::is_unsigned_v<hash_result_type>, "HyperLogLog requires an unsigned hash value type");
+  static_assert(::cuda::std::numeric_limits<hash_result_type>::digits == 32
+                  || ::cuda::std::numeric_limits<hash_result_type>::digits == 64,
+                "HyperLogLog requires a 32-bit or 64-bit hash value type");
 
   hasher hasher_{};
+
+  //! @brief Returns the underlying hash functor.
+  _CCCL_HOST_DEVICE constexpr hasher hash_function() const noexcept
+  {
+    return hasher_;
+  }
 
   //! @brief Hashes an item.
   _CCCL_HOST_DEVICE constexpr hash_result_type hash(const _Key& __k) const noexcept
