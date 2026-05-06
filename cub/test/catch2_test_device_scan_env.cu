@@ -36,11 +36,12 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_scan_inclusive
 
 namespace stdexec = cuda::std::execution;
 
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
+
 // Launcher helper always passes an environment.
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device scan exclusive scan works with default environment", "[scan][device]")
 {
@@ -57,7 +58,7 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
 
   cuda::compute_capability cc;
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto target_block_size = selector_t{}(cc).lookback.block_threads;
+  const unsigned int target_block_size = selector_t{}(cc).lookback.threads_per_block;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
@@ -105,13 +106,33 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
   REQUIRE(d_out[1] == value_t{} + d_in[0]);
 }
 
-template <int BlockThreads>
+TEST_CASE("Device scan inclusive-scan-init works with default environment", "[scan][device]")
+{
+  using num_items_t = int;
+  using value_t     = int;
+
+  num_items_t num_items = 3;
+  auto d_in             = cuda::constant_iterator(value_t{1});
+  auto d_out            = c2h::device_vector<value_t>(num_items);
+
+  value_t init{10};
+
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
+}
+
+#endif // TEST_LAUNCH == 0
+
+#if TEST_LAUNCH != 1
+
+template <int ThreadsPerBlock>
 struct scan_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan::scan_policy
   {
     return {cub::detail::scan::scan_algorithm::lookback,
-            {BlockThreads,
+            {ThreadsPerBlock,
              1,
              cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
              cub::CacheLoadModifier::LOAD_DEFAULT,
@@ -134,7 +155,8 @@ struct unrelated_tuning
   }
 };
 
-using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
 C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_sizes)
 {
@@ -207,7 +229,7 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
 
   cuda::compute_capability cc;
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto target_block_size = selector_t{}(cc).lookback.block_threads;
+  const unsigned int target_block_size = selector_t{}(cc).lookback.threads_per_block;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
@@ -237,22 +259,6 @@ C2H_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", block_size
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
   REQUIRE(d_block_size[0] == target_block_size);
-}
-
-TEST_CASE("Device scan inclusive-scan-init works with default environment", "[scan][device]")
-{
-  using num_items_t = int;
-  using value_t     = int;
-
-  num_items_t num_items = 3;
-  auto d_in             = cuda::constant_iterator(value_t{1});
-  auto d_out            = c2h::device_vector<value_t>(num_items);
-
-  value_t init{10};
-
-  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
-
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
 }
 
 C2H_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", block_sizes)
@@ -336,7 +342,7 @@ TEST_CASE("Device scan exclusive scan with FutureValue in-place works with defau
   REQUIRE(d_data == expected);
 }
 
-#endif
+#endif // TEST_LAUNCH != 1
 
 C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
 {

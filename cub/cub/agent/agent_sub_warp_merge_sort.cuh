@@ -24,7 +24,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int BlockThreadsArg,
+template <int ThreadsPerBlock,
           int WarpThreadsArg,
           int ItemsPerThreadArg,
           cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
@@ -32,7 +32,7 @@ template <int BlockThreadsArg,
           cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
 struct AgentSubWarpMergeSortPolicy
 {
-  static constexpr int BLOCK_THREADS      = BlockThreadsArg;
+  static constexpr int BLOCK_THREADS      = ThreadsPerBlock;
   static constexpr int WARP_THREADS       = WarpThreadsArg;
   static constexpr int ITEMS_PER_THREAD   = ItemsPerThreadArg;
   static constexpr int ITEMS_PER_TILE     = WARP_THREADS * ITEMS_PER_THREAD;

@@ -38,7 +38,7 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
@@ -46,7 +46,7 @@ template <int BlockThreads,
           typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentUniqueByKeyPolicy
 {
-  static constexpr int BLOCK_THREADS                      = BlockThreads;
+  static constexpr int BLOCK_THREADS                      = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD                   = ItemsPerThread;
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;

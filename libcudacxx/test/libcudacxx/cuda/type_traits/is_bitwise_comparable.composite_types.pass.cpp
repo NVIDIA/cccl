@@ -36,7 +36,7 @@ struct UserSpecialization
 template <>
 constexpr bool cuda::is_bitwise_comparable_v<UserSpecialization> = true;
 
-__host__ __device__ void test_composite_types()
+TEST_FUNC void test_composite_types()
 {
   // padding-free cuda::std::array, pair, tuple of bitwise comparable types
   static_assert(cuda::is_bitwise_comparable_v<cuda::std::array<int, 4>>);
@@ -76,7 +76,7 @@ struct NoPaddingExtendedFloatingPoint
 
 #endif // _CCCL_HAS_NVFP16()
 
-__host__ __device__ void test_extended_floating_point_types()
+TEST_FUNC void test_extended_floating_point_types()
 {
   // compositions of extended floating-point types
 #if _CCCL_HAS_NVFP16()

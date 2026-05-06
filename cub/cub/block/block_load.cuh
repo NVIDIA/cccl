@@ -281,7 +281,7 @@ LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[Ite
 //!
 //! @endrst
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -302,27 +302,27 @@ LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[Ite
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
-template <int BlockThreads, typename T, int ItemsPerThread, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = block_src_it[linear_tid + i * BlockThreads];
+    dst_items[i] = block_src_it[linear_tid + i * ThreadsPerBlock];
   }
 }
 
 namespace detail
 {
-template <int BlockThreads, typename T, int ItemsPerThread, typename RandomAccessIterator, typename TransformOpT>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator, typename TransformOpT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], TransformOpT transform_op)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = transform_op(block_src_it[linear_tid + i * BlockThreads]);
+    dst_items[i] = transform_op(block_src_it[linear_tid + i * ThreadsPerBlock]);
   }
 }
 } // namespace detail
@@ -337,7 +337,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
 //!
 //! @endrst
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -361,14 +361,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
 //!
 //! @param[in] block_items_end
 //!   Number of valid items to load
-template <int BlockThreads, typename T, int ItemsPerThread, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const auto src_pos = linear_tid + i * BlockThreads;
+    const auto src_pos = linear_tid + i * ThreadsPerBlock;
     if (src_pos < block_items_end)
     {
       dst_items[i] = block_src_it[src_pos];
@@ -387,7 +387,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //!
 //! @endrst
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -414,7 +414,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //!
 //! @param[in] oob_default
 //!   Default value to assign out-of-bound items
-template <int BlockThreads, typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
+template <int ThreadsPerBlock, typename T, typename DefaultT, int ItemsPerThread, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   int linear_tid,
   RandomAccessIterator block_src_it,
@@ -428,7 +428,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end);
+  LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 //! @}
@@ -684,7 +684,7 @@ enum BlockLoadAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BlockThreads must be a multiple of WARP_THREADS
+  //! - ThreadsPerBlock must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -710,7 +710,7 @@ enum BlockLoadAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BlockThreads must be a multiple of WARP_THREADS
+  //! - ThreadsPerBlock must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -843,7 +843,7 @@ template <typename T,
           int BlockDimZ                = 1>
 class BlockLoad
 {
-  static constexpr int BlockThreads = BlockDimX * BlockDimY * BlockDimZ; // total threads in the block
+  static constexpr int ThreadsPerBlock = BlockDimX * BlockDimY * BlockDimZ; // total threads in the block
 
   // transposing load algorithms need a BlockExchange
   using block_exchange =
@@ -855,8 +855,8 @@ class BlockLoad
                   BlockDimZ>;
 
   static_assert((Algorithm != BLOCK_LOAD_WARP_TRANSPOSE && Algorithm != BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
-                  || (BlockThreads % detail::warp_threads == 0),
-                "BlockThreads must be a multiple of warp_threads for this BlockLoadAlgorithm");
+                  || (ThreadsPerBlock % detail::warp_threads == 0),
+                "ThreadsPerBlock must be a multiple of warp_threads for this BlockLoadAlgorithm");
 
   _CCCL_API static constexpr auto temp_storage_helper()
   {
@@ -972,7 +972,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
@@ -992,7 +992,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
@@ -1061,11 +1061,11 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
@@ -1137,11 +1137,11 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)

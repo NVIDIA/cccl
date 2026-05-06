@@ -16,7 +16,7 @@ struct policy_selector
       const auto scaled =
         cub::detail::scale_reg_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(DominantT));
       return radix_sort_onesweep_policy{
-        scaled.block_threads,
+        scaled.threads_per_block,
         scaled.items_per_thread,
         1,
         ONESWEEP_RADIX_BITS,
@@ -32,7 +32,7 @@ struct policy_selector
 
     const auto scan = [] {
       const auto scaled = cub::detail::scale_mem_bound(512, 23, sizeof(OffsetT));
-      return scan{scaled.block_threads,
+      return scan{scaled.threads_per_block,
                   scaled.items_per_thread,
                   cub::BLOCK_LOAD_WARP_TRANSPOSE,
                   cub::LOAD_DEFAULT,
@@ -47,7 +47,7 @@ struct policy_selector
     const auto single_tile = [] {
       const auto scaled = cub::detail::scale_reg_bound(256, 19, sizeof(DominantT));
       return cub::detail::radix_sort::radix_sort_downsweep_policy{
-        scaled.block_threads,
+        scaled.threads_per_block,
         scaled.items_per_thread,
         single_tile_radix_bits,
         cub::BLOCK_LOAD_DIRECT,

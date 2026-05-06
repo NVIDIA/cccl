@@ -331,7 +331,7 @@ struct policy_hub
 
 struct rle_non_trivial_runs_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -342,7 +342,7 @@ struct rle_non_trivial_runs_policy
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const rle_non_trivial_runs_policy& lhs, const rle_non_trivial_runs_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_with_time_slicing == rhs.store_with_time_slicing && lhs.scan_algorithm == rhs.scan_algorithm
         && lhs.delay_constructor == rhs.delay_constructor;
@@ -358,7 +358,7 @@ struct rle_non_trivial_runs_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const rle_non_trivial_runs_policy& p)
   {
     return os
-        << "rle_non_trivial_runs_policy { .block_threads = " << p.block_threads
+        << "rle_non_trivial_runs_policy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .store_with_time_slicing = " << p.store_with_time_slicing
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";

@@ -8,6 +8,7 @@ python/ @nvidia/cccl-python-codeowners
 
 # Infrastructure
 .github/ @nvidia/cccl-infra-codeowners
+.coderabbit.yaml @nvidia/cccl-infra-codeowners
 ci/ @nvidia/cccl-infra-codeowners
 .devcontainer/ @nvidia/cccl-infra-codeowners
 .pre-commit-config.yaml @nvidia/cccl-infra-codeowners

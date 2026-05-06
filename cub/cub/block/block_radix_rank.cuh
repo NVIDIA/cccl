@@ -149,11 +149,11 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!
 //!    __global__ void ExampleKernel(...)
 //!    {
-//!      constexpr int block_threads = 2;
+//!      constexpr int threads_per_block = 2;
 //!      constexpr int radix_bits = 5;
 //!
 //!      // Specialize BlockRadixRank for a 1D block of 2 threads
-//!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits, false>;
+//!      using block_radix_rank = cub::BlockRadixRank<threads_per_block, radix_bits, false>;
 //!      using storage_t = typename block_radix_rank::TempStorage;
 //!
 //!      // Allocate shared memory for BlockRadixRank

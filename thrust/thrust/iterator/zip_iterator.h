@@ -31,6 +31,7 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/zip_common.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -58,18 +59,11 @@ struct make_zip_iterator_base
 template <typename... Its>
 struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 {
-  // We need this to make proxy iterators work because those have a void reference type
-  template <class Iter>
-  using zip_iterator_reference_t =
-    ::cuda::std::conditional_t<::cuda::std::is_same_v<it_reference_t<Iter>, void>,
-                               decltype(*::cuda::std::declval<Iter>()),
-                               it_reference_t<Iter>>;
-
   // reference type is the type of the tuple obtained from the iterator's reference types.
-  using reference = tuple_of_iterator_references<zip_iterator_reference_t<Its>...>;
+  using reference = tuple_of_iterator_references<::cuda::__zip_maybe_proxy_reference_t<Its>...>;
 
   // Boost's Value type is the same as reference type. using value_type = reference;
-  using value_type = ::cuda::std::tuple<it_value_t<Its>...>;
+  using value_type = ::cuda::std::tuple<::cuda::__zip_maybe_proxy_value_type_t<Its>...>;
 
   // Difference type is the first iterator's difference type
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;

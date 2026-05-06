@@ -23,7 +23,7 @@ namespace detail::segmented_reduce
 // for small/medium segments
 struct warp_reduce_policy
 {
-  int block_threads;
+  int threads_per_block;
   int warp_threads;
   int items_per_thread;
   int vec_size;
@@ -36,12 +36,12 @@ struct warp_reduce_policy
 
   _CCCL_API constexpr int segments_per_block() const
   {
-    return block_threads / warp_threads;
+    return threads_per_block / warp_threads;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.warp_threads == rhs.warp_threads
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.warp_threads == rhs.warp_threads
         && lhs.items_per_thread == rhs.items_per_thread && lhs.vec_size == rhs.vec_size
         && lhs.load_modifier == rhs.load_modifier;
   }
@@ -54,9 +54,9 @@ struct warp_reduce_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const warp_reduce_policy& p)
   {
-    return os << "warp_reduce_policy { .block_threads = " << p.block_threads << ", .warp_threads = " << p.warp_threads
-              << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
-              << ", .load_modifier = " << p.load_modifier << " }";
+    return os << "warp_reduce_policy { .threads_per_block = " << p.threads_per_block
+              << ", .warp_threads = " << p.warp_threads << ", .items_per_thread = " << p.items_per_thread
+              << ", .vec_size = " << p.vec_size << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -108,8 +108,10 @@ struct policy_selector
 
     return segmented_reduce_policy{
       rp,
-      warp_reduce_policy{rp.block_threads, small_threads_per_warp, rp.items_per_thread, rp.vec_size, rp.load_modifier},
-      warp_reduce_policy{rp.block_threads, medium_threads_per_warp, rp.items_per_thread, rp.vec_size, rp.load_modifier}};
+      warp_reduce_policy{
+        rp.threads_per_block, small_threads_per_warp, rp.items_per_thread, rp.vec_size, rp.load_modifier},
+      warp_reduce_policy{
+        rp.threads_per_block, medium_threads_per_warp, rp.items_per_thread, rp.vec_size, rp.load_modifier}};
   }
 };
 

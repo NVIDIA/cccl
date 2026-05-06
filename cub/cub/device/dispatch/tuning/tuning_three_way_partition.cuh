@@ -418,7 +418,7 @@ struct policy_hub
 
 struct three_way_partition_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -428,7 +428,7 @@ struct three_way_partition_policy
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.block_scan_algorithm == rhs.block_scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
@@ -443,7 +443,7 @@ struct three_way_partition_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const three_way_partition_policy& policy)
   {
     return os
-        << "three_way_partition_policy { .block_threads = " << policy.block_threads
+        << "three_way_partition_policy { .threads_per_block = " << policy.threads_per_block
         << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
         << ", .load_modifier = " << policy.load_modifier << ", .block_scan_algorithm = " << policy.block_scan_algorithm
         << ", .delay_constructor = " << policy.delay_constructor << " }";

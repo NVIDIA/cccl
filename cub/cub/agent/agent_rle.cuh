@@ -44,7 +44,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentRle
  *
- * @tparam BlockThreads
+ * @tparam ThreadsPerBlock
  *   Threads per thread block
  *
  * @tparam ItemsPerThread
@@ -68,7 +68,7 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
@@ -78,7 +78,7 @@ template <int BlockThreads,
 struct AgentRlePolicy
 {
   /// Threads per thread block
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
 
   /// Items per thread (per tile of input)
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;

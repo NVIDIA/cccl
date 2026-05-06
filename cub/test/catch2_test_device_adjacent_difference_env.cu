@@ -165,13 +165,13 @@ struct block_size_extracting_minus_t
   }
 };
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct adj_diff_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::adjacent_difference::adjacent_difference_policy
   {
-    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
+    return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
   }
 };
 

@@ -210,7 +210,7 @@ struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
 
 struct AgentPlan
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   int items_per_tile;
   int shared_memory_size;
@@ -219,10 +219,10 @@ struct AgentPlan
   AgentPlan() = default;
 
   THRUST_RUNTIME_FUNCTION
-  AgentPlan(int block_threads_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
-      : block_threads(block_threads_)
+  AgentPlan(int threads_per_block_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
+      : threads_per_block(threads_per_block_)
       , items_per_thread(items_per_thread_)
-      , items_per_tile(items_per_thread * block_threads)
+      , items_per_tile(items_per_thread * threads_per_block)
       , shared_memory_size(shared_memory_size_)
       , grid_size(grid_size_)
   {}
@@ -232,7 +232,7 @@ struct AgentPlan
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
   AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
-      : block_threads(PtxPlan::BLOCK_THREADS)
+      : threads_per_block(PtxPlan::BLOCK_THREADS)
       , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
       , items_per_tile(PtxPlan::ITEMS_PER_TILE)
       , shared_memory_size(temp_storage_size<PtxPlan>::value)

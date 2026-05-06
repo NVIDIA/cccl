@@ -15,13 +15,13 @@
 
 struct less
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a < b;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {3, 1, 2};
   assert(cuda::std::is_heap(a, a + 3));
