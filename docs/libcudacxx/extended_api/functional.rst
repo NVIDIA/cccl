@@ -23,13 +23,11 @@ Functional
 
    * - :ref:`cuda::always_true <libcudacxx-extended-api-functional-always-true-false>`
      - Function object that always returns ``true``
-     - CCCL 2.8.0
-     -
+     - CCCL 3.4.0
 
    * - :ref:`cuda::always_false <libcudacxx-extended-api-functional-always-true-false>`
      - Function object that always returns ``false``
-     - CCCL 2.8.0
-     -
+     - CCCL 3.4.0
 
    * - :ref:`cuda::maximum <libcudacxx-extended-api-functional-maximum-minimum>`
      - Returns the maximum of two values

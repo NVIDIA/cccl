@@ -34,6 +34,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>

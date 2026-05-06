@@ -21,6 +21,7 @@
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_debug.cuh>
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/mdspan>
 

@@ -25,6 +25,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/aligned_size.h>

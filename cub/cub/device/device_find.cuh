@@ -21,6 +21,7 @@
 #include <cub/device/dispatch/dispatch_find.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__nvtx/nvtx.h>
 

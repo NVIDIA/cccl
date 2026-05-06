@@ -13,7 +13,6 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
-#include <cuda/__functional/always_true_false.h>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/limits>

@@ -19,6 +19,7 @@
 
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__stream/get_stream.h>
