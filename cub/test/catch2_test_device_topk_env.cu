@@ -40,7 +40,7 @@ auto topk_requirements()
 template <unsigned int ThreadsPerBlock>
 struct topk_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::topk::topk_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::detail::topk::topk_policy
   {
     return {ThreadsPerBlock, 1, 8, cub::BLOCK_LOAD_DIRECT, cub::BLOCK_SCAN_WARP_SCANS};
   }
