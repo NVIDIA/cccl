@@ -34,11 +34,8 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/__hyperloglog/finalizer.cuh>
@@ -67,33 +64,32 @@ CUDAX_CUCO_DEFINE_STRONG_TYPE(__precision_t, int);
 //!
 //! @tparam _Tp Type of items to count
 //! @tparam _Scope The scope in which operations will be performed by individual threads
-//! @tparam _Hash Hash function used to hash items
-template <class _Tp, ::cuda::thread_scope _Scope, class _Hash>
+//! @tparam _Policy Policy bundling hash function, bit-slicing rule, and finalizer
+template <class _Tp, ::cuda::thread_scope _Scope, class _Policy>
 class __hyperloglog_impl
 {
   using __fp_type         = double; ///< Floating point type used for reduction
-  using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_Tp>())); ///< Hash value type
-
-  static_assert(::cuda::std::is_unsigned_v<__hash_value_type>, "HyperLogLog requires an unsigned hash value type");
+  using __hash_value_type = typename _Policy::hash_result_type; ///< Hash value type
 
 public:
   using __value_type    = _Tp; ///< Type of items to count
-  using __hasher        = _Hash; ///< Hash function type
-  using __register_type = int; ///< HLL register type
+  using __policy_type   = _Policy; ///< Policy type
+  using __hasher        = typename _Policy::hasher; ///< Hash function type
+  using __register_type = typename _Policy::register_type; ///< HLL register type
 
 private:
-  __hasher __hash; ///< Hash function used to hash items
+  _Policy __policy; ///< Policy used to hash items, slice the hash, and finalize the estimate
   int __precision; ///< HLL precision parameter
   ::cuda::std::span<__register_type> __sketch; ///< HLL sketch storage
 
-  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
+  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Policy_>
   friend struct __hyperloglog_impl;
 
 public:
   static constexpr auto __thread_scope = _Scope; ///< CUDA thread scope
 
   template <::cuda::thread_scope _NewScope>
-  using __with_scope = __hyperloglog_impl<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
+  using __with_scope = __hyperloglog_impl<_Tp, _NewScope, _Policy>; ///< Ref type with different thread scope
 
   //! @brief Constructs a non-owning `__hyperloglog_impl` object.
   //!
@@ -104,9 +100,9 @@ public:
   //! @throw If sketch storage has insufficient alignment. Throws if called from host; __trap() if called from device.
   //!
   //! @param __sketch_span Reference to sketch storage
-  //! @param __hash The hash function used to hash items
-  _CCCL_API constexpr __hyperloglog_impl(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Hash& __hash)
-      : __hash{__hash}
+  //! @param __policy The policy used to hash items and finalize the estimate
+  _CCCL_API constexpr __hyperloglog_impl(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Policy& __policy)
+      : __policy{__policy}
       , __precision{::cuda::std::countr_zero(
           __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(__sketch_span.size() / 1024.0))
           / sizeof(__register_type))}
@@ -161,20 +157,13 @@ public:
 
   //! @brief Adds an item to the estimator.
   //!
-  //! @note Bit slicing matches Apache Spark's HyperLogLog++: register index is taken from the
-  //! high `__precision` bits of the hash, and rho is computed from the remaining low bits with
-  //! a one-bit padding to bound the leading-zero count at `hash_bits - __precision`.
+  //! @note Hash, register index, and rho are determined by the active policy.
   //!
   //! @param __item The item to be counted
   _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
-    constexpr auto __hash_bits = ::cuda::std::numeric_limits<__hash_value_type>::digits;
-    const auto __h             = __hash(__item);
-    const auto __reg           = static_cast<int>(__h >> (__hash_bits - __precision));
-    const auto __w_padding     = __hash_value_type{1} << static_cast<__hash_value_type>(__precision - 1);
-    const auto __zeroes        = ::cuda::std::countl_zero((__h << __precision) | __w_padding) + 1;
-
-    __update_max(__reg, __zeroes);
+    const auto __h = __policy.hash(__item);
+    __update_max(__policy.register_index(__h, __precision), __policy.register_value(__h, __precision));
   }
 
   //! @brief Asynchronously adds to be counted items to the estimator.
@@ -342,7 +331,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Hash>& __other)
+  _CCCL_DEVICE constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other)
   {
     if (__other.__precision != __precision)
     {
@@ -366,7 +355,7 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
   _CCCL_HOST constexpr void
-  __merge_async(const __hyperloglog_impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
+  __merge_async(const __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other, ::cuda::stream_ref __stream)
   {
     if (__other.__precision != __precision)
     {
@@ -390,7 +379,7 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
   _CCCL_HOST constexpr void
-  __merge(const __hyperloglog_impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
+  __merge(const __hyperloglog_impl<_Tp, _OtherScope, _Policy>& __other, ::cuda::stream_ref __stream)
   {
     __merge_async(__other, __stream);
     __stream.sync();
@@ -434,10 +423,9 @@ public:
 
     if (__group.thread_rank() == 0)
     {
-      const auto __z        = __block_sum.load(::cuda::std::memory_order_relaxed);
-      const auto __v        = __block_zeroes.load(::cuda::std::memory_order_relaxed);
-      const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(__precision);
-      __estimate            = __finalize(__z, __v);
+      const auto __z = __block_sum.load(::cuda::std::memory_order_relaxed);
+      const auto __v = __block_zeroes.load(::cuda::std::memory_order_relaxed);
+      __estimate     = _Policy::finalize(__z, __v, __precision);
     }
     __group.sync();
 
@@ -477,10 +465,8 @@ public:
       __zeroes += __reg == 0;
     }
 
-    const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(__precision);
-
-    // pass intermediate result to _Finalizer for bias correction, etc.
-    return __finalize(__sum, __zeroes);
+    // dispatch to the policy's finalizer for bias correction, etc.
+    return _Policy::finalize(__sum, __zeroes, __precision);
   }
 
   // #endif
@@ -490,7 +476,15 @@ public:
   //! @return The hash function
   [[nodiscard]] _CCCL_API constexpr auto __hash_function() const noexcept
   {
-    return __hash;
+    return __policy.hasher_;
+  }
+
+  //! @brief Gets the policy.
+  //!
+  //! @return The policy
+  [[nodiscard]] _CCCL_API constexpr const _Policy& __get_policy() const noexcept
+  {
+    return __policy;
   }
 
   //! @brief Gets the span of the sketch.
