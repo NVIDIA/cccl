@@ -51,7 +51,7 @@ struct policy_selector
     algorithm                    = cub::detail::transform::Algorithm::vectorized;
     vec_policy.threads_per_block = TUNE_THREADS;
     vec_policy.vec_size          = (1 << TUNE_VEC_SIZE_POW2);
-    vec_policy.items_per_thread  = policy.vec_size * TUNE_UNROLL_FACTOR;
+    vec_policy.items_per_thread  = vec_policy.vec_size * TUNE_UNROLL_FACTOR;
 #    endif
     return {min_bytes_in_flight, algorithm, pref_policy, vec_policy, {}};
 #  elif TUNE_ALGORITHM == 2
