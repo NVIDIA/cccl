@@ -8,12 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 #include <cuda/std/algorithm.copy_n.h>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {5, 6, 7};
   int o[2]          = {};

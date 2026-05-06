@@ -28,7 +28,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -903,13 +903,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return cudaSuccess;
   }
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const radix_sort_policy active_policy = policy_selector(arch_id);
+  const radix_sort_policy active_policy = policy_selector(cc);
 
   return invoke_passes_segmented_radix_sort(
     d_temp_storage,

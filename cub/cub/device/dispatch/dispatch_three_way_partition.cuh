@@ -73,7 +73,8 @@ struct DeviceThreeWayPartitionKernelSource
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> three_way_partition_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const
+    -> three_way_partition_policy
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
     return three_way_partition_policy{
@@ -433,21 +434,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const three_way_partition_policy active_policy = policy_selector(arch_id);
+  const three_way_partition_policy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST, ({
-      ::std::stringstream ss;
-      ss << active_policy;
-      _CubLog("Dispatching DeviceThreeWayPartition to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
-    }))
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceThreeWayPartition to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   struct fake_hub

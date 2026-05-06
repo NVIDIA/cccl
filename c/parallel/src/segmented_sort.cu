@@ -483,7 +483,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream segmented_sort_policy_sel_str;
-  segmented_sort_policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  segmented_sort_policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto segmented_sort_policy_expr = std::format(
     "cub::detail::segmented_sort::policy_selector_from_types<{}, {}>",
@@ -497,7 +497,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream partition_policy_sel_str;
-  partition_policy_sel_str << partition_policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  partition_policy_sel_str << partition_policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto three_way_partition_policy_expr = std::format(
     "cub::detail::three_way_partition::policy_selector_from_types<cub::detail::segmented_sort::local_segment_index_t, "
@@ -535,10 +535,10 @@ using namespace cub::detail;
 using namespace cub::detail::segmented_sort;
 using namespace cub::detail::three_way_partition;
 static_assert(
-  device_segmented_sort_policy_selector()(current_tuning_arch()) == {12},
+  device_segmented_sort_policy_selector()(current_tuning_cc()) == {12},
   "Host generated and JIT compiled policy mismatch");
 static_assert(
-  device_three_way_partition_policy_selector()(current_tuning_arch()) == {14},
+  device_three_way_partition_policy_selector()(current_tuning_cc()) == {14},
   "Host generated and JIT compiled three-way partition policy mismatch");
 )XXX",
     jit_template_header_contents, // 0

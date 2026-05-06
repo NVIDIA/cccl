@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
@@ -8,6 +8,6 @@ print_environment_details
 
 PRESET="cudax"
 
-test_preset "CUDA Experimental" ${PRESET}
+test_preset "CUDA Experimental" "${PRESET}"
 
 print_time_summary

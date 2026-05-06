@@ -496,3 +496,58 @@ Usage example:
     _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
     // code ..
     _CCCL_DIAG_POP
+
+----
+
+Freestanding support
+--------------------------
+
+We - partially - support building CCCL headers in freestanding mode, for example JIT compilation with NVRTC.
+
++-----------------------------+----------------------------------------------------+
+| ``_CCCL_HOSTED()``          | "Normal" compilation mode with host STL support    |
++-----------------------------+----------------------------------------------------+
+| ``_CCCL_FREESTANDING()``    | Freestanding compilation mode, no host STL support |
++-----------------------------+----------------------------------------------------+
+| ``_CCCL_HOSTJIT()``         | Freestanding compilation mode, with host compiler  |
++-----------------------------+----------------------------------------------------+
+
+Usage example:
+
+.. code-block:: c++
+
+    #if _CCCL_HOSTED()
+    #  include <iostream> // Host STL header not available in freestanding
+    #endif // _CCCL_HOSTED()
+
+    // code ..
+
+Similarly we also provide macros to detect which host standard library is available
+
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HAS_HOST_STD_LIB()``      | Whether a known host standard library is available |
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HOST_STD_LIB(LIBSTDCXX)`` | libstdc++ is available as host standard library    |
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HOST_STD_LIB(LIBCXX)``    | libc++ is available as host standard library       |
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HOST_STD_LIB(STL)``       | MSVC STL is available as host standard library     |
++-----------------------------------+----------------------------------------------------+
+
+Usage example:
+
+.. code-block:: c++
+
+    #if _CCCL_HAS_HOST_STD_LIB()
+    _CCCL_BEGIN_NAMESPACE_STD
+
+    #  if _CCCL_HOST_STD_LIB(STL)
+    template <class _Tp, size_t _Size>
+    class array;
+    #  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv !_CCCL_HOST_STD_LIB(STL) vvv
+    template <class _Tp, size_t _Size>
+    struct array;
+    #  endif // !_CCCL_HOST_STD_LIB(STL)
+
+    _CCCL_END_NAMESPACE_STD
+    #endif // _CCCL_HAS_HOST_STD_LIB()

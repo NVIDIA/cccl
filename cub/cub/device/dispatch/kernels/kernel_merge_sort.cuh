@@ -134,7 +134,7 @@ template <typename PolicySelectorT,
           typename ValueT>
 __launch_bounds__(
   device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_arch()>,
+    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -156,7 +156,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_arch()>,
+    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -235,7 +235,7 @@ template <typename PolicySelectorT,
           typename ValueT>
 __launch_bounds__(
   device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_arch()>,
+    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -257,7 +257,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_arch()>,
+    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,

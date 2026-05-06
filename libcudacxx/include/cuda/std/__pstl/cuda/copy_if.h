@@ -130,12 +130,12 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(
           __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == ::cudaErrorMemoryAllocation)
         {
@@ -146,6 +146,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
           throw;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

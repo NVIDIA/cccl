@@ -67,6 +67,7 @@ class _ThreeWayPartition:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_first_part_out,
@@ -116,6 +117,7 @@ class _ThreeWayPartition:
 
 @cache_with_registered_key_functions
 def make_three_way_partition(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_first_part_out: DeviceArrayLike | IteratorT,
     d_second_part_out: DeviceArrayLike | IteratorT,
@@ -167,6 +169,7 @@ def make_three_way_partition(
 
 
 def three_way_partition(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_first_part_out: DeviceArrayLike | IteratorT,
     d_second_part_out: DeviceArrayLike | IteratorT,
@@ -212,36 +215,36 @@ def three_way_partition(
     second_op_adapter = make_op_adapter(select_second_part_op)
 
     partitioner = make_three_way_partition(
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        first_op_adapter,
-        second_op_adapter,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=first_op_adapter,
+        select_second_part_op=second_op_adapter,
     )
     tmp_storage_bytes = partitioner(
-        None,
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        first_op_adapter,
-        second_op_adapter,
-        num_items,
-        stream,
+        temp_storage=None,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=first_op_adapter,
+        select_second_part_op=second_op_adapter,
+        num_items=num_items,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     partitioner(
-        tmp_storage,
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        first_op_adapter,
-        second_op_adapter,
-        num_items,
-        stream,
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_first_part_out=d_first_part_out,
+        d_second_part_out=d_second_part_out,
+        d_unselected_out=d_unselected_out,
+        d_num_selected_out=d_num_selected_out,
+        select_first_part_op=first_op_adapter,
+        select_second_part_op=second_op_adapter,
+        num_items=num_items,
+        stream=stream,
     )

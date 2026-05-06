@@ -19,7 +19,7 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__utility/in_range.h>
 
 CUB_NAMESPACE_BEGIN
@@ -131,7 +131,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     AgentReducePolicy<0,
                       0,
                       void,
-                      large_pol.vector_load_length,
+                      large_pol.vec_size,
                       large_pol.block_algorithm,
                       large_pol.load_modifier,
                       NoScaling<large_pol.block_threads, large_pol.items_per_thread>>;
@@ -144,7 +144,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
                           med_pol.warp_threads,
                           med_pol.items_per_thread,
                           void,
-                          med_pol.vector_load_length,
+                          med_pol.vec_size,
                           med_pol.load_modifier>;
   using AgentMediumReduceT =
     reduce::AgentWarpReduce<medium_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
@@ -156,7 +156,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
                           small_pol.warp_threads,
                           small_pol.items_per_thread,
                           void,
-                          small_pol.vector_load_length,
+                          small_pol.vec_size,
                           small_pol.load_modifier>;
   using AgentSmallReduceT =
     reduce::AgentWarpReduce<small_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
@@ -337,7 +337,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) v
     AgentReducePolicy<0,
                       0,
                       void,
-                      large_pol.vector_load_length,
+                      large_pol.vec_size,
                       large_pol.block_algorithm,
                       large_pol.load_modifier,
                       NoScaling<large_pol.block_threads, large_pol.items_per_thread>>;
@@ -350,7 +350,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) v
                           med_pol.warp_threads,
                           med_pol.items_per_thread,
                           void,
-                          med_pol.vector_load_length,
+                          med_pol.vec_size,
                           med_pol.load_modifier>;
   using AgentMediumReduceT = reduce::AgentWarpReduce<medium_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
 
@@ -361,7 +361,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) v
                           small_pol.warp_threads,
                           small_pol.items_per_thread,
                           void,
-                          small_pol.vector_load_length,
+                          small_pol.vec_size,
                           small_pol.load_modifier>;
   using AgentSmallReduceT = reduce::AgentWarpReduce<small_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
 

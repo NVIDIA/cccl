@@ -24,8 +24,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-namespace multi_segment_helpers
-{
 template <typename ValueT, typename FlagT = bool>
 struct augmented_value_t
 {
@@ -33,27 +31,12 @@ struct augmented_value_t
   FlagT flag;
 };
 
+template <typename ValueT, typename FlagT = bool>
+_CCCL_HOST_DEVICE augmented_value_t(ValueT, FlagT) -> augmented_value_t<ValueT, FlagT>;
+
 template <typename ComputeT, int MaxSegmentsPerWorker>
 using agent_segmented_scan_compute_t =
   ::cuda::std::conditional_t<MaxSegmentsPerWorker == 1, ComputeT, augmented_value_t<ComputeT>>;
-
-template <typename ValueT, typename FlagT>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr FlagT get_flag(augmented_value_t<ValueT, FlagT> fv) noexcept
-{
-  return fv.flag;
-}
-
-template <typename ValueT, typename FlagT>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr ValueT get_value(augmented_value_t<ValueT, FlagT> fv) noexcept
-{
-  return fv.value;
-}
-
-template <typename ValueT, typename FlagT>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr augmented_value_t<ValueT, FlagT> make_value_flag(ValueT v, FlagT f) noexcept
-{
-  return {v, f};
-}
 
 template <typename ToT>
 struct initial_value_converter
@@ -72,7 +55,7 @@ struct initial_value_converter<augmented_value_t<ToValueT, ToFlagT>>
   _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr augmented_value_t<ToValueT, ToFlagT>
   cast(augmented_value_t<FromValueT, FromFlagT> fv) noexcept
   {
-    return {static_cast<ToValueT>(get_value(fv)), static_cast<ToFlagT>(get_flag(fv))};
+    return {static_cast<ToValueT>(fv.value), static_cast<ToFlagT>(fv.flag)};
   }
 };
 
@@ -90,15 +73,13 @@ struct schwarz_scan_op
 
   _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2) const
   {
-    if (get_flag(o2))
+    if (o2.flag)
     {
       return o2;
     }
-    const auto o2_value    = get_value(o2);
-    const auto o1_value    = get_value(o1);
-    const ValueT res_value = scan_op(o1_value, o2_value);
+    const ValueT res_value = scan_op(o1.value, o2.value);
 
-    return make_value_flag(res_value, get_flag(o1));
+    return fv_t{res_value, o1.flag};
   }
 };
 
@@ -107,7 +88,7 @@ struct packer
 {
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
-    return make_value_flag(v, f);
+    return augmented_value_t<V, F>{v, f};
   }
 };
 
@@ -117,19 +98,6 @@ struct packer_iv
   mutable ScanOp op;
   V init_v;
 
-private:
-  template <typename OpRef>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto impl(OpRef op_ref, V v, F f) const
-  {
-    V res = v;
-    if (f)
-    {
-      res = op_ref(init_v, v);
-    }
-    return make_value_flag(res, f);
-  }
-
-public:
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     V res = v;
@@ -137,7 +105,7 @@ public:
     {
       res = op(init_v, v);
     }
-    return make_value_flag(res, f);
+    return augmented_value_t<V, F>{res, f};
   }
 };
 
@@ -445,12 +413,7 @@ _CCCL_HOST_DEVICE multi_segmented_input_iterator(IterT, OffsetT, SearcherT, Begi
                                     BeginOffsetIterT,
                                     ::cuda::std::remove_cv_t<ReadTransformT>>;
 
-template <typename IterT,
-          typename OffsetT,
-          typename SearcherT,
-          typename BeginOffsetIterT,
-          typename WriteTransformT,
-          unsigned int LinearBinarySearchThreshold = 18>
+template <typename IterT, typename OffsetT, typename SearcherT, typename BeginOffsetIterT, typename WriteTransformT>
 struct multi_segmented_output_iterator
 {
   IterT m_it;
@@ -478,7 +441,7 @@ struct multi_segmented_output_iterator
     template <typename V, typename F>
     _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(augmented_value_t<V, F> new_value)
     {
-      m_it[m_offset] = m_write_fn(get_value(new_value), m_head_flag);
+      m_it[m_offset] = m_write_fn(new_value.value, m_head_flag);
       return *this;
     }
   };
@@ -518,7 +481,6 @@ _CCCL_HOST_DEVICE multi_segmented_output_iterator(IterT, OffsetT, SearcherT, Beg
                                      SearcherT,
                                      BeginOffsetIterT,
                                      ::cuda::std::remove_cv_t<WriteTransformT>>;
-} // namespace multi_segment_helpers
 
 template <typename PrefixT, typename BinaryOpT>
 struct worker_prefix_callback_t

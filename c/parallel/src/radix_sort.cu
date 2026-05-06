@@ -235,7 +235,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   auto policy_hub_expr =
     std::format("cub::detail::radix_sort::policy_selector_from_types<{}, {}, {}>", key_cpp, value_cpp, offset_t);
@@ -259,7 +259,7 @@ using namespace cub::detail;
 using namespace cub::detail::radix_sort;
 using cub::detail::delay_constructor_policy;
 using cub::detail::delay_constructor_kind;
-static_assert(device_radix_sort_policy()(current_tuning_arch()) == {6}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_keys_it.value_type.size, // 0
     input_keys_it.value_type.alignment, // 1

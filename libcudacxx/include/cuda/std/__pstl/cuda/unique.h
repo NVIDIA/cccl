@@ -147,12 +147,12 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl<CUB_NS_QUALIFIER::SelectImpl::SelectPotentiallyInPlace>(
           __policy, __first, ::cuda::std::move(__last), __first, ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == ::cudaErrorMemoryAllocation)
         {
@@ -160,9 +160,10 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {
@@ -184,7 +185,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl<CUB_NS_QUALIFIER::SelectImpl::Select>(
           __policy,
@@ -193,7 +194,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
           ::cuda::std::move(__result),
           ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == ::cudaErrorMemoryAllocation)
         {
@@ -201,9 +202,10 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {
