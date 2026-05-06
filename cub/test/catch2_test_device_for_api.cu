@@ -8,6 +8,10 @@
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/zip_iterator.h>
+
+#include <cuda/iterator>
+#include <cuda/std/tuple>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -47,6 +51,26 @@ struct odd_count_t
   }
 };
 // example-end bulk-odd-count-t
+
+struct assign_zip_value_t
+{
+  template <class Tuple>
+  __device__ void operator()(Tuple tuple) const
+  {
+    cuda::std::get<1>(tuple) = cuda::std::get<0>(tuple);
+  }
+};
+
+template <class OutputIt>
+struct tabulate_output_op
+{
+  OutputIt output;
+
+  __device__ void operator()(int idx, int value) const
+  {
+    output[idx] = value;
+  }
+};
 
 C2H_TEST("Device bulk works with temporary storage", "[bulk][device]")
 {
@@ -142,6 +166,40 @@ C2H_TEST("Device for each n works without temporary storage", "[for_each][device
   // example-end for-each-n-wo-temp-storage
 
   REQUIRE(vec == expected);
+}
+
+C2H_TEST("Device for each n works with a tabulate output iterator in a thrust zip iterator", "[for_each][device]")
+{
+  c2h::device_vector<int> input = {1, 2, 3, 4};
+  c2h::device_vector<int> output(input.size());
+
+  auto output_it = cuda::tabulate_output_iterator{tabulate_output_op<decltype(output.begin())>{output.begin()}};
+  auto zipped_it = thrust::make_zip_iterator(input.begin(), output_it);
+
+  auto result = cub::DeviceFor::ForEachN(zipped_it, input.size(), assign_zip_value_t{});
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachN operation failed with error code: " << result << '\n';
+  }
+
+  REQUIRE(output == input);
+}
+
+C2H_TEST("Device for each n works with a tabulate output iterator in a cuda zip iterator", "[for_each][device]")
+{
+  c2h::device_vector<int> input = {1, 2, 3, 4};
+  c2h::device_vector<int> output(input.size());
+
+  auto output_it = cuda::tabulate_output_iterator{tabulate_output_op<decltype(output.begin())>{output.begin()}};
+  auto zipped_it = cuda::make_zip_iterator(input.begin(), output_it);
+
+  auto result = cub::DeviceFor::ForEachN(zipped_it, input.size(), assign_zip_value_t{});
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachN operation failed with error code: " << result << '\n';
+  }
+
+  REQUIRE(output == input);
 }
 
 C2H_TEST("Device for each works with temporary storage", "[for_each][device]")
