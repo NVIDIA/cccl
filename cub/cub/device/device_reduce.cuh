@@ -112,100 +112,60 @@ private:
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
 
-    return detail::reduce::dispatch<accum_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      static_cast<offset_t>(num_items),
-      reduction_op,
-      init,
-      stream,
-      transform_op,
-      policy_selector{});
-  }
-
-  template <typename TuningEnvT,
-            typename InputIteratorT,
-            typename OutputIteratorT,
-            typename ReductionOpT,
-            typename TransformOpT,
-            typename T,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumItemsT num_items,
-    ReductionOpT,
-    TransformOpT transform_op,
-    T init,
-    ::cuda::execution::determinism::gpu_to_gpu_t,
-    cudaStream_t stream)
-  {
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = ::cuda::std::
-      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::rfa::rfa_policy, default_policy_selector>;
-
-    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      static_cast<offset_t>(num_items),
-      init,
-      stream,
-      transform_op,
-      policy_selector{});
-  }
-
-  template <typename TuningEnvT,
-            typename InputIteratorT,
-            typename OutputIteratorT,
-            typename ReductionOpT,
-            typename TransformOpT,
-            typename T,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumItemsT num_items,
-    ReductionOpT reduction_op,
-    TransformOpT transform_op,
-    T init,
-    ::cuda::execution::determinism::not_guaranteed_t,
-    cudaStream_t stream)
-  {
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-    using default_policy_selector =
-      detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT,
-                                                  detail::reduce_nondeterministic::reduce_nondeterministic_policy,
-                                                  default_policy_selector>;
-
-    return detail::reduce_nondeterministic::dispatch<accum_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
-      static_cast<offset_t>(num_items),
-      reduction_op,
-      init,
-      stream,
-      transform_op,
-      policy_selector{});
+    if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
+    {
+      using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
+      using policy_selector =
+        ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::rfa::rfa_policy, default_policy_selector>;
+      return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        static_cast<offset_t>(num_items),
+        init,
+        stream,
+        transform_op,
+        policy_selector{});
+    }
+    else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
+    {
+      using default_policy_selector =
+        detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+      using policy_selector =
+        ::cuda::std::execution::__query_result_or_t<TuningEnvT,
+                                                    detail::reduce_nondeterministic::reduce_nondeterministic_policy,
+                                                    default_policy_selector>;
+      return detail::reduce_nondeterministic::dispatch<accum_t>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+        static_cast<offset_t>(num_items),
+        reduction_op,
+        init,
+        stream,
+        transform_op,
+        policy_selector{});
+    }
+    else
+    {
+      using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+      using policy_selector =
+        ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
+      return detail::reduce::dispatch<accum_t>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        static_cast<offset_t>(num_items),
+        reduction_op,
+        init,
+        stream,
+        transform_op,
+        policy_selector{});
+    }
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
