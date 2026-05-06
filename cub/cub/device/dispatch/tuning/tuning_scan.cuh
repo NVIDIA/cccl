@@ -31,6 +31,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
@@ -1451,8 +1452,8 @@ struct policy_selector_from_types
       classify_op<ScanOpT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>,
-      ::cuda::std::is_trivially_copyable_v<InputValueT>,
-      ::cuda::std::is_trivially_copyable_v<OutputValueT>,
+      ::cuda::is_trivially_copyable_v<InputValueT>,
+      ::cuda::is_trivially_copyable_v<OutputValueT>,
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match};

@@ -24,9 +24,9 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/concepts>
 
 CUB_NAMESPACE_BEGIN
@@ -1658,7 +1658,7 @@ struct policy_selector_from_types
       int{sizeof(AccumT)},
       classify_type<AccumT>,
       is_primitive_v<KeyT>,
-      ::cuda::std::is_trivially_copyable_v<KeyT>,
+      ::cuda::is_trivially_copyable_v<KeyT>,
       is_primitive_v<AccumT>,
       basic_binary_op_t<ReductionOpT>::value}(cc);
   }

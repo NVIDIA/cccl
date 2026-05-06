@@ -31,9 +31,9 @@
 #include <cuda/__memcpy_async/memcpy_completion.h>
 #include <cuda/__memcpy_async/try_get_barrier_handle.h>
 #include <cuda/__memory/aligned_size.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -58,7 +58,7 @@ template <typename _Group, class _Tp, typename _Size, thread_scope _Sco, typenam
 _CCCL_API inline async_contract_fulfillment __memcpy_async_barrier(
   _Group const& __group, _Tp* __destination, _Tp const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
-  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "memcpy_async requires a trivially copyable type");
+  static_assert(::cuda::is_trivially_copyable_v<_Tp>, "memcpy_async requires a trivially copyable type");
 
   // 1. Determine which completion mechanisms can be used with the current
   // barrier. A local shared memory barrier, i.e., block-scope barrier in local

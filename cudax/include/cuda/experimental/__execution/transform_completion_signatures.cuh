@@ -65,6 +65,9 @@ struct __decay_transform
   }
 };
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4864) // nvbug5765092 latest toolchain complains about missing template
+
 template <class _Fn, class... _As>
 using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().template operator()<_As...>());
 
@@ -75,6 +78,8 @@ template <class _Ay, class... _As, class _Fn>
 {
   return __fn.template operator()<_Ay, _As...>();
 }
+
+_CCCL_DIAG_POP
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fn>

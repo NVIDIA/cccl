@@ -38,6 +38,7 @@
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
@@ -50,7 +51,6 @@
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__ranges/unwrap_end.h>
 #  include <cuda/std/__type_traits/decay.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstdint>
@@ -115,7 +115,7 @@ public:
   friend class buffer;
 
   // For now we require trivially copyable type to simplify the implementation
-  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
+  static_assert(::cuda::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
 
   // At least one of the properties must signal an execution space
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,

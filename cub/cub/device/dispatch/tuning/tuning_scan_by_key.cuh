@@ -26,9 +26,9 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -1931,7 +1931,7 @@ struct policy_selector_from_types
       static_cast<int>(sizeof(ValueT)),
       static_cast<int>(sizeof(AccumT)),
       is_primitive<ValueT>::value,
-      ::cuda::std::is_trivially_copyable_v<ValueT>,
+      ::cuda::is_trivially_copyable_v<ValueT>,
       classify_type<KeyT>,
       classify_type<ValueT>,
       classify_type<AccumT>,
