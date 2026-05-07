@@ -21,6 +21,7 @@ static const char* k_source = R"(
 #include <initializer_list>
 #include <utility>
 
+#include <cuda/std/version>
 #include <cuda_runtime.h>
 
 __global__ void device_kernel(int* ptr)
