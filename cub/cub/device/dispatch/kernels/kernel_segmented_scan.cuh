@@ -375,7 +375,7 @@ public:
                   "Unexpected iterator type");
 
     static_assert(NumSegments <= max_segments,
-                  "Template value NumSegments of consume_ranges method must not exceed class template value "
+                  "Template value NumSegments of scan_segments method must not exceed class template value "
                   "controlling size of shared memory array");
 
     _CCCL_ASSERT(n_segments > 0, "Number of segments per worker should be positive");
