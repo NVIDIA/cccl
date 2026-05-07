@@ -495,11 +495,6 @@ struct worker_prefix_callback_t
   PrefixT& m_exclusive_prefix;
   BinaryOpT m_scan_op;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE worker_prefix_callback_t(PrefixT& prefix, BinaryOpT& op)
-      : m_exclusive_prefix(prefix)
-      , m_scan_op(op)
-  {}
-
   _CCCL_DEVICE _CCCL_FORCEINLINE PrefixT current_prefix() const
   {
     return m_exclusive_prefix;
@@ -512,6 +507,9 @@ struct worker_prefix_callback_t
     return previous_prefix;
   }
 };
+
+template <typename PrefixT, typename OpT>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES worker_prefix_callback_t(PrefixT&, OpT) -> worker_prefix_callback_t<PrefixT, OpT>;
 
 // ScopeT should implement uniform thread participation,
 // valid worker_id, collective scan/reduce, and synchronization behavior
