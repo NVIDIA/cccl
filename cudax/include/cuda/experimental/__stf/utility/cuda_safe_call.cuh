@@ -243,22 +243,56 @@ struct first_param_impl<R (*)(P, Ps...)>
   using type = P;
 };
 
+template <typename...>
+struct last_param_impl;
+
+template <typename P>
+struct last_param_impl<P>
+{
+  using type = P;
+};
+
+template <typename P, typename... Ps>
+struct last_param_impl<P, Ps...> : last_param_impl<Ps...>
+{};
+
+template <typename>
+struct function_last_param_impl;
+
+template <typename R, typename... Ps>
+struct function_last_param_impl<R (*)(Ps...)>
+{
+  using type = typename last_param_impl<Ps...>::type;
+};
+
 /*
 `reserved::first_param<fun>` is an alias for the type of `fun`'s first parameter.
 */
 template <auto f>
 using first_param = typename first_param_impl<decltype(f)>::type;
+
+/*
+`reserved::last_param<fun>` is an alias for the type of `fun`'s last parameter.
+*/
+template <auto f>
+using last_param = typename function_last_param_impl<decltype(f)>::type;
+
+template <typename...>
+inline constexpr bool dependent_false = false;
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
-UNITTEST("first_param")
+UNITTEST("first_last_param")
 {
   extern int test1(int);
   static_assert(::std::is_same_v<reserved::first_param<test1>, int>);
+  static_assert(::std::is_same_v<reserved::last_param<test1>, int>);
   extern int test2(double, int);
   static_assert(::std::is_same_v<reserved::first_param<test2>, double>);
+  static_assert(::std::is_same_v<reserved::last_param<test2>, int>);
   extern int test3(int&&);
   static_assert(::std::is_same_v<reserved::first_param<test3>, int&&>);
+  static_assert(::std::is_same_v<reserved::last_param<test3>, int&&>);
 };
 #endif // UNITTESTED_FILE
 
@@ -356,13 +390,13 @@ UNITTEST("cuda_try1")
  * @param ps Arguments to be forwarded
  * @return `auto` (see below)
  *
- * In this overload of `cuda_try`, the function name is passed explicitly as a template argument and also the first
- * argument is omitted, as in `cuda_try<cudaCreateStream>()`. `cuda_try` will create a temporary  of the appropriate
+ * In this overload of `cuda_try`, the function name is passed explicitly as a template argument and an output pointer
+ * argument may be omitted, as in `cuda_try<cudaCreateStream>()`. `cuda_try` will create a temporary of the appropriate
  * type internally, call the specified CUDA function with the address of that temporary, and then return the temporary.
  * For example, in the call `cuda_try<cudaCreateStream>()`, the created stream object will be returned. That way you can
  * write `auto stream = cuda_try<cudaCreateStream>();` instead of `cudaStream_t stream; cudaCreateStream(&stream);`.
- * This invocation mode relies on the convention used by many CUDA functions with output parameters of specifying them
- * in the first parameter position.
+ * This invocation mode supports CUDA functions that specify their output parameter in either the first or the last
+ * parameter position.
  *
  * Limitations: Does not work with overloaded functions.
  *
@@ -375,20 +409,48 @@ auto cuda_try(Ps&&... ps)
   {
     cuda_try(fun(::std::forward<Ps>(ps)...));
   }
-  else
+  else if constexpr (::std::is_pointer_v<reserved::first_param<fun>>
+                     && !::std::is_const_v<::std::remove_pointer_t<reserved::first_param<fun>>>
+                     && ::std::is_invocable_v<decltype(fun), ::std::remove_pointer_t<reserved::first_param<fun>>*, Ps...>)
   {
     ::std::remove_pointer_t<reserved::first_param<fun>> result{};
     cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
     return result;
   }
+  else if constexpr (::std::is_pointer_v<reserved::last_param<fun>>
+                     && !::std::is_const_v<::std::remove_pointer_t<reserved::last_param<fun>>>
+                     && ::std::is_invocable_v<decltype(fun), Ps..., ::std::remove_pointer_t<reserved::last_param<fun>>*>)
+  {
+    ::std::remove_pointer_t<reserved::last_param<fun>> result{};
+    cuda_try(fun(::std::forward<Ps>(ps)..., &result));
+    return result;
+  }
+  else
+  {
+    static_assert(reserved::dependent_false<Ps...>, "No valid cuda_try invocation form for this function.");
+  }
 }
 
 #ifdef UNITTESTED_FILE
+inline int test_first_output_param(int* out)
+{
+  *out = 1;
+  return 0;
+}
+
+inline int test_last_output_param(double in, int* out)
+{
+  *out = static_cast<int>(in);
+  return 0;
+}
+
 UNITTEST("cuda_try2")
 {
   //! [cuda_try2]
   int dev = cuda_try<cudaGetDevice>(); // continue execution if the call is successful
   cuda_try(cudaGetDevice(&dev)); // equivalent to the line above
+  EXPECT(cuda_try<test_first_output_param>() == 1);
+  EXPECT(cuda_try<test_last_output_param>(2.0) == 2);
   //! [cuda_try2]
 };
 #endif // UNITTESTED_FILE
