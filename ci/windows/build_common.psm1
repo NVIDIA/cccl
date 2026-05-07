@@ -58,7 +58,7 @@ $BUILD_DIR = "../build/$env:CCCL_BUILD_INFIX"
 
 # Create the build dir and symlink it to build/latest:
 $latest_link = "../build/latest"
-[System.IO.Directory]::CreateDirectory($BUILD_DIR) | Out-Null
+New-Item -ItemType Directory -Path $BUILD_DIR -Force | Out-Null
 $BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName # to absolute path
 Remove-Item -Path $latest_link -Force -ErrorAction SilentlyContinue | Out-Null
 New-Item -ItemType SymbolicLink -Path $latest_link -Target $BUILD_DIR | Out-Null
