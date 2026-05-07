@@ -21,14 +21,6 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    # Validate gcc15 + CTK 13.0 build coverage added on the gcc15-support branch:
-    - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: 'gcc15'}
-    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.0', cxx: 'gcc15'}
-    # Validate gcc15 + CTK 13.0 test probes (packaging / nvbench_helper):
-    - {jobs: ['test'], project: 'packaging',     ctk: '13.0', cxx: 'gcc15', gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: 'gcc15', gpu: 'rtx2080'}
-    # Validate H100 catchall after pinning gcc14 for CTK 12.X (was previously defaulting to unsupported gcc15):
-    - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'max', cxx: 'gcc14', gpu: 'h100'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
