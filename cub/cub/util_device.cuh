@@ -539,7 +539,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
 
 /**
  * @brief Computes maximum SM occupancy in thread blocks for executing the given kernel function
- *        pointer @p kernel_ptr on the current device with @p block_threads per thread block.
+ *        pointer @p kernel_ptr on the current device with @p threads_per_block per thread block.
  *
  * @par Snippet
  * The code snippet below illustrates the use of the MaxSmOccupancy function.
@@ -574,7 +574,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
  * @param[in] kernel_ptr
  *   Kernel pointer for which to compute SM occupancy
  *
- * @param[in] block_threads
+ * @param[in] threads_per_block
  *   Number of threads per thread block
  *
  * @param[in] dynamic_smem_bytes
@@ -582,10 +582,10 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
  */
 template <typename KernelPtr>
 _CCCL_VISIBILITY_HIDDEN CUB_RUNTIME_FUNCTION inline cudaError_t
-MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, int dynamic_smem_bytes = 0)
+MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int threads_per_block, int dynamic_smem_bytes = 0)
 {
-  return CubDebug(
-    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_sm_occupancy, kernel_ptr, block_threads, dynamic_smem_bytes));
+  return CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+    &max_sm_occupancy, kernel_ptr, threads_per_block, dynamic_smem_bytes));
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -678,7 +678,7 @@ _CCCL_CONCEPT always_true = true;
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
+  GenericAgentPolicy, (always_true), (BLOCK_THREADS, ThreadsPerBlock, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 _CCCL_TEMPLATE(typename PolicyT)
@@ -715,7 +715,7 @@ struct TripleChevronFactory;
  */
 struct KernelConfig
 {
-  int block_threads{0};
+  int threads_per_block{0};
   int items_per_thread{0};
   int tile_size{0};
   int sm_occupancy{0};
@@ -727,10 +727,10 @@ struct KernelConfig
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
-    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
-    tile_size        = block_threads * items_per_thread;
-    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
+    threads_per_block = cub::detail::MakePolicyWrapper(agent_policy).ThreadsPerBlock();
+    items_per_thread  = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 
   // Using new tuning API conventions
@@ -740,10 +740,10 @@ struct KernelConfig
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   __init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = agent_policy.block_threads;
-    items_per_thread = agent_policy.items_per_thread;
-    tile_size        = block_threads * items_per_thread;
-    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
+    threads_per_block = agent_policy.threads_per_block;
+    items_per_thread  = agent_policy.items_per_thread;
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 };
 } // namespace detail
@@ -802,21 +802,18 @@ private:
   friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
-  template <int ArchMult, int... CudaArches, typename FunctorT>
+  template <int CcMult, int... CudaCcs, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t
   runtime_cc_to_compiletime(int device_ptx_version, FunctorT& op)
   {
-    // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
+    // We instantiate find_and_invoke_policy for each CudaCcs (the arches we are compiling for), but only call the
     // one matching device_ptx_version.
     // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
     // queried ptx version (i.e., the closest lower or equal ptx version to the current device's architecture that the
     // EmptyKernel was compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario is a bug and may arise
     // if CUB_DISABLE_NAMESPACE_MAGIC is set and different TUs are compiled for different sets of architecture.
     cudaError_t e = cudaErrorInvalidDeviceFunction;
-    (...,
-     (device_ptx_version == CudaArches * ArchMult
-        ? (e = find_and_invoke_policy<CudaArches * ArchMult>(op))
-        : cudaSuccess));
+    (..., (device_ptx_version == CudaCcs * CcMult ? (e = find_and_invoke_policy<CudaCcs * CcMult>(op)) : cudaSuccess));
     return e;
   }
 

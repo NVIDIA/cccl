@@ -25,6 +25,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -525,7 +526,7 @@ struct policy_selector_from_types
       int{sizeof(KeyT)},
       classify_type<KeyT>,
       is_primitive_v<LengthT>,
-      ::cuda::std::is_trivially_copyable_v<LengthT>,
+      ::cuda::is_trivially_copyable_v<LengthT>,
       is_primitive_v<KeyT>};
     return selector(cc);
   }

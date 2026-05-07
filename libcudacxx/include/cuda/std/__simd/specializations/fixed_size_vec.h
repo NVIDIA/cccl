@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/in_range.h>
 #include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__simd/specializations/fixed_size_mask.h>
+#include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -30,42 +31,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
-template <__simd_size_type _Np>
-struct __fixed_size
-{
-  static_assert(_Np > 0, "_Np must be greater than 0");
-
-  static constexpr __simd_size_type __simd_size = _Np;
-};
-
-// Element-per-slot simd storage for fixed_size ABI
-template <typename _Tp, __simd_size_type _Np>
-struct __simd_storage<_Tp, __fixed_size<_Np>>
-{
-  using value_type = _Tp;
-
-  _Tp __data[_Np]{};
-
-  _CCCL_HIDE_FROM_ABI constexpr __simd_storage()                                 = default;
-  _CCCL_HIDE_FROM_ABI constexpr __simd_storage(const __simd_storage&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __simd_storage& operator=(const __simd_storage&) = default;
-
-  [[nodiscard]] _CCCL_API constexpr _Tp __get(const __simd_size_type __idx) const noexcept
-  {
-    _CCCL_ASSERT(::cuda::in_range(__idx, __simd_size_type{0}, _Np), "Index is out of bounds");
-    return __data[__idx];
-  }
-
-  _CCCL_API constexpr void __set(const __simd_size_type __idx, const _Tp __v) noexcept
-  {
-    _CCCL_ASSERT(::cuda::in_range(__idx, __simd_size_type{0}, _Np), "Index is out of bounds");
-    __data[__idx] = __v;
-  }
-};
-
 // Simd operations for fixed_size ABI
+
 template <typename _Tp, __simd_size_type _Np>
-struct __simd_operations<_Tp, __fixed_size<_Np>>
+struct __fixed_size_operations
 {
   using _SimdStorage = __simd_storage<_Tp, __fixed_size<_Np>>;
   using _MaskStorage = __mask_storage<sizeof(_Tp), __fixed_size<_Np>>;
@@ -90,7 +59,7 @@ struct __simd_operations<_Tp, __fixed_size<_Np>>
     ((__result.__data[_Is] = __g(integral_constant<__simd_size_type, _Is>())), ...);
     return __result;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-    return _SimdStorage{{ __g(integral_constant<__simd_size_type, _Is>())... }};
+    return _SimdStorage{{__g(integral_constant<__simd_size_type, _Is>())...}};
 #endif // _CCCL_STD_VER < 2020
   }
 
@@ -354,6 +323,12 @@ struct __simd_operations<_Tp, __fixed_size<_Np>>
     return __result;
   }
 };
+
+// Default path (no optimizations)
+template <typename _Tp, __simd_size_type _Np>
+struct __simd_operations<_Tp, __fixed_size<_Np>, __simd_operations_kind::__default> : __fixed_size_operations<_Tp, _Np>
+{};
+
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 
 #include <cuda/std/__cccl/epilogue.h>

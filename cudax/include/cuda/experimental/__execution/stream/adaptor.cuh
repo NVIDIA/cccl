@@ -118,8 +118,8 @@ using __dims_of_t = typename _Config::hierarchy_type;
 // sender. The receiver is where most algorithms do their work, so we want the receiver to
 // tell us how to launch the kernel that completes it. Thus, the launch configuration is
 // read from the outer receiver's environment.
-template <int _BlockThreads, class _Rcvr, class _Variant>
-_CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
+template <int _ThreadsPerBlock, class _Rcvr, class _Variant>
+_CCCL_VISIBILITY_HIDDEN __launch_bounds__(_ThreadsPerBlock) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
@@ -268,8 +268,8 @@ private:
     // Read the launch configuration passed to us by the parent operation. When we launch
     // the completion kernel, we will be completing the parent's receiver, so we must let
     // the receiver tell us how to launch the kernel.
-    auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    constexpr int __block_threads = gpu_thread.count(block, __launch_config);
+    auto const __launch_config        = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
+    constexpr int __threads_per_block = gpu_thread.count(block, __launch_config);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
@@ -278,7 +278,7 @@ private:
     _CCCL_TRY
     {
       // launch a kernel to pass the results to the receiver.
-      auto* __kernel = &__completion_kernel<__block_threads, _Rcvr, __results_t>;
+      auto* __kernel = &__completion_kernel<__threads_per_block, _Rcvr, __results_t>;
       ::cuda::launch(__stream_, __launch_config, __kernel, &__state.__state_);
     }
     _CCCL_CATCH (::cuda::cuda_error & __error) // Check for errors in the kernel launch.
@@ -296,15 +296,15 @@ private:
   {
     auto& __state = __get_state();
 
-    auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    constexpr int __block_threads = gpu_thread.count(block, __launch_config);
+    auto const __launch_config        = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
+    constexpr int __threads_per_block = gpu_thread.count(block, __launch_config);
 
     // without the following, the kernel in __host_start will fail to launch with
     // cudaErrorInvalidDeviceFunction.
 #ifndef _CCCL_CLANG_TIDY_INVOKED
     // clang-tidy<22 errors when compiling this, complaining that we are taking a reference to
     // __global__ function inside a __device__ function.
-    ::__cccl_unused(&__completion_kernel<__block_threads, _Rcvr, __results_t>);
+    ::__cccl_unused(&__completion_kernel<__threads_per_block, _Rcvr, __results_t>);
 #endif
     __state.__state_.__complete_inline_ = true;
     execution::start(__state.__opstate_);

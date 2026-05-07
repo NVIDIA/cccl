@@ -19,6 +19,7 @@
 
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__stream/get_stream.h>
@@ -42,9 +43,12 @@ struct __return_constant
 } // namespace detail
 CUB_NAMESPACE_END
 
+namespace cuda
+{
 template <typename T>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
+} // namespace cuda
 
 CUB_NAMESPACE_BEGIN
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
@@ -79,11 +83,11 @@ struct DeviceTransform
 
     using tuning_env =
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-    using default_policy_selector = detail::transform::policy_selector_from_types<
-      StableAddress == detail::transform::requires_stable_address::yes,
-      ::cuda::std::is_same_v<Predicate, detail::transform::always_true_predicate>,
-      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-      RandomAccessIteratorOut>;
+    using default_policy_selector =
+      detail::transform::policy_selector_from_types<StableAddress == detail::transform::requires_stable_address::yes,
+                                                    ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
+                                                    ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                                    RandomAccessIteratorOut>;
 
     using policy_selector = ::cuda::std::execution::
       __query_result_or_t<tuning_env, detail::transform::transform_policy, default_policy_selector>;
@@ -175,7 +179,7 @@ struct DeviceTransform
       ::cuda::std::move(inputs),
       ::cuda::std::move(outputs),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(transform_op),
       ::cuda::std::move(env));
   }
@@ -278,7 +282,7 @@ struct DeviceTransform
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(transform_op),
       ::cuda::std::move(env));
   }
@@ -442,7 +446,7 @@ struct DeviceTransform
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(generator),
       ::cuda::std::move(env));
   }
@@ -507,7 +511,7 @@ struct DeviceTransform
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       detail::__return_constant<Value>{::cuda::std::move(value)},
       ::cuda::std::move(env));
   }
@@ -821,7 +825,7 @@ struct DeviceTransform
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(transform_op),
       ::cuda::std::move(env));
   }

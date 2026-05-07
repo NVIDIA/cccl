@@ -123,7 +123,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_prev_in,
@@ -139,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   static constexpr scan_by_key_policy policy = current_policy<PolicySelector>();
 
   using scan_by_key_policy_t = AgentScanByKeyPolicy<
-    policy.block_threads,
+    policy.threads_per_block,
     policy.items_per_thread,
     policy.load_algorithm,
     policy.load_modifier,
@@ -418,7 +418,7 @@ struct DispatchScanByKey
     }
 
     // Number of input tiles
-    const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+    const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
     auto tile_state = kernel_source.TileState();
@@ -502,14 +502,14 @@ struct DispatchScanByKey
               "per thread\n",
               start_tile,
               scan_grid_size,
-              active_policy.block_threads,
+              active_policy.threads_per_block,
               (long long) stream,
               active_policy.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream)
+            launcher_factory(scan_grid_size, active_policy.threads_per_block, 0, stream)
               .doit(kernel_source.ScanKernel(),
                     d_keys_in,
                     d_keys_prev_in,

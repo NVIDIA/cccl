@@ -377,8 +377,10 @@ struct __is_partitioned_fn
 {
   Predicate pred_;
 
+  // Not const-qualified: a const operator() would propagate const onto pred_
+  // and reject predicates whose own operator() is non-const (Thrust permits these).
   template <class Tuple>
-  [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple) const
+  [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple)
   {
     const bool lhs = pred_(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
     const bool rhs = pred_(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));

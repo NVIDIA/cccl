@@ -4,6 +4,8 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/sequence.h>
+
 #include <cuda/__cmath/uabs.h>
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
@@ -331,3 +333,59 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #  endif
 #endif
 }
+
+#if TEST_TYPES == 0
+// this type stands in for lambda functions, which are also not copy-assignable before C++17
+struct non_copy_assignable_plus
+{
+  non_copy_assignable_plus()                                           = default;
+  non_copy_assignable_plus(const non_copy_assignable_plus&)            = default;
+  non_copy_assignable_plus& operator=(const non_copy_assignable_plus&) = delete;
+
+  template <typename T>
+  _CCCL_API auto operator()(const T& a, const T& b) const -> T
+  {
+    return a + b;
+  }
+};
+
+struct non_copy_assignable_less
+{
+  non_copy_assignable_less()                                           = default;
+  non_copy_assignable_less(const non_copy_assignable_less&)            = default;
+  non_copy_assignable_less& operator=(const non_copy_assignable_less&) = delete;
+
+  template <typename T>
+  _CCCL_API auto operator()(const T& a, const T& b) const -> bool
+  {
+    return a < b;
+  }
+};
+
+C2H_TEST("Device reduce works with a non copy assignable reduction operator", "[reduce][device]")
+{
+  using item_t   = int;
+  using output_t = int;
+
+  constexpr int num_items = 1000;
+
+  c2h::device_vector<item_t> input(num_items, 42);
+  thrust::sequence(input.begin(), input.end(), 1);
+
+  SECTION("reduce")
+  {
+    c2h::device_vector<output_t> output(1);
+    device_reduce(input.data(), output.data(), num_items, non_copy_assignable_plus{}, 0);
+    CHECK((num_items * (num_items + 1)) / 2 == output[0]);
+  }
+
+  SECTION("argmin")
+  {
+    c2h::device_vector<output_t> output_extremum(1);
+    c2h::device_vector<int> output_index(1);
+    device_arg_min(input.data(), output_extremum.data(), output_index.data(), num_items, non_copy_assignable_less{});
+    REQUIRE(1 == output_extremum[0]);
+    REQUIRE(0 == output_index[0]);
+  }
+}
+#endif // TEST_TYPES == 0

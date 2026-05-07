@@ -473,7 +473,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   }
 };
 
-_CCCL_HOST_DEVICE completion_signatures() -> completion_signatures<>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES completion_signatures() -> completion_signatures<>;
 
 // work-around for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95629
 #if _CCCL_COMPILER(GCC, ==, 11)

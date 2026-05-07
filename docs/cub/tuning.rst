@@ -149,7 +149,7 @@ and the parameters to have effect in execution:
       const auto [items, threads] = cub::detail::scale_mem_bound(
                                      TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(T));
       const auto policy = cub::detail::agent_reduce_policy{
-        .block_threads = threads,
+        .threads_per_block = threads,
         .items_per_thread = items,
         .vector_load_length = 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
         .block_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
@@ -554,7 +554,7 @@ as :ref:`sketched above <cub-tuning-authoring-benchmarks>`:
   struct policy_selector {
     _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::AlgorithmPolicy {
       return {
-        .block_threads = 512,
+        .threads_per_block = 512,
         .items_per_thread = 19,
         ...
       };
@@ -585,7 +585,7 @@ For example, an existing tuning selection function may contain code like:
 
     constexpr auto get_sm90_tuning(type_t accum_t, op_kind_t op, int offset_size, int accum_size) {
       if (op == op_kind_t::plus && offset_size == 4 && accum_size == 4)
-        return { .block_threads = 256, .items_per_thread = 14 }; // tuning variant proposes: 512 and 19
+        return { .threads_per_block = 256, .items_per_thread = 14 }; // tuning variant proposes: 512 and 19
       ...
     }
 

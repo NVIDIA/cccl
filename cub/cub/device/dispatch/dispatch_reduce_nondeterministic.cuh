@@ -21,13 +21,10 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_nondeterministic.cuh>
 #include <cub/grid/grid_even_share.cuh>
-#include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
 #include <cuda/std/__algorithm/max.h>
@@ -37,7 +34,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::reduce
+namespace detail::reduce_nondeterministic
 {
 template <typename MaxPolicyT,
           typename InputIteratorT,
@@ -51,7 +48,7 @@ struct DeviceReduceNondeterministicKernelSource
 {
   CUB_DEFINE_KERNEL_GETTER(
     NondeterministicAtomicKernel,
-    NondeterministicDeviceReduceAtomicKernel<
+    reduce::NondeterministicDeviceReduceAtomicKernel<
       MaxPolicyT,
       InputIteratorT,
       OutputIteratorT,
@@ -160,9 +157,9 @@ template <typename OverrideAccumT = nondeterministic_no_override,
               TransformOpT>,
           typename KernelLauncherFactory = TripleChevronFactory>
 #if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_selector<PolicySelector>
+  requires reduce_nondeterministic_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -176,14 +173,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  // Get arch ID
+  // Get CC
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const reduce_policy active_policy = policy_selector(cc);
+  const reduce_nondeterministic_policy active_policy = policy_selector(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;
@@ -203,13 +200,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   }
 
   // Init kernel configuration
-  const int tile_size =
-    active_policy.reduce_nondeterministic.block_threads * active_policy.reduce_nondeterministic.items_per_thread;
+  const int tile_size = active_policy.reduce.threads_per_block * active_policy.reduce.items_per_thread;
   int sm_occupancy;
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        sm_occupancy,
-        kernel_source.NondeterministicAtomicKernel(),
-        active_policy.reduce_nondeterministic.block_threads)))
+        sm_occupancy, kernel_source.NondeterministicAtomicKernel(), active_policy.reduce.threads_per_block)))
   {
     return error;
   }
@@ -236,14 +230,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
           "per thread, %d SM occupancy\n",
           (unsigned long long) reduce_grid_size,
-          active_policy.reduce_nondeterministic.block_threads,
+          active_policy.reduce.threads_per_block,
           (void*) stream,
-          active_policy.reduce_nondeterministic.items_per_thread,
+          active_policy.reduce.items_per_thread,
           sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   // Invoke NondeterministicDeviceReduceAtomicKernel
-  launcher_factory(reduce_grid_size, active_policy.reduce_nondeterministic.block_threads, 0, stream)
+  launcher_factory(reduce_grid_size, active_policy.reduce.threads_per_block, 0, stream)
     .doit(
       kernel_source.NondeterministicAtomicKernel(), d_in, d_out, num_items, even_share, reduction_op, init, transform_op);
 
@@ -255,6 +249,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   // Sync the stream if specified to flush runtime errors
   return CubDebug(detail::DebugSyncStream(stream));
 }
-} // namespace detail::reduce
+} // namespace detail::reduce_nondeterministic
 
 CUB_NAMESPACE_END

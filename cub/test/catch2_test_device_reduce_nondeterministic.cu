@@ -40,9 +40,7 @@ struct custom_policy_selector
       4,
       cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
       cub::CacheLoadModifier::LOAD_DEFAULT};
-    auto rp_nd            = rp;
-    rp_nd.block_algorithm = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-    return {rp, rp, rp_nd};
+    return {rp, rp};
   }
 };
 
@@ -225,13 +223,13 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   std::size_t temp_storage_bytes{};
 
-  auto error = cub::detail::reduce::dispatch_nondeterministic(
+  auto error = cub::detail::reduce_nondeterministic::dispatch(
     nullptr, temp_storage_bytes, input, raw_ptr, num_items, cuda::std::plus<type>{}, init_t{}, nullptr, transform_t{});
   REQUIRE(error == cudaSuccess);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  error = cub::detail::reduce::dispatch_nondeterministic(
+  error = cub::detail::reduce_nondeterministic::dispatch(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input,

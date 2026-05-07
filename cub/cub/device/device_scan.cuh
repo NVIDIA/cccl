@@ -87,15 +87,15 @@ CUB_NAMESPACE_BEGIN
 struct DeviceScan
 {
   //! @cond
-  template <typename TuningEnvT,
+  template <ForceInclusive EnforceInclusive = ForceInclusive::No,
+            typename PolicySelectorT,
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            ::cuda::execution::determinism::__determinism_t Determinism,
-            ForceInclusive EnforceInclusive = ForceInclusive::No>
-  CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
+            typename Determinism>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -103,25 +103,12 @@ struct DeviceScan
     ScanOpT scan_op,
     InitValueT init,
     NumItemsT num_items,
-    ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
-    cudaStream_t stream)
+    Determinism /*determinism*/,
+    cudaStream_t stream,
+    PolicySelectorT policy_selector)
   {
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    using accum_t =
-      ::cuda::std::__accumulator_t<ScanOpT,
-                                   cub::detail::it_value_t<InputIteratorT>,
-                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                    cub::detail::it_value_t<InputIteratorT>,
-                                                    typename InitValueT::value_type>>;
-
-    using default_policy_selector_t =
-      detail::scan::policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT>;
-
-    using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::scan::scan_policy, default_policy_selector_t>;
-
     return detail::scan::dispatch<EnforceInclusive>(
       d_temp_storage,
       temp_storage_bytes,
@@ -131,7 +118,7 @@ struct DeviceScan
       init,
       static_cast<offset_t>(num_items),
       stream,
-      policy_selector_t{});
+      policy_selector);
   }
 
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
@@ -161,6 +148,9 @@ struct DeviceScan
                                    ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using default_policy_selector_t =
+      detail::scan::policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT>;
 
     constexpr bool is_determinism_required =
       !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
@@ -171,18 +161,11 @@ struct DeviceScan
     static_assert(!is_determinism_required || is_safe_integral_op,
                   "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_impl_determinism<
-        tuning_t,
-        InputIteratorT,
-        OutputIteratorT,
-        ScanOpT,
-        InitValueT,
-        NumItemsT,
-        ::cuda::execution::determinism::__determinism_t(requested_determinism_t::value),
-        EnforceInclusive>(storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return scan_impl_determinism<EnforceInclusive>(
+          storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream, policy_selector);
+      });
   }
 
   template <typename TuningEnvT,

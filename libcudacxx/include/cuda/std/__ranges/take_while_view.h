@@ -215,7 +215,8 @@ public:
 };
 
 template <class _Range, class _Pred>
-_CCCL_HOST_DEVICE take_while_view(_Range&&, _Pred) -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_while_view(_Range&&, _Pred)
+  -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

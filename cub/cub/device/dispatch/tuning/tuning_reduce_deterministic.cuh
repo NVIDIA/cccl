@@ -25,14 +25,14 @@ namespace detail::rfa
 {
 struct reduce_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockReduceAlgorithm block_algorithm;
 };
 
 struct single_tile_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockReduceAlgorithm block_algorithm;
 };
@@ -57,8 +57,8 @@ struct policy_selector
       {
         // ipt_13.tpb_224  1.107188  1.009709  1.097114  1.316820
         const auto scaled = scale_mem_bound(224, 13, accum_size);
-        return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
-                {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+        return {{scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+                {scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
       }
     }
 
@@ -69,28 +69,28 @@ struct policy_selector
       {
         // ipt_6.tpb_224  1.034383  1.000000  1.032097  1.090909
         const auto scaled = scale_mem_bound(224, 6, accum_size);
-        return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
-                {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+        return {{scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+                {scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
       }
       if (accum_t == type_t::float64)
       {
         // ipt_11.tpb_128 ()  1.232089  1.002124  1.245336  1.582279
         const auto scaled = scale_mem_bound(128, 11, accum_size);
-        return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
-                {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+        return {{scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+                {scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
       }
     }
 
     if (cc >= ::cuda::compute_capability{6, 0})
     {
       const auto scaled = scale_mem_bound(256, 16, accum_size);
-      return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
-              {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+      return {{scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+              {scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
     }
 
     const auto scaled = scale_mem_bound(256, 20, accum_size);
-    return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
-            {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+    return {{scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+            {scaled.threads_per_block, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
   }
 };
 
