@@ -155,7 +155,7 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE common_view(_Range&&) -> common_view<::cuda::std::ranges::views::all_t<_Range>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES common_view(_Range&&) -> common_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _View>
 inline constexpr bool enable_borrowed_range<common_view<_View>> = enable_borrowed_range<_View>;

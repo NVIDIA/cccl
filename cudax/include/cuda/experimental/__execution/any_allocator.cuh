@@ -135,9 +135,9 @@ private:
 };
 
 template <class _Allocator>
-_CCCL_HOST_DEVICE any_allocator(_Allocator) -> any_allocator<typename _Allocator::value_type>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES any_allocator(_Allocator) -> any_allocator<typename _Allocator::value_type>;
 
-_CCCL_HOST_DEVICE any_allocator(::cuda::std::allocator<void>) -> any_allocator<::cuda::std::byte>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES any_allocator(::cuda::std::allocator<void>) -> any_allocator<::cuda::std::byte>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
