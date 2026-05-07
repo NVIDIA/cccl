@@ -539,6 +539,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int preprocess_segment_sizes(
 
     const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
     const OffsetT input_segment_end   = (work_id < n_segments) ? input_end_idx_it[work_id] : 0;
+
+    // Treat end_offset < begin_offset as an empty segment
     const OffsetT segment_size = (::cuda::std::max) (input_segment_end, input_segment_begin) - input_segment_begin;
 
     const OffsetT prefix = scope.inclusive_scan_segment_size(segment_size, prefix_callback_op);
