@@ -192,6 +192,7 @@ private:
 
   using augmented_accum_t = AccumT;
 
+  // No temporary storage is needed by thread-level agent
   struct _TempStorage
   {};
 
