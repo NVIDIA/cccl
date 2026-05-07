@@ -148,6 +148,8 @@ private:
   unsigned int warp_id; ///< Warp identifier within CTA
   unsigned int lane_id; ///< Thread identified within warp
 
+  // Each warp owns a dedicated shared-storage slot. Scope methods must not access
+  // another warp's slot; this invariant is what makes warp-only synchronization sufficient.
   struct scope_t
   {
     static constexpr unsigned worker_thread_count = warp_threads;
