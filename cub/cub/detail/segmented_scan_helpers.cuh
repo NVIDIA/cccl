@@ -91,7 +91,7 @@ struct schwarz_scan_op
 template <typename V, typename F = bool>
 struct packer
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     return augmented_value_t<V, F>{v, f};
   }
@@ -103,7 +103,7 @@ struct packer_iv
   mutable ScanOp op;
   V init_v;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     V res = v;
     if (f)
@@ -117,7 +117,7 @@ struct packer_iv
 template <typename V, typename F = bool>
 struct projector
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
   {
     return v;
   }
@@ -128,7 +128,7 @@ struct projector_iv
 {
   V init_v;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     return (f) ? init_v : v;
   }
