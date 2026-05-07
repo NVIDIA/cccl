@@ -195,6 +195,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
 
+  static constexpr auto int32_max = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+
   const auto [workers_per_block, block_size, normalized_spw] =
     [&](worker selector) -> ::cuda::std::tuple<int, int, int> {
     switch (selector)
@@ -231,8 +233,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
         const auto threads_per_block = active_policy.thread.threads_per_block;
         const auto workers_per_block = threads_per_block;
-        // num_segments_per_worker does not have a maximum value to enforce
-        return {workers_per_block, threads_per_block, num_segments_per_worker};
+        // num_segments_per_worker needs to be clamped to ensure that
+        // num_segments_per_worker * workers_per_block fits type int
+        const int max_segments = int32_max / ::cuda::std::max(workers_per_block, 1);
+        return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       default:
         _CCCL_UNREACHABLE();
@@ -246,7 +250,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const auto segments_per_block = num_segments_per_worker * workers_per_block;
   _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
-  static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
   static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
 
   const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
