@@ -202,6 +202,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage
     _CCCL_API constexpr __storage(in_place_t, _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
         : __val_(::cuda::std::forward<_Args>(__args)...)
     {}
+
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API _CCCL_CONSTEXPR_CXX20 ~__storage() noexcept {}
   };
   __storage __storage_{};
@@ -463,6 +465,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_copy_assign_base<_Index, _Tp,
     copyable<_Tp> ? is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_assignable_v<_Tp>
                   : is_nothrow_copy_constructible_v<_Tp>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __compressed_box_copy_assign_base&
   operator=(const __compressed_box_copy_assign_base& __other) noexcept(__nothrow_copy_assignable)
   {
@@ -559,6 +562,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_assign_base<_Index, _Tp,
     movable<_Tp> ? is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>
                  : is_nothrow_move_constructible_v<_Tp>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __compressed_box_move_assign_base&
   operator=(__compressed_box_move_assign_base&& __other) noexcept(__nothrow_move_assignable)
   {
