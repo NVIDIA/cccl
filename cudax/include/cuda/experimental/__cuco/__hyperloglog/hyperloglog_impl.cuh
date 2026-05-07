@@ -420,7 +420,7 @@ public:
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
       const auto __reg = __sketch[__i];
-      __thread_sum += __fp_type{1} / static_cast<__fp_type>(1u << __reg);
+      __thread_sum += __fp_type{1} / static_cast<__fp_type>(1ull << __reg);
       __thread_zeroes += __reg == 0;
     }
 
