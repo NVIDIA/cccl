@@ -17,6 +17,7 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/system/cuda/detail/util.h>
 
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -477,42 +478,6 @@ struct uninitialized
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
   {
     return get();
-  }
-};
-
-// uninitialized_array
-// --------------
-// allocates uninitialized data on stack
-template <class T, size_t N, size_t Alignment = alignof(T)>
-struct uninitialized_array
-{
-  using value_type = T;
-  static constexpr ::cuda::std::integral_constant<size_t, N> size{};
-  alignas(Alignment) char data_[N * sizeof(T)];
-
-  _CCCL_HOST_DEVICE T* data()
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE const T* data() const
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T (&as_array())[N]
-  {
-    return static_cast<T(&)[N]>(data_);
   }
 };
 

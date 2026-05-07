@@ -61,12 +61,10 @@ struct reduce_policy
 {
   agent_reduce_policy reduce;
   agent_reduce_policy single_tile;
-  agent_reduce_policy reduce_nondeterministic;
 
   _CCCL_API constexpr friend bool operator==(const reduce_policy& lhs, const reduce_policy& rhs)
   {
-    return lhs.reduce == rhs.reduce && lhs.single_tile == rhs.single_tile
-        && lhs.reduce_nondeterministic == rhs.reduce_nondeterministic;
+    return lhs.reduce == rhs.reduce && lhs.single_tile == rhs.single_tile;
   }
 
   _CCCL_API constexpr friend bool operator!=(const reduce_policy& lhs, const reduce_policy& rhs)
@@ -77,8 +75,7 @@ struct reduce_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const reduce_policy& p)
   {
-    return os << "reduce_policy { .reduce = " << p.reduce << ", .single_tile = " << p.single_tile
-              << ", .reduce_nondeterministic = " << p.reduce_nondeterministic << " }";
+    return os << "reduce_policy { .reduce = " << p.reduce << ", .single_tile = " << p.single_tile << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -356,10 +353,7 @@ struct policy_selector
       auto [scaled_items, scaled_threads] = scale_mem_bound(sm100_tuning->threads, sm100_tuning->items, accum_size);
       rp                                  = agent_reduce_policy{
         scaled_threads, scaled_items, sm100_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
-
-      auto rp_nondet            = rp;
-      rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-      return {rp, rp, rp_nondet};
+      return {rp, rp};
     }
 
     if (cc >= ::cuda::compute_capability{6, 0})
@@ -372,10 +366,7 @@ struct policy_selector
       auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
       const auto rp =
         agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
-
-      auto rp_nondet            = rp;
-      rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-      return {rp, rp, rp_nondet};
+      return {rp, rp};
     }
 
     // base policy is for 500
@@ -387,13 +378,9 @@ struct policy_selector
     auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
     const auto rp =
       agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
-
-    auto rp_nondet            = rp;
-    rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-    return {rp, rp, rp_nondet};
+    return {rp, rp};
   }
 };
-
 #if _CCCL_HAS_CONCEPTS()
 static_assert(reduce_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()

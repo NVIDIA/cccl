@@ -186,13 +186,16 @@ private:
     ::cuda::execution::determinism::not_guaranteed_t,
     cudaStream_t stream)
   {
-    using offset_t                = detail::choose_offset_t<NumItemsT>;
-    using accum_t                 = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+    using default_policy_selector =
+      detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
     using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT,
+                                                  detail::reduce_nondeterministic::reduce_nondeterministic_policy,
+                                                  default_policy_selector>;
 
-    return detail::reduce::dispatch_nondeterministic<accum_t>(
+    return detail::reduce_nondeterministic::dispatch<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,

@@ -34,9 +34,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Type representing the CUDA compute capability.
 class compute_capability
 {
+public:
   int __cc_{}; //!< The stored compute capability in format 10 * major + minor.
 
-public:
   _CCCL_HIDE_FROM_ABI constexpr compute_capability() noexcept = default;
 
   //! @brief Constructs the object from compute capability \c __cc. The expected format is 10 * major + minor.

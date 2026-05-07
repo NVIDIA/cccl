@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/device_double_buffer.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/device_partition.cuh>
@@ -296,7 +296,7 @@ struct policy_selector_from_hub
 {
   using max_policy = typename PolicyHub::MaxPolicy;
 
-  // this is only called in device code, so we can ignore the arch parameter
+  // this is only called in device code, so we can ignore the cc parameter
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> segmented_sort_policy
   {
     using ap = typename PolicyHub::MaxPolicy::ActivePolicy;

@@ -233,6 +233,14 @@ TEST_FUNC constexpr bool test()
     assert(!(cc2 > cc1));
   }
 
+  // 12. Test that cuda::compute_capability is a structural type.
+#if _CCCL_STD_VER >= 2020
+  {
+    [[maybe_unused]] constexpr auto val =
+      cuda::std::integral_constant<cuda::compute_capability, cuda::compute_capability{100}>{};
+  }
+#endif // _CCCL_STD_VER >= 2020
+
   return true;
 }
 
