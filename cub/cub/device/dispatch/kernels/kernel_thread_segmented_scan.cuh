@@ -81,6 +81,10 @@ private:
         }
       }
     }
+
+    // Mark the iterator exhausted explicitly. operator bool also checks
+    // m_segment_counter, but this avoids leaving a stale segment id around.
+    m_segment_id = m_num_segments;
   }
 
 public:
