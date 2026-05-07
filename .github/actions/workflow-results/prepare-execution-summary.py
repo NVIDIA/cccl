@@ -90,11 +90,13 @@ def update_summary_entry(entry, job, job_times=None):
     if sccache_stats:
         sccache_stats = sccache_stats["stats"]
         hits = sum(
-            v for k, v in sccache_stats.get("cache_hits", {}).get("counts", {}).items()
+            v
+            for k, v in sccache_stats.get("cache_hits", {}).get("counts", {}).items()
             if k in sccache_languages
         )
         misses = sum(
-            v for k, v in sccache_stats.get("cache_misses", {}).get("counts", {}).items()
+            v
+            for k, v in sccache_stats.get("cache_misses", {}).get("counts", {}).items()
             if k in sccache_languages
         )
         requests = hits + misses
