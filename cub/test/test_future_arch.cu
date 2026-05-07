@@ -5,7 +5,7 @@
 // with nvcc.
 
 #if defined(__NVCC__) && __CUDACC_VER_MAJOR__ >= 13
-#  define TEST_CUDA_ARCH 1000000
+#  define TEST_CUDA_ARCH 9900
 
 // Replace __CUDA_ARCH__ only in device code.
 #  if defined(__CUDA_ARCH__)
