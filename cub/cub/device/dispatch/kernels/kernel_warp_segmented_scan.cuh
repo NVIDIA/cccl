@@ -562,8 +562,9 @@ __launch_bounds__(current_policy<PolicySelector>().warp.threads_per_block)
 
     if (num_segments_per_worker == 1)
     {
-      // The branch should be taken by all warps. Otherwise, since consume_range and consume_ranges methods
-      // re-use shared memory using different logic, race condition arises for temporary storage in shared memory.
+      // This branch is grid-uniform because num_segments_per_worker is a kernel argument. That matters because
+      // scan_one_segment and scan_segments reuse the shared-memory union through different members; mixing those
+      // paths within the same CTA would race.
 
       if (n_segments_per_warp == 1)
       {
