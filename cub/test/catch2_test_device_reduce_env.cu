@@ -98,7 +98,16 @@ struct reduce_tuning
   {
     const auto policy = cub::detail::reduce::agent_reduce_policy{
       ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {policy, policy, policy};
+    return {policy, policy};
+  }
+};
+
+struct unrelated_nondeterminisitc_reduce_tuning
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy
+  {
+    return {}; // just zero everything
   }
 };
 
@@ -128,7 +137,16 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(
+    reduce_tuning<target_block_size>{},
+    unrelated_tuning{}
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+    // some rare combinations, like nvcc 12.0 + clang-14 in C++20, or nvcc 12.0 + GCC12 fail with:
+    // pod_tuple.h(130): error: Internal Compiler Error (codegen): "internal error during structure layout!"
+    ,
+    unrelated_nondeterminisitc_reduce_tuning{}
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+  );
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
@@ -144,7 +162,16 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(
+    reduce_tuning<target_block_size>{},
+    unrelated_tuning{}
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+    // some rare combinations, like nvcc 12.0 + clang-14 in C++20, or nvcc 12.0 + GCC12 fail with:
+    // pod_tuple.h(130): error: Internal Compiler Error (codegen): "internal error during structure layout!"
+    ,
+    unrelated_nondeterminisitc_reduce_tuning{}
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+  );
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);
@@ -207,12 +234,12 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+      using policy_t = cub::detail::reduce_nondeterministic::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
       REQUIRE(
         cudaSuccess
-        == cub::detail::reduce::dispatch_nondeterministic(
+        == cub::detail::reduce_nondeterministic::dispatch(
           nullptr,
           expected_bytes_allocated,
           d_in,
@@ -333,12 +360,12 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+      using policy_t = cub::detail::reduce_nondeterministic::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
       REQUIRE(
         cudaSuccess
-        == cub::detail::reduce::dispatch_nondeterministic(
+        == cub::detail::reduce_nondeterministic::dispatch(
           nullptr,
           expected_bytes_allocated,
           d_in,

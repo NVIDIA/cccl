@@ -17,15 +17,15 @@
 
 CUB_NAMESPACE_BEGIN
 
-_CCCL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_arch)
+_CCCL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_cc)
 {
-  *d_kernel_cuda_arch = CUB_PTX_ARCH;
+  *d_kernel_cuda_cc = CUB_PTX_ARCH;
 }
 
-CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_arch_from_kernel(
+CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_cc_from_kernel(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
-  int* d_kernel_cuda_arch,
+  int* d_kernel_cuda_cc,
   int* ptx_version,
   cudaStream_t stream = nullptr)
 {
@@ -34,42 +34,42 @@ CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_arch_from_kernel(
     temp_storage_bytes = 1;
     return cudaSuccess;
   }
-  write_ptx_version_kernel<<<1, 1, 0, stream>>>(d_kernel_cuda_arch);
+  write_ptx_version_kernel<<<1, 1, 0, stream>>>(d_kernel_cuda_cc);
   return cub::PtxVersion(*ptx_version);
 }
 
 CUB_NAMESPACE_END
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(cub::get_cuda_arch_from_kernel, get_cuda_arch_from_kernel);
+DECLARE_LAUNCH_WRAPPER(cub::get_cuda_cc_from_kernel, get_cuda_cc_from_kernel);
 
 C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]")
 {
   constexpr std::size_t single_item = 1;
-  c2h::device_vector<int> cuda_arch(single_item);
+  c2h::device_vector<int> cuda_cc(single_item);
 
   // Query the arch the kernel was actually compiled for
   int ptx_version = [&]() -> int {
     int* buffer{};
     cudaMallocHost(&buffer, sizeof(*buffer));
-    get_cuda_arch_from_kernel(thrust::raw_pointer_cast(cuda_arch.data()), buffer);
+    get_cuda_cc_from_kernel(thrust::raw_pointer_cast(cuda_cc.data()), buffer);
     int result = *buffer;
     cudaFreeHost(buffer);
     return result;
   }();
 
-  int kernel_cuda_arch = cuda_arch[0];
+  int kernel_cuda_cc = cuda_cc[0];
 
   // Host cub::PtxVersion
   int host_ptx_version{};
   cub::PtxVersion(host_ptx_version);
 
   // Ensure variable was properly populated
-  REQUIRE(0 != kernel_cuda_arch);
+  REQUIRE(0 != kernel_cuda_cc);
 
-  // Ensure that the ptx version corresponds to the arch the kernel was compiled for
-  REQUIRE(ptx_version == kernel_cuda_arch);
-  REQUIRE(host_ptx_version == kernel_cuda_arch);
+  // Ensure that the ptx version corresponds to the cc the kernel was compiled for
+  REQUIRE(ptx_version == kernel_cuda_cc);
+  REQUIRE(host_ptx_version == kernel_cuda_cc);
 }
 
 #ifdef __CUDA_ARCH_LIST__
@@ -85,12 +85,12 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 {
   int ptx_version = 0;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
-  auto arch_list = std::vector<int>{CUDA_SM_LIST};
-  for (auto& a : arch_list)
+  auto cc_list = std::vector<int>{CUDA_SM_LIST};
+  for (auto& cc : cc_list)
   {
-    a *= CUDA_SM_LIST_SCALE;
+    cc *= CUDA_SM_LIST_SCALE;
   }
-  REQUIRE(std::find(arch_list.begin(), arch_list.end(), ptx_version) != arch_list.end());
+  REQUIRE(std::find(cc_list.begin(), cc_list.end(), ptx_version) != cc_list.end());
 }
 #endif
 
@@ -135,10 +135,10 @@ struct policy_hub_all
 };
 
 // check that the selected policy exactly matches one of (scaled) arches we compile for
-template <int SelectedPolicyArch, int... ArchList>
+template <int SelectedPolicyCc, int... CcList>
 struct check
 {
-  static_assert(((SelectedPolicyArch == ArchList * CUDA_SM_LIST_SCALE) || ...));
+  static_assert(((SelectedPolicyCc == CcList * CUDA_SM_LIST_SCALE) || ...));
   using type = cudaError_t;
 };
 
@@ -159,7 +159,7 @@ struct closure_all
 };
 
 CUB_RUNTIME_FUNCTION cudaError_t
-check_chained_policy_prunes_to_arch_list(void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t = 0)
+check_chained_policy_prunes_to_cc_list(void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t = 0)
 {
   if (d_temp_storage == nullptr)
   {
@@ -172,7 +172,7 @@ check_chained_policy_prunes_to_arch_list(void* d_temp_storage, size_t& temp_stor
   return policy_hub_all::max_policy::Invoke(ptx_version, c);
 }
 
-DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_arch_list, check_wrapper_all);
+DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_cc_list, check_wrapper_all);
 
 C2H_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {

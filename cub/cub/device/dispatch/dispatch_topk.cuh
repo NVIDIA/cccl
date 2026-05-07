@@ -18,7 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
