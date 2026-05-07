@@ -1498,10 +1498,6 @@ public:
     using determinism_t = ::cuda::execution::determinism::run_to_run_t;
 
     using OutputT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using OffsetT  = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = OutputT;
-    using max_op_t = ::cuda::maximum<>;
-
     using InitT    = OutputT;
     using limits_t = ::cuda::std::numeric_limits<InitT>;
 
