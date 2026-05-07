@@ -1519,7 +1519,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> unique_by_key_policy
           policy_t::LOAD_ALGORITHM,
           policy_t::LOAD_MODIFIER,
           policy_t::SCAN_ALGORITHM,
-          delay_constructor_policy_from_type<typename policy_t::detail::delay_constructor_t>};
+          lookback_delay_policy_from_type<typename policy_t::detail::delay_constructor_t>};
 }
 
 template <typename PolicyHub>

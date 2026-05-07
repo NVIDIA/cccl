@@ -165,7 +165,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanPolicy
       scan_policy_t::LOAD_MODIFIER,
       scan_policy_t::STORE_ALGORITHM,
       scan_policy_t::SCAN_ALGORITHM,
-      detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
+      detail::lookback_delay_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
     ScanWarpspeedPolicy{}};
 }
 

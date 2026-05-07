@@ -1644,7 +1644,7 @@ struct policy_selector_from_hub
       ReduceByKeyPolicyT::LOAD_ALGORITHM,
       ReduceByKeyPolicyT::LOAD_MODIFIER,
       ReduceByKeyPolicyT::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
+      lookback_delay_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
     };
   }
 };

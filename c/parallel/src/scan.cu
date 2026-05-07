@@ -358,8 +358,8 @@ struct __align__({1}) storage_t {{
 using device_scan_policy = {5};
 using namespace cub;
 using namespace cub::detail::scan;
-using cub::detail::delay_constructor_policy;
-using cub::detail::delay_constructor_kind;
+using cub::LookbackDelayPolicy;
+using cub::LookbackDelayAlgorithm;
 static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_it.value_type.size, // 0

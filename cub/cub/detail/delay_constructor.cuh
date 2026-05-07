@@ -93,46 +93,45 @@ struct LookbackDelayPolicy
 namespace detail
 {
 template <typename DelayConstructor>
-inline constexpr auto delay_constructor_policy_from_type = 0;
+inline constexpr auto lookback_delay_policy_from_type = 0;
 
 template <unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<no_delay_constructor_t<L2WriteLatency>> =
+inline constexpr auto lookback_delay_policy_from_type<no_delay_constructor_t<L2WriteLatency>> =
   LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
+inline constexpr auto lookback_delay_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
   LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
+inline constexpr auto lookback_delay_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
   LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>> =
-    LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff_jitter, Delay, L2WriteLatency};
+inline constexpr auto lookback_delay_policy_from_type<exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff_jitter, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>> =
+  lookback_delay_policy_from_type<exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>> =
     LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff_jitter_window, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>> =
+  lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>> =
     LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>> =
+inline constexpr auto lookback_delay_policy_from_type<exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>> =
   LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
+inline constexpr auto lookback_delay_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
   LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold>
 inline constexpr auto
-  delay_constructor_policy_from_type<reduce_by_key_delay_constructor_t<Delay, L2WriteLatency, GridThreshold>> =
+  lookback_delay_policy_from_type<reduce_by_key_delay_constructor_t<Delay, L2WriteLatency, GridThreshold>> =
     LookbackDelayPolicy{LookbackDelayAlgorithm::reduce_by_key, Delay, L2WriteLatency};
 
 template <LookbackDelayAlgorithm Kind, unsigned int Delay, unsigned int L2WriteLatency>

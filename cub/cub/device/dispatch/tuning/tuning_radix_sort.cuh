@@ -894,7 +894,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> radix_sort_policy
       scan_pol::LOAD_MODIFIER,
       scan_pol::STORE_ALGORITHM,
       scan_pol::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>},
+      lookback_delay_policy_from_type<typename scan_pol::detail::delay_constructor_t>},
     {}};
 
   const auto downsweep     = radix_sort::convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
