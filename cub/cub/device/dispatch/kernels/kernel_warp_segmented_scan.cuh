@@ -544,7 +544,7 @@ __launch_bounds__(current_policy<PolicySelector>().warp.threads_per_block)
   }
   else
   {
-    // Agent consumes interleaved segments to improve CTA' memory access locality
+    // Agent consumes interleaved segments to improve CTA memory access locality
 
     // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
     // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
