@@ -719,6 +719,8 @@ class Algorithm:
                 provide_alloc_version = True
                 storage = "__shared__ temp_storage_t temp_storage;"
                 sync = "__syncthreads();"
+            else:
+                raise ValueError(f"Unsupported struct_name: {self.struct_name!r}, expected 'Warp*' or 'Block*'")
 
             buf = StringIO()
             w = buf.write
