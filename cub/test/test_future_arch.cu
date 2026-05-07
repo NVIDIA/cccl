@@ -4,7 +4,7 @@
 // This is a compile-only test that checks whether cub can handle a future (unknown) architecture. Currently, works only
 // with nvcc.
 
-#if defined(__NVCC__)
+#if defined(__NVCC__) && __CUDACC_VER_MAJOR__ >= 13
 #  define TEST_CUDA_ARCH 1000000
 
 // Replace __CUDA_ARCH__ only in device code.
@@ -20,7 +20,7 @@
 // We need to undefine the include guard before including <cuda_runtime.h>. It was defined by us in CMake.
 #  undef __CUDA_RUNTIME_H__
 #  include <cuda_runtime.h>
-#endif // __NVCC__
+#endif // __NVCC__ && is at least 13.0
 
 #include <cub/device/device_reduce.cuh>
 
