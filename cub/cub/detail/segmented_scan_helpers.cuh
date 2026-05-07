@@ -639,7 +639,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void select_segment_scan_searcher(
   {
     const auto segment_size = cum_sizes[0];
     _CCCL_ASSERT((segment_size > 0) && ((items_per_worker % segment_size) == 0),
-                 "Precondition violated, likely due to a race condition");
+                 "Fixed-size segment invariant violated: segment_size must be positive and divide items_per_worker "
+                 "evenly");
 
     // fast path: all segments have identical size (checked via fixed_size_mask)
     // fixed-size searcher can cheaply identify which segment an element belongs to
