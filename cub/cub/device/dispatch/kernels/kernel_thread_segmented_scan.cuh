@@ -555,7 +555,7 @@ __launch_bounds__(current_policy<PolicySelector>().thread.threads_per_block)
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by thread must be positive");
 
-  // Agent consumes interleaved segments to improve CTA' memory access locality
+  // Agent consumes interleaved segments to improve CTA memory access locality
 
   agent_t agent(
     temp_storage, d_in, d_out, begin_offset_d_in, end_offset_d_in, begin_offset_d_out, n_segments, scan_op, _init_value);
