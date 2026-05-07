@@ -623,6 +623,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void single_segment_scan_chunked(
 
 template <::cuda::std::size_t MaxNumSegments,
           typename OffsetT,
+          bool UseBranchlessBinarySearch = true,
           typename ScopeT,
           typename CumSizesT,
           typename InputBeginOffsetIteratorT,
@@ -652,46 +653,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void select_segment_scan_searcher(
   }
   else
   {
-    constexpr bool use_branchless = true;
-
-    if constexpr (use_branchless)
+    if constexpr (UseBranchlessBinarySearch)
     {
-      /*
-Benchmark result when use_branchless is true
-
-## varying_size_segments
-
-### [0] NVIDIA RTX A6000
-
-| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | #Seg/Worker{io} | Worker{io} | Samples | BWUtil |
-|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
-|   I32 |         I32 |    2^27      |       57 |             216 |      block |    672x | 51.97% |
-|   I32 |         I32 |    2^27      |       57 |              18 |       warp |   2832x | 86.45% |
-|   I64 |         I32 |    2^27      |       57 |             216 |      block |    720x | 76.07% |
-|   I64 |         I32 |    2^27      |       57 |              18 |       warp |    784x | 86.95% |
-       */
-
       // searcher locates segment_id using branchless (unrolled) linear/binary search in cum_sizes
       const auto searcher = make_statically_bound_bag_of_segments<MaxNumSegments>(cum_sizes);
       scope.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_worker);
     }
     else
     {
-      /*
-Result for the same benchmark when use_branchless is false
-
-## varying_size_segments
-
-### [0] NVIDIA RTX A6000
-
-| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | #Seg/Worker{io} | Worker{io} | Samples | BWUtil |
-|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
-|   I32 |         I32 |     2^27     |       57 |             117 |      block |    944x | 39.85% |
-|   I32 |         I32 |     2^27     |       57 |              18 |       warp |   2821x | 86.41% |
-|   I64 |         I32 |     2^27     |       57 |             117 |      block |    544x | 53.11% |
-|   I64 |         I32 |     2^27     |       57 |              18 |       warp |    752x | 86.90% |
-       */
-
       // searcher locates segment_id using linear/binary search in cum_sizes
       // binary search is using while-loop based cub::std::upper_bound
       bag_of_segments searcher{cum_sizes};
