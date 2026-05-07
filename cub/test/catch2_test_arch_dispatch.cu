@@ -7,14 +7,6 @@
 
 #include <c2h/catch2_test_helper.h>
 
-#ifdef __CUDA_ARCH_LIST__
-#  define CUDA_SM_LIST       __CUDA_ARCH_LIST__
-#  define CUDA_SM_LIST_SCALE 1
-#elif defined(NV_TARGET_SM_INTEGER_LIST)
-#  define CUDA_SM_LIST       NV_TARGET_SM_INTEGER_LIST
-#  define CUDA_SM_LIST_SCALE 10
-#endif
-
 using cuda::compute_capability;
 
 struct a_policy
@@ -40,14 +32,18 @@ struct policy_selector_all
   }
 };
 
-#ifdef CUDA_SM_LIST
-template <int SelectedPolicyCC, int... ArchList>
-void check_arch_is_in_list()
+template <int SelectedPolicyCC, cuda::std::size_t N>
+void check_arch_is_in_list(cuda::std::array<compute_capability, N> cc_list)
 {
-  static_assert(
-    ((compute_capability{SelectedPolicyCC} == compute_capability{ArchList * CUDA_SM_LIST_SCALE / 10}) || ...));
+  for (const auto cc : cc_list)
+  {
+    if (compute_capability{SelectedPolicyCC} == cc)
+    {
+      return;
+    }
+  }
+  FAIL("SelectedPolicyCC is not present in cc_list");
 }
-#endif // CUDA_SM_LIST
 
 struct closure_all
 {
@@ -56,9 +52,7 @@ struct closure_all
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION auto operator()(PolicyGetter policy_getter) const -> cudaError_t
   {
-#ifdef CUDA_SM_LIST
-    check_arch_is_in_list<PolicyGetter{}().value, CUDA_SM_LIST>();
-#endif // CUDA_SM_LIST
+    check_arch_is_in_list<PolicyGetter{}().value>(cuda::__target_compute_capabilities());
     constexpr a_policy active_policy = policy_getter();
     // since an individual policy is generated per architecture, we can do an exact comparison here
     REQUIRE(active_policy.value == cc);
@@ -68,14 +62,8 @@ struct closure_all
 
 C2H_TEST("dispatch_compute_cap prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {
-#ifdef CUDA_SM_LIST
-  for (const int sm_val : {CUDA_SM_LIST})
+  for (const auto cc : cuda::__target_compute_capabilities())
   {
-    const compute_capability cc{sm_val * CUDA_SM_LIST_SCALE / 10};
-#else
-  for (const compute_capability cc : cuda::__all_compute_capabilities())
-  {
-#endif
     CHECK(cub::detail::dispatch_compute_cap(policy_selector_all{}, cc, closure_all{cc.get()}) == cudaSuccess);
   }
 }
@@ -129,14 +117,8 @@ struct policy_selector_minimal
 
 C2H_TEST("dispatch_compute_cap invokes correct policy", "[util][dispatch]")
 {
-#ifdef CUDA_SM_LIST
-  for (const int sm_val : {CUDA_SM_LIST})
+  for (const auto cc : cuda::__target_compute_capabilities())
   {
-    const compute_capability cc{sm_val * CUDA_SM_LIST_SCALE / 10};
-#else
-  for (const compute_capability cc : cuda::__all_compute_capabilities())
-  {
-#endif
     const auto closure_some = check_policy_closure<3>{cc.get(), cuda::std::array{60, 80, 100}};
     CHECK(cub::detail::dispatch_compute_cap(policy_selector_some{}, cc, closure_some) == cudaSuccess);
 
