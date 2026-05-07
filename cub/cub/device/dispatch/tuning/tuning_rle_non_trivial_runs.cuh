@@ -24,6 +24,7 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
@@ -612,7 +613,7 @@ struct policy_selector_from_types
       classify_type<KeyT>,
       is_primitive_v<LengthT>,
       is_primitive_v<KeyT>,
-      ::cuda::std::is_trivially_copyable_v<KeyT>};
+      ::cuda::is_trivially_copyable_v<KeyT>};
     return selector(cc);
   }
 };

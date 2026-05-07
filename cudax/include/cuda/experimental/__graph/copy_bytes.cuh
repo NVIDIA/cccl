@@ -26,11 +26,11 @@
 #  include <cuda/__algorithm/common.h>
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__type_traits/is_const.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/span>
 
@@ -47,7 +47,7 @@ _CCCL_HOST_API graph_node_ref
 __copy_bytes_graph_impl(path_builder& __pb, ::cuda::std::span<_SrcTy> __src, ::cuda::std::span<_DstTy> __dst)
 {
   static_assert(!::cuda::std::is_const_v<_DstTy>, "Copy destination can't be const");
-  static_assert(::cuda::std::is_trivially_copyable_v<_SrcTy> && ::cuda::std::is_trivially_copyable_v<_DstTy>,
+  static_assert(::cuda::is_trivially_copyable_v<_SrcTy> && ::cuda::is_trivially_copyable_v<_DstTy>,
                 "Copy source and destination element types must be trivially copyable");
 
   if (__src.size_bytes() > __dst.size_bytes())

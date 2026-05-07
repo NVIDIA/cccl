@@ -18,6 +18,7 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
 
 CUB_NAMESPACE_BEGIN
@@ -80,7 +81,7 @@ struct Transforms
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "convertible to `int`.");
-    static_assert(::cuda::std::is_trivially_copyable_v<CommonT>,
+    static_assert(::cuda::is_trivially_copyable_v<CommonT>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "trivially copyable.");
 

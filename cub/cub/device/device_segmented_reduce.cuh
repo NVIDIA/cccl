@@ -311,7 +311,13 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-custommin
+  //!     :end-before: example-end segmented-reduce-custommin
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce
@@ -447,13 +453,13 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce-env
   //!     :end-before: example-end segmented-reduce-reduce-env
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce-env-determinism
@@ -557,7 +563,13 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-custommin
+  //!     :end-before: example-end segmented-reduce-custommin
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-reduce
@@ -637,7 +649,6 @@ public:
   //!   from one device to a another device of a different compute-capability
   //!   because CUB can employ different tile-sizing for different architectures.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -746,7 +757,7 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-sum
@@ -858,15 +869,14 @@ public:
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
-  //! - Can use a specific stream or cuda memory resource through the `env` parameter.
-  //! - @devicestorage
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-sum-env
@@ -956,7 +966,7 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-sum
@@ -1020,7 +1030,6 @@ public:
   //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1110,13 +1119,7 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
-  //!     :language: c++
-  //!     :dedent:
-  //!     :start-after: example-begin segmented-reduce-custommin
-  //!     :end-before: example-end segmented-reduce-custommin
-  //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-min
@@ -1214,8 +1217,7 @@ public:
   }
 
   //! @rst
-  //! Computes a device-wide segmented minimum using the less-than (``<``) operator
-  //! and a fixed segment size.
+  //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -1238,7 +1240,7 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-min-env
@@ -1330,13 +1332,7 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
-  //!     :language: c++
-  //!     :dedent:
-  //!     :start-after: example-begin segmented-reduce-custommin
-  //!     :end-before: example-end segmented-reduce-custommin
-  //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-min
@@ -1408,7 +1404,6 @@ public:
   //!
   //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1514,7 +1509,7 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmin
@@ -1642,18 +1637,13 @@ public:
   //!
   //!   - The minimum of the *i*\ :sup:`th` segment is written to
   //!     ``d_out[i].value`` and its offset in that segment is written to ``d_out[i].key``.
-  //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, ::cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
-  //! - Does not support ``<`` operators that are non-commutative.
-  //! - Provides "run-to-run" determinism for pseudo-associative reduction
-  //!   (e.g., addition of floating point types) on the same GPU device.
-  //!   However, results for pseudo-associative reduction may be inconsistent
-  //!   from one device to a another device of a different compute-capability
-  //!   because CUB can employ different tile-sizing for different architectures.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
   //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
   //!   the latter is specified as ``segment_offsets + 1``).
+  //! - Does not support ``<`` operators that are non-commutative.
   //! - Let ``s`` be in ``[0, num_segments)``. The range
   //!   ``[d_out + d_begin_offsets[s], d_out + d_end_offsets[s])`` shall not
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
@@ -1666,7 +1656,7 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmin-env
@@ -1777,7 +1767,7 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-argmin
@@ -1845,7 +1835,6 @@ public:
   //!     ``d_out[i].second`` and its offset in that segment is written to ``d_out[i].first``.
   //!   - The ``{1, ::cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1916,7 +1905,7 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-max
@@ -2038,7 +2027,7 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-max-env
@@ -2137,7 +2126,7 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-max
@@ -2209,7 +2198,6 @@ public:
   //!
   //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -2314,7 +2302,7 @@ public:
   //! The code snippet below illustrates the argmax-reduction of a device vector
   //! of `int` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmax
@@ -2434,7 +2422,7 @@ public:
 
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
-  //! greater-than (``>``) operator, also returning the in-segment index of that item.
+  //! greater-than (``>``) operator, also returning the in-segment index of that item
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -2446,16 +2434,11 @@ public:
   //!     ``d_out[i].value`` and its offset in that segment is written to ``d_out[i].key``.
   //!   - The ``{1, ::cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
   //!
-  //! - Does not support ``>`` operators that are non-commutative.
-  //! - Provides "run-to-run" determinism for pseudo-associative reduction
-  //!   (e.g., addition of floating point types) on the same GPU device.
-  //!   However, results for pseudo-associative reduction may be inconsistent
-  //!   from one device to a another device of a different compute-capability
-  //!   because CUB can employ different tile-sizing for different architectures.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
   //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
   //!   the latter is specified as ``segment_offsets + 1``).
+  //! - Does not support ``>`` operators that are non-commutative.
   //! - Let ``s`` be in ``[0, num_segments)``. The range
   //!   ``[d_out + d_begin_offsets[s], d_out + d_end_offsets[s])`` shall not
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
@@ -2468,7 +2451,7 @@ public:
   //!
   //! The code snippet below illustrates the argmax-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmax-env
@@ -2580,7 +2563,7 @@ public:
   //! The code snippet below illustrates the argmax-reduction of a device vector
   //! of `int` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-argmax
@@ -2643,14 +2626,13 @@ public:
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
-  //! - The output value type of ``d_out`` is ``cuda::std::pair<int, T>``
+  //! - The output value type of ``d_out`` is ``::cuda::std::pair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
   //!   - The maximum of the *i*\ :sup:`th` segment is written to
   //!     ``d_out[i].second`` and its offset in that segment is written to ``d_out[i].first``.
   //!   - The ``{1, ::cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++

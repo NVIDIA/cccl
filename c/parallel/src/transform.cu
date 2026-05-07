@@ -16,6 +16,7 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/memory>
 
@@ -327,7 +328,7 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
   build_ptr->cache                      = new transform::cache();
 
   // avoid new and delete which requires the allocated and freed types to match
-  static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
   build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
@@ -528,7 +529,7 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
   build_ptr->cache                      = new transform::cache();
 
   // avoid new and delete which requires the allocated and freed types to match
-  static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
   build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
