@@ -193,11 +193,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG)
-                 && (active_policy.warp.load_modifier != CacheLoadModifier::LOAD_LDG)
-                 && (active_policy.thread.load_modifier != CacheLoadModifier::LOAD_LDG),
-               "The memory consistency model does not apply to texture accesses");
-
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
 
   const auto [workers_per_block, block_size, normalized_spw] =
@@ -205,6 +200,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     switch (selector)
     {
       case worker::block: {
+        _CCCL_ASSERT(active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
+                     "The memory consistency model does not apply to texture accesses");
+
         constexpr int workers_per_block = 1;
         const auto max_segments         = active_policy.block.max_segments;
         const auto threads_per_block    = active_policy.block.threads_per_block;
@@ -215,6 +213,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       case worker::warp: {
+        _CCCL_ASSERT(active_policy.warp.load_modifier != CacheLoadModifier::LOAD_LDG,
+                     "The memory consistency model does not apply to texture accesses");
+
         const auto threads_per_block = active_policy.warp.threads_per_block;
         const auto max_segments      = active_policy.warp.max_segments;
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
@@ -225,6 +226,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       case worker::thread: {
+        _CCCL_ASSERT(active_policy.thread.load_modifier != CacheLoadModifier::LOAD_LDG,
+                     "The memory consistency model does not apply to texture accesses");
+
         const auto threads_per_block = active_policy.thread.threads_per_block;
         const auto workers_per_block = threads_per_block;
         return {workers_per_block, threads_per_block, num_segments_per_worker};
