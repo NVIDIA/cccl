@@ -123,6 +123,38 @@ if (CCCL_TOPLEVEL_PROJECT)
   cccl_build_compiler_targets()
 endif()
 
+# Override add_test() to auto attach FIXTURES_REQUIRED to every test,
+# gating them all on the CUDA runtime smoke test (cccl.cuda_runtime_ok).
+set_property(GLOBAL PROPERTY CCCL_SMOKE_FIXTURE_NAME "cccl.cuda_runtime_ok")
+set_property(
+  GLOBAL
+  PROPERTY CCCL_SMOKE_FIXTURE_SKIP_TESTS "cccl.test.cuda_runtime_smoke"
+)
+
+function(add_test)
+  _add_test(${ARGV})
+  # only handle add_test(NAME ...) form
+  if (NOT ARGV0 STREQUAL "NAME")
+    return()
+  endif()
+  set(_test_name "${ARGV1}")
+
+  get_property(_skip_list GLOBAL PROPERTY CCCL_SMOKE_FIXTURE_SKIP_TESTS)
+  if (_test_name IN_LIST _skip_list)
+    return()
+  endif()
+
+  get_property(_fixture GLOBAL PROPERTY CCCL_SMOKE_FIXTURE_NAME)
+  if (NOT _fixture)
+    return()
+  endif()
+
+  set_tests_properties(
+    "${_test_name}"
+    PROPERTIES FIXTURES_REQUIRED "${_fixture}"
+  )
+endfunction()
+
 add_subdirectory(libcudacxx)
 add_subdirectory(cub)
 add_subdirectory(thrust)
@@ -138,6 +170,16 @@ endif()
 if (CCCL_ENABLE_TESTING)
   add_subdirectory("ci")
   add_subdirectory("test")
+endif()
+
+# Must be added after all subprojects so all tests are registered before the fixture is set up.
+if (
+  CUB_ENABLE_TESTING
+  OR THRUST_ENABLE_TESTING
+  OR LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS
+  OR cudax_ENABLE_TESTING
+)
+  add_subdirectory(test/cuda_smoke)
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)
