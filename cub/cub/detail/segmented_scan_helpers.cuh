@@ -513,6 +513,8 @@ struct worker_prefix_callback_t
   }
 };
 
+// ScopeT should implement uniform thread participation,
+// valid worker_id, collective scan/reduce, and synchronization behavior
 template <::cuda::std::size_t MaxNumSegments,
           typename OffsetT,
           typename ScopeT,
