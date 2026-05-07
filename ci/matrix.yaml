@@ -25,12 +25,12 @@ workflows:
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
-    - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc'     ]}
-    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc'     ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc2022' ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ]}
     # Old CTK: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14',            'msvc14.39']}
-    - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc14',   'clang14', 'clang19', 'msvc']}
-    - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc']}
+    - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc14',   'clang14', 'clang19', 'msvc2022']}
+    - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2022']}
     # Current CTK build-only:
     - {jobs: ['build'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'] } # Oldest
     - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'] }
@@ -180,10 +180,10 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['msvc2022', 'msvc2026']}
     # CTK 12.X testing:
-    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'thrust',     ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'cudax',      ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'thrust',     ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx4090'}
+    - {jobs: ['test'], project: 'cudax',      ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'max', cxx: 'gcc14', gpu: 'h100' }
     # CTK '13.X' testing:
     - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
@@ -269,10 +269,10 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['msvc2022', 'msvc2026']}
     # CTK 12.X testing:
-    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtxa6000'}
-    - {jobs: ['test'], project: 'thrust',     ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'cudax',      ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'thrust',     ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx4090'}
+    - {jobs: ['test'], project: 'cudax',      ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'minmax', cxx: 'gcc14', gpu: 'h100' }
     # CTK '13.X' testing:
     - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'minmax', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
