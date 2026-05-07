@@ -231,6 +231,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
         const auto threads_per_block = active_policy.thread.threads_per_block;
         const auto workers_per_block = threads_per_block;
+        // num_segments_per_worker does not have a maximum value to enforce
         return {workers_per_block, threads_per_block, num_segments_per_worker};
       }
       default:
