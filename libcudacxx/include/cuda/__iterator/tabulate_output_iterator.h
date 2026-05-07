@@ -159,6 +159,7 @@ public:
   //! @brief Constructs a @c tabulate_output_iterator with a given functor and an optional index
   //! @param __func the output function
   //! @param __index the position in the output sequence
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator(_Fn __func, _Index __index = 0) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Fn>)
       : __store_(__index, ::cuda::std::move(__func))
@@ -208,6 +209,7 @@ public:
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator
   operator++(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
@@ -224,6 +226,7 @@ public:
   }
 
   //! @brief Decrements the @c tabulate_output_iterator by decrementing the stored index
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator
   operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {

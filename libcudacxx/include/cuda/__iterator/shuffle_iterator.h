@@ -106,11 +106,13 @@ public:
   using reference = _IndexType;
   using pointer   = void;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI constexpr shuffle_iterator() noexcept = default;
 
   //! @brief Constructs a @c shuffle_iterator from a given bijection and an optional start position
   //! @param __bijection The bijection representing the shuffled integer sequence
   //! @param __start The position of the iterator in the shuffled integer sequence
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator(_Bijection __bijection, value_type __start = 0) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Bijection>)
       : __bijection_(::cuda::std::move(__bijection))
@@ -122,6 +124,7 @@ public:
   //! @param __num_elements The size of the bijection sequence
   //! @param __gen The random number generator to initialize the bijection
   //! @param __start The optional stating index of the @c shuffle_iterator in the bijection sequence
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _RNG> // constraining here breaks CTAD
   _CCCL_API explicit constexpr shuffle_iterator(value_type __num_elements, _RNG&& __gen, value_type __start = 0) //
     noexcept(::cuda::std::is_nothrow_constructible_v<_Bijection, value_type, _RNG>)
@@ -130,6 +133,7 @@ public:
   {}
 
   //! @brief Dereferences the @c shuffle_iterator by invoking the bijection with the stored index
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr value_type operator*() const noexcept(noexcept(__bijection_(0)))
   {
     _CCCL_ASSERT(__current_ < static_cast<value_type>(__bijection_.size()),
@@ -140,6 +144,7 @@ public:
   //! @brief Subscripts the @c shuffle_iterator by invoking the bijection with the stored index advanced by a given
   //! number of elements
   //! @param __n The additional number of elements
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr value_type operator[](difference_type __n) const noexcept(noexcept(__bijection_(0)))
   {
     _CCCL_ASSERT(static_cast<value_type>(static_cast<difference_type>(__current_) + __n)

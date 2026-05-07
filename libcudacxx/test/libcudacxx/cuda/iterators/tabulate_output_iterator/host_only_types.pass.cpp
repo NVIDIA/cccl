@@ -26,8 +26,14 @@ struct host_functor
   host_functor() {}
   host_functor(const host_functor&) {}
   host_functor(host_functor&&) {}
-  host_functor& operator=(const host_functor&) {}
-  host_functor& operator=(host_functor&&) {}
+  host_functor& operator=(const host_functor&)
+  {
+    return *this;
+  }
+  host_functor& operator=(host_functor&&)
+  {
+    return *this;
+  }
   ~host_functor() {}
 };
 

@@ -102,6 +102,7 @@ public:
   using reference = _Tp;
   using pointer   = void;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Tp2>)
   _CCCL_API constexpr constant_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Tp2>)
@@ -132,12 +133,14 @@ public:
     return static_cast<difference_type>(__index());
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   //! @brief Returns the stored value
   [[nodiscard]] _CCCL_API constexpr reference operator*() const noexcept
   {
     return __value();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   //! @brief Returns the stored value
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type) const noexcept
   {

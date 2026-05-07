@@ -23,8 +23,14 @@ struct host_bijection
   host_bijection() {}
   host_bijection(const host_bijection&) {}
   host_bijection(host_bijection&&) {}
-  host_bijection& operator=(const host_bijection&) {}
-  host_bijection& operator=(host_bijection&&) {}
+  host_bijection& operator=(const host_bijection&)
+  {
+    return *this;
+  }
+  host_bijection& operator=(host_bijection&&)
+  {
+    return *this;
+  }
   ~host_bijection() {}
 
   template <class RNG>
