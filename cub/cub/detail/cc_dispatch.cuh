@@ -23,7 +23,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-// makes a functor that gets the policy for ArchId from PolicySelector when called
+// makes a functor that gets the policy for CC from PolicySelector when called
 template <typename PolicySelector, int CC>
 struct policy_getter : PolicySelector
 {
@@ -45,7 +45,7 @@ struct device_policy_getter : PolicySelector
 
 #if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 #  if _CCCL_STD_VER < 2020
-template <typename CudaArchSeq, typename PolicySelector, size_t... Is>
+template <typename CudaCcSeq, typename PolicySelector, size_t... Is>
 struct lowest_cc_resolver;
 
 // we keep the compile-time build up of the mapping table outside a template parameterized by a user-provided callable
@@ -101,8 +101,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
    (device_cc == all_ccs[Is] ? (e = f(::cuda::std::integral_constant<policy_t, policy_selector(all_ccs[Is])>{}))
                              : cudaSuccess));
 #  else // if _CCCL_STD_VER >= 2020
-  // In C++17, we have to collapse architectures with the same policies ourselves, so we instantiate call_for_arch once
-  // per policy on the lowest ArchId which produces the same policy
+  // In C++17, we have to collapse architectures with the same policies ourselves, so we instantiate call_for_cc once
+  // per policy on the lowest CC which produces the same policy
   using resolver_t =
     lowest_cc_resolver<::cuda::std::integer_sequence<int, all_ccs[Is].get()...>, PolicySelector, Is...>;
   (...,

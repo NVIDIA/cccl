@@ -176,7 +176,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  // Get arch ID
+  // Get CC
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {

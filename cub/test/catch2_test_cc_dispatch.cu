@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 
 #include <cuda/std/__algorithm/find_if.h>
 
@@ -33,7 +33,7 @@ struct policy_selector_all
 };
 
 template <int SelectedPolicyCC, cuda::std::size_t N>
-void check_arch_is_in_list(cuda::std::array<compute_capability, N> cc_list)
+void check_cc_is_in_list(cuda::std::array<compute_capability, N> cc_list)
 {
   for (const auto cc : cc_list)
   {
@@ -52,9 +52,9 @@ struct closure_all
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION auto operator()(PolicyGetter policy_getter) const -> cudaError_t
   {
-    check_arch_is_in_list<PolicyGetter{}().value>(cuda::__target_compute_capabilities());
+    check_cc_is_in_list<PolicyGetter{}().value>(cuda::__target_compute_capabilities());
     constexpr a_policy active_policy = policy_getter();
-    // since an individual policy is generated per architecture, we can do an exact comparison here
+    // since an individual policy is generated per compute capability, we can do an exact comparison here
     REQUIRE(active_policy.value == cc);
     return cudaSuccess;
   }
@@ -79,10 +79,10 @@ struct check_policy_closure
   {
     constexpr a_policy active_policy = policy_getter();
     CAPTURE(cc, policy_ccs);
-    const auto policy_arch = *cuda::std::find_if(policy_ccs.rbegin(), policy_ccs.rend(), [&](auto policy_ver) {
+    const auto policy_cc = *cuda::std::find_if(policy_ccs.rbegin(), policy_ccs.rend(), [&](auto policy_ver) {
       return policy_ver <= cc;
     });
-    REQUIRE(active_policy.value == policy_arch);
+    REQUIRE(active_policy.value == policy_cc);
     return cudaSuccess;
   }
 };

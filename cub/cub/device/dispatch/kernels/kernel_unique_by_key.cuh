@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_unique_by_key.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_arch.cuh>
