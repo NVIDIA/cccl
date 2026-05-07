@@ -196,7 +196,7 @@ private:
 
   using augmented_accum_t = AccumT;
 
-  // No temporary storage is needed by thread-level agent
+  // Thread-level agent requires no shared memory; all state is in registers
   struct _TempStorage
   {};
 
@@ -276,6 +276,17 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void sync() {}
   };
 
+  struct work_id_mapper
+  {
+    OffsetT thread_work_id0;
+    OffsetT threads_per_block;
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT operator()(int segment_id) const
+    {
+      return thread_work_id0 + static_cast<OffsetT>(segment_id * threads_per_block);
+    }
+  };
+
 public:
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
@@ -340,9 +351,7 @@ private:
     const OffsetT thread_work_id0 =
       static_cast<OffsetT>(blockIdx.x) * segments_per_block + static_cast<OffsetT>(threadIdx.x);
 
-    auto get_work_id = [&](int segment_id) {
-      return thread_work_id0 + static_cast<OffsetT>(segment_id * threads_per_block);
-    };
+    const work_id_mapper get_work_id{thread_work_id0, threads_per_block};
 
     multi_segmented_seq_iterator it{
       segments_per_thread, d_input_begin_idx, d_input_end_idx, d_output_begin_idx, n_segments, get_work_id};
