@@ -94,7 +94,7 @@ template <typename _Config,
           typename _ExtentT,
           typename _StrideTIn,
           typename _StrideTOut>
-_CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
+__global__ void __copy_shared_mem_kernel(
   _CCCL_GRID_CONSTANT const _Config __config,
   const _TpSrc* _CCCL_RESTRICT __src_ptr,
   _CCCL_GRID_CONSTANT const _SrcAccessor __src_accessor,

@@ -32,7 +32,7 @@ namespace cuda::experimental::stf
 {
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename element_type, size_t dimensions = 1, typename ReduxOp>
-_CCCL_KERNEL_ATTRIBUTES void
+__global__ void
 slice_reduction_op_kernel(const slice<element_type, dimensions> in, const slice<element_type, dimensions> inout)
 {
   size_t tid      = threadIdx.x + blockIdx.x * blockDim.x;
@@ -62,7 +62,7 @@ slice_reduction_op_kernel(const slice<element_type, dimensions> in, const slice<
 }
 
 template <typename element_type, size_t dimensions = 1, typename ReduxOp>
-_CCCL_KERNEL_ATTRIBUTES void slice_reduction_op_init_kernel(slice<element_type, dimensions> out)
+__global__ void slice_reduction_op_init_kernel(slice<element_type, dimensions> out)
 {
   size_t tid      = threadIdx.x + blockIdx.x * blockDim.x;
   size_t nthreads = blockDim.x * gridDim.x;

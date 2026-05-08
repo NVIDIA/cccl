@@ -119,8 +119,8 @@ using __dims_of_t = typename _Config::hierarchy_type;
 // tell us how to launch the kernel that completes it. Thus, the launch configuration is
 // read from the outer receiver's environment.
 template <int _ThreadsPerBlock, class _Rcvr, class _Variant>
-__launch_bounds__(_ThreadsPerBlock)
-  _CCCL_KERNEL_ATTRIBUTES void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
+_CCCL_VISIBILITY_HIDDEN __launch_bounds__(_ThreadsPerBlock) __global__
+  void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
   __visit(__visit_results{}, __state->__results_, __state->__rcvr_);

@@ -70,7 +70,7 @@ template <typename _Config,
           typename _StrideTIn,
           typename _StrideTOut,
           ::cuda::std::size_t _Rank>
-_CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
+__global__ void __copy_contiguous_kernel(
   _CCCL_GRID_CONSTANT const _Config __config,
   _CCCL_GRID_CONSTANT const _TpSrc* const _CCCL_RESTRICT __src_ptr,
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTIn, _Rank> __src_strides,

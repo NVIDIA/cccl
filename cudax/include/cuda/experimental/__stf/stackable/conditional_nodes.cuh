@@ -33,8 +33,7 @@ namespace reserved
 // This kernel is used by the update_cond method to update the conditional handle. The device function passed as an
 // argument returns a boolean value which defines the new value of the conditional handle.
 template <typename CondFunc, typename... Args>
-_CCCL_KERNEL_ATTRIBUTES void
-condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc cond_func, Args... args)
+__global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc cond_func, Args... args)
 {
   // Direct call to the user's condition function - no lambda nesting
   bool result = cond_func(args...);
@@ -42,7 +41,7 @@ condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc 
 }
 
 template <bool value>
-_CCCL_KERNEL_ATTRIBUTES void condition_reset(cudaGraphConditionalHandle conditional_handle)
+__global__ void condition_reset(cudaGraphConditionalHandle conditional_handle)
 {
   //  printf("RESET CONDITION to %d\n", !!value);
   cudaGraphSetConditional(conditional_handle, value);
