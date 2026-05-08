@@ -123,8 +123,8 @@ __launch_bounds__(int(
     KParameterT,
     SelectDirectionParameterT,
     NumSegmentsParameterT,
-    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.threads_per_block)) __global__
-  void device_segmented_topk_kernel(
+    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
     ValueInputItItT d_value_segments_it,
