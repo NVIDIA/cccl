@@ -6,7 +6,7 @@ provides a Pythonic interface to the
 It provides the following modules:
 
 - **`cuda.compute`** - Device-level parallel algorithms (reduce, scan, sort, etc.) and iterators
-- **`cuda.coop`** - Block and warp-level cooperative primitives for custom CUDA kernels
+- **`cuda.coop._experimental`** - Block and warp-level cooperative primitives for custom CUDA kernels
 
 ## Installation
 
@@ -46,4 +46,4 @@ For complete documentation, examples, and API reference, visit:
 
 - **Full Documentation**: [nvidia.github.io/cccl/python](https://nvidia.github.io/cccl/python)
 - **Repository**: [github.com/NVIDIA/cccl](https://github.com/NVIDIA/cccl)
-- **Examples**: [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples) and [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/examples)
+- **Examples**: [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/compute/examples) and [github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/_experimental/examples](https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/coop/_experimental/examples)

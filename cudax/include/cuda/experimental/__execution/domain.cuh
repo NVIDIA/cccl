@@ -212,7 +212,7 @@ struct __hide_scheduler : __hide_query<_Env, get_scheduler_t, get_domain_t>
 };
 
 template <class _Env>
-_CCCL_HOST_DEVICE __hide_scheduler(_Env&&) -> __hide_scheduler<_Env>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __hide_scheduler(_Env&&) -> __hide_scheduler<_Env>;
 
 template <class _Sch, class... _Env>
 using __scheduler_domain_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_completion_domain_t<set_value_t>, _Sch, _Env...>;

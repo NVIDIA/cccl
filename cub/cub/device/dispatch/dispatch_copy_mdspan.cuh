@@ -21,6 +21,7 @@
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_debug.cuh>
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/mdspan>
 
@@ -67,7 +68,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
       ::cuda::std::make_tuple(mdspan_in.data_handle()),
       mdspan_out.data_handle(),
       mdspan_in.size(),
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::identity{},
       env);
   }

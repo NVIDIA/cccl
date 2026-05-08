@@ -814,11 +814,12 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_string_view);
 
 _CCCL_TEMPLATE(class _It, class _End)
 _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It>)
-_CCCL_HOST_DEVICE basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
-_CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<::cuda::std::ranges::range_value_t<_Range>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES basic_string_view(_Range&&)
+  -> basic_string_view<::cuda::std::ranges::range_value_t<_Range>>;
 
 #if _CCCL_HOSTED()
 template <class _CharT, class _Alloc>

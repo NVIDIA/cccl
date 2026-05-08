@@ -153,7 +153,7 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE reverse_view(_Range&&) -> reverse_view<::cuda::std::ranges::views::all_t<_Range>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES reverse_view(_Range&&) -> reverse_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<reverse_view<_Tp>> = enable_borrowed_range<_Tp>;

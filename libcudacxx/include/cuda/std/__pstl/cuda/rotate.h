@@ -35,6 +35,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/transform_iterator.h>
@@ -114,7 +115,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         tuple<_InputIterator>{::cuda::std::move(__first)},
         __storage.template __get_ptr<1>(),
         __count,
-        CUB_NS_QUALIFIER::detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         identity{},
         __policy);
 

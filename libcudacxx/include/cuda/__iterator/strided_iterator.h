@@ -389,7 +389,7 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Iter, typename _Stride>
-_CCCL_HOST_DEVICE strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c strided_iterator from a random access iterator
