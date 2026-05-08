@@ -285,6 +285,9 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 #    endif
   ;
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 namespace
 {
 // We create 3 kernel functor launchers:
@@ -349,6 +352,7 @@ __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn,
   }
 }
 } // namespace
+_CCCL_DIAG_POP
 
 // Return void pointer to work around NVCC bug with __restrict__
 template <class _Kernel, class _Config, class... _Args>
