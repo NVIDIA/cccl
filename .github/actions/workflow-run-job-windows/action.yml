@@ -219,6 +219,7 @@ runs:
           --env "GITHUB_SHA=$GITHUB_SHA" \
           --env "JOB_ID=${{inputs.id}}" \
           --env "NVCC_APPEND_FLAGS=-t=100" \
+          --env "PYTHONIOENCODING=utf-8" \
           --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \

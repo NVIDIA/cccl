@@ -58,9 +58,20 @@ $BUILD_DIR = "../build/$env:CCCL_BUILD_INFIX"
 
 # Create the build dir and symlink it to build/latest:
 $latest_link = "../build/latest"
-New-Item -ItemType Directory -Path $BUILD_DIR -Force | Out-Null
-$BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName # to absolute path
-Remove-Item -Path $latest_link -Force -ErrorAction SilentlyContinue | Out-Null
+$BUILD_DIR = (New-Item -ItemType Directory -Path $BUILD_DIR -Force -ErrorAction Stop).FullName
+
+# Idempotently (re)create the `latest` symlink. Avoid Remove-Item, which on Windows
+# PowerShell 5.1 follows directory symlinks and refuses to delete a non-empty target.
+$existing_link = Get-Item -LiteralPath $latest_link -Force -ErrorAction SilentlyContinue
+if ($existing_link) {
+    if ($existing_link.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+        # Existing symlink/junction -- .Delete() removes the link only, not the target.
+        $existing_link.Delete()
+    } else {
+        # Real file or directory at the link path -- bail out rather than risk data loss.
+        throw "Refusing to replace non-symlink '$latest_link' (Attributes=$($existing_link.Attributes)) with a symlink to '$BUILD_DIR'."
+    }
+}
 New-Item -ItemType SymbolicLink -Path $latest_link -Target $BUILD_DIR | Out-Null
 
 # Prepare environment for CMake:
