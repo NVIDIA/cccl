@@ -149,8 +149,13 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 
   auto env = cuda::execution::tune(
     reduce_tuning<target_block_size>{}, // <-- should be taken
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
+    // some rare combinations, like nvcc 12.0 + clang-14 in C++20, or nvcc 12.0 + GCC12 fail with:
+    //   pod_tuple.h(130): error: Internal Compiler Error (codegen): "internal error during structure layout!"
+    // if we pass more than two policy selectors
     unrelated_tuning{}, // should be ignored
     nondeterministic_reduce_tuning<target_block_size * 2>{}, // should be ignored
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
     deterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
   );
 
@@ -170,8 +175,10 @@ C2H_TEST("Device reduce not_guaranteed can be tuned", "[reduce][device]", block_
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed),
     cuda::execution::tune(
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
       reduce_tuning<target_block_size * 2>{}, // should be ignored
       unrelated_tuning{}, // should be ignored
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
       nondeterministic_reduce_tuning<target_block_size>{}, // <-- should be taken
       deterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
       )};
@@ -192,8 +199,10 @@ C2H_TEST("Device reduce run_to_run can be tuned", "[reduce][device]", block_size
     cuda::execution::require(cuda::execution::determinism::run_to_run),
     cuda::execution::tune(
       reduce_tuning<target_block_size>{}, // <-- should be taken
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
       unrelated_tuning{}, // should be ignored
       nondeterministic_reduce_tuning<target_block_size * 2>{}, // should be ignored
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
       deterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
       )};
 
@@ -213,8 +222,10 @@ C2H_TEST("Device reduce gpu_to_gpu can be tuned", "[reduce][device]", block_size
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
     cuda::execution::tune(
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
       reduce_tuning<target_block_size * 2>{}, // should be ignored
       unrelated_tuning{}, // should be ignored
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
       nondeterministic_reduce_tuning<target_block_size * 2>{}, // // should be ignored
       deterministic_reduce_tuning<target_block_size>{} // <-- should be taken
       )};
@@ -279,13 +290,10 @@ C2H_TEST("Device TransformReduce can be tuned", "[reduce][device]", block_sizes)
 
   auto env = cuda::execution::tune(
     reduce_tuning<target_block_size>{},
-    unrelated_tuning{} // should be ignored
-#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
-    // some rare combinations, like nvcc 12.0 + clang-14 in C++20, or nvcc 12.0 + GCC12 fail with:
-    // pod_tuple.h(130): error: Internal Compiler Error (codegen): "internal error during structure layout!"
-    ,
-    nondeterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
+    unrelated_tuning{}, // should be ignored
 #  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 9)
+    nondeterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
   );
 
   device_transform_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, cuda::std::negate<int>{}, 0, env);
