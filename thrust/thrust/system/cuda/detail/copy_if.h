@@ -18,16 +18,11 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_select.cuh>
-#  include <cub/util_math.cuh>
 #  include <cub/util_temporary_storage.cuh>
-#  include <cub/util_type.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/core/util.h>
-#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
