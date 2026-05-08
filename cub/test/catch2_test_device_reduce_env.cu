@@ -159,7 +159,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
     deterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
   );
 
-  device_reduce(d_in, d_out.begin(), 1, ::cuda::std::plus<>{}, 0, env);
+  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
   REQUIRE(d_out[0] == 1);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -183,7 +183,7 @@ C2H_TEST("Device reduce not_guaranteed can be tuned", "[reduce][device]", block_
       deterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
       )};
 
-  device_reduce(d_in, d_out.begin(), 1, ::cuda::std::plus<>{}, 0, env);
+  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
   REQUIRE(d_out[0] == 1);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -206,7 +206,7 @@ C2H_TEST("Device reduce run_to_run can be tuned", "[reduce][device]", block_size
       deterministic_reduce_tuning<target_block_size * 2>{} // should be ignored
       )};
 
-  device_reduce(d_in, d_out.begin(), 1, ::cuda::std::plus<>{}, 0, env);
+  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<>{}, 0, env);
   REQUIRE(d_out[0] == 1);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -230,7 +230,7 @@ C2H_TEST("Device reduce gpu_to_gpu can be tuned", "[reduce][device]", block_size
       deterministic_reduce_tuning<target_block_size>{} // <-- should be taken
       )};
 
-  device_reduce(d_in, d_out.begin(), 1, ::cuda::std::plus<float>{}, 0, env); // make accum_t float to select RFA
+  device_reduce(d_in, d_out.begin(), 1, cuda::std::plus<float>{}, 0, env); // make accum_t float to select RFA
   REQUIRE(d_out[0] == 1);
   REQUIRE(d_block_size[0] == target_block_size);
 }
