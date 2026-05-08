@@ -19,8 +19,11 @@
 
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_math.cuh>
+#  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/count.h>
+#  include <thrust/detail/alignment.h>
+#  include <thrust/detail/temporary_array.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -62,132 +65,47 @@ namespace cuda_cub
 {
 namespace detail
 {
-template <cub::SelectImpl SelectionOpt,
-          typename Derived,
-          typename InputIt,
-          typename OutputIt,
-          typename EqualityOpT,
-          typename OffsetT>
-THRUST_RUNTIME_FUNCTION cudaError_t dispatch_select_unique(
-  execution_policy<Derived>& policy,
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt first,
-  OutputIt& output,
-  EqualityOpT equality_op,
-  OffsetT num_items)
-{
-  using flag_iterator_t       = cub::NullType*; // flag iterator type (not used for unique)
-  using num_selected_out_it_t = OffsetT*; // number of selected output items iterator type
-  using select_op             = cub::NullType; // selection op (not used for unique)
-  using equality_op_t         = EqualityOpT;
-
-  cudaError_t status  = cudaSuccess;
-  cudaStream_t stream = cuda_cub::stream(policy);
-
-  std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
-  void* allocations[2]            = {nullptr, nullptr};
-
-  // The flag iterator is not used for unique, so we set it to nullptr.
-  flag_iterator_t flag_it = static_cast<flag_iterator_t>(nullptr);
-
-  // Query algorithm memory requirements
-  status = cub::DispatchSelectIf<
-    InputIt,
-    flag_iterator_t,
-    OutputIt,
-    num_selected_out_it_t,
-    select_op,
-    equality_op_t,
-    OffsetT,
-    SelectionOpt>::Dispatch(nullptr,
-                            allocation_sizes[0],
-                            first,
-                            flag_it,
-                            output,
-                            static_cast<num_selected_out_it_t>(nullptr),
-                            select_op{},
-                            equality_op,
-                            num_items,
-                            stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
-
-  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  _CUDA_CUB_RET_IF_FAIL(status);
-
-  // Return if we're only querying temporary storage requirements
-  if (d_temp_storage == nullptr)
-  {
-    return status;
-  }
-
-  // Return for empty problems
-  if (num_items == 0)
-  {
-    return status;
-  }
-
-  // Memory allocation for the number of selected output items
-  OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
-
-  // Run algorithm
-  status = cub::DispatchSelectIf<
-    InputIt,
-    flag_iterator_t,
-    OutputIt,
-    num_selected_out_it_t,
-    select_op,
-    equality_op_t,
-    OffsetT,
-    SelectionOpt>::Dispatch(allocations[0],
-                            allocation_sizes[0],
-                            first,
-                            flag_it,
-                            output,
-                            d_num_selected_out,
-                            select_op{},
-                            equality_op,
-                            num_items,
-                            stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
-
-  // Get number of selected items
-  status = cuda_cub::synchronize(policy);
-  _CUDA_CUB_RET_IF_FAIL(status);
-  OffsetT num_selected = get_value(policy, d_num_selected_out);
-  ::cuda::std::advance(output, num_selected);
-  return status;
-}
-
-template <cub::SelectImpl SelectionOpt, typename Derived, typename InputIt, typename OutputIt, typename EqualityOpT>
+template <typename Derived, typename InputIt, typename OutputIt, typename EqualityOpT>
 THRUST_RUNTIME_FUNCTION OutputIt
 select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, EqualityOpT equality_op)
 {
-  // 64-bit offset-type dispatch
-  // Since https://github.com/NVIDIA/cccl/pull/2400, cub::DeviceSelect is using a streaming approach that splits up
-  // inputs larger than INT_MAX into partitions of up to `INT_MAX` items each, repeatedly invoking the respective
-  // algorithm. With that approach, we can always use i64 offset types for DispatchSelectIf, because there's only very
-  // limited performance upside for using i32 offset types. This avoids potentially duplicate kernel compilation.
-  using offset_t = ::cuda::std::int64_t;
+  using offset_t       = ::cuda::std::int64_t; // cub::DeviceSelect uses a single offset type at the public API
+  const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
+  cudaStream_t stream  = cuda_cub::stream(policy);
 
-  const auto num_items      = static_cast<offset_t>(::cuda::std::distance(first, last));
-  cudaError_t status        = cudaSuccess;
+  // We need to allocate space for the num_selected output alongside the algorithm's temp storage
+  std::size_t allocation_sizes[2] = {0, sizeof(offset_t)};
+  void* allocations[2]            = {nullptr, nullptr};
+
+  // Query temp storage
+  cudaError_t status = cub::DeviceSelect::Unique(
+    nullptr, allocation_sizes[0], first, output, static_cast<offset_t*>(nullptr), num_items, equality_op, stream);
+  throw_on_error(status, "unique failed on 1st step");
+
   size_t temp_storage_bytes = 0;
+  status = cub::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
+  throw_on_error(status, "unique failed on temp storage query");
 
-  // Query temporary storage requirements
-  status =
-    dispatch_select_unique<SelectionOpt>(policy, nullptr, temp_storage_bytes, first, output, equality_op, num_items);
-  cuda_cub::throw_on_error(status, "unique failed on 1st step");
-
-  // Allocate temporary storage.
+  // Allocate temporary storage
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
-  // Run algorithm
-  status = dispatch_select_unique<SelectionOpt>(
-    policy, temp_storage, temp_storage_bytes, first, output, equality_op, num_items);
-  cuda_cub::throw_on_error(status, "unique failed on 2nd step");
+  status = cub::detail::alias_temporaries(temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  throw_on_error(status, "unique failed on temp storage alias");
 
+  offset_t* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<offset_t*>(allocations[1]);
+
+  // Run algorithm
+  status = cub::DeviceSelect::Unique(
+    allocations[0], allocation_sizes[0], first, output, d_num_selected_out, num_items, equality_op, stream);
+  throw_on_error(status, "unique failed on 2nd step");
+
+  // Get number of selected items
+  status = cuda_cub::synchronize(policy);
+  throw_on_error(status, "unique failed on sync");
+  const offset_t num_selected = get_value(policy, d_num_selected_out);
+
+  ::cuda::std::advance(output, num_selected);
   return output;
 }
 } // namespace detail
@@ -202,7 +120,7 @@ OutputIt _CCCL_HOST_DEVICE
 unique_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, BinaryPred binary_pred)
 {
   THRUST_CDP_DISPATCH(
-    (return detail::select_unique<cub::SelectImpl::Select>(policy, first, last, result, binary_pred);),
+    (return detail::select_unique(policy, first, last, result, binary_pred);),
     (return thrust::unique_copy(cvt_to_seq(derived_cast(policy)), first, last, result, binary_pred);));
 }
 
@@ -218,9 +136,8 @@ template <class Derived, class ForwardIt, class BinaryPred>
 ForwardIt _CCCL_HOST_DEVICE
 unique(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last, BinaryPred binary_pred)
 {
-  THRUST_CDP_DISPATCH(
-    (return detail::select_unique<cub::SelectImpl::SelectPotentiallyInPlace>(policy, first, last, first, binary_pred);),
-    (return thrust::unique(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
+  THRUST_CDP_DISPATCH((return detail::select_unique(policy, first, last, first, binary_pred);),
+                      (return thrust::unique(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
 }
 
 template <class Derived, class ForwardIt>

@@ -63,100 +63,68 @@ namespace cuda_cub
 {
 namespace detail
 {
-template <cub::SelectImpl SelectionOpt,
-          typename Derived,
-          typename InputIt,
-          typename StencilIt,
-          typename OutputIt,
-          typename Predicate,
-          typename OffsetT>
-struct DispatchCopyIf
+// Helper to dispatch copy_if with no stencil (predicate applied to input) using cub::DeviceSelect::If
+template <typename Derived, typename InputIt, typename OutputIt, typename Predicate>
+THRUST_RUNTIME_FUNCTION OutputIt
+copy_if_no_stencil(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, Predicate predicate)
 {
-  static cudaError_t THRUST_RUNTIME_FUNCTION dispatch(
-    execution_policy<Derived>& policy,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIt first,
-    StencilIt stencil,
-    OutputIt& output,
-    Predicate predicate,
-    OffsetT num_items)
-  {
-    using num_selected_out_it_t = OffsetT*;
-    using equality_op_t         = cub::NullType;
+  using offset_t      = std::int64_t; // cub::DeviceSelect uses a single offset type at the public API
+  offset_t num_items  = static_cast<offset_t>(::cuda::std::distance(first, last));
+  cudaStream_t stream = cuda_cub::stream(policy);
 
-    cudaError_t status  = cudaSuccess;
-    cudaStream_t stream = cuda_cub::stream(policy);
+  // We need to allocate space for the num_selected output alongside the algorithm's temp storage
+  std::size_t allocation_sizes[2] = {0, sizeof(offset_t)};
+  void* allocations[2]            = {nullptr, nullptr};
 
-    std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
-    void* allocations[2]            = {nullptr, nullptr};
+  // Query temp storage for the algorithm
+  cudaError_t status = cub::DeviceSelect::If(
+    nullptr,
+    allocation_sizes[0],
+    first,
+    output,
+    static_cast<offset_t*>(nullptr),
+    static_cast<offset_t>(num_items),
+    predicate,
+    stream);
+  throw_on_error(status, "copy_if failed on 1st step");
 
-    // Query algorithm memory requirements
-    status = cub::
-      DispatchSelectIf<InputIt, StencilIt, OutputIt, num_selected_out_it_t, Predicate, equality_op_t, OffsetT, SelectionOpt>::
-        Dispatch(
-          nullptr,
-          allocation_sizes[0],
-          first,
-          stencil,
-          output,
-          static_cast<num_selected_out_it_t>(nullptr),
-          predicate,
-          equality_op_t{},
-          num_items,
-          stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
+  size_t temp_storage_bytes = 0;
+  status = cub::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
+  throw_on_error(status, "copy_if failed on temp storage query");
 
-    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    _CUDA_CUB_RET_IF_FAIL(status);
+  // Allocate temporary storage
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
+  void* temp_storage = static_cast<void*>(tmp.data().get());
 
-    // Return if we're only querying temporary storage requirements
-    if (d_temp_storage == nullptr)
-    {
-      return status;
-    }
+  status = cub::detail::alias_temporaries(temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  throw_on_error(status, "copy_if failed on temp storage alias");
 
-    // Return for empty problems
-    if (num_items == 0)
-    {
-      return status;
-    }
+  offset_t* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<offset_t*>(allocations[1]);
 
-    // Memory allocation for the number of selected output items
-    OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+  // Run algorithm
+  status = cub::DeviceSelect::If(
+    allocations[0],
+    allocation_sizes[0],
+    first,
+    output,
+    d_num_selected_out,
+    static_cast<offset_t>(num_items),
+    predicate,
+    stream);
+  throw_on_error(status, "copy_if failed on 2nd step");
 
-    // Run algorithm
-    status = cub::
-      DispatchSelectIf<InputIt, StencilIt, OutputIt, num_selected_out_it_t, Predicate, equality_op_t, OffsetT, SelectionOpt>::
-        Dispatch(
-          allocations[0],
-          allocation_sizes[0],
-          first,
-          stencil,
-          output,
-          d_num_selected_out,
-          predicate,
-          equality_op_t{},
-          num_items,
-          stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
+  // Get number of selected items
+  status = cuda_cub::synchronize(policy);
+  cuda_cub::throw_on_error(status, "copy_if failed on sync");
+  const offset_t num_selected = get_value(policy, d_num_selected_out);
 
-    // Get number of selected items
-    status = cuda_cub::synchronize(policy);
-    _CUDA_CUB_RET_IF_FAIL(status);
-    OffsetT num_selected = get_value(policy, d_num_selected_out);
-    ::cuda::std::advance(output, num_selected);
-    return status;
-  }
-};
+  ::cuda::std::advance(output, num_selected);
+  return output;
+}
 
-template <cub::SelectImpl SelectionOpt,
-          typename Derived,
-          typename InputIt,
-          typename StencilIt,
-          typename OutputIt,
-          typename Predicate>
-THRUST_RUNTIME_FUNCTION OutputIt copy_if(
+// Helper to dispatch copy_if with stencil (predicate applied to stencil) using cub::DeviceSelect::FlaggedIf
+template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate>
+THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -165,32 +133,60 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   Predicate predicate)
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
+  using offset_t  = std::int64_t;
 
   size_type num_items       = static_cast<size_type>(::cuda::std::distance(first, last));
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
+  cudaStream_t stream       = cuda_cub::stream(policy);
 
-  // 64-bit offset-type dispatch
-  // Since https://github.com/NVIDIA/cccl/pull/2400, cub::DeviceSelect is using a streaming approach that splits up
-  // inputs larger than INT_MAX into partitions of up to `INT_MAX` items each, repeatedly invoking the respective
-  // algorithm. With that approach, we can always use i64 offset types for DispatchSelectIf, because there's only very
-  // limited performance upside for using i32 offset types. This avoids potentially duplicate kernel compilation.
-  using dispatch64_t = DispatchCopyIf<SelectionOpt, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int64_t>;
+  // We need to allocate space for the num_selected output alongside the algorithm's temp storage
+  std::size_t allocation_sizes[2] = {0, sizeof(offset_t)};
+  void* allocations[2]            = {nullptr, nullptr};
 
-  // Query temporary storage requirements
-  status = dispatch64_t::dispatch(
-    policy, nullptr, temp_storage_bytes, first, stencil, output, predicate, static_cast<std::int64_t>(num_items));
+  // Query temp storage for the algorithm
+  status = cub::DeviceSelect::FlaggedIf(
+    nullptr,
+    allocation_sizes[0],
+    first,
+    stencil,
+    output,
+    static_cast<offset_t*>(nullptr),
+    static_cast<offset_t>(num_items),
+    predicate,
+    stream);
   cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
 
-  // Allocate temporary storage.
+  status = cub::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
+  cuda_cub::throw_on_error(status, "copy_if failed on temp storage query");
+
+  // Allocate temporary storage
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
+  status = cub::detail::alias_temporaries(temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  cuda_cub::throw_on_error(status, "copy_if failed on temp storage alias");
+
+  offset_t* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<offset_t*>(allocations[1]);
+
   // Run algorithm
-  status = dispatch64_t::dispatch(
-    policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, static_cast<std::int64_t>(num_items));
+  status = cub::DeviceSelect::FlaggedIf(
+    allocations[0],
+    allocation_sizes[0],
+    first,
+    stencil,
+    output,
+    d_num_selected_out,
+    static_cast<offset_t>(num_items),
+    predicate,
+    stream);
   cuda_cub::throw_on_error(status, "copy_if failed on 2nd step");
 
+  // Get number of selected items
+  status = cuda_cub::synchronize(policy);
+  cuda_cub::throw_on_error(status, "copy_if failed on sync");
+  offset_t num_selected = get_value(policy, d_num_selected_out);
+  ::cuda::std::advance(output, num_selected);
   return output;
 }
 } // namespace detail
@@ -203,8 +199,7 @@ template <class Derived, class InputIterator, class OutputIterator, class Predic
 OutputIterator _CCCL_HOST_DEVICE copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
-  THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(
-                                policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
+  THRUST_CDP_DISPATCH((return detail::copy_if_no_stencil(policy, first, last, result, pred);),
                       (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
 }
 
@@ -218,7 +213,7 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(policy, first, last, stencil, result, pred);),
+  THRUST_CDP_DISPATCH((return detail::copy_if_with_stencil(policy, first, last, stencil, result, pred);),
                       (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
 }
 } // namespace cuda_cub
