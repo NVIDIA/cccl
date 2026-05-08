@@ -7,8 +7,13 @@
 
 #include <thrust/tabulate.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/type_traits>
+
+#include <cstddef>
+#include <stdexcept>
 
 #include <nvbench_helper.cuh>
 

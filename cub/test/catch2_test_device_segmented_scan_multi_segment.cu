@@ -9,8 +9,12 @@
 #include <thrust/generate.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__functional/minimum.h>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits> // std::integral_constant
+#include <cuda/std/utility>
 
 #include <cstdint>
 #include <tuple>

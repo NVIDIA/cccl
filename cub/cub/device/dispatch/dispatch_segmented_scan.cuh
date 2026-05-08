@@ -34,7 +34,9 @@
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
