@@ -40,7 +40,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::find
 {
 template <typename ValueType, typename OffsetT>
-__launch_bounds__(1) __global__ void init_found_pos_pointer(ValueType* found_pos_ptr, OffsetT num_items)
+__launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void init_found_pos_pointer(ValueType* found_pos_ptr, OffsetT num_items)
 {
   // we immediately trigger launching the find kernel, before waiting for a previous kernel
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -72,8 +72,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL
 }
 
 template <typename ValueType, typename OutputIteratorT>
-__launch_bounds__(1) __global__
-  void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
+__launch_bounds__(1)
+  _CCCL_KERNEL_ATTRIBUTES void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   *d_out = *found_pos_ptr;

@@ -21,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/remove_volatile.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
