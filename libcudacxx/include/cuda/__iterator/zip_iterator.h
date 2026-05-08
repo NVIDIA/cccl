@@ -517,10 +517,10 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
 
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c zip_iterator from a tuple of iterators.

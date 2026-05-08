@@ -21,6 +21,7 @@
 #include <cub/device/dispatch/dispatch_find.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__nvtx/nvtx.h>
 
@@ -223,7 +224,7 @@ struct DeviceFind
       ::cuda::std::make_tuple(d_values),
       d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
       ::cuda::stream_ref{stream});
@@ -343,7 +344,7 @@ struct DeviceFind
       ::cuda::std::make_tuple(d_values),
       d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::transform::always_true_predicate{},
+      ::cuda::always_true{},
       detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
       ::cuda::stream_ref{stream});
@@ -543,7 +544,7 @@ struct DeviceFind
         ::cuda::std::make_tuple(d_values),
         d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
         ::cuda::stream_ref{stream});
@@ -663,7 +664,7 @@ struct DeviceFind
         ::cuda::std::make_tuple(d_values),
         d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
         ::cuda::stream_ref{stream});

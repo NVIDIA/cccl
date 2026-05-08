@@ -35,6 +35,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
@@ -88,10 +89,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     return __result + __count;
   }
 
-  _CCCL_TEMPLATE(class _Policy,
-                 class _InputIterator,
-                 class _OutputIterator,
-                 class _UnaryPred = CUB_NS_QUALIFIER::detail::transform::always_true_predicate)
+  _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _UnaryPred = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator>)
   [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
     [[maybe_unused]] const _Policy& __policy,

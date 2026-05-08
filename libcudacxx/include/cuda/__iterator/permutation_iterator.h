@@ -435,7 +435,7 @@ public:
 _CCCL_TEMPLATE(class _Iter, class _Index)
 _CCCL_REQUIRES(
   ::cuda::std::__has_random_access_traversal<_Iter> _CCCL_AND ::cuda::std::__has_random_access_traversal<_Index>)
-_CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates an @c permutation_iterator from a base iterator and an iterator to an integral index

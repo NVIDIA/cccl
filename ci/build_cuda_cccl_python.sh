@@ -40,13 +40,18 @@ readonly cuda12_version=12.9.1
 readonly cuda13_version=13.1.1
 readonly devcontainer_version=26.04
 readonly devcontainer_distro=rockylinux8
+# Use a baseline Python tag for the rapidsai ci-wheel image. The requested
+# py_version is installed inside the container by setup_python_env (uv).
+# Pinning the image tag avoids relying on a per-py_version image being
+# published (e.g. py3.14 images may not yet exist).
+readonly devcontainer_python_version=3.10
 
 if [[ "$(uname -m)" == "aarch64" ]]; then
-  cuda12_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda12_version}-${devcontainer_distro}-py${py_version}-arm64"
-  cuda13_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda13_version}-${devcontainer_distro}-py${py_version}-arm64"
+  cuda12_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda12_version}-${devcontainer_distro}-py${devcontainer_python_version}-arm64"
+  cuda13_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda13_version}-${devcontainer_distro}-py${devcontainer_python_version}-arm64"
 else
-  cuda12_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda12_version}-${devcontainer_distro}-py${py_version}"
-  cuda13_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda13_version}-${devcontainer_distro}-py${py_version}"
+  cuda12_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda12_version}-${devcontainer_distro}-py${devcontainer_python_version}"
+  cuda13_image="rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda13_version}-${devcontainer_distro}-py${devcontainer_python_version}"
 fi
 # shellcheck disable=SC2034
 readonly cuda12_image

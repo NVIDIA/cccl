@@ -187,7 +187,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 };
 
 template <class _Sch>
-_CCCL_HOST_DEVICE __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
 
 struct __mk_sch_env_t
 {
@@ -225,7 +225,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_attrs_t
 };
 
 template <class _Sch>
-_CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // __inln_attrs

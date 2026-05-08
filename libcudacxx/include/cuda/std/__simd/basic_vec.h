@@ -540,7 +540,7 @@ public:
 _CCCL_TEMPLATE(typename _Range, typename... _Ts)
 _CCCL_REQUIRES(
   ranges::contiguous_range<_Range> _CCCL_AND ranges::sized_range<_Range> _CCCL_AND __has_static_size<_Range>)
-_CCCL_HOST_DEVICE basic_vec(_Range&&, _Ts...)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES basic_vec(_Range&&, _Ts...)
   -> basic_vec<ranges::range_value_t<_Range>,
                __deduce_abi_t<ranges::range_value_t<_Range>, __static_range_size_v<_Range>>>;
 
@@ -552,7 +552,7 @@ _CCCL_HOST_DEVICE basic_vec(_Range&&, _Ts...)
 // The deduced type is equivalent to decltype(+k), i.e. basic_vec<__integer_from<Bytes>, Abi>
 _CCCL_TEMPLATE(size_t _Bytes, typename _Abi)
 _CCCL_REQUIRES(__has_unary_plus<basic_mask<_Bytes, _Abi>>)
-_CCCL_HOST_DEVICE basic_vec(basic_mask<_Bytes, _Abi>) -> basic_vec<__integer_from<_Bytes>, _Abi>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES basic_vec(basic_mask<_Bytes, _Abi>) -> basic_vec<__integer_from<_Bytes>, _Abi>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 

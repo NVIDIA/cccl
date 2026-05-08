@@ -802,21 +802,18 @@ private:
   friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
-  template <int ArchMult, int... CudaArches, typename FunctorT>
+  template <int CcMult, int... CudaCcs, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t
   runtime_cc_to_compiletime(int device_ptx_version, FunctorT& op)
   {
-    // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
+    // We instantiate find_and_invoke_policy for each CudaCcs (the arches we are compiling for), but only call the
     // one matching device_ptx_version.
     // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
     // queried ptx version (i.e., the closest lower or equal ptx version to the current device's architecture that the
     // EmptyKernel was compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario is a bug and may arise
     // if CUB_DISABLE_NAMESPACE_MAGIC is set and different TUs are compiled for different sets of architecture.
     cudaError_t e = cudaErrorInvalidDeviceFunction;
-    (...,
-     (device_ptx_version == CudaArches * ArchMult
-        ? (e = find_and_invoke_policy<CudaArches * ArchMult>(op))
-        : cudaSuccess));
+    (..., (device_ptx_version == CudaCcs * CcMult ? (e = find_and_invoke_policy<CudaCcs * CcMult>(op)) : cudaSuccess));
     return e;
   }
 

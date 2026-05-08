@@ -353,7 +353,7 @@ public:
 };
 
 template <class _Range, class _Pred>
-_CCCL_HOST_DEVICE filter_view(_Range&&, _Pred) -> filter_view<ranges::views::all_t<_Range>, _Pred>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES filter_view(_Range&&, _Pred) -> filter_view<ranges::views::all_t<_Range>, _Pred>;
 
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(filter_view)
 

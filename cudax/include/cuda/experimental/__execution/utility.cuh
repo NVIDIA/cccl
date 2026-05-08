@@ -250,7 +250,7 @@ public:
 };
 
 template <class... _Fns>
-_CCCL_HOST_DEVICE __first_callable(_Fns...) -> __first_callable<_Fns...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __first_callable(_Fns...) -> __first_callable<_Fns...>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // __call_or
@@ -322,7 +322,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
 };
 
 template <class _Ty>
-_CCCL_HOST_DEVICE __always(_Ty) -> __always<_Ty>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __always(_Ty) -> __always<_Ty>;
 
 // @brief A type that turns a nullary callable into an object that is
 // implicitly convertible to the result type of the callable.
@@ -341,7 +341,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __emplace_from
 };
 
 template <class _Fn>
-_CCCL_HOST_DEVICE __emplace_from(_Fn) -> __emplace_from<_Fn>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __emplace_from(_Fn) -> __emplace_from<_Fn>;
 
 template <class _Ty, class... _Us>
 using __unless_one_of_t = ::cuda::std::enable_if_t<__none_of<_Ty, _Us...>, _Ty>;

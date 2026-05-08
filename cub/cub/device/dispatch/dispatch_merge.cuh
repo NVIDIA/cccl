@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>

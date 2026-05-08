@@ -34,6 +34,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
@@ -89,11 +90,8 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     return __result + __count;
   }
 
-  _CCCL_TEMPLATE(class _Policy,
-                 class _InputIterator,
-                 class _OutputIterator,
-                 class _UnaryOp,
-                 class _Predicate = CUB_NS_QUALIFIER::detail::transform::always_true_predicate)
+  _CCCL_TEMPLATE(
+    class _Policy, class _InputIterator, class _OutputIterator, class _UnaryOp, class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
                    is_invocable_v<_UnaryOp, iter_reference_t<_InputIterator>>)
   [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
@@ -145,7 +143,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
                  class _InputIterator2,
                  class _OutputIterator,
                  class _BinaryOp,
-                 class _Predicate = CUB_NS_QUALIFIER::detail::transform::always_true_predicate)
+                 class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator1> _CCCL_AND __has_forward_traversal<_InputIterator2> _CCCL_AND
                    __has_forward_traversal<_OutputIterator>)
   [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(

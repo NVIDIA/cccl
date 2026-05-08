@@ -20,6 +20,7 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -27,27 +28,6 @@
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/tuple>
-
-CUB_NAMESPACE_BEGIN
-namespace detail::transform
-{
-struct always_true_predicate
-{
-  template <typename... Ts>
-  _CCCL_HOST_DEVICE constexpr bool operator()(Ts&&...) const
-  {
-    return true;
-  }
-};
-} // namespace detail::transform
-CUB_NAMESPACE_END
-
-namespace cuda
-{
-template <>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
-{};
-} // namespace cuda
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform

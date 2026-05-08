@@ -72,7 +72,7 @@ get_kernel_name(std::string_view input_iterator_t, std::string_view output_itera
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true, {2}, {3}, {4}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -92,7 +92,7 @@ std::string get_kernel_name(std::string_view input1_iterator_t,
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}, "
+    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true, {2}, {3}, {4}, "
     "{5}>",
     chained_policy_t, // 0
     offset_t, // 1
@@ -362,7 +362,7 @@ CUresult cccl_device_unary_transform(
       ::cuda::std::tuple<indirect_iterator_t>{d_in},
       indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
-      transform::cdt::always_true_predicate{},
+      ::cuda::always_true{},
       indirect_arg_t{op},
       stream,
       *static_cast<cub::detail::transform::policy_selector<1>*>(build.runtime_policy),
@@ -565,7 +565,7 @@ CUresult cccl_device_binary_transform(
       ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
       indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
-      transform::cdt::always_true_predicate{},
+      ::cuda::always_true{},
       indirect_arg_t{op},
       stream,
       *static_cast<cub::detail::transform::policy_selector<2>*>(build.runtime_policy),

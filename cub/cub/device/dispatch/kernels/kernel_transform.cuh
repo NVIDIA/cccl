@@ -25,9 +25,11 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/aligned_size.h>
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -252,7 +254,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     transform_kernel_prefetch<threads_per_block, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
-      always_true_predicate{},
+      ::cuda::always_true{},
       ::cuda::std::move(f),
       ::cuda::std::move(out),
       ins...);
@@ -274,10 +276,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
                                     && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
-  using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
   constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * vec_size : alignof(result_t);
-  uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
+  ::cuda::__uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -324,9 +325,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
-                                    items_per_thread,
-                                    sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
+  provide_array(::cuda::__uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
+                                              items_per_thread,
+                                              sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
@@ -713,7 +714,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 }
 // FIXME(bgruber): nvcc 12.0 - 13.1 error with `function "void
 // cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::transform_kernel_ublkcp< ::policy, int,
-// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::always_true_predicate,
+// ::cuda::always_true,
 // ::cuda::std::__4::logical_and<int> , bool *, int, int > (T2, int, T3, T4, T5,
 // ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::aligned_base_ptr<T6> ...)::[lambda(T1) (instance
 // 3)]::operator ()< ::cuda::std::__4::integral_constant<bool, (bool)1> >  const" has already been defined` when we pass
@@ -1051,7 +1052,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == Algorithm::vectorized)
   {
-    static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
+    static_assert(::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
                   "Cannot vectorize transform with a predicate");
 
     transform_kernel_vectorized</*policy*/ policy.vectorized.threads_per_block,

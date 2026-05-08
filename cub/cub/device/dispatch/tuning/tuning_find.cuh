@@ -63,7 +63,7 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> find_policy
   {
-    // FindPolicy (GTX670: 154.0 @ 48M 4B items) - single policy for all arches
+    // FindPolicy (GTX670: 154.0 @ 48M 4B items) - single policy for all ccs
     const auto scaled = scale_mem_bound(128, 16, input_type_size);
     return find_policy{scaled.threads_per_block, scaled.items_per_thread, 4, LOAD_LDG};
   }

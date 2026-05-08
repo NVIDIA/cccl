@@ -60,7 +60,7 @@ private:
 };
 
 template <class _Sndr>
-_CCCL_HOST_DEVICE __sndr_ref(_Sndr&& __sndr) -> __sndr_ref<_Sndr>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __sndr_ref(_Sndr&& __sndr) -> __sndr_ref<_Sndr>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
