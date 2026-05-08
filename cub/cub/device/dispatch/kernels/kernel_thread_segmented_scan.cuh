@@ -356,8 +356,19 @@ private:
 
     const work_id_mapper get_work_id{thread_work_id0, threads_per_block};
 
+    // Clamp the iterator span to this lane's remaining interleaved segments so inactive lanes avoid probing
+    // out-of-range segment ids.
+    const OffsetT remaining_segments_this_thread =
+      ::cuda::ceil_div(n_segments - ::cuda::std::min(n_segments, thread_work_id0), threads_per_block);
+    const int segments_this_thread =
+      static_cast<int>(::cuda::std::min(static_cast<OffsetT>(segments_per_thread), remaining_segments_this_thread));
+    if (segments_this_thread == 0)
+    {
+      return;
+    }
+
     multi_segmented_seq_iterator it{
-      segments_per_thread, d_input_begin_idx, d_input_end_idx, d_output_begin_idx, n_segments, get_work_id};
+      segments_this_thread, d_input_begin_idx, d_input_end_idx, d_output_begin_idx, n_segments, get_work_id};
 
     using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
     using hv_t                = typename augmented_scan_op_t::fv_t;
