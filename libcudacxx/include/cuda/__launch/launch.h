@@ -290,9 +290,12 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 // 2. With __launch_bounds__ for non-cluster launches with compile-time known block size.
 // 3. Fallback without any attributes.
 
+// GCC falsely throws the following error without the below suppression:
+//
+// libcudacxx/include/cuda/__launch/launch.h:311:119: error: '__visibility__' attribute ignored [-Werror=attributes]
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 
 template <class _Config, class _Kernel, class... _Args>
 _CCCL_KERNEL_ATTRIBUTES void
