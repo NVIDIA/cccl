@@ -29,6 +29,7 @@
 #include <cuda/std/__tuple_dir/tuple_leaf.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
@@ -246,6 +247,16 @@ public:
   template <class _Tuple,
             class _Constraints                                        = __tuple_like_constraints<_Tuple>,
             enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
+            // clang-tidy is confused. We are already using _v here
+            enable_if_t<is_lvalue_reference_v<_Tuple>, int>          = 0, // NOLINT(modernize-type-traits)
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(__t)
+  {}
+
+  template <class _Tuple,
+            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
             enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
             enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
@@ -257,6 +268,15 @@ public:
             enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
             enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _CCCL_API constexpr explicit tuple(const _Tuple& __t) noexcept(is_nothrow_constructible_v<_BaseT, const _Tuple&>)
+      : __base_(__t)
+  {}
+
+  template <class _Tuple,
+            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
+            enable_if_t<is_lvalue_reference_v<_Tuple>, int>           = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
+  _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
       : __base_(__t)
   {}
 
@@ -434,6 +454,53 @@ public:
     return true;
   }
 };
+
+namespace __tuple_common_ref
+{
+// Equivalent to __type_pair in type_list.h, but reimplemented here because we don't want to
+// pull in 1k lines of templates just for this.
+template <typename _Tp, typename _Up>
+struct __type_pair
+{
+  using __first  = _Tp;
+  using __second = _Up;
+};
+} // namespace __tuple_common_ref
+
+template <class... _TypePairs>
+_CCCL_CONCEPT __tuple_of_common_references = _CCCL_REQUIRES_EXPR((variadic _TypePairs), )(
+  typename(tuple<common_reference_t<typename _TypePairs::__first, typename _TypePairs::__second>...>));
+
+template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+struct basic_common_reference<
+  tuple<_TTypes...>,
+  tuple<_UTypes...>,
+  _TQual,
+  _UQual,
+  enable_if_t<__tuple_of_common_references<__tuple_common_ref::__type_pair<_TQual<_TTypes>, _UQual<_UTypes>>...>>>
+{
+  using type _CCCL_NODEBUG = tuple<common_reference_t<_TQual<_TTypes>, _UQual<_UTypes>>...>;
+};
+
+template <class... _TypePairs>
+_CCCL_CONCEPT __tuple_of_common_types = _CCCL_REQUIRES_EXPR((variadic _TypePairs), )(
+  typename(tuple<common_type_t<typename _TypePairs::__first, typename _TypePairs::__second>...>));
+
+template <class, class, class = void>
+struct __tuple_common_type
+{};
+
+template <class... _TTypes, class... _UTypes>
+struct __tuple_common_type<tuple<_TTypes...>,
+                           tuple<_UTypes...>,
+                           enable_if_t<__tuple_of_common_types<__tuple_common_ref::__type_pair<_TTypes, _UTypes>...>>>
+{
+  using type _CCCL_NODEBUG = tuple<common_type_t<_TTypes, _UTypes>...>;
+};
+
+template <class... _TTypes, class... _UTypes>
+struct common_type<tuple<_TTypes...>, tuple<_UTypes...>> : __tuple_common_type<tuple<_TTypes...>, tuple<_UTypes...>>
+{};
 
 template <class... _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(_Tp...) -> tuple<_Tp...>;
