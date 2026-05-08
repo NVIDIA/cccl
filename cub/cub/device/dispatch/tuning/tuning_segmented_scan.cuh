@@ -177,7 +177,11 @@ struct policy_selector
     constexpr int nominal_threads_per_block = 128;
     constexpr int nominal_items_per_thread  = 9;
     constexpr int max_segments_per_block    = 512;
-    constexpr int max_segments_per_warp     = 128;
+    // Per-warp tuning knob. This is intentionally not scaled by the number of
+    // warps in the CTA: the warp agent's temporary storage and work assignment
+    // are defined per warp, and total CTA storage scales with the selected warp
+    // count. A value of 1 selects the smaller single-segment warp kernel.
+    constexpr int max_segments_per_warp = 128;
 
     _CCCL_ASSERT(accum_size > 0, "Accumulator size must be positive");
     _CCCL_ASSERT(accum_align > 0, "Accumulator alignment must be positive");
