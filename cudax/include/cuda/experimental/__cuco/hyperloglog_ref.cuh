@@ -297,7 +297,7 @@ public:
   //! @return The policy
   [[nodiscard]] _CCCL_API constexpr const _Policy& policy() const noexcept
   {
-    return __impl.__get_policy();
+    return __impl.__policy_();
   }
 
   //! @brief Gets the span of the sketch.

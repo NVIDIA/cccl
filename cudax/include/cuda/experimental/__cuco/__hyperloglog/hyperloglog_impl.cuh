@@ -68,8 +68,7 @@ CUDAX_CUCO_DEFINE_STRONG_TYPE(__precision_t, int);
 template <class _Tp, ::cuda::thread_scope _Scope, class _Policy>
 class __hyperloglog_impl
 {
-  using __fp_type         = double; ///< Floating point type used for reduction
-  using __hash_value_type = typename _Policy::hash_result_type; ///< Hash value type
+  using __fp_type = double; ///< Floating point type used for reduction
 
 public:
   using __value_type    = _Tp; ///< Type of items to count
@@ -482,7 +481,7 @@ public:
   //! @brief Gets the policy.
   //!
   //! @return The policy
-  [[nodiscard]] _CCCL_API constexpr const _Policy& __get_policy() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Policy& __policy_() const noexcept
   {
     return __policy;
   }

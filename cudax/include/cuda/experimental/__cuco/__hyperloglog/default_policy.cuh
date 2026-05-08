@@ -116,7 +116,7 @@ struct default_hll_policy
   //! @return The bias-corrected cardinality estimate.
   [[nodiscard]] static _CCCL_API constexpr ::cuda::std::size_t finalize(double __z, int __v, int __precision) noexcept
   {
-    return __hyperloglog_ns::hll_plus_plus_finalizer{__precision}(__z, __v);
+    return __hyperloglog_ns::hllpp_finalizer{__precision}(__z, __v);
   }
 };
 } // namespace cuda::experimental::cuco

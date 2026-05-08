@@ -41,7 +41,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf
 //! @note Precision must be >= 4.
 //!
-class hll_plus_plus_finalizer
+class hllpp_finalizer
 {
   // Note: Most of the types in this implementation are explicit instead of relying on `auto` to
   // avoid confusion with the reference implementation.
@@ -50,7 +50,7 @@ public:
   //! @brief Constructs an HLL finalizer object.
   //!
   //! @param __precision_ HLL precision parameter
-  _CCCL_API constexpr hll_plus_plus_finalizer(int __precision_) noexcept
+  _CCCL_API constexpr hllpp_finalizer(int __precision_) noexcept
       : __precision{__precision_}
       , __m{static_cast<int>(1u << __precision_)}
   {
