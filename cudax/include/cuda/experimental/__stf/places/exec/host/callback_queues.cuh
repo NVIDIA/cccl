@@ -321,7 +321,7 @@ inline void cudagraph_callback_dispatcher(void* userData)
 
 // There is likely a more efficient way in the current implementation of callbacks !
 template <typename = void>
-__global__ void callback_completion_kernel(int* completion_flag)
+_CCCL_KERNEL_ATTRIBUTES void callback_completion_kernel(int* completion_flag)
 {
   // Loop until *completion_flag == 1
   while (1 != (atomicCAS(completion_flag, 1, 1)))

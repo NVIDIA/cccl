@@ -56,7 +56,7 @@ namespace reserved
  * @param p The additional parameters to pass to the function `f`.
  */
 template <typename F, typename shape_t, typename tuple_args>
-__global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs)
+_CCCL_KERNEL_ATTRIBUTES void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs)
 {
   size_t i          = blockIdx.x * blockDim.x + threadIdx.x;
   const size_t step = blockDim.x * gridDim.x;
@@ -262,7 +262,7 @@ private:
 };
 
 template <typename tuple_args, typename tuple_ops>
-__global__ void loop_redux_empty_shape(tuple_args targs)
+_CCCL_KERNEL_ATTRIBUTES void loop_redux_empty_shape(tuple_args targs)
 {
   // A buffer to store reduction variables
   redux_vars<tuple_args, tuple_ops> res;
@@ -276,7 +276,7 @@ __global__ void loop_redux_empty_shape(tuple_args targs)
 
 /* the redux_buffer is an array of tuples of which sizes corresponds to the number of CUDA blocks */
 template <typename F, typename shape_t, typename tuple_args, typename tuple_ops>
-__global__ void loop_redux(
+_CCCL_KERNEL_ATTRIBUTES void loop_redux(
   const _CCCL_GRID_CONSTANT size_t n,
   shape_t shape,
   F f,
@@ -343,7 +343,7 @@ __global__ void loop_redux(
 }
 
 template <typename tuple_args, typename tuple_ops>
-__global__ void
+_CCCL_KERNEL_ATTRIBUTES void
 loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_buffer, size_t nredux_buffer)
 {
   // This tuple in shared memory contains either an empty type for "regular"

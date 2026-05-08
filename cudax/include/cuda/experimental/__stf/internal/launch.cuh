@@ -39,7 +39,7 @@ class stream_task;
 namespace reserved
 {
 template <typename Fun, typename Arg>
-__global__ void launch_kernel(Fun f, Arg arg)
+_CCCL_KERNEL_ATTRIBUTES void launch_kernel(Fun f, Arg arg)
 {
   ::std::apply(mv(f), mv(arg));
 }

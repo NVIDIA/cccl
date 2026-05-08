@@ -48,7 +48,7 @@ namespace execution
 {
 template <int _ThreadsPerBlock, class _Tag, class _Rcvr>
 //_CCCL_VISIBILITY_HIDDEN
-__launch_bounds__(_ThreadsPerBlock) __global__ void __stream_complete(_Tag, _Rcvr* __rcvr)
+__launch_bounds__(_ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void __stream_complete(_Tag, _Rcvr* __rcvr)
 {
   _Tag{}(static_cast<_Rcvr&&>(*__rcvr));
 }
