@@ -150,8 +150,8 @@ private:
 
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::int32_t __interpolation_anchor_index(double __e) const noexcept
   {
-    const auto __estimates = __raw_estimate_data(__precision);
-    const auto __n         = static_cast<::cuda::std::int32_t>(__raw_estimate_data_size(__precision));
+    const auto __estimates       = __raw_estimate_data(__precision);
+    const auto __n               = static_cast<::cuda::std::int32_t>(__raw_estimate_data_size(__precision));
     ::cuda::std::int32_t __left  = 0;
     ::cuda::std::int32_t __right = __n - 1;
 
