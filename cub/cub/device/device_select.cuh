@@ -331,9 +331,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -354,48 +351,35 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename FlagIterator,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename NumItemsT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-    void
+            void
 #else
-    ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-    ,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                               && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-                             int> = 0>
+            ,
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<InputIteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
+              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return select_impl<tuning_t, SelectImpl::Select>(
-        storage,
-        bytes,
-        d_in,
-        d_flags,
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        NullType{},
-        stream);
+        storage, bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, NullType{}, NullType{}, stream);
     });
   }
 
@@ -440,9 +424,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -460,40 +441,32 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename IteratorT,
-            typename FlagIterator,
-            typename NumSelectedIteratorT,
-            typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <
+    typename IteratorT,
+    typename FlagIterator,
+    typename NumSelectedIteratorT,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-            void
+    void
 #else
-            ::cuda::std::execution::env<>
+    ::cuda::std::execution::env<>
 #endif
-            ,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>
-                                       && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-                                     int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
-    IteratorT d_data, FlagIterator d_flags, NumSelectedIteratorT d_num_selected_out, NumItemsT num_items, EnvT env = {})
+    ,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
+                             int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Flagged(IteratorT d_data,
+          FlagIterator d_flags,
+          NumSelectedIteratorT d_num_selected_out,
+          ::cuda::std::int64_t num_items,
+          EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
-        storage,
-        bytes,
-        d_data,
-        d_flags,
-        d_data,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        NullType{},
-        stream);
+        storage, bytes, d_data, d_flags, d_data, d_num_selected_out, num_items, NullType{}, NullType{}, stream);
     });
   }
 
@@ -541,9 +514,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -565,31 +535,27 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-    void
+            void
 #else
-    ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-    ,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
-                             int> = 0>
+            ,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     NumItemsT num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
      EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -601,7 +567,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_out,
         d_num_selected_out,
-        static_cast<offset_t>(num_items),
+        num_items,
         select_op,
         NullType{},
         stream);
@@ -647,9 +613,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -667,25 +630,25 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename IteratorT,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-    void
+            void
 #else
-    ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-    ,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
+            ,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(IteratorT d_data, NumSelectedIteratorT d_num_selected_out, NumItemsT num_items, SelectOp select_op, EnvT env = {})
+  If(IteratorT d_data,
+     NumSelectedIteratorT d_num_selected_out,
+     ::cuda::std::int64_t num_items,
+     SelectOp select_op,
+     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
@@ -696,7 +659,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_data,
         d_num_selected_out,
-        static_cast<offset_t>(num_items),
+        num_items,
         select_op,
         NullType{},
         stream);
@@ -1334,9 +1297,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -1361,48 +1321,34 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename FlagIterator,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-    void
+            void
 #else
-    ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-    ,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
-                             int> = 0>
+            ,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     InputIteratorT d_in,
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     SelectOp select_op,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
 
-    using offset_t = ::cuda::std::int64_t;
-
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return select_impl<tuning_t, SelectImpl::Select>(
-        storage,
-        bytes,
-        d_in,
-        d_flags,
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        NullType{},
-        stream);
+        storage, bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, select_op, NullType{}, stream);
     });
   }
 
@@ -1452,9 +1398,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -1475,45 +1418,32 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename IteratorT,
-    typename FlagIterator,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <typename IteratorT,
+            typename FlagIterator,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-    void
+            void
 #else
-    ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-    ,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
+            ,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     IteratorT d_data,
     FlagIterator d_flags,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     SelectOp select_op,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
-        storage,
-        bytes,
-        d_data,
-        d_flags,
-        d_data,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        NullType{},
-        stream);
+        storage, bytes, d_data, d_flags, d_data, d_num_selected_out, num_items, select_op, NullType{}, stream);
     });
   }
 
@@ -1559,9 +1489,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -1580,31 +1507,27 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename NumItemsT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-    void
+            void
 #else
-    ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-    ,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                               && !::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>,
-                             int> = 0>
+            ,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>
+                                       && !::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>,
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Unique(InputIteratorT d_in,
          OutputIteratorT d_out,
          NumSelectedIteratorT d_num_selected_out,
-         NumItemsT num_items,
+         ::cuda::std::int64_t num_items,
          EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
-
-    using offset_t = ::cuda::std::int64_t;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
@@ -1615,7 +1538,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_out,
         d_num_selected_out,
-        static_cast<offset_t>(num_items),
+        num_items,
         NullType{},
         ::cuda::std::equal_to<>{},
         stream);
@@ -1663,9 +1586,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Type of equality_op
   //!
@@ -1696,7 +1616,6 @@ public:
     typename InputIteratorT,
     typename OutputIteratorT,
     typename NumSelectedIteratorT,
-    typename NumItemsT,
     typename EqualityOpT,
     typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
@@ -1705,20 +1624,18 @@ public:
     ::cuda::std::execution::env<>
 #endif
     ,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>
                                && ::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     EqualityOpT equality_op,
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
-
-    using offset_t = ::cuda::std::int64_t;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
@@ -1729,7 +1646,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_out,
         d_num_selected_out,
-        static_cast<offset_t>(num_items),
+        num_items,
         NullType{},
         equality_op,
         stream);
