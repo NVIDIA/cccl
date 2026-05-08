@@ -291,7 +291,7 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 // 3. Fallback without any attributes.
 
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void
+_CCCL_KERNEL_ATTRIBUTES static void
 // todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters directive is
 // fixed.
 //
@@ -316,8 +316,9 @@ __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Ker
 }
 
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
-__kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+_CCCL_KERNEL_ATTRIBUTES static void
+  _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
+  __kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
 
@@ -332,7 +333,8 @@ __kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _
 }
 
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+_CCCL_KERNEL_ATTRIBUTES static void
+__kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
 
