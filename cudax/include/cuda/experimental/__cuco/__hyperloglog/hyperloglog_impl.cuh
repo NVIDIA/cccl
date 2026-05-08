@@ -88,7 +88,7 @@ public:
   static constexpr auto __thread_scope = _Scope; ///< CUDA thread scope
 
   template <::cuda::thread_scope _NewScope>
-  using __with_scope = __hyperloglog_impl<_Tp, _NewScope, _Policy>; ///< Ref type with different thread scope
+  using __rebind_scope = __hyperloglog_impl<_Tp, _NewScope, _Policy>; ///< Ref type with different thread scope
 
   //! @brief Constructs a non-owning `__hyperloglog_impl` object.
   //!

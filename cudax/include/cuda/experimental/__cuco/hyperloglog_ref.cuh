@@ -86,7 +86,7 @@ public:
   using precision = ::cuda::experimental::cuco::__precision_t;
 
   template <::cuda::thread_scope _NewScope>
-  using with_scope = hyperloglog_ref<_Tp, _NewScope, _Policy>; ///< Ref type with different thread scope
+  using rebind_scope = hyperloglog_ref<_Tp, _NewScope, _Policy>; ///< Ref type with different thread scope
 
   //! @brief Constructs a non-owning `hyperloglog_ref` object.
   //!
