@@ -304,6 +304,8 @@ public:
 private:
   template <typename, int, int, typename>
   friend class WarpBitonicSort;
+  template <int, typename, typename>
+  friend class WarpBitonicTopK;
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
@@ -516,6 +518,8 @@ public:
 private:
   template <typename, int, int, typename>
   friend class WarpBitonicSort;
+  template <int, typename, typename>
+  friend class WarpBitonicTopK;
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
