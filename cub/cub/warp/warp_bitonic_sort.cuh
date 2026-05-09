@@ -240,6 +240,8 @@ public:
 private:
   template <int, typename, typename>
   friend class WarpBitonicSort;
+  template <int, typename, typename>
+  friend class WarpBitonicTopK;
 
   static constexpr int WARP_THREADS_ = detail::warp_threads;
   static constexpr bool KEYS_ONLY_   = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -460,6 +462,8 @@ public:
 private:
   template <int, typename, typename>
   friend class WarpBitonicSort;
+  template <int, typename, typename>
+  friend class WarpBitonicTopK;
 
   static constexpr int WARP_THREADS_            = detail::warp_threads;
   static constexpr unsigned int FULL_WARP_MASK_ = 0xFFFFFFFFu;
