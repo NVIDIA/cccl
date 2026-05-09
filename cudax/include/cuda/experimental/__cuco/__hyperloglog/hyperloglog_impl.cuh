@@ -169,12 +169,12 @@ public:
   _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
     constexpr auto __hash_bits = ::cuda::std::numeric_limits<__hash_value_type>::digits;
-    const auto __h             = __hash(__item);
+    const auto __h             = this->__hash(__item);
     const auto __reg           = static_cast<int>(__h >> (__hash_bits - __precision));
     const auto __w_padding     = __hash_value_type{1} << static_cast<__hash_value_type>(__precision - 1);
     const auto __zeroes        = ::cuda::std::countl_zero((__h << __precision) | __w_padding) + 1;
 
-    __update_max(__reg, __zeroes);
+    this->__update_max(__reg, __zeroes);
   }
 
   //! @brief Asynchronously adds to be counted items to the estimator.
