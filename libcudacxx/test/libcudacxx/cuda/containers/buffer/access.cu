@@ -23,11 +23,35 @@
 #include "helper.h"
 #include "types.h"
 
+template <class T, class = void>
+inline constexpr bool has_at = false;
+template <class T>
+inline constexpr bool has_at<T, cuda::std::void_t<decltype(cuda::std::declval<T>().at(cuda::std::size_t{}))>> = true;
+
+template <class T, class = void>
+inline constexpr bool has_index_operator = false;
+template <class T>
+inline constexpr bool has_index_operator<T, cuda::std::void_t<decltype(cuda::std::declval<T>()[cuda::std::size_t{}])>> =
+  true;
+
+template <class T, class = void>
+inline constexpr bool has_front = false;
+template <class T>
+inline constexpr bool has_front<T, cuda::std::void_t<decltype(cuda::std::declval<T>().front())>> = true;
+
+template <class T, class = void>
+inline constexpr bool has_back = false;
+template <class T>
+inline constexpr bool has_back<T, cuda::std::void_t<decltype(cuda::std::declval<T>().back())>> = true;
+
 C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_types)
 {
-  using Buffer   = c2h::get<0, TestType>;
-  using Resource = typename extract_properties<Buffer>::resource;
-  using T        = typename Buffer::value_type;
+  using Buffer         = c2h::get<0, TestType>;
+  using Resource       = typename extract_properties<Buffer>::resource;
+  using T              = typename Buffer::value_type;
+  using PropertiesList = typename Buffer::properties_list;
+
+  constexpr auto is_host_accessible = PropertiesList::has_property(cuda::mr::host_accessible());
 
   if (!extract_properties<Buffer>::is_resource_supported())
   {
@@ -77,6 +101,84 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
       CCCLRT_CHECK(buf.data() != nullptr);
       CCCLRT_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CCCLRT_CHECK(cuda::std::as_const(buf).data() == buf.data());
+    }
+  }
+
+  SECTION("cuda::buffer::at")
+  {
+    static_assert(has_at<Buffer> == is_host_accessible);
+
+    if constexpr (is_host_accessible)
+    {
+      Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+      buf.stream().sync();
+
+      decltype(auto) v1 = buf.at(0);
+      static_assert(cuda::std::is_same_v<decltype(v1), T&>);
+      CCCLRT_CHECK(v1 == T(1));
+
+      decltype(auto) v2 = cuda::std::as_const(buf).at(3);
+      static_assert(cuda::std::is_same_v<decltype(v2), const T&>);
+      CCCLRT_CHECK(v2 == T(4));
+
+      CHECK_THROWS_AS((buf.at(4)), std::out_of_range);
+    }
+  }
+
+  SECTION("cuda::buffer::operator[]")
+  {
+    static_assert(has_index_operator<Buffer> == is_host_accessible);
+
+    if constexpr (is_host_accessible)
+    {
+      Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+      buf.stream().sync();
+
+      decltype(auto) v1 = buf[0];
+      static_assert(cuda::std::is_same_v<decltype(v1), T&>);
+      CCCLRT_CHECK(v1 == T(1));
+
+      decltype(auto) v2 = cuda::std::as_const(buf)[3];
+      static_assert(cuda::std::is_same_v<decltype(v2), const T&>);
+      CCCLRT_CHECK(v2 == T(4));
+    }
+  }
+
+  SECTION("cuda::buffer::front")
+  {
+    static_assert(has_front<Buffer> == is_host_accessible);
+
+    if constexpr (is_host_accessible)
+    {
+      Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+      buf.stream().sync();
+
+      decltype(auto) v1 = buf.front();
+      static_assert(cuda::std::is_same_v<decltype(v1), T&>);
+      CCCLRT_CHECK(v1 == T(1));
+
+      decltype(auto) v2 = cuda::std::as_const(buf).front();
+      static_assert(cuda::std::is_same_v<decltype(v2), const T&>);
+      CCCLRT_CHECK(v2 == T(1));
+    }
+  }
+
+  SECTION("cuda::buffer::back")
+  {
+    static_assert(has_back<Buffer> == is_host_accessible);
+
+    if constexpr (is_host_accessible)
+    {
+      Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+      buf.stream().sync();
+
+      decltype(auto) v1 = buf.back();
+      static_assert(cuda::std::is_same_v<decltype(v1), T&>);
+      CCCLRT_CHECK(v1 == T(4));
+
+      decltype(auto) v2 = cuda::std::as_const(buf).back();
+      static_assert(cuda::std::is_same_v<decltype(v2), const T&>);
+      CCCLRT_CHECK(v2 == T(4));
     }
   }
 
