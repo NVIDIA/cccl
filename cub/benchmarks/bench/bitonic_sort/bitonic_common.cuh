@@ -7,6 +7,7 @@
 
 #include <cuda/std/limits>
 
+#include <cstddef>
 #include <string>
 
 #include <device_side_benchmark.cuh>
@@ -18,23 +19,23 @@ inline constexpr int num_iterations_for_throughput_mode = 10;
 inline constexpr int block_dim_for_throughput_mode      = 128;
 inline constexpr int grid_threads_for_throughput_mode   = 1 << 27;
 
-enum class Mode
+enum class BenchMode
 {
   // launch a single warp
   Latency,
-  // launch grid_threads_for_throughput_mode threads. Measure Elem/s.
+  // launch grid_threads_for_throughput_mode threads and report Elem/s.
   Throughput
 };
 
 NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
-  Mode,
+  BenchMode,
   // Callable to generate input strings:
-  [](Mode value) {
+  [](BenchMode value) {
     switch (value)
     {
-      case Mode::Latency:
+      case BenchMode::Latency:
         return "latency";
-      case Mode::Throughput:
+      case BenchMode::Throughput:
         return "throughput";
       default:
         return "Unknown";
@@ -45,33 +46,82 @@ NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
     return std::string{};
   })
 
-template <typename ActionT, Mode ModeValue, typename KeyT, typename ValueT, int Len>
+struct RunParams
+{
+  int grid_dim;
+  int block_dim;
+  int num_iterations;
+};
+
+template <BenchMode Mode>
+[[nodiscard]] constexpr RunParams calc_run_params()
+{
+  if constexpr (Mode == BenchMode::Latency)
+  {
+    return {1, warp_threads, num_iterations_for_latency_mode};
+  }
+  else
+  {
+    return {grid_threads_for_throughput_mode / block_dim_for_throughput_mode,
+            block_dim_for_throughput_mode,
+            num_iterations_for_throughput_mode};
+  }
+}
+
+template <BenchMode Mode>
+[[nodiscard]] constexpr RunParams calc_topk_run_params(int items_per_warp)
+{
+  RunParams result = calc_run_params<Mode>();
+  if constexpr (Mode == BenchMode::Throughput)
+  {
+    // Scale the grid inversely with input length because TopK throughput runs are long and stable.
+    result.grid_dim /= items_per_warp / warp_threads;
+  }
+  return result;
+}
+
+[[nodiscard]] constexpr std::size_t count_items(const RunParams& run_params, int items_per_warp)
+{
+  return static_cast<std::size_t>(run_params.grid_dim) * (run_params.block_dim / warp_threads) * items_per_warp
+       * run_params.num_iterations;
+}
+
+template <typename ActionT, BenchMode Mode, typename KeyT, typename ValueT, int Len>
 void run_bench(nvbench::state& state)
 {
   constexpr int items_per_thread = Len / warp_threads;
   const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int>;
+  constexpr RunParams run_params = calc_run_params<Mode>();
 
-  int block_dim;
-  int grid_dim;
-  int num_iterations;
-  if (ModeValue == Mode::Latency)
+  state.add_element_count(count_items(run_params, Len));
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    kernel<<<run_params.grid_dim, run_params.block_dim, 0, launch.get_stream()>>>(
+      run_params.num_iterations, ActionT{}, Len);
+  });
+}
+
+template <typename ActionT, BenchMode Mode, typename KeyT, typename ValueT, int Len, int MaxK>
+void run_topk_bench(nvbench::state& state, int valid_items)
+{
+  static_assert(MaxK >= 1);
+  if constexpr (MaxK > Len)
   {
-    block_dim      = warp_threads;
-    grid_dim       = 1;
-    num_iterations = num_iterations_for_latency_mode;
+    state.skip("Skipping workload where max_k > len.");
   }
   else
   {
-    block_dim      = block_dim_for_throughput_mode;
-    grid_dim       = grid_threads_for_throughput_mode / block_dim;
-    num_iterations = num_iterations_for_throughput_mode;
+    constexpr int items_per_thread = Len / warp_threads;
+    const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int>;
+    constexpr RunParams run_params = calc_topk_run_params<Mode>(Len);
+
+    state.add_element_count(count_items(run_params, valid_items));
+
+    state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+      kernel<<<run_params.grid_dim, run_params.block_dim, 0, launch.get_stream()>>>(
+        run_params.num_iterations, ActionT{}, valid_items);
+    });
   }
-
-  state.add_element_count(static_cast<size_t>(grid_dim) * (block_dim / warp_threads) * Len * num_iterations);
-
-  state.exec([grid_dim, block_dim, kernel, num_iterations](nvbench::launch& launch) {
-    kernel<<<grid_dim, block_dim, 0, launch.get_stream()>>>(num_iterations, ActionT{}, Len);
-  });
 }
 
 struct CustomLess
