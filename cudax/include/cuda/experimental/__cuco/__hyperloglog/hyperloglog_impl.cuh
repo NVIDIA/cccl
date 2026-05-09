@@ -162,7 +162,7 @@ public:
   _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
     const auto __h = __policy.hash(__item);
-    __update_max(__policy.register_index(__h, __precision), __policy.register_value(__h, __precision));
+    this->__update_max(__policy.register_index(__h, __precision), __policy.register_value(__h, __precision));
   }
 
   //! @brief Asynchronously adds to be counted items to the estimator.

@@ -120,19 +120,19 @@ private:
   [[nodiscard]] _CCCL_API constexpr double __bias(double __e) const noexcept
   {
     const auto __anchor_index = __interpolation_anchor_index(__e);
-    const auto __n            = static_cast<::cuda::std::int32_t>(__raw_estimate_data_size(__precision));
+    const auto __n = static_cast<::cuda::std::int32_t>(__hyperloglog_ns::__raw_estimate_data_size(__precision));
 
     auto __low  = ::cuda::std::max(__anchor_index - __k + 1, ::cuda::std::int32_t{0});
     auto __high = ::cuda::std::min(__low + __k, __n);
     // Keep moving bounds as long as the (exclusive) high bound is closer to the estimate than
     // the lower (inclusive) bound.
-    while (__high < __n && __distance(__e, __high) < __distance(__e, __low))
+    while (__high < __n && this->__distance(__e, __high) < this->__distance(__e, __low))
     {
       __low += 1;
       __high += 1;
     }
 
-    const auto __biases = __bias_data(__precision);
+    const auto __biases = __hyperloglog_ns::__bias_data(__precision);
     double __bias_sum   = 0.0;
     for (::cuda::std::int32_t __i = __low; __i < __high; ++__i)
     {
@@ -144,14 +144,14 @@ private:
 
   [[nodiscard]] _CCCL_API constexpr double __distance(double __e, ::cuda::std::int32_t __i) const noexcept
   {
-    const auto __diff = __e - __raw_estimate_data(__precision)[__i];
+    const auto __diff = __e - __hyperloglog_ns::__raw_estimate_data(__precision)[__i];
     return __diff * __diff;
   }
 
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::int32_t __interpolation_anchor_index(double __e) const noexcept
   {
-    const auto __estimates       = __raw_estimate_data(__precision);
-    const auto __n               = static_cast<::cuda::std::int32_t>(__raw_estimate_data_size(__precision));
+    const auto __estimates = __hyperloglog_ns::__raw_estimate_data(__precision);
+    const auto __n         = static_cast<::cuda::std::int32_t>(__hyperloglog_ns::__raw_estimate_data_size(__precision));
     ::cuda::std::int32_t __left  = 0;
     ::cuda::std::int32_t __right = __n - 1;
 
