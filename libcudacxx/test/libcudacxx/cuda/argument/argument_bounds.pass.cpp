@@ -21,7 +21,7 @@ TEST_FUNC constexpr bool test()
   // Basic static bounds
   {
     constexpr auto b = cuda::static_argument_bounds<1, 4096>{};
-    static_assert(b.min == 1);
+    static_assert(b.lowest == 1);
     static_assert(b.max == 4096);
     static_assert(cuda::std::is_same_v<decltype(b)::value_type, int>);
   }
@@ -29,7 +29,7 @@ TEST_FUNC constexpr bool test()
   // Exact static bounds
   {
     constexpr auto b = cuda::static_argument_bounds<42, 42>{};
-    static_assert(b.min == 42);
+    static_assert(b.lowest == 42);
     static_assert(b.max == 42);
   }
 
@@ -44,7 +44,7 @@ TEST_FUNC constexpr bool test()
   // Basic runtime bounds
   {
     auto b = cuda::runtime_argument_bounds{10, 100};
-    assert(b.min == 10);
+    assert(b.lowest == 10);
     assert(b.max == 100);
     static_assert(cuda::std::is_same_v<decltype(b)::value_type, int>);
   }
@@ -54,7 +54,7 @@ TEST_FUNC constexpr bool test()
   // Static via factory
   {
     constexpr auto b = cuda::argument_bounds<1, 8>();
-    static_assert(b.min == 1);
+    static_assert(b.lowest == 1);
     static_assert(b.max == 8);
     static_assert(cuda::__is_static_argument_bounds_cv_v<decltype(b)>);
     static_assert(!cuda::__is_runtime_argument_bounds_cv_v<decltype(b)>);
@@ -64,7 +64,7 @@ TEST_FUNC constexpr bool test()
   // Runtime via factory
   {
     auto b = cuda::argument_bounds(10, 100);
-    assert(b.min == 10);
+    assert(b.lowest == 10);
     assert(b.max == 100);
     static_assert(!cuda::__is_static_argument_bounds_cv_v<decltype(b)>);
     static_assert(cuda::__is_runtime_argument_bounds_cv_v<decltype(b)>);

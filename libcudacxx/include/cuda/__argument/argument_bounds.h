@@ -42,25 +42,25 @@ struct __no_bounds
 //!
 //! The value type is deduced from the non-type template parameters.
 //!
-//! @tparam _Min The static lower bound.
+//! @tparam _Lowest The static lower bound.
 //! @tparam _Max The static upper bound.
-template <auto _Min, auto _Max>
+template <auto _Lowest, auto _Max>
 struct static_argument_bounds
 {
-  static_assert(::cuda::std::is_same_v<decltype(_Min), decltype(_Max)>, "Min and Max must have the same type");
-  static_assert(_Min <= _Max, "Min must be <= Max");
+  static_assert(::cuda::std::is_same_v<decltype(_Lowest), decltype(_Max)>, "Min and Max must have the same type");
+  static_assert(_Lowest <= _Max, "Min must be <= Max");
 
-  using value_type = decltype(_Min);
+  using value_type = decltype(_Lowest);
 
-  static constexpr value_type min = _Min;
-  static constexpr value_type max = _Max;
+  static constexpr value_type lowest = _Lowest;
+  static constexpr value_type max    = _Max;
 };
 
 // Helper to detect static_argument_bounds
 template <class _Tp>
 inline constexpr bool __is_static_argument_bounds_v = false;
-template <auto _Min, auto _Max>
-inline constexpr bool __is_static_argument_bounds_v<static_argument_bounds<_Min, _Max>> = true;
+template <auto _Lowest, auto _Max>
+inline constexpr bool __is_static_argument_bounds_v<static_argument_bounds<_Lowest, _Max>> = true;
 
 // =====================================================================
 // runtime_argument_bounds
@@ -74,16 +74,16 @@ struct runtime_argument_bounds
 {
   using value_type = _Tp;
 
-  _Tp min = ::cuda::std::numeric_limits<_Tp>::lowest();
-  _Tp max = ::cuda::std::numeric_limits<_Tp>::max();
+  _Tp lowest = ::cuda::std::numeric_limits<_Tp>::lowest();
+  _Tp max    = ::cuda::std::numeric_limits<_Tp>::max();
 
   constexpr runtime_argument_bounds() noexcept = default;
 
-  _CCCL_API constexpr runtime_argument_bounds(_Tp __min, _Tp __max) noexcept
-      : min(__min)
+  _CCCL_API constexpr runtime_argument_bounds(_Tp __lowest, _Tp __max) noexcept
+      : lowest(__lowest)
       , max(__max)
   {
-    _CCCL_ASSERT(__min <= __max, "Runtime minimum bound must be <= runtime maximum bound");
+    _CCCL_ASSERT(__lowest <= __max, "Runtime lowest bound must be <= runtime max bound");
   }
 
   static constexpr bool has_runtime_bounds = true; // always true when explicitly constructed; see __no_bounds for
@@ -110,8 +110,8 @@ inline constexpr bool __is_runtime_argument_bounds_v<runtime_argument_bounds<_Tp
 //! @code
 //! cuda::argument_bounds<1, 8>()
 //! @endcode
-template <auto _Min, auto _Max>
-[[nodiscard]] _CCCL_API constexpr static_argument_bounds<_Min, _Max> argument_bounds() noexcept
+template <auto _Lowest, auto _Max>
+[[nodiscard]] _CCCL_API constexpr static_argument_bounds<_Lowest, _Max> argument_bounds() noexcept
 {
   return {};
 }

@@ -48,18 +48,18 @@ TEST_FUNC void test()
   // Bounds: scalar
   {
     constexpr auto sa = cuda::static_argument<42>{};
-    static_assert(cuda::argument_static_min(sa) == 42);
-    static_assert(cuda::argument_static_max(sa) == 42);
-    static_assert(cuda::argument_min(sa) == 42);
+    static_assert(cuda::argument_lowest(sa) == 42);
+    static_assert(cuda::argument_max(sa) == 42);
+    static_assert(cuda::argument_lowest(sa) == 42);
     static_assert(cuda::argument_max(sa) == 42);
   }
 
   // Bounds: array — computes min/max of elements
   {
     constexpr auto sa = cuda::static_argument<cuda::std::array<int, 3>{128, 256, 512}>{};
-    static_assert(cuda::argument_static_min(sa) == 128);
-    static_assert(cuda::argument_static_max(sa) == 512);
-    static_assert(cuda::argument_min(sa) == 128);
+    static_assert(cuda::argument_lowest(sa) == 128);
+    static_assert(cuda::argument_max(sa) == 512);
+    static_assert(cuda::argument_lowest(sa) == 128);
     static_assert(cuda::argument_max(sa) == 512);
   }
 

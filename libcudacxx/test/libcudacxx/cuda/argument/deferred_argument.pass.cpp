@@ -23,8 +23,8 @@ TEST_FUNC constexpr bool test()
     int val  = 42;
     auto def = cuda::deferred_argument{cuda::std::span<int, 1>{&val, 1}};
     assert(def.arg[0] == 42);
-    static_assert(cuda::argument_traits<decltype(def)>::static_min == cuda::std::numeric_limits<int>::lowest());
-    static_assert(cuda::argument_traits<decltype(def)>::static_max == cuda::std::numeric_limits<int>::max());
+    static_assert(cuda::argument_traits<decltype(def)>::lowest == cuda::std::numeric_limits<int>::lowest());
+    static_assert(cuda::argument_traits<decltype(def)>::max == cuda::std::numeric_limits<int>::max());
   }
 
   // Uniform deferred with static bounds
@@ -32,8 +32,8 @@ TEST_FUNC constexpr bool test()
     int val  = 42;
     auto def = cuda::deferred_argument{cuda::std::span<int, 1>{&val, 1}, cuda::argument_bounds<1, 1000>()};
     assert(def.arg[0] == 42);
-    static_assert(cuda::argument_traits<decltype(def)>::static_min == 1);
-    static_assert(cuda::argument_traits<decltype(def)>::static_max == 1000);
+    static_assert(cuda::argument_traits<decltype(def)>::lowest == 1);
+    static_assert(cuda::argument_traits<decltype(def)>::max == 1000);
   }
 
   // Per-segment deferred with both bounds
@@ -41,8 +41,8 @@ TEST_FUNC constexpr bool test()
     int arr[4] = {10, 20, 30, 40};
     auto def   = cuda::deferred_argument{
       cuda::std::span<int>{arr, 4}, cuda::argument_bounds<1, 4096>(), cuda::argument_bounds(5, 100)};
-    static_assert(cuda::argument_traits<decltype(def)>::static_min == 1);
-    assert(cuda::argument_min(def) == 5);
+    static_assert(cuda::argument_traits<decltype(def)>::lowest == 1);
+    assert(cuda::argument_lowest(def) == 5);
     assert(cuda::argument_max(def) == 100);
   }
 
