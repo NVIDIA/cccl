@@ -65,7 +65,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
 {
   constexpr int tile_size = policy_traits<policy_getter<PolicySelector, CUB_PTX_ARCH / 10>>::tile_size;
 
-  const Offset diagonal_idx = static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x);
+  const Offset diagonal_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
   if (diagonal_idx < num_diagonals)
   {
     const Offset diagonal =
@@ -151,7 +151,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     using traits_t = policy_traits<decltype(policy_getter)>;
 
     const Offset total_items   = range_count + values_count;
-    const Offset num_tiles     = ::cuda::ceil_div(total_items, static_cast<Offset>(traits_t::tile_size));
+    const Offset num_tiles     = ::cuda::ceil_div(total_items, Offset{traits_t::tile_size});
     const Offset num_diagonals = num_tiles + 1;
 
     void* allocations[1]             = {nullptr};
@@ -175,7 +175,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       // Lightweight pass; not worth exposing through the tuning system.
       constexpr int threads_per_partition_block = 256;
       const int partition_grid_size =
-        static_cast<int>(::cuda::ceil_div(num_diagonals, static_cast<Offset>(threads_per_partition_block)));
+        static_cast<int>(::cuda::ceil_div(num_diagonals, Offset{threads_per_partition_block}));
 
       if (const auto error = CubDebug(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(

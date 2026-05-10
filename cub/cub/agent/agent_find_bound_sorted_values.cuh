@@ -117,7 +117,7 @@ struct agent_t
     const int needles_count  = total_in_tile - haystack_count;
 
     {
-      auto d_range_cm = try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
+      const auto d_range_cm = try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
       for (int i = threadIdx.x; i < haystack_count; i += BlockThreads)
       {
         storage.haystack[i] = d_range_cm[i];
