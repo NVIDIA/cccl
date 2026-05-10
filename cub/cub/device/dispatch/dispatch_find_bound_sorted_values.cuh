@@ -22,13 +22,14 @@
 #include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_empty.h>
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 #  include <sstream>
@@ -55,12 +56,12 @@ using partition_comp_op_t = typename Mode::template partition_comp_t<CompareOp>;
 // Computes the merge path intersections at equally wide intervals (Odeh et al, IPDPS 2012).
 template <typename PolicySelector, typename HaystackIt, typename NeedlesIt, typename Offset, typename PartitionCompOp>
 _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
-  HaystackIt d_range,
-  Offset range_count,
-  NeedlesIt d_values,
-  Offset values_count,
-  Offset num_diagonals,
-  Offset* range_beg_offsets,
+  _CCCL_GRID_CONSTANT const HaystackIt d_range,
+  _CCCL_GRID_CONSTANT const Offset range_count,
+  _CCCL_GRID_CONSTANT const NeedlesIt d_values,
+  _CCCL_GRID_CONSTANT const Offset values_count,
+  _CCCL_GRID_CONSTANT const Offset num_diagonals,
+  _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
   PartitionCompOp partition_comp)
 {
   constexpr int tile_size = policy_traits<policy_getter<PolicySelector, CUB_PTX_ARCH / 10>>::tile_size;
@@ -84,12 +85,12 @@ template <typename PolicySelector,
           typename CompareOp>
 __launch_bounds__(policy_traits<policy_getter<PolicySelector, CUB_PTX_ARCH / 10>>::block_threads)
   _CCCL_KERNEL_ATTRIBUTES void device_find_bound_sorted_values_kernel(
-    HaystackIt d_range,
-    NeedlesIt d_values,
-    OutputIt d_output,
-    Offset range_count,
-    Offset values_count,
-    Offset* range_beg_offsets,
+    _CCCL_GRID_CONSTANT const HaystackIt d_range,
+    _CCCL_GRID_CONSTANT const NeedlesIt d_values,
+    _CCCL_GRID_CONSTANT const OutputIt d_output,
+    _CCCL_GRID_CONSTANT const Offset range_count,
+    _CCCL_GRID_CONSTANT const Offset values_count,
+    _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
     CompareOp comp)
 {
   using traits_t = policy_traits<policy_getter<PolicySelector, CUB_PTX_ARCH / 10>>;
@@ -139,7 +140,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
       NV_IS_HOST,

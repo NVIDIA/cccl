@@ -89,18 +89,18 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues works", "[find][device][binary-sear
 
 C2H_TEST("DeviceFind::LowerBoundSortedValues input sizes", "[find][device][binary-search]")
 {
-  using value_type            = int;
-  const auto range_num_items  = std::size_t{GENERATE(0, 1, 23, 123, 3234)};
-  const auto values_num_items = std::size_t{GENERATE(0, 1, 52, 556, 5676)};
+  using value_type                   = int;
+  const std::size_t range_num_items  = GENERATE(0, 1, 23, 123, 3234);
+  const std::size_t values_num_items = GENERATE(0, 1, 52, 556, 5676);
   CAPTURE(range_num_items, values_num_items);
   test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, range_num_items, values_num_items);
 }
 
 C2H_TEST("DeviceFind::UpperBoundSortedValues input sizes", "[find][device][binary-search]")
 {
-  using value_type            = int;
-  const auto range_num_items  = std::size_t{GENERATE(0, 1, 23, 123, 3234)};
-  const auto values_num_items = std::size_t{GENERATE(0, 1, 52, 556, 5676)};
+  using value_type                   = int;
+  const std::size_t range_num_items  = GENERATE(0, 1, 23, 123, 3234);
+  const std::size_t values_num_items = GENERATE(0, 1, 52, 556, 5676);
   CAPTURE(range_num_items, values_num_items);
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, range_num_items, values_num_items);
 }
