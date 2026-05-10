@@ -68,8 +68,7 @@ inline int get_device_from_stream(cudaStream_t stream)
 #else
   auto stream_driver = CUstream(stream);
 
-  CUcontext ctx;
-  cuda_try(cuStreamGetCtx(stream_driver, &ctx));
+  CUcontext ctx = cuda_try<cuStreamGetCtx>(stream_driver);
 
   cuda_try(cuCtxPushCurrent(ctx));
   CUdevice stream_dev = cuda_try<cuCtxGetDevice>();

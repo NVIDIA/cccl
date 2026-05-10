@@ -432,16 +432,16 @@ auto cuda_try(Ps&&... ps)
 }
 
 #ifdef UNITTESTED_FILE
-inline int test_first_output_param(int* out)
+inline cudaError_t test_first_output_param(int* out)
 {
   *out = 1;
-  return 0;
+  return cudaSuccess;
 }
 
-inline int test_last_output_param(double in, int* out)
+inline cudaError_t test_last_output_param(double in, int* out)
 {
   *out = static_cast<int>(in);
-  return 0;
+  return cudaSuccess;
 }
 
 UNITTEST("cuda_try2")
