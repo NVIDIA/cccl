@@ -471,27 +471,24 @@ class this_grid : __this_group_base<grid_level, _Hierarchy>
       }
 
       unsigned __old_barrier_value;
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_70,
-        ({
-          asm volatile("atom.add.release.gpu.u32 %0, [%1], %2;"
-                       : "=r"(__old_barrier_value)
-                       : "l"(__barrier_ptr), "r"(__nblocks)
-                       : "memory");
-          unsigned __curr_barrier_value;
-          do
-          {
-            asm volatile("ld.acquire.gpu.u32 %0, [%1];" : "=r"(__curr_barrier_value) : "l"(__barrier_ptr) : "memory");
-          } while (static_cast<int>(__old_barrier_value) < 0 == static_cast<int>(__curr_barrier_value) < 0);
-        }),
-        ({
-          ::__threadfence();
-          __old_barrier_value = ::atomicAdd(__barrier_ptr, __nblocks);
-          while (static_cast<int>(__old_barrier_value) < 0 == static_cast<int>(*__barrier_ptr) < 0)
-          {
-          }
-          ::__threadfence();
-        }))
+#    if _CCCL_HAS_NV_ATOMIC_BUILTINS()
+      __old_barrier_value =
+        __nv_atomic_fetch_add(__barrier_ptr, __nblocks, __NV_ATOMIC_RELEASE, __NV_THREAD_SCOPE_DEVICE);
+#    else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
+      asm volatile("atom.add.release.gpu.u32 %0, [%1], %2;"
+                   : "=r"(__old_barrier_value)
+                   : "l"(__barrier_ptr), "r"(__nblocks)
+                   : "memory");
+#    endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
+      unsigned __curr_barrier_value;
+      do
+      {
+#    if _CCCL_HAS_NV_ATOMIC_BUILTINS()
+        __nv_atomic_load(__barrier_ptr, &__curr_barrier_value, __NV_ATOMIC_ACQUIRE, __NV_THREAD_SCOPE_DEVICE);
+#    else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
+        asm volatile("ld.acquire.gpu.u32 %0, [%1];" : "=r"(__curr_barrier_value) : "l"(__barrier_ptr) : "memory");
+#    endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
+      } while (static_cast<int>(__old_barrier_value) < 0 == static_cast<int>(__curr_barrier_value) < 0);
     }
 
     // Wait for the thread 0 to finish the inter block synchronization.
