@@ -416,7 +416,15 @@ private:
       // compute scan
       if (chunk_id == 0)
       {
-        const auto augmented_init_value = augmented_value_t{initial_value, false};
+        hv_t augmented_init_value{};
+        if constexpr (has_init)
+        {
+          augmented_init_value = convert_initial_value<hv_t>(augmented_value_t{initial_value, false});
+        }
+        else
+        {
+          augmented_init_value = hv_t{AccumT{}, false};
+        }
         // Initialize exclusive_prefix
         scan_first_tile(items, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
