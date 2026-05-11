@@ -22,19 +22,13 @@ static const char* k_source = R"(
 
 #include <cuda_runtime.h>
 
-#ifdef _WIN32
-#  define EXPORT __declspec(dllexport)
-#else
-#  define EXPORT __attribute__((visibility("default")))
-#endif
-
 __global__ void device_kernel(int* ptr)
 {
   ::cuda::std::initializer_list<::std::size_t> meow {42ull, 1337ull};
   *ptr = static_cast<int>(::std::move(*meow.begin()));
 }
 
-extern "C" EXPORT void host_entry(int* ptr)
+extern "C" _CCCL_VISIBILITY_EXPORT void host_entry(int* ptr)
 {
   device_kernel<<<1, 1>>>(ptr);
 }

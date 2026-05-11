@@ -46,33 +46,11 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(1);
 
-  // FIXME(bgruber): the previous implementation did target cub::DispatchReduce, and provided T as accumulator type.
-  // This is not realistic, since a user cannot override the accumulator type the same way at the public API. For
-  // example, reducing I8 over cuda::std::plus deduces accumulator type I32 at the public API, but the benchmark forces
-  // it to I8. This skews the MemBoundScaling, leading to 20% regression for the same tuning when the public API is
-  // called (with accum_t I32) over the benchmark (forced accum_t of I8). See also:
-  // https://github.com/NVIDIA/cccl/issues/6576
-#if 0
-  auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = ::cuda::std::execution::env{
-      ::cuda::stream_ref{launch.get_stream().get_stream()},
-      mr
-#  if !TUNE_BASE
-      ,
-      ::cuda::execution::tune(policy_selector<T>{})
-#  endif
-    };
-    static_assert(::cuda::std::execution::__queryable_with<decltype(env), ::cuda::mr::__get_memory_resource_t>);
-    (void) cub::DeviceReduce::Reduce(d_in, d_out, elements, op_t{}, init_t{}, env);
-  });
-#endif
-
   // So for now, we have to call into the dispatcher again to override the accumulator type:
   auto transform_op = ::cuda::std::identity{};
 
   std::size_t temp_size;
-  cub::detail::reduce::dispatch</* OverrideAccumT = */ T>(
+  cub::detail::reduce::dispatch(
     nullptr,
     temp_size,
     d_in,
@@ -92,7 +70,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::reduce::dispatch</* OverrideAccumT = */ T>(
+    cub::detail::reduce::dispatch(
       temp_storage,
       temp_size,
       d_in,
