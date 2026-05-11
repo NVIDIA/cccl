@@ -340,7 +340,7 @@ C2H_TEST("DeviceSelect::Unique in-place random data", "[device][select_unique]",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE(take(4, random(1, 1000000)));
-  c2h::device_vector<type> data(num_items, thrust::no_init);
+  c2h::device_vector<type> data(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), data, to_bound<type>(0), to_bound<type>(42));
 
   c2h::device_vector<int> num_selected_out(1, 0);
