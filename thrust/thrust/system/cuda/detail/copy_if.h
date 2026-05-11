@@ -58,66 +58,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-// Helper to dispatch copy_if with no stencil (predicate applied to input) using cub::DeviceSelect::If
-template <typename Derived, typename InputIt, typename OutputIt, typename Predicate>
-THRUST_RUNTIME_FUNCTION OutputIt
-copy_if_no_stencil(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, Predicate predicate)
-{
-  using offset_t      = std::int64_t; // cub::DeviceSelect uses a single offset type at the public API
-  offset_t num_items  = static_cast<offset_t>(::cuda::std::distance(first, last));
-  cudaStream_t stream = cuda_cub::stream(policy);
-
-  // We need to allocate space for the num_selected output alongside the algorithm's temp storage
-  std::size_t allocation_sizes[2] = {0, sizeof(offset_t)};
-  void* allocations[2]            = {nullptr, nullptr};
-
-  // Query temp storage for the algorithm
-  cudaError_t status = cub::DeviceSelect::If(
-    nullptr,
-    allocation_sizes[0],
-    first,
-    output,
-    static_cast<offset_t*>(nullptr),
-    static_cast<offset_t>(num_items),
-    predicate,
-    stream);
-  throw_on_error(status, "copy_if failed on 1st step");
-
-  size_t temp_storage_bytes = 0;
-  status = cub::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
-  throw_on_error(status, "copy_if failed on temp storage query");
-
-  // Allocate temporary storage
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
-  void* temp_storage = static_cast<void*>(tmp.data().get());
-
-  status = cub::detail::alias_temporaries(temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  throw_on_error(status, "copy_if failed on temp storage alias");
-
-  offset_t* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<offset_t*>(allocations[1]);
-
-  // Run algorithm
-  status = cub::DeviceSelect::If(
-    allocations[0],
-    allocation_sizes[0],
-    first,
-    output,
-    d_num_selected_out,
-    static_cast<offset_t>(num_items),
-    predicate,
-    stream);
-  throw_on_error(status, "copy_if failed on 2nd step");
-
-  // Get number of selected items
-  status = cuda_cub::synchronize(policy);
-  cuda_cub::throw_on_error(status, "copy_if failed on sync");
-  const offset_t num_selected = get_value(policy, d_num_selected_out);
-
-  ::cuda::std::advance(output, num_selected);
-  return output;
-}
-
-// Helper to dispatch copy_if with stencil (predicate applied to stencil) using cub::DeviceSelect::FlaggedIf
 template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate>
 THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   execution_policy<Derived>& policy,
@@ -127,20 +67,16 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = thrust::detail::it_difference_t<InputIt>;
-  using offset_t  = std::int64_t;
-
-  size_type num_items       = static_cast<size_type>(::cuda::std::distance(first, last));
-  cudaError_t status        = cudaSuccess;
-  size_t temp_storage_bytes = 0;
-  cudaStream_t stream       = cuda_cub::stream(policy);
+  using offset_t            = std::int64_t;
+  const auto num_items      = ::cuda::std::distance(first, last);
+  const cudaStream_t stream = cuda_cub::stream(policy);
 
   // We need to allocate space for the num_selected output alongside the algorithm's temp storage
   std::size_t allocation_sizes[2] = {0, sizeof(offset_t)};
   void* allocations[2]            = {nullptr, nullptr};
 
   // Query temp storage for the algorithm
-  status = cub::DeviceSelect::FlaggedIf(
+  auto status = cub::DeviceSelect::FlaggedIf(
     nullptr,
     allocation_sizes[0],
     first,
@@ -152,6 +88,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
     stream);
   cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
 
+  size_t temp_storage_bytes = 0;
   status = cub::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "copy_if failed on temp storage query");
 
@@ -194,8 +131,9 @@ template <class Derived, class InputIterator, class OutputIterator, class Predic
 OutputIterator _CCCL_HOST_DEVICE copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
-  THRUST_CDP_DISPATCH((return detail::copy_if_no_stencil(policy, first, last, result, pred);),
-                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
+  THRUST_CDP_DISPATCH(
+    (return detail::copy_if_with_stencil(policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
+    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
