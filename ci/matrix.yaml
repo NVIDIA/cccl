@@ -361,6 +361,8 @@ workflows:
     - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
     # cudax doesn't support C++17 on msvc:
     - {project: 'cudax', std: 17, cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
+    # cudax tests currently fail under MSVC on Windows; tracked in #8903.
+    - {project: 'cudax', jobs: ['test'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022', 'msvc2026']}
 
 
 #############################################################################################
