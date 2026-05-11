@@ -3,7 +3,7 @@
 CUDA Tile support
 ==================
 
-CUDA Tile introduces a new way to program GPUs at a higher level than SIMT.
+`CUDA Tile <https://developer.nvidia.com/cuda/tile#section-more-resources>`_ introduces a new way to program GPUs at a higher level than SIMT.
 
 We generally support most features in tile mode such as
 
@@ -16,15 +16,13 @@ We generally support most features in tile mode such as
     - ``cuda::std::tuple``
     - ``cuda::std::variant``
 
-There are some limitations described below
-
 Restrictions
 ------------
 
-With the compiler handling memory and threading there are a number of restrictions in a tile program
+With the compiler taking more control over memory and threading there are a number of restrictions in a tile program:
 
 
-C++ Threading support
+C++ Concurrency support
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Currently the use of inline ptx / assembly is not allowed in a tile program.
