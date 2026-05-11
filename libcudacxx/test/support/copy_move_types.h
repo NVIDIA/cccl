@@ -18,7 +18,7 @@
 
 #if !TEST_COMPILER(NVRTC)
 #  include "test_allocator.h"
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 // Types that can be used to test copy/move operations
 
@@ -39,14 +39,14 @@ struct MutableCopy
       : val(o.val)
       , alloc_constructed(true)
   {}
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 };
 
 #if !TEST_COMPILER(NVRTC)
 template <>
 struct cuda::std::uses_allocator<MutableCopy, test_allocator<int>> : cuda::std::true_type
 {};
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 struct ConstCopy
 {
@@ -65,14 +65,14 @@ struct ConstCopy
       : val(o.val)
       , alloc_constructed(true)
   {}
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 };
 
 #if !TEST_COMPILER(NVRTC)
 template <>
 struct cuda::std::uses_allocator<ConstCopy, test_allocator<int>> : cuda::std::true_type
 {};
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 struct MutableMove
 {
@@ -91,14 +91,14 @@ struct MutableMove
       : val(o.val)
       , alloc_constructed(true)
   {}
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 };
 
 #if !TEST_COMPILER(NVRTC)
 template <>
 struct cuda::std::uses_allocator<MutableMove, test_allocator<int>> : cuda::std::true_type
 {};
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 struct ConstMove
 {
@@ -119,14 +119,14 @@ struct ConstMove
       : val(o.val)
       , alloc_constructed(true)
   {}
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 };
 
 #if !TEST_COMPILER(NVRTC)
 template <>
 struct cuda::std::uses_allocator<ConstMove, test_allocator<int>> : cuda::std::true_type
 {};
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 template <class T>
 struct ConvertibleFrom
@@ -165,14 +165,14 @@ struct ConvertibleFrom
   {
     alloc_constructed = true;
   }
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 };
 
 #if !TEST_COMPILER(NVRTC)
 template <class T>
 struct cuda::std::uses_allocator<ConvertibleFrom<T>, test_allocator<int>> : cuda::std::true_type
 {};
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 template <class T>
 struct ExplicitConstructibleFrom
@@ -211,14 +211,14 @@ struct ExplicitConstructibleFrom
   {
     alloc_constructed = true;
   }
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 };
 
 #if !TEST_COMPILER(NVRTC)
 template <class T>
 struct cuda::std::uses_allocator<ExplicitConstructibleFrom<T>, test_allocator<int>> : cuda::std::true_type
 {};
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 struct TracedCopyMove
 {
@@ -263,14 +263,14 @@ struct TracedCopyMove
   {
     alloc_constructed = true;
   }
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 };
 
 #if !TEST_COMPILER(NVRTC)
 template <>
 struct cuda::std::uses_allocator<TracedCopyMove, test_allocator<int>> : cuda::std::true_type
 {};
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 // If the constructor tuple(tuple<UTypes...>&) is not available,
 // the fallback call to `tuple(const tuple&) = default;` or any other
@@ -369,7 +369,8 @@ struct ConstCopyAssign
       : val(v)
   {}
 
-  TEST_FUNC constexpr const ConstCopyAssign& operator=(const ConstCopyAssign& other) const
+  TEST_FUNC constexpr const ConstCopyAssign& operator=( // NOLINT(misc-unconventional-assign-operator)
+    const ConstCopyAssign& other) const
   {
     val = other.val;
     return *this;
@@ -405,6 +406,7 @@ struct ConstMoveAssign
       : val(v)
   {}
 
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   TEST_FUNC constexpr const ConstMoveAssign& operator=(ConstMoveAssign&& other) const noexcept
   {
     val = other.val;
@@ -424,7 +426,7 @@ struct AssignableFrom
   constexpr AssignableFrom() = default;
 
   template <class U, cuda::std::enable_if_t<cuda::std::is_constructible_v<T, U&&>, int> = 0>
-  TEST_FUNC constexpr AssignableFrom(U&& u)
+  TEST_FUNC constexpr AssignableFrom(U&& u) // NOLINT(bugprone-forwarding-reference-overload)
       : v(cuda::std::forward<U>(u))
   {}
 
@@ -443,14 +445,16 @@ struct AssignableFrom
   }
 
   template <class U = T, cuda::std::enable_if_t<cuda::std::is_assignable_v<const U&, const U&>, int> = 0>
-  TEST_FUNC constexpr const AssignableFrom& operator=(const T& t) const
+  TEST_FUNC constexpr const AssignableFrom& operator=( // NOLINT(misc-unconventional-assign-operator)
+    const T& t) const
   {
     v = t;
     return *this;
   }
 
   template <class U = T, cuda::std::enable_if_t<cuda::std::is_assignable_v<const U&, U&&>, int> = 0>
-  TEST_FUNC constexpr const AssignableFrom& operator=(T&& t) const
+  TEST_FUNC constexpr const AssignableFrom& operator=( // NOLINT(misc-unconventional-assign-operator)
+    T&& t) const
   {
     v = cuda::std::move(t);
     return *this;
@@ -471,7 +475,8 @@ struct TracedAssignment
     copyAssign++;
     return *this;
   }
-  TEST_FUNC constexpr const TracedAssignment& operator=(const TracedAssignment&) const
+  TEST_FUNC constexpr const TracedAssignment& operator=( // NOLINT(misc-unconventional-assign-operator)
+    const TracedAssignment&) const
   {
     constCopyAssign++;
     return *this;
@@ -481,7 +486,8 @@ struct TracedAssignment
     moveAssign++;
     return *this;
   }
-  TEST_FUNC constexpr const TracedAssignment& operator=(TracedAssignment&&) const noexcept
+  TEST_FUNC constexpr const TracedAssignment& operator=( // NOLINT(misc-unconventional-assign-operator)
+    TracedAssignment&&) const noexcept
   {
     constMoveAssign++;
     return *this;
