@@ -29,6 +29,8 @@
 #include <cuda/__utility/__basic_any/rtti.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/any>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -210,7 +212,7 @@ private:
     using __src_interface_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type;
     if (!__from.has_value())
     {
-      __throw_bad_any_cast();
+      _CCCL_THROW(::std::bad_any_cast);
     }
     auto __to_vptr = __vptr_cast<__src_interface_t, interface_type>(__from.__get_vptr());
     __set_ref(__to_vptr, __from.__get_optr());
