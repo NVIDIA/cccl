@@ -63,7 +63,7 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::require(cuda::execution::determinism::not_guaranteed)
 #if !TUNE_BASE
         ,
-      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<opt_t, T, init_t>>{})
+      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<op_t, T, init_t>>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
