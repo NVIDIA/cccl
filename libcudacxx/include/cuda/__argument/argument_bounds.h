@@ -30,7 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT
 
-// Sentinel type indicating no bounds are present
+//! @brief Sentinel type indicating no bounds are present.
 struct __no_bounds
 {};
 
@@ -39,8 +39,13 @@ struct __no_bounds
 // =====================================================================
 
 //! @brief Compile-time bounds on an argument value.
+//!
+//! The value type is deduced from the non-type template parameters.
+//!
+//! @tparam _Lowest The static lower bound.
+//! @tparam _Max The static upper bound.
 template <auto _Lowest, auto _Max>
-struct static_bounds
+struct __static_bounds
 {
   static_assert(::cuda::std::is_same_v<decltype(_Lowest), decltype(_Max)>, "Lowest and Max must have the same type");
   static_assert(_Lowest <= _Max, "Lowest must be <= Max");
@@ -51,28 +56,29 @@ struct static_bounds
   static constexpr value_type max    = _Max;
 };
 
-// Helper to detect static_bounds
 template <class _Tp>
 inline constexpr bool __is_static_bounds_v = false;
 template <auto _Lowest, auto _Max>
-inline constexpr bool __is_static_bounds_v<static_bounds<_Lowest, _Max>> = true;
+inline constexpr bool __is_static_bounds_v<__static_bounds<_Lowest, _Max>> = true;
 
 // =====================================================================
 // runtime_bounds
 // =====================================================================
 
 //! @brief Runtime bounds on an argument value.
+//!
+//! @tparam _Tp The value type of the bounds.
 template <class _Tp>
-struct runtime_bounds
+struct __runtime_bounds
 {
   using value_type = _Tp;
 
   _Tp lowest = ::cuda::std::numeric_limits<_Tp>::lowest();
   _Tp max    = ::cuda::std::numeric_limits<_Tp>::max();
 
-  constexpr runtime_bounds() noexcept = default;
+  constexpr __runtime_bounds() noexcept = default;
 
-  _CCCL_API constexpr runtime_bounds(_Tp __lowest, _Tp __max) noexcept
+  _CCCL_API constexpr __runtime_bounds(_Tp __lowest, _Tp __max) noexcept
       : lowest(__lowest)
       , max(__max)
   {
@@ -82,14 +88,13 @@ struct runtime_bounds
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Tp>
-_CCCL_HOST_DEVICE runtime_bounds(_Tp, _Tp) -> runtime_bounds<_Tp>;
+_CCCL_HOST_DEVICE __runtime_bounds(_Tp, _Tp) -> __runtime_bounds<_Tp>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
-// Helper to detect runtime_bounds
 template <class _Tp>
 inline constexpr bool __is_runtime_bounds_v = false;
 template <class _Tp>
-inline constexpr bool __is_runtime_bounds_v<runtime_bounds<_Tp>> = true;
+inline constexpr bool __is_runtime_bounds_v<__runtime_bounds<_Tp>> = true;
 
 // =====================================================================
 // bounds — factory functions
@@ -97,19 +102,18 @@ inline constexpr bool __is_runtime_bounds_v<runtime_bounds<_Tp>> = true;
 
 //! @brief Create compile-time bounds.
 template <auto _Lowest, auto _Max>
-[[nodiscard]] _CCCL_API constexpr static_bounds<_Lowest, _Max> bounds() noexcept
+[[nodiscard]] _CCCL_API constexpr __static_bounds<_Lowest, _Max> __bounds() noexcept
 {
   return {};
 }
 
 //! @brief Create runtime bounds.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr runtime_bounds<_Tp> bounds(_Tp __lowest, _Tp __max) noexcept
+[[nodiscard]] _CCCL_API constexpr __runtime_bounds<_Tp> __bounds(_Tp __lowest, _Tp __max) noexcept
 {
   return {__lowest, __max};
 }
 
-// Helper to detect either bounds type (cv-qualified safe)
 template <class _Tp>
 inline constexpr bool __is_static_bounds_cv_v = __is_static_bounds_v<::cuda::std::remove_cv_t<_Tp>>;
 template <class _Tp>
