@@ -662,7 +662,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void select_segment_scan_searcher(
     else
     {
       // searcher locates segment_id using linear/binary search in cum_sizes
-      // binary search is using while-loop based cub::std::upper_bound
+      // binary search is using while-loop based cuda::std::upper_bound
       bag_of_segments searcher{cum_sizes};
       scope.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_worker);
     }
