@@ -18,6 +18,9 @@
 
 struct host_functor
 {
+  // nvbug6163849: if the struct is empty NVCC fails with a host device access warning
+  int val_ = 0;
+
   void operator()(const cuda::std::ptrdiff_t val, const int expected) const noexcept
   {
     assert(val == expected); // asserts that the assigned value matches the index

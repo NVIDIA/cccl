@@ -20,6 +20,9 @@
 
 struct host_functor
 {
+  // nvbug6163849: if the struct is empty NVCC fails with a host device access warning
+  int val_ = 0;
+
   int operator()(const int val) const noexcept
   {
     return val + 42;
