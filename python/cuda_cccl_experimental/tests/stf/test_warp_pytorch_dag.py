@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """Tests for a single ``cuda.stf`` DAG that mixes Warp tasks (via
-``wp_stf.task``) and PyTorch tasks (via ``pytorch_task``).
+``warp.stf_experimental.task``) and PyTorch tasks (via ``pytorch_task``).
 
 Three properties are validated:
 
@@ -33,8 +33,8 @@ import pytest
 torch = pytest.importorskip("torch")
 
 import warp as wp  # noqa: E402
-import wp_stf  # noqa: E402
 from pytorch_task import pytorch_task  # noqa: E402
+from warp import stf_experimental as wp_stf  # noqa: E402
 
 import cuda.stf as stf  # noqa: E402
 
