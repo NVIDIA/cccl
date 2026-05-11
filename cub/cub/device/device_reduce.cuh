@@ -881,7 +881,7 @@ private:
       d_min_out,
       d_index_out,
       static_cast<GlobalOffsetT>(num_items),
-      detail::arg_less{compare_op},
+      detail::arg_reduce_op{compare_op},
       stream);
   }
 
@@ -1072,7 +1072,7 @@ private:
           d_min_out,
           d_index_out,
           static_cast<GlobalOffsetT>(num_items),
-          detail::arg_less{compare_op},
+          detail::arg_reduce_op{compare_op},
           stream.get()))
     {
       return error;
@@ -1093,7 +1093,7 @@ private:
       d_min_out,
       d_index_out,
       static_cast<GlobalOffsetT>(num_items),
-      detail::arg_less{compare_op},
+      detail::arg_reduce_op{compare_op},
       stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
@@ -1209,7 +1209,8 @@ public:
     ::cuda::std::int64_t num_items,
     EnvT env = {})
   {
-    return ArgMin(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
+    return __arg_min_env(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
   //! @rst
@@ -1654,14 +1655,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
     return __arg_min(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_max_out,
-      d_index_out,
-      num_items,
-      detail::arg_less{detail::swap_args{compare_op}},
-      stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, detail::swap_args{compare_op}, stream);
   }
 
   //! @rst
@@ -1680,8 +1674,9 @@ public:
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = nullptr)
   {
-    return ArgMax(
-      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::less{}, stream);
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+    return __arg_min(
+      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::greater{}, stream);
   }
 
   //! @rst
@@ -1898,7 +1893,7 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, env);
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::swap_args{compare_op}, env);
   }
 
   //! @overload
@@ -1918,7 +1913,7 @@ public:
          EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_max{}, env);
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, ::cuda::std::greater{}, env);
   }
 
   //! @rst

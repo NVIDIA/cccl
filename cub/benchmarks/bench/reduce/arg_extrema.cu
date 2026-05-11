@@ -73,8 +73,8 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
     nullptr,
     temp_size,
     d_in,
-    d_out_index,
     d_out_extremum,
+    d_out_index,
     num_items,
     OpT{},
     nullptr /* stream */
@@ -92,8 +92,8 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
       temp_storage,
       temp_size,
       d_in,
-      d_out_index,
       d_out_extremum,
+      d_out_index,
       num_items,
       OpT{},
       launch.get_stream()
