@@ -53,18 +53,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
   offset_t* d_num_unique = thrust::raw_pointer_cast(num_unique_out.data());
 
   // Get number of unique elements for metrics
-  size_t temp_size{};
-  cub::DeviceSelect::Unique(
-    nullptr, temp_size, d_in, d_out, d_num_unique, static_cast<offset_t>(elements), ::cuda::std::equal_to<>{});
-  thrust::device_vector<nvbench::uint8_t, thrust::no_init_t> temp(temp_size);
-  cub::DeviceSelect::Unique(
-    thrust::raw_pointer_cast(temp.data()),
-    temp_size,
-    d_in,
-    d_out,
-    d_num_unique,
-    static_cast<offset_t>(elements),
-    ::cuda::std::equal_to<>{});
+  cub::DeviceSelect::Unique(d_in, d_out, d_num_unique, static_cast<offset_t>(elements), ::cuda::std::equal_to<>{});
   cudaDeviceSynchronize();
   const offset_t num_unique = num_unique_out[0];
 

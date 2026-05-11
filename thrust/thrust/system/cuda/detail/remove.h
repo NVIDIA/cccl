@@ -28,7 +28,7 @@ template <class Derived, class InputIt, class StencilIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
-  THRUST_CDP_DISPATCH((return cuda_cub::detail::copy_if_with_stencil<cub::SelectImpl::SelectPotentiallyInPlace>(
+  THRUST_CDP_DISPATCH((return cuda_cub::detail::copy_if_with_stencil</* InPlace */ true>(
                                 policy, first, last, stencil, first, ::cuda::std::not_fn(predicate));),
                       (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, predicate);));
 }
@@ -38,7 +38,7 @@ template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
   THRUST_CDP_DISPATCH(
-    (return cuda_cub::detail::copy_if_with_stencil<cub::SelectImpl::SelectPotentiallyInPlace>(
+    (return cuda_cub::detail::copy_if_with_stencil</* InPlace */ true>(
               policy, first, last, static_cast<cub::NullType*>(nullptr), first, ::cuda::std::not_fn(predicate));),
     (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, predicate);));
 }

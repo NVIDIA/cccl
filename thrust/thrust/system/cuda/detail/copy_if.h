@@ -58,7 +58,7 @@ namespace cuda_cub
 {
 namespace detail
 {
-template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate>
+template <bool InPlace, typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate>
 THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   execution_policy<Derived>& policy,
   InputIt first,
@@ -76,16 +76,32 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   void* allocations[2]            = {nullptr, nullptr};
 
   // Query temp storage for the algorithm
-  auto status = cub::DeviceSelect::FlaggedIf(
-    nullptr,
-    allocation_sizes[0],
-    first,
-    stencil,
-    output,
-    static_cast<offset_t*>(nullptr),
-    static_cast<offset_t>(num_items),
-    predicate,
-    stream);
+  cudaError_t status;
+  if constexpr (InPlace)
+  {
+    status = cub::DeviceSelect::FlaggedIf(
+      nullptr,
+      allocation_sizes[0],
+      first,
+      stencil,
+      static_cast<offset_t*>(nullptr),
+      static_cast<offset_t>(num_items),
+      predicate,
+      stream);
+  }
+  else
+  {
+    status = cub::DeviceSelect::FlaggedIf(
+      nullptr,
+      allocation_sizes[0],
+      first,
+      stencil,
+      output,
+      static_cast<offset_t*>(nullptr),
+      static_cast<offset_t>(num_items),
+      predicate,
+      stream);
+  }
   cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
 
   size_t temp_storage_bytes = 0;
@@ -102,16 +118,31 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   offset_t* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<offset_t*>(allocations[1]);
 
   // Run algorithm
-  status = cub::DeviceSelect::FlaggedIf(
-    allocations[0],
-    allocation_sizes[0],
-    first,
-    stencil,
-    output,
-    d_num_selected_out,
-    static_cast<offset_t>(num_items),
-    predicate,
-    stream);
+  if constexpr (InPlace)
+  {
+    status = cub::DeviceSelect::FlaggedIf(
+      allocations[0],
+      allocation_sizes[0],
+      first,
+      stencil,
+      d_num_selected_out,
+      static_cast<offset_t>(num_items),
+      predicate,
+      stream);
+  }
+  else
+  {
+    status = cub::DeviceSelect::FlaggedIf(
+      allocations[0],
+      allocation_sizes[0],
+      first,
+      stencil,
+      output,
+      d_num_selected_out,
+      static_cast<offset_t>(num_items),
+      predicate,
+      stream);
+  }
   cuda_cub::throw_on_error(status, "copy_if failed on 2nd step");
 
   // Get number of selected items
@@ -146,8 +177,9 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  THRUST_CDP_DISPATCH((return detail::copy_if_with_stencil(policy, first, last, stencil, result, pred);),
-                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
+  THRUST_CDP_DISPATCH(
+    (return detail::copy_if_with_stencil</* InPlace */ false>(policy, first, last, stencil, result, pred);),
+    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
