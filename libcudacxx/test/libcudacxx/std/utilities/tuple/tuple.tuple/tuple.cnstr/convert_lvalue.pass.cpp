@@ -174,7 +174,14 @@ TEST_FUNC constexpr bool test()
   {
     cuda::std::tuple<TracedCopyMove, TracedCopyMove> t1{};
     cuda::std::tuple<TracedCopyMove, TracedCopyMove> t2{t1};
-    assert(nonConstCopyCtrCalled(cuda::std::get<0>(t2)));
+    // NOTE: LLVM's test has this as `assert(nonConstCopyCtrCalled())`, but I think this is
+    // wrong. One of the constraints on the lvalue-ref constructor in P2165 is that:
+    //
+    // - different-from<UTuple, tuple> [range.utility.helpers] is true
+    //
+    // So given equal objects, the t2{t1} constructor call should instead select the
+    // copy-constructor `tuple(const tuple& other)` (which our implementation does).
+    assert(!nonConstCopyCtrCalled(cuda::std::get<0>(t2)));
   }
 
   // These two test points cause gcc to ICE, because it cannot follow the (intentionally)
