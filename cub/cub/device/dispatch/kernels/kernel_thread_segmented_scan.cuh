@@ -138,17 +138,20 @@ public:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT get_input_offset() const
   {
+    _CCCL_ASSERT(*this, "Accessing input offset on exhausted iterator");
     return m_input_idx;
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT get_output_offset() const
   {
+    _CCCL_ASSERT(*this, "Accessing output offset on exhausted iterator");
     return m_output_idx;
   }
 };
 
 template <typename InpBeginOffsetIt, typename InpEndOffsetIt, typename OutBeginOffsetIt, typename OffsetTy, typename MapperF>
-_CCCL_DEVICE multi_segmented_seq_iterator(int, InpBeginOffsetIt, InpEndOffsetIt, OutBeginOffsetIt, OffsetTy, MapperF)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+multi_segmented_seq_iterator(int, InpBeginOffsetIt, InpEndOffsetIt, OutBeginOffsetIt, OffsetTy, MapperF)
   -> multi_segmented_seq_iterator<InpBeginOffsetIt, InpEndOffsetIt, OutBeginOffsetIt, OffsetTy, MapperF>;
 
 // define agent code
@@ -571,16 +574,24 @@ __launch_bounds__(current_policy<PolicySelector>().thread.threads_per_block)
     AccumT,
     ForceInclusive>;
 
-  __shared__ typename agent_t::TempStorage temp_storage;
-
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by thread must be positive");
 
-  // Agent consumes interleaved segments to improve CTA memory access locality
+  // this agent does not need require shared storage, so pass it thread local dummy empty struct
+  typename agent_t::TempStorage unused_temp_storage{};
 
+  // Agent consumes interleaved segments to improve CTA memory access locality
   agent_t agent(
-    temp_storage, d_in, d_out, begin_offset_d_in, end_offset_d_in, begin_offset_d_out, n_segments, scan_op, _init_value);
+    unused_temp_storage,
+    d_in,
+    d_out,
+    begin_offset_d_in,
+    end_offset_d_in,
+    begin_offset_d_out,
+    n_segments,
+    scan_op,
+    _init_value);
   agent.scan_segments(num_segments_per_worker);
 }
 } // namespace detail::segmented_scan
