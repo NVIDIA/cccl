@@ -2264,34 +2264,11 @@ public:
   //!
   //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_select.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int  num_items;              // e.g., 8
-  //!    int  *d_data;                // e.g., [0, 2, 2, 9, 5, 5, 5, 8]
-  //!    int  *d_num_selected_out;    // e.g., [ ]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = nullptr;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSelect::Unique(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_data, d_num_selected_out, num_items);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run selection
-  //!    cub::DeviceSelect::Unique(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_data, d_num_selected_out, num_items);
-  //!
-  //!    // d_data                <-- [0, 2, 9, 5, 8]
-  //!    // d_num_selected_out    <-- [5]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace
+  //!     :end-before: example-end select-unique-inplace
   //!
   //! @endrst
   //!
@@ -2366,34 +2343,17 @@ public:
   //!
   //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector.
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop-myequalityop
+  //!     :end-before: example-end select-unique-inplace-eqop-myequalityop
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_select.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int  num_items;              // e.g., 8
-  //!    int  *d_data;                // e.g., [0, 2, 2, 9, 5, 5, 5, 8]
-  //!    int  *d_num_selected_out;    // e.g., [ ]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = nullptr;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSelect::Unique(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_data, d_num_selected_out, num_items, my_equality_op);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run selection
-  //!    cub::DeviceSelect::Unique(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_data, d_num_selected_out, num_items, my_equality_op);
-  //!
-  //!    // d_data                <-- [0, 2, 9, 5, 8]
-  //!    // d_num_selected_out    <-- [5]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop
+  //!     :end-before: example-end select-unique-inplace-eqop
   //!
   //! @endrst
   //!
