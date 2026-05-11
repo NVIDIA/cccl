@@ -63,7 +63,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
       cuda::execution::tune(tuned_policy_selector{})
 #endif // !TUNE_BASE
     );
-    if constexpr (::cuda::std::is_same_v<OpT, cub::detail::arg_min>)
+    if constexpr (cuda::std::is_same_v<OpT, cub::detail::arg_min>)
     {
       _CCCL_TRY_CUDA_API(
         cub::DeviceReduce::ArgMin,
