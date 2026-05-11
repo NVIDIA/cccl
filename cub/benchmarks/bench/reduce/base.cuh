@@ -29,7 +29,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using init_t = T;
 
   // Retrieve axis parameters
-  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto elements = state.get_int64("Elements{io}");
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
