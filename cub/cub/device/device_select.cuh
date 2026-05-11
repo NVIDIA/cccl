@@ -355,13 +355,7 @@ public:
             typename FlagIterator,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<InputIteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
               int> = 0>
@@ -445,13 +439,7 @@ public:
     typename IteratorT,
     typename FlagIterator,
     typename NumSelectedIteratorT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-    void
-#else
-    ::cuda::std::execution::env<>
-#endif
-    ,
+    typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
@@ -539,13 +527,7 @@ public:
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
@@ -633,13 +615,7 @@ public:
   template <typename IteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                            = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(IteratorT d_data,
@@ -1326,13 +1302,7 @@ public:
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     InputIteratorT d_in,
@@ -1422,13 +1392,7 @@ public:
             typename FlagIterator,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                            = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     IteratorT d_data,
@@ -1510,13 +1474,7 @@ public:
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                 = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>
                                        && !::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>,
                                      int> = 0>
@@ -1617,13 +1575,7 @@ public:
     typename OutputIteratorT,
     typename NumSelectedIteratorT,
     typename EqualityOpT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-    void
-#else
-    ::cuda::std::execution::env<>
-#endif
-    ,
+    typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>
                                && ::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
                              int> = 0>
@@ -1742,13 +1694,7 @@ public:
             typename NumSelectedIteratorT,
             typename NumItemsT,
             typename EqualityOpT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
               ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<KeyInputIteratorT, void*>
                 && ::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
@@ -1866,13 +1812,7 @@ public:
     typename ValueOutputIteratorT,
     typename NumSelectedIteratorT,
     typename NumItemsT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-    void
-#else
-    ::cuda::std::execution::env<>
-#endif
-    ,
+    typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<KeyInputIteratorT, void*>
                                && !::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>,
                              int> = 0>
