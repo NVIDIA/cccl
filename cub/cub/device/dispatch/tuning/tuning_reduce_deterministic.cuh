@@ -41,6 +41,17 @@ struct rfa_policy
 {
   reduce_policy reduce;
   single_tile_policy single_tile;
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const rfa_policy& policy)
+  {
+    return os
+        << "rfa_policy { .reduce = { .threads_per_block = " << policy.reduce.threads_per_block
+        << ", .items_per_thread = " << policy.reduce.items_per_thread
+        << " }, .single_tile = { .threads_per_block = " << policy.single_tile.threads_per_block
+        << ", .items_per_thread = " << policy.single_tile.items_per_thread << " } }";
+  }
+#endif // _CCCL_HOSTED()
 };
 
 struct policy_selector
