@@ -35,7 +35,7 @@ template <typename T, typename OpT>
 void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
 {
   // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-  using offset_t = ::cuda::std::int64_t;
+  using offset_t = cuda::std::int64_t;
 
   // Retrieve axis parameters
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
