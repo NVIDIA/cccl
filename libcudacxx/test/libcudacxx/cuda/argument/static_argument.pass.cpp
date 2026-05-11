@@ -82,16 +82,16 @@ TEST_FUNC void test()
 
   // Unwrap: scalar
   {
-    constexpr auto sa         = cuda::argument::__constant<42>{};
-    constexpr const auto& val = cuda::argument::__unwrap(sa);
+    constexpr auto sa  = cuda::argument::__constant<42>{};
+    constexpr auto val = cuda::argument::__unwrap(sa);
     static_assert(val == 42);
   }
 
 #if _CCCL_STD_VER >= 2020
   // Unwrap: array
   {
-    constexpr auto sa         = cuda::argument::__constant<cuda::std::array<int, 3>{10, 20, 30}>{};
-    constexpr const auto& val = cuda::argument::__unwrap(sa);
+    constexpr auto sa  = cuda::argument::__constant<cuda::std::array<int, 3>{10, 20, 30}>{};
+    constexpr auto val = cuda::argument::__unwrap(sa);
     static_assert(val[0] == 10);
     static_assert(val[2] == 30);
   }
