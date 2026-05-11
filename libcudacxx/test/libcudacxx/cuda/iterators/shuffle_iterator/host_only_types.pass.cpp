@@ -53,7 +53,7 @@ struct host_bijection
 void test()
 {
   // taken from host_bijection
-  constexpr int random_indices[] = {4, 1, 2, 0, 3};
+  constexpr uint32_t random_indices[] = {4, 1, 2, 0, 3};
   cuda::shuffle_iterator iter{host_bijection{}};
   assert(iter[1] == random_indices[1]);
 }
