@@ -1625,22 +1625,27 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using offset_t = ::cuda::std::int64_t;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
-        storage,
-        bytes,
-        d_data,
-        static_cast<NullType*>(nullptr),
-        d_data,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        ::cuda::std::equal_to<>{},
-        stream);
-    });
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          ::cuda::std::equal_to<>{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1717,22 +1722,27 @@ struct DeviceSelect
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using offset_t = ::cuda::std::int64_t;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
-        storage,
-        bytes,
-        d_data,
-        static_cast<NullType*>(nullptr),
-        d_data,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        equality_op,
-        stream);
-    });
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          equality_op,
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst

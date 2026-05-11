@@ -65,7 +65,7 @@ namespace cuda_cub
 {
 namespace detail
 {
-template <typename Derived, typename InputIt, typename OutputIt, typename EqualityOpT>
+template <bool InPlace, typename Derived, typename InputIt, typename OutputIt, typename EqualityOpT>
 THRUST_RUNTIME_FUNCTION OutputIt
 select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt output, EqualityOpT equality_op)
 {
@@ -78,8 +78,17 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
   void* allocations[2]            = {nullptr, nullptr};
 
   // Query temp storage
-  cudaError_t status = cub::DeviceSelect::Unique(
-    nullptr, allocation_sizes[0], first, output, static_cast<offset_t*>(nullptr), num_items, equality_op, stream);
+  cudaError_t status{};
+  if constexpr (InPlace)
+  {
+    status = cub::DeviceSelect::Unique(
+      nullptr, allocation_sizes[0], first, static_cast<offset_t*>(nullptr), num_items, equality_op, stream);
+  }
+  else
+  {
+    status = cub::DeviceSelect::Unique(
+      nullptr, allocation_sizes[0], first, output, static_cast<offset_t*>(nullptr), num_items, equality_op, stream);
+  }
   throw_on_error(status, "unique failed on 1st step");
 
   size_t temp_storage_bytes = 0;
@@ -96,8 +105,16 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
   offset_t* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<offset_t*>(allocations[1]);
 
   // Run algorithm
-  status = cub::DeviceSelect::Unique(
-    allocations[0], allocation_sizes[0], first, output, d_num_selected_out, num_items, equality_op, stream);
+  if constexpr (InPlace)
+  {
+    status = cub::DeviceSelect::Unique(
+      allocations[0], allocation_sizes[0], first, d_num_selected_out, num_items, equality_op, stream);
+  }
+  else
+  {
+    status = cub::DeviceSelect::Unique(
+      allocations[0], allocation_sizes[0], first, output, d_num_selected_out, num_items, equality_op, stream);
+  }
   throw_on_error(status, "unique failed on 2nd step");
 
   // Get number of selected items
@@ -120,7 +137,7 @@ OutputIt _CCCL_HOST_DEVICE
 unique_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, BinaryPred binary_pred)
 {
   THRUST_CDP_DISPATCH(
-    (return detail::select_unique(policy, first, last, result, binary_pred);),
+    (return detail::select_unique</* InPlace */ false>(policy, first, last, result, binary_pred);),
     (return thrust::unique_copy(cvt_to_seq(derived_cast(policy)), first, last, result, binary_pred);));
 }
 
@@ -136,7 +153,7 @@ template <class Derived, class ForwardIt, class BinaryPred>
 ForwardIt _CCCL_HOST_DEVICE
 unique(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last, BinaryPred binary_pred)
 {
-  THRUST_CDP_DISPATCH((return detail::select_unique(policy, first, last, first, binary_pred);),
+  THRUST_CDP_DISPATCH((return detail::select_unique</* InPlace */ true>(policy, first, last, first, binary_pred);),
                       (return thrust::unique(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
 }
 
