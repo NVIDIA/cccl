@@ -1058,7 +1058,7 @@ private:
     using GlobalOffsetT           = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
     using input_value_t           = detail::it_value_t<InputIteratorT>;
     using output_extremum_t       = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
-    using reduce_op_t             = detail::arg_less<CompareOpT>;
+    using reduce_op_t             = detail::arg_reduce_op<CompareOpT>;
     using default_policy_selector = detail::reduce::
       policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, output_extremum_t>, PerPartitionOffsetT, reduce_op_t>;
 
