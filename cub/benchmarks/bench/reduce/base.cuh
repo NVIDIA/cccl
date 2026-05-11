@@ -49,7 +49,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(policy_selector<T>{})
+      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<opt_t, T, init_t>>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
