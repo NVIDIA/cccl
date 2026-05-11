@@ -477,8 +477,9 @@ public:
     return __buf_.data();
   }
 
-  //! @brief Gets a reference to the element at index `__i`.
+  //! @brief Gets a reference to the element at index `__i`. Requires ``cuda::host_accessible`` property.
   //! @throw std::out_of_range if `__i < size()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API _Tp& at(size_type __i)
@@ -490,8 +491,7 @@ public:
     return data()[__i];
   }
 
-  //! @brief Gets a reference to the element at index `__i`.
-  //! @throw std::out_of_range if `__i < size()`.
+  //! @overload
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API const _Tp& at(size_type __i) const
@@ -503,8 +503,9 @@ public:
     return data()[__i];
   }
 
-  //! @brief Gets a reference to the element at index `__i`.
+  //! @brief Gets a reference to the element at index `__i`. Requires ``cuda::host_accessible`` property.
   //! @pre `__i < size()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API _Tp& operator[](size_type __i) noexcept
@@ -513,8 +514,7 @@ public:
     return data()[__i];
   }
 
-  //! @brief Gets a reference to the element at index `__i`.
-  //! @pre `__i < size()`.
+  //! @overload
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API const _Tp& operator[](size_type __i) const noexcept
@@ -523,8 +523,9 @@ public:
     return data()[__i];
   }
 
-  //! @brief Gets a reference to the first element.
+  //! @brief Gets a reference to the first element. Requires ``cuda::host_accessible`` property.
   //! @pre `!empty()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API _Tp& front() noexcept
@@ -533,8 +534,7 @@ public:
     return data()[0];
   }
 
-  //! @brief Gets a reference to the first element.
-  //! @pre `!empty()`.
+  //! @overload
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API const _Tp& front() const noexcept
@@ -543,8 +543,9 @@ public:
     return data()[0];
   }
 
-  //! @brief Gets a reference to the last element.
+  //! @brief Gets a reference to the last element. Requires ``cuda::host_accessible`` property.
   //! @pre `!empty()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API _Tp& back() noexcept
@@ -553,8 +554,7 @@ public:
     return data()[size() - 1];
   }
 
-  //! @brief Gets a reference to the last element.
-  //! @pre `!empty()`.
+  //! @overload
   _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
   _CCCL_REQUIRES(_IsHostAccessible)
   [[nodiscard]] _CCCL_HOST_API const _Tp& back() const noexcept
