@@ -42,8 +42,58 @@ struct host_functor
 
 void test()
 {
-  cuda::tabulate_output_iterator iter{host_functor{}, 10};
-  iter[1] = 1 + 10;
+  {
+    using tabulate_output_iterator = cuda::tabulate_output_iterator<host_functor, int>;
+
+    const tabulate_output_iterator default_constructed{};
+    tabulate_output_iterator value_constructed{host_functor{}};
+
+    tabulate_output_iterator copy_constructed{default_constructed};
+    tabulate_output_iterator move_constructed{::cuda::std::move(value_constructed)};
+
+    [[maybe_unused]] tabulate_output_iterator copy_assigned{};
+    copy_assigned = copy_constructed;
+
+    [[maybe_unused]] tabulate_output_iterator move_assigned{};
+    move_assigned = ::cuda::std::move(move_constructed);
+
+    [[maybe_unused]] tabulate_output_iterator func_index_constructed{host_functor{}, 42};
+  }
+
+  cuda::tabulate_output_iterator iter1{host_functor{}, 100};
+  const cuda::tabulate_output_iterator iter2{host_functor{}, 101};
+  assert(iter1 != iter2);
+
+  {
+    assert(++iter1 == iter2);
+    assert(--iter1 != iter2);
+  }
+
+  {
+    assert(iter1++ != iter2);
+    assert(iter1-- == iter2);
+  }
+
+  {
+    assert(iter1 + 1 == iter2);
+    assert(iter1 - 1 != iter2);
+    assert(iter2 - iter1 == 1);
+  }
+
+  {
+    iter1 += 1;
+    assert(iter1 == iter2);
+    iter1 -= 1;
+    assert(iter1 != iter2);
+  }
+
+  {
+    iter1[1] = 1 + 100;
+    *iter1   = 0 + 100;
+
+    iter2[1] = 1 + 101;
+    *iter2   = 0 + 101;
+  }
 }
 
 int main(int arg, char** argv)

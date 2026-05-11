@@ -44,6 +44,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(20011) // calling a __host__ function from a __host__ __device__ function shuffle_iterator
+                                    // is not allowed
+
 //! @addtogroup iterators
 //! @{
 
@@ -154,6 +157,7 @@ public:
   }
 
   //! @brief Increments the @c permutation_iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator++() noexcept
   {
     ++__current_;
@@ -161,6 +165,7 @@ public:
   }
 
   //! @brief Increments the @c permutation_iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator operator++(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Bijection>)
   {
     auto __tmp = *this;
@@ -169,6 +174,7 @@ public:
   }
 
   //! @brief Decrements the @c permutation_iterator
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator--() noexcept
   {
     --__current_;
@@ -176,6 +182,7 @@ public:
   }
 
   //! @brief Decrements the @c permutation_iterator
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr shuffle_iterator
   operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Bijection>)
   {
@@ -186,6 +193,7 @@ public:
 
   //! @brief Advances the @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to advance
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator+=(difference_type __n) noexcept
   {
 #if _CCCL_COMPILER(MSVC) // C4308: negative integral constant converted to unsigned type
@@ -199,6 +207,7 @@ public:
   //! @brief Returns a copy of a @c shuffle_iterator incremented by a given number of elements
   //! @param __iter The @c shuffle_iterator to copy
   //! @param __n The number of elements to increment
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr shuffle_iterator
   operator+(shuffle_iterator __iter, difference_type __n) noexcept
   {
@@ -213,6 +222,7 @@ public:
   //! @brief Returns a copy of a @c shuffle_iterator incremented by a given number of elements
   //! @param __n The number of elements to increment
   //! @param __iter The @c shuffle_iterator to copy
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr shuffle_iterator
   operator+(difference_type __n, shuffle_iterator __iter) noexcept
   {
@@ -226,6 +236,7 @@ public:
 
   //! @brief Decrements the @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to decrement
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator-=(difference_type __n) noexcept
   {
 #if _CCCL_COMPILER(MSVC) // C4308: negative integral constant converted to unsigned type
@@ -239,6 +250,7 @@ public:
   //! @brief Returns a copy of a @c shuffle_iterator decremented by a given number of elements
   //! @param __iter The @c shuffle_iterator to copy
   //! @param __n The number of elements to decrement
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr shuffle_iterator
   operator-(shuffle_iterator __iter, difference_type __n) noexcept
   {
@@ -333,6 +345,8 @@ template <class _Bijection, class _IndexType>
 }
 
 //! @}
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA
 

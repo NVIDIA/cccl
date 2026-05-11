@@ -16,31 +16,33 @@
 
 #include <vector>
 
+#include "host_device_types.h"
 #include "test_macros.h"
 
 void test()
 {
-  std::vector<int> vec{1, 2, 3, 4};
-
+  std::vector<int> vec{1, 2, 3, 4, 5};
   {
-    using Iter         = typename std::vector<int>::iterator;
-    using zip_iterator = cuda::zip_iterator<Iter, Iter>;
+    using Iter             = typename std::vector<int>::iterator;
+    using strided_iterator = cuda::strided_iterator<Iter, ::std::integral_constant<int, 2>>;
 
-    const zip_iterator default_constructed{};
-    zip_iterator value_constructed{vec.begin(), vec.begin()};
+    const strided_iterator default_constructed{};
+    strided_iterator value_constructed{vec.begin()};
 
-    zip_iterator copy_constructed{default_constructed};
-    zip_iterator move_constructed{::cuda::std::move(value_constructed)};
+    strided_iterator copy_constructed{default_constructed};
+    strided_iterator move_constructed{::cuda::std::move(value_constructed)};
 
-    [[maybe_unused]] zip_iterator copy_assigned{};
+    [[maybe_unused]] strided_iterator copy_assigned{};
     copy_assigned = copy_constructed;
 
-    [[maybe_unused]] zip_iterator move_assigned{};
+    [[maybe_unused]] strided_iterator move_assigned{};
     move_assigned = ::cuda::std::move(move_constructed);
+
+    [[maybe_unused]] strided_iterator iter_stride_constructed{vec.begin(), ::std::integral_constant<int, 2>{}};
   }
 
-  cuda::zip_iterator iter1{vec.begin(), vec.begin() + 1};
-  const cuda::zip_iterator iter2{vec.begin() + 1, vec.begin() + 2};
+  cuda::strided_iterator iter1{vec.begin(), ::std::integral_constant<int, 2>{}};
+  const cuda::strided_iterator iter2{vec.begin() + 2, ::std::integral_constant<int, 2>{}};
   assert(iter1 != iter2);
 
   {
@@ -67,11 +69,11 @@ void test()
   }
 
   {
-    assert((iter1[1] == cuda::std::tuple{vec[1], vec[2]}));
-    assert((iter2[1] == cuda::std::tuple{vec[2], vec[3]}));
+    assert(iter1[1] == 3);
+    assert(*iter1 == 1);
 
-    assert((*iter1 == cuda::std::tuple{vec[0], vec[1]}));
-    assert((*iter2 == cuda::std::tuple{vec[1], vec[2]}));
+    assert(iter2[1] == 5);
+    assert(*iter2 == 3);
   }
 }
 

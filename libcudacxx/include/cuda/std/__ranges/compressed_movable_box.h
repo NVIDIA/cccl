@@ -56,6 +56,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(20011) // calling a __host__ function from a __host__ __device__ function is not allowed
+
 //! @brief Different alternatives for @c __compressed_box_base
 // This is effectively a __movable-box__ that does not rely on `[[no_unique_address]]`
 enum class __compressed_box_specialization
@@ -889,6 +891,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
     swap(__x.__get<2>(), __y.__get<2>());
   }
 };
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

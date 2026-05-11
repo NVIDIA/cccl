@@ -57,8 +57,63 @@ struct host_plus_value
 void test()
 {
   std::vector<int> vec{1, 2, 3, 4};
-  cuda::transform_iterator iter{vec.begin(), host_plus_value{42}};
-  assert(iter[1] == vec[1] + 42);
+
+  {
+    using Iter               = typename std::vector<int>::iterator;
+    using transform_iterator = cuda::transform_iterator<host_plus_value, Iter>;
+
+    const transform_iterator default_constructed{};
+    transform_iterator value_constructed{vec.begin(), host_plus_value{42}};
+
+    transform_iterator copy_constructed{default_constructed};
+    transform_iterator move_constructed{::cuda::std::move(value_constructed)};
+
+    [[maybe_unused]] transform_iterator copy_assigned{};
+    copy_assigned = copy_constructed;
+
+    [[maybe_unused]] transform_iterator move_assigned{};
+    move_assigned = ::cuda::std::move(move_constructed);
+  }
+
+  cuda::transform_iterator iter1{vec.begin(), host_plus_value{42}};
+  const cuda::transform_iterator iter2{vec.begin() + 1, host_plus_value{42}};
+  assert(iter1 != iter2);
+
+  {
+    assert(++iter1 == iter2);
+    assert(--iter1 != iter2);
+  }
+
+  {
+    assert(iter1++ != iter2);
+    assert(iter1-- == iter2);
+  }
+
+  {
+    assert(iter1 + 1 == iter2);
+    assert(iter1 - 1 != iter2);
+    assert(iter2 - iter1 == 1);
+  }
+
+  {
+    iter1 += 1;
+    assert(iter1 == iter2);
+    iter1 -= 1;
+    assert(iter1 != iter2);
+  }
+
+  {
+    assert(iter1[1] == vec[1] + 42);
+    assert(*iter1 == vec[0] + 42);
+
+    assert(iter2[1] == vec[2] + 42);
+    assert(*iter2 == vec[1] + 42);
+  }
+
+  {
+    assert(iter1.base() == vec.begin());
+    assert(iter2.base() == vec.begin() + 1);
+  }
 }
 
 int main(int arg, char** argv)

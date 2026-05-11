@@ -19,8 +19,58 @@
 
 void test()
 {
-  cuda::constant_iterator iter{host_only_type{42}};
-  assert(iter[1].val_ == 42);
+  {
+    using constant_iterator = cuda::constant_iterator<host_only_type, int>;
+
+    const constant_iterator default_constructed{};
+    constant_iterator value_constructed{host_only_type{}};
+
+    constant_iterator copy_constructed{default_constructed};
+    constant_iterator move_constructed{::cuda::std::move(value_constructed)};
+
+    [[maybe_unused]] constant_iterator copy_assigned{};
+    copy_assigned = copy_constructed;
+
+    [[maybe_unused]] constant_iterator move_assigned{};
+    move_assigned = ::cuda::std::move(move_constructed);
+
+    [[maybe_unused]] constant_iterator value_index_constructed{host_only_type{}, 42};
+  }
+
+  cuda::constant_iterator iter1{host_only_type{42}, 100};
+  const cuda::constant_iterator iter2{host_only_type{1337}, 101};
+  assert(iter1 != iter2);
+
+  {
+    assert(++iter1 == iter2);
+    assert(--iter1 != iter2);
+  }
+
+  {
+    assert(iter1++ != iter2);
+    assert(iter1-- == iter2);
+  }
+
+  {
+    assert(iter1 + 1 == iter2);
+    assert(iter1 - 1 != iter2);
+    assert(iter2 - iter1 == 1);
+  }
+
+  {
+    iter1 += 1;
+    assert(iter1 == iter2);
+    iter1 -= 1;
+    assert(iter1 != iter2);
+  }
+
+  {
+    assert(iter1[1] == host_only_type{42});
+    assert(*iter1 == host_only_type{42});
+
+    assert(iter2[1] == host_only_type{1337});
+    assert(*iter2 == host_only_type{1337});
+  }
 }
 
 int main(int arg, char** argv)

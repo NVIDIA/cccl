@@ -57,8 +57,75 @@ struct host_plus_value
 void test()
 {
   std::vector<int> vec{1, 2, 3, 4};
-  cuda::transform_input_output_iterator iter{vec.begin(), host_plus_value{42}, host_plus_value{42}};
-  assert(iter[1] == vec[1] + 42);
+
+  {
+    using Iter = typename std::vector<int>::iterator;
+    using transform_input_output_iterator =
+      cuda::transform_input_output_iterator<host_plus_value, host_plus_value, Iter>;
+
+    const transform_input_output_iterator default_constructed{};
+    transform_input_output_iterator value_constructed{vec.begin(), host_plus_value{42}, host_plus_value{1337}};
+
+    transform_input_output_iterator copy_constructed{default_constructed};
+    transform_input_output_iterator move_constructed{::cuda::std::move(value_constructed)};
+
+    [[maybe_unused]] transform_input_output_iterator copy_assigned{};
+    copy_assigned = copy_constructed;
+
+    [[maybe_unused]] transform_input_output_iterator move_assigned{};
+    move_assigned = ::cuda::std::move(move_constructed);
+  }
+
+  cuda::transform_input_output_iterator iter1{vec.begin(), host_plus_value{42}, host_plus_value{1337}};
+  const cuda::transform_input_output_iterator iter2{vec.begin() + 1, host_plus_value{42}, host_plus_value{1337}};
+  assert(iter1 != iter2);
+
+  {
+    assert(++iter1 == iter2);
+    assert(--iter1 != iter2);
+  }
+
+  {
+    assert(iter1++ != iter2);
+    assert(iter1-- == iter2);
+  }
+
+  {
+    assert(iter1 + 1 == iter2);
+    assert(iter1 - 1 != iter2);
+    assert(iter2 - iter1 == 1);
+  }
+
+  {
+    iter1 += 1;
+    assert(iter1 == iter2);
+    iter1 -= 1;
+    assert(iter1 != iter2);
+  }
+
+  {
+    assert(iter1[1] == vec[1] + 42);
+    assert(*iter1 == vec[0] + 42);
+  }
+
+  {
+    iter1[1] = 1;
+    assert(iter1[1] == (1337 + 1) + 42);
+
+    *iter1 = 2;
+    assert(*iter1 == (1337 + 2) + 42);
+
+    iter2[1] = 1;
+    assert(iter2[1] == (1337 + 1) + 42);
+
+    *iter2 = 2;
+    assert(*iter2 == (1337 + 2) + 42);
+  }
+
+  {
+    assert(iter1.base() == vec.begin());
+    assert(iter2.base() == vec.begin() + 1);
+  }
 }
 
 int main(int arg, char** argv)

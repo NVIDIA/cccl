@@ -54,8 +54,60 @@ void test()
 {
   // taken from host_bijection
   constexpr uint32_t random_indices[] = {4, 1, 2, 0, 3};
-  cuda::shuffle_iterator iter{host_bijection{}};
-  assert(iter[1] == random_indices[1]);
+
+  { // constructors
+    using shuffle_iterator = cuda::shuffle_iterator<int, host_bijection>;
+
+    const shuffle_iterator default_constructed{};
+    shuffle_iterator value_constructed{host_bijection{}};
+
+    shuffle_iterator copy_constructed{default_constructed};
+    shuffle_iterator move_constructed{::cuda::std::move(value_constructed)};
+
+    [[maybe_unused]] shuffle_iterator copy_assigned{};
+    copy_assigned = copy_constructed;
+
+    [[maybe_unused]] shuffle_iterator move_assigned{};
+    move_assigned = ::cuda::std::move(move_constructed);
+
+    [[maybe_unused]] shuffle_iterator bijection_value_constructed{host_bijection{}, 0};
+    [[maybe_unused]] shuffle_iterator size_bijection_value_constructed{4, host_bijection{}, 0};
+  }
+
+  cuda::shuffle_iterator iter1{host_bijection{}, 0};
+  const cuda::shuffle_iterator iter2{host_bijection{}, 1};
+  assert(iter1 != iter2);
+
+  {
+    assert(++iter1 == iter2);
+    assert(--iter1 != iter2);
+  }
+
+  {
+    assert(iter1++ != iter2);
+    assert(iter1-- == iter2);
+  }
+
+  {
+    assert(iter1 + 1 == iter2);
+    assert(iter1 - 1 != iter2);
+    assert(iter2 - iter1 == 1);
+  }
+
+  {
+    iter1 += 1;
+    assert(iter1 == iter2);
+    iter1 -= 1;
+    assert(iter1 != iter2);
+  }
+
+  {
+    assert(iter1[1] == random_indices[1]);
+    assert(*iter1 == random_indices[0]);
+
+    assert(iter2[1] == random_indices[2]);
+    assert(*iter2 == random_indices[1]);
+  }
 }
 
 int main(int arg, char** argv)

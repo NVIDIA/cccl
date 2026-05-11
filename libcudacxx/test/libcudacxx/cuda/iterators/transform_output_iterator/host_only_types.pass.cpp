@@ -45,9 +45,69 @@ struct host_functor
 void test()
 {
   std::vector<int> vec{1, 2, 3, 4};
-  cuda::transform_output_iterator iter{vec.begin(), host_functor{}};
-  iter[1] = 1337;
-  assert(vec[1] == 1337 + 42);
+
+  {
+    using Iter                      = typename std::vector<int>::iterator;
+    using transform_output_iterator = cuda::transform_output_iterator<host_functor, Iter>;
+
+    const transform_output_iterator default_constructed{};
+    transform_output_iterator value_constructed{vec.begin(), host_functor{}};
+
+    transform_output_iterator copy_constructed{default_constructed};
+    transform_output_iterator move_constructed{::cuda::std::move(value_constructed)};
+
+    [[maybe_unused]] transform_output_iterator copy_assigned{};
+    copy_assigned = copy_constructed;
+
+    [[maybe_unused]] transform_output_iterator move_assigned{};
+    move_assigned = ::cuda::std::move(move_constructed);
+  }
+
+  cuda::transform_output_iterator iter1{vec.begin(), host_functor{}};
+  const cuda::transform_output_iterator iter2{vec.begin() + 1, host_functor{}};
+  assert(iter1 != iter2);
+
+  {
+    assert(++iter1 == iter2);
+    assert(--iter1 != iter2);
+  }
+
+  {
+    assert(iter1++ != iter2);
+    assert(iter1-- == iter2);
+  }
+
+  {
+    assert(iter1 + 1 == iter2);
+    assert(iter1 - 1 != iter2);
+    assert(iter2 - iter1 == 1);
+  }
+
+  {
+    iter1 += 1;
+    assert(iter1 == iter2);
+    iter1 -= 1;
+    assert(iter1 != iter2);
+  }
+
+  {
+    iter1[1] = 1337;
+    assert(vec[1] == 1337 + 42);
+
+    *iter1 = 1337;
+    assert(vec[0] == 1337 + 42);
+
+    iter2[1] = 1;
+    assert(vec[2] == 1 + 42);
+
+    *iter2 = 1;
+    assert(vec[1] == 1 + 42);
+  }
+
+  {
+    assert(iter1.base() == vec.begin());
+    assert(iter2.base() == vec.begin() + 1);
+  }
 }
 
 int main(int arg, char** argv)
