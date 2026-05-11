@@ -162,9 +162,9 @@ template <class Derived, class InputIterator, class OutputIterator, class Predic
 OutputIterator _CCCL_HOST_DEVICE copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
-  THRUST_CDP_DISPATCH(
-    (return detail::copy_if_with_stencil(policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
-    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
+  THRUST_CDP_DISPATCH((return detail::copy_if_with_stencil</* InPlace */ false>(
+                                policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
+                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
