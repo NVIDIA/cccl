@@ -54,7 +54,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
       d_in,
       d_out,
       elements,
-      {},
+      init_t{},
       launch.get_stream(),
       transform_t{}
 #if !TUNE_BASE
