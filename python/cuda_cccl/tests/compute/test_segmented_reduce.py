@@ -145,7 +145,12 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
     def make_difference(idx: np.int64) -> np.uint8:
         p = np.uint8(7)
 
-        def Fu(idx: np.int64) -> np.uint8:
+        # Annotations on this nested function are intentionally omitted: on
+        # Python 3.14 they cause numba_cuda to abort with `AssertionError:
+        # unreachable` in op_SET_FUNCTION_ATTRIBUTE, because the new 0x10
+        # (`__annotate__`, PEP 649) flag isn't handled.
+        # Original signature: def Fu(idx: np.int64) -> np.uint8:
+        def Fu(idx):
             i8 = np.uint8(idx % 5) + np.uint8(idx % 3)
             f = (i8 * (i8 + 1)) % p
             return f
