@@ -26,7 +26,7 @@ struct tuned_policy_selector
       cub::LOAD_DEFAULT};
     auto rp_nondet            = rp;
     rp_nondet.block_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-    return {rp, rp, rp_nondet};
+    return {rp, rp};
   }
 };
 #endif // !TUNE_BASE
