@@ -107,7 +107,7 @@ template <typename PolicySelector,
           typename SegmentSizeT,
           typename DecomposerT = detail::identity_decomposer_t>
 #if _CCCL_HAS_CONCEPTS()
-  requires radix_sort_policy_selector<PolicySelector>
+  requires segmented_radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
