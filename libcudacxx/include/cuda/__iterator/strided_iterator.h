@@ -25,6 +25,7 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__iterator/iterator_traits.h>

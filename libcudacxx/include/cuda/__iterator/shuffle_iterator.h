@@ -92,8 +92,8 @@ template <class _IndexType, class _Bijection>
 class shuffle_iterator
 {
 private:
-  _Bijection __bijection_{};
-  _IndexType __current_{0};
+  _Bijection __bijection_;
+  _IndexType __current_;
 
   static_assert(::cuda::std::is_integral_v<_IndexType>, "_IndexType must be an integral type");
   static_assert(__is_bijection<_Bijection>, "_Bijection must be a valid bijection function");
@@ -109,8 +109,13 @@ public:
   using reference = _IndexType;
   using pointer   = void;
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI constexpr shuffle_iterator() noexcept = default;
+  _CCCL_EXEC_CHECK_DISABLE // NVCC 12.0 fails to default construct when _CCCL_TEMPLATE is used
+  template <bool _IsDefaultConstructible                           = ::cuda::std::default_initializable<_Bijection>,
+            ::cuda::std::enable_if_t<_IsDefaultConstructible, int> = 0>
+  _CCCL_API constexpr shuffle_iterator()
+      : __bijection_()
+      , __current_(0)
+  {}
 
   //! @brief Constructs a @c shuffle_iterator from a given bijection and an optional start position
   //! @param __bijection The bijection representing the shuffled integer sequence
@@ -208,8 +213,9 @@ public:
   //! @param __iter The @c shuffle_iterator to copy
   //! @param __n The number of elements to increment
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr shuffle_iterator
-  operator+(shuffle_iterator __iter, difference_type __n) noexcept
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr shuffle_iterator operator+(shuffle_iterator __iter, difference_type __n) noexcept
   {
 #if _CCCL_COMPILER(MSVC) // C4308: negative integral constant converted to unsigned type
     __iter.__current_ = static_cast<value_type>(static_cast<difference_type>(__iter.__current_) + __n);
@@ -223,8 +229,9 @@ public:
   //! @param __n The number of elements to increment
   //! @param __iter The @c shuffle_iterator to copy
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr shuffle_iterator
-  operator+(difference_type __n, shuffle_iterator __iter) noexcept
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr shuffle_iterator operator+(difference_type __n, shuffle_iterator __iter) noexcept
   {
 #if _CCCL_COMPILER(MSVC) // C4308: negative integral constant converted to unsigned type
     __iter.__current_ = static_cast<value_type>(static_cast<difference_type>(__iter.__current_) + __n);
@@ -251,8 +258,9 @@ public:
   //! @param __iter The @c shuffle_iterator to copy
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr shuffle_iterator
-  operator-(shuffle_iterator __iter, difference_type __n) noexcept
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr shuffle_iterator operator-(shuffle_iterator __iter, difference_type __n) noexcept
   {
 #if _CCCL_COMPILER(MSVC) // C4308: negative integral constant converted to unsigned type
     __iter.__current_ = static_cast<value_type>(static_cast<difference_type>(__iter.__current_) - __n);

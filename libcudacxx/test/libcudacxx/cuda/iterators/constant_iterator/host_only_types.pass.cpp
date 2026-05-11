@@ -53,6 +53,7 @@ void test()
 
   {
     assert(iter1 + 1 == iter2);
+    assert(1 + iter1 == iter2);
     assert(iter1 - 1 != iter2);
     assert(iter2 - iter1 == 1);
   }

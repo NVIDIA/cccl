@@ -27,6 +27,7 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
@@ -93,8 +94,8 @@ template <class _Iter, class _Index>
 class permutation_iterator
 {
 private:
-  _Iter __iter_   = {};
-  _Index __index_ = {};
+  _Iter __iter_;
+  _Index __index_;
 
   // We need to factor these out because old gcc chokes with using arguments in friend functions
   template <class _Iter1>
@@ -142,7 +143,13 @@ public:
 
   //! @brief Default constructs an @c permutation_iterator with a value initialized iterator and index
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI constexpr permutation_iterator() = default;
+  _CCCL_TEMPLATE(class _Iter2 = _Iter, class _Index2 = _Index)
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Iter2> _CCCL_AND ::cuda::std::default_initializable<_Index2>)
+  _CCCL_API constexpr permutation_iterator() noexcept(
+    ::cuda::std::is_nothrow_default_constructible_v<_Iter2> && ::cuda::std::is_nothrow_default_constructible_v<_Index2>)
+      : __iter_()
+      , __index_()
+  {}
 
   //! @brief Constructs an @c permutation_iterator from an iterator and an optional index
   //! @param __iter The iterator to to index from
