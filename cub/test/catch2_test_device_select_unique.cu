@@ -354,7 +354,7 @@ C2H_TEST("DeviceSelect::Unique in-place random data", "[device][select_unique]",
   SECTION("without predicate")
   {
     select_unique(data.begin(), d_first_num_selected_out, num_items);
-    REQUIRE(num_selected_std == num_selected_out[0]);
+    REQUIRE(static_cast<int>(reference.size()) == num_selected_out[0]);
     data.resize(num_selected_out[0]);
     REQUIRE(reference == data);
   }
@@ -362,7 +362,7 @@ C2H_TEST("DeviceSelect::Unique in-place random data", "[device][select_unique]",
   SECTION("with predicate")
   {
     select_unique(data.begin(), d_first_num_selected_out, num_items, fake_equal_to{});
-    REQUIRE(num_selected_std == num_selected_out[0]);
+    REQUIRE(static_cast<int>(reference.size()) == num_selected_out[0]);
     data.resize(num_selected_out[0]);
     REQUIRE(reference == data);
   }
