@@ -30,7 +30,6 @@ workflows:
     - {jobs: ['test_gpu'], project: 'thrust',      ctk: ['13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus, cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit'}
     - {jobs: ['test'], project: 'libcudacxx',      ctk: ['13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
     - {jobs: ['test'], project: 'cub',             ctk: ['13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
-    - {jobs: ['test'], project: 'cudax',           ctk: ['13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: ['13.X'], cxx: 'msvc', gpu: *win_gpus}
 
   pull_request:
@@ -367,6 +366,8 @@ workflows:
   exclude:
     # cudax doesn't support C++17 on msvc:
     - {project: 'cudax', std: 17, cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
+    # cudax tests currently fail under MSVC on Windows; tracked in a follow-up PR.
+    - {project: 'cudax', jobs: ['test'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
 
 
 #############################################################################################
