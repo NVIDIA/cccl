@@ -13,6 +13,7 @@ libcu++
    extended_api
    runtime
    ptx_api
+   tile
    API reference <api/index>
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++

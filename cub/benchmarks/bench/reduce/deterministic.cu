@@ -26,11 +26,7 @@ struct policy_selector_t
 template <class T>
 void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 {
-  using input_it_t  = const T*;
-  using output_it_t = T*;
-
   using init_t      = T;
-  using accum_t     = T;
   using transform_t = ::cuda::std::identity;
 
   const auto elements = static_cast<int>(state.get_int64("Elements{io}"));
@@ -38,33 +34,34 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
 
-  input_it_t d_in   = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out = thrust::raw_pointer_cast(out.data());
+  const T* d_in = thrust::raw_pointer_cast(in.data());
+  T* d_out      = thrust::raw_pointer_cast(out.data());
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(out.size());
 
   std::size_t temp_storage_bytes{};
-  // we explicitly provide template arguments to override accum_t
-  cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t>(
-    nullptr, temp_storage_bytes, d_in, d_out, elements, init_t{}, /* stream */ nullptr);
+  cub::detail::rfa::dispatch(
+    nullptr, temp_storage_bytes, d_in, d_out, elements, init_t{}, /* stream */ nullptr, transform_t{});
 
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   auto* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    cub::detail::rfa::dispatch<
-      input_it_t,
-      output_it_t,
-      int,
-      init_t,
-      transform_t,
-      accum_t
+    cub::detail::rfa::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      elements,
+      init_t{},
+      launch.get_stream(),
+      transform_t{}
 #if !TUNE_BASE
       ,
-      policy_selector_t
+      policy_selector_t{}
 #endif // !TUNE_BASE
-      >(d_temp_storage, temp_storage_bytes, d_in, d_out, elements, {}, launch.get_stream());
+    );
   });
 }
 

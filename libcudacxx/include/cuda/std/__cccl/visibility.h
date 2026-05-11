@@ -52,6 +52,12 @@
 #  define _CCCL_VISIBILITY_DEFAULT __attribute__((__visibility__("default")))
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_VISIBILITY_EXPORT __declspec(dllexport)
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_VISIBILITY_EXPORT _CCCL_VISIBILITY_DEFAULT
+#endif // !_CCCL_COMPILER(MSVC)
+
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
 #  define _CCCL_TYPE_VISIBILITY_HIDDEN

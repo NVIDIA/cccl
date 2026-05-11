@@ -57,7 +57,7 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size;
-  cub::detail::reduce_nondeterministic::dispatch</* OverrideAccumT = */ T>(
+  cub::detail::reduce_nondeterministic::dispatch(
     nullptr,
     temp_size,
     d_in,
@@ -77,7 +77,7 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::reduce_nondeterministic::dispatch</* OverrideAccumT = */ T>(
+    cub::detail::reduce_nondeterministic::dispatch(
       temp_storage,
       temp_size,
       d_in,
