@@ -126,9 +126,7 @@ inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
 /* Get the unique ID associated with a context (overloaded) */
 inline unsigned long long get_cuda_context_id(CUcontext ctx)
 {
-  unsigned long long ctx_id;
-  cuda_try(cuCtxGetId(ctx, &ctx_id));
-  return ctx_id;
+  return cuda_try<cuCtxGetId>(ctx);
 }
 
 /* Get the unique ID associated with a green context (overloaded) */

@@ -74,7 +74,7 @@ public:
       {
         cudaFreeHost(&result);
       };
-      cuda_try(cudaGraphAddEmptyNode(&out, graph, nodes.data(), nodes.size()));
+      out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
     else
     {
