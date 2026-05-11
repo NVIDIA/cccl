@@ -110,9 +110,9 @@ public:
   using pointer   = void;
 
   _CCCL_EXEC_CHECK_DISABLE // NVCC 12.0 fails to default construct when _CCCL_TEMPLATE is used
-  template <bool _IsDefaultConstructible                           = ::cuda::std::default_initializable<_Bijection>,
-            ::cuda::std::enable_if_t<_IsDefaultConstructible, int> = 0>
-  _CCCL_API constexpr shuffle_iterator()
+  template <class _Bijection2                                                              = _Bijection,
+            ::cuda::std::enable_if_t<::cuda::std::default_initializable<_Bijection2>, int> = 0>
+  _CCCL_API constexpr shuffle_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Bijection2>)
       : __bijection_()
       , __current_(0)
   {}

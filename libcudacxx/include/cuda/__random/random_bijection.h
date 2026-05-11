@@ -23,8 +23,10 @@
 
 #include <cuda/__fwd/random.h>
 #include <cuda/__random/feistel_bijection.h>
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 
