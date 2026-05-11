@@ -75,6 +75,8 @@ class group_by;
 template <class _Data, bool _IsExahustive>
 class group_as;
 
+class identity_mapping;
+
 // synchronizers
 
 class lane_synchronizer;
