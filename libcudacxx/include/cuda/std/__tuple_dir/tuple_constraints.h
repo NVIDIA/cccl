@@ -51,7 +51,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t;
+struct allocator_arg_t;
 
 template <class... _Tp>
 inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp> && ...);
