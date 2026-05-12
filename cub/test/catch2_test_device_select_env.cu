@@ -646,9 +646,9 @@ C2H_TEST("Device select unique in-place uses environment", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::Unique(
-            nullptr, expected_bytes_allocated, d_data.begin(), d_data.begin(), d_num_selected.begin(), num_items));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -674,10 +674,9 @@ C2H_TEST("Device select unique in-place with custom equality_op uses environment
   eq_mod3_t<value_t> eq_mod3{};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Unique(
-      nullptr, expected_bytes_allocated, d_data.begin(), d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::Unique(
+            nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -962,9 +961,9 @@ TEST_CASE("Device select unique in-place uses custom stream", "[select][device]"
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::Unique(
-            nullptr, expected_bytes_allocated, d_data.begin(), d_data.begin(), d_num_selected.begin(), num_items));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -998,10 +997,9 @@ TEST_CASE("Device select unique in-place with custom equality_op uses custom str
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Unique(
-      nullptr, expected_bytes_allocated, d_data.begin(), d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::Unique(
+            nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};

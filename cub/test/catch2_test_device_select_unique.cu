@@ -320,20 +320,17 @@ C2H_TEST("DeviceSelect::Unique in-place empty and uniform data", "[device][selec
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  if (num_items == 0)
+  SECTION("without predicate")
   {
-    SECTION("without predicate")
+    select_unique(data.begin(), d_first_num_selected_out, num_items);
+    if (num_items > 0)
     {
-      select_unique(data.begin(), d_first_num_selected_out, num_items);
-      if (num_items > 0)
-      {
-        REQUIRE(num_selected_out[0] == 1);
-        REQUIRE(data[0] == val);
-      }
-      else
-      {
-        REQUIRE(num_selected_out[0] == 0);
-      }
+      REQUIRE(num_selected_out[0] == 1);
+      REQUIRE(data[0] == val);
+    }
+    else
+    {
+      REQUIRE(num_selected_out[0] == 0);
     }
   }
 
