@@ -99,7 +99,7 @@ TEST_FUNC constexpr bool test()
     assert(process_segments(seg_size) == 128);
   }
 
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+#if TEST_HAS_CLASS_NTTP
   // static_argument: array, max fits in shared memory
   {
     constexpr auto seg_sizes = cuda::argument::__constant<cuda::std::array{64, 128, 256}>{};
@@ -115,7 +115,7 @@ TEST_FUNC constexpr bool test()
     assert(compute_buffer_size(seg_sizes, 3) == 512 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 512);
   }
-#endif // _CCCL_STD_VER >= 2020
+#endif // TEST_HAS_CLASS_NTTP
 
   // dynamic_argument: tight static bounds, shared memory, buffer = static max
   {
@@ -179,7 +179,7 @@ TEST_FUNC constexpr bool test()
     assert(process_segments(1.0f) == 1);
   }
 
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+#if TEST_HAS_CLASS_NTTP
   // static_argument float (float NTTPs require C++20)
   {
     constexpr auto seg_size = cuda::argument::__constant<128.0f>{};
@@ -193,7 +193,7 @@ TEST_FUNC constexpr bool test()
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(process_segments(seg_size) == 100);
   }
-#endif // _CCCL_STD_VER >= 2020
+#endif // TEST_HAS_CLASS_NTTP
 
   return true;
 }

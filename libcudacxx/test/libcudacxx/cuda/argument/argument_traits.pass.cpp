@@ -75,11 +75,11 @@ TEST_FUNC void test()
   static_assert(cuda::argument::__lowest(1.0f) == cuda::std::numeric_limits<float>::lowest());
   static_assert(cuda::argument::__max(1.0f) == cuda::std::numeric_limits<float>::max());
 
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+#if TEST_HAS_CLASS_NTTP
   // --- is_single_value with array constant ---
   using arr_t = cuda::std::array<int, 3>;
   static_assert(!cuda::argument::__traits<cuda::argument::__constant<arr_t{1, 2, 3}>>::is_single_value);
-#endif // __cpp_nontype_template_args >= 201911L
+#endif // TEST_HAS_CLASS_NTTP
 }
 
 int main(int, char**)

@@ -36,7 +36,7 @@ TEST_FUNC void test()
     static_assert(sa_neg.value == -1);
   }
 
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+#if TEST_HAS_CLASS_NTTP
   // Array value (per-segment at compile time)
   {
     constexpr auto sa_arr = cuda::argument::__constant<cuda::std::array<int, 3>{128, 256, 512}>{};
@@ -45,7 +45,7 @@ TEST_FUNC void test()
     static_assert(sa_arr.value[2] == 512);
     static_assert(cuda::std::is_same_v<decltype(sa_arr)::value_type, cuda::std::array<int, 3>>);
   }
-#endif // _CCCL_STD_VER >= 2020
+#endif // TEST_HAS_CLASS_NTTP
 
   // Bounds: scalar
   {
@@ -54,14 +54,14 @@ TEST_FUNC void test()
     static_assert(cuda::argument::__max(sa) == 42);
   }
 
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+#if TEST_HAS_CLASS_NTTP
   // Bounds: array — computes min/max of elements
   {
     constexpr auto sa = cuda::argument::__constant<cuda::std::array<int, 3>{128, 256, 512}>{};
     static_assert(cuda::argument::__lowest(sa) == 128);
     static_assert(cuda::argument::__max(sa) == 512);
   }
-#endif // _CCCL_STD_VER >= 2020
+#endif // TEST_HAS_CLASS_NTTP
 
   // Traits
   {
@@ -74,10 +74,10 @@ TEST_FUNC void test()
   {
     static_assert(
       cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__constant<42>>::value_type>);
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+#if TEST_HAS_CLASS_NTTP
     static_assert(!cuda::argument::__is_single_value_v<
                   cuda::argument::__traits<cuda::argument::__constant<cuda::std::array<int, 3>{1, 2, 3}>>::value_type>);
-#endif // _CCCL_STD_VER >= 2020
+#endif // TEST_HAS_CLASS_NTTP
   }
 
   // Unwrap: scalar
@@ -87,7 +87,7 @@ TEST_FUNC void test()
     static_assert(val == 42);
   }
 
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+#if TEST_HAS_CLASS_NTTP
   // Unwrap: array
   {
     constexpr auto sa  = cuda::argument::__constant<cuda::std::array<int, 3>{10, 20, 30}>{};
@@ -95,7 +95,7 @@ TEST_FUNC void test()
     static_assert(val[0] == 10);
     static_assert(val[2] == 30);
   }
-#endif // _CCCL_STD_VER >= 2020
+#endif // TEST_HAS_CLASS_NTTP
 }
 
 int main(int, char**)
