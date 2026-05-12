@@ -86,13 +86,16 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _CCCL_API constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [[maybe_unused]] _Tp* __last)
 {
-#if !_CCCL_TILE_COMPILATION() // pointer values cannot be compared
+  // Without the builtin, is_constant_evaluated() is hard-coded to false, so the runtime branch is
+  // selected even during constant evaluation -- where the pointer compare below is ill-formed. Fall
+  // through to the constexpr-safe path on compilers that lack the builtin (notably GCC 8).
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   if (!::cuda::std::is_constant_evaluated())
   {
     return __first < __needle;
   }
   else
-#endif // !_CCCL_TILE_COMPILATION()
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   {
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
     NV_IF_ELSE_TARGET(NV_IS_HOST,
