@@ -161,6 +161,16 @@ struct TestRadixSortDispatch
   static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<>>);
   static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<>>);
 
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
+
   void operator()() const {}
 };
 SimpleUnitTest<TestRadixSortDispatch,
