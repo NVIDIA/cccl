@@ -17,7 +17,7 @@
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
 #include <cub/util_arch.cuh>
 
 #include <cuda/__device/compute_capability.h>
@@ -27,13 +27,13 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::radix_sort
+namespace detail::segmented_radix_sort
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
-  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr segmented_radix_sort_policy policy = current_policy<PolicySelector>();
   return AltDigitBits ? policy.alt_segmented.threads_per_block : policy.segmented.threads_per_block;
 }
 
@@ -107,7 +107,7 @@ template <typename PolicySelector,
           typename SegmentSizeT,
           typename DecomposerT = detail::identity_decomposer_t>
 #if _CCCL_HAS_CONCEPTS()
-  requires radix_sort_policy_selector<PolicySelector>
+  requires segmented_radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
@@ -125,7 +125,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
   // Constants
   //
 
-  static constexpr radix_sort_policy policy                  = current_policy<PolicySelector>();
+  static constexpr segmented_radix_sort_policy policy        = current_policy<PolicySelector>();
   static constexpr radix_sort_downsweep_policy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
 
   static constexpr int threads_per_block = active_policy.threads_per_block;
@@ -140,7 +140,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
                                 active_policy.radix_bits,
                                 NoScaling<active_policy.threads_per_block, active_policy.items_per_thread>>;
 
-  using BlockUpsweepT = AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, SegmentSizeT, DecomposerT>;
+  using BlockUpsweepT = radix_sort::AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, SegmentSizeT, DecomposerT>;
 
   using DigitScanT = BlockScan<SegmentSizeT, threads_per_block>;
 
@@ -155,8 +155,13 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     active_policy.radix_bits,
     NoScaling<active_policy.threads_per_block, active_policy.items_per_thread>>;
 
-  using BlockDownsweepT =
-    AgentRadixSortDownsweep<ActiveDownsweepPolicyT, Order == SortOrder::Descending, KeyT, ValueT, SegmentSizeT, DecomposerT>;
+  using BlockDownsweepT = radix_sort::AgentRadixSortDownsweep<
+    ActiveDownsweepPolicyT,
+    Order == SortOrder::Descending,
+    KeyT,
+    ValueT,
+    SegmentSizeT,
+    DecomposerT>;
 
   /// Number of bin-starting offsets tracked per thread
   static constexpr int bins_tracked_per_thread = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
@@ -284,6 +289,6 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     decomposer);
   downsweep.ProcessRegion(SegmentSizeT{0}, num_items);
 }
-} // namespace detail::radix_sort
+} // namespace detail::segmented_radix_sort
 
 CUB_NAMESPACE_END

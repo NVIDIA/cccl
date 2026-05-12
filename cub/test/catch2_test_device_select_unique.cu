@@ -308,6 +308,80 @@ C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   REQUIRE(reference == out);
 }
 
+C2H_TEST("DeviceSelect::Unique in-place empty and uniform data", "[device][select_unique]", types)
+{
+  using type         = typename c2h::get<0, TestType>;
+  constexpr auto val = static_cast<type>(1);
+
+  const int num_items = GENERATE(0, take(4, random(1, 1000000)));
+  c2h::device_vector<type> data(num_items, val);
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  SECTION("without predicate")
+  {
+    select_unique(data.begin(), d_first_num_selected_out, num_items);
+    if (num_items > 0)
+    {
+      REQUIRE(num_selected_out[0] == 1);
+      REQUIRE(data[0] == val);
+    }
+    else
+    {
+      REQUIRE(num_selected_out[0] == 0);
+    }
+  }
+
+  SECTION("with predicate")
+  {
+    select_unique(data.begin(), d_first_num_selected_out, num_items, fake_equal_to{});
+    if (num_items > 0)
+    {
+      REQUIRE(num_selected_out[0] == 1);
+      REQUIRE(data[0] == val);
+    }
+    else
+    {
+      REQUIRE(num_selected_out[0] == 0);
+    }
+  }
+}
+
+C2H_TEST("DeviceSelect::Unique in-place random data", "[device][select_unique]", all_types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE(take(4, random(1, 1000000)));
+  c2h::device_vector<type> data(num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(2), data, to_bound<type>(0), to_bound<type>(42));
+
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Ensure that we create the same output as std
+  c2h::host_vector<type> reference = data;
+  const auto new_end               = std::unique(reference.begin(), reference.end());
+  reference.erase(new_end, reference.end());
+
+  SECTION("without predicate")
+  {
+    select_unique(data.begin(), d_first_num_selected_out, num_items);
+    REQUIRE(static_cast<int>(reference.size()) == num_selected_out[0]);
+    data.resize(num_selected_out[0]);
+    REQUIRE(reference == data);
+  }
+
+  SECTION("with predicate")
+  {
+    select_unique(data.begin(), d_first_num_selected_out, num_items, fake_equal_to{});
+    REQUIRE(static_cast<int>(reference.size()) == num_selected_out[0]);
+    data.resize(num_selected_out[0]);
+    REQUIRE(reference == data);
+  }
+}
+
 C2H_TEST("DeviceSelect::Unique works for very large number of items",
          "[device][select_unique][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
