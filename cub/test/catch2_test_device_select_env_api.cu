@@ -241,6 +241,64 @@ C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with str
   REQUIRE(output == expected_output);
 }
 
+C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select][env]")
+{
+  // example-begin select-unique-inplace-env
+  auto data         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto num_selected = thrust::device_vector<int>(1);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSelect::Unique(data.begin(), num_selected.begin(), data.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::Unique in-place failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_output{0, 2, 9, 5, 8};
+  thrust::device_vector<int> expected_num_selected{5};
+  // example-end select-unique-inplace-env
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(num_selected == expected_num_selected);
+  data.resize(num_selected[0]);
+  REQUIRE(data == expected_output);
+}
+
+C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env with stream", "[select][env]")
+{
+  // example-begin select-unique-inplace-eqop-env
+  // Unique modulo 3 — consecutive elements are "equal" if they have the same remainder mod 3
+  auto data         = thrust::device_vector<int>{0, 3, 6, 1, 4, 7, 2, 5};
+  auto num_selected = thrust::device_vector<int>(1);
+
+  eq_mod3_t<int> eq_mod3{};
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSelect::Unique(data.begin(), num_selected.begin(), data.size(), eq_mod3, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::Unique in-place with custom equality_op failed with status: " << error << '\n';
+  }
+
+  // 0,3,6 all == mod 3 (consecutive), keep first (0); 1,4,7 all == mod 3 (consecutive), keep first (1);
+  // 2,5 == mod 3 (consecutive), keep first (2)
+  thrust::device_vector<int> expected_output{0, 1, 2};
+  thrust::device_vector<int> expected_num_selected{3};
+  // example-end select-unique-inplace-eqop-env
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(num_selected == expected_num_selected);
+  data.resize(num_selected[0]);
+  REQUIRE(data == expected_output);
+}
+
 C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env]")
 {
   // example-begin select-uniquebykey-env

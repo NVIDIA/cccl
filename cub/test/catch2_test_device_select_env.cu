@@ -218,6 +218,46 @@ TEST_CASE("Device select unique with custom equality_op works with default envir
   REQUIRE(d_out == expected_output);
 }
 
+TEST_CASE("Device select unique in-place works with default environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_data           = c2h::device_vector<value_t>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items));
+
+  c2h::device_vector<value_t> expected_output{0, 2, 9, 5, 8};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_data.resize(d_num_selected[0]);
+  REQUIRE(d_data == expected_output);
+}
+
+TEST_CASE("Device select unique in-place with custom equality_op works with default environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_data           = c2h::device_vector<value_t>{0, 3, 6, 1, 4, 7, 2, 5};
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
+
+  eq_mod3_t<value_t> eq_mod3{};
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+
+  c2h::device_vector<value_t> expected_output{0, 1, 2};
+  c2h::device_vector<int> expected_num_selected{3};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_data.resize(d_num_selected[0]);
+  REQUIRE(d_data == expected_output);
+}
+
 TEST_CASE("Device select unique_by_key works with default environment", "[select][device]")
 {
   using value_t     = int;
@@ -596,6 +636,60 @@ C2H_TEST("Device select unique with custom equality_op uses environment", "[sele
   REQUIRE(d_out == expected_output);
 }
 
+C2H_TEST("Device select unique in-place uses environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 10;
+  auto d_data           = c2h::device_vector<value_t>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, env));
+
+  c2h::device_vector<value_t> expected_output{1, 2, 3, 4, 5};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_data.resize(d_num_selected[0]);
+  REQUIRE(d_data == expected_output);
+}
+
+C2H_TEST("Device select unique in-place with custom equality_op uses environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_data           = c2h::device_vector<value_t>{0, 3, 6, 1, 4, 7, 2, 5};
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
+
+  eq_mod3_t<value_t> eq_mod3{};
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::Unique(
+            nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3, env));
+
+  c2h::device_vector<value_t> expected_output{0, 1, 2};
+  c2h::device_vector<int> expected_num_selected{3};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_data.resize(d_num_selected[0]);
+  REQUIRE(d_data == expected_output);
+}
+
 C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
 {
   using value_t     = int;
@@ -850,6 +944,76 @@ TEST_CASE("Device select unique uses custom stream", "[select][device]")
   REQUIRE(d_num_selected == expected_num_selected);
   d_out.resize(d_num_selected[0]);
   REQUIRE(d_out == expected_output);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("Device select unique in-place uses custom stream", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_data           = c2h::device_vector<value_t>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  c2h::device_vector<value_t> expected_output{0, 2, 9, 5, 8};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_data.resize(d_num_selected[0]);
+  REQUIRE(d_data == expected_output);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("Device select unique in-place with custom equality_op uses custom stream", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_data           = c2h::device_vector<value_t>{0, 3, 6, 1, 4, 7, 2, 5};
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
+
+  eq_mod3_t<value_t> eq_mod3{};
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::Unique(
+            nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  c2h::device_vector<value_t> expected_output{0, 1, 2};
+  c2h::device_vector<int> expected_num_selected{3};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_data.resize(d_num_selected[0]);
+  REQUIRE(d_data == expected_output);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
