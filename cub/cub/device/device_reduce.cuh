@@ -116,6 +116,8 @@ private:
 
       if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
       {
+        // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
+        (void) reduction_op;
         using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
         using policy_selector =
           ::cuda::std::execution::__query_result_or_t<tuning_env_t, detail::rfa::rfa_policy, default_policy_selector>;
