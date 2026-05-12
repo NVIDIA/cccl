@@ -570,7 +570,7 @@ private:
   // and avoids fragile empty/single-tail detection (cudaStreamGetCaptureInfo_v2
   // can return inherited input deps as the frontier when no work was actually
   // captured, so we can't safely treat its output as "captured tails" only).
-  static cudaGraphNode_t end_capture_into_ctx_graph_and_emit_done(cudaStream_t s, cudaGraph_t ctx_graph)
+  [[nodiscard]] static cudaGraphNode_t end_capture_into_ctx_graph_and_emit_done(cudaStream_t s, cudaGraph_t ctx_graph)
   {
     // Snapshot the frontier first: the deps_out pointer is invalidated by
     // any subsequent stream-capture call, so we copy before EndCapture.
