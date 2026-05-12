@@ -163,11 +163,35 @@ class stream_pool
     // Construct from a decorated stream, this is used to create a stream pool with a single stream.
     explicit impl(decorated_stream ds)
         : payload(1, mv(ds))
+        , externally_owned(true)
     {}
+
+    // Release every stream the pool has lazily created. Externally-owned
+    // single-stream pools wrap user streams and must leave them alone.
+    ~impl()
+    {
+      if (externally_owned)
+      {
+        return;
+      }
+
+      for (auto& ds : payload)
+      {
+        if (ds.stream != nullptr)
+        {
+          [[maybe_unused]] cudaError_t err = cudaStreamDestroy(ds.stream);
+          ds.stream                        = nullptr;
+        }
+      }
+    }
+
+    impl(const impl&)            = delete;
+    impl& operator=(const impl&) = delete;
 
     mutable ::std::mutex mtx;
     ::std::vector<decorated_stream> payload;
-    size_t index = 0;
+    size_t index          = 0;
+    bool externally_owned = false;
   };
 
   ::std::shared_ptr<impl> pimpl;

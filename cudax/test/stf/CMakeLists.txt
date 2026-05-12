@@ -66,6 +66,7 @@ set(
   local_stf/stackable_nested_while.cu
   local_stf/stackable_nested.cu
   local_stf/stackable_node_pool_growth.cu
+  local_stf/stream_ctx_lifetime_btb.cu
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
