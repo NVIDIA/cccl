@@ -1,5 +1,5 @@
 ---
-name: libcudacxx-style
+name: cccl-libcudacxx-style
 description: Make the code in libcudacxx/include, cudax/include compliant with the coding style
 ---
 

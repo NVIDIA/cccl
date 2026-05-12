@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "additionalDirectories": [
+      "/tmp/claude"
+    ],
+    "allow": [
+      "Bash(gh auth status)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh run view *)",
+      "Bash(gh run list *)",
+      "Bash(gh workflow list *)",
+      "Bash(gh workflow view *)",
+      "Bash(gh issue view *)",
+      "Bash(gh issue list *)",
+      "Bash(gh search *)",
+      "Bash(gh api repos/NVIDIA/cccl/actions/jobs/*)",
+      "Bash(gh api repos/NVIDIA/cccl/actions/runs/*/jobs*)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git blame *)",
+      "Bash(git rev-parse *)",
+      "Bash(git branch --show-current)",
+      "Bash(git branch -a)",
+      "Bash(git branch -v)",
+      "Bash(git branch --list *)",
+      "Bash(git remote)",
+      "Bash(git remote -v)",
+      "Bash(git remote get-url *)",
+      "Bash(git ls-files *)",
+      "Bash(git worktree list)",
+      "Bash(git worktree list *)",
+      "Bash(git check-ignore *)",
+      "Bash(rg *)",
+      "Bash(grep *)",
+      "Bash(jq *)",
+      "Bash(sed -n *)",
+      "Bash(ls)",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+      "Bash(command -v *)",
+      "Bash(mkdir -p /tmp/claude/*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"CCCL repo orientation: load the `cccl` skill via the Skill tool BEFORE doing anything else. It is the entry point that surfaces all repo-local skills (.claude/skills -> .agent/skills) and agents (.claude/agents -> .agent/agents). If you are unfamiliar with how skills/agents work in this repo, load `cccl-agent-impl` first.\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
