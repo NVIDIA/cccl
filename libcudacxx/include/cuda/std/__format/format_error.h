@@ -58,7 +58,7 @@ _CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-[[noreturn]] _CCCL_API inline void __throw_format_error(const char* __s)
+[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_format_error(const char* __s)
 {
 #if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::cuda::std::format_error(__s);), (::cuda::std::terminate();))
