@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
@@ -95,7 +95,7 @@ inline constexpr bool __is_single_value_v =
 template <auto _Value>
 struct __constant
 {
-  using value_type                  = decltype(_Value);
+  using value_type                  = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using __element_type              = __element_type_of_t<value_type>;
   static constexpr value_type value = _Value;
 };
@@ -311,7 +311,7 @@ template <class _Arg, class _StaticBounds>
 inline constexpr bool __is_wrapper_v<__deferred_sequence<_Arg, _StaticBounds>> = true;
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<_Tp>>>) )
+_CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
 [[nodiscard]] _CCCL_API constexpr _Tp&& __unwrap(_Tp&& __arg) noexcept
 {
   return ::cuda::std::forward<_Tp>(__arg);
@@ -373,7 +373,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_max() noexcept
 
 template <auto _Value>
 inline constexpr auto __constant_compute_lowest = [] {
-  using _VT = decltype(_Value);
+  using _VT = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using _ET = __element_type_of_t<_VT>;
   if constexpr (::cuda::std::is_same_v<_VT, _ET>)
   {
@@ -395,7 +395,7 @@ inline constexpr auto __constant_compute_lowest = [] {
 
 template <auto _Value>
 inline constexpr auto __constant_compute_max = [] {
-  using _VT = decltype(_Value);
+  using _VT = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using _ET = __element_type_of_t<_VT>;
   if constexpr (::cuda::std::is_same_v<_VT, _ET>)
   {
@@ -448,7 +448,7 @@ struct __traits<__immediate<_Arg, _StaticBounds>>
 template <auto _Value>
 struct __traits<__constant<_Value>>
 {
-  using value_type                      = decltype(_Value);
+  using value_type                      = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using element_type                    = __element_type_of_t<value_type>;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = __is_single_value_v<value_type>;

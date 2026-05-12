@@ -35,8 +35,7 @@ TEST_FUNC constexpr bool test()
 
   // Long type deduced from NTTPs
   {
-    constexpr auto b = cuda::argument::__static_bounds<0L, 1000L>{};
-    static_assert(cuda::std::is_same_v<decltype(b)::value_type, long>);
+    static_assert(cuda::std::is_same_v<cuda::argument::__static_bounds<0L, 1000L>::value_type, long>);
   }
 
   // --- runtime_argument_bounds ---
