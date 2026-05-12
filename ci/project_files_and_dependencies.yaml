@@ -225,6 +225,7 @@ ignore_regexes:
   # changes.
   #
   # - '\.clang-tidy'
+  - '\.claude/'
   - '\.devcontainer/img'
   - '\.git-blame-ignore-revs'
   - '\.github/actions/docs-build'
