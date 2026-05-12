@@ -11,7 +11,7 @@ abstractions for CUDA Python developers.
 * :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
 
-* :doc:`cuda.coop <coop>` — Cooperative block- and warp-level algorithms for
+* :doc:`cuda.coop._experimental <coop>` — Cooperative block- and warp-level algorithms for
   writing highly efficient CUDA kernels with `Numba CUDA <https://nvidia.github.io/numba-cuda/>`_.
 
 * :doc:`cuda.stf <stf>` — Sequential Task Flow for CUDA: define logical data and

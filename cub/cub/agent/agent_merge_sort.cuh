@@ -44,7 +44,7 @@ struct AgentBlockSort
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   static constexpr merge_sort_policy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS        = policy.block_threads;
+  static constexpr int BLOCK_THREADS        = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
 
@@ -379,7 +379,7 @@ struct AgentMerge
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   static constexpr merge_sort_policy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS        = policy.block_threads;
+  static constexpr int BLOCK_THREADS        = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
 

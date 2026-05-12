@@ -31,6 +31,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -293,7 +294,7 @@ struct DispatchSegmentedRadixSort
         "%lld items per thread, %lld SM occupancy, "
         "current segment offset %lld, current bit %d, bit_grain %d\n",
         (long long) num_current_segments,
-        (long long) pass_config.segmented_config.block_threads,
+        (long long) pass_config.segmented_config.threads_per_block,
         (long long) stream,
         (long long) pass_config.segmented_config.items_per_thread,
         (long long) pass_config.segmented_config.sm_occupancy,
@@ -303,7 +304,7 @@ struct DispatchSegmentedRadixSort
 #endif
 
       launcher_factory(
-        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.block_threads, 0, stream)
+        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
@@ -761,7 +762,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix
         "%lld items per thread, %lld SM occupancy, "
         "current segment offset %lld, current bit %d, bit_grain %d\n",
         (long long) num_current_segments,
-        (long long) config.block_threads,
+        (long long) config.threads_per_block,
         (long long) stream,
         (long long) config.items_per_thread,
         (long long) config.sm_occupancy,
@@ -771,7 +772,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix
 #endif
 
       if (const auto err = CubDebug(
-            launcher_factory(static_cast<unsigned int>(num_current_segments), config.block_threads, 0, stream)
+            launcher_factory(static_cast<unsigned int>(num_current_segments), config.threads_per_block, 0, stream)
               .doit(kernel,
                     d_keys_in,
                     d_keys_out,
@@ -910,6 +911,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   const radix_sort_policy active_policy = policy_selector(cc);
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceSegmentedRadixSort to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return invoke_passes_segmented_radix_sort(
     d_temp_storage,

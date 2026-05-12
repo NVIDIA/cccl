@@ -329,7 +329,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-env
@@ -574,7 +574,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-descending-env
@@ -830,7 +830,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-db-env
@@ -1077,7 +1077,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-descending-db-env
@@ -1317,7 +1317,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-env
@@ -1566,7 +1566,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-descending-env
@@ -1828,7 +1828,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-db-env
@@ -1930,7 +1930,7 @@ public:
   //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
-  //! - Segments are not required to be contiguous. For all index values ```i`
+  //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
   //!
@@ -2078,7 +2078,7 @@ public:
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-descending-db-env
@@ -2518,7 +2518,7 @@ public:
   //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
   //!   the latter is specified as ``segment_offsets + 1``).
   //! - SortPairsDescending is not guaranteed to be stable. That is, suppose that
-  // ``i`` and ``j`` are equivalent: neither one is less than the other. It is not
+  //!   ``i`` and ``j`` are equivalent: neither one is less than the other. It is not
   //!   guaranteed that the relative order of these two elements will be
   //!   preserved by sort.
   //! - Let ``in`` be one of ``{d_keys_in, d_values_in}`` and ``out`` be any of
@@ -4149,11 +4149,25 @@ public:
   //!   within each DoubleBuffer wrapper to reference which of the two buffers
   //!   now contains the sorted output sequence (a function of the number of key bits
   //!   specified and the targeted device architecture).
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
   //! - StableSortPairs is stable: it preserves the relative ordering of
   //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
   //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
   //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
   //!   ``x`` still precedes ``y``.
+  //! - Let ``cur`` be one of ``{d_keys.Current(), d_values.Current()}`` and ``alt``
+  //!   be any of ``{d_keys.Alternate(), d_values.Alternate()}``. The range
+  //!   ``[cur, cur + num_items)`` shall not overlap
+  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys.Current()[i]``,
+  //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
+  //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
   //!
   //! Snippet
   //!
@@ -4432,11 +4446,25 @@ public:
   //!   within each DoubleBuffer wrapper to reference which of the two buffers
   //!   now contains the sorted output sequence (a function of the number of key bits
   //!   specified and the targeted device architecture).
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
   //! - StableSortPairsDescending is stable: it preserves the relative ordering
   //!   of equivalent elements. That is, if ``x`` and ``y`` are elements such that
   //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
   //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
   //!   ``x`` still precedes ``y``.
+  //! - Let ``cur`` be one of ``{d_keys.Current(), d_values.Current()}`` and ``alt``
+  //!   be any of ``{d_keys.Alternate(), d_values.Alternate()}``. The range
+  //!   ``[cur, cur + num_items)`` shall not overlap
+  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys.Current()[i]``,
+  //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
+  //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
   //!
   //! Snippet
   //!

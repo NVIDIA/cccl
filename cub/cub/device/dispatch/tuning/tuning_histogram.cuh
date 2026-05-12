@@ -231,7 +231,7 @@ struct policy_hub
 
 struct histogram_policy
 {
-  int block_threads;
+  int threads_per_block;
   int pixels_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -243,7 +243,7 @@ struct histogram_policy
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const histogram_policy& lhs, const histogram_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.pixels_per_thread == rhs.pixels_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.rle_compress == rhs.rle_compress && lhs.mem_preference == rhs.mem_preference
         && lhs.work_stealing == rhs.work_stealing && lhs.vec_size == rhs.vec_size
@@ -260,11 +260,11 @@ struct histogram_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const histogram_policy& p)
   {
     return os
-        << "histogram_policy { .block_threads = " << p.block_threads << ", .pixels_per_thread = " << p.pixels_per_thread
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference
-        << ", .work_stealing = " << p.work_stealing << ", .vec_size = " << p.vec_size
-        << ", .pdl_trigger_next_launch_in_init_kernel_max_bin_count = "
+        << "histogram_policy { .threads_per_block = " << p.threads_per_block
+        << ", .pixels_per_thread = " << p.pixels_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
+        << ", .mem_preference = " << p.mem_preference << ", .work_stealing = " << p.work_stealing
+        << ", .vec_size = " << p.vec_size << ", .pdl_trigger_next_launch_in_init_kernel_max_bin_count = "
         << p.pdl_trigger_next_launch_in_init_kernel_max_bin_count << " }";
   }
 #endif // _CCCL_HOSTED()

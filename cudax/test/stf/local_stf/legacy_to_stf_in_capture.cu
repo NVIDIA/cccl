@@ -54,7 +54,7 @@ __global__ void initA(double* d_ptrA, size_t N)
   size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
-    d_ptrA[i] = sin((double) i);
+    d_ptrA[i] = sin(i);
   }
 }
 
@@ -64,7 +64,7 @@ __global__ void initB(double* d_ptrB, size_t N)
   size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
-    d_ptrB[i] = cos((double) i);
+    d_ptrB[i] = cos(i);
   }
 }
 
@@ -201,7 +201,11 @@ static std::unordered_set<cudaGraphNode_t> transitive_dependencies(cudaGraphNode
     }
     std::vector<cudaGraphNode_t> deps(ndeps);
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), nullptr, &ndeps));
+    // CTK 13+: dependency edges may carry cudaGraphEdgeData. Querying into
+    // pDependencies with edgeData == nullptr returns cudaErrorLossyQuery when
+    // any edge has non-default data (e.g. port annotations from capture).
+    std::vector<cudaGraphEdgeData> edge_data(ndeps);
+    cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), edge_data.data(), &ndeps));
 #else
     cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), &ndeps));
 #endif

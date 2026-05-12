@@ -28,23 +28,23 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_r
 
 namespace stdexec = cuda::std::execution;
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct rle_encode_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::reduce_by_key::reduce_by_key_policy
   {
-    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}};
+    return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}};
   }
 };
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct rle_non_trivial_runs_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
-    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::BLOCK_SCAN_WARP_SCANS, {}};
+    return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::BLOCK_SCAN_WARP_SCANS, {}};
   }
 };
 

@@ -12,7 +12,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_bitwise_comparable()
+TEST_FUNC void test_is_bitwise_comparable()
 {
   static_assert(cuda::is_bitwise_comparable<T>::value);
   static_assert(cuda::is_bitwise_comparable_v<T>);
@@ -22,7 +22,7 @@ __host__ __device__ void test_is_bitwise_comparable()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_bitwise_comparable()
+TEST_FUNC void test_is_not_bitwise_comparable()
 {
   static_assert(!cuda::is_bitwise_comparable<T>::value);
   static_assert(!cuda::is_bitwise_comparable_v<T>);
@@ -31,7 +31,7 @@ __host__ __device__ void test_is_not_bitwise_comparable()
   static_assert(!cuda::is_bitwise_comparable_v<const volatile T>);
 }
 
-__host__ __device__ void test_basic_types()
+TEST_FUNC void test_basic_types()
 {
   // types with unique object representations
   test_is_bitwise_comparable<bool>();

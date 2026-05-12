@@ -148,7 +148,7 @@ using iterator_difference_t
 //! Trait obtaining the iterator traversal category of an iterator type.
 template <typename Iterator>
 struct iterator_traversal
-    : detail::iterator_category_to_traversal<typename iterator_traits<Iterator>::iterator_category>
+    : detail::iterator_category_to_traversal<::cuda::std::__iterator_traits_category_or_concept_t<Iterator>>
 {};
 
 //! Alias to the iterator traversal category of an iterator type.
@@ -165,7 +165,7 @@ struct iterator_system_impl
 
 template <typename Iterator>
 struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_traits<Iterator>::iterator_category>>
-    : iterator_category_to_system<typename iterator_traits<Iterator>::iterator_category>
+    : iterator_category_to_system<::cuda::std::__iterator_traits_category_or_concept_t<Iterator>>
 {};
 } // namespace detail
 

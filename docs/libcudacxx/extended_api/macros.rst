@@ -8,7 +8,19 @@ CCCL provides a set of convenience macros for detecting various system and compi
 properties via the preprocessor. These macros are available when any CCCL header is
 included, and do not require including a specific header file.
 
-Operating System
-================
+.. list-table::
+   :widths: 25 45 30 30
+   :header-rows: 1
 
-- :any:`CCCL_OS`: detecting the current operating system.
+   * - **Macro**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
+
+   * - .. toctree::
+          :maxdepth: 1
+
+          ../api/macro_cccl_os
+     - Detecting the current operating system.
+     - CCCL 3.4.0
+     - CUDA 13.3

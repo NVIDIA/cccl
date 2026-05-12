@@ -26,12 +26,12 @@ namespace stdexec = cuda::std::execution;
 
 using block_size_extracting_less_t = block_size_extracting_op<cuda::std::less<>>;
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct merge_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::merge::merge_policy
   {
-    return {BlockThreads, 1, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false};
+    return {ThreadsPerBlock, 1, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false};
   }
 };
 

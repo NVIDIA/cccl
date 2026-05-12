@@ -49,6 +49,12 @@
 #  undef _CCCL_BUILTIN_CLZG
 #endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_CLZ
+#  undef _CCCL_BUILTIN_CLZLL
+#  undef _CCCL_BUILTIN_CLZG
+#endif // _CCCL_TILE_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if !defined(_CCCL_BUILTIN_CLZG)

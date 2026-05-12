@@ -342,11 +342,11 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Fn>
-_CCCL_HOST_DEVICE tabulate_output_iterator(_Fn) -> tabulate_output_iterator<_Fn, ::cuda::std::ptrdiff_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES tabulate_output_iterator(_Fn) -> tabulate_output_iterator<_Fn, ::cuda::std::ptrdiff_t>;
 
 _CCCL_TEMPLATE(class _Fn, class _Index)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Index>)
-_CCCL_HOST_DEVICE tabulate_output_iterator(_Fn, _Index) -> tabulate_output_iterator<_Fn, _Index>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES tabulate_output_iterator(_Fn, _Index) -> tabulate_output_iterator<_Fn, _Index>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c tabulate_output_iterator from an output function and an optional index.

@@ -66,6 +66,11 @@ inline bool is_stream_capturing(cudaStream_t stream)
  */
 inline int get_device_from_stream(cudaStream_t stream)
 {
+  if (stream == nullptr)
+  {
+    return cuda_try<cudaGetDevice>();
+  }
+  
   // If the stream is currently capturing, ``cudaStreamGetDevice`` /
   // ``cuStreamGetCtx`` are not allowed and would invalidate the capture.
   // Fall back to the current device: STF's own stream pool is allocated
@@ -73,9 +78,7 @@ inline int get_device_from_stream(cudaStream_t stream)
   // while that context is captured is assumed to live on that same device.
   if (is_stream_capturing(stream))
   {
-    int device = 0;
-    cuda_try(cudaGetDevice(&device));
-    return device;
+      return cuda_try<cudaGetDevice>();
   }
 
 #if _CCCL_CTK_AT_LEAST(12, 8)
@@ -103,9 +106,19 @@ inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long l
  * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
  * @param stream A valid CUDA stream, or nullptr.
  * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
+ *
+ * When @p stream is participating in CUDA graph capture, querying the driver
+ * stream ID is not permitted (CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED). In that case
+ * this returns k_no_stream_id; callers that cache syncs treat unknown ids as
+ * ``never skip cudaStreamWaitEvent`` (see async_resources_handle).
  */
 inline unsigned long long get_stream_id(cudaStream_t stream)
 {
+  if (stream == nullptr)
+  {
+    return k_no_stream_id;
+  }
+  
   // ``cuStreamGetId`` is not capture-safe: during
   // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` it rejects the query
   // *and* invalidates the capture itself. Gate on ``cudaStreamIsCapturing``
@@ -116,7 +129,8 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
   // collide with a valid ID because ``k_no_stream_id`` is ``~0ULL``.
   if (is_stream_capturing(stream))
   {
-    return static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(stream));
+    // return static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(stream));
+    return k_no_stream_id;
   }
 
   unsigned long long id = 0;

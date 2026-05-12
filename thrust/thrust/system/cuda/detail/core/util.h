@@ -17,6 +17,7 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/system/cuda/detail/util.h>
 
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -210,7 +211,7 @@ struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
 
 struct AgentPlan
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   int items_per_tile;
   int shared_memory_size;
@@ -219,10 +220,10 @@ struct AgentPlan
   AgentPlan() = default;
 
   THRUST_RUNTIME_FUNCTION
-  AgentPlan(int block_threads_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
-      : block_threads(block_threads_)
+  AgentPlan(int threads_per_block_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
+      : threads_per_block(threads_per_block_)
       , items_per_thread(items_per_thread_)
-      , items_per_tile(items_per_thread * block_threads)
+      , items_per_tile(items_per_thread * threads_per_block)
       , shared_memory_size(shared_memory_size_)
       , grid_size(grid_size_)
   {}
@@ -232,7 +233,7 @@ struct AgentPlan
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
   AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
-      : block_threads(PtxPlan::BLOCK_THREADS)
+      : threads_per_block(PtxPlan::BLOCK_THREADS)
       , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
       , items_per_tile(PtxPlan::ITEMS_PER_TILE)
       , shared_memory_size(temp_storage_size<PtxPlan>::value)
@@ -477,42 +478,6 @@ struct uninitialized
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
   {
     return get();
-  }
-};
-
-// uninitialized_array
-// --------------
-// allocates uninitialized data on stack
-template <class T, size_t N, size_t Alignment = alignof(T)>
-struct uninitialized_array
-{
-  using value_type = T;
-  static constexpr ::cuda::std::integral_constant<size_t, N> size{};
-  alignas(Alignment) char data_[N * sizeof(T)];
-
-  _CCCL_HOST_DEVICE T* data()
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE const T* data() const
-  {
-    return reinterpret_cast<T*>(data_);
-  }
-
-  _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
-  {
-    return data()[idx];
-  }
-
-  _CCCL_HOST_DEVICE T (&as_array())[N]
-  {
-    return static_cast<T(&)[N]>(data_);
   }
 };
 

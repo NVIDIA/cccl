@@ -19,6 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Environment :: GPU :: NVIDIA CUDA",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: POSIX :: Linux",
@@ -56,22 +57,22 @@ minimal-sysctk13 = [
 cu12 = [
   "cuda-cccl[minimal-cu12]",
   "numba>=0.60.0",
-  "numba-cuda[cu12]>=0.23.0,<0.27.0",
+  "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
   "numba>=0.60.0",
-  "numba-cuda[cu13]>=0.23.0,<0.27.0",
+  "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
 ]
 sysctk12 = [
   "cuda-cccl[minimal-sysctk12]",
   "numba>=0.60.0",
-  "numba-cuda[cu12]>=0.23.0,<0.27.0",
+  "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
 ]
 sysctk13 = [
   "cuda-cccl[minimal-sysctk13]",
   "numba>=0.60.0",
-  "numba-cuda[cu13]>=0.23.0,<0.27.0",
+  "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
@@ -145,6 +146,7 @@ known-first-party = [
   "cuda.cccl.headers",
   "cuda.compute",
   "cuda.coop",
+  "cuda.coop._experimental",
 ]
 
 [tool.pytest.ini_options]
