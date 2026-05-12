@@ -16,6 +16,7 @@ CMakeUserPresets.json
 *.pyc
 __pycache__
 *.pyd
+.venv/
 wheelhouse/
 bench-artifacts/
 CLAUDE.local.md
