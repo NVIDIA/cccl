@@ -83,6 +83,10 @@ template <class P>
   {
     return static_cast<stf_data_place_handle>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<P, exec_place_resources>)
+  {
+    return static_cast<stf_exec_place_resources_handle>(opaque_bits);
+  }
   else if constexpr (::std::is_same_v<P, context>)
   {
     return static_cast<stf_ctx_handle>(opaque_bits);
@@ -127,6 +131,10 @@ template <class Opaque>
   else if constexpr (::std::is_same_v<Opaque*, stf_data_place_handle>)
   {
     return static_cast<const data_place*>(opaque_bits);
+  }
+  else if constexpr (::std::is_same_v<Opaque*, stf_exec_place_resources_handle>)
+  {
+    return static_cast<const exec_place_resources*>(opaque_bits);
   }
   else if constexpr (::std::is_same_v<Opaque*, stf_ctx_handle>)
   {
@@ -264,6 +272,25 @@ void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
   stf_exec_place_destroy(grid);
 }
 
+stf_exec_place_resources_handle stf_exec_place_resources_create(void)
+{
+  return to_opaque(stf_try_allocate([] {
+    return new exec_place_resources{};
+  }));
+}
+
+void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h)
+{
+  delete from_opaque(h);
+}
+
+CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation)
+{
+  _CCCL_ASSERT(res != nullptr, "exec_place_resources handle must not be null");
+  _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
+  return reinterpret_cast<CUstream>(from_opaque(h)->pick_stream(*from_opaque(res), for_computation != 0));
+}
+
 stf_data_place_handle stf_data_place_host(void)
 {
   return to_opaque(stf_try_allocate([] {
@@ -360,6 +387,12 @@ void stf_ctx_finalize(stf_ctx_handle ctx)
   auto* context_ptr = from_opaque(ctx);
   context_ptr->finalize();
   delete context_ptr;
+}
+
+stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
+  return to_opaque(&from_opaque(ctx)->async_resources().get_place_resources());
 }
 
 cudaStream_t stf_fence(stf_ctx_handle ctx)

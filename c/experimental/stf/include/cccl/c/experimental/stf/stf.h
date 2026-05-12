@@ -106,6 +106,14 @@ typedef struct stf_exec_place_opaque_t* stf_exec_place_handle;
 //! \brief Opaque handle to a \c data_place.
 typedef struct stf_data_place_opaque_t* stf_data_place_handle;
 
+//! \brief Opaque handle to an \c exec_place_resources registry.
+//!
+//! Handles returned by stf_exec_place_resources_create() are owned by the
+//! caller and must be released with stf_exec_place_resources_destroy().
+//! Handles returned by stf_ctx_get_place_resources() are borrowed from the
+//! context and must not be destroyed by the caller.
+typedef struct stf_exec_place_resources_opaque_t* stf_exec_place_resources_handle;
+
 //! \brief 4D position (coordinates) for partition mapping.
 //! Layout matches C++ pos4 for use as partition function arguments/result.
 typedef struct stf_pos4
@@ -169,6 +177,26 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
 
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
+
+//! \brief Create a fresh exec_place_resources registry for standalone place-layer use.
+//!
+//! The registry lazily creates and owns stream pools for places used with
+//! stf_exec_place_pick_stream(). Destroying it releases every stream it owns.
+stf_exec_place_resources_handle stf_exec_place_resources_create(void);
+
+//! \brief Destroy a registry returned by stf_exec_place_resources_create().
+//!
+//! Do not call this for handles borrowed from stf_ctx_get_place_resources().
+//! \p h may be NULL.
+void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
+
+//! \brief Pick a CUDA stream for \p h from the pools owned by \p res.
+//!
+//! \p for_computation is a hint: non-zero requests a compute stream, zero
+//! requests a data-transfer stream. The returned stream is owned by \p res and
+//! remains valid until \p res is destroyed, or until the owning context is
+//! finalized for a borrowed registry.
+CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation);
 
 //! \brief Host (CPU/pinned) data placement.
 stf_data_place_handle stf_data_place_host(void);
@@ -336,6 +364,12 @@ stf_ctx_handle stf_ctx_create_graph(void);
 //! \see stf_ctx_create(), stf_ctx_create_graph(), stf_fence()
 
 void stf_ctx_finalize(stf_ctx_handle ctx);
+
+//! \brief Borrow the per-place stream-pool registry embedded in \p ctx.
+//!
+//! The returned handle remains valid until stf_ctx_finalize(ctx). It must not
+//! be passed to stf_exec_place_resources_destroy().
+stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx);
 
 //!
 //! \brief Get synchronization fence for context

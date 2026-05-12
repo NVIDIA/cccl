@@ -232,3 +232,59 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
     REQUIRE(X[i] == static_cast<float>(i));
   }
 }
+
+C2H_TEST("exec_place_pick_stream standalone resources", "[places][stream]")
+{
+  stf_exec_place_resources_handle res = stf_exec_place_resources_create();
+  REQUIRE(res != nullptr);
+
+  stf_exec_place_handle place = stf_exec_place_current_device();
+  REQUIRE(place != nullptr);
+
+  CUstream stream = stf_exec_place_pick_stream(res, place, /*for_computation=*/1);
+  REQUIRE(stream != nullptr);
+  REQUIRE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess);
+
+  stf_exec_place_destroy(place);
+  stf_exec_place_resources_destroy(res);
+}
+
+C2H_TEST("exec_place resources are independent", "[places][stream]")
+{
+  stf_exec_place_resources_handle res1 = stf_exec_place_resources_create();
+  stf_exec_place_resources_handle res2 = stf_exec_place_resources_create();
+  REQUIRE(res1 != nullptr);
+  REQUIRE(res2 != nullptr);
+
+  stf_exec_place_handle place = stf_exec_place_current_device();
+  REQUIRE(place != nullptr);
+
+  CUstream stream1 = stf_exec_place_pick_stream(res1, place, /*for_computation=*/1);
+  CUstream stream2 = stf_exec_place_pick_stream(res2, place, /*for_computation=*/1);
+  REQUIRE(stream1 != nullptr);
+  REQUIRE(stream2 != nullptr);
+  REQUIRE(stream1 != stream2);
+
+  stf_exec_place_destroy(place);
+  stf_exec_place_resources_destroy(res2);
+  stf_exec_place_resources_destroy(res1);
+}
+
+C2H_TEST("exec_place_pick_stream borrowed context resources", "[places][stream][ctx]")
+{
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  stf_exec_place_resources_handle res = stf_ctx_get_place_resources(ctx);
+  REQUIRE(res != nullptr);
+
+  stf_exec_place_handle place = stf_exec_place_current_device();
+  REQUIRE(place != nullptr);
+
+  CUstream stream = stf_exec_place_pick_stream(res, place, /*for_computation=*/1);
+  REQUIRE(stream != nullptr);
+  REQUIRE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess);
+
+  stf_exec_place_destroy(place);
+  stf_ctx_finalize(ctx);
+}
