@@ -125,6 +125,14 @@ else()
   set(LIBCUDACXX_ENABLE_TILE False)
 endif()
 
+# enable libc++ support
+if (CCCL_USE_LIBCXX)
+  string(
+    APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+    " -Xclang -stdlib=libc++ -Xclang -stdlib++-isystem /usr/include/c++/v1"
+  )
+endif()
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
 endif()
