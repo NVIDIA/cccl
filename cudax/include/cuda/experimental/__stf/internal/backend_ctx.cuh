@@ -953,11 +953,13 @@ public:
   }
 
   // Automatically pick a CUDA stream from the pool attached to the current
-  // execution place
+  // execution place. The pool lives in this context's async_resources_handle
+  // registry, so streams have the same lifetime as the context (instead of
+  // outliving every context like process-global pools used to).
   auto pick_dstream()
   {
     exec_place p = default_exec_place();
-    return p.get_stream_pool(true).next(p);
+    return p.get_stream_pool(true, async_resources().get_place_resources()).next(p);
   }
   cudaStream_t pick_stream()
   {

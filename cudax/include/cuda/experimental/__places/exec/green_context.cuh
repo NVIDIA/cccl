@@ -319,8 +319,11 @@ public:
     return "green_ctx(id=" + ::std::to_string(get_cuda_context_id(g_ctx_)) + " dev=" + ::std::to_string(devid_) + ")";
   }
 
-  stream_pool& get_stream_pool(bool) const override
+  stream_pool& get_stream_pool(bool, exec_place_resources&, const exec_place&) const override
   {
+    // Green-context places carry their own pool (constructed from the
+    // green_ctx_view) and bypass the registry. The user is responsible for
+    // keeping the underlying CUgreenCtx alive while the pool is in use.
     return pool_;
   }
 
