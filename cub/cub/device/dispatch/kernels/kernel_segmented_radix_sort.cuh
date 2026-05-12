@@ -33,7 +33,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
-  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr segmented_radix_sort_policy policy = current_policy<PolicySelector>();
   return AltDigitBits ? policy.alt_segmented.threads_per_block : policy.segmented.threads_per_block;
 }
 

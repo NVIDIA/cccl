@@ -849,23 +849,24 @@ _CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(Pol
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename DownsweepPolicy>
+_CCCL_API constexpr auto convert_downsweep_policy(DownsweepPolicy)
+{
+  return radix_sort_downsweep_policy{
+    DownsweepPolicy::BLOCK_THREADS,
+    DownsweepPolicy::ITEMS_PER_THREAD,
+    DownsweepPolicy::RADIX_BITS,
+    DownsweepPolicy::LOAD_ALGORITHM,
+    DownsweepPolicy::LOAD_MODIFIER,
+    DownsweepPolicy::RANK_ALGORITHM,
+    DownsweepPolicy::SCAN_ALGORITHM};
+};
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
 _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
 {
   using active_policy = LegacyActivePolicy;
-
-  auto convert_downsweep_policy = [](auto p) {
-    (void) p;
-    using p_t = decltype(p);
-    return radix_sort_downsweep_policy{
-      p_t::BLOCK_THREADS,
-      p_t::ITEMS_PER_THREAD,
-      p_t::RADIX_BITS,
-      p_t::LOAD_ALGORITHM,
-      p_t::LOAD_MODIFIER,
-      p_t::RANK_ALGORITHM,
-      p_t::SCAN_ALGORITHM};
-  };
 
   using hist_pol       = typename active_policy::HistogramPolicy;
   const auto histogram = radix_sort_histogram_policy{

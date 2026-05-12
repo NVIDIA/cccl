@@ -94,6 +94,27 @@ struct DeviceSegmentedRadixSortKernelSource
     return sizeof(ValueT);
   }
 };
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename LegacyActivePolicy>
+_CCCL_API constexpr auto convert_policy() -> segmented_radix_sort_policy
+{
+  using active_policy = LegacyActivePolicy;
+
+  const auto segmented     = radix_sort::convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
+  const auto alt_segmented = radix_sort::convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
+  return segmented_radix_sort_policy{segmented, alt_segmented};
+}
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> segmented_radix_sort_policy
+  {
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+  }
+};
 } // namespace detail::segmented_radix_sort
 
 /******************************************************************************
@@ -132,7 +153,7 @@ template <SortOrder Order,
           typename PolicyHub    = detail::radix_sort::policy_hub<KeyT, ValueT, SegmentSizeT>,
           typename DecomposerT  = detail::identity_decomposer_t,
           typename KernelSource = detail::segmented_radix_sort::DeviceSegmentedRadixSortKernelSource<
-            detail::radix_sort::policy_selector_from_hub<PolicyHub>,
+            detail::segmented_radix_sort::policy_selector_from_hub<PolicyHub>,
             Order,
             KeyT,
             ValueT,
