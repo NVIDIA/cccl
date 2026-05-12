@@ -226,6 +226,95 @@ private:
   {}
 
 public:
+  template <class _Tuple>
+  using __utypes_tuple_constraints =
+    // clang-tidy has fallen off its rocker and claims we can use the non-existent
+    // __tuple_like_with_size_v here.
+    _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>, // NOLINT(modernize-type-traits)
+        typename __tuple_constraints<_Tp...>::template __utypes_tuple_constraints<_Tuple>,
+        __invalid_tuple_constraints>;
+
+  template <class... _UTypes,
+            class _Tuple                                             = tuple<_UTypes...>&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple(tuple<_UTypes...>& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(__t)
+  {}
+
+  template <class... _UTypes,
+            class _Tuple                                             = tuple<_UTypes...>&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  _CCCL_API constexpr explicit tuple(tuple<_UTypes...>& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(__t)
+  {}
+
+  // ------------------------------------------------------------------------------------------
+
+  template <class... _UTypes,
+            class _Tuple                                             = const tuple<_UTypes...>&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple(const tuple<_UTypes...>& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(__t)
+  {}
+
+  template <class... _UTypes,
+            class _Tuple                                             = const tuple<_UTypes...>&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  _CCCL_API constexpr explicit tuple(const tuple<_UTypes...>& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(__t)
+  {}
+
+  // ------------------------------------------------------------------------------------------
+
+  template <class... _UTypes,
+            class _Tuple                                             = tuple<_UTypes...>&&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple(tuple<_UTypes...>&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(::cuda::std::move(__t))
+  {}
+
+  template <class... _UTypes,
+            class _Tuple                                             = tuple<_UTypes...>&&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  _CCCL_API constexpr explicit tuple(tuple<_UTypes...>&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(::cuda::std::move(__t))
+  {}
+
+  // ------------------------------------------------------------------------------------------
+
+  template <class... _UTypes,
+            class _Tuple                                             = const tuple<_UTypes...>&&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple(const tuple<_UTypes...>&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(::cuda::std::move(__t))
+  {}
+
+  template <class... _UTypes,
+            class _Tuple                                             = const tuple<_UTypes...>&&,
+            class _Constraints                                       = __utypes_tuple_constraints<_Tuple>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  _CCCL_API constexpr explicit tuple(const tuple<_UTypes...>&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(::cuda::std::move(__t))
+  {}
+
+  // ------------------------------------------------------------------------------------------
+
+  template <class _Tuple,
+            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
+            enable_if_t<is_lvalue_reference_v<_Tuple>, int>           = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
+  _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
+      : __base_(__t)
+  {}
+
   template <class _Tuple,
             class _Constraints                                        = __tuple_like_constraints<_Tuple>,
             enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
@@ -247,16 +336,6 @@ public:
   template <class _Tuple,
             class _Constraints                                        = __tuple_like_constraints<_Tuple>,
             enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
-            // clang-tidy is confused. We are already using _v here
-            enable_if_t<is_lvalue_reference_v<_Tuple>, int>          = 0, // NOLINT(modernize-type-traits)
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
-      : __base_(__t)
-  {}
-
-  template <class _Tuple,
-            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
-            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
             enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
             enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
@@ -268,15 +347,6 @@ public:
             enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
             enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _CCCL_API constexpr explicit tuple(const _Tuple& __t) noexcept(is_nothrow_constructible_v<_BaseT, const _Tuple&>)
-      : __base_(__t)
-  {}
-
-  template <class _Tuple,
-            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
-            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
-            enable_if_t<is_lvalue_reference_v<_Tuple>, int>           = 0,
-            enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
-  _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
       : __base_(__t)
   {}
 

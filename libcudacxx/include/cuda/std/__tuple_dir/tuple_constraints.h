@@ -27,6 +27,7 @@
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
@@ -49,6 +50,8 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t;
 
 template <class... _Tp>
 inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp> && ...);
@@ -196,16 +199,43 @@ struct __tuple_constraints
   template <class... _Args>
   struct __variadic_constraints
   {
-    static constexpr bool __constructible = __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
+    // 12.3: otherwise, true_type
+    template <class... _Up>
+    static constexpr bool __disambiguation_constraints = true;
+
+    // 12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
+    template <class _U0>
+    static constexpr bool __disambiguation_constraints<_U0> = !is_same_v<remove_cvref_t<_U0>, tuple<_Tp...>>;
+
+    // 12.2: otherwise, bool_constant<!is_same_v<remove_cvref_t<U0>, allocator_arg_t> ||
+    //       is_same_v<remove_cvref_t<T0>, allocator_arg_t>> if sizeof...(Types) is 2 or 3
+    template <class _U0, class _U1>
+    static constexpr bool __disambiguation_constraints<_U0, _U1> =
+      !is_same_v<remove_cvref_t<_U0>, allocator_arg_t>
+      || is_same_v<remove_cvref_t<__type_index_c<0, _Tp...>>, allocator_arg_t>;
+
+    template <class _U0, class _U1, class _U2>
+    static constexpr bool __disambiguation_constraints<_U0, _U1, _U2> = __disambiguation_constraints<_U0, _U1>;
+
+    // Must be a function since the is_constructible check needs to be lazy
+    [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __check_constructible() noexcept
+    {
+      if constexpr (__disambiguation_constraints<_Args...>)
+      {
+        return _And<is_constructible<_Tp, _Args>...>::value;
+      }
+      else
+      {
+        return false;
+      }
+    }
+
+    static constexpr bool __constructible = __check_constructible();
 
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>
-      && __tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
-
+      __constructible && __tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>
-      && !__tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
-
+      __constructible && !__tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
     static constexpr bool __nothrow_constructible = (is_nothrow_constructible_v<_Tp, _Args> && ...);
   };
 
@@ -266,6 +296,33 @@ struct __tuple_constraints
   using __tuple_like_constraints =
     conditional_t<sizeof...(_Tp) == 1,
                   __valid_tuple_like_constraints_rank_one<_Tuple>,
+                  __valid_tuple_like_constraints<_Tuple>>;
+
+  template <class _Tuple, class _DecayedOtherTuple = remove_cvref_t<_Tuple>>
+  struct __valid_utypes_constraints_rank_one
+  {
+    static constexpr bool __implicit_constructible = false;
+    static constexpr bool __explicit_constructible = false;
+  };
+
+  template <class _Tuple, class... _Up>
+  struct __valid_utypes_constraints_rank_one<_Tuple, tuple<_Up...>>
+  {
+    static constexpr bool __enable_singleton_utype_ctor =
+      !(is_convertible_v<_Tuple, _Tp> && ...) && !(is_constructible_v<_Tp, _Tuple> && ...)
+      && !(is_same_v<_Tp, _Up> && ...);
+
+    static constexpr bool __implicit_constructible =
+      __enable_singleton_utype_ctor && __valid_tuple_like_constraints_rank_one<_Tuple>::__implicit_constructible;
+
+    static constexpr bool __explicit_constructible =
+      __enable_singleton_utype_ctor && __valid_tuple_like_constraints_rank_one<_Tuple>::__explicit_constructible;
+  };
+
+  template <class _Tuple>
+  using __utypes_tuple_constraints =
+    conditional_t<sizeof...(_Tp) == 1,
+                  __valid_utypes_constraints_rank_one<_Tuple>,
                   __valid_tuple_like_constraints<_Tuple>>;
 
   template <class... _Up>

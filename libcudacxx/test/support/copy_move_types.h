@@ -307,6 +307,23 @@ struct ExplicitCtrFromTupleRef : TracedCopyMove
   {}
 };
 
+struct CvtFromConstTupleRefRef : TracedCopyMove
+{
+  constexpr CvtFromConstTupleRefRef() = default;
+  TEST_FUNC constexpr CvtFromConstTupleRefRef(cuda::std::tuple<const CvtFromConstTupleRefRef>&& other)
+      : TracedCopyMove(static_cast<const TracedCopyMove&&>(cuda::std::get<0>(other)))
+  {}
+};
+
+struct ExplicitCtrFromConstTupleRefRef : TracedCopyMove
+{
+  constexpr explicit ExplicitCtrFromConstTupleRefRef() = default;
+  TEST_FUNC constexpr explicit ExplicitCtrFromConstTupleRefRef(
+    cuda::std::tuple<const ExplicitCtrFromConstTupleRefRef>&& other)
+      : TracedCopyMove(static_cast<const TracedCopyMove&&>(cuda::std::get<0>(other)))
+  {}
+};
+
 template <class T>
 TEST_FUNC constexpr void conversion_test(T)
 {}
