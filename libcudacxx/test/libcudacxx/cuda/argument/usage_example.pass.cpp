@@ -32,7 +32,7 @@ enum class algorithm_variant
 
 // Static scaling: choose algorithm variant at compile time.
 template <class _SegSizeArg>
-constexpr algorithm_variant select_variant(_SegSizeArg)
+TEST_FUNC constexpr algorithm_variant select_variant(_SegSizeArg)
 {
   if constexpr (cuda::argument::__traits<_SegSizeArg>::max <= shared_memory_capacity)
   {
@@ -46,7 +46,7 @@ constexpr algorithm_variant select_variant(_SegSizeArg)
 
 // Dynamic scaling: compute buffer size at runtime, clamped to default.
 template <class _SegSizeArg>
-constexpr int compute_buffer_size(_SegSizeArg __seg_size, int __num_segments)
+TEST_FUNC constexpr int compute_buffer_size(_SegSizeArg __seg_size, int __num_segments)
 {
   auto __max = cuda::std::min(default_max_segment_size, static_cast<int>(cuda::argument::__max(__seg_size)));
   return __max * __num_segments;
@@ -54,7 +54,7 @@ constexpr int compute_buffer_size(_SegSizeArg __seg_size, int __num_segments)
 
 // Process: use the actual unwrapped value.
 template <class _SegSizeArg>
-constexpr int process_segments(_SegSizeArg __seg_size)
+TEST_FUNC constexpr int process_segments(_SegSizeArg __seg_size)
 {
   const auto& __val = cuda::argument::__unwrap(__seg_size);
 
@@ -100,7 +100,7 @@ TEST_FUNC constexpr bool test()
     assert(process_segments(seg_size) == 128);
   }
 
-#if _CCCL_STD_VER >= 2020
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
   // static_argument: array, max fits in shared memory
   {
     constexpr auto seg_sizes = cuda::argument::__constant<cuda::std::array{64, 128, 256}>{};
@@ -180,7 +180,7 @@ TEST_FUNC constexpr bool test()
     assert(process_segments(1.0f) == 1);
   }
 
-#if _CCCL_STD_VER >= 2020
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
   // static_argument float (float NTTPs require C++20)
   {
     constexpr auto seg_size = cuda::argument::__constant<128.0f>{};

@@ -36,7 +36,7 @@ TEST_FUNC void test()
     static_assert(sa_neg.value == -1);
   }
 
-#if _CCCL_STD_VER >= 2020
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
   // Array value (per-segment at compile time)
   {
     constexpr auto sa_arr = cuda::argument::__constant<cuda::std::array<int, 3>{128, 256, 512}>{};
@@ -54,7 +54,7 @@ TEST_FUNC void test()
     static_assert(cuda::argument::__max(sa) == 42);
   }
 
-#if _CCCL_STD_VER >= 2020
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
   // Bounds: array — computes min/max of elements
   {
     constexpr auto sa = cuda::argument::__constant<cuda::std::array<int, 3>{128, 256, 512}>{};
@@ -74,7 +74,7 @@ TEST_FUNC void test()
   {
     static_assert(
       cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__constant<42>>::value_type>);
-#if _CCCL_STD_VER >= 2020
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
     static_assert(!cuda::argument::__is_single_value_v<
                   cuda::argument::__traits<cuda::argument::__constant<cuda::std::array<int, 3>{1, 2, 3}>>::value_type>);
 #endif // _CCCL_STD_VER >= 2020
@@ -87,7 +87,7 @@ TEST_FUNC void test()
     static_assert(val == 42);
   }
 
-#if _CCCL_STD_VER >= 2020
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
   // Unwrap: array
   {
     constexpr auto sa  = cuda::argument::__constant<cuda::std::array<int, 3>{10, 20, 30}>{};

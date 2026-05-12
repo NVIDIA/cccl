@@ -76,7 +76,7 @@ TEST_FUNC void test()
   static_assert(
     cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__constant<42>>::value_type>);
 
-#if _CCCL_STD_VER >= 2020
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
   using arr_t = cuda::std::array<int, 3>;
   static_assert(!cuda::argument::__is_single_value_v<
                 cuda::argument::__traits<cuda::argument::__constant<arr_t{1, 2, 3}>>::value_type>);
