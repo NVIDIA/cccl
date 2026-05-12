@@ -10,6 +10,7 @@
 #include <catch2/catch_message.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 
 // This file implements Catch2's test macros that work both in host and device code. We globally define the
 // CATCH_CONFIG_PREFIX_ALL macro to force Catch2 to prepend it's macros with CATCH_ prefix. That allows us to implement
@@ -33,6 +34,8 @@
 
 #define C2H_INTERNAL_DEVICE_TEST_PRINT(KIND, ...) C2H_INTERNAL_DEVICE_PRINTF(KIND "(%s) failed", "" #__VA_ARGS__)
 
+// <catch2/catch2_test_macros.hpp>
+
 #define REQUIRE(...)                                                            \
   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE(__VA_ARGS__);), ({               \
                       if (!(__VA_ARGS__))                                       \
@@ -52,13 +55,13 @@
 
 #define REQUIRE_THROWS(...)                                                          \
   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_THROWS(__VA_ARGS__);), ({             \
-                      (void) __VA_ARGS__;                                            \
+                      __VA_ARGS__;                                                   \
                       C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_THROWS", __VA_ARGS__); \
                       ::__trap();                                                    \
                     }))
 #define REQUIRE_THROWS_AS(EXPR, TYPE)                                                  \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_THROWS_AS(EXPR, TYPE);), ({             \
-                      (void) EXPR;                                                     \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_THROWS_AS((EXPR), TYPE);), ({           \
+                      EXPR;                                                            \
                       C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_THROWS_AS", EXPR, TYPE); \
                       ::__trap();                                                      \
                     }))
@@ -86,15 +89,15 @@
 
 #define CHECK_THROWS(...)                                                          \
   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_THROWS(__VA_ARGS__);), ({             \
-                      (void) __VA_ARGS__;                                          \
+                      __VA_ARGS__;                                                 \
                       C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_THROWS", __VA_ARGS__); \
                     }))
 #define CHECK_THROWS_AS(EXPR, TYPE)                                                  \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_THROWS_AS(EXPR, TYPE);), ({             \
-                      (void) EXPR;                                                   \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_THROWS_AS((EXPR), TYPE);), ({           \
+                      EXPR;                                                          \
                       C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_THROWS_AS", EXPR, TYPE); \
                     }))
-#define CHECK_NOTHROW(...) NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_NOTHROW(__VA_ARGS__);), (EXPR;))
+#define CHECK_NOTHROW(...) NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_NOTHROW(__VA_ARGS__);), (__VA_ARGS__;))
 
 #define TEST_CASE(...)           CATCH_TEST_CASE(__VA_ARGS__)
 #define TEST_CASE_METHOD(...)    CATCH_TEST_CASE_METHOD(__VA_ARGS__)
@@ -103,7 +106,7 @@
 #define SECTION(...)             CATCH_SECTION(__VA_ARGS__)
 #define DYNAMIC_SECTION(...)     CATCH_DYNAMIC_SECTION(__VA_ARGS__)
 #define FAIL(...) \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_FAIL(__VA_ARGS__);), ({ C2H_INTERNAL_DEVICE_PRINTF("FAIL: %s", __VA_ARGS__); }))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_FAIL(__VA_ARGS__);), ({ C2H_INTERNAL_DEVICE_TEST_PRINT("FAIL", __VA_ARGS__); }))
 #define FAIL_CHECK(...) CATCH_FAIL_CHECK(__VA_ARGS__)
 #define SUCCEED(...)    CATCH_SUCCEED(__VA_ARGS__)
 #define SKIP(...)       CATCH_SKIP(__VA_ARGS__)
@@ -128,10 +131,14 @@
 #define THEN(...)            CATCH_THEN(__VA_ARGS__)
 #define AND_THEN(...)        CATCH_AND_THEN(__VA_ARGS__)
 
+// <catch2/catch_message.hpp>
+
 #define INFO(...)          CATCH_INFO(__VA_ARGS__)
 #define UNSCOPED_INFO(...) CATCH_UNSCOPED_INFO(__VA_ARGS__)
 #define WARN(...)          CATCH_WARN(__VA_ARGS__)
 #define CAPTURE(...)       CATCH_CAPTURE(__VA_ARGS__)
+
+// <catch2/catch_template_test_macros.hpp>
 
 #define TEMPLATE_TEST_CASE(...)                    CATCH_TEMPLATE_TEST_CASE(__VA_ARGS__)
 #define TEMPLATE_TEST_CASE_SIG(...)                CATCH_TEMPLATE_TEST_CASE_SIG(__VA_ARGS__)
@@ -143,3 +150,12 @@
 #define TEMPLATE_PRODUCT_TEST_CASE_METHOD_SIG(...) CATCH_TEMPLATE_PRODUCT_TEST_CASE_METHOD_SIG(__VA_ARGS__)
 #define TEMPLATE_LIST_TEST_CASE(...)               CATCH_TEMPLATE_LIST_TEST_CASE(__VA_ARGS__)
 #define TEMPLATE_LIST_TEST_CASE_METHOD(...)        CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(__VA_ARGS__)
+
+// <catch2/matchers/catch_matchers.hpp>
+
+#define REQUIRE_THROWS_WITH(...)    CATCH_REQUIRE_THROWS_WITH(__VA_ARGS__)
+#define REQUIRE_THROWS_MATCHES(...) CATCH_REQUIRE_THROWS_MATCHES(__VA_ARGS__)
+#define CHECK_THROWS_WITH(...)      CATCH_CHECK_THROWS_WITH(__VA_ARGS__)
+#define CHECK_THROWS_MATCHES(...)   CATCH_CHECK_THROWS_MATCHES(__VA_ARGS__)
+#define CHECK_THAT(...)             CATCH_CHECK_THAT(__VA_ARGS__)
+#define REQUIRE_THAT(...)           CATCH_REQUIRE_THAT(__VA_ARGS__)
