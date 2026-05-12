@@ -876,6 +876,11 @@ class Configuration(object):
         if nvcc_host_compiler and self.cxx.type == "nvcc":
             self.cxx.compile_flags += ["-ccbin={0}".format(nvcc_host_compiler)]
 
+        if nvcc_host_compiler and self.cxx_stdlib_under_test == "libc++":
+            self.cxx.compile_flags += [
+                "-Xclang -stdlib=libc++ -Xclang -stdlib++-isystem /usr/include/c++/v1"
+            ]
+
         # Try and get the std version from the command line. Fall back to
         # default given in lit.site.cfg is not present. If default is not
         # present then force c++11.
