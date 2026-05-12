@@ -308,9 +308,24 @@ struct __tuple_constraints
   template <class _Tuple, class... _Up>
   struct __valid_utypes_constraints_rank_one<_Tuple, tuple<_Up...>>
   {
-    static constexpr bool __enable_singleton_utype_ctor =
-      !(is_convertible_v<_Tuple, _Tp> && ...) && !(is_constructible_v<_Tp, _Tuple> && ...)
-      && !(is_same_v<_Tp, _Up> && ...);
+    // Use consteval function to lazily evaluate the conditions.
+    [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __check_enable_singleton_utype_ctor() noexcept
+    {
+      if constexpr ((is_same_v<_Tp, _Up> && ...))
+      { // NOLINT(bugprone-branch-clone)
+        return false;
+      }
+      else if constexpr ((is_convertible_v<_Tuple, _Tp> && ...))
+      {
+        return false;
+      }
+      else
+      {
+        return !(is_constructible_v<_Tp, _Tuple> && ...);
+      }
+    }
+
+    static constexpr bool __enable_singleton_utype_ctor = __check_enable_singleton_utype_ctor();
 
     static constexpr bool __implicit_constructible =
       __enable_singleton_utype_ctor && __valid_tuple_like_constraints_rank_one<_Tuple>::__implicit_constructible;
