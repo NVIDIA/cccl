@@ -75,9 +75,9 @@ public:
   graph_task(graph_task&&)            = default;
   graph_task& operator=(graph_task&&) = default;
 
-  graph_task(graph_task&)                  = default;
-  graph_task(const graph_task&)            = default;
-  graph_task& operator=(const graph_task&) = default;
+  // Tasks are move-only
+  graph_task(const graph_task&)            = delete;
+  graph_task& operator=(const graph_task&) = delete;
 
   graph_task& start()
   {

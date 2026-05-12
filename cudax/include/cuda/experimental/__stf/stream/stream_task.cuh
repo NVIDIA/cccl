@@ -63,11 +63,16 @@ public:
     ctx.increment_task_count();
   }
 
-  stream_task(const stream_task<>&)              = default;
-  stream_task<>& operator=(const stream_task<>&) = default;
+  // Tasks are move-only: a task wrapper owns per-instance in-flight state
+  // (capture stream, frontier, done nodes, held mutex during stream capture)
+  // on top of the pimpl `task` base, so copying it has no meaningful semantics.
+  // Contexts (`stream_ctx`, `graph_ctx`, `context`) are pimpl handles and
+  // remain copyable.
+  stream_task(const stream_task<>&)              = delete;
+  stream_task<>& operator=(const stream_task<>&) = delete;
+  stream_task(stream_task<>&&)                   = default;
+  stream_task<>& operator=(stream_task<>&&)      = default;
   ~stream_task()                                 = default;
-
-  // movable ??
 
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
