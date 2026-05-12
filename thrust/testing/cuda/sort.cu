@@ -131,15 +131,45 @@ DECLARE_UNITTEST(TestComparisonSortCudaStreams);
 template <typename T>
 struct TestRadixSortDispatch
 {
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<T>>);
 
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
 
   void operator()() const {}
 };
