@@ -70,8 +70,17 @@ skip the test gate unless asked, go to 5.2.
 
 ### 5.1 Tests
 
-`cccl-clarify` → skip / `pre-commit run --files <staged>` / dispatch `cccl-build-and-test-targets`. On failure:
-investigate / commit anyway / abort.
+`cccl-clarify` → skip / `pre-commit run --files <staged>` / dispatch `cccl-build-and-test-targets`. If
+`pre-commit` is absent, venv-install it (`python3 -m venv .venv && .venv/bin/pip install pre-commit`).
+
+Many pre-commit hooks auto-fix in place (`pretty-format-json`, `end-of-file-fixer`,
+`trim-trailing-whitespace`, `ruff format`). On failure with auto-fixes applied:
+1. Show the resulting `git diff` per fixed file.
+2. For each file, route through `cccl-clarify` — re-stage / revert / discuss — same flow as Step 4's per-chunk
+   action menu. Never bulk-`git add` the fixes.
+3. Re-run `pre-commit run --files <staged>` to confirm clean.
+
+Other failures: investigate / commit anyway / abort via `cccl-clarify`.
 
 ### 5.2 Commit message
 
