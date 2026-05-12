@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: msvc
+// See https://github.com/NVIDIA/cccl/issues/8952
+
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;

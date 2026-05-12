@@ -12,6 +12,9 @@
 
 // UNSUPPORTED: nvrtc
 
+// UNSUPPORTED: msvc
+// See https://github.com/NVIDIA/cccl/issues/8953
+
 #include <cuda/std/cassert>
 #include <cuda/std/mdspan>
 
