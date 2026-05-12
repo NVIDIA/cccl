@@ -96,7 +96,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_API __shared_memory_pool_base(__shared_memory_pool_base&& __other) noexcept
-      : __memory_pool_base(__other.__pool_)
+      : __memory_pool_base(::cuda::std::exchange(__other.__pool_, nullptr))
       , __ref_(::cuda::std::move(__other.__ref_))
   {}
 

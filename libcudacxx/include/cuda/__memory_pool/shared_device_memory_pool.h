@@ -76,7 +76,7 @@ public:
 
   //! @brief Constructs a shared device memory pool from an existing native handle.
   //! @param __pool The ``cudaMemPool_t`` to take shared ownership of.
-  _CCCL_HOST_API static shared_device_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
+  [[nodiscard]] _CCCL_HOST_API static shared_device_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
     return shared_device_memory_pool(__pool);
   }
