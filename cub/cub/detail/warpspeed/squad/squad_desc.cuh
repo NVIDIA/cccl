@@ -32,27 +32,29 @@ struct SquadDesc
   int mWarpCount = -1;
 
   _CCCL_HIDE_FROM_ABI constexpr SquadDesc() = default;
-  _CCCL_API constexpr SquadDesc(int squadIdx, int warpCount) noexcept
+  _CCCL_HOST_DEVICE_API constexpr SquadDesc(int squadIdx, int warpCount) noexcept
       : mSquadIdx(squadIdx)
       , mWarpCount(warpCount)
   {}
 
-  [[nodiscard]] _CCCL_API constexpr int warpCount() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int warpCount() const noexcept
   {
     return mWarpCount;
   }
 
-  [[nodiscard]] _CCCL_API constexpr int threadCount() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int threadCount() const noexcept
   {
     return 32 * warpCount();
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
   {
     return lhs.mSquadIdx == rhs.mSquadIdx;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
   {
     return lhs.mSquadIdx != rhs.mSquadIdx;
   }
@@ -63,7 +65,7 @@ struct SquadDesc
 // descriptors. It is used to launch a kernel with the correct number of
 // threads.
 template <int numSquads>
-[[nodiscard]] _CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]) noexcept
 {
   int sumThreads = 0;
   for (int gi = 0; gi < numSquads; ++gi)

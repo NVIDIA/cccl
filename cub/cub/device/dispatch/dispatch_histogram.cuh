@@ -719,7 +719,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_pdl_trigger(int)
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
   -> decltype(ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count)
 {
   return ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count;
@@ -727,14 +727,14 @@ _CCCL_API constexpr auto convert_pdl_trigger(int)
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_pdl_trigger(long)
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(long)
 {
   return 0;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> histogram_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> histogram_policy
 {
   using ap = typename ActivePolicy::AgentHistogramPolicyT;
   return histogram_policy{
@@ -759,7 +759,7 @@ private:
     histogram_policy& policy;
 
     template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
+    _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
       policy = convert_policy<ActivePolicyT>();
       return cudaSuccess;
@@ -767,7 +767,7 @@ private:
   };
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({

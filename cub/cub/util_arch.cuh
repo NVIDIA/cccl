@@ -126,7 +126,7 @@ struct scaling_result
   int threads_per_block;
 };
 
-[[nodiscard]] _CCCL_API inline constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr auto
 scale_reg_bound(int nominal_4B_threads_per_block, int nominal_4B_items_per_thread, int target_type_size)
   -> scaling_result
 {
@@ -150,7 +150,7 @@ public:
   static constexpr int BLOCK_THREADS    = result.threads_per_block;
 };
 
-[[nodiscard]] _CCCL_API inline constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr auto
 scale_mem_bound(int nominal_4B_threads_per_block, int nominal_4B_items_per_thread, int target_type_size)
   -> scaling_result
 {
@@ -181,7 +181,7 @@ struct NoScaling
   static constexpr int BLOCK_THREADS    = Nominal4ByteThreadsPerBlock;
 };
 
-[[nodiscard]] _CCCL_API constexpr ::cuda::compute_capability current_tuning_cc() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::compute_capability current_tuning_cc() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   return ::cuda::compute_capability(__NVCOMPILER_CUDA_ARCH__ / 10);
@@ -194,7 +194,7 @@ struct NoScaling
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class PolicySelector>
-[[nodiscard]] _CCCL_API constexpr auto select_policy(::cuda::compute_capability cc)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto select_policy(::cuda::compute_capability cc)
 {
   return PolicySelector{}(cc);
 }

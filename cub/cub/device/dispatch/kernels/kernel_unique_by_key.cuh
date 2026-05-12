@@ -41,7 +41,7 @@ struct host_policy_provider
 
   struct fallback_pol_getter
   {
-    _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
       unique_by_key_policy policy = PolicyGetter{}();
       policy.threads_per_block    = 64;

@@ -31,13 +31,13 @@ struct find_policy
   int vec_size;
   CacheLoadModifier load_modifier;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const find_policy& lhs, const find_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const find_policy& lhs, const find_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const find_policy& lhs, const find_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const find_policy& lhs, const find_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -61,7 +61,7 @@ struct policy_selector
 {
   int input_type_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> find_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> find_policy
   {
     // FindPolicy (GTX670: 154.0 @ 48M 4B items) - single policy for all ccs
     const auto scaled = scale_mem_bound(128, 16, input_type_size);
@@ -77,7 +77,7 @@ static_assert(find_policy_selector<policy_selector>);
 template <typename InputType>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> find_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> find_policy
   {
     return policy_selector{int{sizeof(InputType)}}(cc);
   }

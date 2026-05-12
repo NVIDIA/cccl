@@ -13,12 +13,12 @@ struct a_policy
 {
   int value;
 
-  _CCCL_API constexpr bool operator==(const a_policy& other) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr bool operator==(const a_policy& other) const noexcept
   {
     return value == other.value;
   }
 
-  _CCCL_API constexpr bool operator!=(const a_policy& other) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr bool operator!=(const a_policy& other) const noexcept
   {
     return value != other.value;
   }
@@ -26,7 +26,7 @@ struct a_policy
 
 struct policy_selector_all
 {
-  _CCCL_API constexpr auto operator()(compute_capability cc) const -> a_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(compute_capability cc) const -> a_policy
   {
     return a_policy{cc.get()};
   }
@@ -90,7 +90,7 @@ struct check_policy_closure
 // distinct policies for 60+, 80+ and 100+
 struct policy_selector_some
 {
-  _CCCL_API constexpr auto operator()(compute_capability cc) const -> a_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(compute_capability cc) const -> a_policy
   {
     if (cc >= compute_capability{10, 0})
     {
@@ -108,7 +108,7 @@ struct policy_selector_some
 // only a single policy
 struct policy_selector_minimal
 {
-  _CCCL_API constexpr auto operator()(compute_capability) const -> a_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(compute_capability) const -> a_policy
   {
     // default is policy 60
     return a_policy{60};
@@ -134,7 +134,7 @@ struct bad_policy
 
 struct policy_selector_not_regular
 {
-  _CCCL_API auto operator()(compute_capability) const -> bad_policy
+  _CCCL_HOST_DEVICE_API auto operator()(compute_capability) const -> bad_policy
   {
     return bad_policy{};
   }

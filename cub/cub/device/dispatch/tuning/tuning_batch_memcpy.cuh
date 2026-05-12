@@ -36,7 +36,7 @@ struct small_buffer_policy
   delay_constructor_policy buff_delay_constructor;
   delay_constructor_policy block_delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const small_buffer_policy& lhs, const small_buffer_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.buffers_per_thread == rhs.buffers_per_thread
@@ -48,7 +48,7 @@ struct small_buffer_policy
         && lhs.block_delay_constructor == rhs.block_delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const small_buffer_policy& lhs, const small_buffer_policy& rhs)
   {
     return !(lhs == rhs);
@@ -73,13 +73,13 @@ struct large_buffer_policy
   int threads_per_block;
   int bytes_per_thread;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const large_buffer_policy& lhs, const large_buffer_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.bytes_per_thread == rhs.bytes_per_thread;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const large_buffer_policy& lhs, const large_buffer_policy& rhs)
   {
     return !(lhs == rhs);
@@ -99,13 +99,13 @@ struct batch_memcpy_policy
   small_buffer_policy small_buffer;
   large_buffer_policy large_buffer;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const batch_memcpy_policy& lhs, const batch_memcpy_policy& rhs)
   {
     return lhs.small_buffer == rhs.small_buffer && lhs.large_buffer == rhs.large_buffer;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const batch_memcpy_policy& lhs, const batch_memcpy_policy& rhs)
   {
     return !(lhs == rhs);
@@ -127,7 +127,8 @@ concept batch_memcpy_policy_selector = policy_selector<T, batch_memcpy_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> batch_memcpy_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> batch_memcpy_policy
   {
     const auto large = large_buffer_policy{
       256,

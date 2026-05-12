@@ -31,7 +31,7 @@ namespace stdexec = cuda::std::execution;
 template <int ThreadsPerBlock>
 struct rle_encode_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::reduce_by_key::reduce_by_key_policy
   {
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}};
@@ -41,7 +41,7 @@ struct rle_encode_tuning
 template <int ThreadsPerBlock>
 struct rle_non_trivial_runs_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::BLOCK_SCAN_WARP_SCANS, {}};

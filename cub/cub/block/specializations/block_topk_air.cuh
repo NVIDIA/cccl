@@ -34,7 +34,7 @@ struct compare_key_prefix_op
 
   SortKeyT prefix_mask;
   SortKeyT key_prefix;
-  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(SortKeyT sort_key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr bool operator()(SortKeyT sort_key) const noexcept
   {
     return (sort_key & prefix_mask) == (key_prefix);
   }

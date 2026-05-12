@@ -37,7 +37,7 @@ struct block_segmented_scan_policy
   BlockScanAlgorithm scan_algorithm;
   int max_segments;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const block_segmented_scan_policy& lhs, const block_segmented_scan_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -46,7 +46,7 @@ struct block_segmented_scan_policy
         && lhs.max_segments == rhs.max_segments;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const block_segmented_scan_policy& lhs, const block_segmented_scan_policy& rhs)
   {
     return !(lhs == rhs);
@@ -69,13 +69,13 @@ struct segmented_scan_policy
 {
   block_segmented_scan_policy block;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const segmented_scan_policy& lhs, const segmented_scan_policy& rhs)
   {
     return lhs.block == rhs.block;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const segmented_scan_policy& lhs, const segmented_scan_policy& rhs)
   {
     return !(lhs == rhs);
@@ -100,7 +100,8 @@ struct policy_selector
   int accum_size;
   int accum_align;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> segmented_scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> segmented_scan_policy
   {
     constexpr int nominal_threads_per_block = 128;
     constexpr int nominal_items_per_thread  = 9;
@@ -143,7 +144,8 @@ static_assert(segmented_scan_policy_selector<policy_selector>);
 template <typename AccumT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> segmented_scan_policy
   {
     constexpr auto accum_size  = static_cast<int>(sizeof(AccumT));
     constexpr auto accum_align = static_cast<int>(alignof(AccumT));

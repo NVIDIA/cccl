@@ -97,7 +97,7 @@ struct DeviceSegmentedRadixSortKernelSource
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> segmented_radix_sort_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> segmented_radix_sort_policy
 {
   using active_policy = LegacyActivePolicy;
 

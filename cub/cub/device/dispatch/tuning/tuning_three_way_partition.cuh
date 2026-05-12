@@ -425,7 +425,7 @@ struct three_way_partition_policy
   BlockScanAlgorithm block_scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -433,7 +433,7 @@ struct three_way_partition_policy
         && lhs.block_scan_algorithm == rhs.block_scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
   {
     return !(lhs == rhs);
@@ -462,7 +462,8 @@ struct policy_selector
   int input_size;
   int offset_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> three_way_partition_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> three_way_partition_policy
   {
     const auto default_policy = three_way_partition_policy{
       256,
@@ -713,7 +714,8 @@ static_assert(three_way_partition_policy_selector<policy_selector>);
 template <typename InputT, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> three_way_partition_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> three_way_partition_policy
   {
     constexpr auto selector = policy_selector{classify_type<InputT>, int{sizeof(InputT)}, int{sizeof(OffsetT)}};
     return selector(cc);
