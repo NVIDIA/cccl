@@ -22,17 +22,17 @@
 // Only a subset of the Catch2's macro are provided. If needed, feel free to extend the support. Host-only macros can
 // be determined by missing NV_IF_ELSE_TARGET wrapper and immediate dispatch to CATCH_-prefixed variant.
 
-#define C2H_INTERNAL_DEVICE_PRINTF(FMT, ...)                                                                         \
-  ::printf(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ":\n    " FMT "\n    block [%u, %u, %u], thread [%u, %u, %u]\n\n", \
-           __VA_ARGS__,                                                                                              \
-           blockIdx.x,                                                                                               \
-           blockIdx.y,                                                                                               \
-           blockIdx.z,                                                                                               \
-           threadIdx.x,                                                                                              \
-           threadIdx.y,                                                                                              \
-           threadIdx.z)
-
-#define C2H_INTERNAL_DEVICE_TEST_PRINT(KIND, ...) C2H_INTERNAL_DEVICE_PRINTF(KIND "(%s) failed", "" #__VA_ARGS__)
+#define C2H_INTERNAL_DEVICE_TEST_PRINT(KIND, ...)                                                                \
+  ::printf(                                                                                                      \
+    __FILE__                                                                                                     \
+    ":" _CCCL_TO_STRING(__LINE__) ":\n    " KIND "(%s) failed\n    block [%u, %u, %u], thread [%u, %u, %u]\n\n", \
+    #__VA_ARGS__,                                                                                                \
+    blockIdx.x,                                                                                                  \
+    blockIdx.y,                                                                                                  \
+    blockIdx.z,                                                                                                  \
+    threadIdx.x,                                                                                                 \
+    threadIdx.y,                                                                                                 \
+    threadIdx.z)
 
 // <catch2/catch2_test_macros.hpp>
 
