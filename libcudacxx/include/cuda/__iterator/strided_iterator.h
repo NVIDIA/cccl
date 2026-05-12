@@ -246,8 +246,9 @@ public:
   //! @param __iter The @c strided_iterator to advance
   //! @param __n The number of steps to increment
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
-  operator+(const strided_iterator& __iter, difference_type __n) noexcept(
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr strided_iterator operator+(const strided_iterator& __iter, difference_type __n) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::declval<const _Iter&>() + __n))
   {
     return strided_iterator{__iter.__iter() + __iter.stride() * __n, __iter.__stride()};
@@ -257,8 +258,9 @@ public:
   //! @param __n The number of steps to increment
   //! @param __iter The @c strided_iterator to advance
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
-  operator+(difference_type __n, const strided_iterator& __iter) noexcept(
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr strided_iterator operator+(difference_type __n, const strided_iterator& __iter) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::declval<const _Iter&>() + __n))
   {
     return strided_iterator{__iter.__iter() + __iter.stride() * __n, __iter.__stride()};
@@ -279,8 +281,9 @@ public:
   //! @param __n The number of steps to decrement
   //! @param __iter The @c strided_iterator to decrement
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API friend constexpr strided_iterator
-  operator-(const strided_iterator& __iter, difference_type __n) noexcept(
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
+  [[nodiscard]]
+  _CCCL_API friend constexpr strided_iterator operator-(const strided_iterator& __iter, difference_type __n) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::declval<const _Iter&>() - __n))
   {
     return strided_iterator{__iter.__iter() - __iter.stride() * __n, __iter.__stride()};

@@ -280,6 +280,7 @@ public:
   //! @param __n The number of elements to advance
   //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(const permutation_iterator& __iter, difference_type __n) noexcept( //
     noexcept(__iter.__index_ + __n)
@@ -293,6 +294,7 @@ public:
   //! @param __iter The original @c permutation_iterator
   //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(difference_type __n, const permutation_iterator& __iter) noexcept(
     noexcept(__iter.__index_ + __n)
@@ -306,6 +308,7 @@ public:
   //! @param __n The number of elements to decrement
   //! @return Equivalent to ``permutation_iterator{iter, index - __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator-(const permutation_iterator& __iter, difference_type __n) noexcept( //
     noexcept(__iter.__index_ - __n)
