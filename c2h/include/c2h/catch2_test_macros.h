@@ -41,16 +41,16 @@
                       if (!(__VA_ARGS__))                                       \
                       {                                                         \
                         C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE", __VA_ARGS__); \
+                        ::__trap();                                             \
                       }                                                         \
-                      ::__trap();                                               \
                     }))
 #define REQUIRE_FALSE(...)                                                            \
   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_FALSE(__VA_ARGS__);), ({               \
                       if (__VA_ARGS__)                                                \
                       {                                                               \
                         C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_FALSE", __VA_ARGS__); \
+                        ::__trap();                                                   \
                       }                                                               \
-                      ::__trap();                                                     \
                     }))
 
 #define REQUIRE_THROWS(...)                                                          \
@@ -72,16 +72,16 @@
                       if (!(__VA_ARGS__))                                     \
                       {                                                       \
                         C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK", __VA_ARGS__); \
+                        ::__trap();                                           \
                       }                                                       \
-                      ::__trap();                                             \
                     }))
 #define CHECK_FALSE(...)                                                            \
   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_FALSE(__VA_ARGS__);), ({               \
                       if (__VA_ARGS__)                                              \
                       {                                                             \
                         C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_FALSE", __VA_ARGS__); \
+                        ::__trap();                                                 \
                       }                                                             \
-                      ::__trap();                                                   \
                     }))
 #define CHECKED_IF(...)   CATCH_CHECKED_IF(__VA_ARGS__)
 #define CHECKED_ELSE(...) CATCH_CHECKED_ELSE(__VA_ARGS__)
@@ -168,8 +168,8 @@
     if (!(__VA_ARGS__))                                       \
     {                                                         \
       C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE", __VA_ARGS__); \
+      ::__trap();                                             \
     }                                                         \
-    ::__trap();                                               \
   } while (false)
 
 #define REQUIRE_CUDA(...)   REQUIRE((__VA_ARGS__) == CUDA_SUCCESS)
