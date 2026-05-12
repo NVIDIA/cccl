@@ -1,7 +1,10 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
+#include <cub/device/device_reduce.cuh>
+
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 
 #include <nvbench_helper.cuh>
 
@@ -35,9 +38,8 @@ struct policy_selector
 template <typename T, typename OffsetT>
 void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-  using op_t     = cuda::std::plus<>;
-  using init_t   = T;
+  using op_t   = cuda::std::plus<>;
+  using init_t = T;
 
   // Retrieve axis parameters
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -53,45 +55,19 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(1);
 
-  auto transform_op = ::cuda::std::identity{};
-
-  // Allocate temporary storage:
-  std::size_t temp_size;
-  cub::detail::reduce_nondeterministic::dispatch(
-    nullptr,
-    temp_size,
-    d_in,
-    d_out,
-    static_cast<offset_t>(elements),
-    op_t{},
-    init_t{},
-    nullptr /* stream */,
-    transform_op
-#if !TUNE_BASE
-    ,
-    policy_selector<T>{}
-#endif
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::reduce_nondeterministic::dispatch(
-      temp_storage,
-      temp_size,
-      d_in,
-      d_out,
-      static_cast<offset_t>(elements),
-      op_t{},
-      init_t{},
-      launch.get_stream(),
-      transform_op
+    auto env = cub_bench_env(
+      alloc,
+      launch,
+      cuda::execution::require(cuda::execution::determinism::not_guaranteed)
 #if !TUNE_BASE
-      ,
-      policy_selector{}
-#endif
+        ,
+      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<op_t, T, init_t>>{})
+#endif // !TUNE_BASE
     );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, static_cast<OffsetT>(elements), op_t{}, init_t{}, env);
   });
 }
 

@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// nvbug6141871: error: v2[i] == ~v1[i] failed
-
 // bitset<N> operator~() const; // constexpr since C++23
 
 #include <cuda/std/bitset>

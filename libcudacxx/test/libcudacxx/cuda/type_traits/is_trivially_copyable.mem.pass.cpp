@@ -26,7 +26,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 
 // operator== for CUDA vector types and dim3 (not provided by the toolkit)
 template <class T, cuda::std::enable_if_t<cuda::is_vector_type_v<T>, int> = 0>
-__host__ __device__ bool operator==(T a, T b)
+TEST_FUNC bool operator==(T a, T b)
 {
   if constexpr (sizeof(T) == sizeof(decltype(T::x)))
   {
@@ -47,7 +47,7 @@ __host__ __device__ bool operator==(T a, T b)
 }
 
 template <class T>
-__host__ __device__ bool operator==(cuda::complex<T> a, cuda::complex<T> b)
+TEST_FUNC bool operator==(cuda::complex<T> a, cuda::complex<T> b)
 {
   return a.real() == b.real() && a.imag() == b.imag();
 }
@@ -59,7 +59,7 @@ struct large_custom_t
 };
 
 template <int Size>
-__host__ __device__ bool operator==(const large_custom_t<Size>& a, const large_custom_t<Size>& b)
+TEST_FUNC bool operator==(const large_custom_t<Size>& a, const large_custom_t<Size>& b)
 {
   for (int i = 0; i < Size; ++i)
   {
@@ -72,7 +72,7 @@ __host__ __device__ bool operator==(const large_custom_t<Size>& a, const large_c
 }
 
 template <typename T>
-__host__ __device__ void test_memcpy_roundtrip(T from)
+TEST_FUNC void test_memcpy_roundtrip(T from)
 {
   static_assert(cuda::is_trivially_copyable_v<T>);
   T to;
@@ -108,7 +108,7 @@ __host__ __device__ void test_memcpy_roundtrip(T from)
   TEST_CUDA_VECTOR_TYPE(base_type, 3)     \
   TEST_CUDA_VECTOR_TYPE(base_type, 4)
 
-__host__ __device__ bool tests()
+TEST_FUNC bool tests()
 {
   // standard scalar types
   test_memcpy_roundtrip(42);
@@ -249,7 +249,7 @@ __host__ __device__ bool tests()
   return true;
 }
 
-__host__ __device__ bool tests_nvfp()
+TEST_FUNC bool tests_nvfp()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   for (__half i :

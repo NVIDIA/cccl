@@ -1,12 +1,9 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
 
 #include <cub/device/device_reduce.cuh>
-
-#include <cuda/__device/all_devices.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
 
 #include <nvbench_helper.cuh>
 
@@ -21,7 +18,7 @@ struct policy_selector
       cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
     const auto policy = cub::detail::reduce::agent_reduce_policy{
       threads, items, 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {policy, policy, policy};
+    return {policy, policy};
   }
 };
 #endif // !TUNE_BASE
@@ -29,11 +26,10 @@ struct policy_selector
 template <typename T, typename OffsetT>
 void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-  using init_t   = T;
+  using init_t = T;
 
   // Retrieve axis parameters
-  const auto elements = static_cast<offset_t>(state.get_int64("Elements{io}"));
+  const auto elements = state.get_int64("Elements{io}");
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
@@ -46,45 +42,18 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(1);
 
-  // So for now, we have to call into the dispatcher again to override the accumulator type:
-  auto transform_op = ::cuda::std::identity{};
-
-  std::size_t temp_size;
-  cub::detail::reduce::dispatch(
-    nullptr,
-    temp_size,
-    d_in,
-    d_out,
-    elements,
-    op_t{},
-    init_t{},
-    nullptr /* stream */,
-    transform_op
-#if !TUNE_BASE
-    ,
-    policy_selector<T>{}
-#endif
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::reduce::dispatch(
-      temp_storage,
-      temp_size,
-      d_in,
-      d_out,
-      elements,
-      op_t{},
-      init_t{},
-      launch.get_stream(),
-      transform_op
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
       ,
-      policy_selector<T>{}
-#endif
+      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<op_t, T, init_t>>{})
+#endif // !TUNE_BASE
     );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, static_cast<OffsetT>(elements), op_t{}, init_t{}, env);
   });
 }
 
