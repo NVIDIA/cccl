@@ -180,7 +180,7 @@ public:
    * the same handle share one registry. The registry itself is internally
    * mutex-guarded for concurrent lookups.
    */
-  ::cuda::experimental::places::exec_place_resources& get_place_resources() const
+  [[nodiscard]] ::cuda::experimental::places::exec_place_resources& get_place_resources() const
   {
     assert(pimpl);
     return pimpl->place_resources;
@@ -313,30 +313,30 @@ namespace cuda::experimental::places
 // layer; they are only available to code that already includes
 // async_resources_handle.cuh.
 
-inline stream_pool&
+[[nodiscard]] inline stream_pool&
 exec_place::get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const
 {
   return get_stream_pool(for_computation, h.get_place_resources());
 }
 
-inline decorated_stream
+[[nodiscard]] inline decorated_stream
 exec_place::getStream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
 {
   return getStream(h.get_place_resources(), for_computation);
 }
 
-inline cudaStream_t
+[[nodiscard]] inline cudaStream_t
 exec_place::pick_stream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
 {
   return pick_stream(h.get_place_resources(), for_computation);
 }
 
-inline size_t exec_place::stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const
+[[nodiscard]] inline size_t exec_place::stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const
 {
   return stream_pool_size(h.get_place_resources());
 }
 
-inline ::std::vector<cudaStream_t>
+[[nodiscard]] inline ::std::vector<cudaStream_t>
 exec_place::pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const
 {
   return pick_all_streams(h.get_place_resources());

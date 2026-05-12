@@ -109,7 +109,7 @@ public:
    * reference is stable for the lifetime of the registry (`std::unordered_map`
    * preserves node addresses across rehashes).
    */
-  per_place_pools& get(const void* impl_key)
+  [[nodiscard]] per_place_pools& get(const void* impl_key)
   {
     ::std::lock_guard<::std::mutex> lock(mtx_);
     auto it = map_.find(impl_key);
@@ -121,7 +121,7 @@ public:
   }
 
   /// @brief Number of per-place entries currently cached. Mainly for tests.
-  ::std::size_t size() const
+  [[nodiscard]] ::std::size_t size() const
   {
     ::std::lock_guard<::std::mutex> lock(mtx_);
     return map_.size();

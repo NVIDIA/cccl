@@ -237,10 +237,11 @@ handle directly so call sites do not have to dereference it:
     cudaStream_t stream = place.pick_stream(ctx.async_resources());
 
 Stream pools are populated lazily -- CUDA streams are only created when first
-requested via ``pick_stream()``. Self-contained places
-(``exec_place::cuda_stream(s)``, green-context places) ignore the registry
-and return their own embedded pool instead, so the user-provided
-``cudaStream_t`` / ``CUgreenCtx`` must outlive any place that wraps it.
+requested via ``pick_stream(resources)`` (or ``pick_stream(ctx.async_resources())``
+inside CUDASTF). Self-contained places (``exec_place::cuda_stream(s)``,
+green-context places) ignore the registry and return their own embedded pool
+instead, so the user-provided ``cudaStream_t`` / ``CUgreenCtx`` must outlive
+any place that wraps it.
 
 .. _places-memory-allocation:
 

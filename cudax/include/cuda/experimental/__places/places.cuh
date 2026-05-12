@@ -523,7 +523,7 @@ public:
      *                        derived overrides that need access to the
      *                        public-facing place).
      */
-    virtual stream_pool&
+    [[nodiscard]] virtual stream_pool&
     get_stream_pool(bool for_computation, exec_place_resources& res, [[maybe_unused]] const exec_place& self) const
     {
       auto& slot = res.get(this);
