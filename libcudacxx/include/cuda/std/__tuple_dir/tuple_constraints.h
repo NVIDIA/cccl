@@ -199,28 +199,41 @@ struct __tuple_constraints
   template <class... _Args>
   struct __variadic_constraints
   {
-    // 12.3: otherwise, true_type
+    // Must be a function because GCC7 does not allow us to specialize constexpr bools inside a
+    // template class context. We could fix this by defining them outside, but we need access
+    // to 2 template parameters packs (_Up... and _Tp...). I don't see a way to do this without
+    // templated outer classes, so constexpr function it is.
     template <class... _Up>
-    static constexpr bool __disambiguation_constraints = true;
+    [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __disambiguation_constraints() noexcept
+    {
+      static_assert(sizeof...(_Tp) == sizeof...(_Up));
+      if constexpr (sizeof...(_Tp) == 1)
+      {
+        // 12.1: negation<is_same<remove_cvref_t<U0>, tuple>>
+        //       if sizeof...(Types) is 1
+        return !is_same_v<remove_cvref_t<_Up>..., tuple<_Tp...>>;
+      }
+      else if constexpr (sizeof...(_Tp) == 2 || sizeof...(_Tp) == 3)
+      {
+        // 12.2: otherwise, if sizeof...(Types) is 2 or 3
+        //       bool_constant<!is_same_v<remove_cvref_t<U0>, allocator_arg_t> || is_same_v<remove_cvref_t<T0>,
+        //       allocator_arg_t>>
+        using _U0 = __type_index_c<0, _Up...>;
+        using _T0 = __type_index_c<0, _Tp...>;
 
-    // 12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
-    template <class _U0>
-    static constexpr bool __disambiguation_constraints<_U0> = !is_same_v<remove_cvref_t<_U0>, tuple<_Tp...>>;
-
-    // 12.2: otherwise, bool_constant<!is_same_v<remove_cvref_t<U0>, allocator_arg_t> ||
-    //       is_same_v<remove_cvref_t<T0>, allocator_arg_t>> if sizeof...(Types) is 2 or 3
-    template <class _U0, class _U1>
-    static constexpr bool __disambiguation_constraints<_U0, _U1> =
-      !is_same_v<remove_cvref_t<_U0>, allocator_arg_t>
-      || is_same_v<remove_cvref_t<__type_index_c<0, _Tp...>>, allocator_arg_t>;
-
-    template <class _U0, class _U1, class _U2>
-    static constexpr bool __disambiguation_constraints<_U0, _U1, _U2> = __disambiguation_constraints<_U0, _U1>;
+        return !is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>;
+      }
+      else
+      {
+        // 12.3: otherwise, true_type
+        return true;
+      }
+    }
 
     // Must be a function since the is_constructible check needs to be lazy
     [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __check_constructible() noexcept
     {
-      if constexpr (__disambiguation_constraints<_Args...>)
+      if constexpr (__disambiguation_constraints<_Args...>())
       {
         return _And<is_constructible<_Tp, _Args>...>::value;
       }
