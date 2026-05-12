@@ -14,16 +14,15 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 
-#include <vector>
-
+#include "host_device_types.h"
 #include "test_macros.h"
 
 void test()
 {
-  std::vector<int> vec{1, 2, 3, 0};
+  host_only_container vec{};
 
   { // constructors
-    using Iter                 = typename std::vector<int>::iterator;
+    using Iter                 = typename host_only_container::iterator;
     using permutation_iterator = cuda::permutation_iterator<Iter, Iter>;
 
     const permutation_iterator default_constructed{};

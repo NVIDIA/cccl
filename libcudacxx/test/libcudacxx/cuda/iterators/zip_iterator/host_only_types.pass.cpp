@@ -14,16 +14,15 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 
-#include <vector>
-
+#include "host_device_types.h"
 #include "test_macros.h"
 
 void test()
 {
-  std::vector<int> vec{1, 2, 3, 4};
+  host_only_container vec{};
 
   {
-    using Iter         = typename std::vector<int>::iterator;
+    using Iter         = typename host_only_container::iterator;
     using zip_iterator = cuda::zip_iterator<Iter, Iter>;
 
     const zip_iterator default_constructed{};

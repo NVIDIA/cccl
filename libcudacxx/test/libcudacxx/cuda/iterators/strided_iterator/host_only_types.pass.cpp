@@ -14,16 +14,14 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 
-#include <vector>
-
 #include "host_device_types.h"
 #include "test_macros.h"
 
 void test()
 {
-  std::vector<int> vec{1, 2, 3, 4, 5};
+  host_only_container vec{};
   {
-    using Iter             = typename std::vector<int>::iterator;
+    using Iter             = typename host_only_container::iterator;
     using strided_iterator = cuda::strided_iterator<Iter, ::std::integral_constant<int, 2>>;
 
     const strided_iterator default_constructed{};

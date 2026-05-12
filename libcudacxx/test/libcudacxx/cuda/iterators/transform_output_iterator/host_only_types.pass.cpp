@@ -14,8 +14,7 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 
-#include <vector>
-
+#include "host_device_types.h"
 #include "test_macros.h"
 
 struct host_functor
@@ -44,10 +43,10 @@ struct host_functor
 
 void test()
 {
-  std::vector<int> vec{1, 2, 3, 4};
+  host_only_container vec{};
 
   {
-    using Iter                      = typename std::vector<int>::iterator;
+    using Iter                      = typename host_only_container::iterator;
     using transform_output_iterator = cuda::transform_output_iterator<host_functor, Iter>;
 
     const transform_output_iterator default_constructed{};
