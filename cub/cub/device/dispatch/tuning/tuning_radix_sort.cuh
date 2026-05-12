@@ -898,8 +898,8 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
       delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>},
     {}};
 
-  const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
-  const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
+  const auto downsweep     = radix_sort::convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
+  const auto alt_downsweep = radix_sort::convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
 
   using up_pol       = typename active_policy::UpsweepPolicy;
   const auto upsweep = radix_sort_upsweep_policy{
@@ -909,7 +909,7 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
   const auto alt_upsweep = radix_sort_upsweep_policy{
     alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
 
-  const auto single_tile = convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
+  const auto single_tile = radix_sort::convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
 
   return radix_sort_policy{
     active_policy::ONESWEEP,
