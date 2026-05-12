@@ -573,7 +573,7 @@ struct caching_allocator_t
     return result;
   }
 
-  void deallocate(char* ptr, size_t, bool check_stream = true)
+  void deallocate(char* ptr, size_t, [[maybe_unused]] bool check_stream = true)
   {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     if (check_stream && first_async_stream != ::cuda::invalid_stream)
