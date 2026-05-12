@@ -40,15 +40,25 @@ TEST_FUNC void test()
   // --- argument_traits: is_deferred ---
 
   static_assert(!cuda::argument::__traits<int>::is_deferred);
-  static_assert(!cuda::argument::__traits<cuda::argument::__dynamic<int>>::is_deferred);
+  static_assert(!cuda::argument::__traits<cuda::argument::__immediate<int>>::is_deferred);
   static_assert(!cuda::argument::__traits<cuda::argument::__constant<42>>::is_deferred);
-  static_assert(cuda::argument::__traits<cuda::argument::__deferred<cuda::std::span<int, 1>>>::is_deferred);
-  static_assert(cuda::argument::__traits<cuda::argument::__deferred<cuda::std::span<int>>>::is_deferred);
+  static_assert(cuda::argument::__traits<cuda::argument::__deferred_value<cuda::std::span<int, 1>>>::is_deferred);
+  static_assert(cuda::argument::__traits<cuda::argument::__deferred_sequence<cuda::std::span<int>>>::is_deferred);
+
+  // --- argument_traits: is_single_value ---
+
+  static_assert(cuda::argument::__traits<int>::is_single_value);
+  static_assert(!cuda::argument::__traits<int*>::is_single_value);
+  static_assert(cuda::argument::__traits<cuda::argument::__immediate<int>>::is_single_value);
+  static_assert(!cuda::argument::__traits<cuda::argument::__immediate<cuda::std::span<int>>>::is_single_value);
+  static_assert(cuda::argument::__traits<cuda::argument::__constant<42>>::is_single_value);
+  static_assert(cuda::argument::__traits<cuda::argument::__deferred_value<int*>>::is_single_value);
+  static_assert(!cuda::argument::__traits<cuda::argument::__deferred_sequence<cuda::std::span<int>>>::is_single_value);
 
   // --- argument_traits: value_type ---
 
   static_assert(cuda::std::is_same_v<cuda::argument::__traits<int>::value_type, int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__traits<cuda::argument::__dynamic<int>>::value_type, int>);
+  static_assert(cuda::std::is_same_v<cuda::argument::__traits<cuda::argument::__immediate<int>>::value_type, int>);
   static_assert(cuda::std::is_same_v<cuda::argument::__traits<cuda::argument::__constant<42>>::value_type, int>);
 
   // --- argument_traits: lowest / max ---
@@ -65,22 +75,11 @@ TEST_FUNC void test()
   static_assert(cuda::argument::__lowest(1.0f) == cuda::std::numeric_limits<float>::lowest());
   static_assert(cuda::argument::__max(1.0f) == cuda::std::numeric_limits<float>::max());
 
-  // --- __is_single_value_v on unwrapped wrapper types ---
-
-  static_assert(
-    cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__dynamic<int>>::value_type>);
-  static_assert(!cuda::argument::__is_single_value_v<
-                cuda::argument::__traits<cuda::argument::__dynamic<cuda::std::span<int>>>::value_type>);
-  static_assert(
-    !cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__dynamic<int*>>::value_type>);
-  static_assert(
-    cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__constant<42>>::value_type>);
-
 #if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L
+  // --- is_single_value with array constant ---
   using arr_t = cuda::std::array<int, 3>;
-  static_assert(!cuda::argument::__is_single_value_v<
-                cuda::argument::__traits<cuda::argument::__constant<arr_t{1, 2, 3}>>::value_type>);
-#endif // _CCCL_STD_VER >= 2020
+  static_assert(!cuda::argument::__traits<cuda::argument::__constant<arr_t{1, 2, 3}>>::is_single_value);
+#endif // __cpp_nontype_template_args >= 201911L
 }
 
 int main(int, char**)

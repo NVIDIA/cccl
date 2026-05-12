@@ -58,8 +58,7 @@ TEST_FUNC constexpr int process_segments(_SegSizeArg __seg_size)
 {
   const auto& __val = cuda::argument::__unwrap(__seg_size);
 
-  if constexpr (cuda::argument::__is_single_value_v<
-                  cuda::std::remove_cv_t<cuda::std::remove_reference_t<decltype(__val)>>>)
+  if constexpr (cuda::argument::__traits<_SegSizeArg>::is_single_value)
   {
     return static_cast<int>(__val);
   }
@@ -120,7 +119,7 @@ TEST_FUNC constexpr bool test()
 
   // dynamic_argument: tight static bounds, shared memory, buffer = static max
   {
-    constexpr auto seg_size = cuda::argument::__dynamic{100, cuda::argument::__bounds<1, 256>()};
+    constexpr auto seg_size = cuda::argument::__immediate{100, cuda::argument::__bounds<1, 256>()};
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(compute_buffer_size(seg_size, 4) == 256 * 4);
     assert(process_segments(seg_size) == 100);
@@ -128,7 +127,7 @@ TEST_FUNC constexpr bool test()
 
   // dynamic_argument: wide static bounds, global memory, buffer clamped to default
   {
-    constexpr auto seg_size = cuda::argument::__dynamic{100, cuda::argument::__bounds<1, 4096>()};
+    constexpr auto seg_size = cuda::argument::__immediate{100, cuda::argument::__bounds<1, 4096>()};
     static_assert(select_variant(seg_size) == algorithm_variant::global_memory);
     assert(compute_buffer_size(seg_size, 4) == default_max_segment_size * 4);
     assert(process_segments(seg_size) == 100);
@@ -136,7 +135,7 @@ TEST_FUNC constexpr bool test()
 
   // dynamic_argument: no bounds, global memory, buffer clamped
   {
-    constexpr auto seg_size = cuda::argument::__dynamic{100};
+    constexpr auto seg_size = cuda::argument::__immediate{100};
     static_assert(select_variant(seg_size) == algorithm_variant::global_memory);
     assert(compute_buffer_size(seg_size, 4) == default_max_segment_size * 4);
     assert(process_segments(seg_size) == 100);
@@ -145,7 +144,7 @@ TEST_FUNC constexpr bool test()
   // dynamic_argument: per-segment span with runtime bounds only
   {
     int sizes[3]   = {64, 128, 96};
-    auto seg_sizes = cuda::argument::__dynamic{cuda::std::span<int>{sizes, 3}, cuda::argument::__bounds(1, 200)};
+    auto seg_sizes = cuda::argument::__immediate{cuda::std::span<int>{sizes, 3}, cuda::argument::__bounds(1, 200)};
     assert(select_variant(seg_sizes) == algorithm_variant::global_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 200 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 96);
@@ -154,7 +153,7 @@ TEST_FUNC constexpr bool test()
   // dynamic_argument: per-segment span with both bounds
   {
     int sizes[3]   = {64, 128, 96};
-    auto seg_sizes = cuda::argument::__dynamic{
+    auto seg_sizes = cuda::argument::__immediate{
       cuda::std::span<int>{sizes, 3}, cuda::argument::__bounds<1, 256>(), cuda::argument::__bounds(1, 200)};
     static_assert(cuda::argument::__traits<decltype(seg_sizes)>::max <= shared_memory_capacity);
     assert(select_variant(seg_sizes) == algorithm_variant::shared_memory);
@@ -165,7 +164,7 @@ TEST_FUNC constexpr bool test()
   // deferred_argument: uniform, bounds for decisions only
   {
     int val       = 100;
-    auto seg_size = cuda::argument::__deferred{
+    auto seg_size = cuda::argument::__deferred_value{
       cuda::std::span<int, 1>{&val, 1}, cuda::argument::__bounds<1, 256>(), cuda::argument::__bounds(1, 200)};
     static_assert(cuda::argument::__traits<decltype(seg_size)>::max <= shared_memory_capacity);
     assert(select_variant(seg_size) == algorithm_variant::shared_memory);
@@ -190,7 +189,7 @@ TEST_FUNC constexpr bool test()
 
   // dynamic_argument float with static bounds
   {
-    constexpr auto seg_size = cuda::argument::__dynamic{100.0f, cuda::argument::__bounds<1.0f, 256.0f>()};
+    constexpr auto seg_size = cuda::argument::__immediate{100.0f, cuda::argument::__bounds<1.0f, 256.0f>()};
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(process_segments(seg_size) == 100);
   }

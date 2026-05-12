@@ -20,7 +20,7 @@ TEST_FUNC constexpr bool test()
 {
   // Uniform scalar via CTAD
   {
-    auto da = cuda::argument::__dynamic{5};
+    auto da = cuda::argument::__immediate{5};
     assert(da.arg == 5);
     static_assert(cuda::argument::__traits<decltype(da)>::lowest == cuda::std::numeric_limits<int>::lowest());
     static_assert(cuda::argument::__traits<decltype(da)>::max == cuda::std::numeric_limits<int>::max());
@@ -30,7 +30,7 @@ TEST_FUNC constexpr bool test()
 
   // Uniform scalar with static bounds
   {
-    auto da = cuda::argument::__dynamic{5, cuda::argument::__bounds<1, 8>()};
+    auto da = cuda::argument::__immediate{5, cuda::argument::__bounds<1, 8>()};
     assert(da.arg == 5);
     static_assert(cuda::argument::__traits<decltype(da)>::lowest == 1);
     static_assert(cuda::argument::__traits<decltype(da)>::max == 8);
@@ -39,7 +39,7 @@ TEST_FUNC constexpr bool test()
   // Per-segment span with runtime bounds
   {
     int arr[4] = {10, 20, 30, 40};
-    auto da    = cuda::argument::__dynamic{cuda::std::span<int>{arr, 4}, cuda::argument::__bounds(1, 100)};
+    auto da    = cuda::argument::__immediate{cuda::std::span<int>{arr, 4}, cuda::argument::__bounds(1, 100)};
     assert(da.arg.size() == 4);
     assert(cuda::argument::__lowest(da) == 1);
     assert(cuda::argument::__max(da) == 100);
@@ -48,7 +48,7 @@ TEST_FUNC constexpr bool test()
   // Per-segment span with both bounds — argument_max combines both
   {
     int arr[4] = {10, 20, 30, 40};
-    auto da    = cuda::argument::__dynamic{
+    auto da    = cuda::argument::__immediate{
       cuda::std::span<int>{arr, 4}, cuda::argument::__bounds<1, 256>(), cuda::argument::__bounds(10, 200)};
     static_assert(cuda::argument::__traits<decltype(da)>::lowest == 1);
     static_assert(cuda::argument::__traits<decltype(da)>::max == 256);
@@ -59,7 +59,7 @@ TEST_FUNC constexpr bool test()
   // Per-segment via span
   {
     int arr[4] = {1, 2, 3, 4};
-    auto da    = cuda::argument::__dynamic{cuda::std::span<int>{arr, 4}};
+    auto da    = cuda::argument::__immediate{cuda::std::span<int>{arr, 4}};
     assert(da.arg.size() == 4);
     assert(da.arg[0] == 1);
     assert(da.arg[3] == 4);
@@ -68,7 +68,7 @@ TEST_FUNC constexpr bool test()
   // Per-segment with static bounds
   {
     int arr[4] = {10, 20, 30, 40};
-    auto da    = cuda::argument::__dynamic{cuda::std::span<int>{arr, 4}, cuda::argument::__bounds<1, 100>()};
+    auto da    = cuda::argument::__immediate{cuda::std::span<int>{arr, 4}, cuda::argument::__bounds<1, 100>()};
     assert(da.arg.size() == 4);
     assert(da.arg[2] == 30);
     static_assert(cuda::argument::__traits<decltype(da)>::lowest == 1);
@@ -78,13 +78,13 @@ TEST_FUNC constexpr bool test()
   // Uniform via span<T, 1> (span<T, 1>)
   {
     int val = 42;
-    auto da = cuda::argument::__dynamic{cuda::std::span<int, 1>{&val, 1}};
+    auto da = cuda::argument::__immediate{cuda::std::span<int, 1>{&val, 1}};
     assert(da.arg[0] == 42);
   }
 
   // Traits
   {
-    using traits = cuda::argument::__traits<cuda::argument::__dynamic<int>>;
+    using traits = cuda::argument::__traits<cuda::argument::__immediate<int>>;
     static_assert(!traits::is_deferred);
     static_assert(cuda::std::is_same_v<traits::value_type, int>);
   }
@@ -92,16 +92,16 @@ TEST_FUNC constexpr bool test()
   // __is_single_value_v on unwrapped types
   {
     static_assert(
-      cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__dynamic<int>>::value_type>);
+      cuda::argument::__is_single_value_v<cuda::argument::__traits<cuda::argument::__immediate<int>>::value_type>);
     static_assert(!cuda::argument::__is_single_value_v<
-                  cuda::argument::__traits<cuda::argument::__dynamic<cuda::std::span<int>>>::value_type>);
+                  cuda::argument::__traits<cuda::argument::__immediate<cuda::std::span<int>>>::value_type>);
     static_assert(cuda::argument::__is_single_value_v<
-                  cuda::argument::__traits<cuda::argument::__dynamic<cuda::std::span<int, 1>>>::value_type>);
+                  cuda::argument::__traits<cuda::argument::__immediate<cuda::std::span<int, 1>>>::value_type>);
   }
 
   // Unwrap: scalar
   {
-    auto da       = cuda::argument::__dynamic{7};
+    auto da       = cuda::argument::__immediate{7};
     const auto& v = cuda::argument::__unwrap(da);
     assert(v == 7);
   }
@@ -109,7 +109,7 @@ TEST_FUNC constexpr bool test()
   // Unwrap: span
   {
     int arr[3]    = {10, 20, 30};
-    auto da       = cuda::argument::__dynamic{cuda::std::span<int>{arr, 3}};
+    auto da       = cuda::argument::__immediate{cuda::std::span<int>{arr, 3}};
     const auto& v = cuda::argument::__unwrap(da);
     assert(v.size() == 3);
     assert(v[1] == 20);
