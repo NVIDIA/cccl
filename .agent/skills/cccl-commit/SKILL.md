@@ -68,6 +68,13 @@ the per-group expected set. STOP on divergence.
 Commit-only with no Split / no Interactive: confirm staged set via `git diff --cached --stat` (empty → exit),
 skip the test gate unless asked, go to 5.2.
 
+### 5.0a Optional CI scoping (last commit only)
+
+Before drafting the last commit's message, route through `cccl-clarify`: offer to scope the next CI run via
+`cccl-ci-overrides` — override matrix (writes `workflows.override` into `ci/matrix.yaml`; re-stage + re-run
+pre-commit) and/or `[skip-*]` tags on the last commit's last line. Both block merge — remind the user to reset
+before final merge.
+
 ### 5.1 Tests
 
 `cccl-clarify` → skip / `pre-commit run --files <staged>` / dispatch `cccl-build-and-test-targets`. If
@@ -106,9 +113,7 @@ prompt). Verify with `git show -p HEAD`: SHA, subject, file list match expectati
 After each commit, `cccl-clarify` → continue / pause / end. On continue, verify remaining slices still apply
 (`git apply --check` per remaining slice); regenerate the patch and re-plan if any fail.
 
-Remind caller to use `cccl-ci-overrides` to setup a minimal CI run if needed.
-
-Last group → final summary (all SHAs, deferred, reverted) and exit.
+Last group → final summary (all SHAs, deferred, reverted) and exit. (CI scoping was offered in Step 5.0a.)
 
 ## Hard prohibitions
 

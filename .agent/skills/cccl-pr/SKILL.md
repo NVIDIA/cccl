@@ -8,6 +8,10 @@ description: "Manage CCCL pull requests — open a new draft PR after commits la
 CCCL PR lifecycle. Route every user-facing question through `cccl-clarify`. Refuses on `main`. Never force-pushes;
 never deletes branches; never closes/merges PRs.
 
+**Merge-blocker check** — before every push or PR-open operation, detect non-empty `workflows.override` in
+`ci/matrix.yaml` and any `[skip-*]` tags on HEAD's commit message. Both block merge. Surface via `cccl-clarify`
+as a reminder — typically fine for in-progress work, but must be reset before final merge.
+
 ## Step 1 — Resolve mode
 
 `cccl-clarify` (or infer from phrasing):
