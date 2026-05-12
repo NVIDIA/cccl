@@ -981,7 +981,8 @@ struct policy_selector
     return {};
   }
 
-  _CCCL_API constexpr bool can_use_warpspeed([[maybe_unused]] const scan_warpspeed_policy& warpspeed_policy) const
+  _CCCL_API constexpr bool can_use_warpspeed([[maybe_unused]] ::cuda::compute_capability cc,
+                                             [[maybe_unused]] const scan_warpspeed_policy& warpspeed_policy) const
   {
     // We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
     // MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing
@@ -992,6 +993,15 @@ struct policy_selector
   || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1))) || defined(CCCL_DISABLE_WARPSPEED_SCAN)
     return false;
 #else
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4)
+    if (cc == ::cuda::compute_capability{12, 0})
+    {
+      // Unfortunately, there seems to be a codegen bug in nvcc when targeting GB20x GPUs (sm120), so let's disable
+      // warpspeed scan until this is resolved. See: https://github.com/NVIDIA/cccl/issues/8528
+      return false;
+    }
+#  endif //_CCCL_CUDA_COMPILER(NVCC, <, 13, 4)
+
     if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
         || !output_default_constructible)
     {
@@ -1019,7 +1029,7 @@ struct policy_selector
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
       const auto warpspeed_policy_opt = get_warpspeed_policy(cc);
-      if (warpspeed_policy_opt && can_use_warpspeed(*warpspeed_policy_opt))
+      if (warpspeed_policy_opt && can_use_warpspeed(cc, *warpspeed_policy_opt))
       {
         return {scan_algorithm::warpspeed, scan_lookback_policy{}, *warpspeed_policy_opt};
       }
