@@ -5,6 +5,7 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/reduce.h>
 #include <thrust/tabulate.h>
 
 #include <cuda/iterator>
@@ -67,9 +68,9 @@ gen_data(int num_segments, pattern_kind pattern, const cuda::std::int64_t* d_seg
 
   thrust::tabulate(d_keys.begin(), d_keys.end(), [pattern, d_seg_sizes] __device__(std::size_t idx) -> float {
     auto quantize = [](float base) -> float {
-      const auto scaled = static_cast<double>(base) * 32.0;
-      const auto r      = cuda::std::rint(scaled);
-      return static_cast<float>(r / 32.0);
+      const auto r         = cuda::std::rint(base);
+      const auto scaled_fr = cuda::std::rint((base - r) * 32.0f);
+      return r + (scaled_fr / 32.0f);
     };
 
     auto random_value = [](unsigned long long idx) -> float {
@@ -238,8 +239,9 @@ using max_segment_size_list = nvbench::enum_type_list< //
   1024,
   2048,
   4096,
-  8192,
+  8192
 #if 0 // need these, waiting for implementation to catch up
+  ,
   16384,
   32768,
   65536,
