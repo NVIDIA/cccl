@@ -8,7 +8,6 @@
 
 import importlib
 import locale
-import os
 import platform
 import re
 import subprocess
