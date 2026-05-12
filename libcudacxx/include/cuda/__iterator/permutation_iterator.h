@@ -283,7 +283,7 @@ public:
   template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(const permutation_iterator& __iter, difference_type __n) noexcept( //
-    noexcept(__iter.__index_ + __n)
+    noexcept(::cuda::std::declval<const _Index&>() + difference_type{})
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
@@ -297,7 +297,7 @@ public:
   template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(difference_type __n, const permutation_iterator& __iter) noexcept(
-    noexcept(__iter.__index_ + __n)
+    noexcept(::cuda::std::declval<const _Index&>() + difference_type{})
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
@@ -311,7 +311,7 @@ public:
   template <int = 0> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator-(const permutation_iterator& __iter, difference_type __n) noexcept( //
-    noexcept(__iter.__index_ - __n)
+    noexcept(::cuda::std::declval<const _Index&>() - difference_type{})
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ - __n};
