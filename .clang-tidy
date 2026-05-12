@@ -28,6 +28,7 @@ Checks:
   - '-modernize-use-nodiscard'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
+  - 'clang-diagnostic-*'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
