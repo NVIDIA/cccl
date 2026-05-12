@@ -1,0 +1,145 @@
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
+#pragma once
+
+#include <cuda/std/detail/__config>
+
+#include <nv/target>
+
+#include <catch2/catch_message.hpp>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+// This file implements Catch2's test macros that work both in host and device code. We globally define the
+// CATCH_CONFIG_PREFIX_ALL macro to force Catch2 to prepend it's macros with CATCH_ prefix. That allows us to implement
+// the non-prefixed versions ourselves.
+//
+// In host code, we just use the CATCH_-prefixed variant, in device code we implement the functionality, so it
+// corresponds the desired functionality.
+//
+// Only a subset of the Catch2's macro are provided. If needed, feel free to extend the support. Host-only macros can
+// be determined by missing NV_IF_ELSE_TARGET wrapper and immediate dispatch to CATCH_-prefixed variant.
+
+#define C2H_INTERNAL_DEVICE_PRINTF(FMT, ...)                                                                         \
+  ::printf(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ":\n    " FMT "\n    block [%u, %u, %u], thread [%u, %u, %u]\n\n", \
+           __VA_ARGS__,                                                                                              \
+           blockIdx.x,                                                                                               \
+           blockIdx.y,                                                                                               \
+           blockIdx.z,                                                                                               \
+           threadIdx.x,                                                                                              \
+           threadIdx.y,                                                                                              \
+           threadIdx.z)
+
+#define C2H_INTERNAL_DEVICE_TEST_PRINT(KIND, ...) C2H_INTERNAL_DEVICE_PRINTF(KIND "(%s) failed", "" #__VA_ARGS__)
+
+#define REQUIRE(...)                                                            \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE(__VA_ARGS__);), ({               \
+                      if (!(__VA_ARGS__))                                       \
+                      {                                                         \
+                        C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE", __VA_ARGS__); \
+                      }                                                         \
+                      ::__trap();                                               \
+                    }))
+#define REQUIRE_FALSE(...)                                                            \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_FALSE(__VA_ARGS__);), ({               \
+                      if (__VA_ARGS__)                                                \
+                      {                                                               \
+                        C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_FALSE", __VA_ARGS__); \
+                      }                                                               \
+                      ::__trap();                                                     \
+                    }))
+
+#define REQUIRE_THROWS(...)                                                          \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_THROWS(__VA_ARGS__);), ({             \
+                      (void) __VA_ARGS__;                                            \
+                      C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_THROWS", __VA_ARGS__); \
+                      ::__trap();                                                    \
+                    }))
+#define REQUIRE_THROWS_AS(EXPR, TYPE)                                                  \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_THROWS_AS(EXPR, TYPE);), ({             \
+                      (void) EXPR;                                                     \
+                      C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_THROWS_AS", EXPR, TYPE); \
+                      ::__trap();                                                      \
+                    }))
+#define REQUIRE_NOTHROW(...) NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_NOTHROW(__VA_ARGS__);), (__VA_ARGS__;))
+
+#define CHECK(...)                                                            \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK(__VA_ARGS__);), ({               \
+                      if (!(__VA_ARGS__))                                     \
+                      {                                                       \
+                        C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK", __VA_ARGS__); \
+                      }                                                       \
+                      ::__trap();                                             \
+                    }))
+#define CHECK_FALSE(...)                                                            \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_FALSE(__VA_ARGS__);), ({               \
+                      if (__VA_ARGS__)                                              \
+                      {                                                             \
+                        C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_FALSE", __VA_ARGS__); \
+                      }                                                             \
+                      ::__trap();                                                   \
+                    }))
+#define CHECKED_IF(...)   CATCH_CHECKED_IF(__VA_ARGS__)
+#define CHECKED_ELSE(...) CATCH_CHECKED_ELSE(__VA_ARGS__)
+#define CHECK_NOFAIL(...) CATCH_CHECK_NOFAIL(__VA_ARGS__)
+
+#define CHECK_THROWS(...)                                                          \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_THROWS(__VA_ARGS__);), ({             \
+                      (void) __VA_ARGS__;                                          \
+                      C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_THROWS", __VA_ARGS__); \
+                    }))
+#define CHECK_THROWS_AS(EXPR, TYPE)                                                  \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_THROWS_AS(EXPR, TYPE);), ({             \
+                      (void) EXPR;                                                   \
+                      C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_THROWS_AS", EXPR, TYPE); \
+                    }))
+#define CHECK_NOTHROW(...) NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_NOTHROW(__VA_ARGS__);), (EXPR;))
+
+#define TEST_CASE(...)           CATCH_TEST_CASE(__VA_ARGS__)
+#define TEST_CASE_METHOD(...)    CATCH_TEST_CASE_METHOD(__VA_ARGS__)
+#define METHOD_AS_TEST_CASE(...) CATCH_METHOD_AS_TEST_CASE(__VA_ARGS__)
+#define REGISTER_TEST_CASE(...)  CATCH_REGISTER_TEST_CASE(__VA_ARGS__)
+#define SECTION(...)             CATCH_SECTION(__VA_ARGS__)
+#define DYNAMIC_SECTION(...)     CATCH_DYNAMIC_SECTION(__VA_ARGS__)
+#define FAIL(...) \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_FAIL(__VA_ARGS__);), ({ C2H_INTERNAL_DEVICE_PRINTF("FAIL: %s", __VA_ARGS__); }))
+#define FAIL_CHECK(...) CATCH_FAIL_CHECK(__VA_ARGS__)
+#define SUCCEED(...)    CATCH_SUCCEED(__VA_ARGS__)
+#define SKIP(...)       CATCH_SKIP(__VA_ARGS__)
+
+#define STATIC_REQUIRE(...) \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_STATIC_REQUIRE(__VA_ARGS__);), (static_assert(__VA_ARGS__, #__VA_ARGS__);))
+#define STATIC_REQUIRE_FALSE(...) \
+  NV_IF_ELSE_TARGET(              \
+    NV_IS_HOST, (CATCH_STATIC_REQUIRE_FALSE(__VA_ARGS__);), (static_assert(!(__VA_ARGS__), "!(" #__VA_ARGS__ ")");))
+#define STATIC_CHECK(...) \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_STATIC_CHECK(__VA_ARGS__);), (static_assert(__VA_ARGS__, #__VA_ARGS__);))
+#define STATIC_CHECK_FALSE(...) \
+  NV_IF_ELSE_TARGET(            \
+    NV_IS_HOST, (CATCH_STATIC_CHECK_FALSE(__VA_ARGS__);), (static_assert(!(__VA_ARGS__), "!(" #__VA_ARGS__ ")");))
+
+#define SCENARIO(...)        CATCH_SCENARIO(__VA_ARGS__)
+#define SCENARIO_METHOD(...) CATCH_SCENARIO_METHOD(__VA_ARGS__)
+#define GIVEN(...)           CATCH_GIVEN(__VA_ARGS__)
+#define AND_GIVEN(...)       CATCH_AND_GIVEN(__VA_ARGS__)
+#define WHEN(...)            CATCH_WHEN(__VA_ARGS__)
+#define AND_WHEN(...)        CATCH_AND_WHEN(__VA_ARGS__)
+#define THEN(...)            CATCH_THEN(__VA_ARGS__)
+#define AND_THEN(...)        CATCH_AND_THEN(__VA_ARGS__)
+
+#define INFO(...)          CATCH_INFO(__VA_ARGS__)
+#define UNSCOPED_INFO(...) CATCH_UNSCOPED_INFO(__VA_ARGS__)
+#define WARN(...)          CATCH_WARN(__VA_ARGS__)
+#define CAPTURE(...)       CATCH_CAPTURE(__VA_ARGS__)
+
+#define TEMPLATE_TEST_CASE(...)                    CATCH_TEMPLATE_TEST_CASE(__VA_ARGS__)
+#define TEMPLATE_TEST_CASE_SIG(...)                CATCH_TEMPLATE_TEST_CASE_SIG(__VA_ARGS__)
+#define TEMPLATE_TEST_CASE_METHOD(...)             CATCH_TEMPLATE_TEST_CASE_METHOD(__VA_ARGS__)
+#define TEMPLATE_TEST_CASE_METHOD_SIG(...)         CATCH_TEMPLATE_TEST_CASE_METHOD_SIG(__VA_ARGS__)
+#define TEMPLATE_PRODUCT_TEST_CASE(...)            CATCH_TEMPLATE_PRODUCT_TEST_CASE(__VA_ARGS__)
+#define TEMPLATE_PRODUCT_TEST_CASE_SIG(...)        CATCH_TEMPLATE_PRODUCT_TEST_CASE_SIG(__VA_ARGS__)
+#define TEMPLATE_PRODUCT_TEST_CASE_METHOD(...)     CATCH_TEMPLATE_PRODUCT_TEST_CASE_METHOD(__VA_ARGS__)
+#define TEMPLATE_PRODUCT_TEST_CASE_METHOD_SIG(...) CATCH_TEMPLATE_PRODUCT_TEST_CASE_METHOD_SIG(__VA_ARGS__)
+#define TEMPLATE_LIST_TEST_CASE(...)               CATCH_TEMPLATE_LIST_TEST_CASE(__VA_ARGS__)
+#define TEMPLATE_LIST_TEST_CASE_METHOD(...)        CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(__VA_ARGS__)
