@@ -268,8 +268,8 @@ private:
     // Read the launch configuration passed to us by the parent operation. When we launch
     // the completion kernel, we will be completing the parent's receiver, so we must let
     // the receiver tell us how to launch the kernel.
-    auto const __launch_config        = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    constexpr int __threads_per_block = gpu_thread.count(block, __launch_config);
+    auto const __launch_config         = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
+    constexpr auto __threads_per_block = gpu_thread.count_as<int>(block, __launch_config);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
@@ -296,8 +296,8 @@ private:
   {
     auto& __state = __get_state();
 
-    auto const __launch_config        = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    constexpr int __threads_per_block = gpu_thread.count(block, __launch_config);
+    auto const __launch_config         = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
+    constexpr auto __threads_per_block = gpu_thread.count_as<int>(block, __launch_config);
 
     // without the following, the kernel in __host_start will fail to launch with
     // cudaErrorInvalidDeviceFunction.
