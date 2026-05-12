@@ -465,8 +465,8 @@ protected:
  * execution place can be set in the constructor and also dynamically. An invocation of `->*` takes place on the last
  * set execution place.
  *
- * It is possible to copy or move this task into a `stream_task<>` by implicit conversion. Subsequently, the
- * obtained object can be used with dynamic dependencies.
+ * It is possible to move this task into a `stream_task<>` by implicit conversion (copying is disabled because
+ * `stream_task<>` is move-only). Subsequently, the obtained object can be used with dynamic dependencies.
  */
 template <typename... Data>
 class stream_task
