@@ -159,3 +159,10 @@
 #define CHECK_THROWS_MATCHES(...)   CATCH_CHECK_THROWS_MATCHES(__VA_ARGS__)
 #define CHECK_THAT(...)             CATCH_CHECK_THAT(__VA_ARGS__)
 #define REQUIRE_THAT(...)           CATCH_REQUIRE_THAT(__VA_ARGS__)
+
+// extensions
+
+#define REQUIRE_CUDA(...)   REQUIRE((__VA_ARGS__) == CUDA_SUCCESS)
+#define REQUIRE_CUDART(...) REQUIRE((__VA_ARGS__) == cudaSuccess)
+#define CHECK_CUDA(...)     CHECK((__VA_ARGS__) == CUDA_SUCCESS)
+#define CHECK_CUDART(...)   CHECK((__VA_ARGS__) == cudaSuccess)
