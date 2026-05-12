@@ -285,6 +285,8 @@ C2H_TEST("exec_place_pick_stream borrowed context resources", "[places][stream][
   REQUIRE(stream != nullptr);
   REQUIRE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess);
 
+  stf_exec_place_resources_destroy(res);
+
   stf_exec_place_destroy(place);
   stf_ctx_finalize(ctx);
 }

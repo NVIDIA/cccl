@@ -110,8 +110,9 @@ typedef struct stf_data_place_opaque_t* stf_data_place_handle;
 //!
 //! Handles returned by stf_exec_place_resources_create() are owned by the
 //! caller and must be released with stf_exec_place_resources_destroy().
-//! Handles returned by stf_ctx_get_place_resources() are borrowed from the
-//! context and must not be destroyed by the caller.
+//! Handles returned by stf_ctx_get_place_resources() do not own the context
+//! resources, but the handle itself should still be released with
+//! stf_exec_place_resources_destroy().
 typedef struct stf_exec_place_resources_opaque_t* stf_exec_place_resources_handle;
 
 //! \brief 4D position (coordinates) for partition mapping.
@@ -186,7 +187,8 @@ stf_exec_place_resources_handle stf_exec_place_resources_create(void);
 
 //! \brief Destroy a registry returned by stf_exec_place_resources_create().
 //!
-//! Do not call this for handles borrowed from stf_ctx_get_place_resources().
+//! For handles returned by stf_ctx_get_place_resources(), this releases only
+//! the C handle wrapper and leaves the context-owned resources untouched.
 //! \p h may be NULL.
 void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
 
@@ -367,8 +369,10 @@ void stf_ctx_finalize(stf_ctx_handle ctx);
 
 //! \brief Borrow the per-place stream-pool registry embedded in \p ctx.
 //!
-//! The returned handle remains valid until stf_ctx_finalize(ctx). It must not
-//! be passed to stf_exec_place_resources_destroy().
+//! The returned handle refers to resources that remain valid until
+//! stf_ctx_finalize(ctx). Release the handle with
+//! stf_exec_place_resources_destroy(); doing so does not destroy the
+//! context-owned resources.
 stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx);
 
 //!
