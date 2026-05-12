@@ -126,11 +126,12 @@ else()
 endif()
 
 # enable libc++ support
-if (CCCL_USE_LIBCXX)
-  string(
-    APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
-    " -Xclang -stdlib=libc++ -Xclang -stdlib++-isystem /usr/include/c++/v1"
-  )
+if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(LIBCUDACXX_HOST_STL "msvc")
+elseif (CCCL_USE_LIBCXX)
+  set(LIBCUDACXX_HOST_STL "libc++")
+else()
+  set(LIBCUDACXX_HOST_STL "libstdc++")
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
