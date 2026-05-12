@@ -35,7 +35,7 @@
 #define CCCLRT_CHECK_FALSE(condition) CHECK_FALSE(condition)
 
 // Explicit device side require macros for clang-cuda
-#define CCCLRT_REQUIRE_DEVICE(condition)     REQUIRE(condition)
+#define CCCLRT_REQUIRE_DEVICE(condition)     REQUIRE_DEVICE(condition)
 #define CCCLRT_CHECK_DEVICE(condition)       CHECK(condition)
 #define CCCLRT_FAIL_DEVICE(message)          FAIL(message)
 #define CCCLRT_CHECK_FALSE_DEVICE(condition) CHECK_FALSE(condition)

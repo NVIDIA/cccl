@@ -162,6 +162,16 @@
 
 // extensions
 
+#define REQUIRE_DEVICE(...)                                   \
+  do                                                          \
+  {                                                           \
+    if (!(__VA_ARGS__))                                       \
+    {                                                         \
+      C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE", __VA_ARGS__); \
+    }                                                         \
+    ::__trap();                                               \
+  } while (false)
+
 #define REQUIRE_CUDA(...)   REQUIRE((__VA_ARGS__) == CUDA_SUCCESS)
 #define REQUIRE_CUDART(...) REQUIRE((__VA_ARGS__) == cudaSuccess)
 #define CHECK_CUDA(...)     CHECK((__VA_ARGS__) == CUDA_SUCCESS)
