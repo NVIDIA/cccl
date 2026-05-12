@@ -839,6 +839,24 @@ public:
         d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
       }
 
+      // Forward the body graph's completion event into the parent context.
+      //
+      // Without this, a graph_scope used purely for token ordering (no
+      // pushed_data) would leak the events recorded after the body
+      // cudaGraphLaunch on `support_stream`: the loop above only chains
+      // `finalize_prereqs` through pushed_data, so when pushed_data is
+      // empty the parent never learns it should wait on `support_stream`.
+      // The parent's eventual fence/finalize then synchronizes its own
+      // (essentially empty) submitted_stream while the body graph is
+      // still running. Registering as a dangling event funnels into
+      // `insert_fence`, which any subsequent task or `finalize()` will
+      // pick up.
+      auto& parent_backend = parent_ctx.get_backend();
+      if (finalize_prereqs.size() > 0 && parent_backend.track_dangling_events())
+      {
+        parent_backend.get_state().add_dangling_events(parent_backend, finalize_prereqs);
+      }
+
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_node->clear_adapters)
       {
