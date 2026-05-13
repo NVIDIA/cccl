@@ -24,13 +24,37 @@
 
 #include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+template <class _InputIterator, class _BinaryPredicate, class _ValueType = ::cuda::std::iter_value_t<_InputIterator>>
+inline constexpr bool __can_use_radix_sort =
+  (::cuda::std::is_arithmetic_v<_ValueType>
+#  if _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+   || ::cuda::std::is_same_v<_ValueType, __half>
+#  endif // _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+#  if _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+   || ::cuda::std::is_same_v<_ValueType, __nv_bfloat16>
+#  endif // _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
+         // !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+   )
+  && ::cuda::std::__is_one_of_v<::cuda::std::remove_cvref_t<_BinaryPredicate>,
+                                ::cuda::std::less<>,
+                                ::cuda::std::less<_ValueType>,
+                                ::cuda::std::greater<>,
+                                ::cuda::std::greater<_ValueType>>;
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! DeviceRadixSort provides device-wide, parallel operations for

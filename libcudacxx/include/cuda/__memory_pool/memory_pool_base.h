@@ -557,7 +557,7 @@ public:
   }
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
-  [[nodiscard]] _CCCL_API constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
   }

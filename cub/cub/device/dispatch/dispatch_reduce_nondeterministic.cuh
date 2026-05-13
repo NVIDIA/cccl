@@ -79,7 +79,7 @@ struct nondeterministic_no_override
 {};
 
 template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
-_CCCL_API auto select_nondeterministic_accum_t(nondeterministic_no_override*)
+_CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(nondeterministic_no_override*)
   -> ::cuda::std::__accumulator_t<ReductionOpT,
                                   ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                   InitT>;
@@ -90,7 +90,7 @@ template <typename InputIteratorT,
           typename TransformOpT,
           typename OverrideAccumT,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, nondeterministic_no_override>, int> = 0>
-_CCCL_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> OverrideAccumT;
+_CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 //! @brief Free function dispatch for nondeterministic device-wide reduction
 //!

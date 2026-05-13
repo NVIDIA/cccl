@@ -27,6 +27,7 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
@@ -93,10 +94,21 @@ template <class _Iter, class _Index>
 class permutation_iterator
 {
 private:
-  _Iter __iter_   = {};
-  _Index __index_ = {};
+  _Iter __iter_;
+  _Index __index_;
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Internal helpers
   // We need to factor these out because old gcc chokes with using arguments in friend functions
+  template <class _Iter1>
+  static constexpr bool __nothrow_plus =
+    ::cuda::std::is_nothrow_copy_constructible_v<_Iter1> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>
+    && noexcept(::cuda::std::declval<const _Index&>() + ::cuda::std::iter_difference_t<_Index>());
+
+  template <class _Iter1>
+  static constexpr bool __nothrow_minus =
+    ::cuda::std::is_nothrow_copy_constructible_v<_Iter1> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>
+    && noexcept(::cuda::std::declval<const _Index&>() - ::cuda::std::iter_difference_t<_Index>());
+
   template <class _Iter1>
   static constexpr bool __nothrow_difference =
     noexcept(::cuda::std::declval<_Iter1>() - ::cuda::std::declval<_Iter1>());
@@ -114,6 +126,7 @@ private:
   template <class _Iter1, class _Iter2>
   static constexpr bool __nothrow_greater_equal =
     noexcept(::cuda::std::declval<_Iter1>() >= ::cuda::std::declval<_Iter2>());
+#endif // _CCCL_DOXYGEN_INVOKED
 
 public:
   using iterator_type       = _Iter;
@@ -142,7 +155,13 @@ public:
 
   //! @brief Default constructs an @c permutation_iterator with a value initialized iterator and index
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI constexpr permutation_iterator() = default;
+  _CCCL_TEMPLATE(class _Iter2 = _Iter, class _Index2 = _Index)
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Iter2> _CCCL_AND ::cuda::std::default_initializable<_Index2>)
+  _CCCL_API constexpr permutation_iterator() noexcept(
+    ::cuda::std::is_nothrow_default_constructible_v<_Iter2> && ::cuda::std::is_nothrow_default_constructible_v<_Index2>)
+      : __iter_()
+      , __index_()
+  {}
 
   //! @brief Constructs an @c permutation_iterator from an iterator and an optional index
   //! @param __iter The iterator to to index from
@@ -273,10 +292,9 @@ public:
   //! @param __n The number of elements to advance
   //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
-  operator+(const permutation_iterator& __iter, difference_type __n) noexcept( //
-    noexcept(__iter.__index_ + __n)
-    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
+  operator+(const permutation_iterator& __iter, difference_type __n) noexcept(__nothrow_plus<_Iter2>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
   }
@@ -286,10 +304,9 @@ public:
   //! @param __iter The original @c permutation_iterator
   //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
-  operator+(difference_type __n, const permutation_iterator& __iter) noexcept(
-    noexcept(__iter.__index_ + __n)
-    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
+  operator+(difference_type __n, const permutation_iterator& __iter) noexcept(__nothrow_plus<_Iter2>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
   }
@@ -299,10 +316,9 @@ public:
   //! @param __n The number of elements to decrement
   //! @return Equivalent to ``permutation_iterator{iter, index - __n}``
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter> // Must be template, or the compiler complains about a nonliteral return type
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
-  operator-(const permutation_iterator& __iter, difference_type __n) noexcept( //
-    noexcept(__iter.__index_ - __n)
-    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
+  operator-(const permutation_iterator& __iter, difference_type __n) noexcept(__nothrow_minus<_Iter2>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ - __n};
   }

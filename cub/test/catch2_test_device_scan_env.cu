@@ -129,7 +129,7 @@ TEST_CASE("Device scan inclusive-scan-init works with default environment", "[sc
 template <int ThreadsPerBlock>
 struct scan_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan::scan_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan::scan_policy
   {
     return {cub::detail::scan::scan_algorithm::lookback,
             {ThreadsPerBlock,

@@ -40,7 +40,7 @@ struct __sync_wait_t : private sync_wait_t
 {
   // TODO: calling sync_wait from device code is not supported yet.
   template <class _Sndr, class _Env>
-  _CCCL_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
     // _Sndr is a sender that has not yet been transformed to run on the stream domain.
     // The transformation would happen in due course in the connect cpo, so why transform
@@ -55,7 +55,7 @@ struct __sync_wait_t : private sync_wait_t
   }
 
   template <class _Sndr>
-  _CCCL_API auto operator()(_Sndr&& __sndr) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr&& __sndr) const
   {
     return (*this)(static_cast<_Sndr&&>(__sndr), env{});
   }

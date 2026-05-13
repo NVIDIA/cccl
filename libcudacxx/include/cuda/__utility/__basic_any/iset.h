@@ -114,11 +114,11 @@ struct __iset_vptr : __base_vptr
 
   __iset_vptr() = default;
 
-  _CCCL_API constexpr __iset_vptr(__iset_vtable const* __vptr) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __iset_vptr(__iset_vtable const* __vptr) noexcept
       : __base_vptr(__vptr)
   {}
 
-  _CCCL_API constexpr __iset_vptr(__base_vptr __vptr) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __iset_vptr(__base_vptr __vptr) noexcept
       : __base_vptr(__vptr)
   {}
 
@@ -126,7 +126,7 @@ struct __iset_vptr : __base_vptr
   // simply constrain this because then the ctor from __base_vptr would be
   // selected instead, giving the wrong result.
   template <class... _Others>
-  _CCCL_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
+  _CCCL_HOST_DEVICE_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
       : __base_vptr(__vptr->__query_interface(__iunknown()))
   {
     static_assert(::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Others...>, _Interfaces...>);

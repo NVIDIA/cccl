@@ -101,7 +101,8 @@ public:
   //!
   //! @param __sketch_span Reference to sketch storage
   //! @param __hash The hash function used to hash items
-  _CCCL_API constexpr __hyperloglog_impl(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Hash& __hash)
+  _CCCL_HOST_DEVICE_API constexpr __hyperloglog_impl(::cuda::std::span<::cuda::std::byte> __sketch_span,
+                                                     const _Hash& __hash)
       : __hash{__hash}
       , __precision{::cuda::std::countr_zero(
           __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(__sketch_span.size() / 1024.0))
@@ -482,7 +483,7 @@ public:
   //! @brief Gets the hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_API constexpr auto __hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __hash_function() const noexcept
   {
     return __hash;
   }
@@ -490,7 +491,7 @@ public:
   //! @brief Gets the span of the sketch.
   //!
   //! @return The ::cuda::std::span of the sketch
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::span<::cuda::std::byte> __sketch_span() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::span<::cuda::std::byte> __sketch_span() const noexcept
   {
     return ::cuda::std::span<::cuda::std::byte>(reinterpret_cast<::cuda::std::byte*>(__sketch.data()), __sketch_bytes());
   }
@@ -498,7 +499,7 @@ public:
   //! @brief Gets the number of bytes required for the sketch storage.
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t __sketch_bytes() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t __sketch_bytes() const noexcept
   {
     return (1ull << __precision) * sizeof(__register_type);
   }
@@ -508,7 +509,7 @@ public:
   //! @param sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::size_t
   __sketch_bytes(::cuda::experimental::cuco::__sketch_size_kb_t __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
@@ -521,7 +522,7 @@ public:
   //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::size_t
   sketch_bytes(::cuda::experimental::cuco::__standard_deviation_t __standard_deviation) noexcept
   {
     // implementation taken from
@@ -544,7 +545,7 @@ public:
   //! @param __precision HyperLogLog precision parameter
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::size_t
   sketch_bytes(::cuda::experimental::cuco::__precision_t __precision) noexcept
   {
     const auto __precision_value = static_cast<int>(__precision);
@@ -555,7 +556,7 @@ public:
   //! @brief Gets the alignment required for the sketch storage.
   //!
   //! @return The required alignment
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t __sketch_alignment() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::size_t __sketch_alignment() noexcept
   {
     return alignof(__register_type);
   }
@@ -565,7 +566,7 @@ private:
   //! @brief Gets the register mask used to separate register index from count.
   //!
   //! @return The register mask
-  [[nodiscard]] _CCCL_API constexpr __hash_value_type __register_mask() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __hash_value_type __register_mask() const noexcept
   {
     return (1ull << __precision) - 1;
   }

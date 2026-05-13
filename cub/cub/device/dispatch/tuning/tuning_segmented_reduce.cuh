@@ -29,24 +29,26 @@ struct warp_reduce_policy
   int vec_size;
   CacheLoadModifier load_modifier;
 
-  _CCCL_API constexpr int items_per_tile() const
+  _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
   {
     return warp_threads * items_per_thread;
   }
 
-  _CCCL_API constexpr int segments_per_block() const
+  _CCCL_HOST_DEVICE_API constexpr int segments_per_block() const
   {
     return threads_per_block / warp_threads;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.warp_threads == rhs.warp_threads
         && lhs.items_per_thread == rhs.items_per_thread && lhs.vec_size == rhs.vec_size
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -67,13 +69,15 @@ struct segmented_reduce_policy
   warp_reduce_policy small_reduce;
   warp_reduce_policy medium_reduce;
 
-  _CCCL_API constexpr friend bool operator==(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
   {
     return lhs.large_reduce == rhs.large_reduce && lhs.small_reduce == rhs.small_reduce
         && lhs.medium_reduce == rhs.medium_reduce;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -99,7 +103,8 @@ struct policy_selector
   int offset_size;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> segmented_reduce_policy
   {
     constexpr int small_threads_per_warp  = 1;
     constexpr int medium_threads_per_warp = 32;
@@ -123,7 +128,8 @@ static_assert(segmented_reduce_policy_selector<policy_selector>);
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> segmented_reduce_policy
   {
     constexpr auto policies =
       policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};

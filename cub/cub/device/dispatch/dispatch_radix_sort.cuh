@@ -1019,7 +1019,7 @@ public:
   {
     struct policy_getter
     {
-      _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
         return detail::radix_sort::convert_policy<ActivePolicyT>();
       }
