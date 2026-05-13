@@ -79,7 +79,7 @@ constexpr std::size_t max_onesweep_temp_storage_size()
 {
   using portion_offset = int;
 
-  constexpr auto active_policy = policy_selector<KeyT, ValueT, OffsetT>{}(cuda::arch_id{});
+  constexpr auto active_policy = policy_selector<KeyT, ValueT, OffsetT>{}(cuda::compute_capability{});
 
   constexpr auto onesweep = active_policy.onesweep;
   using onesweep_policy_t = AgentRadixSortOnesweepPolicy<
