@@ -24,6 +24,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
@@ -189,11 +190,8 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyIt1>, it_value_t<ValueIt1>, Offset>,
+          typename TuningEnvT            = ::cuda::std::execution::env<>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-#if _CCCL_HAS_CONCEPTS()
-  requires merge_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -207,16 +205,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   ValueIt3 d_values_out,
   CompareOp compare_op,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using default_policy_selector_t = policy_selector_from_types<it_value_t<KeyIt1>, it_value_t<ValueIt1>, Offset>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, merge_policy, default_policy_selector_t>;
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(merge_policy_selector<policy_selector_t>);
+#endif // _CCCL_HAS_CONCEPTS()
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) {
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
                    std::stringstream ss;
@@ -270,7 +275,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
               partition_grid_size, threads_per_partition_block, 0, stream)
               .doit(device_partition_merge_path_kernel<
-                      PolicySelector,
+                      policy_selector_t,
                       KeyIt1,
                       ValueIt1,
                       KeyIt2,
@@ -301,7 +306,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
               static_cast<int>(num_tiles), static_cast<int>(AgentT::threads_per_block), 0, stream)
               .doit(
-                device_merge_kernel<PolicySelector, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
+                device_merge_kernel<policy_selector_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
                 d_keys1,
                 d_values1,
                 num_items1,

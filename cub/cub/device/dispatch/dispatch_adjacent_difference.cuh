@@ -28,6 +28,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -320,11 +321,8 @@ template <MayAlias AliasOpt,
           typename OutputIteratorT,
           typename OffsetT,
           typename DifferenceOpT,
-          typename PolicySelector        = policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>,
+          typename TuningEnvT            = ::cuda::std::execution::env<>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-#if _CCCL_HAS_CONCEPTS()
-  requires adjacent_difference_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -333,10 +331,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   OffsetT num_items,
   DifferenceOpT difference_op,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
   using InputT = detail::it_value_t<InputIteratorT>;
+
+  using default_policy_selector_t = policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, adjacent_difference_policy, default_policy_selector_t>;
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(adjacent_difference_policy_selector<policy_selector_t>);
+#endif // _CCCL_HAS_CONCEPTS()
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
@@ -344,7 +349,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const adjacent_difference_policy active_policy = policy_selector(cc);
+  const adjacent_difference_policy active_policy = policy_selector_t{}(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
@@ -429,7 +434,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.threads_per_block, 0, stream)
-          .doit(DeviceAdjacentDifferenceDifferenceKernel < PolicySelector,
+          .doit(DeviceAdjacentDifferenceDifferenceKernel < policy_selector_t,
                 InputIteratorT,
                 OutputIteratorT,
                 DifferenceOpT,
