@@ -50,6 +50,25 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __layout_stride_detail
 {
+template <class _Extents, class _StrideArray, bool = (_Extents::rank() == 0)>
+struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base : __mdspan_ebco<_Extents, _StrideArray>
+{
+  using __base = __mdspan_ebco<_Extents, _StrideArray>;
+  using __base::__base;
+};
+
+template <class _Extents, class _StrideArray>
+struct _CCCL_DECLSPEC_EMPTY_BASES __mapping_base<_Extents, _StrideArray, true> : __mdspan_ebco<_Extents>
+{
+  using __base = __mdspan_ebco<_Extents>;
+  using __base::__base;
+
+  _CCCL_API constexpr __mapping_base(const _Extents& __ext,
+                                     const _StrideArray&) noexcept(is_nothrow_constructible_v<__base, const _Extents&>)
+      : __base(__ext)
+  {}
+};
+
 template <class _StridedLayoutMapping, class _Extents>
 _CCCL_CONCEPT __can_convert = _CCCL_REQUIRES_EXPR((_StridedLayoutMapping, _Extents))(
   requires(__mdspan_detail::__layout_mapping_alike<_StridedLayoutMapping>),
@@ -70,8 +89,9 @@ struct __constraints
 
 template <class _Extents>
 class _CCCL_DECLSPEC_EMPTY_BASES layout_stride::mapping
-    : private __mdspan_ebco<_Extents,
-                            __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
+    : private __layout_stride_detail::__mapping_base<
+        _Extents,
+        __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
 public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
@@ -82,7 +102,9 @@ public:
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_stride;
-  using __base = __mdspan_ebco<_Extents, __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
+  using __base =
+    __layout_stride_detail::__mapping_base<_Extents,
+                                           __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
 
   template <class, class, class, class>
   friend class mdspan;
