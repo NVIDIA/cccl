@@ -14,7 +14,6 @@
 template <typename T, typename OffsetT>
 void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using key_t   = T;
   using value_t = cub::NullType;
   if constexpr (!fits_in_default_shared_memory<T, value_t, OffsetT, cub::SortOrder::Ascending>())
   {
@@ -28,8 +27,8 @@ void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<T> buffer_1 = generate(elements, entropy);
   thrust::device_vector<T> buffer_2(elements, thrust::no_init);
 
-  const key_t* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
-  key_t* d_buffer_2       = thrust::raw_pointer_cast(buffer_2.data());
+  const T* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
+  T* d_buffer_2       = thrust::raw_pointer_cast(buffer_2.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -43,7 +42,7 @@ void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(policy_selector<key_t, value_t, OffsetT>{})
+      cuda::execution::tune(policy_selector<T, value_t, OffsetT>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
@@ -53,7 +52,7 @@ void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_buffer_2,
       static_cast<OffsetT>(elements),
       0,
-      sizeof(key_t) * 8,
+      sizeof(T) * 8,
       env);
   });
 }

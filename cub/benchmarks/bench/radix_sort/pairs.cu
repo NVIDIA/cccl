@@ -16,9 +16,7 @@
 template <typename KeyT, typename ValueT, typename OffsetT>
 void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using key_t   = KeyT;
-  using value_t = ValueT;
-  if constexpr (!fits_in_default_shared_memory<key_t, value_t, OffsetT, cub::SortOrder::Ascending>())
+  if constexpr (!fits_in_default_shared_memory<KeyT, ValueT, OffsetT, cub::SortOrder::Ascending>())
   {
     return;
   }
@@ -27,15 +25,15 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  thrust::device_vector<key_t> keys_in = generate(elements, entropy);
-  thrust::device_vector<key_t> keys_out(elements, thrust::no_init);
-  thrust::device_vector<value_t> values_in = generate(elements);
-  thrust::device_vector<value_t> values_out(elements, thrust::no_init);
+  thrust::device_vector<KeyT> keys_in = generate(elements, entropy);
+  thrust::device_vector<KeyT> keys_out(elements, thrust::no_init);
+  thrust::device_vector<ValueT> values_in = generate(elements);
+  thrust::device_vector<ValueT> values_out(elements, thrust::no_init);
 
-  const key_t* d_keys_in     = thrust::raw_pointer_cast(keys_in.data());
-  key_t* d_keys_out          = thrust::raw_pointer_cast(keys_out.data());
-  const value_t* d_values_in = thrust::raw_pointer_cast(values_in.data());
-  value_t* d_values_out      = thrust::raw_pointer_cast(values_out.data());
+  const KeyT* d_keys_in     = thrust::raw_pointer_cast(keys_in.data());
+  KeyT* d_keys_out          = thrust::raw_pointer_cast(keys_out.data());
+  const ValueT* d_values_in = thrust::raw_pointer_cast(values_in.data());
+  ValueT* d_values_out      = thrust::raw_pointer_cast(values_out.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -51,7 +49,7 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::tune(policy_selector<key_t, value_t, OffsetT>{})
+      cuda::execution::tune(policy_selector<KeyT, ValueT, OffsetT>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
@@ -63,7 +61,7 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
       d_values_out,
       static_cast<OffsetT>(elements),
       0,
-      sizeof(key_t) * 8,
+      sizeof(KeyT) * 8,
       env);
   });
 }
