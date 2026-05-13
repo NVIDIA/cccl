@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
@@ -153,7 +153,7 @@ struct agent_t
     int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x);
     if constexpr (!IsFullTile)
     {
-      d0_thread = ::cuda::std::min(d0_thread, total_in_tile);
+      d0_thread = (::cuda::std::min) (d0_thread, total_in_tile);
     }
 
     const int i0 =
@@ -165,7 +165,7 @@ struct agent_t
     int haystack_remaining = haystack_count - i0;
     int needles_remaining  = needles_count - j0;
 
-    const int steps = IsFullTile ? ItemsPerThread : ::cuda::std::min(total_in_tile - d0_thread, ItemsPerThread);
+    const int steps = IsFullTile ? ItemsPerThread : (::cuda::std::min) (total_in_tile - d0_thread, ItemsPerThread);
     _CCCL_PRAGMA_UNROLL(ItemsPerThread)
     for (int step = 0; step < steps; ++step)
     {
@@ -190,7 +190,7 @@ struct agent_t
   {
     const int tile_idx      = static_cast<int>(blockIdx.x);
     const Offset diag0      = static_cast<Offset>(tile_size) * tile_idx;
-    const Offset diag1      = ::cuda::std::min(diag0 + static_cast<Offset>(tile_size), range_count + values_count);
+    const Offset diag1      = (::cuda::std::min) (diag0 + static_cast<Offset>(tile_size), range_count + values_count);
     const int total_in_tile = static_cast<int>(diag1 - diag0);
 
     if (total_in_tile == tile_size)

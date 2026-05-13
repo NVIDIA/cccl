@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
@@ -20,9 +20,9 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/concepts>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -47,13 +47,13 @@ struct find_bound_sorted_values_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const find_bound_sorted_values_policy& p)
   {
     return os << "find_bound_sorted_values_policy { .block_threads = " << p.block_threads
               << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

@@ -746,8 +746,9 @@ struct DeviceFind
   //!   Comparison function object (Strict Weak Ordering).
   //!
   //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   //!
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -767,7 +768,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::LowerBoundSortedValues");
 
@@ -785,6 +786,129 @@ struct DeviceFind
       d_output,
       comp,
       stream);
+  }
+
+  //! @rst
+  //! Accelerated variant of :cpp:func:`LowerBound` that exploits the additional
+  //! precondition that ``[d_values, d_values + values_num_items)`` is also
+  //! sorted consistently with ``comp``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Both ``[d_range, d_range + range_num_items)`` **and**
+  //!   ``[d_values, d_values + values_num_items)`` must be sorted consistently
+  //!   with ``comp``.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the lower bound search.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_bound_sorted_values_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin lower-bound-sorted-values-env
+  //!     :end-before: example-end lower-bound-sorted-values-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam RangeIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
+  //!   ``ValuesIteratorT`` using ``CompareOpT`` as the predicate.
+  //!
+  //! @tparam RangeNumItemsT
+  //!   is an integral type representing the number of elements in the range to be searched.
+  //!
+  //! @tparam ValuesIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
+  //!   ``RangeIteratorT`` using ``CompareOpT`` as the predicate.
+  //!
+  //! @tparam ValuesNumItemsT
+  //!   is a model of integral type representing the number of elements in the range of values to be searched for.
+  //!
+  //! @tparam OutputIteratorT
+  //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``'s difference
+  //!   type.
+  //!
+  //! @tparam CompareOpT
+  //!   is a model of [Strict Weak Ordering], which forms a [Relation] with the value types of ``RangeIteratorT``
+  //!   and ``ValuesIteratorT``.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in] d_range
+  //!   Iterator to the beginning of the ordered haystack range.
+  //!
+  //! @param[in] range_num_items
+  //!   Number of elements in the haystack range.
+  //!
+  //! @param[in] d_values
+  //!   Iterator to the beginning of the sorted range of needles.
+  //!
+  //! @param[in] values_num_items
+  //!   Number of needle elements.
+  //!
+  //! @param[out] d_output
+  //!   Iterator to the beginning of the output range.
+  //!
+  //! @param[in] comp
+  //!   Comparison function object (Strict Weak Ordering).
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  //!
+  //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
+  //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+  //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
+  template <typename RangeIteratorT,
+            typename RangeNumItemsT,
+            typename ValuesIteratorT,
+            typename ValuesNumItemsT,
+            typename OutputIteratorT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t LowerBoundSortedValues(
+    RangeIteratorT d_range,
+    RangeNumItemsT range_num_items,
+    ValuesIteratorT d_values,
+    ValuesNumItemsT values_num_items,
+    OutputIteratorT d_output,
+    CompareOpT comp,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBoundSortedValues");
+
+    using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
+    using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
+    using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
+
+    using default_policy_selector =
+      detail::find_bound_sorted_values::policy_selector_from_types<detail::it_value_t<RangeIteratorT>,
+                                                                   detail::it_value_t<ValuesIteratorT>>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
+          storage,
+          bytes,
+          d_range,
+          static_cast<OffsetT>(range_num_items),
+          d_values,
+          static_cast<OffsetT>(values_num_items),
+          d_output,
+          comp,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -862,8 +986,9 @@ struct DeviceFind
   //!   Comparison function object (Strict Weak Ordering).
   //!
   //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   //!
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -883,7 +1008,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::UpperBoundSortedValues");
 
@@ -901,6 +1026,129 @@ struct DeviceFind
       d_output,
       comp,
       stream);
+  }
+
+  //! @rst
+  //! Accelerated variant of :cpp:func:`UpperBound` that exploits the additional
+  //! precondition that ``[d_values, d_values + values_num_items)`` is also
+  //! sorted consistently with ``comp``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Both ``[d_range, d_range + range_num_items)`` **and**
+  //!   ``[d_values, d_values + values_num_items)`` must be sorted consistently
+  //!   with ``comp``.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the upper bound search.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_bound_sorted_values_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin upper-bound-sorted-values-env
+  //!     :end-before: example-end upper-bound-sorted-values-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam RangeIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
+  //!   ``ValuesIteratorT`` using ``CompareOpT`` as the predicate.
+  //!
+  //! @tparam RangeNumItemsT
+  //!   is an integral type representing the number of elements in the range to be searched.
+  //!
+  //! @tparam ValuesIteratorT
+  //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
+  //!   ``RangeIteratorT`` using ``CompareOpT`` as the predicate.
+  //!
+  //! @tparam ValuesNumItemsT
+  //!   is a model of integral type representing the number of elements in the range of values to be searched for.
+  //!
+  //! @tparam OutputIteratorT
+  //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``'s difference
+  //!   type.
+  //!
+  //! @tparam CompareOpT
+  //!   is a model of [Strict Weak Ordering], which forms a [Relation] with the value types of ``RangeIteratorT``
+  //!   and ``ValuesIteratorT``.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in] d_range
+  //!   Iterator to the beginning of the ordered haystack range.
+  //!
+  //! @param[in] range_num_items
+  //!   Number of elements in the haystack range.
+  //!
+  //! @param[in] d_values
+  //!   Iterator to the beginning of the sorted range of needles.
+  //!
+  //! @param[in] values_num_items
+  //!   Number of needle elements.
+  //!
+  //! @param[out] d_output
+  //!   Iterator to the beginning of the output range.
+  //!
+  //! @param[in] comp
+  //!   Comparison function object (Strict Weak Ordering).
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  //!
+  //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
+  //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+  //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
+  template <typename RangeIteratorT,
+            typename RangeNumItemsT,
+            typename ValuesIteratorT,
+            typename ValuesNumItemsT,
+            typename OutputIteratorT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UpperBoundSortedValues(
+    RangeIteratorT d_range,
+    RangeNumItemsT range_num_items,
+    ValuesIteratorT d_values,
+    ValuesNumItemsT values_num_items,
+    OutputIteratorT d_output,
+    CompareOpT comp,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBoundSortedValues");
+
+    using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
+    using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
+    using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
+
+    using default_policy_selector =
+      detail::find_bound_sorted_values::policy_selector_from_types<detail::it_value_t<RangeIteratorT>,
+                                                                   detail::it_value_t<ValuesIteratorT>>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
+          storage,
+          bytes,
+          d_range,
+          static_cast<OffsetT>(range_num_items),
+          d_values,
+          static_cast<OffsetT>(values_num_items),
+          d_output,
+          comp,
+          stream,
+          policy_selector);
+      });
   }
 };
 
