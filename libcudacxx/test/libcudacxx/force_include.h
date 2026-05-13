@@ -54,15 +54,21 @@ __tile__
 int cuda_thread_count = 1;
 int cuda_cluster_size = 1;
 
+__device__ int fake_main_kernel_ret = 0;
+
 #ifdef __CUDACC_TILE__
 __tile_global__
 #else // ^^^ __CUDACC_TILE__ ^^^ / vvv !__CUDACC_TILE__ vvv
 __global__
 #endif // !__CUDACC_TILE__
   void
-  fake_main_kernel(int* ret)
+  fake_main_kernel()
 {
-  *ret = fake_main(0, nullptr);
+  int this_ret = fake_main(0, nullptr);
+
+  // There may be multiple threads trying to write the test return value at the same time. We need to make sure they
+  // don't overwrite a previous failed result.
+  atomicCAS(&fake_main_kernel_ret, 0, this_ret);
 }
 
 #define CUDA_CALL(err, ...)                                                                              \
@@ -78,59 +84,66 @@ __global__
 
 int main(int argc, char** argv)
 {
-  // Check if the CUDA driver/runtime are installed and working for sanity.
   cudaError_t err;
-  CUDA_CALL(err, cudaDeviceSynchronize());
+  const cudaStream_t stream = nullptr;
 
+  // Launch the test kernel.
+  if (cuda_cluster_size > 1)
+  {
+    cudaLaunchAttribute attributes[1];
+    attributes[0].id               = cudaLaunchAttributeClusterDimension;
+    attributes[0].val.clusterDim.x = cuda_cluster_size; // Cluster size in X-dimension
+    attributes[0].val.clusterDim.y = 1;
+    attributes[0].val.clusterDim.z = 1;
+
+    cudaLaunchConfig_t config = {
+      dim3(cuda_cluster_size), // grid dim
+      dim3(cuda_thread_count), // block dim
+      0, // dynamic smem bytes
+      stream, // stream
+      attributes, // attributes
+      1, // number of attributes
+    };
+    CUDA_CALL(err, cudaLaunchKernelEx(&config, fake_main_kernel));
+  }
+  else
+  {
+    fake_main_kernel<<<1, cuda_thread_count, 0, stream>>>();
+    CUDA_CALL(err, cudaGetLastError());
+  }
+
+  // Allocate pinned memory for the device run return value.
+  int* host_ret;
+  CUDA_CALL(err, cudaHostAlloc(&host_ret, sizeof(int), cudaHostAllocDefault));
+
+  // Copy the device result on host.
+  CUDA_CALL(err,
+            cudaMemcpyFromSymbolAsync(host_ret, fake_main_kernel_ret, sizeof(int), 0, cudaMemcpyDeviceToHost, stream));
+
+  // Execute host testing, while device testing is running.
   printf("Testing on host:\n");
   fflush(stdout);
   int ret = fake_main(argc, argv);
   if (ret != 0)
   {
     printf("Host testing returned failure\n");
+    fflush(stdout);
     return ret;
   }
 
+  list_devices();
   printf("Testing on device:\n");
   fflush(stdout);
-  list_devices();
-  int* cuda_ret = 0;
-  CUDA_CALL(err, cudaMalloc(&cuda_ret, sizeof(int)));
 
-  if (cuda_cluster_size > 1)
-  {
-    cudaLaunchAttribute attribute[1];
-    attribute[0].id               = cudaLaunchAttributeClusterDimension;
-    attribute[0].val.clusterDim.x = cuda_cluster_size; // Cluster size in X-dimension
-    attribute[0].val.clusterDim.y = 1;
-    attribute[0].val.clusterDim.z = 1;
-
-    cudaLaunchConfig_t config = {
-      dim3(cuda_cluster_size), // grid dim
-      dim3(cuda_thread_count), // block dim
-      0, // dynamic smem bytes
-      0, // stream
-      attribute, // attributes
-      1, // number of attributes
-    };
-    CUDA_CALL(err, cudaLaunchKernelEx(&config, fake_main_kernel, cuda_ret));
-  }
-  else
-  {
-    fake_main_kernel<<<1, cuda_thread_count>>>(cuda_ret);
-  }
-
-  CUDA_CALL(err, cudaGetLastError());
-  CUDA_CALL(err, cudaDeviceSynchronize());
-  CUDA_CALL(err, cudaMemcpy(&ret, cuda_ret, sizeof(int), cudaMemcpyDeviceToHost));
-  CUDA_CALL(err, cudaFree(cuda_ret));
-  fflush(stdout);
-
-  if (ret != 0)
+  // Wait for device testing to end and check the return value.
+  CUDA_CALL(err, cudaStreamSynchronize(stream));
+  if (*host_ret != 0)
   {
     printf("Device testing returned failure\n");
+    return *host_ret;
   }
-  return ret;
+
+  // Leak host_ret.
 }
 
 #ifdef __CUDACC_TILE__
