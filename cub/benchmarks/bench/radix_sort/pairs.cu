@@ -46,23 +46,23 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    if (cub::DeviceRadixSort::SortPairs(
-          d_keys_in,
-          d_keys_out,
-          d_values_in,
-          d_values_out,
-          static_cast<OffsetT>(elements),
-          cub_bench_env(alloc,
-                        launch
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-                        ,
-                        cuda::execution::tune(policy_selector<key_t, value_t, OffsetT>{})
+      ,
+      cuda::execution::tune(policy_selector<key_t, value_t, OffsetT>{})
 #endif // !TUNE_BASE
-                          ))
-        != cudaSuccess)
-    {
-      throw 42; // TODO(bgruber): what's the appropriate way to abort a benchmark?
-    }
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRadixSort::SortPairs,
+      "SortPairs failed",
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 
