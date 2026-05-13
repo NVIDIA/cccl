@@ -62,6 +62,8 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
       d_values_in,
       d_values_out,
       static_cast<OffsetT>(elements),
+      0,
+      sizeof(key_t) * 8,
       env);
   });
 }
