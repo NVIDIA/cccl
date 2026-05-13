@@ -448,10 +448,19 @@ _CCCL_HOST_API inline ::cuda::std::size_t __mempoolGetAttribute(::CUmemoryPool _
   return __value;
 }
 
-_CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
+_CCCL_HOST_API inline ::cudaError_t __mempoolDestroyNoThrow(::CUmemoryPool __pool) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolDestroy);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to destroy a memory pool", __pool);
+  return static_cast<::cudaError_t>(__driver_fn(__pool));
+}
+
+_CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
+{
+  ::cudaError_t __status = ::cuda::__driver::__mempoolDestroyNoThrow(__pool);
+  if (__status != ::cudaSuccess)
+  {
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to destroy a memory pool");
+  }
 }
 
 _CCCL_HOST_API inline ::CUdeviceptr

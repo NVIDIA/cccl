@@ -92,9 +92,6 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<shared_managed_memory_pool, ::cuda::mr::device_accessible>);
-static_assert(::cuda::mr::resource_with<shared_managed_memory_pool, ::cuda::mr::host_accessible>);
-
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>

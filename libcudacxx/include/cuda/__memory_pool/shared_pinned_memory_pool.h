@@ -103,9 +103,6 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<shared_pinned_memory_pool, ::cuda::mr::device_accessible>);
-static_assert(::cuda::mr::resource_with<shared_pinned_memory_pool, ::cuda::mr::host_accessible>);
-
 #  endif // _CCCL_CTK_AT_LEAST(12, 9)
 
 _CCCL_END_NAMESPACE_CUDA

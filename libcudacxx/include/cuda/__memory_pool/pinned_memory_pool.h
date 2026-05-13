@@ -156,7 +156,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   {
     if (__pool_ != nullptr)
     {
-      ::cuda::__driver::__mempoolDestroy(__pool_);
+      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
     }
   }
 
