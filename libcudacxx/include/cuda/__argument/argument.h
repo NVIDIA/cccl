@@ -372,7 +372,8 @@ _CCCL_API constexpr _ElementType __wrapper_static_max() noexcept
 }
 
 template <auto _Value>
-inline constexpr auto __constant_compute_lowest = [] {
+_CCCL_API constexpr auto __constant_compute_lowest() noexcept
+{
   using _VT = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using _ET = __element_type_of_t<_VT>;
   if constexpr (::cuda::std::is_same_v<_VT, _ET>)
@@ -391,10 +392,11 @@ inline constexpr auto __constant_compute_lowest = [] {
     }
     return __result;
   }
-}();
+}
 
 template <auto _Value>
-inline constexpr auto __constant_compute_max = [] {
+_CCCL_API constexpr auto __constant_compute_max() noexcept
+{
   using _VT = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using _ET = __element_type_of_t<_VT>;
   if constexpr (::cuda::std::is_same_v<_VT, _ET>)
@@ -413,7 +415,7 @@ inline constexpr auto __constant_compute_max = [] {
     }
     return __result;
   }
-}();
+}
 
 // =====================================================================
 // __traits
@@ -452,8 +454,8 @@ struct __traits<__constant<_Value>>
   using element_type                    = __element_type_of_t<value_type>;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = __is_single_value_v<value_type>;
-  static constexpr element_type lowest  = __constant_compute_lowest<_Value>;
-  static constexpr element_type max     = __constant_compute_max<_Value>;
+  static constexpr element_type lowest  = __constant_compute_lowest<_Value>();
+  static constexpr element_type max     = __constant_compute_max<_Value>();
 };
 
 template <class _Arg, class _StaticBounds>
@@ -493,7 +495,7 @@ _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 template <auto _Value>
 [[nodiscard]] _CCCL_API constexpr auto __lowest(__constant<_Value>) noexcept
 {
-  return __constant_compute_lowest<_Value>;
+  return __constant_compute_lowest<_Value>();
 }
 
 template <class _Arg, class _StaticBounds>
@@ -531,7 +533,7 @@ _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 template <auto _Value>
 [[nodiscard]] _CCCL_API constexpr auto __max(__constant<_Value>) noexcept
 {
-  return __constant_compute_max<_Value>;
+  return __constant_compute_max<_Value>();
 }
 
 template <class _Arg, class _StaticBounds>
