@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: calling a __device__ function("__isShared(const void *)") is not allowed
+
 #include <cuda/mdspan>
 
 #include "test_macros.h"
