@@ -62,8 +62,7 @@ __global__
   void
   fake_main_kernel(int* ret)
 {
-  // We need to use atomicCAS to make sure we don't overwrite previous non-zero value.
-  atomicCAS(ret, 0, fake_main(0, nullptr));
+  *ret = fake_main(0, nullptr);
 }
 
 #define CUDA_CALL(err, ...)                                                                              \
