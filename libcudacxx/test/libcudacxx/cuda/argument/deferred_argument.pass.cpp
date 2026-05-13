@@ -53,8 +53,8 @@ TEST_FUNC constexpr bool test()
     auto def   = cuda::argument::__deferred_sequence{
       cuda::std::span<int>{arr, 4}, cuda::argument::__bounds<1, 4096>(), cuda::argument::__bounds(5, 100)};
     static_assert(cuda::argument::__traits<decltype(def)>::lowest == 1);
-    assert(cuda::argument::__lowest(def) == 5);
-    assert(cuda::argument::__max(def) == 100);
+    assert(cuda::argument::__lowest_(def) == 5);
+    assert(cuda::argument::__max_(def) == 100);
   }
 
   // Traits: deferred_value is single value

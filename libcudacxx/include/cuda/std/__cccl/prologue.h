@@ -250,18 +250,6 @@
 #  define _CCCL_POP_MACRO_max
 #endif // defined(max)
 
-#if defined(__min)
-#  pragma push_macro("__min")
-#  undef __min
-#  define _CCCL_POP_MACRO___min
-#endif // defined(__min)
-
-#if defined(__max)
-#  pragma push_macro("__max")
-#  undef __max
-#  define _CCCL_POP_MACRO___max
-#endif // defined(__max)
-
 #if defined(interface)
 #  pragma push_macro("interface")
 #  undef interface

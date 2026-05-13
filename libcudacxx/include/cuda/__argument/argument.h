@@ -481,25 +481,25 @@ struct __traits<__deferred_sequence<_Arg, _StaticBounds>>
 };
 
 // =====================================================================
-// __lowest / __max — free functions
+// __lowest_ / __max_ — free functions
 // =====================================================================
 
 //! @brief Returns the effective lowest bound, combining static and runtime bounds.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
-[[nodiscard]] _CCCL_API constexpr auto __lowest(_Tp) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(_Tp) noexcept
 {
   return ::cuda::std::numeric_limits<__element_type_of_t<_Tp>>::lowest();
 }
 
 template <auto _Value>
-[[nodiscard]] _CCCL_API constexpr auto __lowest(__constant<_Value>) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(__constant<_Value>) noexcept
 {
   return __constant_compute_lowest<_Value>();
 }
 
 template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __lowest(__immediate<_Arg, _StaticBounds> __arg) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(__immediate<_Arg, _StaticBounds> __arg) noexcept
 {
   using _ET           = __element_type_of_t<_Arg>;
   _ET __static_lowest = __wrapper_static_lowest<_ET, _StaticBounds>();
@@ -507,7 +507,7 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __lowest(__deferred_value<_Arg, _StaticBounds> __arg) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(__deferred_value<_Arg, _StaticBounds> __arg) noexcept
 {
   using _ET           = __element_type_of_t<_Arg>;
   _ET __static_lowest = __wrapper_static_lowest<_ET, _StaticBounds>();
@@ -515,7 +515,7 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __lowest(__deferred_sequence<_Arg, _StaticBounds> __arg) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __lowest_(__deferred_sequence<_Arg, _StaticBounds> __arg) noexcept
 {
   using _ET           = __element_type_of_t<_Arg>;
   _ET __static_lowest = __wrapper_static_lowest<_ET, _StaticBounds>();
@@ -525,19 +525,19 @@ template <class _Arg, class _StaticBounds>
 //! @brief Returns the effective max bound, combining static and runtime bounds.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
-[[nodiscard]] _CCCL_API constexpr auto __max(_Tp) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __max_(_Tp) noexcept
 {
   return ::cuda::std::numeric_limits<__element_type_of_t<_Tp>>::max();
 }
 
 template <auto _Value>
-[[nodiscard]] _CCCL_API constexpr auto __max(__constant<_Value>) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __max_(__constant<_Value>) noexcept
 {
   return __constant_compute_max<_Value>();
 }
 
 template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __max(__immediate<_Arg, _StaticBounds> __arg) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __max_(__immediate<_Arg, _StaticBounds> __arg) noexcept
 {
   using _ET        = __element_type_of_t<_Arg>;
   _ET __static_max = __wrapper_static_max<_ET, _StaticBounds>();
@@ -545,7 +545,7 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __max(__deferred_value<_Arg, _StaticBounds> __arg) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __max_(__deferred_value<_Arg, _StaticBounds> __arg) noexcept
 {
   using _ET        = __element_type_of_t<_Arg>;
   _ET __static_max = __wrapper_static_max<_ET, _StaticBounds>();
@@ -553,7 +553,7 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <class _Arg, class _StaticBounds>
-[[nodiscard]] _CCCL_API constexpr auto __max(__deferred_sequence<_Arg, _StaticBounds> __arg) noexcept
+[[nodiscard]] _CCCL_API constexpr auto __max_(__deferred_sequence<_Arg, _StaticBounds> __arg) noexcept
 {
   using _ET        = __element_type_of_t<_Arg>;
   _ET __static_max = __wrapper_static_max<_ET, _StaticBounds>();

@@ -70,10 +70,10 @@ TEST_FUNC void test()
 
   // --- Free function bounds on plain values ---
 
-  static_assert(cuda::argument::__lowest(42) == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::argument::__max(42) == cuda::std::numeric_limits<int>::max());
-  static_assert(cuda::argument::__lowest(1.0f) == cuda::std::numeric_limits<float>::lowest());
-  static_assert(cuda::argument::__max(1.0f) == cuda::std::numeric_limits<float>::max());
+  static_assert(cuda::argument::__lowest_(42) == cuda::std::numeric_limits<int>::lowest());
+  static_assert(cuda::argument::__max_(42) == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::argument::__lowest_(1.0f) == cuda::std::numeric_limits<float>::lowest());
+  static_assert(cuda::argument::__max_(1.0f) == cuda::std::numeric_limits<float>::max());
 
 #if TEST_HAS_CLASS_NTTP
   // --- is_single_value with array constant ---

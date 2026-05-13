@@ -50,16 +50,16 @@ TEST_FUNC void test()
   // Bounds: scalar
   {
     constexpr auto sa = cuda::argument::__constant<42>{};
-    static_assert(cuda::argument::__lowest(sa) == 42);
-    static_assert(cuda::argument::__max(sa) == 42);
+    static_assert(cuda::argument::__lowest_(sa) == 42);
+    static_assert(cuda::argument::__max_(sa) == 42);
   }
 
 #if TEST_HAS_CLASS_NTTP
   // Bounds: array — computes min/max of elements
   {
     constexpr auto sa = cuda::argument::__constant<cuda::std::array<int, 3>{128, 256, 512}>{};
-    static_assert(cuda::argument::__lowest(sa) == 128);
-    static_assert(cuda::argument::__max(sa) == 512);
+    static_assert(cuda::argument::__lowest_(sa) == 128);
+    static_assert(cuda::argument::__max_(sa) == 512);
   }
 #endif // TEST_HAS_CLASS_NTTP
 

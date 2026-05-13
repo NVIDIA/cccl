@@ -48,7 +48,7 @@ TEST_FUNC constexpr algorithm_variant select_variant(_SegSizeArg)
 template <class _SegSizeArg>
 TEST_FUNC constexpr int compute_buffer_size(_SegSizeArg __seg_size, int __num_segments)
 {
-  auto __max = cuda::std::min(default_max_segment_size, static_cast<int>(cuda::argument::__max(__seg_size)));
+  auto __max = cuda::std::min(default_max_segment_size, static_cast<int>(cuda::argument::__max_(__seg_size)));
   return __max * __num_segments;
 }
 

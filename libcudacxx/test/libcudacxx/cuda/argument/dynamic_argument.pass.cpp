@@ -24,8 +24,8 @@ TEST_FUNC constexpr bool test()
     assert(da.arg == 5);
     static_assert(cuda::argument::__traits<decltype(da)>::lowest == cuda::std::numeric_limits<int>::lowest());
     static_assert(cuda::argument::__traits<decltype(da)>::max == cuda::std::numeric_limits<int>::max());
-    assert(cuda::argument::__lowest(da) == cuda::std::numeric_limits<int>::lowest());
-    assert(cuda::argument::__max(da) == cuda::std::numeric_limits<int>::max());
+    assert(cuda::argument::__lowest_(da) == cuda::std::numeric_limits<int>::lowest());
+    assert(cuda::argument::__max_(da) == cuda::std::numeric_limits<int>::max());
   }
 
   // Uniform scalar with static bounds
@@ -41,8 +41,8 @@ TEST_FUNC constexpr bool test()
     int arr[4] = {10, 20, 30, 40};
     auto da    = cuda::argument::__immediate{cuda::std::span<int>{arr, 4}, cuda::argument::__bounds(1, 100)};
     assert(da.arg.size() == 4);
-    assert(cuda::argument::__lowest(da) == 1);
-    assert(cuda::argument::__max(da) == 100);
+    assert(cuda::argument::__lowest_(da) == 1);
+    assert(cuda::argument::__max_(da) == 100);
   }
 
   // Per-segment span with both bounds — argument_max combines both
@@ -52,8 +52,8 @@ TEST_FUNC constexpr bool test()
       cuda::std::span<int>{arr, 4}, cuda::argument::__bounds<1, 256>(), cuda::argument::__bounds(10, 200)};
     static_assert(cuda::argument::__traits<decltype(da)>::lowest == 1);
     static_assert(cuda::argument::__traits<decltype(da)>::max == 256);
-    assert(cuda::argument::__lowest(da) == 10);
-    assert(cuda::argument::__max(da) == 200);
+    assert(cuda::argument::__lowest_(da) == 10);
+    assert(cuda::argument::__max_(da) == 200);
   }
 
   // Per-segment via span
