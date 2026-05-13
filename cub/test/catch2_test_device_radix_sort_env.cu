@@ -1133,11 +1133,9 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   cuda::stream_ref stream{cudaStream_t{}};
   size_t bytes_allocated   = 0;
   size_t bytes_deallocated = 0;
-  auto env                 = stdexec::env{
-    cuda::std::execution::prop{
-      cuda::mr::__get_memory_resource_t{}, device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated}},
-    stream,
-    cuda::execution::tune(policy_selector)};
+  auto env                 = stdexec::env{device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated},
+                          stream,
+                          cuda::execution::tune(policy_selector)};
   REQUIRE(cudaSuccess == run(env));
   stream.sync();
   CHECK(bytes_allocated > 0);
