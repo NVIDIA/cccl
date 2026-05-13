@@ -58,7 +58,7 @@ CUDAX_CUCO_DEFINE_STRONG_TYPE(__sketch_size_kb_t, double);
 
 CUDAX_CUCO_DEFINE_STRONG_TYPE(__standard_deviation_t, double);
 
-CUDAX_CUCO_DEFINE_STRONG_TYPE(__precision_t, int);
+CUDAX_CUCO_DEFINE_STRONG_TYPE(__precision_t, ::cuda::std::int32_t);
 
 //! @brief A GPU-accelerated utility for approximating the number of distinct items in a multiset.
 //!
@@ -83,7 +83,7 @@ public:
 
 private:
   __hasher __hash; ///< Hash function used to hash items
-  int __precision; ///< HLL precision parameter
+  ::cuda::std::int32_t __precision; ///< HLL precision parameter
   ::cuda::std::span<__register_type> __sketch; ///< HLL sketch storage
 
   template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
@@ -406,7 +406,7 @@ public:
   __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
-    __shared__ ::cuda::atomic<int, ::cuda::std::thread_scope_block> __block_zeroes;
+    __shared__ ::cuda::atomic<::cuda::std::int32_t, ::cuda::std::thread_scope_block> __block_zeroes;
     __shared__ ::cuda::std::size_t __estimate;
 
     if (__group.thread_rank() == 0)
@@ -416,8 +416,8 @@ public:
     }
     __group.sync();
 
-    __fp_type __thread_sum = 0;
-    int __thread_zeroes    = 0;
+    __fp_type __thread_sum               = 0;
+    ::cuda::std::int32_t __thread_zeroes = 0;
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
       const auto __reg = __sketch[__i];
@@ -430,7 +430,7 @@ public:
     ::cooperative_groups::reduce_update_async(
       __warp, __block_sum, __thread_sum, ::cooperative_groups::plus<__fp_type>());
     ::cooperative_groups::reduce_update_async(
-      __warp, __block_zeroes, __thread_zeroes, ::cooperative_groups::plus<int>());
+      __warp, __block_zeroes, __thread_zeroes, ::cooperative_groups::plus<::cuda::std::int32_t>());
     __group.sync();
 
     if (__group.thread_rank() == 0)
@@ -468,8 +468,8 @@ public:
       __host_sketch_buf.data(), __sketch.data(), sizeof(__register_type) * __num_regs, __stream.get());
     __stream.sync();
 
-    __fp_type __sum = 0;
-    int __zeroes    = 0;
+    __fp_type __sum               = 0;
+    ::cuda::std::int32_t __zeroes = 0;
 
     // geometric mean computation + count registers with 0s
     for (const auto __reg : __host_sketch_buf)
@@ -535,10 +535,10 @@ public:
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
 
     auto const __precision_from_sd =
-      static_cast<int>(::cuda::std::ceil(2.0 * ::cuda::std::log2(1.106 / __standard_deviation)));
+      static_cast<::cuda::std::int32_t>(::cuda::std::ceil(2.0 * ::cuda::std::log2(1.106 / __standard_deviation)));
 
     //  minimum precision is 4 or 64 bytes
-    const auto __precision_ = ::cuda::std::max(static_cast<int>(4), __precision_from_sd);
+    const auto __precision_ = ::cuda::std::max(::cuda::std::int32_t{4}, __precision_from_sd);
 
     // inverse of this function (omitting the minimum precision constraint) is
     // standard_deviation = 1.106 / exp((__precision_ * log(2.0)) / 2.0)
@@ -554,7 +554,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::size_t
   sketch_bytes(::cuda::experimental::cuco::__precision_t __precision) noexcept
   {
-    const auto __precision_value = static_cast<int>(__precision);
+    const auto __precision_value = static_cast<::cuda::std::int32_t>(__precision);
 
     return sizeof(__register_type) * (1ull << __precision_value);
   }
