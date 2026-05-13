@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
-
 // <random>
 //
 // Verify [rand.req.genl]/1.6 and /1.7 (C++26, P4037R1) for the set of integer
