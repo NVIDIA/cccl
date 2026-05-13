@@ -50,7 +50,7 @@ struct _say_hello
 template <class Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT unknown_sender : Sndr
 {
-  _CCCL_API explicit unknown_sender(Sndr sndr) noexcept
+  _CCCL_HOST_DEVICE_API explicit unknown_sender(Sndr sndr) noexcept
       : Sndr(cuda::std::move(sndr))
   {}
 };

@@ -52,7 +52,7 @@ public:
   //! @brief Constructs an HLL finalizer object.
   //!
   //! @param __precision_ HLL precision parameter
-  _CCCL_API constexpr _Finalizer(int __precision_) noexcept
+  _CCCL_HOST_DEVICE_API constexpr _Finalizer(int __precision_) noexcept
       : __precision{__precision_}
       , __m{static_cast<int>(1u << __precision_)}
   {
@@ -65,7 +65,7 @@ public:
   //! @param __v Number of 0 registers
   //!
   //! @return Bias-corrected cardinality estimate
-  [[nodiscard]] _CCCL_API ::cuda::std::size_t operator()(double __z, int __v) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::size_t operator()(double __z, int __v) const noexcept
   {
     double __e = __alpha_mm() / __z;
 
@@ -97,7 +97,7 @@ public:
   }
 
 private:
-  [[nodiscard]] _CCCL_API constexpr double __alpha_mm() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double __alpha_mm() const noexcept
   {
     const auto __m2 = static_cast<double>(__m) * __m;
     switch (__m)
@@ -113,12 +113,12 @@ private:
     }
   }
 
-  [[nodiscard]] _CCCL_API constexpr double __bias_corrected_estimate(double __e) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double __bias_corrected_estimate(double __e) const noexcept
   {
     return (__e < 5.0 * __m) ? __e - __bias(__e) : __e;
   }
 
-  [[nodiscard]] _CCCL_API constexpr double __bias(double __e) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double __bias(double __e) const noexcept
   {
     const auto __anchor_index = __interpolation_anchor_index(__e);
     const auto __n            = static_cast<int>(__raw_estimate_data_size(__precision));
@@ -143,13 +143,13 @@ private:
     return __bias_sum / (__high - __low);
   }
 
-  [[nodiscard]] _CCCL_API constexpr double __distance(double __e, int __i) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double __distance(double __e, int __i) const noexcept
   {
     const auto __diff = __e - __raw_estimate_data(__precision)[__i];
     return __diff * __diff;
   }
 
-  [[nodiscard]] _CCCL_API constexpr int __interpolation_anchor_index(double __e) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __interpolation_anchor_index(double __e) const noexcept
   {
     const auto __estimates = __raw_estimate_data(__precision);
     const auto __n         = static_cast<int>(__raw_estimate_data_size(__precision));

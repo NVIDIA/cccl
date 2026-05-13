@@ -36,7 +36,7 @@ struct scope_exit
                 "The scope_guard function must be nothrow lvalue-callable with no arguments.");
 
   template <class _Fn2>
-  _CCCL_API explicit scope_exit(_Fn2&& __fn) noexcept(::cuda::std::is_nothrow_constructible_v<_Fn, _Fn2>)
+  _CCCL_HOST_DEVICE_API explicit scope_exit(_Fn2&& __fn) noexcept(::cuda::std::is_nothrow_constructible_v<_Fn, _Fn2>)
       : scope_exit(::cuda::std::forward<_Fn2>(__fn), ::cuda::std::is_nothrow_constructible<_Fn, _Fn2>{})
   {
     static_assert(::cuda::std::is_nothrow_constructible_v<_Fn, _Fn2> || ::cuda::std::is_constructible_v<_Fn, _Fn2&>,
@@ -48,7 +48,7 @@ struct scope_exit
   scope_exit& operator=(scope_exit&&) = delete;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API ~scope_exit()
+  _CCCL_HOST_DEVICE_API ~scope_exit()
   {
     if (__active_)
     {
@@ -57,7 +57,7 @@ struct scope_exit
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API void release() noexcept
+  _CCCL_HOST_DEVICE_API void release() noexcept
   {
     __active_ = false;
   }
@@ -66,7 +66,7 @@ private:
   // Handle the case where _Fn is nothrow constructible from _Fn2.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn2>
-  _CCCL_API explicit scope_exit(_Fn2&& __fn, ::cuda::std::true_type) noexcept
+  _CCCL_HOST_DEVICE_API explicit scope_exit(_Fn2&& __fn, ::cuda::std::true_type) noexcept
       : __fn_(::cuda::std::forward<_Fn2>(__fn))
   {}
 
@@ -77,13 +77,13 @@ private:
   // to the original callable, and then releasing it if the copy succeeds.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn2>
-  _CCCL_API explicit scope_exit(_Fn2&& __fn, ::cuda::std::false_type) noexcept(false)
+  _CCCL_HOST_DEVICE_API explicit scope_exit(_Fn2&& __fn, ::cuda::std::false_type) noexcept(false)
       : scope_exit(__fn, scope_exit<_Fn2&>(__fn))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn2>
-  _CCCL_API explicit scope_exit(_Fn2& __fn, scope_exit<_Fn2&>&& __scope) noexcept(false)
+  _CCCL_HOST_DEVICE_API explicit scope_exit(_Fn2& __fn, scope_exit<_Fn2&>&& __scope) noexcept(false)
       : __fn_(__fn) // copy not move because we don't want to invalidate __scope if the copy throws
   {
     __scope.release(); // the copy succeeded, so release __scope
