@@ -998,14 +998,14 @@ struct policy_selector
   || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1))) || defined(CCCL_DISABLE_WARPSPEED_SCAN)
     return false;
 #else
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4)
+#  if _CCCL_CUDACC_BELOW(13, 4)
     if (cc == ::cuda::compute_capability{12, 0})
     {
       // Unfortunately, there seems to be a codegen bug in nvcc when targeting GB20x GPUs (sm120), so let's disable
       // warpspeed scan until this is resolved. See: https://github.com/NVIDIA/cccl/issues/8528
       return false;
     }
-#  endif //_CCCL_CUDA_COMPILER(NVCC, <, 13, 4)
+#  endif // _CCCL_CUDACC_BELOW(13, 4)
 
     if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
         || !output_default_constructible)
