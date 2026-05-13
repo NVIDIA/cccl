@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,7 +43,7 @@ _CUDAX_CUCO_HLL_TUNING_ARR_DECL __threshold_data[] = {10.0, 20.0, 40.0, 80.0, 22
 //!
 //! @param __precision The precision value (4-18)
 //! @return The threshold value for the given precision
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __threshold(int __precision) noexcept {
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __threshold(::cuda::std::int32_t __precision) noexcept {
   return __threshold_data[__precision - 4];
 }
 
@@ -69,7 +70,7 @@ _CUDAX_CUCO_HLL_TUNING_ARR_DECL __raw_estimate_data_p18[] = {189084.0, 192250.91
 //!
 //! @param __precision The precision value (4-18)
 //! @return Pointer to the raw estimate data array for the given precision
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const double* __raw_estimate_data(int __precision) noexcept {
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const double* __raw_estimate_data(::cuda::std::int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __raw_estimate_data_p4;
     case 5:  return __raw_estimate_data_p5;
@@ -94,7 +95,7 @@ _CUDAX_CUCO_HLL_TUNING_ARR_DECL __raw_estimate_data_p18[] = {189084.0, 192250.91
 //!
 //! @param __precision The precision value (4-18)
 //! @return Size of the raw estimate data array for the given precision
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t __raw_estimate_data_size(int __precision) noexcept {
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t __raw_estimate_data_size(::cuda::std::int32_t __precision) noexcept {
   constexpr auto __size_of_double = sizeof(double);
   switch (__precision) {
     case 4:  return sizeof(__raw_estimate_data_p4) / __size_of_double;
@@ -136,7 +137,7 @@ _CUDAX_CUCO_HLL_TUNING_ARR_DECL __bias_data_p18[] = {189083.0, 185696.913, 18234
 //!
 //! @param __precision The precision value (4-18)
 //! @return Pointer to the bias data array for the given precision
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const double* __bias_data(int __precision) noexcept {
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const double* __bias_data(::cuda::std::int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __bias_data_p4;
     case 5:  return __bias_data_p5;

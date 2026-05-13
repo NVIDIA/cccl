@@ -86,7 +86,7 @@ struct default_hll_policy
   //! @param[in] __precision The HLL precision parameter.
   //! @return The register index in `[0, 2^__precision)`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
-  register_index(hash_result_type __h, int __precision) const noexcept
+  register_index(hash_result_type __h, ::cuda::std::int32_t __precision) const noexcept
   {
     constexpr auto __hash_bits = ::cuda::std::numeric_limits<hash_result_type>::digits;
     return static_cast<::cuda::std::uint32_t>(__h >> (__hash_bits - __precision));
@@ -101,7 +101,7 @@ struct default_hll_policy
   //! @param[in] __precision The HLL precision parameter.
   //! @return rho, in `[1, hash_bits - __precision + 1]`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint8_t
-  register_value(hash_result_type __h, int __precision) const noexcept
+  register_value(hash_result_type __h, ::cuda::std::int32_t __precision) const noexcept
   {
     const auto __w_padding = hash_result_type{1} << static_cast<hash_result_type>(__precision - 1);
     return static_cast<::cuda::std::uint8_t>(::cuda::std::countl_zero((__h << __precision) | __w_padding) + 1);
@@ -115,7 +115,7 @@ struct default_hll_policy
   //! @param[in] __precision HLL precision parameter.
   //! @return The bias-corrected cardinality estimate.
   [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
-  finalize(double __z, int __v, int __precision) noexcept
+  finalize(double __z, ::cuda::std::int32_t __v, ::cuda::std::int32_t __precision) noexcept
   {
     return __hyperloglog_ns::hllpp_finalizer{__precision}(__z, __v);
   }

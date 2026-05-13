@@ -448,7 +448,7 @@ public:
 private:
   [[nodiscard]] static constexpr precision __precision_in_bounds(precision __precision, const char* __message)
   {
-    const auto __value    = static_cast<int>(__precision);
+    const auto __value    = static_cast<::cuda::std::int32_t>(__precision);
     const auto __in_range = ::cuda::in_range(__value, 4, 18);
     if (!__in_range)
     {
