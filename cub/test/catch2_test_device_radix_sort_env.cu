@@ -1129,6 +1129,7 @@ struct tiny_onesweep_policy_selector
     policy.downsweep.items_per_thread      = 1;
     policy.alt_downsweep.threads_per_block = BlockThreads;
     policy.alt_downsweep.items_per_thread  = 1;
+    policy.histogram.num_parts             = 1;
     return policy;
   }
 };
