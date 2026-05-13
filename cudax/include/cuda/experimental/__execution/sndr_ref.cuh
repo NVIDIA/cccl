@@ -34,23 +34,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_ref
 {
   using sender_concept = receiver_t;
 
-  _CCCL_API explicit constexpr __sndr_ref(_Sndr&& __sndr) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr __sndr_ref(_Sndr&& __sndr) noexcept
       : __sndr_(static_cast<_Sndr&&>(__sndr))
   {}
 
   template <class _Self, class... _Env>
-  _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return execution::get_completion_signatures<_Sndr, _Env...>();
   }
 
   template <class _Rcvr>
-  _CCCL_API constexpr auto connect(_Rcvr __rcvr) const
+  _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) const
   {
     return execution::connect(static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return execution::get_env(__sndr_);
   }

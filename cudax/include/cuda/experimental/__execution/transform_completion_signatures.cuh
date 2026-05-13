@@ -40,7 +40,7 @@ template <class _Tag>
 struct __default_transform_fn
 {
   template <class... _Ts>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(_Ts...)>
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(_Ts...)>
   {
     return {};
   }
@@ -49,7 +49,7 @@ struct __default_transform_fn
 struct __swallow_transform
 {
   template <class... _Ts>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<>
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<>
   {
     return {};
   }
@@ -59,7 +59,7 @@ template <class _Tag>
 struct __decay_transform
 {
   template <class... _Ts>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(decay_t<_Ts>...)>
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(decay_t<_Ts>...)>
   {
     return {};
   }
@@ -73,7 +73,7 @@ using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().templat
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ay, class... _As, class _Fn>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
   -> __meta_call_result_t<const _Fn&, _Ay, _As...>
 {
   return __fn.template operator()<_Ay, _As...>();
@@ -83,7 +83,8 @@ _CCCL_DIAG_POP
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fn>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn) -> __call_result_t<const _Fn&>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
+  -> __call_result_t<const _Fn&>
 {
   return __fn();
 }
@@ -97,7 +98,7 @@ struct _COULD_NOT_CALL_THE_TRANSFORM_FUNCTION_WITH_THE_GIVEN_TEMPLATE_ARGUMENTS;
 
 // transform_completion_signatures:
 template <class... _As, class _Fn>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __apply_transform(const _Fn& __fn)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __apply_transform(const _Fn& __fn)
 {
   if constexpr (__is_instantiable_with<__transform_expr_t, _Fn, _As...>)
   {
@@ -135,7 +136,7 @@ struct __transform_one
   _StoppedFn __stopped_fn;
 
   template <class _Tag, class... _Ts>
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Tag (*)(_Ts...)) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()(_Tag (*)(_Ts...)) const
   {
     if constexpr (_Tag{} == set_value)
     {
@@ -158,7 +159,7 @@ struct __transform_all_fn
   _TransformOne __tfx1;
 
   template <class... _Sigs>
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Sigs*... __sigs) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()(_Sigs*... __sigs) const
   {
     return concat_completion_signatures(__tfx1(__sigs)...);
   }
@@ -172,7 +173,7 @@ template <class _Completions,
           class _ErrorFn   = __default_transform_fn<set_error_t>,
           class _StoppedFn = __default_transform_fn<set_stopped_t>,
           class _ExtraSigs = completion_signatures<>>
-_CCCL_API _CCCL_CONSTEVAL auto transform_completion_signatures(
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto transform_completion_signatures(
   _Completions, //
   _ValueFn __value_fn     = {},
   _ErrorFn __error_fn     = {},
