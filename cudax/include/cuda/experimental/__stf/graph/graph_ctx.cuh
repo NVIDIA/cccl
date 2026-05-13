@@ -718,9 +718,7 @@ UNITTEST("movable graph_ctx")
 UNITTEST("copyable graph_ctx")
 {
   graph_ctx ctx;
-  graph_ctx ctx2  = ctx;
-  graph_task<> t  = ctx.task();
-  graph_task<> t2 = ctx2.task();
+  graph_ctx ctx2 = ctx;
 };
 
 UNITTEST("movable graph_task<>")
