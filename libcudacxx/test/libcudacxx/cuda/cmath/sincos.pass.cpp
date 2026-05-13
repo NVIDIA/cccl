@@ -102,6 +102,36 @@ TEST_FUNC void test_type(float zero)
   }
 }
 
+#if _CCCL_HAS_CONSTEXPR_SINCOS()
+
+template <class T>
+TEST_FUNC constexpr bool test_constexpr_type()
+{
+  using Result          = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+  constexpr auto result = cuda::sincos(T{});
+  return result.sin == Result{0} && result.cos == Result{1};
+}
+
+TEST_FUNC constexpr bool test_constexpr()
+{
+#  if defined(_CCCL_BUILTIN_SINCOSF)
+  static_assert(test_constexpr_type<float>());
+#  endif // _CCCL_BUILTIN_SINCOSF
+
+#  if defined(_CCCL_BUILTIN_SINCOS)
+  static_assert(test_constexpr_type<double>());
+  static_assert(test_constexpr_type<int>());
+#  endif // _CCCL_BUILTIN_SINCOS
+
+#  if _CCCL_HAS_LONG_DOUBLE() && defined(_CCCL_BUILTIN_SINCOSL)
+  static_assert(test_constexpr_type<long double>());
+#  endif // _CCCL_HAS_LONG_DOUBLE() && _CCCL_BUILTIN_SINCOSL
+
+  return true;
+}
+
+#endif // _CCCL_HAS_CONSTEXPR_SINCOS()
+
 TEST_FUNC void test(float zero)
 {
   test_type<float>(zero);
@@ -146,5 +176,8 @@ int main(int, char**)
 {
   volatile float zero = 0.0f;
   test(zero);
+#if _CCCL_HAS_CONSTEXPR_SINCOS()
+  static_assert(test_constexpr());
+#endif // _CCCL_HAS_CONSTEXPR_SINCOS()
   return 0;
 }

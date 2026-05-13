@@ -38,16 +38,35 @@
 #  define _CCCL_BUILTIN_SINCOS(...) __builtin_sincos(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_sincos) || _CCCL_COMPILER(GCC)
 
-#if _CCCL_HAS_BUILTIN(__builtin_sincosl) || _CCCL_COMPILER(GCC)
+#if _CCCL_HAS_LONG_DOUBLE() && (_CCCL_HAS_BUILTIN(__builtin_sincosl) || _CCCL_COMPILER(GCC))
 #  define _CCCL_BUILTIN_SINCOSL(...) __builtin_sincosl(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__builtin_sincosl) || _CCCL_COMPILER(GCC)
+#endif // _CCCL_HAS_LONG_DOUBLE() && (_CCCL_HAS_BUILTIN(__builtin_sincosl) || _CCCL_COMPILER(GCC))
 
 // clang-cuda crashes if these builtins are used.
+// TODO: tested with clang-21. Check with newer versions.
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_SINCOSF
 #  undef _CCCL_BUILTIN_SINCOS
 #  undef _CCCL_BUILTIN_SINCOSL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+#if !_CCCL_HAS_LONG_DOUBLE() || defined(_CCCL_BUILTIN_SINCOSL)
+#  define _CCCL_HAS_REQUIRED_BUILTIN_SINCOSL() 1
+#else // ^^^ !_CCCL_HAS_LONG_DOUBLE() || _CCCL_BUILTIN_SINCOSL ^^^
+#  define _CCCL_HAS_REQUIRED_BUILTIN_SINCOSL() 0
+#endif // ^^^ _CCCL_HAS_LONG_DOUBLE() && !_CCCL_BUILTIN_SINCOSL ^^^
+
+// nvc++ builtins are not constexpr
+// nvrtc does not support them
+// nvcc+any compiler does not support them even on the host only
+#if defined(_CCCL_BUILTIN_SINCOSF) && defined(_CCCL_BUILTIN_SINCOS) && _CCCL_HAS_REQUIRED_BUILTIN_SINCOSL() \
+  && !_CCCL_COMPILER(NVHPC) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC)
+#  define _CCCL_CONSTEXPR_SINCOS       constexpr
+#  define _CCCL_HAS_CONSTEXPR_SINCOS() 1
+#else // ^^^ _CCCL_BUILTIN_SINCOSF && _CCCL_BUILTIN_SINCOS && _CCCL_BUILTIN_SINCOSL ^^^
+#  define _CCCL_CONSTEXPR_SINCOS
+#  define _CCCL_HAS_CONSTEXPR_SINCOS() 0
+#endif // ^^^ !_CCCL_BUILTIN_SINCOSF || !_CCCL_BUILTIN_SINCOS || !_CCCL_BUILTIN_SINCOSL ^^^
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -66,7 +85,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sincos_result
 //! @return The \c cuda::sincos_result with the results of sin and cos operations.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
-[[nodiscard]] _CCCL_API auto sincos(_Tp __v) noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_SINCOS auto sincos(_Tp __v) noexcept
   -> sincos_result<::cuda::std::conditional_t<::cuda::std::is_integral_v<_Tp>, double, _Tp>>
 {
   if constexpr (::cuda::std::is_integral_v<_Tp>)
