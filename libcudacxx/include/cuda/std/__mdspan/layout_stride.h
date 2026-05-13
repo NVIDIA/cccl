@@ -442,7 +442,14 @@ public:
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
     //_CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(__extents_, __idx...),
     //             "layout_stride::mapping: out of bounds indexing");
-    return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    if constexpr (extents_type::rank() == 0)
+    {
+      return index_type{0};
+    }
+    else
+    {
+      return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    }
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
