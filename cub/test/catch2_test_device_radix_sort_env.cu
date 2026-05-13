@@ -1116,13 +1116,13 @@ TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom str
 template <typename KeyT, typename ValueT, int BlockThreads>
 struct tiny_onesweep_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id arch) const -> cub::detail::radix_sort::radix_sort_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::detail::radix_sort::radix_sort_policy
   {
-    using default_selector_t         = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
-    auto policy                      = default_selector_t{}(arch);
-    policy.use_onesweep              = true;
-    policy.onesweep.block_threads    = BlockThreads;
-    policy.onesweep.items_per_thread = 1;
+    using default_selector_t          = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
+    auto policy                       = default_selector_t{}(cc);
+    policy.use_onesweep               = true;
+    policy.onesweep.threads_per_block = BlockThreads;
+    policy.onesweep.items_per_thread  = 1;
     return policy;
   }
 };
@@ -1134,8 +1134,8 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   size_t bytes_allocated   = 0;
   size_t bytes_deallocated = 0;
   auto env                 = stdexec::env{
-    cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{},
-                               device_memory_resource{{}, stream.get(), &bytes_allocated, &bytes_deallocated}},
+    cuda::std::execution::prop{
+      cuda::mr::__get_memory_resource_t{}, device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated}},
     stream,
     cuda::execution::tune(policy_selector)};
   REQUIRE(cudaSuccess == run(env));

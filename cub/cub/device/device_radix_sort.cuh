@@ -156,7 +156,7 @@ private:
             typename KeyT,
             typename ValueT,
             typename OffsetT,
-            typename DecomposerT = identity_decomposer_t,
+            typename DecomposerT = detail::identity_decomposer_t,
             typename TuningEnvT  = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t select_tuning_and_dispatch(
     void* d_temp_storage,
