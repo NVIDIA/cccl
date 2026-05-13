@@ -112,10 +112,9 @@ constexpr std::size_t max_onesweep_temp_storage_size()
 template <typename KeyT, typename ValueT, typename OffsetT, cub::SortOrder SortOrder>
 constexpr std::size_t max_temp_storage_size()
 {
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-  using policy_t = typename policy_hub_t<KeyT, ValueT, offset_t>::policy_t;
-
-  static_assert(policy_t::ONESWEEP);
+  using offset_t               = cub::detail::choose_offset_t<OffsetT>;
+  constexpr auto active_policy = policy_selector<KeyT, ValueT, offset_t>{}(cuda::compute_capability{});
+  static_assert(active_policy.use_onesweep);
   return max_onesweep_temp_storage_size<KeyT, ValueT, offset_t, SortOrder>();
 }
 
