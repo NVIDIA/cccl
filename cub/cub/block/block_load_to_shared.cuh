@@ -238,10 +238,14 @@ private:
     _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // NOLINT(modernize-use-equals-default) ctor must have a body to
                                                        // avoid token_impl{} to compile
 
+  public:
     // NOLINTBEGIN(modernize-use-equals-delete)
     token_impl(const token_impl&)            = delete;
     token_impl& operator=(const token_impl&) = delete;
     // NOLINTEND(modernize-use-equals-delete)
+
+    token_impl(token_impl&&)            = default;
+    token_impl& operator=(token_impl&&) = default;
   };
 
 public:

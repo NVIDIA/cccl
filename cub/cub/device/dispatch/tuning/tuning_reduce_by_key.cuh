@@ -78,28 +78,28 @@ enum class accum_size
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class T>
-_CCCL_API constexpr primitive_key is_primitive_key()
+_CCCL_HOST_DEVICE_API constexpr primitive_key is_primitive_key()
 {
   return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class T>
-_CCCL_API constexpr primitive_accum is_primitive_accum()
+_CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 {
   return detail::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class ReductionOpT>
-_CCCL_API constexpr primitive_op is_primitive_op()
+_CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_t<ReductionOpT>::value ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class KeyT>
-_CCCL_API constexpr key_size classify_key_size()
+_CCCL_HOST_DEVICE_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -112,7 +112,7 @@ _CCCL_API constexpr key_size classify_key_size()
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class AccumT>
-_CCCL_API constexpr accum_size classify_accum_size()
+_CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -951,7 +951,7 @@ struct reduce_by_key_policy
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -959,7 +959,7 @@ struct reduce_by_key_policy
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
   {
     return !(lhs == rhs);
@@ -995,7 +995,7 @@ struct policy_selector
   bool accum_is_primitive;
   bool op_is_primitive;
 
-  _CCCL_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
+  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
   {
     constexpr int nominal_4B_items_per_thread = 6;
     const int combined_input_bytes            = key_size + accum_size;
@@ -1015,7 +1015,8 @@ struct policy_selector
         accum_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> reduce_by_key_policy
   {
     // bail out if we don't know the operation. TODO(bgruber): drop this check when we make the tuning API public
     if (!op_is_primitive)
@@ -1651,7 +1652,8 @@ struct policy_selector_from_hub
 template <class ReductionOpT, class AccumT, class KeyT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> reduce_by_key_policy
   {
     return policy_selector{
       int{sizeof(KeyT)},

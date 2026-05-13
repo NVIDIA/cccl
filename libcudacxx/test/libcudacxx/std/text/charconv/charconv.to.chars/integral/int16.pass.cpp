@@ -1151,18 +1151,21 @@ TEST_FUNC constexpr void test_to_chars(const TestItem& item)
   const char* ref_str = (cuda::std::is_signed_v<T>) ? item.str_signed : item.str_unsigned;
   const auto ref_len  = cuda::std::strlen(ref_str);
 
-  // Windows + sm120 + int16_t gives invalid result for -32768. See nvbug 5537408.
-#if _CCCL_OS(WINDOWS)
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT{NV_IF_TARGET(NV_IS_EXACTLY_SM_120, ({
-                                                if constexpr (cuda::std::is_signed_v<T>)
-                                                {
-                                                  if (value == -32768)
-                                                  {
-                                                    return;
-                                                  }
-                                                }
-                                              }))}
-#endif // _CCCL_OS(WINDOWS)
+  // ptxas below 13.4 + SM120 + int16_t gives invalid result for -32768. See nvbug 5537408.
+#if _CCCL_CUDACC_BELOW(13, 4)
+  if (!cuda::std::is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_IS_EXACTLY_SM_120, ({
+                   if constexpr (cuda::std::is_signed_v<T>)
+                   {
+                     if (value == -32768)
+                     {
+                       return;
+                     }
+                   }
+                 }))
+  }
+#endif // _CCCL_CUDACC_BELOW(13, 4)
 
   // Check valid buffer size
   {

@@ -265,11 +265,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Vp>
 struct iterator_traits<simd::__simd_iterator<_Vp>>
 {
-  using __iter            = simd::__simd_iterator<_Vp>;
-  using iterator_concept  = typename __iter::iterator_concept;
-  using iterator_category = typename __iter::iterator_category;
-  using value_type        = typename __iter::value_type;
-  using difference_type   = typename __iter::difference_type;
+  using _Iter             = simd::__simd_iterator<_Vp>;
+  using iterator_concept  = typename _Iter::iterator_concept;
+  using iterator_category = typename _Iter::iterator_category;
+  using value_type        = typename _Iter::value_type;
+  using difference_type   = typename _Iter::difference_type;
   using pointer           = void;
   using reference         = value_type;
 };

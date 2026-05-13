@@ -12,13 +12,7 @@ static const char* cuda_source = R"(
 #include <cub/device/device_adjacent_difference.cuh>
 #include <cuda/std/functional>
 
-#ifdef _WIN32
-#define HOSTJIT_EXPORT __declspec(dllexport)
-#else
-#define HOSTJIT_EXPORT
-#endif
-
-extern "C" HOSTJIT_EXPORT int adjacentDifference(
+extern "C" _CCCL_VISIBILITY_EXPORT int adjacentDifference(
     const int* d_input, int* d_output, int num_items) {
     void* d_temp_storage = nullptr;
     size_t temp_storage_bytes = 0;

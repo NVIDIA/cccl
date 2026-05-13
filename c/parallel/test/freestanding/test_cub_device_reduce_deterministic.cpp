@@ -14,13 +14,7 @@ static const char* cuda_source = R"(
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 
-#ifdef _WIN32
-#define HOSTJIT_EXPORT __declspec(dllexport)
-#else
-#define HOSTJIT_EXPORT
-#endif
-
-extern "C" HOSTJIT_EXPORT int computeSumDeterministic(float* d_input, int num_items, float* result) {
+extern "C" _CCCL_VISIBILITY_EXPORT int computeSumDeterministic(float* d_input, int num_items, float* result) {
     float* d_output = nullptr;
 
     // Allocate output

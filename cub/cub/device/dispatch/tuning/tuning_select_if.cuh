@@ -1600,14 +1600,16 @@ struct select_if_policy
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const select_if_policy& lhs, const select_if_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const select_if_policy& lhs, const select_if_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const select_if_policy& lhs, const select_if_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const select_if_policy& lhs, const select_if_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -1639,7 +1641,8 @@ struct policy_selector
   SelectImpl selection_impl;
 
 private:
-  [[nodiscard]] _CCCL_API constexpr auto default_policy(CacheLoadModifier load_modifier) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_policy(CacheLoadModifier load_modifier) const
+    -> select_if_policy
   {
     constexpr int nominal_4B_items_per_thread = 10;
     const int items_per_thread =
@@ -1653,7 +1656,7 @@ private:
       delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto make_scaled_policy(
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_scaled_policy(
     int threads_per_block,
     int nominal_4b_items,
     BlockLoadAlgorithm load_alg,
@@ -1664,7 +1667,8 @@ private:
     return select_if_policy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm80_tuning(bool has_flags, bool keep_rejects) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm80_tuning(bool has_flags, bool keep_rejects) const
+    -> select_if_policy
   {
     // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
 
@@ -1880,7 +1884,8 @@ private:
     return default_policy(LOAD_DEFAULT);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm90_tuning(bool has_flags, bool keep_rejects) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning(bool has_flags, bool keep_rejects) const
+    -> select_if_policy
   {
     // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
 
@@ -2096,8 +2101,8 @@ private:
     return default_policy(LOAD_DEFAULT);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm100_tuning(bool has_flags, bool keep_rejects, bool may_alias) const
-    -> ::cuda::std::optional<select_if_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  get_sm100_tuning(bool has_flags, bool keep_rejects, bool may_alias) const -> ::cuda::std::optional<select_if_policy>
   {
     if (not input_is_primitive)
     {
@@ -2511,7 +2516,7 @@ private:
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
   {
     const bool has_flags    = flag_size_bytes != 0;
     const bool keep_rejects = selection_impl == SelectImpl::Partition;
@@ -2552,7 +2557,7 @@ template <typename InputIteratorT,
           SelectImpl SelectionOpt>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
   {
     using input_t = it_value_t<InputIteratorT>;
     using flag_t  = it_value_t<FlagsInputIteratorT>;

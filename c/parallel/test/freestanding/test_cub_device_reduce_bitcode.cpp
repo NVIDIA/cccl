@@ -52,13 +52,7 @@ struct UserOp {
     }
 };
 
-#ifdef _WIN32
-#define HOSTJIT_EXPORT __declspec(dllexport)
-#else
-#define HOSTJIT_EXPORT
-#endif
-
-extern "C" HOSTJIT_EXPORT int computeReduce(float* d_input, int num_items, float* result) {
+extern "C" _CCCL_VISIBILITY_EXPORT int computeReduce(float* d_input, int num_items, float* result) {
     float* d_output = nullptr;
     void* d_temp_storage = nullptr;
     size_t temp_storage_bytes = 0;

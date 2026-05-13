@@ -47,7 +47,7 @@ void seg_radix_sort(nvbench::state& state,
 
   std::size_t temp_storage_bytes{};
   std::uint8_t* d_temp_storage{};
-  cub::detail::radix_sort::dispatch<cub::SortOrder::Ascending, segment_size_t>(
+  cub::detail::segmented_radix_sort::dispatch<cub::SortOrder::Ascending, segment_size_t>(
     d_temp_storage,
     temp_storage_bytes,
     d_keys,
@@ -69,7 +69,7 @@ void seg_radix_sort(nvbench::state& state,
                cub::DoubleBuffer<key_t> keys     = d_keys;
                cub::DoubleBuffer<value_t> values = d_values;
 
-               cub::detail::radix_sort::dispatch<cub::SortOrder::Ascending, segment_size_t>(
+               cub::detail::segmented_radix_sort::dispatch<cub::SortOrder::Ascending, segment_size_t>(
                  d_temp_storage,
                  temp_storage_bytes,
                  keys,

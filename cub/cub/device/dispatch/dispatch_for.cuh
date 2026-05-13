@@ -25,6 +25,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
@@ -124,6 +125,17 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
   {
     return error;
   }
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceFor to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     constexpr for_policy active_policy = policy_getter();

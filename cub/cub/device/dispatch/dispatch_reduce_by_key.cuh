@@ -647,7 +647,7 @@ namespace detail::reduce_by_key
 {
 // we move the conversion of the policy to the agent policy and its use out of the lambda below, so MSVC does not ICE
 template <typename PolicyGetter, typename... Args>
-_CCCL_API auto determine_threads_items_vsmem(PolicyGetter policy_getter)
+_CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_getter)
 {
   // TODO(bgruber): refactor this in the future
   constexpr reduce_by_key_policy policy = policy_getter();

@@ -43,19 +43,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 struct __single_thread_group
 {
-  _CCCL_API inline void sync() const {}
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size() const
+  _CCCL_HOST_DEVICE_API inline void sync() const {}
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t size() const
   {
     return 1;
   };
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t thread_rank() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t thread_rank() const
   {
     return 0;
   };
 };
 
 template <typename _Group, class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
-_CCCL_API inline async_contract_fulfillment __memcpy_async_barrier(
+_CCCL_HOST_DEVICE_API inline async_contract_fulfillment __memcpy_async_barrier(
   _Group const& __group, _Tp* __destination, _Tp const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
   static_assert(::cuda::is_trivially_copyable_v<_Tp>, "memcpy_async requires a trivially copyable type");

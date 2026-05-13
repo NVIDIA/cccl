@@ -145,7 +145,7 @@ and the parameters to have effect in execution:
   #if !TUNE_BASE
   template <typename T>
   struct policy_selector {
-    _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::ReducePolicy {
+    _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::ReducePolicy {
       const auto [items, threads] = cub::detail::scale_mem_bound(
                                      TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(T));
       const auto policy = cub::detail::agent_reduce_policy{
@@ -552,7 +552,7 @@ as :ref:`sketched above <cub-tuning-authoring-benchmarks>`:
 .. code:: c++
 
   struct policy_selector {
-    _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::AlgorithmPolicy {
+    _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::AlgorithmPolicy {
       return {
         .threads_per_block = 512,
         .items_per_thread = 19,

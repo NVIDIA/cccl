@@ -27,7 +27,7 @@ struct TrivialPod
 {
   int x;
   float y;
-  __host__ __device__ friend bool operator==(TrivialPod a, TrivialPod b)
+  TEST_FUNC friend bool operator==(TrivialPod a, TrivialPod b)
   {
     return a.x == b.x && a.y == b.y;
   }

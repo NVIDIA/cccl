@@ -154,9 +154,28 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     reserved::fetch_data(ctx, d, instance_id, *this, mode, eplace, dplace, result);
   }
 
-  // In the (rare case) where there is no data dependency for a task, the
-  // task would still depend on the entry events of the context, if any
-  if ((task_deps.size() == 0) && ctx.has_start_events())
+  // A task that ends up with no actual runtime prerequisite chained back from
+  // previous tasks must instead depend on the context's entry point. This
+  // covers two situations that need the same treatment:
+  //   * tasks whose only deps are write-mode (no input dep at all), and
+  //   * tasks reading from logical data that have no previous writer in this
+  //     context yet -- e.g. an in-capture ``token().read()`` of a token that
+  //     has not been ``.write()``-n by any task in this context. In that case
+  //     ``enforce_stf_deps_before`` returns an empty event list because there
+  //     is no prior writer/reader to chain back to, and ``fetch_data`` adds
+  //     no allocation/MSI prereqs for void-interface (token) data.
+  //
+  // Both cases are observable as ``result`` still being empty after the
+  // dependency loop above. Merging the context's start events here is the
+  // only thing tying the task back to the context's entry point.
+  //
+  // This is required for correctness when the context's user stream is
+  // participating in a CUDA graph capture: the pool stream picked for the
+  // task would otherwise never issue the ``cudaStreamWaitEvent`` that forks
+  // it into the capture, and subsequent waits from the (captured) user
+  // stream onto events recorded on that (uncaptured) pool stream would fail
+  // with ``cudaErrorStreamCaptureIsolation``.
+  if (result.size() == 0 && ctx.has_start_events())
   {
     result.merge(ctx.get_start_events());
   }

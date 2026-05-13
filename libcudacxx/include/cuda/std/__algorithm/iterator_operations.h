@@ -56,9 +56,6 @@ struct _IterOps<_RangeAlgPolicy>
   using __value_type = iter_value_t<_Iter>;
 
   template <class _Iter>
-  using __iterator_category = ::cuda::std::ranges::__iterator_concept<_Iter>;
-
-  template <class _Iter>
   using __difference_type = iter_difference_t<_Iter>;
 
   static constexpr auto advance      = ::cuda::std::ranges::advance;
@@ -78,9 +75,6 @@ struct _IterOps<_ClassicAlgPolicy>
 {
   template <class _Iter>
   using __value_type = typename iterator_traits<_Iter>::value_type;
-
-  template <class _Iter>
-  using __iterator_category = typename iterator_traits<_Iter>::iterator_category;
 
   template <class _Iter>
   using __difference_type = typename iterator_traits<_Iter>::difference_type;

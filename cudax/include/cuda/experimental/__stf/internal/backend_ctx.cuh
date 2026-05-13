@@ -116,6 +116,10 @@ protected:
     impl(async_resources_handle async_resources = async_resources_handle())
         : auto_scheduler(reserved::scheduler::make(getenv("CUDASTF_SCHEDULE")))
         , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
+        // Record whether the handle was supplied by the caller *before* we
+        // move it into ``async_resources``. Relies on declaration order:
+        // ``user_provided_handle`` is declared before ``async_resources``.
+        , user_provided_handle(bool(async_resources))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
     {
       // Forces init
@@ -348,6 +352,13 @@ protected:
     // Keep track of the number of completed tasks in that context
     ::std::atomic<size_t> total_finished_task_cnt = 0;
 #endif
+
+    // True iff the ``async_resources_handle`` was supplied by the caller at
+    // context construction time (as opposed to being freshly created
+    // internally). Set from ``bool(async_resources)`` *before* the handle is
+    // moved into ``async_resources`` -- see the member initializer list. Must
+    // therefore be declared before ``async_resources``.
+    bool user_provided_handle = false;
 
     // This data structure contains all resources useful for an efficient
     // asynchronous execution. This will for example contain pools of CUDA

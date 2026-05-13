@@ -74,7 +74,7 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_API constexpr unsigned count() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr unsigned count() const noexcept
   {
     return static_cast<unsigned>(_Count);
   }
