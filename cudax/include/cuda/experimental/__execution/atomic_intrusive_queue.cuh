@@ -37,7 +37,7 @@ template <class _Tp, _Tp* _Tp::* _NextPtr>
 class alignas(64) __atomic_intrusive_queue<_NextPtr>
 {
 public:
-  _CCCL_API auto push(_Tp* __node) noexcept -> bool
+  _CCCL_HOST_DEVICE_API auto push(_Tp* __node) noexcept -> bool
   {
     _CCCL_ASSERT(__node != nullptr, "Cannot push a null pointer to the queue");
     _Tp* __old_head = __head_.load(::cuda::std::memory_order_relaxed);
@@ -60,14 +60,14 @@ public:
     return true;
   }
 
-  _CCCL_API void wait_for_item() noexcept
+  _CCCL_HOST_DEVICE_API void wait_for_item() noexcept
   {
     // Wait until the queue has an item in it:
     __head_.wait(nullptr);
   }
 
   [[nodiscard]]
-  _CCCL_API auto pop_all() noexcept -> __intrusive_queue<_NextPtr>
+  _CCCL_HOST_DEVICE_API auto pop_all() noexcept -> __intrusive_queue<_NextPtr>
   {
     auto* const __list = __head_.exchange(nullptr, ::cuda::std::memory_order_acquire);
     return __intrusive_queue<_NextPtr>::make_reversed(__list);

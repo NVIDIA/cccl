@@ -13,6 +13,7 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/utility>
 
+#include "test_iterators.h"
 #include "test_macros.h"
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -77,6 +78,51 @@ struct host_only_type
   void swap(host_only_type& other) noexcept
   {
     cuda::std::swap(val_, other.val_);
+  }
+};
+
+struct host_only_container
+{
+  using iterator = host_only_iterator<int*>;
+
+  int data_[6] = {1, 2, 3, 4, 5, 6};
+
+  host_only_container() noexcept {}
+  host_only_container(const host_only_container&) noexcept {}
+  host_only_container(host_only_container&&) noexcept {}
+  host_only_container& operator=(const host_only_container&) noexcept
+  {
+    return *this;
+  }
+  host_only_container& operator=(host_only_container&&) noexcept
+  {
+    return *this;
+  }
+
+  host_only_iterator<int*> begin()
+  {
+    return host_only_iterator{data_};
+  }
+  host_only_iterator<const int*> begin() const
+  {
+    return host_only_iterator{data_};
+  }
+  host_only_iterator<int*> end()
+  {
+    return host_only_iterator{data_ + 6};
+  }
+  host_only_iterator<const int*> end() const
+  {
+    return host_only_iterator{data_ + 6};
+  }
+
+  int& operator[](const size_t index) noexcept
+  {
+    return data_[index];
+  }
+  const int& operator[](const size_t index) const noexcept
+  {
+    return data_[index];
   }
 };
 #endif // !_CCCL_COMPILER(NVRTC)

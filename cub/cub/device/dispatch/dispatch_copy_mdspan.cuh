@@ -35,7 +35,7 @@ struct copy_mdspan_t
   MdspanIn mdspan_in;
   MdspanOut mdspan_out;
 
-  _CCCL_API copy_mdspan_t(MdspanIn mdspan_in, MdspanOut mdspan_out)
+  _CCCL_HOST_DEVICE_API copy_mdspan_t(MdspanIn mdspan_in, MdspanOut mdspan_out)
       : mdspan_in{mdspan_in}
       , mdspan_out{mdspan_out}
   {}

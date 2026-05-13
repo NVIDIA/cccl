@@ -38,7 +38,7 @@ namespace cuda::experimental::cuco
 //! @param __index The index of the chunk to load
 //! @return The loaded chunk of type _Tp
 template <typename _Tp, typename _Extent>
-[[nodiscard]] _CCCL_API _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
 {
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "__load_chunk must be used with types of size 4 or 8 bytes");
 

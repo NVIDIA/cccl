@@ -95,19 +95,21 @@ struct merge_sort_policy
   CacheLoadModifier load_modifier;
   BlockStoreAlgorithm store_algorithm;
 
-  [[nodiscard]] _CCCL_API constexpr int items_per_tile() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
   {
     return threads_per_block * items_per_thread;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const merge_sort_policy& lhs, const merge_sort_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const merge_sort_policy& lhs, const merge_sort_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const merge_sort_policy& lhs, const merge_sort_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const merge_sort_policy& lhs, const merge_sort_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -131,7 +133,7 @@ struct policy_selector
 {
   int key_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> merge_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> merge_sort_policy
   {
     // from SM60
     return merge_sort_policy{
@@ -150,7 +152,8 @@ static_assert(merge_sort_policy_selector<policy_selector>);
 template <typename KeyIteratorT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> merge_sort_policy
   {
     return policy_selector{int{sizeof(it_value_t<KeyIteratorT>)}}(cc);
   }

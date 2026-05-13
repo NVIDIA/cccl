@@ -29,13 +29,13 @@ struct segmented_radix_sort_policy
   radix_sort_downsweep_policy segmented;
   radix_sort_downsweep_policy alt_segmented;
 
-  _CCCL_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
   {
     return lhs.segmented == rhs.segmented && lhs.alt_segmented == rhs.alt_segmented;
   }
 
-  _CCCL_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
   {
     return !(lhs == rhs);
@@ -61,12 +61,13 @@ struct policy_selector
   int value_size; // when 0, indicates keys-only
 
   // Dominant-sized key/value type
-  [[nodiscard]] _CCCL_API constexpr int __dominant_size() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
   {
     return ::cuda::std::max(value_size, key_size);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> segmented_radix_sort_policy
   {
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -293,7 +294,8 @@ static_assert(segmented_radix_sort_policy_selector<policy_selector>);
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> segmented_radix_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const
+    -> segmented_radix_sort_policy
   {
     constexpr auto policies =
       policy_selector{int{sizeof(KeyT)}, ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)}};

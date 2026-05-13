@@ -53,21 +53,21 @@ enum class counter_size
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class T>
-_CCCL_API constexpr primitive_sample is_primitive_sample()
+_CCCL_HOST_DEVICE_API constexpr primitive_sample is_primitive_sample()
 {
   return is_primitive<T>::value ? primitive_sample::yes : primitive_sample::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class CounterT>
-_CCCL_API constexpr counter_size classify_counter_size()
+_CCCL_HOST_DEVICE_API constexpr counter_size classify_counter_size()
 {
   return sizeof(CounterT) == 4 ? counter_size::_4 : counter_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class SampleT>
-_CCCL_API constexpr sample_size classify_sample_size()
+_CCCL_HOST_DEVICE_API constexpr sample_size classify_sample_size()
 {
   return sizeof(SampleT) == 1 ? sample_size::_1 : sizeof(SampleT) == 2 ? sample_size::_2 : sample_size::unknown;
 }
@@ -164,7 +164,7 @@ struct policy_hub
   // TODO(bgruber): move inside t_scale in C++14
   static constexpr int v_scale = (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int);
 
-  _CCCL_API static constexpr int t_scale(int nominalItemsPerThread)
+  _CCCL_HOST_DEVICE_API static constexpr int t_scale(int nominalItemsPerThread)
   {
     return (::cuda::std::max) (nominalItemsPerThread / NumActiveChannels / v_scale, 1);
   }
@@ -182,7 +182,7 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy500
     template <typename Tuning>
-    _CCCL_API static auto select_agent_policy(int)
+    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int)
       -> AgentHistogramPolicy<Tuning::threads,
                               Tuning::items,
                               Tuning::load_algorithm,
@@ -192,7 +192,7 @@ struct policy_hub
                               Tuning::work_stealing>;
 
     template <typename Tuning>
-    _CCCL_API static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
+    _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
       decltype(select_agent_policy<
@@ -205,7 +205,7 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    _CCCL_API static auto select_agent_policy(int)
+    _CCCL_HOST_DEVICE_API static auto select_agent_policy(int)
       -> AgentHistogramPolicy<Tuning::threads,
                               Tuning::items,
                               Tuning::load_algorithm,
@@ -216,7 +216,7 @@ struct policy_hub
                               Tuning::vec_size>;
 
     template <typename Tuning>
-    _CCCL_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
+    _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
       decltype(select_agent_policy<
@@ -241,7 +241,8 @@ struct histogram_policy
   int vec_size;
   int pdl_trigger_next_launch_in_init_kernel_max_bin_count;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const histogram_policy& lhs, const histogram_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const histogram_policy& lhs, const histogram_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -251,7 +252,8 @@ struct histogram_policy
              == rhs.pdl_trigger_next_launch_in_init_kernel_max_bin_count;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const histogram_policy& lhs, const histogram_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const histogram_policy& lhs, const histogram_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -286,14 +288,14 @@ struct policy_selector
   bool is_even;
 
 private:
-  [[nodiscard]] _CCCL_API constexpr int t_scale(int nominal_items_per_thread) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int t_scale(int nominal_items_per_thread) const
   {
     const int sample_scale = (sample_size_bytes + int{sizeof(int)} - 1) / int{sizeof(int)};
     return (::cuda::std::max) (nominal_items_per_thread / num_active_channels / sample_scale, 1);
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
   {
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -342,7 +344,7 @@ static_assert(histogram_policy_selector<policy_selector>);
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> histogram_policy
   {
     constexpr auto policies = policy_selector{
       is_primitive_v<SampleT>,

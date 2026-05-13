@@ -64,20 +64,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
   // attributes of the stream scheduler's sender
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
-    [[nodiscard]] _CCCL_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
     {
       return __stream_;
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept
       -> stream_scheduler
     {
       return stream_scheduler{__stream_};
     }
 
     template <class _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_error_t>, _Env&& __env) const noexcept
-      -> __scheduler_of_t<_Env&>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    query(get_completion_scheduler_t<set_error_t>, _Env&& __env) const noexcept -> __scheduler_of_t<_Env&>
     {
       return execution::get_scheduler(__env);
     }
@@ -89,8 +89,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
     }
 
     template <class _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, _Env&& __env) const noexcept
-      -> __call_result_t<get_domain_t, _Env&>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    query(get_completion_domain_t<set_error_t>, _Env&& __env) const noexcept -> __call_result_t<get_domain_t, _Env&>
     {
       return {};
     }
@@ -111,7 +111,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
     using operation_state_concept = operation_state_t;
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_API explicit __opstate_t(_Rcvr __rcvr, stream_ref __stream_ref) noexcept
+    _CCCL_HOST_DEVICE_API explicit __opstate_t(_Rcvr __rcvr, stream_ref __stream_ref) noexcept
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __stream_{__stream_ref}
     {
@@ -122,7 +122,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API void start() noexcept
+    _CCCL_HOST_DEVICE_API void start() noexcept
     {
       NV_IF_ELSE_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
     }
@@ -170,7 +170,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
   {};
 
 public:
-  _CCCL_API constexpr stream_scheduler(stream_ref __stream) noexcept
+  _CCCL_HOST_DEVICE_API constexpr stream_scheduler(stream_ref __stream) noexcept
       : __stream_{__stream}
   {}
 
@@ -180,23 +180,23 @@ public:
   {
     using sender_concept = sender_t;
 
-    _CCCL_API constexpr explicit __sndr_t(stream_ref __stream) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit __sndr_t(stream_ref __stream) noexcept
         : __attrs_{__stream}
     {}
 
     template <class _Self>
-    _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
+    _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
     {
       return completion_signatures<set_value_t(), set_error_t(cudaError_t)>{};
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> const __attrs_t&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> const __attrs_t&
     {
       return __attrs_;
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
     {
       return __opstate_t<_Rcvr>{static_cast<_Rcvr&&>(__rcvr), __attrs_.__stream_};
     }
@@ -205,40 +205,43 @@ public:
     __attrs_t __attrs_;
   };
 
-  [[nodiscard]] _CCCL_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
   {
     return __stream_;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept -> stream_domain
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept
+    -> stream_domain
   {
     return {};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, _Env&&) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_domain_t<set_error_t>, _Env&&) const noexcept
     -> __call_result_t<get_domain_t, _Env&>
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(get_forward_progress_guarantee_t) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_forward_progress_guarantee_t) const noexcept
     -> forward_progress_guarantee
   {
     return forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __sndr_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto schedule() const noexcept -> __sndr_t
   {
     return __sndr_t{__stream_};
   }
 
-  [[nodiscard]] _CCCL_API friend bool operator==(const stream_scheduler& __lhs, const stream_scheduler& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool
+  operator==(const stream_scheduler& __lhs, const stream_scheduler& __rhs) noexcept
   {
     return __lhs.__stream_ == __rhs.__stream_;
   }
 
-  [[nodiscard]] _CCCL_API friend bool operator!=(const stream_scheduler& __lhs, const stream_scheduler& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend bool
+  operator!=(const stream_scheduler& __lhs, const stream_scheduler& __rhs) noexcept
   {
     return __lhs.__stream_ != __rhs.__stream_;
   }
@@ -255,26 +258,26 @@ struct stream_domain::__apply_t<stream_scheduler::__tag_t> : stream_domain::__ap
 {};
 } // namespace execution
 
-_CCCL_API inline auto stream_ref::schedule() const noexcept
+_CCCL_HOST_DEVICE_API inline auto stream_ref::schedule() const noexcept
 {
   return execution::schedule(execution::stream_scheduler{*this});
 }
 
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 stream_ref::query(const execution::get_completion_scheduler_t<execution::set_value_t>&) const noexcept -> stream_ref
 {
   return *this;
 }
 
 template <class _Env>
-[[nodiscard]] _CCCL_API constexpr auto stream_ref::query(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto stream_ref::query(
   const execution::get_completion_scheduler_t<execution::set_error_t>&, const _Env& __env) const noexcept
   -> execution::__scheduler_of_t<const _Env&>
 {
   return execution::get_scheduler(__env);
 }
 
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 stream_ref::query(const execution::get_completion_domain_t<execution::set_value_t>&) const noexcept
   -> execution::stream_domain
 {
@@ -282,7 +285,7 @@ stream_ref::query(const execution::get_completion_domain_t<execution::set_value_
 }
 
 template <class _Env>
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 stream_ref::query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
   -> __call_result_t<execution::get_domain_t, const _Env&>
 {

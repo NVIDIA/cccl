@@ -59,7 +59,7 @@ struct policy_selector
   type_t accum_t;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
   {
     if (cc >= ::cuda::compute_capability{9, 0})
     {
@@ -109,7 +109,7 @@ struct policy_selector
 template <typename AccumT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
   {
     return policy_selector{classify_type<AccumT>, int{sizeof(AccumT)}}(cc);
   }

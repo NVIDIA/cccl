@@ -73,7 +73,8 @@ struct prefetch_policy
   // bgruber: but A6000 and H100 show small gains without pragma, so omitting pragma
   int unroll_factor = -1; // -1 means we leave it to the compiler
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block
         && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
@@ -81,7 +82,8 @@ struct prefetch_policy
         && lhs.prefetch_byte_stride == rhs.prefetch_byte_stride && lhs.unroll_factor == rhs.unroll_factor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -104,13 +106,15 @@ struct vectorized_policy
   int items_per_thread;
   int vec_size;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const vectorized_policy& lhs, const vectorized_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -134,14 +138,16 @@ struct async_copy_policy
   // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
   int unroll_factor = 1;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.bulk_copy_alignment == rhs.bulk_copy_alignment
         && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
         && lhs.unroll_factor == rhs.unroll_factor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const async_copy_policy& lhs, const async_copy_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const async_copy_policy& lhs, const async_copy_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -166,13 +172,15 @@ struct transform_policy
   vectorized_policy vectorized;
   async_copy_policy async_copy;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const transform_policy& lhs, const transform_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const transform_policy& lhs, const transform_policy& rhs)
   {
     return lhs.min_bytes_in_flight == rhs.min_bytes_in_flight && lhs.algorithm == rhs.algorithm
         && lhs.prefetch == rhs.prefetch && lhs.vectorized == rhs.vectorized && lhs.async_copy == rhs.async_copy;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const transform_policy& lhs, const transform_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const transform_policy& lhs, const transform_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -248,7 +256,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-[[nodiscard]] _CCCL_API constexpr int cc_to_min_bytes_in_flight(::cuda::compute_capability cc)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int cc_to_min_bytes_in_flight(::cuda::compute_capability cc)
 {
   if (cc >= ::cuda::compute_capability{10, 0})
   {
@@ -265,7 +273,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
   return 12 * 1024; // V100 and below
 }
 
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool filling)
 {
   if (filling)
@@ -309,7 +317,7 @@ struct policy_selector
   ::cuda::std::array<iterator_info, InputCount> inputs;
   iterator_info output;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> transform_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> transform_policy
   {
     const bool no_input_streams = InputCount == 0;
 
@@ -469,7 +477,7 @@ struct policy_selector_from_types<RequiresStableAddress,
                 "could pass an output iterator by accident, but it could also be a transform_iterator with a "
                 "__device__ callable and a deduced return type (which is void in host code).");
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> transform_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> transform_policy
   {
     constexpr auto policies = policy_selector<sizeof...(RandomAccessIteratorsIn)>{
       RequiresStableAddress,

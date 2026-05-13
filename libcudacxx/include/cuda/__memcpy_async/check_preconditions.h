@@ -45,7 +45,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Check the memcpy_async preconditions, return value is intended for testing purposes exclusively
 template <class _Tp, class _Size>
-_CCCL_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Size __size)
+_CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Size __size)
 {
   constexpr auto __align = ::cuda::std::max(alignof(_Tp), __get_size_align_v<_Size>);
 
@@ -67,7 +67,7 @@ _CCCL_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Si
 }
 
 template <class _Size>
-_CCCL_API inline bool __memcpy_async_check_pre(void* __dst, const void* __src, _Size __size)
+_CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(void* __dst, const void* __src, _Size __size)
 {
   return ::cuda::__memcpy_async_check_pre(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __size);
 }

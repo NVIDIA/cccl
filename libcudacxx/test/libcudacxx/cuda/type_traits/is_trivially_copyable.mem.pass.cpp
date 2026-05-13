@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 #include <cuda_bf16.h>
 #include <cuda_fp16.h>
 
