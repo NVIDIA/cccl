@@ -65,7 +65,7 @@ class __shared_block_ptr
 
 public:
   //! @brief Constructs a null ``__shared_block_ptr`` with no control block.
-  __shared_block_ptr() = default;
+  _CCCL_HIDE_FROM_ABI __shared_block_ptr() = default;
 
   //! @brief Constructs a new control block, forwarding arguments to the payload.
   _CCCL_TEMPLATE(class _Arg, class... _Rest)
