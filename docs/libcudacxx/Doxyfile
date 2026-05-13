@@ -81,6 +81,7 @@ PREDEFINED = \
     "__cccl_lib_mdspan" \
     "_CCCL_AND=&&" \
     "_CCCL_API=inline" \
+    "_CCCL_HOST_DEVICE_API=inline" \
     "_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT="\
     "_CCCL_BEGIN_NAMESPACE_CUDA=namespace cuda {" \
     "_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE=namespace cuda::device {" \
