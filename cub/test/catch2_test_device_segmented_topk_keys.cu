@@ -31,7 +31,7 @@ template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
           typename KParamT,
-          typename SelectDirectionParamT,
+          typename SelectDirectionT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
@@ -41,7 +41,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   KeyOutputItItT d_key_segments_out_it,
   SegmentSizeParamT segment_sizes,
   KParamT k,
-  SelectDirectionParamT select_directions,
+  SelectDirectionT select_direction,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
@@ -56,7 +56,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
     values_it,
     segment_sizes,
     k,
-    select_directions,
+    select_direction,
     num_segments,
     total_num_items_guarantee,
     stream);
@@ -151,11 +151,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+    ::cuda::argument::__immediate{segment_size, ::cuda::argument::__bounds<1, max_segment_size>()},
+    ::cuda::argument::__immediate{k, ::cuda::argument::__bounds<1, static_max_k>()},
+    direction,
+    ::cuda::argument::__immediate{num_segments},
+    ::cuda::argument::__immediate{num_segments * segment_size});
   // Prepare expected results
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -248,12 +248,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::batched_topk::segment_size_per_segment<decltype(segment_size_it), 1, static_max_segment_size>{
-      segment_size_it},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_items});
+    ::cuda::argument::__immediate{segment_size_it, ::cuda::argument::__bounds<1, static_max_segment_size>()},
+    ::cuda::argument::__immediate{k, ::cuda::argument::__bounds<1, static_max_k>()},
+    direction,
+    ::cuda::argument::__immediate{num_segments},
+    ::cuda::argument::__immediate{num_items});
 
   // Verify keys are returned correctly: sort each segment of the expected input, then compact the top-k
   segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
@@ -286,11 +285,11 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   batched_topk_keys(
     d_keys_in_it,
     d_keys_out_it,
-    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::batched_topk::k_uniform<1, static_cast<cuda::std::size_t>(k)>{k},
-    cub::detail::batched_topk::select_direction_uniform{cub::detail::topk::select::min},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+    ::cuda::argument::__immediate{segment_size, ::cuda::argument::__bounds<1, max_segment_size>()},
+    ::cuda::argument::__immediate{k, ::cuda::argument::__bounds<1, k>()},
+    cub::detail::topk::select::min,
+    ::cuda::argument::__immediate{num_segments},
+    ::cuda::argument::__immediate{num_segments * segment_size});
 
   const int num_minus_zero = static_cast<int>(thrust::count_if(d_keys_out.begin(), d_keys_out.end(), is_minus_zero{}));
   REQUIRE(num_minus_zero >= 1);

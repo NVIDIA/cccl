@@ -8,6 +8,7 @@
 #include <thrust/reduce.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/argument>
 #include <cuda/iterator>
 #include <cuda/random>
 #include <cuda/std/algorithm>
@@ -171,20 +172,17 @@ void variable_seg_size_topk_keys(nvbench::state& state,
     static_cast<cuda::std::int64_t>(MaxSegmentSize));
   const auto input_elements  = thrust::reduce(d_segment_sizes.begin(), d_segment_sizes.end());
   const auto output_elements = static_cast<std::size_t>(num_segments) * K;
-  const auto total_num_items =
-    cub::detail::batched_topk::total_num_items_guarantee<1, cuda::std::numeric_limits<cuda::std::int64_t>::max()>{
-      static_cast<cuda::std::int64_t>(input_elements)};
+  const auto total_num_items = ::cuda::argument::__immediate{static_cast<cuda::std::int64_t>(input_elements)};
 
   auto in_keys_buffer = gen_data<MaxSegmentSize, K>(
     num_segments, string_to_pattern(state.get_string("Pattern")), thrust::raw_pointer_cast(d_segment_sizes.data()));
   auto out_keys_buffer = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
 
-  cub::detail::batched_topk::segment_size_per_segment<const cuda::std::int64_t*, 1, MaxSegmentSize> segment_sizes_param{
-    thrust::raw_pointer_cast(d_segment_sizes.data())};
-  cub::detail::batched_topk::k_static<K> k_param{};
-  cub::detail::batched_topk::select_direction_static<cub::detail::topk::select::max> select_directions{};
-  cub::detail::batched_topk::num_segments_uniform<> num_segments_uniform_param{
-    static_cast<cuda::std::int64_t>(num_segments)};
+  auto segment_sizes_param = ::cuda::argument::__immediate{
+    thrust::raw_pointer_cast(d_segment_sizes.data()), ::cuda::argument::__bounds<1, MaxSegmentSize>()};
+  auto k_param            = ::cuda::argument::__constant<K>{};
+  auto select_direction   = cub::detail::topk::select::max;
+  auto num_segments_param = ::cuda::argument::__immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
   auto d_keys_in = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(in_keys_buffer.data())),
@@ -210,8 +208,8 @@ void variable_seg_size_topk_keys(nvbench::state& state,
       static_cast<cub::NullType**>(nullptr),
       segment_sizes_param,
       k_param,
-      select_directions,
-      num_segments_uniform_param,
+      select_direction,
+      num_segments_param,
       total_num_items,
       env);
   });
