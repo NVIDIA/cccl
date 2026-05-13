@@ -776,7 +776,7 @@ public:
         num_items,
         decomposer,
         stream,
-        {},
+        tuning_env,
         begin_bit,
         end_bit);
     });
