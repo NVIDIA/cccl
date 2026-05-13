@@ -22,9 +22,11 @@
 #endif // no system header
 
 #if _CCCL_HAS_CTK()
+#  include <cuda/__type_traits/scalar_type.h>
 #  include <cuda/__type_traits/vector_size.h>
 #  include <cuda/std/__floating_point/traits.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__type_traits/void_t.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -40,8 +42,11 @@ using is_vector_type = ::cuda::std::bool_constant<is_vector_type_v<_Tp>>;
 
 // is_extended_fp_vector_type
 
+template <class _Tp, class = void>
+inline constexpr bool is_extended_fp_vector_type_v = false;
 template <class _Tp>
-inline constexpr bool is_extended_fp_vector_type_v = (is_vector_type_v<_Tp> && ::cuda::std::__is_ext_nv_fp_v<_Tp>);
+inline constexpr bool is_extended_fp_vector_type_v<_Tp, ::cuda::std::void_t<typename scalar_type<_Tp>::type>> =
+  ::cuda::std::__is_ext_nv_fp_v<scalar_type_t<_Tp>>;
 
 template <class _Tp>
 using is_extended_fp_vector_type = ::cuda::std::bool_constant<is_extended_fp_vector_type_v<_Tp>>;
