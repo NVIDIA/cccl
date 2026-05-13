@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 #include <cuda/std/linalg>
