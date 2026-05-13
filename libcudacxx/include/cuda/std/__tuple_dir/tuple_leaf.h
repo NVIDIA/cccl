@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/allocator_arg_t.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/tuple.h>
-#include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__tuple_dir/tuple_constraints.h>
