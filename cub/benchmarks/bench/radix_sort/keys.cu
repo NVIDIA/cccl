@@ -48,7 +48,7 @@ void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
                         launch
 #if !TUNE_BASE
                         ,
-                        cuda::execution::__tune(policy_selector<key_t, value_t, offset_t>{})
+                        cuda::execution::tune(policy_selector<key_t, value_t, OffsetT>{})
 #endif // !TUNE_BASE
                           ))
         != cudaSuccess)

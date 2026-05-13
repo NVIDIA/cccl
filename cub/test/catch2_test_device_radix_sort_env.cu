@@ -1107,7 +1107,12 @@ TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom str
   REQUIRE(values == expected_values);
 }
 
-// using different block sizes yields to different temporary storage sizes, so use a custom policy to influence that
+#if TEST_LAUNCH == 0
+
+// Radix sort does not accept user-provided functors or iterators, so we cannot use the block_size_extracting_op or
+// block_size_extracting_constant_iterator approach. Instead, we verify tuning by measuring allocation sizes: different
+// block sizes produce different temporary storage requirements, which is an observable side effect of the tuning being
+// applied.
 template <typename KeyT, typename ValueT, int BlockThreads>
 struct tiny_onesweep_policy_selector
 {
@@ -1132,7 +1137,7 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
     cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{},
                                device_memory_resource{{}, stream.get(), &bytes_allocated, &bytes_deallocated}},
     stream,
-    cuda::execution::__tune(policy_selector)};
+    cuda::execution::tune(policy_selector)};
   REQUIRE(cudaSuccess == run(env));
   stream.sync();
   CHECK(bytes_allocated > 0);
@@ -1155,10 +1160,9 @@ TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]")
       env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+  CHECK(bytes32 != bytes64);
 }
 
 TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1169,10 +1173,9 @@ TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][
     return cub::DeviceRadixSort::SortPairs(double_buf, double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+  CHECK(bytes32 != bytes64);
 }
 
 TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][device]")
@@ -1190,10 +1193,9 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][dev
       env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+  CHECK(bytes32 != bytes64);
 }
 
 TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1204,10 +1206,9 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[ra
     return cub::DeviceRadixSort::SortPairsDescending(double_buf, double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+  CHECK(bytes32 != bytes64);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]")
@@ -1218,10 +1219,9 @@ TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]")
       data.data().get(), data.data().get(), static_cast<int>(data.size()), 0, 32, env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+  CHECK(bytes32 != bytes64);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1232,10 +1232,9 @@ TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][d
     return cub::DeviceRadixSort::SortKeys(double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+  CHECK(bytes32 != bytes64);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][device]")
@@ -1246,10 +1245,9 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][devi
       data.data().get(), data.data().get(), static_cast<int>(data.size()), 0, 32, env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+  CHECK(bytes32 != bytes64);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1260,8 +1258,9 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[rad
     return cub::DeviceRadixSort::SortKeysDescending(double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-
-  CHECK(default_bytes != tuned_bytes);
+  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+  CHECK(bytes32 != bytes64);
 }
+
+#endif // TEST_LAUNCH != 1

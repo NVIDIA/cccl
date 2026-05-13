@@ -56,7 +56,7 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
                         launch
 #if !TUNE_BASE
                         ,
-                        cuda::execution::__tune(policy_selector<key_t, value_t, offset_t>{})
+                        cuda::execution::tune(policy_selector<key_t, value_t, OffsetT>{})
 #endif // !TUNE_BASE
                           ))
         != cudaSuccess)
