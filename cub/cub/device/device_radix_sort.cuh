@@ -522,7 +522,6 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Ascending>(
         storage,
@@ -3147,7 +3146,6 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    // Dispatch with environment - handles all boilerplate
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
@@ -4327,7 +4325,6 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    // Dispatch with environment - handles all boilerplate
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
