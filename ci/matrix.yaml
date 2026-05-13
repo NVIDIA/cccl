@@ -21,11 +21,6 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    # Targeted repro of nightly 25713127213 failures. Reset before merging.
-    # libcu++ bit_cast<__float128> regression: memcpy fallback fires on GCC 8/9/10 (no __builtin_bit_cast) with CTK 12.0/12.X.
-    - {jobs: ['build'], project: 'libcudacxx', std: 'all', ctk: ['12.0', '12.X'], cxx: ['gcc8', 'gcc9', 'gcc10']}
-    # CUB device_reduce -Wunused-but-set-parameter regression: GCC 8 only.
-    - {jobs: ['build'], project: 'cub',        std: 17,    ctk: ['12.0', '12.X'], cxx: ['gcc8']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
