@@ -149,6 +149,45 @@ inline constexpr bool __can_use_radix_sort =
 struct DeviceRadixSort
 {
 private:
+  // TODO(bgruber): I would ideally like to have the logic of extracting the policy selector from the tuning environment
+  // inside the dispatch function, but this will not work with CCCL.C, which needs to pass a stateful policy selector.
+  // Refactor this once we have a host code JIT compiler.
+  template <SortOrder Order,
+            typename KeyT,
+            typename ValueT,
+            typename OffsetT,
+            typename DecomposerT = identity_decomposer_t,
+            typename TuningEnvT  = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t select_tuning_and_dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    OffsetT num_items,
+    int begin_bit,
+    int end_bit,
+    bool is_overwrite_okay,
+    cudaStream_t stream,
+    DecomposerT decomposer = {},
+    TuningEnvT             = {})
+  {
+    using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
+    using policy_selector_t         = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+    return detail::radix_sort::dispatch<Order>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream,
+      decomposer,
+      policy_selector_t{});
+  }
+
   template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t radix_sort_with_decomposer(
     void* d_temp_storage,
@@ -171,7 +210,7 @@ private:
 
     if constexpr (decomposer_check)
     {
-      return detail::radix_sort::dispatch<Order>(
+      return select_tuning_and_dispatch<Order>(
         d_temp_storage,
         temp_storage_bytes,
         d_keys,
@@ -359,7 +398,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+    return select_tuning_and_dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -472,10 +511,7 @@ public:
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
           bytes,
           d_keys,
@@ -486,7 +522,7 @@ public:
           false,
           stream,
           {},
-          policy_selector_t{});
+          tuning_env);
       });
   }
 
@@ -1070,7 +1106,7 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+    return select_tuning_and_dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1170,10 +1206,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
           bytes,
           d_keys,
@@ -1184,7 +1217,7 @@ public:
           true,
           stream,
           {},
-          policy_selector_t{});
+          tuning_env);
       });
   }
 
@@ -1735,7 +1768,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::radix_sort::dispatch<SortOrder::Descending>(
+    return select_tuning_and_dispatch<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1847,10 +1880,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::radix_sort::dispatch<SortOrder::Descending>(
+        return select_tuning_and_dispatch<SortOrder::Descending>(
           storage,
           bytes,
           d_keys,
@@ -1861,7 +1891,7 @@ public:
           false,
           stream,
           {},
-          policy_selector_t{});
+          tuning_env);
       });
   }
 
@@ -2255,7 +2285,7 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return detail::radix_sort::dispatch<SortOrder::Descending>(
+    return select_tuning_and_dispatch<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2355,10 +2385,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::radix_sort::dispatch<SortOrder::Descending>(
+        return select_tuning_and_dispatch<SortOrder::Descending>(
           storage,
           bytes,
           d_keys,
@@ -2369,7 +2396,7 @@ public:
           true,
           stream,
           {},
-          policy_selector_t{});
+          tuning_env);
       });
   }
 
@@ -3010,7 +3037,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+    return select_tuning_and_dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -3108,10 +3135,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, offset_t>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
           bytes,
           d_keys,
@@ -3122,7 +3146,7 @@ public:
           false,
           stream,
           {},
-          policy_selector_t{});
+          tuning_env);
       });
   }
 
@@ -3623,7 +3647,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+    return select_tuning_and_dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -3718,10 +3742,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, offset_t>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
           bytes,
           d_keys,
@@ -3732,7 +3753,7 @@ public:
           true,
           stream,
           {},
-          policy_selector_t{});
+          tuning_env);
       });
   }
 
@@ -4195,7 +4216,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::radix_sort::dispatch<SortOrder::Descending>(
+    return select_tuning_and_dispatch<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -4293,10 +4314,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, offset_t>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::radix_sort::dispatch<SortOrder::Descending>(
+        return select_tuning_and_dispatch<SortOrder::Descending>(
           storage,
           bytes,
           d_keys,
@@ -4307,7 +4325,7 @@ public:
           false,
           stream,
           {},
-          policy_selector_t{});
+          tuning_env);
       });
   }
 
@@ -4661,7 +4679,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::radix_sort::dispatch<SortOrder::Descending>(
+    return select_tuning_and_dispatch<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
