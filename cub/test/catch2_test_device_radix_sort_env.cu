@@ -1118,11 +1118,17 @@ struct tiny_onesweep_policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::detail::radix_sort::radix_sort_policy
   {
-    using default_selector_t          = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
-    auto policy                       = default_selector_t{}(cc);
-    policy.use_onesweep               = true;
-    policy.onesweep.threads_per_block = BlockThreads;
-    policy.onesweep.items_per_thread  = 1;
+    using default_selector_t               = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
+    auto policy                            = default_selector_t{}(cc);
+    policy.use_onesweep                    = true;
+    policy.onesweep.threads_per_block      = BlockThreads;
+    policy.onesweep.items_per_thread       = 1;
+    policy.single_tile.threads_per_block   = BlockThreads;
+    policy.single_tile.items_per_thread    = 1;
+    policy.downsweep.threads_per_block     = BlockThreads;
+    policy.downsweep.items_per_thread      = 1;
+    policy.alt_downsweep.threads_per_block = BlockThreads;
+    policy.alt_downsweep.items_per_thread  = 1;
     return policy;
   }
 };
@@ -1158,9 +1164,9 @@ TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]")
       env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1171,9 +1177,9 @@ TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][
     return cub::DeviceRadixSort::SortPairs(double_buf, double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][device]")
@@ -1191,9 +1197,9 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][dev
       env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1204,9 +1210,9 @@ TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[ra
     return cub::DeviceRadixSort::SortPairsDescending(double_buf, double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]")
@@ -1217,9 +1223,9 @@ TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]")
       data.data().get(), data.data().get(), static_cast<int>(data.size()), 0, 32, env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1230,9 +1236,9 @@ TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][d
     return cub::DeviceRadixSort::SortKeys(double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][device]")
@@ -1243,9 +1249,9 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][devi
       data.data().get(), data.data().get(), static_cast<int>(data.size()), 0, 32, env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[radix_sort][device]")
@@ -1256,9 +1262,277 @@ TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[rad
     return cub::DeviceRadixSort::SortKeysDescending(double_buf, static_cast<int>(data.size()), 0, 32, env);
   };
 
-  const auto bytes32 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
-  const auto bytes64 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
-  CHECK(bytes32 != bytes64);
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+// decomposer variants: keys
+
+TEST_CASE("DeviceRadixSort::SortKeys decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<custom_key_t>(10'000);
+    return cub::DeviceRadixSort::SortKeys(
+      data.data().get(), data.data().get(), static_cast<int>(data.size()), keys_decomposer_t{}, 0, 32, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeys decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<custom_key_t>(10'000);
+    return cub::DeviceRadixSort::SortKeys(
+      data.data().get(), data.data().get(), static_cast<int>(data.size()), keys_decomposer_t{}, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeys DB decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto buf0 = c2h::device_vector<custom_key_t>(10'000);
+    auto buf1 = c2h::device_vector<custom_key_t>(10'000);
+    cub::DoubleBuffer<custom_key_t> d_keys(buf0.data().get(), buf1.data().get());
+    return cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(buf0.size()), keys_decomposer_t{}, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeys DB decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto buf0 = c2h::device_vector<custom_key_t>(10'000);
+    auto buf1 = c2h::device_vector<custom_key_t>(10'000);
+    cub::DoubleBuffer<custom_key_t> d_keys(buf0.data().get(), buf1.data().get());
+    return cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(buf0.size()), keys_decomposer_t{}, 0, 32, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+// decomposer variants: keys descending
+
+TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<custom_key_t>(10'000);
+    return cub::DeviceRadixSort::SortKeysDescending(
+      data.data().get(), data.data().get(), static_cast<int>(data.size()), keys_decomposer_t{}, 0, 32, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeysDescending decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<custom_key_t>(10'000);
+    return cub::DeviceRadixSort::SortKeysDescending(
+      data.data().get(), data.data().get(), static_cast<int>(data.size()), keys_decomposer_t{}, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto buf0 = c2h::device_vector<custom_key_t>(10'000);
+    auto buf1 = c2h::device_vector<custom_key_t>(10'000);
+    cub::DoubleBuffer<custom_key_t> d_keys(buf0.data().get(), buf1.data().get());
+    return cub::DeviceRadixSort::SortKeysDescending(d_keys, static_cast<int>(buf0.size()), keys_decomposer_t{}, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeysDescending DB decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto buf0 = c2h::device_vector<custom_key_t>(10'000);
+    auto buf1 = c2h::device_vector<custom_key_t>(10'000);
+    cub::DoubleBuffer<custom_key_t> d_keys(buf0.data().get(), buf1.data().get());
+    return cub::DeviceRadixSort::SortKeysDescending(
+      d_keys, static_cast<int>(buf0.size()), keys_decomposer_t{}, 0, 32, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+// decomposer variants: pairs
+
+TEST_CASE("DeviceRadixSort::SortPairs decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto kbuf1 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vbuf0 = c2h::device_vector<int>(10'000);
+    auto vbuf1 = c2h::device_vector<int>(10'000);
+    cub::DoubleBuffer<custom_pair_key_t> d_keys(kbuf0.data().get(), kbuf1.data().get());
+    cub::DoubleBuffer<int> d_values(vbuf0.data().get(), vbuf1.data().get());
+    return cub::DeviceRadixSort::SortPairs(
+      d_keys, d_values, static_cast<int>(kbuf0.size()), pairs_decomposer_t{}, 0, 32, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairs decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto keys = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vals = c2h::device_vector<int>(10'000);
+    return cub::DeviceRadixSort::SortPairs(
+      keys.data().get(),
+      keys.data().get(),
+      vals.data().get(),
+      vals.data().get(),
+      static_cast<int>(keys.size()),
+      pairs_decomposer_t{},
+      env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairs DB decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto kbuf1 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vbuf0 = c2h::device_vector<int>(10'000);
+    auto vbuf1 = c2h::device_vector<int>(10'000);
+    cub::DoubleBuffer<custom_pair_key_t> d_keys(kbuf0.data().get(), kbuf1.data().get());
+    cub::DoubleBuffer<int> d_values(vbuf0.data().get(), vbuf1.data().get());
+    return cub::DeviceRadixSort::SortPairs(d_keys, d_values, static_cast<int>(kbuf0.size()), pairs_decomposer_t{}, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairs DB decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto kbuf1 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vbuf0 = c2h::device_vector<int>(10'000);
+    auto vbuf1 = c2h::device_vector<int>(10'000);
+    cub::DoubleBuffer<custom_pair_key_t> d_keys(kbuf0.data().get(), kbuf1.data().get());
+    cub::DoubleBuffer<int> d_values(vbuf0.data().get(), vbuf1.data().get());
+    return cub::DeviceRadixSort::SortPairs(
+      d_keys, d_values, static_cast<int>(kbuf0.size()), pairs_decomposer_t{}, 0, 32, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+// decomposer variants: pairs descending
+
+TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto keys = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vals = c2h::device_vector<int>(10'000);
+    return cub::DeviceRadixSort::SortPairsDescending(
+      keys.data().get(),
+      keys.data().get(),
+      vals.data().get(),
+      vals.data().get(),
+      static_cast<int>(keys.size()),
+      pairs_decomposer_t{},
+      0,
+      32,
+      env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairsDescending decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto keys = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vals = c2h::device_vector<int>(10'000);
+    return cub::DeviceRadixSort::SortPairsDescending(
+      keys.data().get(),
+      keys.data().get(),
+      vals.data().get(),
+      vals.data().get(),
+      static_cast<int>(keys.size()),
+      pairs_decomposer_t{},
+      env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto kbuf1 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vbuf0 = c2h::device_vector<int>(10'000);
+    auto vbuf1 = c2h::device_vector<int>(10'000);
+    cub::DoubleBuffer<custom_pair_key_t> d_keys(kbuf0.data().get(), kbuf1.data().get());
+    cub::DoubleBuffer<int> d_values(vbuf0.data().get(), vbuf1.data().get());
+    return cub::DeviceRadixSort::SortPairsDescending(
+      d_keys, d_values, static_cast<int>(kbuf0.size()), pairs_decomposer_t{}, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer+bits can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto kbuf0 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto kbuf1 = c2h::device_vector<custom_pair_key_t>(10'000);
+    auto vbuf0 = c2h::device_vector<int>(10'000);
+    auto vbuf1 = c2h::device_vector<int>(10'000);
+    cub::DoubleBuffer<custom_pair_key_t> d_keys(kbuf0.data().get(), kbuf1.data().get());
+    cub::DoubleBuffer<int> d_values(vbuf0.data().get(), vbuf1.data().get());
+    return cub::DeviceRadixSort::SortPairsDescending(
+      d_keys, d_values, static_cast<int>(kbuf0.size()), pairs_decomposer_t{}, 0, 32, env);
+  };
+
+  const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
+  CHECK(bytes32 != bytes128);
 }
 
 #endif // TEST_LAUNCH != 1
