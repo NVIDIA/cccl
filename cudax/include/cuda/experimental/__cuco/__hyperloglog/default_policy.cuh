@@ -63,7 +63,7 @@ struct default_hll_policy
   //! @brief Returns the underlying hash functor.
   //!
   //! @return The hash functor.
-  [[nodiscard]] _CCCL_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {
     return hasher_;
   }
@@ -72,7 +72,7 @@ struct default_hll_policy
   //!
   //! @param[in] __k The item to hash.
   //! @return The hash value of `__k`.
-  [[nodiscard]] _CCCL_API constexpr hash_result_type hash(const _Key& __k) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hash_result_type hash(const _Key& __k) const noexcept
   {
     return hasher_(__k);
   }
@@ -85,7 +85,7 @@ struct default_hll_policy
   //! @param[in] __h The hash value.
   //! @param[in] __precision The HLL precision parameter.
   //! @return The register index in `[0, 2^__precision)`.
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
   register_index(hash_result_type __h, int __precision) const noexcept
   {
     constexpr auto __hash_bits = ::cuda::std::numeric_limits<hash_result_type>::digits;
@@ -100,7 +100,7 @@ struct default_hll_policy
   //! @param[in] __h The hash value.
   //! @param[in] __precision The HLL precision parameter.
   //! @return rho, in `[1, hash_bits - __precision + 1]`.
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint8_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint8_t
   register_value(hash_result_type __h, int __precision) const noexcept
   {
     const auto __w_padding = hash_result_type{1} << static_cast<hash_result_type>(__precision - 1);
@@ -114,7 +114,8 @@ struct default_hll_policy
   //! @param[in] __v Count of zero registers.
   //! @param[in] __precision HLL precision parameter.
   //! @return The bias-corrected cardinality estimate.
-  [[nodiscard]] static _CCCL_API constexpr ::cuda::std::size_t finalize(double __z, int __v, int __precision) noexcept
+  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
+  finalize(double __z, int __v, int __precision) noexcept
   {
     return __hyperloglog_ns::hllpp_finalizer{__precision}(__z, __v);
   }

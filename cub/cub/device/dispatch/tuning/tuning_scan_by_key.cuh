@@ -44,7 +44,7 @@ struct scan_by_key_policy
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  _CCCL_API constexpr friend bool operator==(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -52,7 +52,7 @@ struct scan_by_key_policy
         && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -1031,7 +1031,7 @@ struct policy_hub
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename ActivePolicyT>
-_CCCL_API constexpr auto convert_policy() -> scan_by_key_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> scan_by_key_policy
 {
   using policy_t = typename ActivePolicyT::ScanByKeyPolicyT;
   return {policy_t::BLOCK_THREADS,
@@ -1066,7 +1066,8 @@ struct policy_selector
   type_t accum_type;
   op_kind_t operation_t;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> scan_by_key_policy
   {
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
     const bool primitive_accum =
@@ -1924,7 +1925,8 @@ struct policy_selector
 template <typename KeyT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> scan_by_key_policy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),

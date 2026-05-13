@@ -140,7 +140,7 @@ struct __not_a_sender
   using sender_concept = sender_t;
 
   template <class...>
-  _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return execution::invalid_completion_signature<_What...>();
   }
@@ -151,17 +151,17 @@ struct __not_a_scheduler
 {
   using scheduler_concept = scheduler_t;
 
-  _CCCL_API auto schedule() noexcept
+  _CCCL_HOST_DEVICE_API auto schedule() noexcept
   {
     return __not_a_sender<_What...>{};
   }
 
-  _CCCL_API constexpr bool operator==(__not_a_scheduler) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr bool operator==(__not_a_scheduler) const noexcept
   {
     return true;
   }
 
-  _CCCL_API constexpr bool operator!=(__not_a_scheduler) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr bool operator!=(__not_a_scheduler) const noexcept
   {
     return false;
   }

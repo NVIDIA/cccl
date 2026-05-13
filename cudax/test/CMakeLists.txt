@@ -144,6 +144,11 @@ cudax_add_catch2_test(test_target group.mapping.group_by
 )
 target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
+cudax_add_catch2_test(test_target group.mapping.identity_mapping
+    group/mapping/identity_mapping.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )

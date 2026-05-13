@@ -57,7 +57,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_
 {
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
   {
     return __env_.query(_Query{}, static_cast<_Args&&>(__args)...);
@@ -70,32 +70,33 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(env<>) const noexcept -> env<>
   {
     return {};
   }
 
   _CCCL_TEMPLATE(class _Env, class = _Env*) // not considered if _Env is a reference type
   _CCCL_REQUIRES((!::cuda::__is_specialization_of_v<_Env, __fwd_env_>) )
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
   {
     return static_cast<_Env&&>(__env);
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept -> __env_ref_<_Env>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept -> __env_ref_<_Env>
   {
     return __env_ref_<_Env>{__env};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept -> __env_ref_<_Env>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept
+    -> __env_ref_<_Env>
   {
     return __env;
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
     -> __fwd_env_<_Env const&>
   {
     return __fwd_env_<_Env const&>{__env.__env_};
@@ -119,7 +120,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<_Env, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
   {
     return __env_.query(_Query{}, static_cast<_Args&&>(__args)...);
@@ -132,19 +133,20 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(env<>) const noexcept -> env<>
   {
     return {};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept -> __fwd_env_<_Env const&>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept
+    -> __fwd_env_<_Env const&>
   {
     return __fwd_env_<_Env const&>{__env.__env_};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Env&& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Env&& __env) const noexcept
   {
     static_assert(__nothrow_movable<_Env>);
     // If the environment is already a forwarding environment, we can just return it.
@@ -173,12 +175,12 @@ _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 template <class _Sch>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept -> _Sch
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_scheduler_t) const noexcept -> _Sch
   {
     return __sch_;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(get_domain_t) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_domain_t) const noexcept
   {
     return __query_result_or_t<_Sch, get_completion_domain_t<set_value_t>, default_domain>{};
   }
@@ -192,7 +194,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
 struct __mk_sch_env_t
 {
   template <class _Sch, class... _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sch __sch, const _Env&... __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sch __sch, const _Env&... __env) const noexcept
   {
     return __sch_env_t{__call_or(get_completion_scheduler<set_value_t>, __sch, __sch, __env...)};
   }
@@ -209,14 +211,16 @@ _CCCL_GLOBAL_CONSTANT __mk_sch_env_t __mk_sch_env{};
 template <class _Sch>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_attrs_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> const _Sch&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept
+    -> const _Sch&
   {
     return __sch_;
   }
 
   _CCCL_TEMPLATE(class... _Env)
   _CCCL_REQUIRES(__callable<get_completion_domain_t<set_value_t>, _Sch, _Env...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_domain_t<set_value_t>, const _Env&...) const noexcept
   {
     return __call_result_t<get_completion_domain_t<set_value_t>, _Sch, _Env...>{};
   }
@@ -237,7 +241,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 //! and domain based on the environment.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __inln_attrs_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t) const noexcept
   {
     return completion_behavior::inline_completion;
   }
@@ -250,25 +254,25 @@ namespace __detail
 struct __join_env_fn
 {
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Env&& __env, env<> = {}) const noexcept -> _Env
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Env&& __env, env<> = {}) const noexcept -> _Env
   {
     static_assert(__nothrow_movable<_Env>);
     return static_cast<_Env&&>(__env);
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(env<>, _Env&& __env) const noexcept -> __fwd_env_t<_Env>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(env<>, _Env&& __env) const noexcept -> __fwd_env_t<_Env>
   {
     return __fwd_env(static_cast<_Env&&>(__env));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(env<>, env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(env<>, env<>) const noexcept -> env<>
   {
     return {};
   }
 
   template <class _First, class _Second>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_First&& __first, _Second&& __second) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_First&& __first, _Second&& __second) const noexcept
     -> env<_First, __fwd_env_t<_Second>>
   {
     static_assert(__nothrow_movable<_First>);

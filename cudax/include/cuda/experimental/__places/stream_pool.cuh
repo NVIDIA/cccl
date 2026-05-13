@@ -49,6 +49,20 @@ class exec_place;
  */
 inline int get_device_from_stream(cudaStream_t stream)
 {
+  if (stream == nullptr)
+  {
+    return cuda_try<cudaGetDevice>();
+  }
+
+  auto capture_status = cudaStreamCaptureStatusNone;
+  if (cudaStreamIsCapturing(stream, &capture_status) == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  {
+    // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
+    // participating in capture. Use the active device, which is the device on
+    // which the capture is being constructed.
+    return cuda_try<cudaGetDevice>();
+  }
+
 #if _CCCL_CTK_AT_LEAST(12, 8)
   int device = 0;
   cuda_try(cudaStreamGetDevice(stream, &device));
@@ -74,9 +88,24 @@ inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long l
  * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
  * @param stream A valid CUDA stream, or nullptr.
  * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
+ *
+ * When @p stream is participating in CUDA graph capture, querying the driver
+ * stream ID is not permitted (CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED). In that case
+ * this returns k_no_stream_id; callers that cache syncs treat unknown ids as
+ * ``never skip cudaStreamWaitEvent`` (see async_resources_handle).
  */
 inline unsigned long long get_stream_id(cudaStream_t stream)
 {
+  if (stream == nullptr)
+  {
+    return k_no_stream_id;
+  }
+  cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+  const cudaError_t cap_err              = cudaStreamIsCapturing(stream, &capture_status);
+  if (cap_err == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  {
+    return k_no_stream_id;
+  }
   unsigned long long id = 0;
   cuda_try(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
   _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");

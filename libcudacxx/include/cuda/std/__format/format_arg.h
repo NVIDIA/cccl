@@ -64,12 +64,12 @@ inline constexpr uint8_t __fmt_packed_arg_t_mask  = 0x1f;
 inline constexpr unsigned __fmt_packed_types_storage_bits = 64;
 inline constexpr unsigned __fmt_packed_types_max          = __fmt_packed_types_storage_bits / __fmt_packed_arg_t_bits;
 
-[[nodiscard]] _CCCL_API constexpr bool __fmt_use_packed_format_arg_store(size_t __size) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __fmt_use_packed_format_arg_store(size_t __size) noexcept
 {
   return __size <= __fmt_packed_types_max;
 }
 
-[[nodiscard]] _CCCL_API constexpr __fmt_arg_t __fmt_get_packed_type(uint64_t __types, size_t __id) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_arg_t __fmt_get_packed_type(uint64_t __types, size_t __id) noexcept
 {
   _CCCL_ASSERT(__id <= __fmt_packed_types_max, "");
 
@@ -91,7 +91,7 @@ class __basic_format_arg_value
   using _CharT _CCCL_NODEBUG_ALIAS = typename _Context::char_type;
 
   template <class _Tp>
-  _CCCL_API static void
+  _CCCL_HOST_DEVICE_API static void
   __formatter_invoker(basic_format_parse_context<_CharT>& __parse_ctx, _Context& __ctx, const void* __ptr)
   {
     using _Dp = remove_const_t<_Tp>;
@@ -109,7 +109,7 @@ public:
   struct __handle
   {
     template <class _Tp>
-    _CCCL_API explicit __handle(_Tp& __v) noexcept
+    _CCCL_HOST_DEVICE_API explicit __handle(_Tp& __v) noexcept
         : __ptr_(::cuda::std::addressof(__v))
         , __format_(__formatter_invoker<_Tp>)
     {}
@@ -136,46 +136,46 @@ public:
     __handle __handle_;
   };
 
-  _CCCL_API __basic_format_arg_value() noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value() noexcept
       : __monostate_()
   {}
-  _CCCL_API __basic_format_arg_value(bool __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(bool __value) noexcept
       : __boolean_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(_CharT __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(_CharT __value) noexcept
       : __char_type_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(int __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(int __value) noexcept
       : __int_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(unsigned __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(unsigned __value) noexcept
       : __unsigned_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(long long __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(long long __value) noexcept
       : __long_long_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(unsigned long long __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(unsigned long long __value) noexcept
       : __unsigned_long_long_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(float __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(float __value) noexcept
       : __float_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(double __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(double __value) noexcept
       : __double_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(long double __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(long double __value) noexcept
       : __long_double_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(const _CharT* __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(const _CharT* __value) noexcept
       : __const_char_type_ptr_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(basic_string_view<_CharT> __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(basic_string_view<_CharT> __value) noexcept
       : __string_view_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(const void* __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(const void* __value) noexcept
       : __ptr_(__value)
   {}
-  _CCCL_API __basic_format_arg_value(__handle&& __value) noexcept
+  _CCCL_HOST_DEVICE_API __basic_format_arg_value(__handle&& __value) noexcept
       : __handle_(::cuda::std::move(__value))
   {}
 };
@@ -186,11 +186,11 @@ class _CCCL_NO_SPECIALIZATIONS _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_arg
 public:
   class handle;
 
-  _CCCL_API basic_format_arg() noexcept
+  _CCCL_HOST_DEVICE_API basic_format_arg() noexcept
       : __type_{__fmt_arg_t::__none}
   {}
 
-  _CCCL_API explicit operator bool() const noexcept
+  _CCCL_HOST_DEVICE_API explicit operator bool() const noexcept
   {
     return __type_ != __fmt_arg_t::__none;
   }
@@ -213,7 +213,8 @@ public:
   __basic_format_arg_value<_Context> __value_;
   __fmt_arg_t __type_;
 
-  _CCCL_API explicit basic_format_arg(__fmt_arg_t __type, __basic_format_arg_value<_Context> __value) noexcept
+  _CCCL_HOST_DEVICE_API explicit basic_format_arg(__fmt_arg_t __type,
+                                                  __basic_format_arg_value<_Context> __value) noexcept
       : __value_(__value)
       , __type_(__type)
   {}
@@ -223,12 +224,12 @@ template <class _Context>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_arg<_Context>::handle
 {
 public:
-  _CCCL_API void format(basic_format_parse_context<char_type>& __parse_ctx, _Context& __ctx) const
+  _CCCL_HOST_DEVICE_API void format(basic_format_parse_context<char_type>& __parse_ctx, _Context& __ctx) const
   {
     __handle_.__format_(__parse_ctx, __ctx, __handle_.__ptr_);
   }
 
-  _CCCL_API explicit handle(typename __basic_format_arg_value<_Context>::__handle& __handle) noexcept
+  _CCCL_HOST_DEVICE_API explicit handle(typename __basic_format_arg_value<_Context>::__handle& __handle) noexcept
       : __handle_(__handle)
   {}
 
@@ -237,7 +238,7 @@ private:
 };
 
 template <class _Visitor, class _Context>
-_CCCL_API decltype(auto) visit_format_arg(_Visitor&& __vis, basic_format_arg<_Context> __arg)
+_CCCL_HOST_DEVICE_API decltype(auto) visit_format_arg(_Visitor&& __vis, basic_format_arg<_Context> __arg)
 {
   switch (__arg.__type_)
   {

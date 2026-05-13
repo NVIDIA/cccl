@@ -44,7 +44,7 @@ namespace detail::scan
 namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 
-_CCCL_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
+_CCCL_HOST_DEVICE_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
 {
   const auto num_total_warps = 2 * policy.num_reduce_and_scan_warps + 1 /*num_load_warps*/
                              + 1 /*num_sched_warps*/ + 1 /*num_look_ahead_warps*/;
@@ -95,7 +95,7 @@ struct ScanResources
 // Function to allocate resources.
 
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
-[[nodiscard]] _CCCL_API constexpr ScanResources<PolicySelector, InputT, OutputT, AccumT>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ScanResources<PolicySelector, InputT, OutputT, AccumT>
 allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& smemAllocator, int numStages)
 {
   using ScanResourcesT    = ScanResources<PolicySelector, InputT, OutputT, AccumT>;
@@ -864,7 +864,7 @@ device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, co
 }
 
 template <typename InputT, typename OutputT, typename AccumT>
-_CCCL_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, int num_stages) -> int
+_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, int num_stages) -> int
 {
   return smem_for_stages(
     policy,

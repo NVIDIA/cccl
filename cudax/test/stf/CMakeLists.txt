@@ -53,6 +53,7 @@ set(
   interface/cuda_kernel_empty_args.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/legacy_to_stf_in_capture.cu
   local_stf/logical_data_t_template.cu
   local_stf/stackable.cu
   local_stf/stackable2.cu

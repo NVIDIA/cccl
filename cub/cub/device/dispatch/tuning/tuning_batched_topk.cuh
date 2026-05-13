@@ -31,13 +31,13 @@ struct epilogue_policy
   BlockStoreAlgorithm store_algorithm;
   BlockScanAlgorithm scan_algorithm;
 
-  _CCCL_API constexpr friend bool operator==(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const epilogue_policy& lhs, const epilogue_policy& rhs)
   {
     return lhs.items_per_thread == rhs.items_per_thread && lhs.load_algorithm == rhs.load_algorithm
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const epilogue_policy& lhs, const epilogue_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -61,14 +61,14 @@ struct worker_policy
 
   epilogue_policy epilogue;
 
-  _CCCL_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm
         && lhs.epilogue == rhs.epilogue;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -88,12 +88,12 @@ struct multi_worker_policy
   int threads_per_block;
   int items_per_thread;
 
-  _CCCL_API constexpr friend bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -114,13 +114,13 @@ struct batched_topk_policy
   ::cuda::std::array<worker_policy, 6> worker_per_segment_policies;
   multi_worker_policy multi_worker_per_segment_policy;
 
-  _CCCL_API constexpr friend bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
     return lhs.worker_per_segment_policies == rhs.worker_per_segment_policies
         && lhs.multi_worker_per_segment_policy == rhs.multi_worker_per_segment_policy;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -149,7 +149,7 @@ concept batched_topk_policy_selector = policy_selector<T, batched_topk_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> batched_topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> batched_topk_policy
   {
     constexpr auto load_alg  = BLOCK_LOAD_WARP_TRANSPOSE;
     constexpr auto store_alg = BLOCK_STORE_WARP_TRANSPOSE;
@@ -171,7 +171,8 @@ struct policy_selector
 template <typename KeyT, typename ValueT, typename SegmentSizeT, ::cuda::std::int64_t MaxK>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> batched_topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> batched_topk_policy
   {
     return policy_selector{}(cc);
   }

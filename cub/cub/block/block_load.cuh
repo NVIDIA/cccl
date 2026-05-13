@@ -858,7 +858,7 @@ class BlockLoad
                   || (ThreadsPerBlock % detail::warp_threads == 0),
                 "ThreadsPerBlock must be a multiple of warp_threads for this BlockLoadAlgorithm");
 
-  _CCCL_API static constexpr auto temp_storage_helper()
+  _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_STRIPED
                   || Algorithm == BLOCK_LOAD_VECTORIZE)

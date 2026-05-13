@@ -32,6 +32,7 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>
@@ -346,6 +347,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   const rfa_policy active_policy = policy_selector(cc);
+
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceReduceDeterministic to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+
   const auto tile_items =
     static_cast<OffsetT>(active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
 

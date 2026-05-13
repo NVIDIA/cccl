@@ -35,14 +35,14 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
   BlockReduceAlgorithm block_algorithm;
   CacheLoadModifier load_modifier;
 
-  _CCCL_API constexpr friend bool operator==(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.block_algorithm == rhs.block_algorithm
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -62,12 +62,12 @@ struct reduce_policy
   agent_reduce_policy reduce;
   agent_reduce_policy single_tile;
 
-  _CCCL_API constexpr friend bool operator==(const reduce_policy& lhs, const reduce_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const reduce_policy& lhs, const reduce_policy& rhs)
   {
     return lhs.reduce == rhs.reduce && lhs.single_tile == rhs.single_tile;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const reduce_policy& lhs, const reduce_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const reduce_policy& lhs, const reduce_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -209,7 +209,8 @@ struct sm100_tuning_values
   int items_per_vec_load;
 };
 
-_CCCL_API constexpr auto get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int accum_size)
+_CCCL_HOST_DEVICE_API constexpr auto
+get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int accum_size)
   -> ::cuda::std::optional<sm100_tuning_values>
 {
   if (operation_t != op_kind_t::plus)
@@ -343,7 +344,7 @@ struct policy_selector
   int offset_size;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
   {
     // if we don't have a tuning for sm100, fall through
     auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
@@ -389,7 +390,7 @@ static_assert(reduce_policy_selector<policy_selector>);
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> reduce_policy
   {
     constexpr auto policies =
       policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
