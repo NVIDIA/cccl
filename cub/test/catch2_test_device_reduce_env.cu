@@ -38,7 +38,7 @@ namespace stdexec = cuda::std::execution;
 template <int ThreadsPerBlock>
 struct reduce_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::reduce::reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::reduce::reduce_policy
   {
     const auto policy = cub::detail::reduce::agent_reduce_policy{
       ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
@@ -49,7 +49,7 @@ struct reduce_tuning
 template <int ThreadsPerBlock>
 struct nondeterministic_reduce_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy
   {
     return {cub::detail::reduce::agent_reduce_policy{
@@ -60,7 +60,7 @@ struct nondeterministic_reduce_tuning
 template <int ThreadsPerBlock>
 struct deterministic_reduce_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::rfa::rfa_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::rfa::rfa_policy
   {
     return {cub::detail::rfa::reduce_policy{ThreadsPerBlock, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS},
             cub::detail::rfa::single_tile_policy{ThreadsPerBlock, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS}};

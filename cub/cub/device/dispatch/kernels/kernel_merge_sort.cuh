@@ -28,7 +28,7 @@ template <typename DefaultPolicyGetter>
 struct fallback_policy_getter
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
   {
     merge_sort_policy policy = DefaultPolicyGetter{}();
     policy.threads_per_block = 64;

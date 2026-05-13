@@ -149,7 +149,7 @@ template <typename Predicate>
 struct swap_args : Predicate
 {
   template <typename T, typename U>
-  _CCCL_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
   {
     return Predicate::operator()(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
   }
