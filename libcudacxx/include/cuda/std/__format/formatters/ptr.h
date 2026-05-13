@@ -44,7 +44,7 @@ struct __fmt_formatter_ptr
   //! @return An iterator pointing to the end of the parsed format specification.
   //!
   template <class _ParseCtx>
-  _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
+  _CCCL_HOST_DEVICE_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
     typename _ParseCtx::iterator __result = __parser_.__parse(__ctx, ::cuda::std::__fmt_spec_fields_ptr());
     ::cuda::std::__fmt_process_display_type_ptr(__parser_.__type_);
@@ -59,7 +59,7 @@ struct __fmt_formatter_ptr
   //! @return An iterator pointing to the end of the formatted output.
   //!
   template <class _Tp, class _FmtCtx>
-  _CCCL_API typename _FmtCtx::iterator format([[maybe_unused]] _Tp __value, _FmtCtx& __ctx) const
+  _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator format([[maybe_unused]] _Tp __value, _FmtCtx& __ctx) const
   {
     auto __specs                     = __parser_.__get_parsed_std_spec(__ctx);
     __specs.__std_.__alternate_form_ = true;
