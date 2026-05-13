@@ -66,7 +66,9 @@ struct synchronous_resource_adapter
   {}
 
   [[nodiscard]] _CCCL_HOST_API void*
-  allocate([[maybe_unused]] const ::cuda::stream_ref __stream, const size_t __bytes, const size_t __alignment)
+  allocate([[maybe_unused]] const ::cuda::stream_ref __stream,
+           const size_t __bytes,
+           const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     if constexpr (__has_member_allocate<_Resource>)
     {
@@ -78,13 +80,17 @@ struct synchronous_resource_adapter
     }
   }
 
-  [[nodiscard]] _CCCL_HOST_API void* allocate_sync(const size_t __bytes, const size_t __alignment)
+  [[nodiscard]] _CCCL_HOST_API void*
+  allocate_sync(const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     return __resource.allocate_sync(__bytes, __alignment);
   }
 
-  _CCCL_HOST_API void
-  deallocate(const ::cuda::stream_ref __stream, void* __ptr, const size_t __bytes, const size_t __alignment) noexcept
+  _CCCL_HOST_API void deallocate(
+    const ::cuda::stream_ref __stream,
+    void* __ptr,
+    const size_t __bytes,
+    const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     if constexpr (__has_member_deallocate<_Resource>)
     {
@@ -97,7 +103,8 @@ struct synchronous_resource_adapter
     }
   }
 
-  _CCCL_HOST_API void deallocate_sync(void* __ptr, const size_t __bytes, const size_t __alignment) noexcept
+  _CCCL_HOST_API void deallocate_sync(
+    void* __ptr, const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     __resource.deallocate_sync(__ptr, __bytes, __alignment);
   }
