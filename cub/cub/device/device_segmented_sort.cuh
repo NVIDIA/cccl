@@ -128,7 +128,7 @@ private:
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
-    global_segment_offset_t num_segments,
+    detail::segmented_sort::global_segment_offset_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     bool is_overwrite_okay,
@@ -2268,7 +2268,7 @@ private:
     bool is_overwrite_okay = true,
     TuningEnvT tuning_env  = {})
   {
-    return select_tuning_and_dispatch<Order, OffsetT>(
+    return select_tuning_and_dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
