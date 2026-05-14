@@ -43,7 +43,7 @@ namespace cuda_cub
 namespace detail
 {
 template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate, typename OffsetT>
-cudaError_t THRUST_RUNTIME_FUNCTION dispatch_partition(
+[[nodiscard]] cudaError_t THRUST_RUNTIME_FUNCTION dispatch_partition(
   execution_policy<Derived>& policy,
   void* d_temp_storage,
   size_t& temp_storage_bytes,
