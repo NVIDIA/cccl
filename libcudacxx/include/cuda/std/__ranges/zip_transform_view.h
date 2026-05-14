@@ -417,7 +417,8 @@ public:
 };
 
 template <class _Fn, class... _Ranges>
-_CCCL_HOST_DEVICE zip_transform_view(_Fn, _Ranges&&...) -> zip_transform_view<_Fn, views::all_t<_Ranges>...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_transform_view(_Fn, _Ranges&&...)
+  -> zip_transform_view<_Fn, views::all_t<_Ranges>...>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
@@ -438,10 +439,10 @@ struct __fn
   _CCCL_TEMPLATE(class _Fn, class... _Ranges)
   _CCCL_REQUIRES((sizeof...(_Ranges) > 0))
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __fun, _Ranges&&... __rs) const
-    noexcept(noexcept(/**/ zip_transform_view{::cuda::std::forward<_Fn>(__fun), ::cuda::std::forward<_Ranges>(__rs)...}))
-      -> decltype(/*----*/ zip_transform_view{::cuda::std::forward<_Fn>(__fun), ::cuda::std::forward<_Ranges>(__rs)...})
+    noexcept(noexcept(zip_transform_view{::cuda::std::forward<_Fn>(__fun), ::cuda::std::forward<_Ranges>(__rs)...}))
+      -> decltype(zip_transform_view{::cuda::std::forward<_Fn>(__fun), ::cuda::std::forward<_Ranges>(__rs)...})
   {
-    return /*-----------*/ zip_transform_view{::cuda::std::forward<_Fn>(__fun), ::cuda::std::forward<_Ranges>(__rs)...};
+    return zip_transform_view{::cuda::std::forward<_Fn>(__fun), ::cuda::std::forward<_Ranges>(__rs)...};
   }
 };
 
