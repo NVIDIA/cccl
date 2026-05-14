@@ -75,6 +75,7 @@ for ctk in 12 13; do
         --env "GITHUB_ACTIONS=${GITHUB_ACTIONS:-}" \
         --env "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}" \
         --env "JOB_ID=${JOB_ID:-}" \
+        --env "CCCL_PYTHON_USE_V2=${CCCL_PYTHON_USE_V2:-}" \
         "$image" \
         /workspace/ci/build_cuda_cccl_wheel.sh
     # Prevent GHA runners from exhausting available storage with leftover images:

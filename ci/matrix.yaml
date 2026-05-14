@@ -72,6 +72,10 @@ workflows:
     # entire matrix. Currently blocked on libnvfatbin availability on
     # Windows containers, and for CUDA <12.4.
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    # Python against c.parallel v2 (HostJIT-based). Single point of coverage
+    # for the v2 Python path; the main `python` matrix continues to test
+    # against v1 until v2 replaces it.
+    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
@@ -579,6 +583,13 @@ projects:
     job_map:
       build: ['build_py_wheel']
       test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples']
+  python_v2:
+    name: "Python (cuda.compute on v2/HostJIT)"
+    # Only the cuda.compute path differs between v1 and v2; cccl.headers,
+    # cuda.coop, and examples are unaffected so we don't re-run them here.
+    job_map:
+      build: ['build_py_wheel']
+      test:  ['test_py_par']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

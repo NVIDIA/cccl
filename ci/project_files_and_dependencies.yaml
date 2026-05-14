@@ -117,12 +117,28 @@ projects:
   cccl_c_parallel_v2:
     name: "CCCL C Parallel Library v2 (HostJIT)"
     matrix_project: "cccl_c_parallel_v2"
-    lite_dependencies: [libcudacxx_public]
-    full_dependencies: [cccl_c_parallel_public]
+    # v2 depends on libcudacxx, cub, and thrust headers (it JIT-compiles
+    # CUB's host+device code via HostJIT). Any change to those should trigger
+    # v2 to run.
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
     include_regexes:
       - "c/parallel\\.v2/"
       - "ci/build_cccl_c_parallel_v2\\.sh"
       - "ci/test_cccl_c_parallel_v2\\.sh"
+
+  python_v2:
+    name: "Python (cuda.compute on v2/HostJIT)"
+    matrix_project: "python_v2"
+    # cccl_c_parallel_v2 already pulls in libcudacxx/cub/thrust, so listing
+    # it here transitively triggers python_v2 on any of those upstream
+    # changes too. Direct includes catch Python-only edits.
+    lite_dependencies: [cccl_c_parallel_v2]
+    full_dependencies: []
+    include_regexes:
+      - "python/cuda_cccl/"
+      - "ci/build_cuda_cccl_python_v2\\.sh"
+      - "ci/test_cuda_compute_python_v2\\.sh"
 
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"

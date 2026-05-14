@@ -49,6 +49,13 @@ export CUDACXX
 CUDAHOSTCXX="$(command -v g++)"
 export CUDAHOSTCXX
 
+# When CCCL_PYTHON_USE_V2 is set (=1/true/on), build the wheel against the
+# HostJIT-based cccl.c.parallel.v2 library instead of the default v1.
+if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  export CMAKE_ARGS="${CMAKE_ARGS:-} -DCCCL_PYTHON_USE_V2=ON"
+  echo "Building wheel with CCCL v2 backend: CMAKE_ARGS=${CMAKE_ARGS}"
+fi
+
 # Build the wheel
 python -m pip wheel --no-deps --verbose --wheel-dir dist .
 
