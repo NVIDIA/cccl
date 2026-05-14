@@ -1,39 +1,43 @@
 ---
-name: cccl
-description: "Entry-point orientation for the CCCL repository. Surfaces the available CCCL-specific skills and agents and points at common entry phrases. Load this skill first in every CCCL session before doing other work. Use when starting any task in this repo, when unsure which CCCL skill to use, or when introduced to the repo cold."
+description: "Entry-point router for the cccl-* skill and agent family. Load first in any CCCL session. Routes by intent: commit, branch, PR, CI, build/test, libraries, infrastructure, benchmarks, docs. Triggers: \"where do I start\", \"which skill should I use\", \"new to this repo\", \"what cccl skill handles X\"."
 ---
 
 # cccl
 
-Skills live in `.agent/skills/`; agents live in `.agent/agents/`. `.claude/skills` and `.claude/agents` symlink to
-those so Claude Code and Codex find the same files.
+Entry-point router for the cccl-* skills and agents.
 
-If you don't know how skill or agent invocation works, load `cccl-agent-impl` first.
+Skills live under `.agent/skills/<name>/SKILL.md`; agents under `.agent/agents/<name>.md`. `.claude/skills` and `.claude/agents` are directory symlinks to those.
+
+Entry skills (`cccl-*`) are slash-completable workflow entry points. Detail skills (`cccl_detail-*`) auto-load via description match and are excluded from slash autocomplete. See `references/skills-and-agents.md` for the full catalog and invocation mechanics.
 
 ## Where to start by intent
 
-| Intent                                         | Load                                                |
-|------------------------------------------------|-----------------------------------------------------|
-| Commit uncommitted changes / wrap up a fix     | `cccl-commit`                                       |
-| Resplit / clean up a branch's commit history   | `cccl-resplit-branch`                               |
-| Open / edit / comment on a PR / trigger CI     | `cccl-pr`                                           |
-| Diagnose CI on this PR / what's failing        | `cccl-triage-pr`                                    |
-| Triage nightly / fix nightly CI                | `cccl-triage-nightly`                               |
-| Stuck on a decision / should I X or Y          | `cccl-clarify`                                      |
-| Post `/ok to test`                             | `cccl-ok-to-test` agent (called by a skill)         |
-| Generate override matrix / skip tags           | `cccl-ci-overrides` agent (called by a skill)       |
-| How does CI work / where is X CI defined       | `cccl-ci`                                           |
-| Set up a benchmark on this PR                  | `cccl-ci-benchmarks`                                |
-| Git bisect a regression                        | `cccl-bisect`                                       |
-| Build / test in the devcontainer               | `cccl-devcontainers`, `cccl-build-and-test-targets` |
-| Build cub / thrust / libcudacxx / cudax (full) | `cccl-cpp-builds`                                   |
-| Work on / build / test the python bindings     | `cccl-python`                                       |
-| Check for SASS/PTX changes                     | `cccl-sass-diff`                                    |
-| libcudacxx code style                          | `cccl-libcudacxx-style`                             |
+| Intent                               | Load                     |
+|--------------------------------------|--------------------------|
+| Commit / wrap up a fix               | `cccl-commit`            |
+| Resplit / clean up commit history    | `cccl-resplit-branch`    |
+| Open / edit / comment on a PR        | `cccl-pr`                |
+| Diagnose CI failures (PR or nightly) | `cccl-triage`            |
+| Stuck on a decision                  | `cccl-clarify`           |
+| CI overview / matrix / skip tags     | `cccl-ci`                |
+| Benchmarks / perf comparisons        | `cccl-bench`             |
+| Git bisect a regression              | `cccl-bisect`            |
+| Build a target                       | `cccl-build`             |
+| Run tests                            | `cccl-test`              |
+| Launch a devcontainer                | `cccl-devcontainer`      |
+| Cross-functional infra               | `cccl-infra`             |
+| Python bindings                      | `cccl-python`            |
+| SASS / PTX comparison                | `cccl-sass-diff`         |
+| Pre-commit / linters / formatters    | `cccl-precommit`         |
+| CMake presets / configuration        | `cccl-cmake`             |
+| Sphinx docs / Doxygen                | `cccl-docs`              |
+| libcudacxx                           | `cccl-libcudacxx`        |
+| CUB                                  | `cccl-cub`               |
+| Thrust                               | `cccl-thrust`            |
+| cudax                                | `cccl-cudax`             |
+| C Parallel Library                   | `cccl-c`                 |
 
-## Repo conventions
+## Additional resources
 
-- **Scratch space**: `/tmp/claude/<sessionid>/`. Create with `mkdir -p`. Don't pipe; redirect to a file and Read.
-- **CI** uses `ci/matrix.yaml` with optional `workflows.override` to scope PR jobs; `[skip-*]` commit tags scope
-  further. Both block merging while present. See `cccl-ci`.
-- **`/ok to test <SHA>`** is required from a maintainer for external PRs. The `cccl-ok-to-test` agent posts it.
+- `references/skills-and-agents.md` — full entry-skill catalog, detail-skill catalog, agent catalog, naming convention, invocation mechanics.
+- `references/docs.md` — index of top-level CCCL orientation documentation.

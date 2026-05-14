@@ -1,6 +1,5 @@
 ---
-name: cccl-sass-diff
-description: "Compare CUDA SASS or PTX between two CCCL builds (commits, branches, working-copy vs HEAD) to detect non-trivial codegen changes while filtering noise from addresses, symbols, metadata, and pure register renaming. Use when the user asks to check for SASS changes, audit ABI/codegen impact of a change, or compare PTX. Trigger phrases: \"check for SASS changes\", \"compare SASS\", \"any codegen impact\", \"PTX diff\"."
+description: "Compare CUDA SASS or PTX between two CCCL builds (commits, branches, working-copy vs HEAD) to detect non-trivial codegen changes — filters addresses, symbols, metadata, and pure register renaming. Triggers: \"check for SASS changes\", \"compare SASS\", \"any codegen impact\", \"PTX diff\"."
 ---
 
 # cccl-sass-diff

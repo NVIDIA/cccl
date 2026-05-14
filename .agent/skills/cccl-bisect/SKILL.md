@@ -1,29 +1,25 @@
 ---
-name: cccl-bisect
-description: "Run a git bisect on CCCL to identify which commit introduced a regression. Two routes: cloud (dispatch `.github/workflows/git-bisect.yml` via `gh workflow run`, runs in CCCL CI infrastructure on a GPU runner) or local (invoke `ci/util/git_bisect.sh` via `.devcontainer/launch.sh`). Walks the user through preset / build-targets / ctest-targets / lit-tests / good-ref / bad-ref selection. Use when the user has a regression and wants to find the introducing commit. Trigger phrases: \"bisect this regression\", \"find when X broke\", \"git bisect\"."
+description: "Run a git bisect on CCCL to find the commit that introduced a regression. Cloud route: dispatch `.github/workflows/git-bisect.yml` on a GPU runner. Local route: invoke `ci/util/git_bisect.sh` via `.devcontainer/launch.sh`. Walks through preset, build/test targets, good/bad refs. Triggers: \"bisect this regression\", \"find when X broke\", \"git bisect\"."
 ---
 
 # cccl-bisect
 
-Bisects are slow. Restrict build/test targets to the smallest set that reliably reproduces the regression.
+Bisects are slow. Restrict build and test targets to the smallest set that reliably reproduces the regression.
 
 ## Sources of truth
 
-- `.github/workflows/git-bisect.yml` — cloud-dispatch workflow.
-- `ci/util/git_bisect.sh` — local script wrapped by the workflow.
-- `ci/util/build_and_test_targets.sh` — per-commit configure/build/test driver.
-- `docs/cccl/development/build_and_bisect_tools.rst` — full docs.
+- `.github/workflows/git-bisect.yml`
+- `ci/util/git_bisect.sh`
+- `ci/util/build_and_test_targets.sh`
+- `docs/cccl/development/build_and_bisect_tools.rst`
 
 ## Inputs needed
 
-- **`preset`** — CMake preset (e.g. `cub-cpp20`, `thrust-cpp17`, `libcudacxx`, `cudax`). `cmake --list-presets`
-  enumerates them.
+- **`preset`** — CMake preset (e.g. `cub-cpp20`, `thrust-cpp17`, `libcudacxx`, `cudax`). `cmake --list-presets` enumerates them.
 - **`build_targets`** — space-separated ninja targets.
 - **`ctest_targets`** — space-separated CTest `-R` regexes. Optional.
-- **`lit_precompile_tests` / `lit_tests`** — space-separated libcudacxx lit paths relative to
-  `libcudacxx/test/libcudacxx/`. Optional.
-- **`good_ref`** / **`bad_ref`** — commit/tag/branch, or `-Nd` ("N days ago on main", e.g. `-7d`), or empty
-  (defaults: latest release tag / `main`).
+- **`lit_precompile_tests` / `lit_tests`** — space-separated libcudacxx lit paths relative to `libcudacxx/test/libcudacxx/`. Optional.
+- **`good_ref`** / **`bad_ref`** — commit/tag/branch, or `-Nd` ("N days ago on main", e.g. `-7d`), or empty (defaults: latest release tag / `main`).
 - **`cmake_options`** — extra `-D…=…` flags. Optional.
 - **`launch_args`** — extra `--cuda X` / `--host Y` for devcontainer. Optional.
 
@@ -64,10 +60,13 @@ Requires Docker.
     --ctest-targets '<regex>'
 ```
 
-Single long Bash invocation — no `&&` chains.
-
 ## Output
 
-Both routes write a `summary.md` capturing the found-bad commit (hash, author, message), the build/test command
-that distinguishes good from bad, and the bisect log. Cloud route surfaces a "Bisection Results" URL in the GHA
-step summary.
+Both routes write a `summary.md` capturing the found-bad commit (hash, author, message), the build/test command that distinguishes good from bad, and the bisect log. Cloud route surfaces a "Bisection Results" URL in the GHA step summary.
+
+## Additional resources
+
+- `references/docs.md` — index of CCCL bisect documentation.
+- `references/tools.md` — `git_bisect.sh` and cross-referenced build tools.
+- `references/git_bisect_usage.md` — `ci/util/git_bisect.sh` interface and examples.
+- `cccl-build` → `references/build_and_test_targets_usage.md` — build/test flags shared with bisect.

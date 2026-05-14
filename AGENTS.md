@@ -2,9 +2,11 @@
 
 ## Load the `cccl` skill first
 
-Load the `cccl` skill via the Skill tool. It maps the available repo-local skills and agents and routes by user intent.
+Load the `cccl` skill via the Skill tool. It is the entry-point router for the `cccl-*` skill and agent
+family, and carries the full intent → skill routing table. Every session begins here.
 
-If you don't know what skills or agents are, load `cccl-agent-impl` first.
+The `cccl` skill points at `references/skills-and-agents.md` for the complete catalog and invocation
+mechanics.
 
 ## What CCCL is
 
@@ -44,34 +46,19 @@ cccl/
 └── CMakePresets.json
 ```
 
-`.agent/` is canonical; `.claude/skills` and `.claude/agents` symlink to it so both Claude Code and Codex find the
-same files.
+`.agent/` is canonical; `.claude/skills` and `.claude/agents` symlink to it so both Claude Code and Codex find
+the same files. Reference docs live in `CONTRIBUTING.md`, `ci-overview.md`, and `docs/cccl/development/`.
 
-## Skill routing
+## Skill and agent naming
 
-The `cccl` skill carries the full table. Common entries:
+- Entry skills use the `cccl-` prefix and appear in `/cccl-` slash autocomplete.
+- Detail skills use the `cccl_detail-` prefix (underscore between `cccl` and `detail`), auto-load via
+  description match, and are excluded from slash autocomplete.
 
-- Commit uncommitted changes / wrap up a fix → `cccl-commit`
-- Resplit / clean up a branch's commit history → `cccl-resplit-branch`
-- Open / edit / comment on a PR / trigger CI → `cccl-pr`
-- CI overview / matrix / skip tags / `/ok to test` → `cccl-ci`
-- Triage failed CI → `cccl-triage-pr` or `cccl-triage-nightly`
-- Benchmarks → `cccl-ci-benchmarks`
-- Git bisect → `cccl-bisect`
-- Devcontainers → `cccl-devcontainers`
-- Targeted build/test (fast iteration) → `cccl-build-and-test-targets`
-- Full-matrix C++ build/test scripts → `cccl-cpp-builds`
-- Python packages (cuda-cccl) → `cccl-python`
-- libcudacxx code style → `cccl-libcudacxx-style`
-- SASS / PTX comparison → `cccl-sass-diff`
-- Stuck on a decision → `cccl-clarify`
+## Known limitations
 
-Reference docs: `CONTRIBUTING.md`, `ci-overview.md`, `docs/cccl/development/`.
-
-## Known agent limitations
-
-- Long-running builds (60+ min) and tests (30+ min) are normal — never cancel them. Use
-  `cccl-build-and-test-targets` for fast iteration.
+Long-running builds (60+ min) and tests (30+ min) are normal — never cancel them. The `cccl-build` and
+`cccl-test` skills cover fast-iteration targeted builds and tests.
 
 ## Pre-commit
 

@@ -1,32 +1,34 @@
 ---
-name: cccl-resplit-branch
-description: "Rebase a CCCL feature branch onto `main` and resplit its commit history into a clean series, using the same interactive chunk-walkthrough as `cccl-commit`. Backs up the original branch tip, rebases (resolving conflicts), collapses commits to a single working-tree diff via `git reset --mixed`, then hands off to `cccl-commit`'s split / interactive / commit pipeline. Use when a branch has accumulated messy / squashable / out-of-order commits and needs a clean series before opening or refreshing a PR. Trigger phrases: \"resplit this branch\", \"clean up these commits\", \"rebase and resplit\", \"reorganize the commits\", \"squash and resplit\", \"fix up commit history\". For first-time commits on a fresh branch, use `cccl-commit`."
+description: |
+  Rebase a CCCL feature branch onto `main` and resplit its commit history
+  into a clean series. Backs up the original tip, rebases (resolving
+  conflicts via `cccl-clarify`), collapses to a working-tree diff, then
+  hands off to `cccl-commit`. For first-time commits on a fresh branch,
+  use `cccl-commit` directly.
+  Triggers: "resplit this branch", "clean up these commits", "rebase and resplit", "fix up commit history".
 ---
 
 # cccl-resplit-branch
 
-Rebase onto `main`, then collapse the branch's commits into a working-tree diff and replay them as a clean series
-via `cccl-commit`'s flow. Route every user-facing question through `cccl-clarify`. Refuses on `main`. Never
-force-pushes — that's `cccl-pr` Phase 4 with explicit user approval.
+Rebase onto `main`, collapse the branch's commits into an unstaged working-tree diff, and replay them as a clean series via `cccl-commit`. Refuses on `main`. Never force-pushes — that is `cccl-pr`'s responsibility.
 
 ## Step 1 — Pre-flight
 
-- Refuse on `main` (`git rev-parse --git-dir` vs `--git-common-dir`).
-- Working tree must be clean: `git status --porcelain` empty. Dirty → route to `cccl-commit` first.
-- Scratch: `mkdir -p /tmp/claude/<sessionid>`.
-- `git log --oneline main..HEAD > /tmp/claude/<sessionid>/original-commits.txt`. Empty → nothing to resplit;
-  exit. Branch is already pushed with review activity → `cccl-clarify` confirms the user wants to rewrite
-  published history (force-push will come later via `cccl-pr` Phase 4).
+- Refuse on `main`.
+- Working tree must be clean (`git status --porcelain` empty). Dirty → route to `cccl-commit` first.
+- `mkdir -p /tmp/claude/<sessionid>/resplit`.
+- `git log --oneline main..HEAD > /tmp/claude/<sessionid>/resplit/original-commits.txt`. Empty → nothing to resplit; exit.
+- Branch is already published with review activity → `cccl-clarify` confirms the user wants to rewrite history (force-push follows later via `cccl-pr`).
 
-## Step 2 — Backup the tip
+## Step 2 — Backup
 
-`cccl-clarify` confirms the backup ref name (default `refs/backup/<branch>-<YYYYMMDD-HHMMSS>`). Then:
+Confirm backup ref name via `cccl-clarify` (default `refs/backup/<branch>-<YYYYMMDD-HHMMSS>`), then:
 
 ```
 git update-ref refs/backup/<branch>-<timestamp> HEAD
 ```
 
-Surface the backup ref in every later confirmation prompt — recovery is `git reset --hard <ref>`.
+Recovery is possible at any point before final commits land — see [Recovery](#recovery).
 
 ## Step 3 — Rebase onto `main`
 
@@ -35,77 +37,56 @@ git fetch origin main
 git rebase origin/main
 ```
 
-On conflict, for each conflicted file route through `cccl-clarify`:
+On conflict, route each file through `cccl-clarify`:
 
-- **Resolve manually** — read file, present conflict markers verbatim in chat, suggest resolution, user picks.
-- **Take ours** — `git checkout --ours <file>`.
-- **Take theirs** — `git checkout --theirs <file>`.
-- **Skip commit** — `git rebase --skip` (loses content; only for already-redone work).
-- **Abort** — `git rebase --abort`; surface backup ref; exit.
+| Choice            | Command                                                                    |
+|-------------------|----------------------------------------------------------------------------|
+| Resolve manually  | Present conflict markers verbatim; user picks resolution; `git add <file>` |
+| Take ours         | `git checkout --ours <file>` then `git add <file>`                       |
+| Take theirs       | `git checkout --theirs <file>` then `git add <file>`                     |
+| Skip commit       | `git rebase --skip` (loses content — only for already-redone work)        |
+| Abort             | `git rebase --abort` then stop; recovery ref still intact                 |
 
-After resolution: `git add <file>` per-file (never bulk-stage), then `git rebase --continue`.
+After each resolution: `git add <file>` per-file (never bulk-stage), then `git rebase --continue`.
 
-### 3.1 Verify
+Verify: `git diff main..HEAD --stat > /tmp/claude/<sessionid>/resplit/rebased-stat.txt`. Material mismatch with the original commit list → `cccl-clarify` (continue / inspect / abort).
 
-```
-git diff main..HEAD --stat > /tmp/claude/<sessionid>/rebased-diff-stat.txt
-```
-
-Compare touched-file set to the pre-rebase commit list. Material mismatch → `cccl-clarify` (continue / inspect /
-abort to backup).
-
-## Step 4 — Collapse to working tree
+## Step 4 — Collapse
 
 ```
 git reset --mixed main
 ```
 
-`--mixed` keeps every change in the working tree, unstaged — the starting state `cccl-commit` expects. **Never
-`--hard`** (would discard the work). Mutating; expect prompt; surface the backup ref in the prompt.
+**Never `--hard`** — `--mixed` keeps all changes unstaged, which is the state `cccl-commit` expects. This is irreversible without the backup ref; surface the ref in the confirmation prompt.
 
-Verify: `git diff --stat` must match the rebased diff stat from Step 3.1. Material divergence → STOP.
+Verify: `git diff --stat` must match `rebased-stat.txt`. Divergence → STOP.
 
 ## Step 5 — Hand off to `cccl-commit`
 
-Run `cccl-commit` from Step 1 onward. Splitting and Committing are implicit (a resplit means at least one new
-commit), but offer Interactive (strongly recommended — catches drift the original series hid) and Test gate via
-`cccl-clarify`.
+Invoke `cccl-commit` from Step 1. Seed the chunk planner from `original-commits.txt` — use original commit subjects as draft message starters. The resplit fixes structure, not invents it.
 
-Seed the chunk planner from the original commit series (read `original-commits.txt`) — the resplit's job is to
-*fix* problems, not invent unrelated structure. Use original commit subjects as starting drafts for the new
-messages.
+Offer the Interactive walkthrough (strongly recommended — catches drift the original series hid) and the test gate via `cccl-clarify` before committing.
 
-## Step 6 — Final tree check
-
-After the last commit:
+## Step 6 — Final check
 
 ```
 git diff HEAD refs/backup/<branch>-<timestamp> --stat
 ```
 
-Non-empty → the new branch diverges from the original. Present the delta via `cccl-clarify`:
-
-- **Expected** (user reverted / edited chunks during walkthrough) — accept.
-- **Unexpected** — investigate, or `git reset --hard <backup>` to abort.
-
-Report final tip SHA, commit list, backup ref location, and a force-push reminder if the branch was published.
+Non-empty → present the delta via `cccl-clarify`: expected (user edited chunks) or unexpected (investigate, or reset to backup). Report final tip SHA, commit list, backup ref, and a force-push reminder if the branch was published.
 
 ## Recovery
 
-At any time before commits start landing: `git reset --hard refs/backup/<branch>-<timestamp>` restores the
-original tip. After commits land: same command, but the new series is lost; surface this trade-off when the user
-asks to abort late.
+`git reset --hard refs/backup/<branch>-<timestamp>` restores the original tip at any time before the new commits land. After commits land, the same command discards the new series — surface this trade-off explicitly if the user asks to abort late.
 
 ## Hard prohibitions
 
-- Never `git reset --hard` outside an explicit user-confirmed abort.
-- Never force-push — `cccl-pr` Phase 4 owns that with its own approval.
+- Never `git reset --hard` without explicit user-confirmed abort.
+- Never force-push — `cccl-pr` Phase 4 owns that.
 - Never delete a backup ref without per-ref user approval.
 - Never `--no-verify`.
-- Never co-author / tool-attribution footers.
-- Never `git rebase --abort` autonomously — only on explicit user choice.
+- Never `git rebase --abort` autonomously — only on explicit user choice via `cccl-clarify`.
 
-## Handoff to `cccl-pr`
+## Handoff
 
-If the branch was published, the resplit requires a force-push. Route to `cccl-pr` Phase 4 — and note its
-current force-push prohibition. Until that's opted-in, the user runs `git push --force-with-lease` by hand.
+If the branch was published, a force-push is required. Route to `cccl-pr` Phase 4. Until the user opts in, they run `git push --force-with-lease` by hand.
