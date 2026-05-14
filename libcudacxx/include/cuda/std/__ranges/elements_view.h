@@ -584,9 +584,9 @@ struct __fn : __range_adaptor_closure<__fn<_Np>>
   template <class _Range>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range) const
     noexcept(noexcept(elements_view<all_t<_Range&&>, _Np>{::cuda::std::forward<_Range>(__range)}))
-      -> elements_view<all_t<_Range>, _Np>
+      -> decltype(elements_view<all_t<_Range&&>, _Np>{::cuda::std::forward<_Range>(__range)})
   {
-    return /*------*/ elements_view<all_t<_Range&&>, _Np>{::cuda::std::forward<_Range>(__range)};
+    return elements_view<all_t<_Range&&>, _Np>{::cuda::std::forward<_Range>(__range)};
   }
 };
 _CCCL_END_NAMESPACE_CPO

@@ -20,6 +20,7 @@
 // friend constexpr auto operator<=>(const iterator& x, const iterator& y)
 //   requires random_access_range<Base> && three_way_comparable<iterator_t<Base>>;
 
+#include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/ranges>
 #include <cuda/std/tuple>

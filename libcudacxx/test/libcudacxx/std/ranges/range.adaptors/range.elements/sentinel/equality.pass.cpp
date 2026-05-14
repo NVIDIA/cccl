@@ -14,6 +14,7 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/ranges>
+#include <cuda/std/tuple>
 
 #include "../types.h"
 #include "test_macros.h"
