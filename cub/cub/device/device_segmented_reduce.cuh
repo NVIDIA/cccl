@@ -897,7 +897,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -1003,9 +1003,7 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  template <typename InputIteratorT, typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
       size_t& temp_storage_bytes,
