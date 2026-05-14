@@ -324,7 +324,8 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <auto _Value>
-[[nodiscard]] _CCCL_API constexpr decltype(_Value) __unwrap(const __constant<_Value>&) noexcept
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::remove_cvref_t<decltype(_Value)>
+__unwrap(const __constant<_Value>&) noexcept
 {
   return _Value;
 }
