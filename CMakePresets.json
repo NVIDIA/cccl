@@ -514,7 +514,8 @@
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.nvtarget",
         "libcudacxx.test.atomics.ptx",
-        "libcudacxx.test.c2h_all"
+        "libcudacxx.test.c2h_all",
+        "cccl.test.cuda_runtime_smoke"
       ]
     },
     {
@@ -545,7 +546,8 @@
       "name": "libcudacxx-nvrtc",
       "configurePreset": "libcudacxx-nvrtc",
       "targets": [
-        "libcudacxx.nvrtcc"
+        "libcudacxx.nvrtcc",
+        "cccl.test.cuda_runtime_smoke"
       ]
     },
     {
@@ -890,7 +892,7 @@
       "inherits": "thrust",
       "filter": {
         "exclude": {
-          "name": "^thrust.*\\.cuda\\..*$"
+          "name": "^(thrust.*\\.cuda\\..*|cccl\\.test\\.cuda_runtime_smoke)$"
         }
       }
     },

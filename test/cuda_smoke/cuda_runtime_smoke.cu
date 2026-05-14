@@ -15,12 +15,10 @@
 
 #include <cuda_runtime.h>
 
-#include <c2h/catch2_test_helper.h>
+#include <catch2/catch_test_macros.hpp>
 
 #define CUDART_REQUIRE(call) REQUIRE((call) == cudaSuccess)
 
-namespace
-{
 __global__ void increment_kernel(int* p, int n)
 {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -29,9 +27,8 @@ __global__ void increment_kernel(int* p, int n)
     p[idx] += 1;
   }
 }
-} // namespace
 
-C2H_TEST("CUDA device is available", "[cuda_smoke]")
+TEST_CASE("CUDA device is available", "[cuda_smoke]")
 {
   (void) cudaGetLastError(); // clear any pre-existing error state
 
@@ -52,7 +49,7 @@ C2H_TEST("CUDA device is available", "[cuda_smoke]")
 
 // Covers the NVBug 5739038 failure : host write -> kernel transform -> host read-back
 // via a managed pointer. Fails here instead of producing dozens of thrust/cub failures.
-C2H_TEST("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
+TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
 {
   (void) cudaGetLastError(); // clear any pre-existing error state
 
