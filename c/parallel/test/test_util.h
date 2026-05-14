@@ -720,7 +720,7 @@ struct pointer_t
 
   operator cccl_iterator_t()
   {
-    cccl_iterator_t it;
+    cccl_iterator_t it{};
     it.size        = sizeof(T);
     it.alignment   = alignof(T);
     it.type        = cccl_iterator_kind_t::CCCL_POINTER;
@@ -853,7 +853,7 @@ struct iterator_t
 
   operator cccl_iterator_t()
   {
-    cccl_iterator_t it;
+    cccl_iterator_t it{};
     it.size        = sizeof(StateT);
     it.alignment   = alignof(StateT);
     it.type        = cccl_iterator_kind_t::CCCL_ITERATOR;

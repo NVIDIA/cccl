@@ -105,6 +105,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
 
     [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_t<_Env, env_of_t<_Rcvr>>
     {
+      _CCCL_ASSUME(__state_ != nullptr);
       return __mk_env(__state_->__env_, execution::get_env(__state_->__rcvr_));
     }
 

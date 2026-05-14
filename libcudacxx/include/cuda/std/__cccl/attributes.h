@@ -75,8 +75,10 @@
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 // _CCCL_ASSUME
-// NVCC does not properly respect [[assume()]], so use __builtin_assume, see nvbug5458663
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+// NVCC does not properly respect [[assume()]], so use __builtin_assume, see
+// nvbug5458663. Similarly clang-analyzer run by clang-tidy also does not properly respect
+// [[assume()]].
+#if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || defined(_CCCL_CLANG_TIDY_INVOKED)
 #  define _CCCL_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]

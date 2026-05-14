@@ -11,6 +11,7 @@ fi
   --quiet \
   --extra-arg='-Wno-error=unused-command-line-argument' \
   --extra-arg='-D_CCCL_CLANG_TIDY_INVOKED=1' \
+  --exclude-header-filter='@FETCHCONTENT_BASE_DIR@.*' \
   -p '@CMAKE_BINARY_DIR@' \
   "${clang_tidy_args[@]}" \
   "$@"

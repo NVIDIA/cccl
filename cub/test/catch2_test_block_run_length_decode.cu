@@ -107,7 +107,8 @@ private:
   {
     if (num_valid_items < RUNS_PER_BLOCK)
     {
-      BlockLoadRunItemT(temp_storage.load_uniques_storage).Load(d_block_unique_items, unique_items, num_valid_items);
+      BlockLoadRunItemT(temp_storage.load_uniques_storage)
+        .Load(d_block_unique_items, unique_items, num_valid_items, RunItemT{});
     }
     else
     {

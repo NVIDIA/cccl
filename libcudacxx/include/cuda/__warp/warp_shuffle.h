@@ -129,6 +129,8 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
+      // False positive
+      // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
       __array[i] = ::cuda::ptx::shfl_sync_up(__array[i], __pred, __delta, __clamp_segmask, __lane_mask);
     }
     warp_shuffle_result<_Up> __result;
@@ -227,6 +229,8 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
+      // False positive
+      // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
       __array[i] = ::cuda::ptx::shfl_sync_bfly(__array[i], __pred, __xor_mask, __clamp_segmask, __lane_mask);
     }
     warp_shuffle_result<_Up> __result;

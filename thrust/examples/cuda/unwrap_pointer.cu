@@ -27,5 +27,6 @@ int main()
   // note: d_vec.data() returns a device_ptr
   raw_ptr = thrust::raw_pointer_cast(d_vec.data());
 
+  static_cast<void>(raw_ptr);
   return 0;
 }

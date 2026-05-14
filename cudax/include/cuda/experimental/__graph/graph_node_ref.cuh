@@ -240,7 +240,11 @@ struct graph_node_ref
       bool const __is_small = __deps.size() <= ::cuda::std::ranges::size(__small_buffer);
       auto const __src_arr  = __is_small ? __src_arr_t{__small_buffer, &__noop_deleter}
                                          : __src_arr_t{::new cudaGraphNode_t[__deps.size()], &__array_deleter};
-      ::cuda::std::fill(__src_arr.get(), __src_arr.get() + __deps.size(), __node_);
+      // clang analyzer does not realize that __src_arr is bounded by __deps.size()
+      ::cuda::std::fill( // NOLINT(clang-analyzer-security.ArrayBound)
+        __src_arr.get(),
+        __src_arr.get() + __deps.size(),
+        __node_);
 
       // Add the dependencies using __src_arr array and the span of dependencies.
       ::cuda::experimental::__driver::__graphAddDependencies(

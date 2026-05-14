@@ -95,6 +95,8 @@ public:
       //  we know             0 < (divisor - 2^shift) < 2^shift
       //  so __multiplier is  2^k / divisor + (2^k % divisor) >= (divisor - 2^shift)
       //  where (divisor - 2^shift) is the threshold
+      _CCCL_ASSUME(__shift >= 0);
+      _CCCL_ASSUME(__shift < __num_bits);
       const auto __threshold = __u_divisor - (__unsigned_t{1} << __shift);
       __multiplier           = __pow2_div.first + (__pow2_div.second >= __threshold);
       __add                  = (__pow2_div.second < __threshold);

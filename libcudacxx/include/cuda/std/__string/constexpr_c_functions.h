@@ -55,6 +55,7 @@ _CCCL_HOST_API _CharT* __cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, con
 {
   if constexpr (sizeof(_CharT) == 1)
   {
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.strcpy)
     return reinterpret_cast<_CharT*>(::strcpy(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src)));
   }
   else

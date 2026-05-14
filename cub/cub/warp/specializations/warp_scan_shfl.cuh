@@ -569,8 +569,15 @@ struct WarpScanShfl
     for (int step = 0; step < STEPS; step++)
     {
       constexpr int segment_first_lane = 0;
-      inclusive_output =
-        InclusiveScanStepPartial(inclusive_output, scan_op, valid_items, segment_first_lane, (1 << step));
+      // inclusive_output is definitely used uninitialized (InclusiveScanStepPartial() takes by
+      // value, and also perform warp shuffles with the garbage value). But initializing it may
+      // cause perf issues so we silence for now.
+      inclusive_output = InclusiveScanStepPartial( // NOLINT(clang-analyzer-core.CallAndMessage)
+        inclusive_output,
+        scan_op,
+        valid_items,
+        segment_first_lane,
+        (1 << step));
     }
   }
 

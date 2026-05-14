@@ -168,6 +168,9 @@ struct __upon_t
 
     _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
+      _CCCL_ASSUME(__state_ != nullptr);
+      // Apparentl _CCCL_ASSUME() is not enough
+      // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
 
