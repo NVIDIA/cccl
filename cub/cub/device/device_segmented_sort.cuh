@@ -113,23 +113,34 @@ private:
     return "cub::DeviceSegmentedSort";
   }
 
-  // Internal version without NVTX range
-  template <SortOrder Order, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
+  // TODO(bgruber): I would ideally like to have the logic of extracting the policy selector from the tuning environment
+  // inside the dispatch function, but this will not work with CCCL.C, which needs to pass a stateful policy selector.
+  // Refactor this once we have a host code JIT compiler.
+  template <SortOrder Order,
+            typename KeyT,
+            typename ValueT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename TuningEnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static auto select_tuning_and_dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
     ::cuda::std::int64_t num_items,
-    ::cuda::std::int64_t num_segments,
+    global_segment_offset_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
+    bool is_overwrite_okay,
     cudaStream_t stream,
-    bool is_overwrite_okay = true)
+    TuningEnvT = {}) -> cudaError_t
   {
-    using OffsetT =
+    using offset_t =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    DoubleBuffer<NullType> d_values;
-    return detail::segmented_sort::dispatch<Order, OffsetT>(
+    using default_policy_selector_t = detail::segmented_sort::policy_selector_from_types<KeyT, ValueT>;
+    using policy_selector_t         = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::segmented_sort::segmented_sort_policy, default_policy_selector_t>;
+    return detail::segmented_sort::dispatch<Order, offset_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -139,12 +150,48 @@ private:
       d_begin_offsets,
       d_end_offsets,
       is_overwrite_okay,
-      stream);
+      stream,
+      policy_selector_t{});
   }
 
-  // Internal version without NVTX range
-  template <SortOrder Order, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
+  template <SortOrder Order,
+            typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename TuningEnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_keys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool is_overwrite_okay = true,
+    TuningEnvT tuning_env  = {})
+  {
+    DoubleBuffer<NullType> d_values;
+    return select_tuning_and_dispatch<Order>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream,
+      tuning_env);
+  }
+
+  template <SortOrder Order,
+            typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename TuningEnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_keys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
@@ -153,11 +200,21 @@ private:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    TuningEnvT tuning_env = {})
   {
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    return SortKeysNoNVTX<Order>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, false);
+    return sort_keys<Order>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream,
+      false,
+      tuning_env);
   }
 
 public:
@@ -289,7 +346,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Ascending>(
+    return sort_keys<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -398,7 +455,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Ascending>(
+        return sort_keys<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -407,7 +464,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -534,7 +592,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Descending>(
+    return sort_keys<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -643,7 +701,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Descending>(
+        return sort_keys<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -652,7 +710,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -790,7 +849,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Ascending>(
+    return sort_keys<SortOrder::Ascending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -897,8 +956,17 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Ascending>(
-          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+        return sort_keys<SortOrder::Ascending>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          stream,
+          true,
+          tuning);
       });
   }
 
@@ -1037,7 +1105,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Descending>(
+    return sort_keys<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -1144,8 +1212,17 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Descending>(
-          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+        return sort_keys<SortOrder::Descending>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          stream,
+          true,
+          tuning);
       });
   }
 
@@ -1276,7 +1353,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Ascending>(
+    return sort_keys<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1386,7 +1463,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Ascending>(
+        return sort_keys<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -1395,7 +1472,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -1526,7 +1604,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Descending>(
+    return sort_keys<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1637,7 +1715,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Descending>(
+        return sort_keys<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -1646,7 +1724,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -1787,7 +1866,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Ascending>(
+    return sort_keys<SortOrder::Ascending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -1896,8 +1975,17 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Ascending>(
-          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+        return sort_keys<SortOrder::Ascending>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          stream,
+          true,
+          tuning);
       });
   }
 
@@ -2037,7 +2125,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<SortOrder::Descending>(
+    return sort_keys<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -2146,15 +2234,28 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortKeysNoNVTX<SortOrder::Descending>(
-          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+        return sort_keys<SortOrder::Descending>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          stream,
+          true,
+          tuning);
       });
   }
 
 private:
-  // Internal version without NVTX range
-  template <SortOrder Order, typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
+  template <SortOrder Order,
+            typename KeyT,
+            typename ValueT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename TuningEnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_pairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
@@ -2164,11 +2265,10 @@ private:
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream,
-    bool is_overwrite_okay = true)
+    bool is_overwrite_okay = true,
+    TuningEnvT tuning_env  = {})
   {
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    return detail::segmented_sort::dispatch<Order, OffsetT>(
+    return select_tuning_and_dispatch<Order, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2178,12 +2278,17 @@ private:
       d_begin_offsets,
       d_end_offsets,
       is_overwrite_okay,
-      stream);
+      stream,
+      tuning_env);
   }
 
-  // Internal version without NVTX range
-  template <SortOrder Order, typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
+  template <SortOrder Order,
+            typename KeyT,
+            typename ValueT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename TuningEnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_pairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
@@ -2194,11 +2299,12 @@ private:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    TuningEnvT tuning_env = {})
   {
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-    return SortPairsNoNVTX<Order>(
+    return sort_pairs<Order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2208,7 +2314,8 @@ private:
       d_begin_offsets,
       d_end_offsets,
       stream,
-      false);
+      false,
+      tuning_env);
   }
 
 public:
@@ -2363,7 +2470,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Ascending>(
+    return sort_pairs<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2490,7 +2597,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Ascending>(
+        return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -2501,7 +2608,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -2652,7 +2760,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Descending>(
+    return sort_pairs<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2779,7 +2887,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Descending>(
+        return sort_pairs<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -2790,7 +2898,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -2948,7 +3057,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Ascending>(
+    return sort_pairs<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -3078,7 +3187,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Ascending>(
+        return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys,
@@ -3087,7 +3196,9 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          true,
+          tuning);
       });
   }
 
@@ -3244,7 +3355,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Descending>(
+    return sort_pairs<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -3374,7 +3485,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Descending>(
+        return sort_pairs<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys,
@@ -3383,7 +3494,9 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          true,
+          tuning);
       });
   }
 
@@ -3534,7 +3647,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Ascending>(
+    return sort_pairs<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -3661,7 +3774,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Ascending>(
+        return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -3672,7 +3785,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -3823,7 +3937,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Descending>(
+    return sort_pairs<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -3950,7 +4064,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Descending>(
+        return sort_pairs<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in,
@@ -3961,7 +4075,8 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          tuning);
       });
   }
 
@@ -4120,7 +4235,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Ascending>(
+    return sort_pairs<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -4250,7 +4365,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Ascending>(
+        return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys,
@@ -4259,7 +4374,9 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          true,
+          tuning);
       });
   }
 
@@ -4417,7 +4534,7 @@ public:
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX<SortOrder::Descending>(
+    return sort_pairs<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -4547,7 +4664,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return SortPairsNoNVTX<SortOrder::Descending>(
+        return sort_pairs<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys,
@@ -4556,7 +4673,9 @@ public:
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          stream);
+          stream,
+          true,
+          tuning);
       });
   }
 
