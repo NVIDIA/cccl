@@ -52,8 +52,14 @@ struct __static_bounds
 
   using value_type = decltype(_Lowest);
 
-  static constexpr value_type lowest = _Lowest;
-  static constexpr value_type max    = _Max;
+  [[nodiscard]] _CCCL_API static constexpr value_type lowest() noexcept
+  {
+    return _Lowest;
+  }
+  [[nodiscard]] _CCCL_API static constexpr value_type max() noexcept
+  {
+    return _Max;
+  }
 };
 
 template <class _Tp>

@@ -103,9 +103,13 @@ inline constexpr bool __is_single_value_v =
 template <auto _Value>
 struct __constant
 {
-  using value_type                  = ::cuda::std::remove_cvref_t<decltype(_Value)>;
-  using __element_type              = __element_type_of_t<value_type>;
-  static constexpr value_type value = _Value;
+  using value_type     = ::cuda::std::remove_cvref_t<decltype(_Value)>;
+  using __element_type = __element_type_of_t<value_type>;
+
+  [[nodiscard]] _CCCL_API static constexpr value_type value() noexcept
+  {
+    return _Value;
+  }
 };
 
 // =====================================================================
@@ -133,8 +137,8 @@ private:
   {
     if constexpr (!::cuda::std::is_same_v<_StaticBounds, __no_bounds>)
     {
-      _CCCL_ASSERT(__val >= __static_bounds_.lowest, "immediate argument value is below static lowest bound");
-      _CCCL_ASSERT(__val <= __static_bounds_.max, "immediate argument value is above static max bound");
+      _CCCL_ASSERT(__val >= __static_bounds_.lowest(), "immediate argument value is below static lowest bound");
+      _CCCL_ASSERT(__val <= __static_bounds_.max(), "immediate argument value is above static max bound");
     }
     _CCCL_ASSERT(__val >= __runtime_bounds_.lowest, "immediate argument value is below runtime lowest bound");
     _CCCL_ASSERT(__val <= __runtime_bounds_.max, "immediate argument value is above runtime max bound");
@@ -171,10 +175,8 @@ public:
   template <class _BoundsTp>
   _CCCL_API constexpr __immediate(_Arg __arg, __runtime_bounds<_BoundsTp> __rb) noexcept
       : arg{::cuda::std::move(__arg)}
-      , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
+      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
   {
-    static_assert(!::cuda::std::is_same_v<_Arg, __element_type>,
-                  "runtime bounds on a single-value immediate argument are not supported; use static bounds instead");
     __validate();
   }
 
@@ -183,10 +185,8 @@ public:
     _Arg __arg, __static_bounds<_Lowest, _Max> __sb, __runtime_bounds<_BoundsTp> __rb) noexcept
       : arg{::cuda::std::move(__arg)}
       , __static_bounds_{__sb}
-      , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
+      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
   {
-    static_assert(!::cuda::std::is_same_v<_Arg, __element_type>,
-                  "runtime bounds on a single-value immediate argument are not supported; use static bounds instead");
     __validate();
   }
 };
@@ -237,7 +237,7 @@ struct __deferred_base
   template <class _BoundsTp>
   _CCCL_API constexpr __deferred_base(_Arg __arg, __runtime_bounds<_BoundsTp> __rb) noexcept
       : arg{::cuda::std::move(__arg)}
-      , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
+      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
   {}
 
   template <auto _Lowest, auto _Max, class _BoundsTp>
@@ -245,7 +245,7 @@ struct __deferred_base
     _Arg __arg, __static_bounds<_Lowest, _Max> __sb, __runtime_bounds<_BoundsTp> __rb) noexcept
       : arg{::cuda::std::move(__arg)}
       , __static_bounds_{__sb}
-      , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
+      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
   {}
 };
 
@@ -355,7 +355,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_lowest() noexcept
   }
   else
   {
-    return static_cast<_ElementType>(_StaticBounds::lowest);
+    return static_cast<_ElementType>(_StaticBounds::lowest());
   }
 }
 
@@ -368,7 +368,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_max() noexcept
   }
   else
   {
-    return static_cast<_ElementType>(_StaticBounds::max);
+    return static_cast<_ElementType>(_StaticBounds::max());
   }
 }
 

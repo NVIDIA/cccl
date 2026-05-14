@@ -21,16 +21,16 @@ TEST_FUNC constexpr bool test()
   // Basic static bounds
   {
     constexpr auto b = cuda::argument::__static_bounds<1, 4096>{};
-    static_assert(b.lowest == 1);
-    static_assert(b.max == 4096);
+    static_assert(b.lowest() == 1);
+    static_assert(b.max() == 4096);
     static_assert(cuda::std::is_same_v<decltype(b)::value_type, int>);
   }
 
   // Exact static bounds
   {
     constexpr auto b = cuda::argument::__static_bounds<42, 42>{};
-    static_assert(b.lowest == 42);
-    static_assert(b.max == 42);
+    static_assert(b.lowest() == 42);
+    static_assert(b.max() == 42);
   }
 
   // Long type deduced from NTTPs
@@ -53,8 +53,8 @@ TEST_FUNC constexpr bool test()
   // Static via factory
   {
     constexpr auto b = cuda::argument::__bounds<1, 8>();
-    static_assert(b.lowest == 1);
-    static_assert(b.max == 8);
+    static_assert(b.lowest() == 1);
+    static_assert(b.max() == 8);
     static_assert(cuda::argument::__is_static_bounds_cv_v<decltype(b)>);
     static_assert(!cuda::argument::__is_runtime_bounds_cv_v<decltype(b)>);
     static_assert(cuda::argument::__is_bounds_v<decltype(b)>);

@@ -19,30 +19,30 @@ TEST_FUNC void test()
   // Basic value
   {
     constexpr auto sa = cuda::argument::__constant<42>{};
-    static_assert(sa.value == 42);
+    static_assert(sa.value() == 42);
     static_assert(cuda::std::is_same_v<decltype(sa)::value_type, int>);
   }
 
   // Different types
   {
     constexpr auto sa_long = cuda::argument::__constant<100L>{};
-    static_assert(sa_long.value == 100L);
+    static_assert(sa_long.value() == 100L);
     static_assert(cuda::std::is_same_v<decltype(sa_long)::value_type, long>);
   }
 
   // Negative value
   {
     constexpr auto sa_neg = cuda::argument::__constant<-1>{};
-    static_assert(sa_neg.value == -1);
+    static_assert(sa_neg.value() == -1);
   }
 
 #if TEST_HAS_CLASS_NTTP
   // Array value (per-segment at compile time)
   {
     constexpr auto sa_arr = cuda::argument::__constant<cuda::std::array<int, 3>{128, 256, 512}>{};
-    static_assert(sa_arr.value[0] == 128);
-    static_assert(sa_arr.value[1] == 256);
-    static_assert(sa_arr.value[2] == 512);
+    static_assert(sa_arr.value()[0] == 128);
+    static_assert(sa_arr.value()[1] == 256);
+    static_assert(sa_arr.value()[2] == 512);
     static_assert(cuda::std::is_same_v<decltype(sa_arr)::value_type, cuda::std::array<int, 3>>);
   }
 #endif // TEST_HAS_CLASS_NTTP
