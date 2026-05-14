@@ -60,6 +60,14 @@ readonly cuda13_image
 
 mkdir -p wheelhouse
 
+# Shared caches across the cu12 + cu13 wheel builds. Both jobs compile an
+# identical LLVM/clang tree (LLVM has no CUDA dep), so a shared ccache cuts
+# the second build's LLVM phase from ~10 min to under 2 min; a shared CPM
+# source cache skips the second LLVM git clone entirely.
+host_ccache_dir="${HOST_WORKSPACE:?}/.ccache"
+host_cpm_cache_dir="${HOST_WORKSPACE:?}/.cpm-cache"
+mkdir -p "$host_ccache_dir" "$host_cpm_cache_dir"
+
 for ctk in 12 13; do
   image="cuda${ctk}_image"
   image="${!image}"
@@ -70,12 +78,16 @@ for ctk in 12 13; do
     docker run --rm -i \
         --workdir /workspace/python/cuda_cccl \
         --mount "type=bind,source=${HOST_WORKSPACE:?},target=/workspace/" \
+        --mount "type=bind,source=${host_ccache_dir},target=/root/.ccache" \
+        --mount "type=bind,source=${host_cpm_cache_dir},target=/root/.cpm-cache" \
         "${action_mounts[@]}" \
         --env "py_version=${py_version}" \
         --env "GITHUB_ACTIONS=${GITHUB_ACTIONS:-}" \
         --env "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}" \
         --env "JOB_ID=${JOB_ID:-}" \
         --env "CCCL_PYTHON_USE_V2=${CCCL_PYTHON_USE_V2:-}" \
+        --env "CCACHE_DIR=/root/.ccache" \
+        --env "CPM_SOURCE_CACHE=/root/.cpm-cache" \
         "$image" \
         /workspace/ci/build_cuda_cccl_wheel.sh
     # Prevent GHA runners from exhausting available storage with leftover images:
@@ -126,6 +138,8 @@ for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
         --exclude 'libnvrtc.so.13' \
         --exclude 'libnvJitLink.so.12' \
         --exclude 'libnvJitLink.so.13' \
+        --exclude 'libcudart.so.12' \
+        --exclude 'libcudart.so.13' \
         --exclude 'libcuda.so.1' \
         "$wheel" \
         --wheel-dir wheelhouse_final
