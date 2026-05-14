@@ -270,7 +270,10 @@ public:
 
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    int ptx_version = 70;
+    // PTX version floor is 7.8 — CUB's instruction selection assumes
+    // features added in PTX 7.6 (e.g. `bmsk`), so anything older fails to
+    // assemble even on sm_75/sm_80.
+    int ptx_version = 78;
     if (config.sm_version >= 120)
     {
       ptx_version = 87;
@@ -282,14 +285,6 @@ public:
     else if (config.sm_version >= 90)
     {
       ptx_version = 80;
-    }
-    else if (config.sm_version >= 89)
-    {
-      ptx_version = 78;
-    }
-    else if (config.sm_version >= 80)
-    {
-      ptx_version = 75;
     }
 
     std::vector<std::string> arg_strings;
@@ -668,7 +663,10 @@ public:
     std::string source_file  = temp_dir + "/" + input_file;
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    int ptx_version = 70;
+    // PTX version floor is 7.8 — CUB's instruction selection assumes
+    // features added in PTX 7.6 (e.g. `bmsk`), so anything older fails to
+    // assemble even on sm_75/sm_80.
+    int ptx_version = 78;
     if (config.sm_version >= 120)
     {
       ptx_version = 87;
@@ -680,14 +678,6 @@ public:
     else if (config.sm_version >= 90)
     {
       ptx_version = 80;
-    }
-    else if (config.sm_version >= 89)
-    {
-      ptx_version = 78;
-    }
-    else if (config.sm_version >= 80)
-    {
-      ptx_version = 75;
     }
 
     std::vector<std::string> arg_strings;
