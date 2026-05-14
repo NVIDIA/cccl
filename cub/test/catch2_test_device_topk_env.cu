@@ -11,6 +11,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
 #include <cuda/__execution/determinism.h>
@@ -19,6 +20,8 @@ struct stream_registry_factory_t;
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 #include <cuda/std/functional>
+
+#include <algorithm>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -182,6 +185,145 @@ C2H_TEST("DeviceTopK::MinPairs can be tuned", "[topk][device]", block_sizes)
       3,
       env));
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+namespace
+{
+template <typename T>
+thrust::host_vector<T> sorted_top_k(const thrust::host_vector<T>& h_in, int k, bool largest)
+{
+  auto sorted = h_in;
+  if (largest)
+  {
+    std::sort(sorted.begin(), sorted.end(), cuda::std::greater<T>{});
+  }
+  else
+  {
+    std::sort(sorted.begin(), sorted.end());
+  }
+  sorted.resize(static_cast<size_t>(k));
+  return sorted;
+}
+} // namespace
+
+using topk_element_types = c2h::type_list<int8_t, int16_t, int32_t, uint32_t, int64_t, float, double>;
+
+C2H_TEST("DeviceTopK::MaxKeys env-alloc returns correct top K", "[topk][env]", topk_element_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const int num_items = 256;
+  thrust::host_vector<T> h_in(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    h_in[i] = static_cast<T>((i * 1664525 + 1013904223) % 251);
+  }
+  thrust::device_vector<T> d_in    = h_in;
+  thrust::device_vector<T> d_out_k = thrust::device_vector<T>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess == cub::DeviceTopK::MaxKeys(d_in.begin(), d_out_k.begin(), num_items, 8, env));
+
+  thrust::host_vector<T> h_out = d_out_k;
+  std::sort(h_out.begin(), h_out.end(), cuda::std::greater<T>{});
+
+  auto expected = sorted_top_k(h_in, 8, /*largest*/ true);
+  REQUIRE(h_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MinKeys env-alloc returns correct bottom K", "[topk][env]", topk_element_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const int num_items = 256;
+  thrust::host_vector<T> h_in(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    h_in[i] = static_cast<T>((i * 1664525 + 1013904223) % 251);
+  }
+  thrust::device_vector<T> d_in    = h_in;
+  thrust::device_vector<T> d_out_k = thrust::device_vector<T>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess == cub::DeviceTopK::MinKeys(d_in.begin(), d_out_k.begin(), num_items, 8, env));
+
+  thrust::host_vector<T> h_out = d_out_k;
+  std::sort(h_out.begin(), h_out.end());
+
+  auto expected = sorted_top_k(h_in, 8, /*largest*/ false);
+  REQUIRE(h_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MaxPairs env-alloc returns correct top K", "[topk][env]", topk_element_types)
+{
+  using KeyT = c2h::get<0, TestType>;
+
+  const int num_items = 256;
+  thrust::host_vector<KeyT> h_keys_in(num_items);
+  thrust::host_vector<int> h_values_in(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    h_keys_in[i]   = static_cast<KeyT>((i * 1664525 + 1013904223) % 251);
+    h_values_in[i] = i;
+  }
+  thrust::device_vector<KeyT> d_keys_in   = h_keys_in;
+  thrust::device_vector<int> d_values_in  = h_values_in;
+  thrust::device_vector<KeyT> d_keys_out  = thrust::device_vector<KeyT>(8);
+  thrust::device_vector<int> d_values_out = thrust::device_vector<int>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MaxPairs(
+            d_keys_in.begin(), d_keys_out.begin(), d_values_in.begin(), d_values_out.begin(), num_items, 8, env));
+
+  thrust::host_vector<KeyT> h_keys_out = d_keys_out;
+  std::sort(h_keys_out.begin(), h_keys_out.end(), cuda::std::greater<KeyT>{});
+
+  auto expected = sorted_top_k(h_keys_in, 8, /*largest*/ true);
+  REQUIRE(h_keys_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MinPairs env-alloc returns correct bottom K", "[topk][env]", topk_element_types)
+{
+  using KeyT = c2h::get<0, TestType>;
+
+  const int num_items = 256;
+  thrust::host_vector<KeyT> h_keys_in(num_items);
+  thrust::host_vector<int> h_values_in(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    h_keys_in[i]   = static_cast<KeyT>((i * 1664525 + 1013904223) % 251);
+    h_values_in[i] = i;
+  }
+  thrust::device_vector<KeyT> d_keys_in   = h_keys_in;
+  thrust::device_vector<int> d_values_in  = h_values_in;
+  thrust::device_vector<KeyT> d_keys_out  = thrust::device_vector<KeyT>(8);
+  thrust::device_vector<int> d_values_out = thrust::device_vector<int>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MinPairs(
+            d_keys_in.begin(), d_keys_out.begin(), d_values_in.begin(), d_values_out.begin(), num_items, 8, env));
+
+  thrust::host_vector<KeyT> h_keys_out = d_keys_out;
+  std::sort(h_keys_out.begin(), h_keys_out.end());
+
+  auto expected = sorted_top_k(h_keys_in, 8, /*largest*/ false);
+  REQUIRE(h_keys_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MaxKeys env-alloc handles K equal to num_items", "[topk][env]")
+{
+  thrust::device_vector<int> d_in{5, 2, 9, 1, 7};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess == cub::DeviceTopK::MaxKeys(d_in.begin(), d_out.begin(), 5, 5, env));
+
+  thrust::host_vector<int> h_out = d_out;
+  std::sort(h_out.begin(), h_out.end(), cuda::std::greater<int>{});
+  thrust::host_vector<int> expected{9, 7, 5, 2, 1};
+  REQUIRE(h_out == expected);
 }
 
 #endif // TEST_LAUNCH != 1
