@@ -138,7 +138,16 @@ try
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  {
+    const CUresult status =
+      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      build_ptr->library = nullptr;
+      return CUDA_ERROR_NO_BINARY_FOR_GPU;
+    }
+    check(status);
+  }
   check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, lowered_name.c_str()));
 
   build_ptr->cc         = cc;

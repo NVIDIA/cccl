@@ -332,7 +332,16 @@ static_assert(device_merge_sort_policy()(detail::current_tuning_cc()) == {10}, "
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  {
+    const CUresult status =
+      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      build_ptr->library = nullptr;
+      return CUDA_ERROR_NO_BINARY_FOR_GPU;
+    }
+    check(status);
+  }
   check(cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, block_sort_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));

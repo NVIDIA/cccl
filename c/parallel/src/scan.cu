@@ -420,7 +420,16 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  {
+    const CUresult status =
+      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      build_ptr->library = nullptr;
+      return CUDA_ERROR_NO_BINARY_FOR_GPU;
+    }
+    check(status);
+  }
   check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
 

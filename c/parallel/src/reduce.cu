@@ -346,7 +346,16 @@ static_assert(device_reduce_nd_policy()(detail::current_tuning_cc()) == {10},
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  {
+    const CUresult status =
+      cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      build->library = nullptr;
+      return CUDA_ERROR_NO_BINARY_FOR_GPU;
+    }
+    check(status);
+  }
   check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(
     &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));

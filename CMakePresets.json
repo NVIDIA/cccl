@@ -416,11 +416,12 @@
       }
     },
     {
-      "name": "cccl-c-parallel-hostjit",
-      "displayName": "CCCL C Parallel Library (HostJIT)",
-      "inherits": "cccl-c-parallel",
+      "name": "cccl-c-parallel-v2",
+      "displayName": "CCCL C Parallel Library v2 (HostJIT)",
+      "inherits": "base",
       "cacheVariables": {
-        "CCCL_C_Parallel_ENABLE_HOSTJIT": true
+        "CCCL_ENABLE_C_PARALLEL_V2": true,
+        "CCCL_C_Parallel_V2_ENABLE_TESTING": true
       }
     },
     {
@@ -657,8 +658,8 @@
       "configurePreset": "cccl-c-parallel"
     },
     {
-      "name": "cccl-c-parallel-hostjit",
-      "configurePreset": "cccl-c-parallel-hostjit"
+      "name": "cccl-c-parallel-v2",
+      "configurePreset": "cccl-c-parallel-v2"
     },
     {
       "name": "cccl-c-stf",
@@ -940,8 +941,8 @@
       "inherits": "base"
     },
     {
-      "name": "cccl-c-parallel-hostjit",
-      "configurePreset": "cccl-c-parallel-hostjit",
+      "name": "cccl-c-parallel-v2",
+      "configurePreset": "cccl-c-parallel-v2",
       "inherits": "base"
     },
     {

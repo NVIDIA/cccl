@@ -318,7 +318,16 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  {
+    const CUresult status =
+      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      build_ptr->library = nullptr;
+      return CUDA_ERROR_NO_BINARY_FOR_GPU;
+    }
+    check(status);
+  }
   check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
 
   build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
@@ -519,7 +528,16 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  {
+    const CUresult status =
+      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      build_ptr->library = nullptr;
+      return CUDA_ERROR_NO_BINARY_FOR_GPU;
+    }
+    check(status);
+  }
   check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
 
   build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));

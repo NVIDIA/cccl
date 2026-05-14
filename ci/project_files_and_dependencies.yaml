@@ -114,15 +114,15 @@ projects:
     include_regexes: ["c/parallel/"]
     exclude_project_files: [cccl_c_parallel_public]
 
-  cccl_c_parallel_hostjit:
-    name: "CCCL C Parallel Library (HostJIT)"
-    matrix_project: "cccl_c_parallel_hostjit"
+  cccl_c_parallel_v2:
+    name: "CCCL C Parallel Library v2 (HostJIT)"
+    matrix_project: "cccl_c_parallel_v2"
     lite_dependencies: [libcudacxx_public]
     full_dependencies: [cccl_c_parallel_public]
     include_regexes:
-      - "c/parallel/src/hostjit/"
-      - "ci/build_cccl_c_parallel_hostjit\\.sh"
-      - "ci/test_cccl_c_parallel_hostjit\\.sh"
+      - "c/parallel\\.v2/"
+      - "ci/build_cccl_c_parallel_v2\\.sh"
+      - "ci/test_cccl_c_parallel_v2\\.sh"
 
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"

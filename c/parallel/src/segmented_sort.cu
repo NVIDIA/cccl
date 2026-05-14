@@ -632,7 +632,16 @@ static_assert(
       ->finalize_program();
 
   // populate build struct members
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  {
+    const CUresult status =
+      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
+    {
+      build_ptr->library = nullptr;
+      return CUDA_ERROR_NO_BINARY_FOR_GPU;
+    }
+    check(status);
+  }
   check(cuLibraryGetKernel(&build_ptr->segmented_sort_fallback_kernel,
                            build_ptr->library,
                            segmented_sort_fallback_kernel_lowered_name.c_str()));
