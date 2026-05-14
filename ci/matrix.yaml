@@ -21,6 +21,10 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    # Temporary: while v2 is in development, only exercise the v2 jobs on PRs.
+    # Remove this block once we want the regular pull_request matrix again.
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

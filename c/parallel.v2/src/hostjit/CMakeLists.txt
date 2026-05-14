@@ -181,13 +181,29 @@ if (CUDAToolkit_FOUND)
       PUBLIC CUDA::nvJitLink CUDA::nvfatbin
     )
   else()
-    target_link_libraries(
-      cccl.c.parallel.v2.hostjit_lib
-      PUBLIC
-        CUDA::nvJitLink_static
-        CUDA::nvptxcompiler_static
-        CUDA::nvfatbin_static
-    )
+    # Prefer static CUDA libs on Linux for self-contained binaries. If the
+    # toolchain (e.g. lite/pip CUDA installs or some Docker images) only ships
+    # the dynamic variants, fall back to those rather than failing configure.
+    foreach (_cudalib nvJitLink nvptxcompiler nvfatbin)
+      if (TARGET "CUDA::${_cudalib}_static")
+        target_link_libraries(
+          cccl.c.parallel.v2.hostjit_lib
+          PUBLIC "CUDA::${_cudalib}_static"
+        )
+      elseif (TARGET "CUDA::${_cudalib}")
+        target_link_libraries(
+          cccl.c.parallel.v2.hostjit_lib
+          PUBLIC "CUDA::${_cudalib}"
+        )
+      else()
+        message(
+          FATAL_ERROR
+          "hostjit needs CUDA::${_cudalib}[_static] but neither variant was "
+          "found by FindCUDAToolkit. Install the full CUDA toolkit "
+          "(libnvjitlink-dev / libnvfatbin-dev or equivalent)."
+        )
+      endif()
+    endforeach()
   endif()
 endif()
 
