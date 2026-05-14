@@ -14,7 +14,8 @@ struct CompilerConfig
   std::string cccl_include_path; // Path to CCCL headers (overrides CCCL_SOURCE_DIR); contains cub/, thrust/, cuda/
   std::vector<std::string> include_paths;
   std::vector<std::string> library_paths;
-  std::vector<std::string> device_bitcode_files; // Paths to .bc files to link into device code
+  std::vector<std::string> device_bitcode_files; // Raw LLVM bitcode (magic "BC") linked via LLVM's Linker
+  std::vector<std::string> device_ltoir_files; // NVRTC LTOIR; linked at the nvJitLink stage with -lto
   std::unordered_map<std::string, std::string> macro_definitions; // key=macro name, value=macro value (empty for flag
                                                                   // macros)
   int sm_version         = 70;

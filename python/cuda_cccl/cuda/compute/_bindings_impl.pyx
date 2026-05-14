@@ -1394,7 +1394,6 @@ cdef extern from "cccl/c/segmented_reduce.h":
         cccl_iterator_t,
         cccl_op_t,
         cccl_value_t,
-        size_t,
         CUstream
     ) nogil
 
@@ -1464,7 +1463,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         Iterator end_offsets,
         Op op,
         Value h_init,
-        size_t max_segment_size=0,
+        size_t max_segment_size=0,  # accepted for v1 API compat; v2 ignores
         stream=None
     ):
         cdef CUresult status = -1
@@ -1484,7 +1483,6 @@ cdef class DeviceSegmentedReduceBuildResult:
                 end_offsets.iter_data,
                 op.op_data,
                 h_init.value_data,
-                max_segment_size,
                 c_stream
             )
         if status != 0:
@@ -2253,9 +2251,8 @@ cdef class DeviceHistogramBuildResult:
 # -------------------
 cdef extern from "cccl/c/binary_search.h":
     cdef struct cccl_device_binary_search_build_result_t 'cccl_device_binary_search_build_result_t':
-        cccl_device_transform_build_result_t transform
-        size_t op_state_size
-        size_t op_state_alignment
+        void* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_binary_search_build(
         cccl_device_binary_search_build_result_t*,
@@ -2362,8 +2359,8 @@ cdef class DeviceBinarySearchBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.transform.cubin,
-            self.build_data.transform.cubin_size
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
         )
 
 

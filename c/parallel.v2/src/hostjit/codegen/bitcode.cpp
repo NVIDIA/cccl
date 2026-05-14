@@ -38,15 +38,30 @@ bool BitcodeCollector::is_bitcode_op(cccl_op_t op)
 
 void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std::string& name)
 {
-  if (data && size > 0)
+  if (!data || size == 0)
   {
-    auto path = make_temp_path("cccl_" + name + "_", unique_id_, ".bc");
-    if (write_file(data, size, path))
-    {
-      config_.device_bitcode_files.push_back(path);
-      temp_paths_.push_back(path);
-    }
+    return;
   }
+  // LLVM bitcode starts with magic "BC" (0x42 0x43). Anything else (typical
+  // case: NVRTC LTOIR wrapper produced by Numba) is routed to the nvJitLink
+  // link stage instead of LLVM's bitcode linker, which can only parse raw BC.
+  const bool is_llvm_bitcode =
+    size >= 2 && static_cast<unsigned char>(data[0]) == 0x42 && static_cast<unsigned char>(data[1]) == 0x43;
+  const char* ext = is_llvm_bitcode ? ".bc" : ".ltoir";
+  auto path       = make_temp_path("cccl_" + name + "_", unique_id_, ext);
+  if (!write_file(data, size, path))
+  {
+    return;
+  }
+  if (is_llvm_bitcode)
+  {
+    config_.device_bitcode_files.push_back(path);
+  }
+  else
+  {
+    config_.device_ltoir_files.push_back(path);
+  }
+  temp_paths_.push_back(path);
 }
 
 bool BitcodeCollector::compile_and_add(const char* source, size_t source_size, const std::string& name)
@@ -104,18 +119,9 @@ void BitcodeCollector::add_op_code(cccl_op_t& op, const std::string& name)
       auto extra_name    = name + "_extra" + std::to_string(extra_counter++);
       const auto* data   = op.extra_ltoirs[i];
       const auto data_sz = op.extra_ltoir_sizes[i];
-      // Detect LLVM bitcode magic bytes (0x42 0x43 = "BC")
-      const bool is_bitcode_data =
-        data_sz >= 2 && static_cast<unsigned char>(data[0]) == 0x42 && static_cast<unsigned char>(data[1]) == 0x43;
-      if (!is_bitcode_data)
-      {
-        // Treat as C++ source
-        compile_and_add(data, data_sz, extra_name);
-      }
-      else
-      {
-        add_raw_bitcode(data, data_sz, extra_name);
-      }
+      // add_raw_bitcode routes by magic bytes: raw LLVM bitcode goes through
+      // LLVM's linker; LTOIR or any other format goes through nvJitLink.
+      add_raw_bitcode(data, data_sz, extra_name);
     }
   }
 }
@@ -137,16 +143,7 @@ void BitcodeCollector::add_op(cccl_op_t op, const std::string& label)
       auto extra_name    = label + "_extra" + std::to_string(extra_counter++);
       const auto* data   = op.extra_ltoirs[i];
       const auto data_sz = op.extra_ltoir_sizes[i];
-      const bool is_bitcode_data =
-        data_sz >= 2 && static_cast<unsigned char>(data[0]) == 0x42 && static_cast<unsigned char>(data[1]) == 0x43;
-      if (!is_bitcode_data)
-      {
-        compile_and_add(data, data_sz, extra_name);
-      }
-      else
-      {
-        add_raw_bitcode(data, data_sz, extra_name);
-      }
+      add_raw_bitcode(data, data_sz, extra_name);
     }
   }
 }

@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cstddef>
 #include <format>
 
 #include <hostjit/codegen/iterators.hpp>
@@ -5,6 +7,19 @@
 
 namespace hostjit::codegen
 {
+namespace
+{
+// The iterator struct holds a `long long _delta` lazy-offset field, so its
+// natural alignment is at least alignof(long long)==8. C++ rejects alignas
+// values smaller than the natural alignment; clamp here so user iterators with
+// small `it.alignment` (e.g. 1 for a `char` state) still produce a valid struct.
+inline std::size_t struct_alignas(std::size_t it_alignment)
+{
+  const std::size_t base = it_alignment > 0 ? it_alignment : 1;
+  return base < alignof(long long) ? alignof(long long) : base;
+}
+} // namespace
+
 IteratorCode make_input_iterator(
   cccl_iterator_t it,
   const std::string& value_type_name,
@@ -56,22 +71,25 @@ IteratorCode make_input_iterator(
       deref_name,
       val_alias);
 
-    // Positional args: {0}=struct_name, {1}=val_alias, {2}=it.size, {3}=adv_name, {4}=deref_name
+    // Positional args: {0}=struct_name, {1}=val_alias, {2}=it.size, {3}=adv_name, {4}=deref_name, {5}=it.alignment
     //
     // Arithmetic ops (+, +=, ++) are __host__ __device__ so CUB's host
     // dispatch (which does `iter += n` etc.) compiles in the freestanding
     // host pass. They accumulate into `_delta` rather than calling the
     // device-only `advance` bitcode. `operator*` (device-only) applies the
     // accumulated `_delta` to a copy of state via `advance`, then derefs.
+    // `alignas({5})` matches the iterator's declared state alignment so the
+    // user-supplied advance/dereference (which casts state as a pointer/etc.)
+    // sees properly-aligned memory.
     result.preamble += std::format(
-      "struct {0} {{\n"
+      "struct alignas({5}) {0} {{\n"
       "  using value_type = {1};\n"
       "  using difference_type = long long;\n"
       "  using pointer = {1}*;\n"
       "  using reference = {1};\n"
       "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
       "\n"
-      "  char state[{2}];\n"
+      "  alignas({5}) char state[{2}];\n"
       "  long long _delta = 0;\n"
       "\n"
       "  __host__ __device__ {0} operator+(difference_type n) const {{\n"
@@ -104,7 +122,8 @@ IteratorCode make_input_iterator(
       val_alias, // {1}
       it.size, // {2}
       adv_name, // {3}
-      deref_name); // {4}
+      deref_name, // {4}
+      struct_alignas(it.alignment)); // {5}
 
     result.setup_code = std::format(
       "{} {};\n"
@@ -174,31 +193,35 @@ IteratorCode make_output_iterator(
     // by value.  After operator[] returns the temporary is destroyed, so a pointer
     // to its state would be dangling.  Storing the state bytes in the proxy itself
     // makes the proxy self-contained and safe across that return.
+    // Proxy contains only `char state[N]` so its natural alignment is 1; the
+    // struct alignas is the bigger of the iterator's declared alignment and 1.
+    const std::size_t proxy_align = it.alignment > 0 ? it.alignment : 1;
     result.preamble += std::format(
-      "struct {} {{\n"
-      "  char state[{}];\n"
-      "  __device__ void operator=(const {}& val) {{\n"
-      "    {}(state, &val);\n"
+      "struct alignas({1}) {0} {{\n"
+      "  alignas({1}) char state[{2}];\n"
+      "  __device__ void operator=(const {3}& val) {{\n"
+      "    {4}(state, &val);\n"
       "  }}\n"
       "}};\n",
-      proxy_name,
-      it.size,
-      elem_type,
-      deref_name);
+      proxy_name, // {0}
+      proxy_align, // {1}
+      it.size, // {2}
+      elem_type, // {3}
+      deref_name); // {4}
 
     // Arithmetic ops (+, +=, ++) are __host__ __device__ so CUB's host
     // dispatch compiles; they accumulate `_delta` instead of calling the
     // device-only `advance` bitcode. operator* (device only) applies the
     // accumulated `_delta` before constructing the proxy.
     result.preamble += std::format(
-      "struct {0} {{\n"
+      "struct alignas({5}) {0} {{\n"
       "  using value_type = {1};\n"
       "  using difference_type = long long;\n"
       "  using pointer = {1}*;\n"
       "  using reference = {2};\n"
       "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
       "\n"
-      "  char state[{3}];\n"
+      "  alignas({5}) char state[{3}];\n"
       "  long long _delta = 0;\n"
       "\n"
       "  __host__ __device__ {0} operator+(difference_type n) const {{\n"
@@ -228,7 +251,8 @@ IteratorCode make_output_iterator(
       elem_type, // {1}
       proxy_name, // {2}
       it.size, // {3}
-      adv_name); // {4}
+      adv_name, // {4}
+      struct_alignas(it.alignment)); // {5}
 
     result.setup_code = std::format(
       "{} {};\n"

@@ -519,7 +519,10 @@ public:
           }
           else
           {
-            diagnostics += "Failed to parse bitcode: " + bc_file + "\n";
+            std::string err_msg;
+            llvm::raw_string_ostream err_stream(err_msg);
+            err.print("hostjit", err_stream);
+            diagnostics += "Failed to parse bitcode: " + bc_file + "\n" + err_msg + "\n";
             success = false;
             break;
           }
@@ -1109,11 +1112,26 @@ public:
         ptx_data.push_back('\0');
       }
 
-      std::string arch_opt           = "-arch=sm_" + std::to_string(config.sm_version);
-      std::string opt_level          = "-O" + std::to_string(config.optimization_level >= 1 ? 3 : 0);
-      const char* jitlink_options[]  = {arch_opt.c_str(), opt_level.c_str()};
+      std::string arch_opt  = "-arch=sm_" + std::to_string(config.sm_version);
+      std::string opt_level = "-O" + std::to_string(config.optimization_level >= 1 ? 3 : 0);
+      std::vector<std::string> jitlink_option_strs{arch_opt, opt_level};
+      // LTOIR inputs require -lto. When present, both the PTX and the LTOIRs
+      // get linked through the LTO codegen path.
+      const bool have_ltoir = !config.device_ltoir_files.empty();
+      if (have_ltoir)
+      {
+        jitlink_option_strs.emplace_back("-lto");
+      }
+      std::vector<const char*> jitlink_options;
+      jitlink_options.reserve(jitlink_option_strs.size());
+      for (const auto& s : jitlink_option_strs)
+      {
+        jitlink_options.push_back(s.c_str());
+      }
+
       nvJitLinkHandle jitlink_handle = nullptr;
-      nvJitLinkResult jlr            = nvJitLinkCreate(&jitlink_handle, 2, jitlink_options);
+      nvJitLinkResult jlr =
+        nvJitLinkCreate(&jitlink_handle, static_cast<uint32_t>(jitlink_options.size()), jitlink_options.data());
       if (jlr != NVJITLINK_SUCCESS)
       {
         result.diagnostics += "\nnvJitLinkCreate failed (error " + std::to_string(static_cast<int>(jlr)) + ")";
@@ -1136,6 +1154,35 @@ public:
         nvJitLinkDestroy(&jitlink_handle);
         std::filesystem::remove_all(temp_dir);
         return result;
+      }
+
+      // Feed any NVRTC LTOIR (Numba-produced user ops) directly to nvJitLink
+      // alongside the device PTX. nvJitLink resolves the extern op symbol(s)
+      // referenced by the PTX from these LTOIR modules.
+      for (const auto& ltoir_path : config.device_ltoir_files)
+      {
+        std::ifstream f(ltoir_path, std::ios::binary);
+        std::vector<char> buf((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+        if (buf.empty())
+        {
+          continue;
+        }
+        jlr = nvJitLinkAddData(jitlink_handle, NVJITLINK_INPUT_LTOIR, buf.data(), buf.size(), ltoir_path.c_str());
+        if (jlr != NVJITLINK_SUCCESS)
+        {
+          size_t log_size = 0;
+          nvJitLinkGetErrorLogSize(jitlink_handle, &log_size);
+          if (log_size > 1)
+          {
+            std::string log(log_size, '\0');
+            nvJitLinkGetErrorLog(jitlink_handle, log.data());
+            result.diagnostics += "\n" + log;
+          }
+          result.diagnostics += "\nnvJitLinkAddData(LTOIR) failed for " + ltoir_path;
+          nvJitLinkDestroy(&jitlink_handle);
+          std::filesystem::remove_all(temp_dir);
+          return result;
+        }
       }
 
       jlr = nvJitLinkComplete(jitlink_handle);
