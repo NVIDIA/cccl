@@ -33,6 +33,9 @@ env:
  WORKING_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRho"
  START_SPRINT_FIELD_ID: "PVTIF_lADOABpemM4AEhOIzgJlRhU"
 
+# Workflow token unused: every step authenticates via tibdex/github-app-token.
+permissions: {}
+
 jobs:
   query_and_mutate_project_fields:
     if: github.repository == 'NVIDIA/cccl'

@@ -33,6 +33,9 @@ env:
  STATUS_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgCmnYc"
  IN_REVIEW_PROJECT_OPTION_ID: "c6b49c6b"
 
+# Workflow token unused: every step authenticates via tibdex/github-app-token.
+permissions: {}
+
 jobs:
   query_and_mutate_project_fields:
     if: github.repository == 'NVIDIA/cccl'
