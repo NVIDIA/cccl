@@ -24,6 +24,8 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/mdspan>
 
@@ -177,8 +179,6 @@ struct DeviceCopy
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - This operation provides ``gpu_to_gpu`` determinism: results are identical across different GPU architectures.
-  //!
   //! .. note::
   //!
   //!    If any input range aliases any output range the behavior is undefined.
@@ -226,7 +226,11 @@ struct DeviceCopy
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename InputIt, typename OutputIt, typename SizeIteratorT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename InputIt,
+            typename OutputIt,
+            typename SizeIteratorT,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Batched(InputIt input_it, OutputIt output_it, SizeIteratorT sizes, ::cuda::std::int64_t num_ranges, EnvT env = {})
   {
@@ -360,16 +364,14 @@ struct DeviceCopy
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
+  //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
+  //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
+  //! transformations.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
-  //!
-  //! - This operation provides ``gpu_to_gpu`` determinism: results are identical across different GPU architectures.
-  //!
-  //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
-  //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
-  //! transformations.
   //!
   //! Preconditions
   //! +++++++++++++
@@ -435,7 +437,8 @@ struct DeviceCopy
             typename Extents_Out,
             typename Layout_Out,
             typename Accessor_Out,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Copy(::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
        ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
