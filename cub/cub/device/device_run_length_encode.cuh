@@ -186,13 +186,11 @@ struct DeviceRunLengthEncode
     // Generator type for providing 1s values for run-length reduction
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
 
-    using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
-
-    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-
+    using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t>;
+    using key_t   = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
-    return detail::reduce_by_key::dispatch_streaming</* OverrideAccumT */ accum_t>(
+    return detail::reduce_by_key::dispatch_streaming(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -300,13 +298,13 @@ struct DeviceRunLengthEncode
     using offset_t                 = detail::choose_signed_offset_t<NumItemsT>;
     using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
-    using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
+    using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using default_policy_selector = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce_by_key::dispatch_streaming<accum_t>(
+        return detail::reduce_by_key::dispatch_streaming(
           storage,
           bytes,
           d_in,
