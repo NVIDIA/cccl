@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -55,19 +55,9 @@
                       }                                                                \
                     }))
 
-#define REQUIRE_THROWS(...)                                                           \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_THROWS(__VA_ARGS__);), ({              \
-                      __VA_ARGS__;                                                    \
-                      C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_THROWS", #__VA_ARGS__); \
-                      ::__trap();                                                     \
-                    }))
-#define REQUIRE_THROWS_AS(EXPR, TYPE)                                                   \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_THROWS_AS((EXPR), TYPE);), ({            \
-                      EXPR;                                                             \
-                      C2H_INTERNAL_DEVICE_TEST_PRINT("REQUIRE_THROWS_AS", #EXPR #TYPE); \
-                      ::__trap();                                                       \
-                    }))
-#define REQUIRE_NOTHROW(...) NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_NOTHROW(__VA_ARGS__);), (__VA_ARGS__;))
+#define REQUIRE_THROWS(...)    CATCH_REQUIRE_THROWS(__VA_ARGS__)
+#define REQUIRE_THROWS_AS(...) CATCH_REQUIRE_THROWS_AS(__VA_ARGS__)
+#define REQUIRE_NOTHROW(...)   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_REQUIRE_NOTHROW(__VA_ARGS__);), (__VA_ARGS__;))
 
 #define CHECK(...)                                                             \
   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK(__VA_ARGS__);), ({                \
@@ -107,8 +97,11 @@
 #define REGISTER_TEST_CASE(...)  CATCH_REGISTER_TEST_CASE(__VA_ARGS__)
 #define SECTION(...)             CATCH_SECTION(__VA_ARGS__)
 #define DYNAMIC_SECTION(...)     CATCH_DYNAMIC_SECTION(__VA_ARGS__)
-#define FAIL(...) \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_FAIL(__VA_ARGS__);), ({ C2H_INTERNAL_DEVICE_TEST_PRINT("FAIL", #__VA_ARGS__); }))
+#define FAIL(...)                                                           \
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_FAIL(__VA_ARGS__);), ({              \
+                      C2H_INTERNAL_DEVICE_TEST_PRINT("FAIL", #__VA_ARGS__); \
+                      ::__trap();                                           \
+                    }))
 #define FAIL_CHECK(...) CATCH_FAIL_CHECK(__VA_ARGS__)
 #define SUCCEED(...)    CATCH_SUCCEED(__VA_ARGS__)
 #define SKIP(...)       CATCH_SKIP(__VA_ARGS__)
