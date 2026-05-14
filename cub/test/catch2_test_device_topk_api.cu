@@ -495,3 +495,93 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
     REQUIRE(expected_vals == vals_out);
   }
 }
+
+// Guard tests: each public DeviceTopK method's legacy temp-storage form must resolve
+// unambiguously when called in its minimal form (no explicit stream, all defaults
+// implicit), even though the env-alloc overloads (which drop the temp-storage args)
+// also live in scope. If the env-overload SFINAE drifts, these become "ambiguous
+// overload" compile errors.
+
+C2H_TEST("DeviceTopK::MaxKeys legacy size-query is unambiguous", "[topk][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_keys_in            = nullptr;
+  int* d_keys_out           = nullptr;
+  int num_items             = 0;
+  int k                     = 0;
+
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MaxKeys(
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k, requirements));
+}
+
+C2H_TEST("DeviceTopK::MinKeys legacy size-query is unambiguous", "[topk][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_keys_in            = nullptr;
+  int* d_keys_out           = nullptr;
+  int num_items             = 0;
+  int k                     = 0;
+
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MinKeys(
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k, requirements));
+}
+
+C2H_TEST("DeviceTopK::MaxPairs legacy size-query is unambiguous", "[topk][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_keys_in            = nullptr;
+  int* d_keys_out           = nullptr;
+  int* d_values_in          = nullptr;
+  int* d_values_out         = nullptr;
+  int num_items             = 0;
+  int k                     = 0;
+
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MaxPairs(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_keys_in,
+            d_keys_out,
+            d_values_in,
+            d_values_out,
+            num_items,
+            k,
+            requirements));
+}
+
+C2H_TEST("DeviceTopK::MinPairs legacy size-query is unambiguous", "[topk][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_keys_in            = nullptr;
+  int* d_keys_out           = nullptr;
+  int* d_values_in          = nullptr;
+  int* d_values_out         = nullptr;
+  int num_items             = 0;
+  int k                     = 0;
+
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MinPairs(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_keys_in,
+            d_keys_out,
+            d_values_in,
+            d_values_out,
+            num_items,
+            k,
+            requirements));
+}
