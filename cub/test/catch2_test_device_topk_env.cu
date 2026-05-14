@@ -276,7 +276,18 @@ C2H_TEST("DeviceTopK::MaxPairs env-alloc returns correct top K", "[topk][env]", 
           == cub::DeviceTopK::MaxPairs(
             d_keys_in.begin(), d_keys_out.begin(), d_values_in.begin(), d_values_out.begin(), num_items, 8, env));
 
-  thrust::host_vector<KeyT> h_keys_out = d_keys_out;
+  thrust::host_vector<KeyT> h_keys_out  = d_keys_out;
+  thrust::host_vector<int> h_values_out = d_values_out;
+
+  // Verify pair association: each returned value indexes back to the corresponding key
+  // (recall h_values_in[i] = i, so value-out is the original input position of the key-out)
+  for (size_t i = 0; i < h_keys_out.size(); ++i)
+  {
+    REQUIRE(h_values_out[i] >= 0);
+    REQUIRE(h_values_out[i] < num_items);
+    REQUIRE(h_keys_out[i] == h_keys_in[h_values_out[i]]);
+  }
+
   std::sort(h_keys_out.begin(), h_keys_out.end(), cuda::std::greater<KeyT>{});
 
   auto expected = sorted_top_k(h_keys_in, 8, /*largest*/ true);
@@ -305,7 +316,18 @@ C2H_TEST("DeviceTopK::MinPairs env-alloc returns correct bottom K", "[topk][env]
           == cub::DeviceTopK::MinPairs(
             d_keys_in.begin(), d_keys_out.begin(), d_values_in.begin(), d_values_out.begin(), num_items, 8, env));
 
-  thrust::host_vector<KeyT> h_keys_out = d_keys_out;
+  thrust::host_vector<KeyT> h_keys_out  = d_keys_out;
+  thrust::host_vector<int> h_values_out = d_values_out;
+
+  // Verify pair association: each returned value indexes back to the corresponding key
+  // (recall h_values_in[i] = i, so value-out is the original input position of the key-out)
+  for (size_t i = 0; i < h_keys_out.size(); ++i)
+  {
+    REQUIRE(h_values_out[i] >= 0);
+    REQUIRE(h_values_out[i] < num_items);
+    REQUIRE(h_keys_out[i] == h_keys_in[h_values_out[i]]);
+  }
+
   std::sort(h_keys_out.begin(), h_keys_out.end());
 
   auto expected = sorted_top_k(h_keys_in, 8, /*largest*/ false);
