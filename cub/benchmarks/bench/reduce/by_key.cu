@@ -60,7 +60,7 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   const offset_t num_items = static_cast<offset_t>(elements);
 
   auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::reduce_by_key::dispatch</* OverrideAccumT */ ValueT>(
+    return cub::detail::reduce_by_key::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in_keys,
