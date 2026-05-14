@@ -22,7 +22,6 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
@@ -600,12 +599,10 @@ struct DeviceAdjacentDifference
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
-            typename DifferenceOpT        = ::cuda::std::minus<>,
-            typename NumItemsT            = uint32_t,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>
-                                       && ::cuda::std::input_or_output_iterator<InputIteratorT>,
-                                     int> = 0>
+            typename DifferenceOpT                                               = ::cuda::std::minus<>,
+            typename NumItemsT                                                   = uint32_t,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractLeftCopy(
     InputIteratorT d_input,
     OutputIteratorT d_output,
@@ -692,12 +689,10 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT        = ::cuda::std::minus<>,
-            typename NumItemsT            = uint32_t,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>
-                                       && ::cuda::std::input_or_output_iterator<RandomAccessIteratorT>,
-                                     int> = 0>
+            typename DifferenceOpT                                               = ::cuda::std::minus<>,
+            typename NumItemsT                                                   = uint32_t,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractLeft(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, EnvT env = {})
   {
@@ -792,12 +787,10 @@ struct DeviceAdjacentDifference
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
-            typename DifferenceOpT        = ::cuda::std::minus<>,
-            typename NumItemsT            = uint32_t,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>
-                                       && ::cuda::std::input_or_output_iterator<InputIteratorT>,
-                                     int> = 0>
+            typename DifferenceOpT                                               = ::cuda::std::minus<>,
+            typename NumItemsT                                                   = uint32_t,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractRightCopy(
     InputIteratorT d_input,
     OutputIteratorT d_output,
@@ -884,12 +877,10 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT        = ::cuda::std::minus<>,
-            typename NumItemsT            = uint32_t,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>
-                                       && ::cuda::std::input_or_output_iterator<RandomAccessIteratorT>,
-                                     int> = 0>
+            typename DifferenceOpT                                               = ::cuda::std::minus<>,
+            typename NumItemsT                                                   = uint32_t,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractRight(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, EnvT env = {})
   {

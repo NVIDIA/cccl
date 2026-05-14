@@ -24,8 +24,6 @@
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -238,6 +236,9 @@ public:
   //! ``d_in`` into a partitioned sequence ``d_out``.
   //! The total number of items copied into the first partition is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
@@ -306,11 +307,7 @@ public:
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<
-              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-              int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
@@ -493,6 +490,9 @@ public:
   //! a partitioned sequence ``d_out``. The total number of items copied into the first partition is written
   //! to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
@@ -553,15 +553,12 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT = ::cuda::std::execution::env<>,
-    typename ::cuda::std::
-      enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
@@ -882,6 +879,9 @@ public:
   //! @rst
   //! Uses two functors to split the corresponding items from ``d_in`` into three partitioned sequences
   //! ``d_first_part_out``, ``d_second_part_out``, and ``d_unselected_out``.
+  //! The total number of items copied into the first partition is written
+  //! to ``d_num_selected_out[0]``, while the total number of items copied into the second partition is written
+  //! to ``d_num_selected_out[1]``.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -896,9 +896,11 @@ public:
   //! - Copies of the items selected by ``select_second_part_op`` are compacted
   //!   into ``d_second_part_out`` and maintain their original relative ordering.
   //! - Copies of the unselected items are compacted into the ``d_unselected_out`` in reverse order.
-  //! - The total number of items copied into the first partition is written
-  //!   to ``d_num_selected_out[0]``, while the total number of items copied into the second partition is written
-  //!   to ``d_num_selected_out[1]``.
+  //! - The ranges ``[d_out, d_out + num_items)``,
+  //!   ``[d_first_part_out, d_first_part_out + d_num_selected_out[0])``,
+  //!   ``[d_second_part_out, d_second_part_out + d_num_selected_out[1])``,
+  //!   ``[d_unselected_out, d_unselected_out + num_items - d_num_selected_out[0] - d_num_selected_out[1])``,
+  //!   shall not overlap in any way.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -984,8 +986,7 @@ public:
             typename SelectFirstPartOp,
             typename SelectSecondPartOp,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_arithmetic_v<FirstOutputIteratorT>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      FirstOutputIteratorT d_first_part_out,

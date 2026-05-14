@@ -24,8 +24,6 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/mdspan>
 
@@ -226,11 +224,7 @@ struct DeviceCopy
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename InputIt,
-            typename OutputIt,
-            typename SizeIteratorT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
+  template <typename InputIt, typename OutputIt, typename SizeIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Batched(InputIt input_it, OutputIt output_it, SizeIteratorT sizes, ::cuda::std::int64_t num_ranges, EnvT env = {})
   {
@@ -437,8 +431,7 @@ struct DeviceCopy
             typename Extents_Out,
             typename Layout_Out,
             typename Accessor_Out,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Copy(::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
        ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
