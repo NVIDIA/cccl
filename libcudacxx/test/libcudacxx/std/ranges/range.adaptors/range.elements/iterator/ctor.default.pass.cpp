@@ -9,6 +9,7 @@
 
 // iterator() requires default_initializable<iterator_t<Base>> = default;
 
+#include <cuda/std/cassert>
 #include <cuda/std/ranges>
 #include <cuda/std/tuple>
 

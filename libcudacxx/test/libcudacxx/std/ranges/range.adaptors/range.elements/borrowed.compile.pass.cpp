@@ -45,7 +45,8 @@ inline constexpr bool cuda::std::ranges::enable_borrowed_range<Borrowed> = true;
 
 static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::elements_view<NonBorrowed, 0>>);
 
-#if !TEST_COMPILER(NVRTC) // NVRTC somehow fails this?
+// TODO(miscco): NVRTC somehow fails this?
+#if !TEST_COMPILER(NVRTC)
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::elements_view<Borrowed, 0>>);
 #endif // !TEST_COMPILER(NVRTC)
 
