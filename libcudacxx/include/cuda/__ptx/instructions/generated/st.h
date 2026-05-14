@@ -13,18 +13,12 @@ __device__ static inline void st(
   B8 src);
 */
 #if __cccl_ptx_isa >= 100
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_is_not_supported_before_SM_50__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_is_not_supported_before_SM_50__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -38,21 +32,15 @@ __device__ static inline void st(
   B16 src);
 */
 #if __cccl_ptx_isa >= 100
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_is_not_supported_before_SM_50__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.b16 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_is_not_supported_before_SM_50__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -66,21 +54,15 @@ __device__ static inline void st(
   B32 src);
 */
 #if __cccl_ptx_isa >= 100
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_is_not_supported_before_SM_50__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.b32 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_is_not_supported_before_SM_50__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -94,21 +76,15 @@ __device__ static inline void st(
   B64 src);
 */
 #if __cccl_ptx_isa >= 100
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_is_not_supported_before_SM_50__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.b64 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_is_not_supported_before_SM_50__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -122,26 +98,21 @@ __device__ static inline void st(
   B128 src);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_is_not_supported_before_SM_70__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.b128 [%0], B128_src;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.b128 [%0], B128_src; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"((*reinterpret_cast<longlong2*>(&__src)).x),
         "l"((*reinterpret_cast<longlong2*>(&__src)).y)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -155,13 +126,11 @@ __device__ static inline void st(
   B256 src);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.v4.b64 [%0], {%1, %2, %3, %4};"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -170,10 +139,6 @@ _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B256* __addr, _
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).z),
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 
@@ -188,22 +153,16 @@ __device__ static inline void st_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.L2::cache_hint.b8 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)), "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -218,24 +177,18 @@ __device__ static inline void st_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.L2::cache_hint.b16 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -250,24 +203,18 @@ __device__ static inline void st_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.L2::cache_hint.b32 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -282,24 +229,18 @@ __device__ static inline void st_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.L2::cache_hint.b64 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -314,17 +255,16 @@ __device__ static inline void st_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.L2::cache_hint.b128 [%0], B128_src, %3;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.L2::cache_hint.b128 [%0], B128_src, %3; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -332,10 +272,6 @@ st_L2_cache_hint(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda
         "l"((*reinterpret_cast<longlong2*>(&__src)).y),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -350,14 +286,12 @@ __device__ static inline void st_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -367,10 +301,6 @@ st_L2_cache_hint(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L2_cache_hint_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 
@@ -384,18 +314,12 @@ __device__ static inline void st_L1_evict_first(
   B8 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.L1::evict_first.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -409,21 +333,15 @@ __device__ static inline void st_L1_evict_first(
   B16 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.L1::evict_first.b16 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -437,21 +355,15 @@ __device__ static inline void st_L1_evict_first(
   B32 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.L1::evict_first.b32 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -465,21 +377,15 @@ __device__ static inline void st_L1_evict_first(
   B64 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.L1::evict_first.b64 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -493,26 +399,21 @@ __device__ static inline void st_L1_evict_first(
   B128 src);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.L1::evict_first.b128 [%0], B128_src;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.L1::evict_first.b128 [%0], B128_src; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"((*reinterpret_cast<longlong2*>(&__src)).x),
         "l"((*reinterpret_cast<longlong2*>(&__src)).y)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -526,13 +427,11 @@ __device__ static inline void st_L1_evict_first(
   B256 src);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.L1::evict_first.v4.b64 [%0], {%1, %2, %3, %4};"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -541,10 +440,6 @@ _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).z),
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 
@@ -559,22 +454,16 @@ __device__ static inline void st_L1_evict_first_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.L1::evict_first.L2::cache_hint.b8 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)), "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -589,24 +478,18 @@ __device__ static inline void st_L1_evict_first_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.L1::evict_first.L2::cache_hint.b16 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -621,24 +504,18 @@ __device__ static inline void st_L1_evict_first_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.L1::evict_first.L2::cache_hint.b32 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -653,24 +530,18 @@ __device__ static inline void st_L1_evict_first_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.L1::evict_first.L2::cache_hint.b64 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -685,17 +556,16 @@ __device__ static inline void st_L1_evict_first_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.L1::evict_first.L2::cache_hint.b128 [%0], B128_src, %3;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.L1::evict_first.L2::cache_hint.b128 [%0], B128_src, %3; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -703,10 +573,6 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
         "l"((*reinterpret_cast<longlong2*>(&__src)).y),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -721,14 +587,12 @@ __device__ static inline void st_L1_evict_first_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.L1::evict_first.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -738,10 +602,6 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_first_L2_cache_hint_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 
@@ -755,18 +615,12 @@ __device__ static inline void st_L1_evict_last(
   B8 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.L1::evict_last.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -780,21 +634,15 @@ __device__ static inline void st_L1_evict_last(
   B16 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.L1::evict_last.b16 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -808,21 +656,15 @@ __device__ static inline void st_L1_evict_last(
   B32 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.L1::evict_last.b32 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -836,21 +678,15 @@ __device__ static inline void st_L1_evict_last(
   B64 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.L1::evict_last.b64 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -864,26 +700,21 @@ __device__ static inline void st_L1_evict_last(
   B128 src);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.L1::evict_last.b128 [%0], B128_src;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.L1::evict_last.b128 [%0], B128_src; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"((*reinterpret_cast<longlong2*>(&__src)).x),
         "l"((*reinterpret_cast<longlong2*>(&__src)).y)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -897,13 +728,11 @@ __device__ static inline void st_L1_evict_last(
   B256 src);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.L1::evict_last.v4.b64 [%0], {%1, %2, %3, %4};"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -912,10 +741,6 @@ _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).z),
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 
@@ -930,22 +755,16 @@ __device__ static inline void st_L1_evict_last_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.L1::evict_last.L2::cache_hint.b8 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)), "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -960,24 +779,18 @@ __device__ static inline void st_L1_evict_last_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.L1::evict_last.L2::cache_hint.b16 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -992,24 +805,18 @@ __device__ static inline void st_L1_evict_last_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.L1::evict_last.L2::cache_hint.b32 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1024,24 +831,18 @@ __device__ static inline void st_L1_evict_last_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.L1::evict_last.L2::cache_hint.b64 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1056,17 +857,16 @@ __device__ static inline void st_L1_evict_last_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.L1::evict_last.L2::cache_hint.b128 [%0], B128_src, %3;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.L1::evict_last.L2::cache_hint.b128 [%0], B128_src, %3; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -1074,10 +874,6 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
         "l"((*reinterpret_cast<longlong2*>(&__src)).y),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -1092,14 +888,12 @@ __device__ static inline void st_L1_evict_last_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.L1::evict_last.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -1109,10 +903,6 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_evict_last_L2_cache_hint_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 
@@ -1126,18 +916,12 @@ __device__ static inline void st_L1_no_allocate(
   B8 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.L1::no_allocate.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1151,21 +935,15 @@ __device__ static inline void st_L1_no_allocate(
   B16 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.L1::no_allocate.b16 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1179,21 +957,15 @@ __device__ static inline void st_L1_no_allocate(
   B32 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.L1::no_allocate.b32 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1207,21 +979,15 @@ __device__ static inline void st_L1_no_allocate(
   B64 src);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.L1::no_allocate.b64 [%0], %1;"
       :
       : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1235,26 +1001,21 @@ __device__ static inline void st_L1_no_allocate(
   B128 src);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.L1::no_allocate.b128 [%0], B128_src;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.L1::no_allocate.b128 [%0], B128_src; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"((*reinterpret_cast<longlong2*>(&__src)).x),
         "l"((*reinterpret_cast<longlong2*>(&__src)).y)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -1268,13 +1029,11 @@ __device__ static inline void st_L1_no_allocate(
   B256 src);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.L1::no_allocate.v4.b64 [%0], {%1, %2, %3, %4};"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -1283,10 +1042,6 @@ _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).z),
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 
@@ -1301,22 +1056,16 @@ __device__ static inline void st_L1_no_allocate_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B8) == 1, "");
   asm("st.global.L1::no_allocate.L2::cache_hint.b8 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)), "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1331,24 +1080,18 @@ __device__ static inline void st_L1_no_allocate_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B16) == 2, "");
   asm("st.global.L1::no_allocate.L2::cache_hint.b16 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1363,24 +1106,18 @@ __device__ static inline void st_L1_no_allocate_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B32) == 4, "");
   asm("st.global.L1::no_allocate.L2::cache_hint.b32 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1395,24 +1132,18 @@ __device__ static inline void st_L1_no_allocate_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 740
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
+  static_assert(sizeof(_B64) == 8, "");
   asm("st.global.L1::no_allocate.L2::cache_hint.b64 [%0], %1, %2;"
       :
       : "l"(__as_ptr_gmem(__addr)),
         "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__src)),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -1427,17 +1158,16 @@ __device__ static inline void st_L1_no_allocate_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
-  asm("{\n\t .reg .b128 B128_src; \n\t"
-      "mov.b128 B128_src, {%1, %2}; \n"
-      "st.global.L1::no_allocate.L2::cache_hint.b128 [%0], B128_src, %3;\n\t"
+  static_assert(sizeof(_B128) == 16, "");
+  asm("{\n\t"
+      ".reg .b128 B128_src; \n\t"
+      "mov.b128 B128_src, {%1, %2}; \n\t"
+      "st.global.L1::no_allocate.L2::cache_hint.b128 [%0], B128_src, %3; \n"
       "}"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -1445,10 +1175,6 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
         "l"((*reinterpret_cast<longlong2*>(&__src)).y),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_80__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -1463,14 +1189,12 @@ __device__ static inline void st_L1_no_allocate_L2_cache_hint(
   uint64_t cache_policy);
 */
 #if __cccl_ptx_isa >= 880
-extern "C" _CCCL_DEVICE void __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_100__();
 template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+  static_assert(sizeof(_B256) == 32, "");
   asm("st.global.L1::no_allocate.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :
       : "l"(__as_ptr_gmem(__addr)),
@@ -1480,10 +1204,6 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
         "l"((*reinterpret_cast<::cuda::ptx::longlong4_32a*>(&__src)).w),
         "l"(__cache_policy)
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_L1_no_allocate_L2_cache_hint_is_not_supported_before_SM_100__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 880
 

@@ -16,7 +16,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_inc_t,
@@ -24,17 +23,12 @@ red_async(::cuda::ptx::op_inc_t,
           const ::cuda::std::uint32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_inc (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_inc (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -51,7 +45,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_dec_t,
@@ -59,17 +52,12 @@ red_async(::cuda::ptx::op_dec_t,
           const ::cuda::std::uint32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_dec (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_dec (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -86,7 +74,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_min_t,
@@ -94,17 +81,12 @@ red_async(::cuda::ptx::op_min_t,
           const ::cuda::std::uint32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -121,7 +103,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_max_t,
@@ -129,17 +110,12 @@ red_async(::cuda::ptx::op_max_t,
           const ::cuda::std::uint32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -156,7 +132,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_add_t,
@@ -164,17 +139,12 @@ red_async(::cuda::ptx::op_add_t,
           const ::cuda::std::uint32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_u32 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -191,7 +161,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_min_t,
@@ -199,17 +168,12 @@ red_async(::cuda::ptx::op_min_t,
           const ::cuda::std::int32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -226,7 +190,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_max_t,
@@ -234,17 +197,12 @@ red_async(::cuda::ptx::op_max_t,
           const ::cuda::std::int32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -261,7 +219,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_add_t,
@@ -269,17 +226,12 @@ red_async(::cuda::ptx::op_add_t,
           const ::cuda::std::int32_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_s32 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "r"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -296,25 +248,19 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_and_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -331,25 +277,19 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_or_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -366,25 +306,19 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_xor_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -401,7 +335,6 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_add_t,
@@ -409,17 +342,12 @@ red_async(::cuda::ptx::op_add_t,
           const ::cuda::std::uint64_t& __value,
           ::cuda::std::uint64_t* __remote_bar)
 {
-// __type == type_u64 (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __type == type_u64 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "l"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -435,7 +363,6 @@ __device__ static inline void red_async(
   int64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
 red_async(::cuda::ptx::op_add_t,
@@ -443,17 +370,12 @@ red_async(::cuda::ptx::op_add_t,
           const ::cuda::std::int64_t& __value,
           ::cuda::std::int64_t* __remote_bar)
 {
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __op == op_add (due to parameter type constraint)
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; // .u64 "
       "intentional"
       :
       : "r"(__as_ptr_remote_dsmem(__dest)), "l"(__value), "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
