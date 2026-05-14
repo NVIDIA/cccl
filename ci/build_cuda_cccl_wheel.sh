@@ -69,6 +69,12 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   else
     echo "WARNING: could not derive CTK version from nvcc; skipping nvJitLink/nvfatbin install"
   fi
+
+  # FindCUDAToolkit learned about CUDA::nvfatbin only in CMake 3.27. The base
+  # rapidsai/ci-wheel image ships an older CMake; install a newer one into
+  # the active venv so scikit-build-core picks it up over the system cmake.
+  echo "Pinning cmake>=3.27 for FindCUDAToolkit nvfatbin support..."
+  python -m pip install --upgrade 'cmake>=3.27'
 fi
 
 # Build the wheel
