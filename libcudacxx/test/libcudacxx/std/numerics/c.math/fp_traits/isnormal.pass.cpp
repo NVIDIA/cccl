@@ -80,9 +80,14 @@ TEST_FUNC constexpr void test_type()
     test_isnormal(cuda::std::numeric_limits<T>::signaling_NaN(), false);
   }
 
+  // numeric_limits::has_denorm has been deprecated since C++23
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   if constexpr (cuda::std::numeric_limits<T>::has_denorm)
   {
-    test_isnormal(cuda::std::numeric_limits<T>::denorm_min(), false);
+    _CCCL_SUPPRESS_DEPRECATED_POP
+    {
+      test_isnormal(cuda::std::numeric_limits<T>::denorm_min(), false);
+    }
   }
 }
 

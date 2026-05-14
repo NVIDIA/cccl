@@ -42,8 +42,10 @@ TEST_FUNC void test_calloc_fail(cuda::std::size_t n)
 {
   T* ptr = static_cast<T*>(cuda::std::calloc(n, sizeof(T)));
 
-  // check that the memory was not allocated
-  assert(ptr == nullptr);
+  // check that the memory was not allocated on device, on host it's implementation defined
+  NV_IF_TARGET(NV_IS_DEVICE, (assert(ptr == nullptr);))
+
+  cuda::std::free(ptr);
 }
 
 struct BigStruct

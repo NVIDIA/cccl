@@ -46,23 +46,19 @@ TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0)
 }
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
-template <
-  class MDS,
-  class... Indices,
-  class  = cuda::std::enable_if_t<
-     cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Indices>()...]), typename MDS::reference>,
-     int> = 0>
+template <class MDS, class... Indices>
+  requires requires(MDS mds, Indices... indices) { mds[indices...]; }
 TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS m, Indices... idxs)
 {
   unused(m[idxs...]);
   return true;
 }
 #else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
-template <
-  class MDS,
-  class Index,
-  class = cuda::std::enable_if_t<cuda::std::is_same<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Index>()]),
-                                                    typename MDS::reference>::value>>
+template <class MDS,
+          class Index,
+          cuda::std::enable_if_t<cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Index>()]),
+                                                      typename MDS::reference>,
+                                 int> = 0>
 TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS m, Index idx)
 {
   unused(m[idx]);
