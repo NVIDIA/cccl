@@ -388,19 +388,20 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxPairs");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::max>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        d_values_in,
-        d_values_out,
-        num_items,
-        k,
-        detail::identity_decomposer_t{},
-        env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::max>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          num_items,
+          k,
+          detail::identity_decomposer_t{},
+          env);
+      });
   }
 
   //! @rst
@@ -650,10 +651,11 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::max>(
-        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, decomposer, env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::max>(
+          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, decomposer, env);
+      });
   }
 
   //! @rst
@@ -856,19 +858,20 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinPairs");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::min>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        d_values_in,
-        d_values_out,
-        num_items,
-        k,
-        detail::identity_decomposer_t{},
-        env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::min>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          num_items,
+          k,
+          detail::identity_decomposer_t{},
+          env);
+      });
   }
 
   //! @rst
@@ -1113,10 +1116,11 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::min>(
-        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, decomposer, env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::min>(
+          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, decomposer, env);
+      });
   }
 
   //! @rst
@@ -1282,19 +1286,20 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxKeys");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::max>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType*>(nullptr),
-        static_cast<NullType*>(nullptr),
-        num_items,
-        k,
-        detail::identity_decomposer_t{},
-        env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::max>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          k,
+          detail::identity_decomposer_t{},
+          env);
+      });
   }
 
   //! @rst
@@ -1506,19 +1511,20 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::max>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType*>(nullptr),
-        static_cast<NullType*>(nullptr),
-        num_items,
-        k,
-        decomposer,
-        env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::max>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          k,
+          decomposer,
+          env);
+      });
   }
 
   //! @rst
@@ -1684,19 +1690,20 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinKeys");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::min>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType*>(nullptr),
-        static_cast<NullType*>(nullptr),
-        num_items,
-        k,
-        detail::identity_decomposer_t{},
-        env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::min>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          k,
+          detail::identity_decomposer_t{},
+          env);
+      });
   }
 
   //! @rst
@@ -1908,19 +1915,20 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-      return detail::dispatch_topk<detail::topk::select::min>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType*>(nullptr),
-        static_cast<NullType*>(nullptr),
-        num_items,
-        k,
-        decomposer,
-        env);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
+        return detail::dispatch_topk<detail::topk::select::min>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          k,
+          decomposer,
+          env);
+      });
   }
 };
 
