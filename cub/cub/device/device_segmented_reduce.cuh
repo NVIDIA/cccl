@@ -1013,6 +1013,8 @@ public:
       int segment_size,
       cudaStream_t stream = nullptr)
   {
+    static_assert(!::cuda::std::is_same_v<InputIteratorT, void*>,
+                  "InputIteratorT must be a real iterator; void* has no iterator_traits::value_type.");
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
     using init_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     return fixed_size_impl(
