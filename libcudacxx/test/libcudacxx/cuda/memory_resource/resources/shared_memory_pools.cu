@@ -168,7 +168,7 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool comparison", "[memory_resource]", SHARE
 
   SECTION("Copies are equal")
   {
-    shared_pool copy(pool1);
+    shared_pool copy(pool1); // NOLINT(performance-unnecessary-copy-initialization)
     CHECK(pool1 == copy);
   }
 
