@@ -64,9 +64,13 @@ mkdir -p wheelhouse
 # identical LLVM/clang tree (LLVM has no CUDA dep), so a shared ccache cuts
 # the second build's LLVM phase from ~10 min to under 2 min; a shared CPM
 # source cache skips the second LLVM git clone entirely.
+#
+# The `mkdir`s run inside the (dev)container where only the container-side
+# paths are visible. The docker bind-mount uses the host-side paths
+# (${HOST_WORKSPACE}) since the inner docker daemon is the host's.
+mkdir -p ./.ccache ./.cpm-cache
 host_ccache_dir="${HOST_WORKSPACE:?}/.ccache"
 host_cpm_cache_dir="${HOST_WORKSPACE:?}/.cpm-cache"
-mkdir -p "$host_ccache_dir" "$host_cpm_cache_dir"
 
 for ctk in 12 13; do
   image="cuda${ctk}_image"
