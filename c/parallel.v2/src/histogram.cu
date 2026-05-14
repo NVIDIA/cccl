@@ -62,6 +62,7 @@ static std::string make_histogram_even_source(
   return std::format(
     R"SRC(
 #include <cuda_runtime.h>
+#include <cuda_fp16.h>
 #include <cuda/std/iterator>
 #include <cub/device/device_histogram.cuh>
 {0}

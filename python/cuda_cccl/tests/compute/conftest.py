@@ -146,9 +146,6 @@ def pytest_collection_modifyitems(config, items):
     skip_stateful_for_v2 = pytest.mark.skip(
         reason="v2 (HostJIT) backend: stateful-op marshaling is not yet implemented"
     )
-    skip_fp16_for_v2 = pytest.mark.skip(
-        reason="v2 (HostJIT) backend: fp16/__half disabled via CCCL_DISABLE_FP16_SUPPORT"
-    )
     using_v2 = _backend_uses_v2()
     for item in items:
         # Check if the 'no_numba' marker is present on the test item
@@ -167,11 +164,10 @@ def pytest_collection_modifyitems(config, items):
         if "stateful" in lowered_name:
             item.add_marker(skip_stateful_for_v2)
 
-        # Skip parametrized cases over fp16: v2's freestanding compile defines
-        # CCCL_DISABLE_FP16_SUPPORT=1, so __half is only forward-declared and
-        # any algorithm template instantiation against it fails.
-        if "float16" in lowered_name or "fp16" in lowered_name:
-            item.add_marker(skip_fp16_for_v2)
+        # fp16 (__half) is supported on v2 now — algorithm sources include
+        # <cuda_fp16.h> and CCCL_DISABLE_FP16_SUPPORT is no longer set. Keep
+        # `skip_fp16_for_v2` defined above so it's trivial to re-enable if a
+        # regression shows up.
 
         # Explicit per-test deferrals.
         # `item.originalname` is the function name without parametrize suffix;

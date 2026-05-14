@@ -44,6 +44,7 @@ static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
 
   std::string src;
   src += "#include <cuda_runtime.h>\n";
+  src += "#include <cuda_fp16.h>\n";
   src += "#include <cub/agent/agent_for.cuh>\n";
   src += "#include <climits>\n\n";
 

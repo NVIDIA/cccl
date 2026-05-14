@@ -47,6 +47,7 @@ static std::string make_binary_search_source(
 
   std::string src;
   src += "#include <cuda_runtime.h>\n";
+  src += "#include <cuda_fp16.h>\n";
   src += "#include <cuda/__iterator/zip_iterator.h>\n";
   src += "#include <cub/agent/agent_for.cuh>\n";
   src += "#include <cub/detail/binary_search_helpers.cuh>\n";

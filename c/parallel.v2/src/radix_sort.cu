@@ -57,6 +57,7 @@ static std::string make_keys_only_source(const std::string& key_type, bool ascen
   return std::format(
     R"SRC(
 #include <cuda_runtime.h>
+#include <cuda_fp16.h>
 #include <cub/device/device_radix_sort.cuh>
 {0}
 extern "C" EXPORT int cccl_jit_radix_sort(
@@ -87,6 +88,7 @@ static std::string make_pairs_source(const std::string& key_type, const std::str
   return std::format(
     R"SRC(
 #include <cuda_runtime.h>
+#include <cuda_fp16.h>
 #include <cub/device/device_radix_sort.cuh>
 {0}
 extern "C" EXPORT int cccl_jit_radix_sort(
