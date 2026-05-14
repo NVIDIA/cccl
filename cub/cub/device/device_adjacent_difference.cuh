@@ -689,10 +689,10 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT                                               = ::cuda::std::minus<>,
-            typename NumItemsT                                                   = uint32_t,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractLeft(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, EnvT env = {})
   {
@@ -877,10 +877,10 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT                                               = ::cuda::std::minus<>,
-            typename NumItemsT                                                   = uint32_t,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractRight(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, EnvT env = {})
   {
