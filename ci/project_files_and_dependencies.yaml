@@ -124,7 +124,6 @@ projects:
     full_dependencies: []
     include_regexes:
       - "c/parallel\\.v2/"
-      - "ci/build_cccl_c_parallel_v2\\.sh"
       - "ci/test_cccl_c_parallel_v2\\.sh"
 
   python_v2:

@@ -15,15 +15,14 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-# Build first
-$buildCmd = "$PSScriptRoot/build_cccl_c_parallel_v2.ps1 -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
-Write-Host "Running: $buildCmd"
-Invoke-Expression $buildCmd
-
 Remove-Module -Name build_common -ErrorAction SilentlyContinue
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @(20, $CUDA_ARCH, $CMAKE_OPTIONS)
 
 $PRESET = "cccl-c-parallel-v2"
+$LOCAL_CMAKE_OPTIONS = ""
+
+configure_and_build_preset "CCCL C Parallel v2 (HostJIT)" $PRESET $LOCAL_CMAKE_OPTIONS
+
 test_preset "CCCL C Parallel v2 (HostJIT)" "$PRESET"
 
 If($CURRENT_PATH -ne "ci") {
