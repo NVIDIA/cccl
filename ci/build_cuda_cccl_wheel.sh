@@ -54,6 +54,21 @@ export CUDAHOSTCXX
 if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
   export CMAKE_ARGS="${CMAKE_ARGS:-} -DCCCL_PYTHON_USE_V2=ON"
   echo "Building wheel with CCCL v2 backend: CMAKE_ARGS=${CMAKE_ARGS}"
+
+  # v2's hostjit links against libnvJitLink and libnvfatbin, which aren't in
+  # the base rapidsai/ci-wheel image. Install the matching CTK devel packages
+  # so CMake's FindCUDAToolkit picks them up. nvcc is on PATH; derive the
+  # version (e.g. "13-0") from it.
+  ctk_pkg_ver=$(nvcc --version 2>/dev/null \
+    | grep -oP 'release \K[0-9]+\.[0-9]+' | tr '.' '-')
+  if [[ -n "${ctk_pkg_ver}" ]]; then
+    echo "Installing libnvjitlink-devel-${ctk_pkg_ver} libnvfatbin-devel-${ctk_pkg_ver}..."
+    /workspace/ci/util/retry.sh 5 30 dnf -y install \
+      "libnvjitlink-devel-${ctk_pkg_ver}" \
+      "libnvfatbin-devel-${ctk_pkg_ver}"
+  else
+    echo "WARNING: could not derive CTK version from nvcc; skipping nvJitLink/nvfatbin install"
+  fi
 fi
 
 # Build the wheel
