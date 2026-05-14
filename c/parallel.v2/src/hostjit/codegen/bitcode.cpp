@@ -42,6 +42,21 @@ void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std:
   {
     return;
   }
+  // Dedup by content hash: identical bitcode bytes define identical symbols
+  // (e.g. two PointerIterator<int>s sharing the same advance LTOIR). Adding
+  // both would make nvJitLink fail with "symbol multiply defined".
+  // FNV-1a 64-bit — cheap, no allocations, good enough for byte-stream dedup.
+  std::uint64_t hash = 1469598103934665603ULL; // FNV offset basis
+  for (size_t i = 0; i < size; ++i)
+  {
+    hash ^= static_cast<std::uint64_t>(static_cast<unsigned char>(data[i]));
+    hash *= 1099511628211ULL; // FNV prime
+  }
+  if (!added_content_hashes_.insert(hash).second)
+  {
+    return; // exact same bytes already added
+  }
+
   // LLVM bitcode starts with magic "BC" (0x42 0x43). Anything else (typical
   // case: NVRTC LTOIR wrapper produced by Numba) is routed to the nvJitLink
   // link stage instead of LLVM's bitcode linker, which can only parse raw BC.
