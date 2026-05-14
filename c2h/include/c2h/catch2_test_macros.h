@@ -79,17 +79,9 @@
 #define CHECKED_ELSE(...) CATCH_CHECKED_ELSE(__VA_ARGS__)
 #define CHECK_NOFAIL(...) CATCH_CHECK_NOFAIL(__VA_ARGS__)
 
-#define CHECK_THROWS(...)                                                           \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_THROWS(__VA_ARGS__);), ({              \
-                      __VA_ARGS__;                                                  \
-                      C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_THROWS", #__VA_ARGS__); \
-                    }))
-#define CHECK_THROWS_AS(EXPR, TYPE)                                                   \
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_THROWS_AS((EXPR), TYPE);), ({            \
-                      EXPR;                                                           \
-                      C2H_INTERNAL_DEVICE_TEST_PRINT("CHECK_THROWS_AS", #EXPR #TYPE); \
-                    }))
-#define CHECK_NOTHROW(...) NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_NOTHROW(__VA_ARGS__);), (__VA_ARGS__;))
+#define CHECK_THROWS(...)    CATCH_CHECK_THROWS(__VA_ARGS__)
+#define CHECK_THROWS_AS(...) CATCH_CHECK_THROWS_AS(__VA_ARGS__)
+#define CHECK_NOTHROW(...)   NV_IF_ELSE_TARGET(NV_IS_HOST, (CATCH_CHECK_NOTHROW(__VA_ARGS__);), (__VA_ARGS__;))
 
 #define TEST_CASE(...)           CATCH_TEST_CASE(__VA_ARGS__)
 #define TEST_CASE_METHOD(...)    CATCH_TEST_CASE_METHOD(__VA_ARGS__)
