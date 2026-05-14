@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/__argument/argument_bounds.h>
+#include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -29,7 +31,9 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
@@ -43,24 +47,28 @@ _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT
 // __element_type_of
 // =====================================================================
 
-template <class _Tp>
+// Primary: scalars, enums — element type is the type itself
+template <class _Tp, class = void>
 struct __element_type_of
 {
   using type = _Tp;
 };
 
+// Pointers
 template <class _Tp>
 struct __element_type_of<_Tp*>
 {
   using type = _Tp;
 };
 
-template <class _Tp, size_t _Extent>
-struct __element_type_of<::cuda::std::span<_Tp, _Extent>>
+// Types with element_type member typedef (e.g., span)
+template <class _Tp>
+struct __element_type_of<_Tp, ::cuda::std::void_t<typename _Tp::element_type>>
 {
-  using type = _Tp;
+  using type = typename _Tp::element_type;
 };
 
+// Arrays (std::array has value_type, not element_type)
 template <class _Tp, size_t _Size>
 struct __element_type_of<::cuda::std::array<_Tp, _Size>>
 {
@@ -117,11 +125,11 @@ struct __immediate
   using __element_type = __element_type_of_t<_Arg>;
 
   _Arg arg;
-  _CCCL_NO_UNIQUE_ADDRESS _StaticBounds __static_bounds_;
-  __runtime_bounds<__element_type> __runtime_bounds_;
+  _CCCL_NO_UNIQUE_ADDRESS _StaticBounds __static_bounds_{};
+  __runtime_bounds<__element_type> __runtime_bounds_{};
 
 private:
-  _CCCL_API constexpr void __validate_element(__element_type __val) noexcept
+  _CCCL_API constexpr void __validate_element(const __element_type& __val) const noexcept
   {
     if constexpr (!::cuda::std::is_same_v<_StaticBounds, __no_bounds>)
     {
@@ -132,7 +140,7 @@ private:
     _CCCL_ASSERT(__val <= __runtime_bounds_.max, "immediate argument value is above runtime max bound");
   }
 
-  _CCCL_API constexpr void __validate() noexcept
+  _CCCL_API constexpr void __validate() const noexcept
   {
     if constexpr (::cuda::std::is_arithmetic_v<_Arg> || ::cuda::std::is_enum_v<_Arg>)
     {
@@ -140,33 +148,29 @@ private:
     }
     else if constexpr (::cuda::std::__is_cuda_std_span_v<_Arg>)
     {
-      for (size_t __i = 0; __i < arg.size(); ++__i)
+      for (auto&& __a : arg)
       {
-        __validate_element(arg[__i]);
+        __validate_element(__a);
       }
     }
   }
 
 public:
   _CCCL_API constexpr __immediate(_Arg __arg) noexcept
-      : arg(__arg)
-      , __static_bounds_{}
-      , __runtime_bounds_{}
+      : arg{::cuda::std::move(__arg)}
   {}
 
   template <auto _Lowest, auto _Max>
   _CCCL_API constexpr __immediate(_Arg __arg, __static_bounds<_Lowest, _Max> __sb) noexcept
-      : arg(__arg)
-      , __static_bounds_(__sb)
-      , __runtime_bounds_{}
+      : arg{::cuda::std::move(__arg)}
+      , __static_bounds_{__sb}
   {
     __validate();
   }
 
   template <class _BoundsTp>
   _CCCL_API constexpr __immediate(_Arg __arg, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg(__arg)
-      , __static_bounds_{}
+      : arg{::cuda::std::move(__arg)}
       , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
   {
     static_assert(!::cuda::std::is_same_v<_Arg, __element_type>,
@@ -177,8 +181,8 @@ public:
   template <auto _Lowest, auto _Max, class _BoundsTp>
   _CCCL_API constexpr __immediate(
     _Arg __arg, __static_bounds<_Lowest, _Max> __sb, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg(__arg)
-      , __static_bounds_(__sb)
+      : arg{::cuda::std::move(__arg)}
+      , __static_bounds_{__sb}
       , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
   {
     static_assert(!::cuda::std::is_same_v<_Arg, __element_type>,
@@ -217,34 +221,30 @@ struct __deferred_base
   using __element_type = __element_type_of_t<_Arg>;
 
   _Arg arg;
-  _CCCL_NO_UNIQUE_ADDRESS _StaticBounds __static_bounds_;
-  __runtime_bounds<__element_type> __runtime_bounds_;
+  _CCCL_NO_UNIQUE_ADDRESS _StaticBounds __static_bounds_{};
+  __runtime_bounds<__element_type> __runtime_bounds_{};
 
   _CCCL_API constexpr __deferred_base(_Arg __arg) noexcept
-      : arg(__arg)
-      , __static_bounds_{}
-      , __runtime_bounds_{}
+      : arg{::cuda::std::move(__arg)}
   {}
 
   template <auto _Lowest, auto _Max>
   _CCCL_API constexpr __deferred_base(_Arg __arg, __static_bounds<_Lowest, _Max> __sb) noexcept
-      : arg(__arg)
-      , __static_bounds_(__sb)
-      , __runtime_bounds_{}
+      : arg{::cuda::std::move(__arg)}
+      , __static_bounds_{__sb}
   {}
 
   template <class _BoundsTp>
   _CCCL_API constexpr __deferred_base(_Arg __arg, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg(__arg)
-      , __static_bounds_{}
+      : arg{::cuda::std::move(__arg)}
       , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
   {}
 
   template <auto _Lowest, auto _Max, class _BoundsTp>
   _CCCL_API constexpr __deferred_base(
     _Arg __arg, __static_bounds<_Lowest, _Max> __sb, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg(__arg)
-      , __static_bounds_(__sb)
+      : arg{::cuda::std::move(__arg)}
+      , __static_bounds_{__sb}
       , __runtime_bounds_{static_cast<__element_type>(__rb.lowest), static_cast<__element_type>(__rb.max)}
   {}
 };
@@ -383,15 +383,7 @@ _CCCL_API constexpr auto __constant_compute_lowest() noexcept
   }
   else
   {
-    auto __result = _Value[0];
-    for (size_t __i = 1; __i < _Value.size(); ++__i)
-    {
-      if (_Value[__i] < __result)
-      {
-        __result = _Value[__i];
-      }
-    }
-    return __result;
+    return *::cuda::std::min_element(_Value.begin(), _Value.end());
   }
 }
 
@@ -406,15 +398,7 @@ _CCCL_API constexpr auto __constant_compute_max() noexcept
   }
   else
   {
-    auto __result = _Value[0];
-    for (size_t __i = 1; __i < _Value.size(); ++__i)
-    {
-      if (_Value[__i] > __result)
-      {
-        __result = _Value[__i];
-      }
-    }
-    return __result;
+    return *::cuda::std::max_element(_Value.begin(), _Value.end());
   }
 }
 
@@ -431,6 +415,7 @@ struct __traits
 {
   using value_type                      = _Tp;
   using element_type                    = __element_type_of_t<_Tp>;
+  static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = __is_single_value_v<_Tp>;
   static constexpr element_type lowest  = ::cuda::std::numeric_limits<element_type>::lowest();
@@ -442,6 +427,7 @@ struct __traits<__immediate<_Arg, _StaticBounds>>
 {
   using value_type                      = _Arg;
   using element_type                    = __element_type_of_t<_Arg>;
+  static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = __is_single_value_v<_Arg>;
   static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
@@ -453,6 +439,7 @@ struct __traits<__constant<_Value>>
 {
   using value_type                      = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using element_type                    = __element_type_of_t<value_type>;
+  static constexpr bool is_constant     = true;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = __is_single_value_v<value_type>;
   static constexpr element_type lowest  = __constant_compute_lowest<_Value>();
@@ -464,6 +451,7 @@ struct __traits<__deferred_value<_Arg, _StaticBounds>>
 {
   using value_type                      = _Arg;
   using element_type                    = __element_type_of_t<_Arg>;
+  static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = true;
   static constexpr bool is_single_value = true;
   static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
@@ -475,6 +463,7 @@ struct __traits<__deferred_sequence<_Arg, _StaticBounds>>
 {
   using value_type                      = _Arg;
   using element_type                    = __element_type_of_t<_Arg>;
+  static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = true;
   static constexpr bool is_single_value = false;
   static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
