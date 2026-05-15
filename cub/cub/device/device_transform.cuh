@@ -70,14 +70,7 @@ struct DeviceTransform
     TransformOp transform_op,
     Env env)
   {
-    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
-    using offset_t        = typename choose_offset_t::type;
-
-    // Check if the number of items exceeds the range covered by the selected signed offset type
-    if (const cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items); error != cudaSuccess)
-    {
-      return error;
-    }
+    using offset_t = int64_t;
 
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
