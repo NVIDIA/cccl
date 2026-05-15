@@ -64,7 +64,8 @@ C++ customization point objects
 The standard library uses __ Customization Point Objects __ to enable user-customization of the behavior of many
 algorithms and ranges. We rely heavily on those for most of our iterator machinery such as e.g `cuda::std::begin`.
 
-Those CPOs are currently not accessible in a tile kernel.
+Those CPOs are currently not accessible in a tile kernel. A potential workaround is to construct an instance of the
+empty type, e.g. ``decltype(cuda::std::begin){}(container);``
 
 C++ return statements in loops and switches
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
