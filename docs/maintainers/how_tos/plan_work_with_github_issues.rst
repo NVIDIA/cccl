@@ -47,16 +47,13 @@ conditions.
 Propose planned work
 --------------------
 
-Raise work for planning when other people need to know it exists, plan around
-it, or find the outcome later.
+Sprint planning happens monthly. Team leads review the roadmap, current priorities,
+and incoming requests to identify the highest-impact work for the upcoming
+four-week planning window.
 
 If you think work should be considered for the next planning cycle, raise it
 during planning or ask a team lead to add it to the
 `Sprint Planning <https://github.com/orgs/NVIDIA/projects/6/views/58>`__ view.
-
-Sprint planning happens monthly. Team leads review the roadmap, current priorities,
-and incoming requests to identify the highest-impact work for the upcoming
-four-week planning window.
 
 During planning, the team reviews proposed issues, confirms ownership,
 identifies gaps or dependencies, and checks that issues are actionable and
