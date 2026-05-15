@@ -82,19 +82,19 @@ private:
   {};
   static constexpr __storage_tag_t __storage_tag{};
 
-  _CCCL_API constexpr basic_vec(const _Storage __s, __storage_tag_t) noexcept
+  _CCCL_HOST_DEVICE_API constexpr basic_vec(const _Storage __s, __storage_tag_t) noexcept
       : __s_{__s}
   {}
 
   // Friend comparison operators (e.g. operator==) cannot access basic_mask's private constructor directly (friendship
   // is not transitive). This function is required to access the private constructor of basic_mask.
-  _CCCL_API static constexpr mask_type __make_mask(const typename mask_type::_Storage __s) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr mask_type __make_mask(const typename mask_type::_Storage __s) noexcept
   {
     return mask_type{__s, mask_type::__storage_tag};
   }
 
   // operator[] is const only. We need this function to set values
-  _CCCL_API constexpr void __set(const __simd_size_type __i, const value_type __v) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void __set(const __simd_size_type __i, const value_type __v) noexcept
   {
     __s_.__set(__i, __v);
   }
@@ -105,27 +105,27 @@ public:
   using iterator       = __simd_iterator<basic_vec>;
   using const_iterator = __simd_iterator<const basic_vec>;
 
-  [[nodiscard]] _CCCL_API constexpr iterator begin() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr iterator begin() noexcept
   {
     return {*this, 0};
   }
 
-  [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator begin() const noexcept
   {
     return {*this, 0};
   }
 
-  [[nodiscard]] _CCCL_API constexpr const_iterator cbegin() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator cbegin() const noexcept
   {
     return {*this, 0};
   }
 
-  [[nodiscard]] _CCCL_API constexpr default_sentinel_t end() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr default_sentinel_t end() const noexcept
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_API constexpr default_sentinel_t cend() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr default_sentinel_t cend() const noexcept
   {
     return {};
   }
@@ -142,14 +142,14 @@ public:
   // [simd.ctor] value broadcast constructor (explicit overload)
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES((__explicitly_convertible_to<_Up, value_type>) _CCCL_AND(!__is_value_ctor_implicit<_Up, value_type>))
-  _CCCL_API constexpr explicit basic_vec(_Up&& __v) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit basic_vec(_Up&& __v) noexcept
       : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
   {}
 
   // [simd.ctor] value broadcast constructor (implicit overload)
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES((__explicitly_convertible_to<_Up, value_type>) _CCCL_AND(__is_value_ctor_implicit<_Up, value_type>))
-  _CCCL_API constexpr basic_vec(_Up&& __v) noexcept
+  _CCCL_HOST_DEVICE_API constexpr basic_vec(_Up&& __v) noexcept
       : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
   {}
 
@@ -157,7 +157,7 @@ public:
   _CCCL_TEMPLATE(typename _Up, typename _UAbi)
   _CCCL_REQUIRES((__simd_size_v<_Up, _UAbi> == __size) _CCCL_AND(__explicitly_convertible_to<_Up, value_type>)
                    _CCCL_AND(__is_vec_ctor_explicit<_Up, value_type>))
-  _CCCL_API constexpr explicit basic_vec(const basic_vec<_Up, _UAbi>& __v) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit basic_vec(const basic_vec<_Up, _UAbi>& __v) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (__simd_size_type __i = 0; __i < __size; ++__i)
@@ -170,7 +170,7 @@ public:
   _CCCL_TEMPLATE(typename _Up, typename _UAbi)
   _CCCL_REQUIRES((__simd_size_v<_Up, _UAbi> == __size) _CCCL_AND(__explicitly_convertible_to<_Up, value_type>)
                    _CCCL_AND(!__is_vec_ctor_explicit<_Up, value_type>))
-  _CCCL_API constexpr basic_vec(const basic_vec<_Up, _UAbi>& __v) noexcept
+  _CCCL_HOST_DEVICE_API constexpr basic_vec(const basic_vec<_Up, _UAbi>& __v) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (__simd_size_type __i = 0; __i < __size; ++__i)
@@ -182,7 +182,7 @@ public:
   // [simd.ctor] generator constructor
   _CCCL_TEMPLATE(typename _Generator)
   _CCCL_REQUIRES(__can_generate_v<value_type, _Generator, __size>)
-  _CCCL_API constexpr explicit basic_vec(_Generator&& __g)
+  _CCCL_HOST_DEVICE_API constexpr explicit basic_vec(_Generator&& __g)
       : __s_{_Impl::__generate(__g)}
   {}
 
@@ -194,7 +194,7 @@ public:
   // [simd.ctor] range constructor
   _CCCL_TEMPLATE(typename _Range, typename... _Flags)
   _CCCL_REQUIRES(__is_compatible_range<_Range>)
-  _CCCL_API constexpr basic_vec(_Range&& __range, flags<_Flags...> = {})
+  _CCCL_HOST_DEVICE_API constexpr basic_vec(_Range&& __range, flags<_Flags...> = {})
   {
     static_assert(__has_convert_flag_v<_Flags...> || __is_value_preserving_v<ranges::range_value_t<_Range>, value_type>,
                   "Conversion from range_value_t<R> to value_type is not value-preserving; use flag_convert");
@@ -210,7 +210,7 @@ public:
   // [simd.ctor] masked range constructor
   _CCCL_TEMPLATE(typename _Range, typename... _Flags)
   _CCCL_REQUIRES(__is_compatible_range<_Range>)
-  _CCCL_API constexpr basic_vec(_Range&& __range, const mask_type& __mask, flags<_Flags...> = {})
+  _CCCL_HOST_DEVICE_API constexpr basic_vec(_Range&& __range, const mask_type& __mask, flags<_Flags...> = {})
   {
     static_assert(__has_convert_flag_v<_Flags...> || __is_value_preserving_v<ranges::range_value_t<_Range>, value_type>,
                   "Conversion from range_value_t<R> to value_type is not value-preserving; use flag_convert");
@@ -228,7 +228,7 @@ public:
 
   // [simd.subscr], basic_vec subscript operators
 
-  [[nodiscard]] _CCCL_API constexpr value_type operator[](const __simd_size_type __i) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr value_type operator[](const __simd_size_type __i) const noexcept
   {
     _CCCL_ASSERT(::cuda::in_range(__i, __simd_size_type{0}, __size), "Index is out of bounds");
     return __s_.__get(__i);
@@ -248,7 +248,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_pre_increment<_Up>)
-  _CCCL_API constexpr basic_vec& operator++() noexcept
+  _CCCL_HOST_DEVICE_API constexpr basic_vec& operator++() noexcept
   {
     _Impl::__increment(__s_);
     return *this;
@@ -256,7 +256,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_post_increment<_Up>)
-  [[nodiscard]] _CCCL_API constexpr basic_vec operator++(int) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec operator++(int) noexcept
   {
     const basic_vec __r = *this;
     _Impl::__increment(__s_);
@@ -265,7 +265,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_pre_decrement<_Up>)
-  _CCCL_API constexpr basic_vec& operator--() noexcept
+  _CCCL_HOST_DEVICE_API constexpr basic_vec& operator--() noexcept
   {
     _Impl::__decrement(__s_);
     return *this;
@@ -273,7 +273,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_post_decrement<_Up>)
-  [[nodiscard]] _CCCL_API constexpr basic_vec operator--(int) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec operator--(int) noexcept
   {
     const basic_vec __r = *this;
     _Impl::__decrement(__s_);
@@ -282,28 +282,28 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_negate<_Up>)
-  [[nodiscard]] _CCCL_API constexpr mask_type operator!() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr mask_type operator!() const noexcept
   {
     return mask_type{_Impl::__negate(__s_), mask_type::__storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_bitwise_not<_Up>)
-  [[nodiscard]] _CCCL_API constexpr basic_vec operator~() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec operator~() const noexcept
   {
     return basic_vec{_Impl::__bitwise_not(__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_unary_plus<_Up>)
-  [[nodiscard]] _CCCL_API constexpr basic_vec operator+() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec operator+() const noexcept
   {
     return *this;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_unary_minus<_Up>)
-  [[nodiscard]] _CCCL_API constexpr basic_vec operator-() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec operator-() const noexcept
   {
     return basic_vec{_Impl::__unary_minus(__s_), __storage_tag};
   }
@@ -312,14 +312,16 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_binary_plus<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator+(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator+(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__plus(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_binary_minus<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator-(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator-(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__minus(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
@@ -327,63 +329,70 @@ public:
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_multiplies<_Up>)
   [[nodiscard]]
-  _CCCL_API friend constexpr basic_vec operator*(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec operator*(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__multiplies(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_divides<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator/(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator/(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__divides(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_modulo<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator%(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator%(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__modulo(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_bitwise_and<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator&(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator&(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__bitwise_and(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_bitwise_or<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator|(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator|(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__bitwise_or(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_bitwise_xor<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator^(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator^(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__bitwise_xor(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_left<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator<<(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator<<(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__shift_left(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_right<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec operator>>(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  operator>>(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return basic_vec{_Impl::__shift_right(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_left_size<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   operator<<(const basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
     return __lhs << basic_vec{__n};
@@ -391,7 +400,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_right_size<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   operator>>(const basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
     return __lhs >> basic_vec{__n};
@@ -401,84 +410,84 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_binary_plus<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator+=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator+=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs + __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_binary_minus<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator-=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator-=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs - __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_multiplies<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator*=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator*=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs * __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_divides<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator/=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator/=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs / __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_modulo<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator%=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator%=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs % __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_bitwise_and<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator&=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator&=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs & __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_bitwise_or<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator|=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator|=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs | __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_bitwise_xor<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator^=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator^=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs ^ __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_left<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator<<=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator<<=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs << __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_right<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator>>=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator>>=(basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __lhs = __lhs >> __rhs;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_left_size<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator<<=(basic_vec& __lhs, const __simd_size_type __n) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator<<=(basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
     return __lhs = __lhs << __n;
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_shift_right_size<_Up>)
-  _CCCL_API friend constexpr basic_vec& operator>>=(basic_vec& __lhs, const __simd_size_type __n) noexcept
+  _CCCL_HOST_DEVICE_API friend constexpr basic_vec& operator>>=(basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
     return __lhs = __lhs >> __n;
   }
@@ -487,42 +496,48 @@ public:
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_equal_to<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr mask_type operator==(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr mask_type
+  operator==(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __make_mask(_Impl::__equal_to(__lhs.__s_, __rhs.__s_));
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_not_equal_to<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr mask_type operator!=(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr mask_type
+  operator!=(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __make_mask(_Impl::__not_equal_to(__lhs.__s_, __rhs.__s_));
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_greater_equal<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr mask_type operator>=(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr mask_type
+  operator>=(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __make_mask(_Impl::__greater_equal(__lhs.__s_, __rhs.__s_));
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_less_equal<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr mask_type operator<=(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr mask_type
+  operator<=(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __make_mask(_Impl::__less_equal(__lhs.__s_, __rhs.__s_));
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_greater<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr mask_type operator>(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr mask_type
+  operator>(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __make_mask(_Impl::__greater(__lhs.__s_, __rhs.__s_));
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(__has_less<_Up>)
-  [[nodiscard]] _CCCL_API friend constexpr mask_type operator<(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr mask_type
+  operator<(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {
     return __make_mask(_Impl::__less(__lhs.__s_, __rhs.__s_));
   }
