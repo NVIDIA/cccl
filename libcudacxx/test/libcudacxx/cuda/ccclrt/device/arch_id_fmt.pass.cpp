@@ -36,6 +36,11 @@ void test()
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_110) == TEST_STRLIT(C, "sm_110"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_120) == TEST_STRLIT(C, "sm_120"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_121) == TEST_STRLIT(C, "sm_121"));
+  assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_100f) == TEST_STRLIT(C, "sm_100f"));
+  assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_103f) == TEST_STRLIT(C, "sm_103f"));
+  assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_110f) == TEST_STRLIT(C, "sm_110f"));
+  assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_120f) == TEST_STRLIT(C, "sm_120f"));
+  assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_121f) == TEST_STRLIT(C, "sm_121f"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_90a) == TEST_STRLIT(C, "sm_90a"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_100a) == TEST_STRLIT(C, "sm_100a"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_103a) == TEST_STRLIT(C, "sm_103a"));

@@ -81,6 +81,9 @@
 //! @brief List of all known PTX architectures supported by this CCCL version.
 #define _CCCL_KNOWN_CUDA_ARCH_LIST 50, 52, 53, 60, 61, 62, 70, 75, 80, 86, 87, 88, 89, 90, 100, 103, 110, 120, 121
 
+//! @brief List of all known family specific architectures supported by this CCCL version.
+#define _CCCL_KNOWN_CUDA_FAMILY_SPECIFIC_LIST 100, 103, 110, 120, 121
+
 //! @brief List of all known architecture specific architectures supported by this CCCL version.
 #define _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST 90, 100, 103, 110, 120, 121
 

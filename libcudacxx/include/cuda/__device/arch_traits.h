@@ -406,6 +406,14 @@ template <>
 };
 
 template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_100f>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_100>();
+  __traits.arch_id = arch_id::sm_100f;
+  return __traits;
+};
+
+template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_100a>() noexcept
 {
   auto __traits    = ::cuda::arch_traits<arch_id::sm_100>();
@@ -421,6 +429,14 @@ template <>
   __traits.compute_capability_major = 10;
   __traits.compute_capability_minor = 3;
   __traits.compute_capability       = compute_capability{103};
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_103f>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_103>();
+  __traits.arch_id = arch_id::sm_103f;
   return __traits;
 };
 
@@ -447,6 +463,14 @@ template <>
 };
 
 template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_110f>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_110>();
+  __traits.arch_id = arch_id::sm_110f;
+  return __traits;
+};
+
+template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_110a>() noexcept
 {
   auto __traits    = ::cuda::arch_traits<arch_id::sm_110>();
@@ -464,6 +488,14 @@ template <>
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_120f>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_120>();
+  __traits.arch_id = arch_id::sm_120f;
   return __traits;
 };
 
@@ -487,6 +519,14 @@ template <>
 };
 
 template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_121f>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_121>();
+  __traits.arch_id = arch_id::sm_121f;
+  return __traits;
+};
+
+template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_121a>() noexcept
 {
   auto __traits    = ::cuda::arch_traits<arch_id::sm_121>();
@@ -504,13 +544,18 @@ template <>
 #define _CCCL_ARCH_TRAITS_FOR_CASE(_CC) \
   case arch_id::sm_##_CC:               \
     return ::cuda::arch_traits<arch_id::sm_##_CC>();
-#define _CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE(_CC) \
-  case arch_id::sm_##_CC##a:                     \
+#define _CCCL_ARCH_TRAITS_FOR_FAMILY_SPECIFIC_CASE(_CC) \
+  case arch_id::sm_##_CC##f:                            \
+    return ::cuda::arch_traits<arch_id::sm_##_CC##f>();
+#define _CCCL_ARCH_TRAITS_FOR_ARCH_SPECIFIC_CASE(_CC) \
+  case arch_id::sm_##_CC##a:                          \
     return ::cuda::arch_traits<arch_id::sm_##_CC##a>();
     _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_CASE, _CCCL_KNOWN_CUDA_ARCH_LIST)
-    _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_FAMILY_SPECIFIC_CASE, _CCCL_KNOWN_CUDA_FAMILY_SPECIFIC_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_ARCH_SPECIFIC_CASE, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
 #undef _CCCL_ARCH_TRAITS_FOR_CASE
-#undef _CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE
+#undef _CCCL_ARCH_TRAITS_FOR_FAMILY_SPECIFIC_CASE
+#undef _CCCL_ARCH_TRAITS_FOR_ARCH_SPECIFIC_CASE
     default:
 #if _CCCL_HAS_CTK()
       _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInvalidValue, "Traits requested for an unknown architecture");

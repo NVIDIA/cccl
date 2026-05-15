@@ -37,11 +37,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! capability. For example, sm_90 and sm_90a have the same compute capability, but the identifier is different.
 enum class arch_id : int
 {
-#define _CCCL_DEFINE_ARCH_ID(_CC)          sm_##_CC = _CC,
-#define _CCCL_DEFINE_ARCH_SPECIFIC_ID(_CC) sm_##_CC##a = _CC * __arch_specific_id_multiplier,
+#define _CCCL_DEFINE_ARCH_ID(_CC)            sm_##_CC = _CC,
+#define _CCCL_DEFINE_FAMILY_SPECIFIC_ID(_CC) sm_##_CC##f = _CC + __family_specific_id_offset,
+#define _CCCL_DEFINE_ARCH_SPECIFIC_ID(_CC)   sm_##_CC##a = _CC + __arch_specific_id_offset,
   _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_ID, _CCCL_KNOWN_CUDA_ARCH_LIST)
-    _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_DEFINE_FAMILY_SPECIFIC_ID, _CCCL_KNOWN_CUDA_FAMILY_SPECIFIC_LIST)
+      _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
 #undef _CCCL_DEFINE_ARCH_ID
+#undef _CCCL_DEFINE_FAMILY_SPECIFIC_ID
 #undef _CCCL_DEFINE_ARCH_SPECIFIC_ID
 };
 
@@ -76,18 +79,27 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
 [[nodiscard]] _CCCL_API constexpr auto __all_arch_ids() noexcept
 {
   return ::cuda::std::array{
-#define _CCCL_MAKE_ARCH_ID(_CC)          arch_id::sm_##_CC,
-#define _CCCL_MAKE_ARCH_SPECIFIC_ID(_CC) arch_id::sm_##_CC##a,
+#define _CCCL_MAKE_ARCH_ID(_CC)            arch_id::sm_##_CC,
+#define _CCCL_MAKE_FAMILY_SPECIFIC_ID(_CC) arch_id::sm_##_CC##f,
+#define _CCCL_MAKE_ARCH_SPECIFIC_ID(_CC)   arch_id::sm_##_CC##a,
     _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_ID, _CCCL_KNOWN_CUDA_ARCH_LIST)
-      _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+      _CCCL_PP_FOR_EACH(_CCCL_MAKE_FAMILY_SPECIFIC_ID, _CCCL_KNOWN_CUDA_FAMILY_SPECIFIC_LIST)
+        _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
 #undef _CCCL_MAKE_ARCH_ID
+#undef _CCCL_MAKE_FAMILY_SPECIFIC_ID
 #undef _CCCL_MAKE_ARCH_SPECIFIC_ID
   };
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __is_specific_arch(arch_id __arch) noexcept
+[[nodiscard]] _CCCL_API constexpr bool __is_family_specific(arch_id __arch) noexcept
 {
-  return ::cuda::std::to_underlying(__arch) > __arch_specific_id_multiplier;
+  return ::cuda::std::to_underlying(__arch) > __family_specific_id_offset
+      && ::cuda::std::to_underlying(__arch) < __arch_specific_id_offset;
+}
+
+[[nodiscard]] _CCCL_API constexpr bool __is_arch_specific(arch_id __arch) noexcept
+{
+  return ::cuda::std::to_underlying(__arch) > __arch_specific_id_offset;
 }
 
 [[nodiscard]] _CCCL_API constexpr bool __has_known_arch(compute_capability __cc) noexcept
@@ -103,7 +115,20 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
   }
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __has_known_specific_arch(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_API constexpr bool __has_known_family_specific_arch(compute_capability __cc) noexcept
+{
+  switch (__cc.get())
+  {
+#define _CCCL_HAS_KNOWN_FAMILY_SPECFIC_ARCH_CASE(_CC) case _CC:
+    _CCCL_PP_FOR_EACH(_CCCL_HAS_KNOWN_FAMILY_SPECFIC_ARCH_CASE, _CCCL_KNOWN_CUDA_FAMILY_SPECIFIC_LIST)
+#undef _CCCL_HAS_KNOWN_FAMILY_SPECFIC_ARCH_CASE
+    return true;
+    default:
+      return false;
+  }
+}
+
+[[nodiscard]] _CCCL_API constexpr bool __has_known_arch_specific_arch(compute_capability __cc) noexcept
 {
   switch (__cc.get())
   {
@@ -127,6 +152,18 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
   return static_cast<arch_id>(__cc.get());
 }
 
+//! @brief Converts the compute capability to the family specific id.
+//!
+//! @param __cc The compute capability. Must have a corresponding family specific id.
+//!
+//! @returns The architecture specific id.
+[[nodiscard]] _CCCL_API constexpr arch_id to_family_specific_id(compute_capability __cc) noexcept
+{
+  _CCCL_ASSERT(::cuda::__has_known_family_specific_arch(__cc),
+               "this compute capability cannot be converted to arch specific id");
+  return static_cast<arch_id>(__cc.get() + __family_specific_id_offset);
+}
+
 //! @brief Converts the compute capability to the architecture specific id.
 //!
 //! @param __cc The compute capability. Must have a corresponding architecture specific id.
@@ -134,9 +171,9 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
 //! @returns The architecture specific id.
 [[nodiscard]] _CCCL_API constexpr arch_id to_arch_specific_id(compute_capability __cc) noexcept
 {
-  _CCCL_ASSERT(::cuda::__has_known_specific_arch(__cc),
+  _CCCL_ASSERT(::cuda::__has_known_arch_specific_arch(__cc),
                "this compute capability cannot be converted to arch specific id");
-  return static_cast<arch_id>(__cc.get() * __arch_specific_id_multiplier);
+  return static_cast<arch_id>(__cc.get() + __arch_specific_id_offset);
 }
 
 _CCCL_END_NAMESPACE_CUDA
@@ -162,9 +199,13 @@ struct formatter<::cuda::arch_id, _CharT> : private formatter<::cuda::compute_ca
     *__it++   = _CharT{'_'};
     __ctx.advance_to(__it);
     __it = formatter<::cuda::compute_capability, _CharT>::format(::cuda::compute_capability{__arch}, __ctx);
-    if (::cuda::__is_specific_arch(__arch))
+    if (::cuda::__is_arch_specific(__arch))
     {
       *__it++ = _CharT{'a'};
+    }
+    else if (::cuda::__is_family_specific(__arch))
+    {
+      *__it++ = _CharT{'f'};
     }
     return __it;
   }
@@ -205,14 +246,19 @@ template <class _Dummy = void>
 #  elif _CCCL_DEVICE_COMPILATION()
   constexpr auto __cc = ::cuda::device::current_compute_capability();
 #    if defined(__CUDA_ARCH_SPECIFIC__)
-  constexpr auto __is_known_cc = ::cuda::std::__always_false_v<_Dummy> || ::cuda::__has_known_specific_arch(__cc);
-  static_assert(__is_known_cc, "unknown CUDA specific architecture");
+  constexpr auto __is_known_cc = ::cuda::std::__always_false_v<_Dummy> || ::cuda::__has_known_arch_specific_arch(__cc);
+  static_assert(__is_known_cc, "unknown CUDA arch-specific architecture");
   return ::cuda::to_arch_specific_id(__cc);
-#    else // ^^^ __CUDA_ARCH_SPECIFIC__ ^^^ / vvv !__CUDA_ARCH_SPECIFIC__ vvv
+#    elif defined(__CUDA_FAMILY_SPECIFIC__)
+  constexpr auto __is_known_cc =
+    ::cuda::std::__always_false_v<_Dummy> || ::cuda::__has_known_family_specific_arch(__cc);
+  static_assert(__is_known_cc, "unknown CUDA family-specific architecture");
+  return ::cuda::to_family_specific_id(__cc);
+#    else // ^^^ family specific arch ^^^ / vvv ordinary arch vvv
   constexpr auto __is_known_cc = ::cuda::std::__always_false_v<_Dummy> || ::cuda::__has_known_arch(__cc);
   static_assert(__is_known_cc, "unknown CUDA architecture");
   return ::cuda::to_arch_id(__cc);
-#    endif // ^^^ __CUDA_ARCH_SPECIFIC__ ^^^
+#    endif // ^^^ ordinary arch ^^^
 #  else
   return {};
 #  endif // ^^^ single-pass cuda compiler ^^^
