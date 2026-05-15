@@ -94,6 +94,7 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 'all', sm: '75;80;90;100;120'}
+    - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
     # libc++
     # - arm64 for now as it's closest to android.
     # - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100;120'}
@@ -229,6 +230,7 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100;120'}
+    - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
     # clang-tidy
     - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
     # arch-specific and family-specific arch builds
@@ -321,6 +323,7 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100;120'}
+    - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
     # clang-tidy
