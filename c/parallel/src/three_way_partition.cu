@@ -273,16 +273,7 @@ static_assert(
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  {
-    const CUresult status =
-      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
-    {
-      build_ptr->library = nullptr;
-      return CUDA_ERROR_NO_BINARY_FOR_GPU;
-    }
-    check(status);
-  }
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
   check(cuLibraryGetKernel(&build_ptr->three_way_partition_init_kernel,
                            build_ptr->library,
                            three_way_partition_init_kernel_lowered_name.c_str()));

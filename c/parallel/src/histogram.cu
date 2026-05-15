@@ -375,16 +375,7 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  {
-    const CUresult status =
-      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
-    {
-      build_ptr->library = nullptr;
-      return CUDA_ERROR_NO_BINARY_FOR_GPU;
-    }
-    check(status);
-  }
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
   check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 

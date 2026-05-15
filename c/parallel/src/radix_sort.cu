@@ -351,16 +351,7 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  {
-    const CUresult status =
-      cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    if (status == CUDA_ERROR_NO_BINARY_FOR_GPU)
-    {
-      build_ptr->library = nullptr;
-      return CUDA_ERROR_NO_BINARY_FOR_GPU;
-    }
-    check(status);
-  }
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
   check(
     cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, single_tile_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, upsweep_kernel_lowered_name.c_str()));
