@@ -78,6 +78,12 @@ if [[ " ${preset_variants[*]} " == *" test_gpu "* ]]; then
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-test_gpu" \
       "$build_dir_regex/lib/.*\.cuda\.test\.framework\..*" > /dev/null
+  # The CUDA runtime smoke binary is the setup fixture for every CUDA-backed
+  # thrust test; its name does not match the thrust\..*\.cuda\..* regex above,
+  # so stage it explicitly.
+  ci/util/artifacts/stage.sh \
+      "$artifact_prefix-test_gpu" \
+      "$build_dir_regex/bin/cccl\.test\.cuda_runtime_smoke$" > /dev/null
 
   # Windows builds generate binaries for the header tests, remove these:
   ci/util/artifacts/unstage.sh  \

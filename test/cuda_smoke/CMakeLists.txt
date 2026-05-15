@@ -1,19 +1,30 @@
-# CUDA runtime smoke test — registered as CTest fixture cccl.cuda_runtime_ok
-# add_test() override gates all other tests on this fixture
-
-enable_language(CUDA)
+# Registered as a CTest setup fixture (${CCCL_CUDA_SMOKE_FIXTURE}); library
+# tests get FIXTURES_REQUIRED via the deferred walker in
+# cmake/CCCLCudaSmokeFixture.cmake, which emits ${CMAKE_BINARY_DIR}/CTestCustom.cmake.
+#
+# Declare CUDA inside this subproject only so the root project() can stay
+# CXX-only (external consumers via add_subdirectory(cccl) see no change).
+project(CCCL_CUDA_SMOKE LANGUAGES CXX CUDA)
 
 cccl_get_catch2()
-cccl_get_cudatoolkit()
 
-set(_smoke_target cccl.test.cuda_runtime_smoke)
+cccl_add_executable(${CCCL_CUDA_SMOKE_TARGET} SOURCES cuda_runtime_smoke.cu)
 
-cccl_add_executable(${_smoke_target} SOURCES cuda_runtime_smoke.cu ADD_CTEST)
+target_link_libraries(${CCCL_CUDA_SMOKE_TARGET} PRIVATE Catch2::Catch2WithMain)
 
-target_link_libraries(${_smoke_target} PRIVATE Catch2::Catch2WithMain)
+# The smoke TEST_CASEs are tagged [.smoke] (leading dot hides them from the
+# default Catch2 listing when the binary is run by hand). Pass the tag
+# explicitly so CTest actually selects them; without it, Catch2 v3 exits
+# non-zero with "No tests ran" and the fixture poisons every downstream test.
+add_test(
+  NAME
+  ${CCCL_CUDA_SMOKE_TARGET}
+  COMMAND
+  "$<TARGET_FILE:${CCCL_CUDA_SMOKE_TARGET}>"
+  "[.smoke]"
+)
 
-# the top level override skips this test to avoid self dependency.
 set_tests_properties(
-  ${_smoke_target}
-  PROPERTIES FIXTURES_SETUP cccl.cuda_runtime_ok
+  ${CCCL_CUDA_SMOKE_TARGET}
+  PROPERTIES FIXTURES_SETUP ${CCCL_CUDA_SMOKE_FIXTURE}
 )

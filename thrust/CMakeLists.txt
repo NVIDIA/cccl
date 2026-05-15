@@ -52,6 +52,16 @@ if (THRUST_ENABLE_HEADER_TESTING)
   include(cmake/ThrustHeaderTesting.cmake)
 endif()
 
+# Only CUDA-backed Thrust configs need the runtime smoke; host-only configs
+# (CPP/OMP/TBB device) must not require the fixture or ctest would always run
+# the smoke binary first and fail on GPU-less nodes. Stored as a plain CMake
+# variable (not a directory property) so it propagates through add_subdirectory
+# into thrust/testing/ and thrust/examples/. The add_test() macro shadow in
+# cmake/CCCLCudaSmokeFixture.cmake reads this variable directly.
+if (CCCL_TOPLEVEL_PROJECT AND CCCL_CUDA_SMOKE_ENABLED)
+  set(CCCL_CUDA_SMOKE_NAME_REGEX "^thrust.*\\.cuda\\..*$")
+endif()
+
 if (THRUST_ENABLE_TESTING)
   add_subdirectory(testing)
 endif()

@@ -67,6 +67,12 @@ for preset_variant in "${preset_variants[@]}"; do
     ci/util/artifacts/stage.sh  \
         "$artifact_prefix-$preset_variant" \
         "$build_dir_regex/bin/.*\.$preset_variant.*" > /dev/null
+    # The CUDA runtime smoke binary is the setup fixture for every cub test;
+    # its name has no lid_* infix so the per-preset regex above misses it.
+    # Stage it explicitly into every lid variant.
+    ci/util/artifacts/stage.sh  \
+        "$artifact_prefix-$preset_variant" \
+        "$build_dir_regex/bin/cccl\.test\.cuda_runtime_smoke$" > /dev/null
     # Windows builds generate binaries for the header tests, remove these:
     ci/util/artifacts/unstage.sh  \
         "$artifact_prefix-$preset_variant" \

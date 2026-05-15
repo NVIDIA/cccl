@@ -123,48 +123,44 @@ if (CCCL_TOPLEVEL_PROJECT)
   cccl_build_compiler_targets()
 endif()
 
-# Override add_test() to auto attach FIXTURES_REQUIRED to every test,
-# gating them all on the CUDA runtime smoke test (cccl.cuda_runtime_ok).
+# CUDA runtime smoke test.
+#
+# A single CTest fixture-setup test verifies that the CUDA runtime is functional
+# (device visible, kernel launch + managed-memory round-trip work). Every other
+# CCCL test in this build is then declared to require that fixture, so a broken
+# CUDA install fails fast and once, instead of producing dozens of confusing
+# downstream failures.
+#
+# We deliberately gate on the top-level CCCL_ENABLE_* options here, not on the
+# subprojects' *_ENABLE_TESTING options: those are option()s declared inside
+# each subproject's CMakeLists.txt and are therefore undefined at this scope
+# until add_subdirectory() runs. Note also that the smoke test is intentionally
+# *not* gated on CCCL_ENABLE_TESTING: it is meant to guard any GPU-touching
+# test that any enabled subproject registers, regardless of whether the
+# top-level test/ tree is also being built.
+set(CCCL_CUDA_SMOKE_TARGET cccl.test.cuda_runtime_smoke)
+set(CCCL_CUDA_SMOKE_FIXTURE cccl.cuda_runtime_ok)
+
+set(CCCL_CUDA_SMOKE_ENABLED OFF)
 if (
-  CUB_ENABLE_TESTING
-  OR THRUST_ENABLE_TESTING
-  OR LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS
-  OR cudax_ENABLE_TESTING
+  CCCL_TOPLEVEL_PROJECT
+  AND
+    (
+      CCCL_ENABLE_CUB
+      OR CCCL_ENABLE_THRUST
+      OR CCCL_ENABLE_LIBCUDACXX
+      OR CCCL_ENABLE_CUDAX
+    )
 )
-  function(add_test)
-    _add_test(${ARGV})
-    if (NOT ARGV0 STREQUAL "NAME")
-      return()
-    endif()
+  set(CCCL_CUDA_SMOKE_ENABLED ON)
+endif()
 
-    set(_test_name "${ARGV1}")
-
-    if (_test_name STREQUAL "cccl.test.cuda_runtime_smoke")
-      return()
-    endif()
-
-    if (_test_name MATCHES "^cub\\.")
-      set_tests_properties(
-        "${_test_name}"
-        PROPERTIES FIXTURES_REQUIRED cccl.cuda_runtime_ok
-      )
-    elseif (_test_name MATCHES "^libcudacxx\\.test\\.")
-      set_tests_properties(
-        "${_test_name}"
-        PROPERTIES FIXTURES_REQUIRED cccl.cuda_runtime_ok
-      )
-    elseif (_test_name MATCHES "^cudax\\.test\\.")
-      set_tests_properties(
-        "${_test_name}"
-        PROPERTIES FIXTURES_REQUIRED cccl.cuda_runtime_ok
-      )
-    elseif (_test_name MATCHES "^thrust.*\\.cuda\\..*$")
-      set_tests_properties(
-        "${_test_name}"
-        PROPERTIES FIXTURES_REQUIRED cccl.cuda_runtime_ok
-      )
-    endif()
-  endfunction()
+# cmake/CCCLCudaSmokeFixture.cmake shadows add_test() with a macro that
+# auto-attaches FIXTURES_REQUIRED=${CCCL_CUDA_SMOKE_FIXTURE} to every CUDA-
+# touching test. Must be included BEFORE any add_subdirectory() that may
+# register tests, otherwise the macro shadow misses early tests.
+if (CCCL_TOPLEVEL_PROJECT)
+  include(cmake/CCCLCudaSmokeFixture.cmake)
 endif()
 
 add_subdirectory(libcudacxx)
@@ -184,14 +180,28 @@ if (CCCL_ENABLE_TESTING)
   add_subdirectory("test")
 endif()
 
-# Must be added after all subprojects so all tests are registered before the fixture is set up.
-if (
-  CUB_ENABLE_TESTING
-  OR THRUST_ENABLE_TESTING
-  OR LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS
-  OR cudax_ENABLE_TESTING
-)
+# Must run after every subproject has registered its tests. Fixture properties
+# are attached from each subproject's CMakeLists.txt (see
+# cmake/CCCLCudaSmokeFixture.cmake) so set_tests_properties sees nested-project
+# tests; then register the smoke target here.
+if (CCCL_CUDA_SMOKE_ENABLED)
+  # test/cuda_smoke/ declares its own project(... LANGUAGES CXX CUDA), so the
+  # CUDA toolchain is enabled inside that subtree only. The root project()
+  # above stays CXX-only; external consumers that pull CCCL in via
+  # add_subdirectory() see no change in root-scope language enablement.
   add_subdirectory(test/cuda_smoke)
+
+  # Make each subproject's top-level metatarget pull in the smoke binary.
+  # This means `ninja cub`/`thrust`/`libcudacxx`/`cudax` (which most test
+  # presets build, directly or transitively) always produces the smoke
+  # executable, so no CMakePresets.json target list needs to mention it by
+  # name. Presets that build a more specific target still need to either list
+  # the smoke target or build one of these metatargets.
+  foreach (_sub IN ITEMS libcudacxx cub thrust cudax)
+    if (TARGET ${_sub})
+      add_dependencies(${_sub} ${CCCL_CUDA_SMOKE_TARGET})
+    endif()
+  endforeach()
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)

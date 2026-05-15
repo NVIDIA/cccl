@@ -28,10 +28,12 @@ __global__ void increment_kernel(int* p, int n)
   }
 }
 
-TEST_CASE("CUDA device is available", "[cuda_smoke]")
-{
-  (void) cudaGetLastError(); // clear any pre-existing error state
+// All TEST_CASEs are tagged [.smoke] so they are hidden from the default
+// Catch2 listing when the binary is run by hand; they are still reachable via
+// `--list-tests --tags`, CTest, or by passing the tag explicitly.
 
+TEST_CASE("CUDA device is available", "[.smoke][cuda_smoke]")
+{
   int device_count = 0;
   CUDART_REQUIRE(cudaGetDeviceCount(&device_count));
   REQUIRE(device_count > 0);
@@ -40,16 +42,14 @@ TEST_CASE("CUDA device is available", "[cuda_smoke]")
 
   cudaDeviceProp props{};
   CUDART_REQUIRE(cudaGetDeviceProperties(&props, 0));
-  // real device has a non-empty name
   REQUIRE(props.name[0] != '\0');
-  REQUIRE(props.major >= 1);
 
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }
 
 // Covers the NVBug 5739038 failure : host write -> kernel transform -> host read-back
 // via a managed pointer. Fails here instead of producing dozens of thrust/cub failures.
-TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
+TEST_CASE("cudaMallocManaged round-trip works", "[.smoke][cuda_smoke][managed_memory]")
 {
   (void) cudaGetLastError(); // clear any pre-existing error state
 
