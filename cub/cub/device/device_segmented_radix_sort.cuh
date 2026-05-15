@@ -699,7 +699,7 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
         storage,
         bytes,
@@ -712,7 +712,9 @@ public:
         begin_bit,
         end_bit,
         true,
-        stream);
+        stream,
+        {},
+        tuning_env);
     });
   }
 
@@ -1353,7 +1355,7 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
         storage,
         bytes,
@@ -1366,7 +1368,9 @@ public:
         begin_bit,
         end_bit,
         true,
-        stream);
+        stream,
+        {},
+        tuning_env);
     });
   }
 
@@ -1963,7 +1967,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
         storage,
         bytes,
@@ -1976,7 +1980,9 @@ public:
         begin_bit,
         end_bit,
         true,
-        stream);
+        stream,
+        {},
+        tuning_env);
     });
   }
 
@@ -2565,7 +2571,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
         storage,
         bytes,
@@ -2578,7 +2584,9 @@ public:
         begin_bit,
         end_bit,
         true,
-        stream);
+        stream,
+        {},
+        tuning_env);
     });
   }
 
