@@ -37,8 +37,8 @@ struct MoveAssignable
   MoveAssignable& operator=(MoveAssignable&&)      = default;
 };
 
-TEST_GLOBAL_VARIABLE int copied = 0;
-TEST_GLOBAL_VARIABLE int moved  = 0;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE int copied = 0;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE int moved  = 0;
 
 struct CountAssign
 {
