@@ -65,7 +65,6 @@ struct stream_registry_factory_state_t
 {
   cuda::std::optional<cudaStream_t> m_stream;
   cuda::std::span<void*> m_kernels;
-  size_t m_kernel_launches = 0;
 };
 
 static CUB_RUNTIME_FUNCTION stream_registry_factory_state_t* get_stream_registry_factory_state()
@@ -73,18 +72,6 @@ static CUB_RUNTIME_FUNCTION stream_registry_factory_state_t* get_stream_registry
   stream_registry_factory_state_t* ptr{};
   NV_IF_ELSE_TARGET(NV_IS_HOST, (static stream_registry_factory_state_t state; ptr = &state;), (ptr = nullptr;));
   return ptr;
-}
-
-static CUB_RUNTIME_FUNCTION void reset_kernel_launches()
-{
-  NV_IF_TARGET(NV_IS_HOST, (get_stream_registry_factory_state()->m_kernel_launches = 0;));
-}
-
-static CUB_RUNTIME_FUNCTION auto get_kernel_launches() -> size_t
-{
-  size_t launches = 0;
-  NV_IF_TARGET(NV_IS_HOST, (launches = get_stream_registry_factory_state()->m_kernel_launches;));
-  return launches;
 }
 
 struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
@@ -98,7 +85,6 @@ struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
   CUB_RUNTIME_FUNCTION cudaError_t doit(K kernel, Args const&... args) const
   {
     NV_IF_TARGET(NV_IS_HOST, ({
-                   ++get_stream_registry_factory_state()->m_kernel_launches;
                    auto& kernels = get_stream_registry_factory_state()->m_kernels;
                    if (!kernels.empty())
                    {

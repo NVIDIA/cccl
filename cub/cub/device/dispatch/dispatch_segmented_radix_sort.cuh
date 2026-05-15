@@ -903,8 +903,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   TuningEnvT             = {})
 {
   using default_policy_selector_t = policy_selector_from_types<KeyT, ValueT, SegmentSizeT>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, segmented_radix_sort_policy, default_policy_selector_t>;
+  using policy_selector_t         = ::cuda::std::decay_t<
+            ::cuda::std::execution::__query_result_or_t<TuningEnvT, segmented_radix_sort_policy, default_policy_selector_t>>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(segmented_radix_sort_policy_selector<policy_selector_t>);
 #endif // _CCCL_HAS_CONCEPTS()
