@@ -34,17 +34,15 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs works with default environment", 
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairs(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<int>(keys_in.size()),
-      3,
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairs(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    3,
+    offsets.begin(),
+    offsets.begin() + 1));
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   c2h::device_vector<int> expected_values{1, 2, 0, 5, 4, 3, 6};
@@ -61,17 +59,15 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending works with default envi
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairsDescending(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<int>(keys_in.size()),
-      3,
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairsDescending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    3,
+    offsets.begin(),
+    offsets.begin() + 1));
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
@@ -85,15 +81,13 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeys works with default environment", "
   auto keys_out = c2h::device_vector<int>(7);
   auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeys(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<int>(keys_in.size()),
-      3,
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeys(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<int>(keys_in.size()),
+    3,
+    offsets.begin(),
+    offsets.begin() + 1));
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   REQUIRE(keys_out == expected_keys);
@@ -106,15 +100,13 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending works with default envir
   auto keys_out = c2h::device_vector<int>(7);
   auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeysDescending(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<int>(keys_in.size()),
-      3,
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeysDescending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<int>(keys_in.size()),
+    3,
+    offsets.begin(),
+    offsets.begin() + 1));
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   REQUIRE(keys_out == expected_keys);
@@ -129,9 +121,8 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeys DoubleBuffer works with default en
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf.data()), thrust::raw_pointer_cast(keys_alt.data()));
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedRadixSort::SortKeys(
-            d_keys, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeys(
+    d_keys, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
 
   c2h::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -149,9 +140,8 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer works with 
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf.data()), thrust::raw_pointer_cast(keys_alt.data()));
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedRadixSort::SortKeysDescending(
-            d_keys, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeysDescending(
+    d_keys, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
 
   c2h::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -171,19 +161,17 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs uses environment", "[segmented_rad
   auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -215,19 +203,17 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending uses environment", "[seg
   auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -257,17 +243,15 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys uses environment", "[segmented_radi
   auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeys(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeys(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -293,17 +277,15 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending uses environment", "[segm
   auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeysDescending(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeysDescending(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -331,22 +313,20 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs uses custom stream", "[segmented_
   auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -364,14 +344,14 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs uses custom stream", "[segmented_
     static_cast<int>(sizeof(int) * 8),
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   c2h::device_vector<int> expected_values{1, 2, 0, 5, 4, 3, 6};
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending uses custom stream", "[segmented_radix_sort][device]")
@@ -383,22 +363,20 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending uses custom stream", "[
   auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -416,14 +394,14 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending uses custom stream", "[
     static_cast<int>(sizeof(int) * 8),
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceSegmentedRadixSort::SortKeys uses custom stream", "[segmented_radix_sort][device]")
@@ -433,20 +411,18 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeys uses custom stream", "[segmented_r
   auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeys(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeys(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -462,12 +438,12 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeys uses custom stream", "[segmented_r
     static_cast<int>(sizeof(int) * 8),
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   REQUIRE(keys_out == expected_keys);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending uses custom stream", "[segmented_radix_sort][device]")
@@ -477,20 +453,18 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending uses custom stream", "[s
   auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeysDescending(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeysDescending(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -506,12 +480,12 @@ TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending uses custom stream", "[s
     static_cast<int>(sizeof(int) * 8),
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   REQUIRE(keys_out == expected_keys);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer uses environment", "[segmented_radix_sort][device]")
@@ -523,16 +497,14 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer uses environment", "[s
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf.data()), thrust::raw_pointer_cast(keys_alt.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeys(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      static_cast<::cuda::std::int64_t>(keys_buf.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeys(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    static_cast<::cuda::std::int64_t>(keys_buf.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -562,16 +534,14 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer uses environ
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf.data()), thrust::raw_pointer_cast(keys_alt.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortKeysDescending(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      static_cast<::cuda::std::int64_t>(keys_buf.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortKeysDescending(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    static_cast<::cuda::std::int64_t>(keys_buf.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -605,9 +575,8 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer works with default e
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf.data()), thrust::raw_pointer_cast(values_alt.data()));
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedRadixSort::SortPairs(
-            d_keys, d_values, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairs(
+    d_keys, d_values, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
 
   c2h::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -633,9 +602,8 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer works with
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf.data()), thrust::raw_pointer_cast(values_alt.data()));
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedRadixSort::SortPairsDescending(
-            d_keys, d_values, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairsDescending(
+    d_keys, d_values, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1));
 
   c2h::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -661,17 +629,15 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses environment", "[
     thrust::raw_pointer_cast(values_buf.data()), thrust::raw_pointer_cast(values_alt.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -711,17 +677,15 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer uses enviro
     thrust::raw_pointer_cast(values_buf.data()), thrust::raw_pointer_cast(values_alt.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -760,20 +724,18 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream",
     thrust::raw_pointer_cast(values_buf.data()), thrust::raw_pointer_cast(values_alt.data()));
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedRadixSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf.size()),
-      static_cast<::cuda::std::int64_t>(3),
-      offsets.begin(),
-      offsets.begin() + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedRadixSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf.size()),
+    static_cast<::cuda::std::int64_t>(3),
+    offsets.begin(),
+    offsets.begin() + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -789,7 +751,7 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream",
     static_cast<int>(sizeof(int) * 8),
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -801,5 +763,5 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream",
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }

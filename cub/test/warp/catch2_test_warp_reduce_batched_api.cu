@@ -47,8 +47,8 @@ C2H_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batc
   c2h::device_vector<int> d_out(6);
 
   WarpReduceBatchedOverviewKernel<<<1, 64>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{30, 31, 32, 62, 63, 64};
   REQUIRE(expected == d_out);
@@ -90,8 +90,8 @@ C2H_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batch
   c2h::device_vector<int> d_out(3);
 
   WarpReduceBatchedReduceApiKernel<<<1, 64>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{14, 15, 16};
   REQUIRE(expected == d_out);
@@ -150,8 +150,8 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][redu
   c2h::device_vector<int> d_out(6);
 
   WarpReduceBatchedReduceToStripedApiKernel<<<1, 8>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
   REQUIRE(expected == d_out);
@@ -211,8 +211,8 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][redu
   c2h::device_vector<int> d_out(6);
 
   WarpReduceBatchedReduceToBlockedApiKernel<<<1, 8>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
   REQUIRE(expected == d_out);
@@ -250,8 +250,8 @@ C2H_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]
   c2h::device_vector<int> d_out(6);
 
   WarpReduceBatchedSumApiKernel<<<1, 8>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{2, 6, 10, 18, 22, 26};
   REQUIRE(expected == d_out);
@@ -298,8 +298,8 @@ C2H_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce]
   c2h::device_vector<int> d_out(20);
 
   WarpReduceBatchedSumToStripedApiKernel<<<1, 8>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
   REQUIRE(expected == d_out);
@@ -346,8 +346,8 @@ C2H_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce]
   c2h::device_vector<int> d_out(20);
 
   WarpReduceBatchedSumToBlockedApiKernel<<<1, 8>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
   REQUIRE(expected == d_out);

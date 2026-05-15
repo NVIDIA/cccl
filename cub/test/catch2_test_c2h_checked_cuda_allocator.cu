@@ -13,8 +13,7 @@ std::size_t get_alloc_bytes()
 {
   std::size_t free_bytes{};
   std::size_t total_bytes{};
-  cudaError_t status = cudaMemGetInfo(&free_bytes, &total_bytes);
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(cudaMemGetInfo(&free_bytes, &total_bytes));
 
   // Find a size that's > free but < total, preferring to return more than total if the values are
   // too close.

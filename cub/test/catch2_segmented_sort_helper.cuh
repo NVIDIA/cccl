@@ -521,7 +521,7 @@ void generate_unsorted_derived_inputs(
   }
 
   // The for_each calls are using nosync policies:
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 // Verifies the results of sorting the segmented key/value arrays produced by generate_unsorted_derived_inputs.
@@ -1112,12 +1112,12 @@ public:
 
   void initialize()
   {
-    REQUIRE(cudaSuccess == cudaMallocHost(&m_selectors, 2 * sizeof(int)));
+    REQUIRE_CUDART(cudaMallocHost(&m_selectors, 2 * sizeof(int)));
   }
 
   void finalize()
   {
-    REQUIRE(cudaSuccess == cudaFreeHost(m_selectors));
+    REQUIRE_CUDART(cudaFreeHost(m_selectors));
     m_selectors = nullptr;
   }
 
@@ -1605,10 +1605,10 @@ c2h::device_vector<int> generate_edge_case_offsets()
   using MaxPolicyT = typename cub::detail::segmented_sort::policy_hub<KeyT, ValueT>::MaxPolicy;
 
   int ptx_version = 0;
-  REQUIRE(cudaSuccess == CubDebug(cub::PtxVersion(ptx_version)));
+  REQUIRE_CUDART(CubDebug(cub::PtxVersion(ptx_version)));
 
   generate_edge_case_offsets_dispatch dispatch;
-  REQUIRE(cudaSuccess == CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch)));
+  REQUIRE_CUDART(CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch)));
 
   return dispatch.generate_offsets();
 }
@@ -1646,7 +1646,7 @@ inline int generate_unspecified_segments_offsets(
   thrust::scatter(
     c2h::nosync_device_policy, const_zero_begin, const_zero_end, erase_indices.cbegin(), d_end_offsets.begin());
 
-  REQUIRE(cudaSuccess == CubDebug(cudaDeviceSynchronize()));
+  REQUIRE_CUDART(CubDebug(cudaDeviceSynchronize()));
 
   // Add more items to place another unspecified segment at the end.
   const int num_items = d_end_offsets.back() + 243;

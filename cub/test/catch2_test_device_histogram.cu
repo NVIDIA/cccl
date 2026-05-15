@@ -752,7 +752,7 @@ C2H_TEST_LIST(
   const int valid_num_levels = valid_num_bins + 1;
 
   temp_storage_bytes = canary_bytes;
-  const auto error2  = cub::DeviceHistogram::HistogramEven(
+  REQUIRE_CUDART(cub::DeviceHistogram::HistogramEven(
     nullptr,
     temp_storage_bytes,
     d_samples,
@@ -760,9 +760,8 @@ C2H_TEST_LIST(
     valid_num_levels,
     lower_level,
     static_cast<level_t>(valid_num_bins), // upper_level must accommodate all bins
-    num_samples);
+    num_samples));
 
-  CHECK(error2 == cudaSuccess);
   CHECK(temp_storage_bytes != canary_bytes);
 }
 #endif // TEST_LAUNCH == 0

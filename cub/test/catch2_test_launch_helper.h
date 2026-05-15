@@ -94,30 +94,30 @@ template <class ActionT, class... Args>
 void launch(ActionT action, Args... args)
 {
   cudaStream_t stream{};
-  REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
 
   std::size_t temp_storage_bytes{};
   cudaError_t error = action(nullptr, temp_storage_bytes, args..., stream);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == error);
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(error);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
   cudaGraph_t graph{};
-  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
+  REQUIRE_CUDART(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
   error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args..., stream);
-  REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
-  REQUIRE(cudaSuccess == error);
+  REQUIRE_CUDART(cudaStreamEndCapture(stream, &graph));
+  REQUIRE_CUDART(error);
 
   cudaGraphExec_t exec{};
-  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+  REQUIRE_CUDART(cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
 
-  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream));
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
+  REQUIRE_CUDART(cudaGraphLaunch(exec, stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream));
 
-  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
-  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
-  REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
+  REQUIRE_CUDART(cudaGraphExecDestroy(exec));
+  REQUIRE_CUDART(cudaGraphDestroy(graph));
+  REQUIRE_CUDART(cudaStreamDestroy(stream));
 }
 
 #elif TEST_LAUNCH == 1
@@ -158,9 +158,9 @@ void launch(ActionT action, Args... args)
     thrust::raw_pointer_cast(d_error.data()),
     action,
     args...);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == d_error[0]);
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(d_error[0]);
 
   c2h::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0], thrust::no_init);
 
@@ -170,9 +170,9 @@ void launch(ActionT action, Args... args)
     thrust::raw_pointer_cast(d_error.data()),
     action,
     args...);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == d_error[0]);
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(d_error[0]);
 }
 
 #else // TEST_LAUNCH == 0
@@ -182,18 +182,18 @@ void launch(ActionT action, Args... args)
 {
   std::size_t temp_storage_bytes{};
   cudaError_t error = action(nullptr, temp_storage_bytes, args...);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == error);
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(error);
 
   REQUIRE(temp_storage_bytes > 0); // required by API contract
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
   error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args...);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(cudaSuccess == error);
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(error);
 }
 
 #endif // TEST_LAUNCH == 0

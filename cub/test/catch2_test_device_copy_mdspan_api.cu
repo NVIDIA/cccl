@@ -10,11 +10,6 @@
 
 #include <c2h/catch2_test_helper.h>
 
-void check_status(cudaError_t status)
-{
-  REQUIRE(status == cudaSuccess);
-}
-
 C2H_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]")
 {
   // clang-format off
@@ -37,16 +32,14 @@ C2H_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]")
   // Determine temporary device storage requirements
   void*  d_temp_storage     = nullptr;
   size_t temp_storage_bytes = 0;
-  auto status = cub::DeviceCopy::Copy(d_temp_storage, temp_storage_bytes, mdspan_in, mdspan_out);
-  check_status(status);
+  REQUIRE_CUDART(cub::DeviceCopy::Copy(d_temp_storage, temp_storage_bytes, mdspan_in, mdspan_out));
 
   // Allocate temporary storage using thrust::device_vector
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run copy algorithm
-  status = cub::DeviceCopy::Copy(d_temp_storage, temp_storage_bytes, mdspan_in, mdspan_out);
-  check_status(status);
+  REQUIRE_CUDART(cub::DeviceCopy::Copy(d_temp_storage, temp_storage_bytes, mdspan_in, mdspan_out));
 // example-end copy-mdspan-example-op
   // clang-format on
   REQUIRE(d_input == d_output);

@@ -37,17 +37,15 @@ TEST_CASE("DeviceSegmentedSort::StableSortPairs works with default environment",
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::StableSortPairs(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<int>(keys_in.size()),
-      2,
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::StableSortPairs(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    2,
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   c2h::device_vector<int> expected_values{1, 2, 0, 5, 4, 3, 6};
@@ -64,17 +62,15 @@ TEST_CASE("DeviceSegmentedSort::StableSortPairsDescending works with default env
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::StableSortPairsDescending(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<int>(keys_in.size()),
-      2,
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::StableSortPairsDescending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    2,
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
@@ -90,17 +86,15 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable works with default environme
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairs(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<int>(keys_in.size()),
-      2,
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairs(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    2,
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   c2h::device_vector<int> expected_values{1, 2, 0, 5, 4, 3, 6};
@@ -117,17 +111,15 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable works with default
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairsDescending(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<int>(keys_in.size()),
-      2,
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairsDescending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    2,
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
@@ -148,15 +140,13 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer works with defa
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairs(
-      d_keys,
-      d_values,
-      static_cast<int>(keys_buf0.size()),
-      2,
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairs(
+    d_keys,
+    d_values,
+    static_cast<int>(keys_buf0.size()),
+    2,
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   c2h::device_vector<int> expected_values{1, 2, 0, 5, 4, 3, 6};
@@ -179,15 +169,13 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer works
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairsDescending(
-      d_keys,
-      d_values,
-      static_cast<int>(keys_buf0.size()),
-      2,
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairsDescending(
+    d_keys,
+    d_values,
+    static_cast<int>(keys_buf0.size()),
+    2,
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
@@ -210,19 +198,17 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream", "[segme
   cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -257,19 +243,17 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream
   cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -308,17 +292,15 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom str
   cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf0.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf0.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -357,17 +339,15 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses 
   cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf0.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf0.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -400,19 +380,17 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairs uses environment", "[segmented_so
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::StableSortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::StableSortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -442,19 +420,17 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairsDescending uses environment", "[se
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::StableSortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::StableSortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -488,17 +464,15 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairs DoubleBuffer uses environment", "
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::StableSortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf0.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::StableSortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf0.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -533,17 +507,15 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer uses envir
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::StableSortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf0.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::StableSortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf0.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -573,19 +545,17 @@ C2H_TEST("DeviceSegmentedSort::SortPairs nonstable uses environment", "[segmente
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -615,19 +585,17 @@ C2H_TEST("DeviceSegmentedSort::SortPairsDescending nonstable uses environment", 
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      static_cast<::cuda::std::int64_t>(keys_in.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<::cuda::std::int64_t>(keys_in.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -661,17 +629,15 @@ C2H_TEST("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses environment
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf0.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairs(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf0.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -705,17 +671,15 @@ C2H_TEST("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses e
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedSort::SortPairsDescending(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys,
-      d_values,
-      static_cast<::cuda::std::int64_t>(keys_buf0.size()),
-      static_cast<::cuda::std::int64_t>(2),
-      thrust::raw_pointer_cast(offsets.data()),
-      thrust::raw_pointer_cast(offsets.data()) + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedSort::SortPairsDescending(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys,
+    d_values,
+    static_cast<::cuda::std::int64_t>(keys_buf0.size()),
+    static_cast<::cuda::std::int64_t>(2),
+    thrust::raw_pointer_cast(offsets.data()),
+    thrust::raw_pointer_cast(offsets.data()) + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 

@@ -62,7 +62,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
   thrust::device_vector<int> expected{0, 1, 3, 0, 4, 0, 6, 13};
   // example-end exclusive-segmented-sum-two-offsets
 
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(status);
   REQUIRE(output == expected);
 }
 
@@ -114,7 +114,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   thrust::device_vector<int> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
   // example-end exclusive-segmented-sum-three-offsets
 
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(status);
   REQUIRE(output == expected);
 }
 
@@ -151,7 +151,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
   thrust::device_vector<int> expected{2, 3, 4, 2, 3, 2, 3, 4};
   // example-end inclusive-segmented-sum-two-offsets
 
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(status);
   // input was modified inplace
   REQUIRE(input == expected);
 }
@@ -210,7 +210,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   auto expected = thrust::device_vector<int>{h_expected};
   // example-end inclusive-segmented-sum-three-offsets
 
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(status);
   REQUIRE(output == expected);
 }
 
@@ -272,7 +272,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
   auto expected = thrust::device_vector<unsigned>{h_expected};
   // example-end inclusive-segmented-scan-init-two-offsets
 
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(status);
   REQUIRE(expected == output);
 }
 
@@ -347,7 +347,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
     auto out_b = h_input.begin() + h_offsets[id];
     compute_exclusive_scan_reference(inp_b, inp_e, out_b, init_value, scan_op);
   }
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(status);
   REQUIRE(output == h_input);
 }
 
@@ -410,5 +410,5 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
 
   // example-end inclusive-segmented-scan-three-offsets
   REQUIRE(output == expected);
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(status);
 }

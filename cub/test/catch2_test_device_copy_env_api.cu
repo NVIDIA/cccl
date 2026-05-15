@@ -53,7 +53,7 @@ C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
   }
   // example-end copy-batched-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_dst == d_src);
 }
 
@@ -87,7 +87,7 @@ C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")
   }
   // example-end copy-mdspan-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   // Verify the data was copied
   REQUIRE(d_input == d_output);
 }

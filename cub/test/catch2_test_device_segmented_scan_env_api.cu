@@ -37,7 +37,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[seg
   // example-end exclusive-segmented-sum-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -64,7 +64,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[se
   // example-end exclusive-segmented-scan-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -91,7 +91,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[seg
   // example-end inclusive-segmented-sum-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -118,7 +118,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[se
   // example-end inclusive-segmented-scan-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -145,7 +145,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", 
   // example-end inclusive-segmented-scan-init-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -175,7 +175,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) acc
   // example-end exclusive-segmented-sum-separate-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -213,7 +213,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
   // example-end exclusive-segmented-scan-separate-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -243,7 +243,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) acc
   // example-end inclusive-segmented-sum-separate-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -280,7 +280,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) ac
   // example-end inclusive-segmented-scan-separate-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }
 
@@ -319,6 +319,6 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
   // example-end inclusive-segmented-scan-init-separate-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out == expected);
 }

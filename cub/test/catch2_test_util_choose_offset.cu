@@ -36,14 +36,12 @@ C2H_TEST("Tests choose_signed_offset", "[util][type]")
   STATIC_REQUIRE(cuda::std::is_same_v<cub::detail::choose_signed_offset_t<std::int64_t>, std::int64_t>);
 
   // Offset type covers maximum number representable by a signed 32-bit integer
-  REQUIRE(cudaSuccess
-          == cub::detail::choose_signed_offset<std::int32_t>::is_exceeding_offset_type(
-            cuda::std::numeric_limits<std::int32_t>::max()));
+  REQUIRE_CUDART(cub::detail::choose_signed_offset<std::int32_t>::is_exceeding_offset_type(
+    cuda::std::numeric_limits<std::int32_t>::max()));
 
   // Offset type covers maximum number representable by a signed 64-bit integer
-  REQUIRE(cudaSuccess
-          == cub::detail::choose_signed_offset<std::int64_t>::is_exceeding_offset_type(
-            cuda::std::numeric_limits<std::int64_t>::max()));
+  REQUIRE_CUDART(cub::detail::choose_signed_offset<std::int64_t>::is_exceeding_offset_type(
+    cuda::std::numeric_limits<std::int64_t>::max()));
 
   // Offset type does not support maximum number representable by an unsigned 64-bit integer
   REQUIRE(cudaErrorInvalidValue

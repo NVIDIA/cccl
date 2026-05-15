@@ -145,8 +145,8 @@ C2H_TEST("ThreadReduce Integral Type Tests",
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   thread_reduce_partial_kernel<num_items>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), reduce_op, valid_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
@@ -177,8 +177,8 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests",
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   thread_reduce_partial_kernel<num_items>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), reduce_op, valid_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
@@ -216,8 +216,8 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
     unwrap_it(thrust::raw_pointer_cast(d_out.data())),
     reduce_op,
     valid_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
@@ -241,21 +241,21 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
 
   thread_reduce_partial_kernel_array<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 
   thread_reduce_partial_kernel_span<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 
 #if _CCCL_STD_VER >= 2023
   thread_reduce_partial_kernel_mdspan<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), op_t{}, valid_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 #endif // _CCCL_STD_VER >= 2023
 }
@@ -286,8 +286,8 @@ C2H_TEST("ThreadReducePartial does not invoke the reduction operator on invalid 
     thrust::raw_pointer_cast(d_out.data()),
     merge_segments_op{thrust::raw_pointer_cast(error_flag.data())},
     valid_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(error_flag.front() == false);
   if (valid_items > 0)
   {

@@ -255,8 +255,8 @@ void run_thread_reduce_kernel(
     default:
       FAIL("Unsupported number of items");
   }
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 constexpr int max_size  = 16;
@@ -344,21 +344,21 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
 
   thread_reduce_kernel_array<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 
   thread_reduce_kernel_span<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 
 #if _CCCL_STD_VER >= 2023
   thread_reduce_kernel_mdspan<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 #endif // _CCCL_STD_VER >= 2023
 }

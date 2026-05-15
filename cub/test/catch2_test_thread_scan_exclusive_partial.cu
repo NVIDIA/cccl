@@ -191,8 +191,8 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests",
     prefix,
     apply_prefix,
     filler);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   if (!apply_prefix)
   {
     // Undefined for exclusive scan
@@ -248,8 +248,8 @@ C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
     prefix,
     apply_prefix,
     filler);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   if (!apply_prefix)
   {
     // Undefined for exclusive scan
@@ -310,8 +310,8 @@ C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
     *unwrap_it(&prefix),
     apply_prefix,
     *unwrap_it(&filler));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   if (!apply_prefix)
   {
     // Undefined for exclusive scan
@@ -345,8 +345,8 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
     valid_items,
     0,
     true);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 
   thrust::fill(d_out.begin(), d_out.end(), 0);
@@ -357,8 +357,8 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
     valid_items,
     0,
     true);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 
 #if _CCCL_STD_VER >= 2023
@@ -370,8 +370,8 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
     valid_items,
     0,
     true);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 #endif // _CCCL_STD_VER >= 2023
 }
@@ -413,8 +413,8 @@ C2H_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]")
     prefix,
     apply_prefix,
     segment{});
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(error_flag.front() == false);
   if (!apply_prefix && valid_items > 0)
   {

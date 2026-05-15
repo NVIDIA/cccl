@@ -47,7 +47,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_
   // example-end stable-sort-pairs-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -85,7 +85,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[
   // example-end stable-sort-pairs-descending-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -125,7 +125,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API",
   // example-end stable-sort-pairs-db-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result_keys(d_keys.Current(), d_keys.Current() + 7);
   thrust::device_vector<int> result_values(d_values.Current(), d_values.Current() + 7);
   REQUIRE(result_keys == expected_keys);
@@ -169,7 +169,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-b
   // example-end stable-sort-pairs-descending-db-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result_keys(d_keys.Current(), d_keys.Current() + 7);
   thrust::device_vector<int> result_values(d_values.Current(), d_values.Current() + 7);
   REQUIRE(result_keys == expected_keys);
@@ -209,7 +209,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable env-based API", "[segmen
   // example-end sort-pairs-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -247,7 +247,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable env-based API"
   // example-end sort-pairs-descending-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -287,7 +287,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable DoubleBuffer env-based A
   // example-end sort-pairs-db-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result_keys(d_keys.Current(), d_keys.Current() + 7);
   thrust::device_vector<int> result_values(d_values.Current(), d_values.Current() + 7);
   REQUIRE(result_keys == expected_keys);
@@ -330,7 +330,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer e
   // example-end sort-pairs-descending-db-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result_keys(d_keys.Current(), d_keys.Current() + 7);
   thrust::device_vector<int> result_values(d_values.Current(), d_values.Current() + 7);
   REQUIRE(result_keys == expected_keys);

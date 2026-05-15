@@ -43,8 +43,8 @@ void block_histogram(c2h::device_vector<SampleT>& d_samples, c2h::device_vector<
   block_histogram_kernel<Bins, ThreadsInBlock, ItemsPerThread, Algorithm>
     <<<1, ThreadsInBlock>>>(thrust::raw_pointer_cast(d_samples.data()), thrust::raw_pointer_cast(d_histogram.data()));
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 // %PARAM% TEST_BINS bins 32:256:1024

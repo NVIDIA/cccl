@@ -50,8 +50,8 @@ void warp_load(InputIteratorT input_iterator, ActionT action, int* error_counter
 {
   warp_load_kernel<LoadAlgorithm, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, T, InputIteratorT, ActionT>
     <<<1, TOTAL_WARPS * LOGICAL_WARP_THREADS>>>(input_iterator, action, error_counter);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 /**

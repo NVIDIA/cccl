@@ -109,8 +109,8 @@ void warp_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT 
   warp_reduce_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT><<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 /**

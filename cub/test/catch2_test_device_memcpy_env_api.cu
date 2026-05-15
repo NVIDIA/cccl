@@ -63,7 +63,7 @@ C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
   // example-end memcpy-batched-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_dst_a == expected_a);
   REQUIRE(d_dst_b == expected_b);
 }

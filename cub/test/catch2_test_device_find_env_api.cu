@@ -46,7 +46,7 @@ C2H_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]")
   // example-end find-if-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out[0] == expected);
 }
 
@@ -77,7 +77,7 @@ C2H_TEST("cub::DeviceFind::LowerBound accepts env with stream", "[find][env]")
   // example-end lower-bound-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_output == expected);
 }
 
@@ -108,6 +108,6 @@ C2H_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]")
   // example-end upper-bound-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_output == expected);
 }

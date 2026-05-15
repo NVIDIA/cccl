@@ -53,8 +53,8 @@ void warp_combine_scan(
     valid_items,
     filler);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
@@ -85,8 +85,8 @@ void warp_scan(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT ac
   warp_scan_kernel<LogicalWarpThreads, TotalWarps, T, ActionT><<<1, LogicalWarpThreads * TotalWarps>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action, valid_items);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 enum class scan_mode

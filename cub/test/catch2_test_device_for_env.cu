@@ -57,9 +57,8 @@ C2H_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]")
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::Bulk(4, op, env);
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceFor::Bulk(4, op, env));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream.get()));
 
   c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
@@ -77,9 +76,8 @@ C2H_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]")
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, env);
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, env));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream.get()));
 
   c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
@@ -97,9 +95,8 @@ C2H_TEST("DeviceFor::ForEach env uses custom stream", "[for][env]")
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env);
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream.get()));
 
   c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
@@ -118,9 +115,8 @@ C2H_TEST("DeviceFor::ForEachCopyN env uses custom stream", "[for][env]")
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, env);
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, env));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream.get()));
 
   c2h::device_vector<int> expected_count{2};
   REQUIRE(count == expected_count);
@@ -139,9 +135,8 @@ C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env);
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream.get()));
 
   c2h::device_vector<int> expected_count{2};
   REQUIRE(count == expected_count);
@@ -179,7 +174,7 @@ C2H_TEST("DeviceFor::Bulk can be tuned", "[for][device]", block_sizes)
   block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
+  REQUIRE_CUDART(cub::DeviceFor::Bulk(4, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -191,7 +186,7 @@ C2H_TEST("DeviceFor::ForEachN can be tuned", "[for][device]", block_sizes)
   block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
+  REQUIRE_CUDART(cub::DeviceFor::ForEachN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -203,7 +198,7 @@ C2H_TEST("DeviceFor::ForEach can be tuned", "[for][device]", block_sizes)
   block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(d_data.begin(), d_data.end(), op, env));
+  REQUIRE_CUDART(cub::DeviceFor::ForEach(d_data.begin(), d_data.end(), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -215,7 +210,7 @@ C2H_TEST("DeviceFor::ForEachCopyN can be tuned", "[for][device]", block_sizes)
   block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
+  REQUIRE_CUDART(cub::DeviceFor::ForEachCopyN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -227,6 +222,6 @@ C2H_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", block_sizes)
   block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_data.begin(), d_data.end(), op, env));
+  REQUIRE_CUDART(cub::DeviceFor::ForEachCopy(d_data.begin(), d_data.end(), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }

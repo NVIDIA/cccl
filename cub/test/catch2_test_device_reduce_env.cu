@@ -95,10 +95,10 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
   int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  REQUIRE_CUDART(cudaGetDevice(&current_device));
 
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  REQUIRE_CUDART(cub::detail::ptx_compute_cap(cc, current_device));
 
   unsigned int target_block_size =
     cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_plus_t>{}(cc)
@@ -110,7 +110,7 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, value_t{0}));
+  REQUIRE_CUDART(cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, value_t{0}));
   REQUIRE(d_out[0] == num_items);
 
   // Make sure we use default tuning
@@ -123,17 +123,17 @@ TEST_CASE("Device Sum works with default environment", "[reduce][device]")
   using value_t     = int;
 
   int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  REQUIRE_CUDART(cudaGetDevice(&current_device));
 
   int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
+  REQUIRE_CUDART(cub::PtxVersion(ptx_version, current_device));
 
   num_items_t num_items = 1;
 
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items));
   REQUIRE(d_out[0] == num_items);
 }
 #endif
@@ -369,9 +369,8 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   auto kernels = [&]() {
     if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
-      REQUIRE(
-        cudaSuccess
-        == cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, init));
+      REQUIRE_CUDART(
+        cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, init));
 
       using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       return cuda::std::array<void*, 3>{
@@ -402,18 +401,16 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       using policy_t = cub::detail::reduce_nondeterministic::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
-      REQUIRE(
-        cudaSuccess
-        == cub::detail::reduce_nondeterministic::dispatch(
-          nullptr,
-          expected_bytes_allocated,
-          d_in,
-          raw_ptr,
-          num_items,
-          op_t{},
-          init,
-          /* stream */ nullptr,
-          transform_t{}));
+      REQUIRE_CUDART(cub::detail::reduce_nondeterministic::dispatch(
+        nullptr,
+        expected_bytes_allocated,
+        d_in,
+        raw_ptr,
+        num_items,
+        op_t{},
+        init,
+        /* stream */ nullptr,
+        transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
@@ -434,10 +431,9 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
       using output_it_t           = decltype(d_out.begin());
 
-      REQUIRE(cudaSuccess
-              == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
-                  nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+      REQUIRE_CUDART(
+        cub::detail::rfa::dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
+          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
@@ -497,7 +493,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   auto kernels = [&]() {
     if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
-      REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
+      REQUIRE_CUDART(cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
 
       using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       return cuda::std::array<void*, 3>{
@@ -528,18 +524,16 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       using policy_t = cub::detail::reduce_nondeterministic::policy_selector_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
-      REQUIRE(
-        cudaSuccess
-        == cub::detail::reduce_nondeterministic::dispatch(
-          nullptr,
-          expected_bytes_allocated,
-          d_in,
-          raw_ptr,
-          num_items,
-          op_t{},
-          init,
-          /* stream */ nullptr,
-          transform_t{}));
+      REQUIRE_CUDART(cub::detail::reduce_nondeterministic::dispatch(
+        nullptr,
+        expected_bytes_allocated,
+        d_in,
+        raw_ptr,
+        num_items,
+        op_t{},
+        init,
+        /* stream */ nullptr,
+        transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
@@ -560,10 +554,9 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
       using output_it_t           = decltype(d_out.begin());
 
-      REQUIRE(cudaSuccess
-              == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
-                  nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+      REQUIRE_CUDART(
+        cub::detail::rfa::dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
+          nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
@@ -609,8 +602,7 @@ TEST_CASE("Device Min works with default environment", "[reduce][device]")
   auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto output = c2h::device_vector<float>(1);
 
-  auto error = cub::DeviceReduce::Min(input.begin(), output.begin(), static_cast<int>(input.size()));
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceReduce::Min(input.begin(), output.begin(), static_cast<int>(input.size())));
   REQUIRE(output[0] == 0.0f);
 }
 
@@ -619,8 +611,7 @@ TEST_CASE("Device Max works with default environment", "[reduce][device]")
   auto input  = c2h::device_vector<float>{3.0f, 1.0f, 4.0f, 0.0f, 2.0f};
   auto output = c2h::device_vector<float>(1);
 
-  auto error = cub::DeviceReduce::Max(input.begin(), output.begin(), static_cast<int>(input.size()));
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceReduce::Max(input.begin(), output.begin(), static_cast<int>(input.size())));
   REQUIRE(output[0] == 4.0f);
 }
 
@@ -631,9 +622,8 @@ TEST_CASE("Device TransformReduce works with default environment", "[reduce][dev
 
   auto negate = cuda::std::negate<int>{};
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceReduce::TransformReduce(
-            d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0));
+  REQUIRE_CUDART(cub::DeviceReduce::TransformReduce(
+    d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0));
 
   REQUIRE(d_out[0] == -10);
 }
@@ -646,16 +636,14 @@ TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]
   auto d_aggregates_out = c2h::device_vector<int>(8);
   auto d_num_runs_out   = c2h::device_vector<int>(1);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::ReduceByKey(
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
-      cuda::minimum<int>{},
-      static_cast<int>(d_keys_in.size())));
+  REQUIRE_CUDART(cub::DeviceReduce::ReduceByKey(
+    d_keys_in.begin(),
+    d_unique_out.begin(),
+    d_values_in.begin(),
+    d_aggregates_out.begin(),
+    d_num_runs_out.begin(),
+    cuda::minimum<int>{},
+    static_cast<int>(d_keys_in.size())));
 
   REQUIRE(d_num_runs_out[0] == 5);
   c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
@@ -672,9 +660,8 @@ TEST_CASE("Device ArgMin works with default environment", "[reduce][device]")
   auto min_output   = c2h::device_vector<float>(1);
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
-  auto error =
-    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()));
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(
+    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size())));
   REQUIRE(min_output[0] == 0.0f);
   REQUIRE(index_output[0] == 3);
 }
@@ -685,9 +672,8 @@ TEST_CASE("Device ArgMax works with default environment", "[reduce][device]")
   auto max_output   = c2h::device_vector<float>(1);
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
-  auto error =
-    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()));
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(
+    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size())));
   REQUIRE(max_output[0] == 4.0f);
   REQUIRE(index_output[0] == 2);
 }
@@ -698,9 +684,8 @@ TEST_CASE("Device ArgMin with compare_op works with default environment", "[redu
   auto min_output   = c2h::device_vector<float>(1);
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
-  auto error = cub::DeviceReduce::ArgMin(
-    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{});
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceReduce::ArgMin(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{}));
   REQUIRE(min_output[0] == 0.0f);
   REQUIRE(index_output[0] == 3);
 }
@@ -711,9 +696,8 @@ TEST_CASE("Device ArgMax with compare_op works with default environment", "[redu
   auto max_output   = c2h::device_vector<float>(1);
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
-  auto error = cub::DeviceReduce::ArgMax(
-    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{});
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(cub::DeviceReduce::ArgMax(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<int>(input.size()), cuda::std::less{}));
   REQUIRE(max_output[0] == 4.0f);
   REQUIRE(index_output[0] == 2);
 }
@@ -728,17 +712,15 @@ C2H_TEST("Device TransformReduce uses environment", "[reduce][device]")
   auto negate = cuda::std::negate<int>{};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::TransformReduce(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      static_cast<int>(d_in.size()),
-      cuda::std::plus<int>{},
-      negate,
-      0));
+  REQUIRE_CUDART(cub::DeviceReduce::TransformReduce(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    static_cast<int>(d_in.size()),
+    cuda::std::plus<int>{},
+    negate,
+    0));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -754,9 +736,8 @@ C2H_TEST("Device Min uses environment", "[reduce][device]")
   auto output = c2h::device_vector<float>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceReduce::Min(
-            nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
+  REQUIRE_CUDART(cub::DeviceReduce::Min(
+    nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -771,9 +752,8 @@ C2H_TEST("Device Max uses environment", "[reduce][device]")
   auto output = c2h::device_vector<float>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceReduce::Max(
-            nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
+  REQUIRE_CUDART(cub::DeviceReduce::Max(
+    nullptr, expected_bytes_allocated, input.begin(), output.begin(), static_cast<int>(input.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -791,18 +771,16 @@ C2H_TEST("Device ReduceByKey uses environment", "[reduce][device]")
   auto d_num_runs_out   = c2h::device_vector<int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::ReduceByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys_in.begin(),
-      d_unique_out.begin(),
-      d_values_in.begin(),
-      d_aggregates_out.begin(),
-      d_num_runs_out.begin(),
-      cuda::minimum<int>{},
-      static_cast<int>(d_keys_in.size())));
+  REQUIRE_CUDART(cub::DeviceReduce::ReduceByKey(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys_in.begin(),
+    d_unique_out.begin(),
+    d_values_in.begin(),
+    d_aggregates_out.begin(),
+    d_num_runs_out.begin(),
+    cuda::minimum<int>{},
+    static_cast<int>(d_keys_in.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -832,15 +810,13 @@ C2H_TEST("Device ArgMin uses environment", "[reduce][device]")
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::ArgMin(
-      nullptr,
-      expected_bytes_allocated,
-      input.begin(),
-      min_output.begin(),
-      index_output.begin(),
-      static_cast<int>(input.size())));
+  REQUIRE_CUDART(cub::DeviceReduce::ArgMin(
+    nullptr,
+    expected_bytes_allocated,
+    input.begin(),
+    min_output.begin(),
+    index_output.begin(),
+    static_cast<int>(input.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -857,16 +833,14 @@ C2H_TEST("Device ArgMin with compare_op uses environment", "[reduce][device]")
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::ArgMin(
-      nullptr,
-      expected_bytes_allocated,
-      input.begin(),
-      min_output.begin(),
-      index_output.begin(),
-      static_cast<int>(input.size()),
-      cuda::std::less{}));
+  REQUIRE_CUDART(cub::DeviceReduce::ArgMin(
+    nullptr,
+    expected_bytes_allocated,
+    input.begin(),
+    min_output.begin(),
+    index_output.begin(),
+    static_cast<int>(input.size()),
+    cuda::std::less{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -884,15 +858,13 @@ C2H_TEST("Device ArgMax uses environment", "[reduce][device]")
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::ArgMax(
-      nullptr,
-      expected_bytes_allocated,
-      input.begin(),
-      max_output.begin(),
-      index_output.begin(),
-      static_cast<int>(input.size())));
+  REQUIRE_CUDART(cub::DeviceReduce::ArgMax(
+    nullptr,
+    expected_bytes_allocated,
+    input.begin(),
+    max_output.begin(),
+    index_output.begin(),
+    static_cast<int>(input.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -909,16 +881,14 @@ C2H_TEST("Device ArgMax with compare_op uses environment", "[reduce][device]")
   auto index_output = c2h::device_vector<cuda::std::int64_t>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceReduce::ArgMax(
-      nullptr,
-      expected_bytes_allocated,
-      input.begin(),
-      max_output.begin(),
-      index_output.begin(),
-      static_cast<int>(input.size()),
-      cuda::std::less{}));
+  REQUIRE_CUDART(cub::DeviceReduce::ArgMax(
+    nullptr,
+    expected_bytes_allocated,
+    input.begin(),
+    max_output.begin(),
+    index_output.begin(),
+    static_cast<int>(input.size()),
+    cuda::std::less{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 

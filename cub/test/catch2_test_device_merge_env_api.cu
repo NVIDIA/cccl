@@ -41,7 +41,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
   // example-end merge-keys-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(result == expected);
 }
 
@@ -80,7 +80,7 @@ C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
   // example-end merge-pairs-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 }

@@ -121,20 +121,19 @@ C2H_TEST("Decoupled look-back works with various message types", "[decoupled loo
 
   // Initialize temporary storage
   scan_tile_state_t tile_status;
-  cudaError_t status = tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes);
-  REQUIRE(status == cudaSuccess);
+  REQUIRE_CUDART(tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes));
 
   constexpr unsigned int threads_in_init_block = 256;
   const unsigned int blocks_in_init_grid       = cuda::ceil_div(num_tiles, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, num_tiles);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   // Launch decoupled look-back
   constexpr unsigned int threads_in_block = 256;
   decoupled_look_back_kernel<<<num_tiles, threads_in_block>>>(tile_status, d_tile_data);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   REQUIRE(reference == tile_data);
 }

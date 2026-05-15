@@ -32,7 +32,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
   using init_t  = input_t;
 
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  REQUIRE_CUDART(cub::detail::ptx_compute_cap(cc));
   auto full_policy = cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{}(cc);
 
   const int small_segment_size  = full_policy.small_reduce.items_per_tile();
@@ -119,7 +119,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     nullptr,
     cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
 
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   // Verify result
   REQUIRE(expected_result == out_result);

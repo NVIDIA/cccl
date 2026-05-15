@@ -66,8 +66,8 @@ C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][war
   c2h::device_vector<int> d_out(num_warps * 32);
 
   InclusiveWarpScanKernel<<<1, num_warps * 32>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected(d_out.size());
 
@@ -123,8 +123,8 @@ C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
   InclusiveWarpScanKernelAggr<<<1, num_warps * 32>>>(
     thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_warp_aggregate.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected(d_out.size());
   c2h::host_vector<int> expected_aggr{};
@@ -199,8 +199,8 @@ C2H_TEST("Warp array-based partial inclusive scan works with initial value", "[s
   c2h::device_vector<int> d_out(num_warps * 32);
 
   InclusiveWarpScanPartialKernel<<<1, num_warps * 32>>>(thrust::raw_pointer_cast(d_out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected(d_out.size());
 
@@ -277,8 +277,8 @@ C2H_TEST("Warp array-based partial inclusive scan aggregate works with initial v
 
   InclusiveWarpScanPartialKernelAggr<<<1, num_warps * 32>>>(
     thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_warp_aggregate.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected(d_out.size());
   c2h::host_vector<int> expected_aggr{};

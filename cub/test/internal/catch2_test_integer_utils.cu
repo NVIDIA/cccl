@@ -118,11 +118,11 @@ C2H_TEST("Split/Merge Integers", "[Split/Merge][Random]", integral_types)
   c2h::device_vector<T> d_in(num_items);
   c2h::gen(C2H_SEED(1), d_in);
   test_int_kernel<<<cuda::ceil_div(num_items, 256), 256>>>(thrust::raw_pointer_cast(d_in.data()), num_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   test_int_special_values_kernel<<<1, 1>>>();
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 C2H_TEST(
@@ -134,9 +134,9 @@ C2H_TEST(
   c2h::device_vector<T> d_in(num_items);
   c2h::gen(C2H_SEED(1), d_in);
   test_float_kernel<<<cuda::ceil_div(num_items, 256), 256>>>(Op{}, thrust::raw_pointer_cast(d_in.data()), num_items);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   test_float_special_values_kernel<T><<<1, 1>>>(Op{});
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }

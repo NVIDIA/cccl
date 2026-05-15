@@ -43,9 +43,8 @@ TEST_CASE("Device segmented exclusive sum works with default environment", "[seg
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(d_in.size());
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-            d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
 
   thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
   REQUIRE(d_out == expected);
@@ -59,9 +58,8 @@ TEST_CASE("Device segmented exclusive scan works with default environment", "[se
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(d_in.size());
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-            d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
 
   thrust::device_vector<int> expected{100, 108, 114, 121, 100, 103, 103, 100, 101};
   REQUIRE(d_out == expected);
@@ -75,9 +73,8 @@ TEST_CASE("Device segmented inclusive sum works with default environment", "[seg
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(d_in.size());
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-            d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
 
   thrust::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
   REQUIRE(d_out == expected);
@@ -91,9 +88,8 @@ TEST_CASE("Device segmented inclusive scan works with default environment", "[se
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(d_in.size());
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-            d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}));
 
   thrust::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
   REQUIRE(d_out == expected);
@@ -107,9 +103,8 @@ TEST_CASE("Device segmented inclusive scan init works with default environment",
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(d_in.size());
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
-            d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
 
   thrust::device_vector<int> expected{108, 114, 121, 126, 103, 103, 112, 101, 103};
   REQUIRE(d_out == expected);
@@ -127,9 +122,8 @@ TEST_CASE("Device segmented exclusive sum with separate offsets works with defau
   thrust::device_vector<int> d_in{1, 2, 3, 4, 5, 6, 7, 8};
   thrust::device_vector<int> d_out(10, sentinel);
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-            d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
 
   thrust::device_vector<int> expected{0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13};
   REQUIRE(d_out == expected);
@@ -147,10 +141,8 @@ TEST_CASE("Device segmented exclusive scan with separate offsets works with defa
   thrust::device_vector<int> d_in{1, 2, 3, 4, 5, 6, 7, 8};
   thrust::device_vector<int> d_out(10, sentinel);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-      d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
   thrust::device_vector<int> expected{100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
   REQUIRE(d_out == expected);
@@ -168,9 +160,8 @@ TEST_CASE("Device segmented inclusive sum with separate offsets works with defau
   thrust::device_vector<int> d_in{1, 2, 3, 4, 5, 6, 7, 8};
   thrust::device_vector<int> d_out(10, sentinel);
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-            d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
 
   thrust::device_vector<int> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
   REQUIRE(d_out == expected);
@@ -188,10 +179,8 @@ TEST_CASE("Device segmented inclusive scan with separate offsets works with defa
   thrust::device_vector<int> d_in{1, 2, 3, 4, 5, 6, 7, 8};
   thrust::device_vector<int> d_out(10, sentinel);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-      d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}));
 
   thrust::device_vector<int> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
   REQUIRE(d_out == expected);
@@ -209,10 +198,8 @@ TEST_CASE("Device segmented inclusive scan init with separate offsets works with
   thrust::device_vector<int> d_in{1, 2, 3, 4, 5, 6, 7, 8};
   thrust::device_vector<int> d_out(10, sentinel);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
-      d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+    d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
   thrust::device_vector<int> expected{101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
   REQUIRE(d_out == expected);
@@ -229,10 +216,8 @@ C2H_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][de
   thrust::device_vector<int> d_out(d_in.size());
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -251,18 +236,16 @@ C2H_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][d
   thrust::device_vector<int> d_out(d_in.size());
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_offsets_it,
-      d_offsets_it + 1,
-      num_segments,
-      ::cuda::std::plus<>{},
-      100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_offsets_it,
+    d_offsets_it + 1,
+    num_segments,
+    ::cuda::std::plus<>{},
+    100));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -282,10 +265,8 @@ C2H_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][de
   thrust::device_vector<int> d_out(d_in.size());
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -304,17 +285,15 @@ C2H_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][d
   thrust::device_vector<int> d_out(d_in.size());
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_offsets_it,
-      d_offsets_it + 1,
-      num_segments,
-      ::cuda::std::plus<>{}));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_offsets_it,
+    d_offsets_it + 1,
+    num_segments,
+    ::cuda::std::plus<>{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -334,18 +313,16 @@ C2H_TEST("Device segmented inclusive scan init uses environment", "[segmented_sc
   thrust::device_vector<int> d_out(d_in.size());
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_offsets_it,
-      d_offsets_it + 1,
-      num_segments,
-      ::cuda::std::plus<>{},
-      100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_offsets_it,
+    d_offsets_it + 1,
+    num_segments,
+    ::cuda::std::plus<>{},
+    100));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -368,17 +345,15 @@ C2H_TEST("Device segmented exclusive sum with separate offsets uses environment"
   thrust::device_vector<int> d_out(10, sentinel);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_in_off_it,
-      d_in_off_it + 1,
-      d_out_off_it,
-      num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_in_off_it,
+    d_in_off_it + 1,
+    d_out_off_it,
+    num_segments));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -401,19 +376,17 @@ C2H_TEST("Device segmented exclusive scan with separate offsets uses environment
   thrust::device_vector<int> d_out(10, sentinel);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_in_off_it,
-      d_in_off_it + 1,
-      d_out_off_it,
-      num_segments,
-      ::cuda::std::plus<>{},
-      100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_in_off_it,
+    d_in_off_it + 1,
+    d_out_off_it,
+    num_segments,
+    ::cuda::std::plus<>{},
+    100));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -444,17 +417,15 @@ C2H_TEST("Device segmented inclusive sum with separate offsets uses environment"
   thrust::device_vector<int> d_out(10, sentinel);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_in_off_it,
-      d_in_off_it + 1,
-      d_out_off_it,
-      num_segments));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_in_off_it,
+    d_in_off_it + 1,
+    d_out_off_it,
+    num_segments));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -477,18 +448,16 @@ C2H_TEST("Device segmented inclusive scan with separate offsets uses environment
   thrust::device_vector<int> d_out(10, sentinel);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_in_off_it,
-      d_in_off_it + 1,
-      d_out_off_it,
-      num_segments,
-      ::cuda::std::plus<>{}));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_in_off_it,
+    d_in_off_it + 1,
+    d_out_off_it,
+    num_segments,
+    ::cuda::std::plus<>{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -511,19 +480,17 @@ C2H_TEST("Device segmented inclusive scan init with separate offsets uses enviro
   thrust::device_vector<int> d_out(10, sentinel);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      d_in_off_it,
-      d_in_off_it + 1,
-      d_out_off_it,
-      num_segments,
-      ::cuda::std::plus<>{},
-      100));
+  REQUIRE_CUDART(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    d_in_off_it,
+    d_in_off_it + 1,
+    d_out_off_it,
+    num_segments,
+    ::cuda::std::plus<>{},
+    100));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 

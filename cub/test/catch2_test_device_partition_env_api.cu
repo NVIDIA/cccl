@@ -49,7 +49,7 @@ C2H_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]")
   thrust::device_vector<int> expected_num_selected{4};
   // example-end partition-if-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
 }
@@ -78,7 +78,7 @@ C2H_TEST("cub::DevicePartition::Flagged accepts env with stream", "[partition][e
   thrust::device_vector<int> expected_num_selected{4};
   // example-end partition-flagged-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
 }
@@ -118,7 +118,7 @@ C2H_TEST("cub::DevicePartition::If three-way accepts env with stream", "[partiti
   // example-end partition-three-way-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(num_selected_out[0] == 5);
   REQUIRE(num_selected_out[1] == 1);
   small_out.resize(num_selected_out[0]);

@@ -84,7 +84,7 @@ C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
 C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {
   int ptx_version = 0;
-  REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
+  REQUIRE_CUDART(cub::PtxVersion(ptx_version));
   auto cc_list = std::vector<int>{CUDA_SM_LIST};
   for (auto& cc : cc_list)
   {
@@ -304,11 +304,10 @@ C2H_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]")
 
   // 1. Test positive case.
   int dyn_smem_size{};
-  REQUIRE(
-    cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, test_max_potential_dynamic_smem_bytes_kernel) == cudaSuccess);
+  REQUIRE_CUDART(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, test_max_potential_dynamic_smem_bytes_kernel));
   REQUIRE(dyn_smem_size == expected);
 
   // 2. Test that we return -1 if an error occurs.
-  REQUIRE(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, nullptr) != cudaSuccess);
+  REQUIRE_CUDART(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, nullptr));
   REQUIRE(dyn_smem_size == -1);
 }

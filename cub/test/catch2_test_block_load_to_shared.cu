@@ -116,8 +116,8 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
     c2h::device_vector<T> d_output(d_input.size());
     kernel<ItemsPerThread, ThreadsInBlock, Mode>
       <<<1, ThreadsInBlock>>>(input, thrust::raw_pointer_cast(d_output.data()), static_cast<int>(d_input.size()));
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE_CUDART(cudaPeekAtLastError());
+    REQUIRE_CUDART(cudaDeviceSynchronize());
     REQUIRE(d_input == d_output);
   }
 }
@@ -169,8 +169,8 @@ void test_block_load_dyn_smem_dst(const c2h::device_vector<T>& d_input, InputPoi
   kernel_dyn_smem_dst<block_dim_x, block_dim_y, block_dim_z>
     <<<1, dim3{block_dim_x, block_dim_y, block_dim_z}, buffer_size>>>(
       input, thrust::raw_pointer_cast(d_output.data()), static_cast<int>(d_input.size()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(d_input == d_output);
 }
 

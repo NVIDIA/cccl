@@ -72,8 +72,8 @@ void block_radix_sort(
   kernel<InputIteratorT, OutputIteratorT, ActionT, ItemsPerThread, ThreadsInBlock, RadixBits, Memoize, Algorithm, ShmemConfig>
     <<<1, ThreadsInBlock>>>(action, input, output, begin_bit, end_bit, striped);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 template <typename InputKeyIteratorT,
@@ -172,8 +172,8 @@ void block_radix_sort(
          ShmemConfig>
     <<<1, ThreadsInBlock>>>(action, input_keys, input_values, output_keys, output_values, begin_bit, end_bit, striped);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 struct sort_op_t

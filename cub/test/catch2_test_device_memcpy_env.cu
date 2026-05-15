@@ -64,7 +64,7 @@ TEST_CASE("DeviceMemcpy::Batched works with default environment", "[memcpy][devi
     iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto sizes = cuda::transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
 
-  REQUIRE(cudaSuccess == cub::DeviceMemcpy::Batched(input_it, output_it, sizes, num_buffers));
+  REQUIRE_CUDART(cub::DeviceMemcpy::Batched(input_it, output_it, sizes, num_buffers));
 
   REQUIRE(d_dst == d_src);
 }
@@ -88,8 +88,8 @@ C2H_TEST("DeviceMemcpy::Batched uses environment", "[memcpy][device]")
   auto sizes = cuda::transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceMemcpy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_buffers));
+  REQUIRE_CUDART(
+    cub::DeviceMemcpy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_buffers));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -117,8 +117,8 @@ TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]")
   cuda::stream custom_stream(cuda::device_ref{0});
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceMemcpy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_buffers));
+  REQUIRE_CUDART(
+    cub::DeviceMemcpy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_buffers));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};

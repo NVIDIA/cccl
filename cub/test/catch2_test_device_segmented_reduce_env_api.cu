@@ -42,7 +42,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinis
 
   stream.sync();
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][env]")
@@ -69,7 +69,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][e
 
   stream.sync();
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism requirements", "[segmented_reduce][env]")
@@ -94,7 +94,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism require
   // example-end segmented-reduce-sum-env-determinism
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism requirements", "[segmented_reduce][env]")
@@ -119,7 +119,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism req
   // example-end segmented-reduce-sum-env-non-determinism
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Reduce env-based API", "[segmented_reduce][env]")
@@ -146,7 +146,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce env-based API", "[segmented_reduce]
   stream.sync();
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Min env-based API", "[segmented_reduce][env]")
@@ -173,7 +173,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min env-based API", "[segmented_reduce][en
   stream.sync();
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Max env-based API", "[segmented_reduce][env]")
@@ -200,7 +200,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max env-based API", "[segmented_reduce][en
   stream.sync();
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::ArgMin env-based API", "[segmented_reduce][env]")
@@ -270,7 +270,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min accepts run_to_run determinism require
   thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Min accepts not_guaranteed determinism requirements", "[segmented_reduce][env]")
@@ -288,7 +288,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min accepts not_guaranteed determinism req
   thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Max accepts run_to_run determinism requirements", "[segmented_reduce][env]")
@@ -306,7 +306,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max accepts run_to_run determinism require
   thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Max accepts not_guaranteed determinism requirements", "[segmented_reduce][env]")
@@ -324,7 +324,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max accepts not_guaranteed determinism req
   thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::ArgMin accepts run_to_run determinism requirements", "[segmented_reduce][env]")
@@ -340,7 +340,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin accepts run_to_run determinism requ
   auto error =
     cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<cub::KeyValuePair<int, int>> expected{{1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
   REQUIRE(d_out == expected);
@@ -360,7 +360,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin accepts not_guaranteed determinism 
   auto error =
     cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<cub::KeyValuePair<int, int>> expected{{1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
   REQUIRE(d_out == expected);
@@ -379,7 +379,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax accepts run_to_run determinism requ
   auto error =
     cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
   REQUIRE(d_out == expected);
@@ -399,7 +399,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax accepts not_guaranteed determinism 
   auto error =
     cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
   REQUIRE(d_out == expected);
@@ -427,7 +427,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts run_to_run determinism requ
   // example-end segmented-reduce-reduce-env-determinism
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism requirements",
@@ -451,7 +451,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism 
   }
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 C2H_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmented_reduce][env]")
 {
@@ -476,7 +476,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmen
   stream.sync();
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented_reduce][env]")
@@ -501,7 +501,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented
   stream.sync();
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented_reduce][env]")
@@ -526,7 +526,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented
   stream.sync();
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented_reduce][env]")
@@ -551,7 +551,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented
   stream.sync();
 
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmented_reduce][env]")

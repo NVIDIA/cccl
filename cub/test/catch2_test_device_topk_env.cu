@@ -62,21 +62,18 @@ C2H_TEST("DeviceTopK::MaxKeys can be tuned", "[topk][device]", block_sizes)
   auto env = stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning<target_block_size>{})};
 
   size_t temp_size{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceTopK::MaxKeys(
-            nullptr, temp_size, input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env));
+  REQUIRE_CUDART(cub::DeviceTopK::MaxKeys(
+    nullptr, temp_size, input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env));
 
   c2h::device_vector<char> temp(temp_size, thrust::no_init);
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceTopK::MaxKeys(
-      thrust::raw_pointer_cast(temp.data()),
-      temp_size,
-      input,
-      d_keys_out.begin(),
-      /* elements */ 1024,
-      d_keys_out.size(),
-      env));
+  REQUIRE_CUDART(cub::DeviceTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp.data()),
+    temp_size,
+    input,
+    d_keys_out.begin(),
+    /* elements */ 1024,
+    d_keys_out.size(),
+    env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -91,21 +88,18 @@ C2H_TEST("DeviceTopK::MinKeys can be tuned", "[topk][device]", block_sizes)
   auto env = stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning<target_block_size>{})};
 
   size_t temp_size{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceTopK::MinKeys(
-            nullptr, temp_size, input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env));
+  REQUIRE_CUDART(cub::DeviceTopK::MinKeys(
+    nullptr, temp_size, input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env));
 
   c2h::device_vector<char> temp(temp_size, thrust::no_init);
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceTopK::MinKeys(
-      thrust::raw_pointer_cast(temp.data()),
-      temp_size,
-      input,
-      d_keys_out.begin(),
-      /* elements */ 1024,
-      d_keys_out.size(),
-      env));
+  REQUIRE_CUDART(cub::DeviceTopK::MinKeys(
+    thrust::raw_pointer_cast(temp.data()),
+    temp_size,
+    input,
+    d_keys_out.begin(),
+    /* elements */ 1024,
+    d_keys_out.size(),
+    env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -122,23 +116,20 @@ C2H_TEST("DeviceTopK::MaxPairs can be tuned", "[topk][device]", block_sizes)
   auto env = stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning<target_block_size>{})};
 
   size_t temp_size{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceTopK::MaxPairs(
-            nullptr, temp_size, input, d_keys_out.begin(), values_in, d_values_out.begin(), 1024, 3, env));
+  REQUIRE_CUDART(cub::DeviceTopK::MaxPairs(
+    nullptr, temp_size, input, d_keys_out.begin(), values_in, d_values_out.begin(), 1024, 3, env));
 
   c2h::device_vector<char> temp(temp_size, thrust::no_init);
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceTopK::MaxPairs(
-      thrust::raw_pointer_cast(temp.data()),
-      temp_size,
-      input,
-      d_keys_out.begin(),
-      values_in,
-      d_values_out.begin(),
-      1024,
-      3,
-      env));
+  REQUIRE_CUDART(cub::DeviceTopK::MaxPairs(
+    thrust::raw_pointer_cast(temp.data()),
+    temp_size,
+    input,
+    d_keys_out.begin(),
+    values_in,
+    d_values_out.begin(),
+    1024,
+    3,
+    env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -155,32 +146,28 @@ C2H_TEST("DeviceTopK::MinPairs can be tuned", "[topk][device]", block_sizes)
   auto env = stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning<target_block_size>{})};
 
   size_t temp_size{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceTopK::MinPairs(
-      nullptr,
-      temp_size,
-      input,
-      d_keys_out.begin(),
-      values_in,
-      d_values_out.begin(),
-      /* elements */ 1024,
-      d_keys_out.size(),
-      env));
+  REQUIRE_CUDART(cub::DeviceTopK::MinPairs(
+    nullptr,
+    temp_size,
+    input,
+    d_keys_out.begin(),
+    values_in,
+    d_values_out.begin(),
+    /* elements */ 1024,
+    d_keys_out.size(),
+    env));
 
   c2h::device_vector<char> temp(temp_size, thrust::no_init);
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceTopK::MinPairs(
-      thrust::raw_pointer_cast(temp.data()),
-      temp_size,
-      input,
-      d_keys_out.begin(),
-      values_in,
-      d_values_out.begin(),
-      1024,
-      3,
-      env));
+  REQUIRE_CUDART(cub::DeviceTopK::MinPairs(
+    thrust::raw_pointer_cast(temp.data()),
+    temp_size,
+    input,
+    d_keys_out.begin(),
+    values_in,
+    d_values_out.begin(),
+    1024,
+    3,
+    env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 

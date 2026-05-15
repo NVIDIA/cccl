@@ -38,7 +38,7 @@ C2H_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_len
   thrust::device_vector<int> expected_num_runs{5};
   // example-end encode-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   unique_out.resize(num_runs_out[0]);
   counts_out.resize(num_runs_out[0]);
   REQUIRE(unique_out == expected_unique);
@@ -70,7 +70,7 @@ C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "
   thrust::device_vector<int> expected_num_runs{2};
   // example-end non-trivial-runs-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   offsets_out.resize(num_runs_out[0]);
   lengths_out.resize(num_runs_out[0]);
   REQUIRE(offsets_out == expected_offsets);

@@ -147,7 +147,7 @@ C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
   size_t tmp_size{};
   cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op_t{}, init_value, num_items);
-  REQUIRE(cudaSuccess == status1);
+  REQUIRE_CUDART(status1);
   REQUIRE(tmp_size > 0);
 
   using cuda::std::byte;
@@ -157,7 +157,7 @@ C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
 
   cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op_t{}, init_value, num_items);
-  REQUIRE(cudaSuccess == status2);
+  REQUIRE_CUDART(status2);
 
   // transfer to host_vector is synchronizing
   c2h::host_vector<pair_t> h_output(output);
@@ -204,7 +204,7 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   size_t tmp_size{};
   cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op, empty_stack_symbol, num_items);
-  REQUIRE(cudaSuccess == status1);
+  REQUIRE_CUDART(status1);
   REQUIRE(tmp_size > 0);
 
   using cuda::std::byte;
@@ -214,7 +214,7 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
 
   cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op, empty_stack_symbol, num_items);
-  REQUIRE(cudaSuccess == status2);
+  REQUIRE_CUDART(status2);
 
   // transfer to host_vector is synchronizing
   c2h::host_vector<symbol_t> h_output(output);
@@ -272,7 +272,7 @@ C2H_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-repor
   size_t tmp_size{};
   cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op, empty_stack_symbol, num_elements);
-  REQUIRE(cudaSuccess == status1);
+  REQUIRE_CUDART(status1);
 
   using cuda::std::byte;
 
@@ -281,7 +281,7 @@ C2H_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-repor
 
   cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op, empty_stack_symbol, num_elements);
-  REQUIRE(cudaSuccess == status2);
+  REQUIRE_CUDART(status2);
 
   c2h::host_vector<symbol_t> h_output(output);
   REQUIRE(h_expected == h_output);
