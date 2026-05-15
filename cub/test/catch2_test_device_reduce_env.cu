@@ -52,8 +52,9 @@ struct nondeterministic_reduce_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy
   {
-    return {cub::detail::reduce::agent_reduce_policy{
-      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT}};
+    return cub::detail::reduce_nondeterministic::reduce_nondeterministic_policy{
+      cub::detail::reduce::agent_reduce_policy{
+        ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT}};
   }
 };
 
@@ -62,8 +63,9 @@ struct deterministic_reduce_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::rfa::rfa_policy
   {
-    return {cub::detail::rfa::reduce_policy{ThreadsPerBlock, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS},
-            cub::detail::rfa::single_tile_policy{ThreadsPerBlock, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS}};
+    return cub::detail::rfa::rfa_policy{
+      cub::detail::rfa::reduce_policy{ThreadsPerBlock, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS},
+      cub::detail::rfa::single_tile_policy{ThreadsPerBlock, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS}};
   }
 };
 
