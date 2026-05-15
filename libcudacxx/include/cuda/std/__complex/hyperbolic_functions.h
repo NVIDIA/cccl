@@ -333,30 +333,115 @@ _CCCL_API inline complex<__nv_bfloat16> cosh(const complex<__nv_bfloat16>& __x) 
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> tanh(const complex<_Tp>& __x)
 {
-  if (::cuda::std::isinf(__x.real()))
+  const _Tp __realx = ::cuda::std::fabs(__x.real());
+  _Tp __imagx       = __x.imag();
+
+  // __realx == INFINITY overrides __imagx == NAN.
+  if (__realx == numeric_limits<_Tp>::infinity())
   {
-    if (!::cuda::std::isfinite(__x.imag()))
+    __imagx = ::cuda::std::copysign(_Tp{0}, __imagx);
+  }
+
+  // A somewhat strange special-within-special case that
+  // cannot really be made to pass through nicely.
+  if ((__realx == _Tp{0}) && ::cuda::std::isinf(__imagx))
+  {
+    // C11 DR471
+    return complex<_Tp>{::cuda::std::copysign(_Tp{0}, __x.real()), numeric_limits<_Tp>::quiet_NaN()};
+  }
+
+  auto [__sin_imag, __cos_imag] = ::cuda::sincos(__imagx);
+
+  // We can avoid under/overflow issues by scaling large real values
+  // appropriately and correcting afterwards.
+  // floor(log(MAX_FLOAT) / 4)
+  const _Tp __reduction_needed_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(177.0) : static_cast<_Tp>(22.0f);
+
+  _Tp __realx_reduced    = __realx;
+  _Tp __imagx_mul_factor = _Tp{1};
+
+  if (__realx_reduced >= __reduction_needed_bound)
+  {
+    // Set some very specific (per type) values to help with range reduction.
+    const _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(648.0) : static_cast<_Tp>(58.0f);
+
+    // Use two intervals to reduce values. Some values will be reduced twice.
+    const _Tp __large_interval_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(334.0) : static_cast<_Tp>(34.0f);
+
+    // Has very low ulp error for c-r exp(__large_interval_subtract_factor).
+    const _Tp __large_interval_subtract_factor =
+      is_same_v<_Tp, double> ? static_cast<_Tp>(-6.2800006538698050917e2) : static_cast<_Tp>(-48.061161f);
+
+    // exp(__large_interval_subtract_factor)
+    const _Tp __large_interval_mul_factor =
+      is_same_v<_Tp, double> ? static_cast<_Tp>(1.83247039732913163759e-273) : static_cast<_Tp>(1.340611578e-21f);
+
+    // Has very low ulp error for c-r exp(__small_interval_subtract_factor).
+    const _Tp __small_interval_subtract_factor =
+      is_same_v<_Tp, double> ? static_cast<_Tp>(-3.1400000790995977695e2) : static_cast<_Tp>(-24.34370422f);
+
+    // exp(__small_interval_subtract_factor)
+    const _Tp __small_interval_mul_factor =
+      is_same_v<_Tp, double> ? static_cast<_Tp>(4.2808424752052536879e-137) : static_cast<_Tp>(2.6770937897e-11f);
+
+    // Clamp huge values, doesn't change result.
+    if (__realx_reduced > __clamp_huge_values_bound)
     {
-      return complex<_Tp>(::cuda::std::copysign(_Tp(1), __x.real()), _Tp(0));
+      __realx_reduced = __clamp_huge_values_bound;
     }
-    return complex<_Tp>(::cuda::std::copysign(_Tp(1), __x.real()),
-                        ::cuda::std::copysign(_Tp(0), ::cuda::std::sin(_Tp(2) * __x.imag())));
+
+    if (__realx_reduced >= __large_interval_bound)
+    {
+      __imagx_mul_factor = __large_interval_mul_factor;
+      __realx_reduced    = __realx_reduced + (__large_interval_subtract_factor * _Tp{0.5});
+    }
+
+    if (__realx_reduced > __reduction_needed_bound)
+    {
+      __imagx_mul_factor *= __small_interval_mul_factor;
+      __realx_reduced = __realx_reduced + (__small_interval_subtract_factor * _Tp{0.5});
+    }
   }
-  if (::cuda::std::isnan(__x.real()) && __x.imag() == _Tp(0))
+
+  const _Tp __expm1_2x = ::cuda::std::expm1(_Tp{2} * __realx_reduced);
+  const _Tp __cos_sq_4 = _Tp{4} * __cos_imag * __cos_imag;
+  const _Tp __denom    = ::cuda::std::fma(__expm1_2x, __expm1_2x, ::cuda::std::fma(__cos_sq_4, __expm1_2x, __cos_sq_4));
+  const _Tp __numer_real = ::cuda::std::fma(__expm1_2x, __expm1_2x, _Tp{2} * __expm1_2x);
+
+  // Save doing two full divides:
+  const _Tp __denom_recip = _Tp{1} / __denom;
+
+  // For the imaginary part of the answer care is needed to avoid intermediate under/overflow.
+  // Here is one possibility:
+  _Tp __ans_imag = ((::cuda::std::fma(__sin_imag, __expm1_2x, __sin_imag) * __denom_recip) * (_Tp{4} * __cos_imag))
+                 * __imagx_mul_factor;
+
+  // Overwrite imag == 0.0 for real inf/nan inputs.
+  if (__imagx == _Tp{0})
   {
-    return __x;
+    __ans_imag = __imagx;
   }
-  _Tp __2r(_Tp(2) * __x.real());
-  _Tp __2i(_Tp(2) * __x.imag());
-  const auto [__2i_sin, __2i_cos] = ::cuda::sincos(__2i);
-  _Tp __d(::cuda::std::cosh(__2r) + __2i_cos);
-  _Tp __2rsh(::cuda::std::sinh(__2r));
-  if (::cuda::std::isinf(__2rsh) && ::cuda::std::isinf(__d))
-  {
-    return complex<_Tp>(__2rsh > _Tp(0) ? _Tp(1) : _Tp(-1), __2i > _Tp(0) ? _Tp(0) : _Tp(-0.));
-  }
-  return complex<_Tp>(__2rsh / __d, __2i_sin / __d);
+
+  const _Tp __ans_real = __numer_real * __denom_recip;
+  return complex<_Tp>{::cuda::std::copysign(__ans_real, __x.real()), __ans_imag};
 }
+
+// We have performance issues with extended floating point types
+#if _LIBCUDACXX_HAS_NVFP16()
+template <>
+_CCCL_API inline complex<__half> tanh(const complex<__half>& __x) noexcept
+{
+  return complex<__half>{::cuda::std::tanh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+template <>
+_CCCL_API inline complex<__nv_bfloat16> tanh(const complex<__nv_bfloat16>& __x) noexcept
+{
+  return complex<__nv_bfloat16>{::cuda::std::tanh(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
