@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 from typing import Callable
 
 import numpy as np
@@ -68,6 +70,32 @@ class _Reduce:
                 self.device_reduce_fn = self.build_result.compute_nondeterministic
             case _:
                 raise ValueError(f"Invalid determinism: {determinism}")
+
+    def __call__(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        op: Callable | OpAdapter,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        msg = (
+            "Use new get_temp_storage_bytes/compute functions instead "
+            "of treating instance as callable object"
+        )
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+        return self._execute_call(
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=op,
+            h_init=h_init,
+            stream=stream
+        )
 
     def get_temp_storage_bytes(
         self,
@@ -224,17 +252,15 @@ def reduce_into(
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init, **kwargs)
-    tmp_storage_bytes = reducer(
-        temp_storage=None,
+    tmp_storage_bytes = reducer.get_temp_storage_bytes(
         d_in=d_in,
         d_out=d_out,
         num_items=num_items,
         op=op,
-        h_init=h_init,
-        stream=stream,
+        h_init=h_init
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(
+    reducer.compute(
         temp_storage=tmp_storage,
         d_in=d_in,
         d_out=d_out,

@@ -959,7 +959,7 @@ def test_reduce_bool():
     assert d_output.get()[0] == expected
 
 
-def test_reduce_get_temp_storage_bytes():
+def test_reduce_temp_storage_compute_api():
     h_init = np.array([False])
     h_input = random_int(1024, np.int64)
     d_input = cp.array([True, False, True])
