@@ -28,10 +28,12 @@
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_enum.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
@@ -113,6 +115,19 @@ struct __constant
 };
 
 // =====================================================================
+// __assert_in_range
+// =====================================================================
+
+template <class _To, class _From>
+_CCCL_API constexpr void __assert_in_range([[maybe_unused]] _From __val) noexcept
+{
+  if constexpr (::cuda::std::is_integral_v<_To> && ::cuda::std::is_integral_v<_From>)
+  {
+    _CCCL_ASSERT(::cuda::std::in_range<_To>(__val), "runtime bound value overflows the element type");
+  }
+}
+
+// =====================================================================
 // __immediate
 // =====================================================================
 
@@ -177,6 +192,8 @@ public:
       : arg{::cuda::std::move(__arg)}
       , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
   {
+    __assert_in_range<__element_type>(__rb.lowest);
+    __assert_in_range<__element_type>(__rb.max);
     __validate();
   }
 
@@ -187,6 +204,8 @@ public:
       , __static_bounds_{__sb}
       , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
   {
+    __assert_in_range<__element_type>(__rb.lowest);
+    __assert_in_range<__element_type>(__rb.max);
     __validate();
   }
 };
@@ -238,7 +257,10 @@ struct __deferred_base
   _CCCL_API constexpr __deferred_base(_Arg __arg, __runtime_bounds<_BoundsTp> __rb) noexcept
       : arg{::cuda::std::move(__arg)}
       , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
-  {}
+  {
+    __assert_in_range<__element_type>(__rb.lowest);
+    __assert_in_range<__element_type>(__rb.max);
+  }
 
   template <auto _Lowest, auto _Max, class _BoundsTp>
   _CCCL_API constexpr __deferred_base(
@@ -246,7 +268,10 @@ struct __deferred_base
       : arg{::cuda::std::move(__arg)}
       , __static_bounds_{__sb}
       , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
-  {}
+  {
+    __assert_in_range<__element_type>(__rb.lowest);
+    __assert_in_range<__element_type>(__rb.max);
+  }
 };
 
 //! @brief Wraps a single device-resident value (pointer, fancy iterator, span<T,1>, etc.).
