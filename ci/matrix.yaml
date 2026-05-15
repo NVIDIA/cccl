@@ -600,6 +600,12 @@ projects:
   cccl_c_parallel_v2:
     name: 'CCCL C Parallel v2 (HostJIT)'
     stds: [20]
+    # test_cccl_c_parallel_v2.sh builds inline (no separate build script),
+    # so suppress the default test→build dependency. test_nobuild invokes
+    # test_<project>.sh directly without a producer build job.
+    job_map:
+      build: []
+      test: ['test_nobuild']
   cccl_c_stf:
     name: 'CCCL C CUDASTF'
     stds: [20]
