@@ -18,18 +18,20 @@
 #include <cuda/launch>
 #include <cuda/stream>
 
-#include "../common/utility.cuh"
 #include "test_macros.h"
 
 void test_extended_lambda()
 {
   cuda::stream stream{cuda::devices[0]};
-  test::pinned<int> i(0);
+
+  int* i;
+  assert(cudaMallocHost(&i, sizeof(int)) == cudaSuccess);
+
   auto config           = cuda::block_dims<32>() & cuda::grid_dims<1>();
   auto assign_42_lambda = [] TEST_DEVICE_FUNC(int* pi) {
     *pi = 42;
   };
-  cuda::launch(stream, config, assign_42_lambda, i.get());
+  cuda::launch(stream, config, assign_42_lambda, i);
   stream.sync();
   assert(*i == 42);
 
@@ -38,9 +40,11 @@ void test_extended_lambda()
     static_assert(cuda::block.count(cuda::grid, config) == 1);
     *pi = 1337;
   };
-  cuda::launch(stream, config, assign_1337_lambda, config, i.get());
+  cuda::launch(stream, config, assign_1337_lambda, config, i);
   stream.sync();
   assert(*i == 1337);
+
+  assert(cudaFreeHost(i) == cudaSuccess);
 }
 
 int main(int, char**)
