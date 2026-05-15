@@ -349,7 +349,7 @@ template <class _Tp>
     return complex<_Tp>{::cuda::std::copysign(_Tp{0}, __x.real()), numeric_limits<_Tp>::quiet_NaN()};
   }
 
-  auto [__sin_imag, __cos_imag] = ::cuda::sincos(__imagx);
+  const auto [__sin_imag, __cos_imag] = ::cuda::sincos(__imagx);
 
   // We can avoid under/overflow issues by scaling large real values
   // appropriately and correcting afterwards.
