@@ -122,13 +122,33 @@ set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
 set(_generated_extension_src "${cuda_cccl_BINARY_DIR}/_bindings_impl.c")
 set(_depfile "${cuda_cccl_BINARY_DIR}/_bindings_impl.c.dep")
 
-# Custom Cython compilation command for version-specific target
+# Backend-conditional Cython .pxi files. Where v1 and v2 expose different
+# struct layouts or call signatures, the .pyx `include`s a generated .pxi
+# whose source is chosen here. The helpers inside present a uniform interface
+# so the rest of _bindings_impl.pyx stays backend-agnostic.
+if (CCCL_PYTHON_USE_V2)
+  set(_backend_suffix "v2")
+else()
+  set(_backend_suffix "v1")
+endif()
+foreach (_pxi_stem segmented_reduce_backend binary_search_backend)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cuda/compute/_bindings_${_pxi_stem}_${_backend_suffix}.pxi"
+    "${CMAKE_CURRENT_BINARY_DIR}/_bindings_${_pxi_stem}.pxi"
+    COPYONLY
+  )
+endforeach()
+
+# Custom Cython compilation command. `-I ${BINARY_DIR}` lets the .pyx's
+# `include "_bindings_..._backend.pxi"` resolve to the file we configured
+# above.
 add_custom_command(
   OUTPUT "${_generated_extension_src}"
   COMMAND "${Python3_EXECUTABLE}" -m cython
   # gersemi: off
   ARGS
     ${CYTHON_FLAGS_LIST}
+    -I "${CMAKE_CURRENT_BINARY_DIR}"
     "${pyx_source_file}"
     --output-file "${_generated_extension_src}"
   # gersemi: on
