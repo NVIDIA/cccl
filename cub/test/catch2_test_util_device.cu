@@ -51,10 +51,10 @@ C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   // Query the arch the kernel was actually compiled for
   int ptx_version = [&]() -> int {
     int* buffer{};
-    cudaMallocHost(&buffer, sizeof(*buffer));
+    REQUIRE_CUDART(cudaMallocHost(&buffer, sizeof(*buffer)));
     get_cuda_cc_from_kernel(thrust::raw_pointer_cast(cuda_cc.data()), buffer);
     int result = *buffer;
-    cudaFreeHost(buffer);
+    REQUIRE_CUDART(cudaFreeHost(buffer));
     return result;
   }();
 
