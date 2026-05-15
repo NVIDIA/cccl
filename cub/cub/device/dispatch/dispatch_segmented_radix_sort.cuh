@@ -883,8 +883,9 @@ template <SortOrder Order,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename DecomposerT = identity_decomposer_t,
-          typename TuningEnvT  = ::cuda::std::execution::env<>>
+          typename DecomposerT           = identity_decomposer_t,
+          typename TuningEnvT            = ::cuda::std::execution::env<>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -917,7 +918,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     EndOffsetIteratorT,
     SegmentSizeT,
     DecomposerT>{};
-  auto launcher_factory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{};
+  auto launcher_factory = KernelLauncherFactory{};
 
   if (num_items == 0 || num_segments == 0 || (begin_bit == end_bit && is_overwrite_okay))
   {
