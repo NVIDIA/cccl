@@ -957,3 +957,37 @@ def test_reduce_bool():
 
     expected = True
     assert d_output.get()[0] == expected
+
+
+def test_reduce_get_temp_storage_bytes():
+    h_init = np.array([False])
+    h_input = random_int(1024, np.int64)
+    d_input = cp.array([True, False, True])
+    d_output = cp.empty_like(d_input, shape=(1,))
+
+    # Perform the reduction.
+    reducer = cuda.compute.make_reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=len(d_input),
+        op=OpKind.MAXIMUM,
+        h_init=h_init,
+    )
+    temp_storage_size = reducer.get_temp_storage_bytes(
+        d_in=d_input, 
+        d_out=d_output,
+        num_items=len(h_input), 
+        op=OpKind.MAXIMUM,
+        h_init=h_init
+    )
+    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+    reducer.compute(
+        temp_storage=d_temp_storage, 
+        d_in=d_input, 
+        d_out=d_output, 
+        num_items=len(h_input), 
+        op=OpKind.MAXIMUM,
+        h_init=h_init
+    )
+    expected = True
+    assert d_output.get()[0] == expected

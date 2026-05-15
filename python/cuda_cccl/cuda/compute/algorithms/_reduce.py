@@ -69,7 +69,47 @@ class _Reduce:
             case _:
                 raise ValueError(f"Invalid determinism: {determinism}")
 
-    def __call__(
+    def get_temp_storage_bytes(
+        self,
+        *,
+        d_in,
+        d_out,
+        num_items: int,
+        op: Callable | OpAdapter,
+        h_init: np.ndarray | GpuStruct,
+    ):
+        return self._execute_call(
+            temp_storage=None,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=op,
+            h_init=h_init,
+            stream=None
+        )
+
+    def compute(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        op: Callable | OpAdapter,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        return self._execute_call(
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=op,
+            h_init=h_init,
+            stream=stream
+        )
+
+    def _execute_call(
         self,
         *,
         temp_storage,
