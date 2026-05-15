@@ -22,6 +22,11 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // _CCCL_STD_VER >= 2023
+
 template <class T>
 TEST_FUNC constexpr void test_fpclassify(T val, int expected)
 {
@@ -79,15 +84,10 @@ TEST_FUNC constexpr void test_type()
     test_fpclassify(cuda::std::numeric_limits<T>::signaling_NaN(), FP_NAN);
   }
 
-  // numeric_limits::has_denorm has been deprecated since C++23
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   if constexpr (cuda::std::numeric_limits<T>::has_denorm)
   {
-    _CCCL_SUPPRESS_DEPRECATED_POP
-    {
-      // fixme: behaviour of subnormal values depends on the FP mode, may result in FP_ZERO
-      // test_fpclassify(cuda::std::numeric_limits<T>::denorm_min(), FP_SUBNORMAL);
-    }
+    // fixme: behaviour of subnormal values depends on the FP mode, may result in FP_ZERO
+    // test_fpclassify(cuda::std::numeric_limits<T>::denorm_min(), FP_SUBNORMAL);
   }
 }
 
