@@ -331,7 +331,7 @@ _CCCL_API inline complex<__nv_bfloat16> cosh(const complex<__nv_bfloat16>& __x) 
 // tanh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> tanh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API inline complex<_Tp> tanh(const complex<_Tp>& __x) noexcept
 {
   const _Tp __realx = ::cuda::std::fabs(__x.real());
   _Tp __imagx       = __x.imag();
