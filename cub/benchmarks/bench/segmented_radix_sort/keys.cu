@@ -18,7 +18,7 @@ void seg_radix_sort(nvbench::state& state,
   using offset_t          = OffsetT;
   using begin_offset_it_t = const offset_t*;
   using end_offset_it_t   = const offset_t*;
-  using segment_size_t    = offset_t;
+  using segment_size_t    = cuda::std::int32_t; // same as CUB public API
   using key_t             = T;
   using value_t           = cub::NullType;
 
