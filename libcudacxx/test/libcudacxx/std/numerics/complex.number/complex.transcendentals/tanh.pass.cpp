@@ -51,13 +51,33 @@ TEST_FUNC void test_edges()
     }
     else if (cuda::std::isfinite(testcases[i].real()) && cuda::std::isinf(testcases[i].imag()))
     {
-      assert(cuda::std::isnan(r.real()));
-      assert(cuda::std::isnan(r.imag()));
+      // Per revision C11 DR471, tanh(0, inf) = (0, NaN)
+      if (testcases[i].real() == T(0))
+      {
+        assert(r.real() == T(0));
+        assert(cuda::std::signbit(r.real()) == cuda::std::signbit(testcases[i].real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
+      else
+      {
+        assert(cuda::std::isnan(r.real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
     }
     else if (cuda::std::isfinite(testcases[i].real()) && cuda::std::isnan(testcases[i].imag()))
     {
-      assert(cuda::std::isnan(r.real()));
-      assert(cuda::std::isnan(r.imag()));
+      // Per revision C11 DR471, tanh(0, NaN) = (0, NaN)
+      if (testcases[i].real() == T(0))
+      {
+        assert(r.real() == T(0));
+        assert(cuda::std::signbit(r.real()) == cuda::std::signbit(testcases[i].real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
+      else
+      {
+        assert(cuda::std::isnan(r.real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
     }
     else if (cuda::std::isinf(testcases[i].real()) && cuda::std::isfinite(testcases[i].imag()))
     {
