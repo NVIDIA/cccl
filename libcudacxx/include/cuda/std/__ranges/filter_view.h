@@ -299,7 +299,7 @@ public:
     is_nothrow_move_constructible_v<_View>
     && is_nothrow_constructible_v<__movable_box<_Pred>, in_place_t, add_rvalue_reference_t<_Pred>>)
       : __base_{::cuda::std::move(__base)}
-      , __pred_{in_place, ::cuda::std::move(__pred)}
+      , __pred_{in_place_t{}, ::cuda::std::move(__pred)}
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
