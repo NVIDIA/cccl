@@ -38,7 +38,7 @@ static bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 static bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 {
   cudaDeviceProp props;
-  CUDART(cudaGetDeviceProperties(&props, 0));
+  REQUIRE_CUDART(cudaGetDeviceProperties(&props, 0));
   return filter(props);
 }
 

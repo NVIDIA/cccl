@@ -55,17 +55,17 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
     auto pool = cuda::device_default_memory_pool(cuda::device_ref{0});
     cuda::mr::synchronous_resource_adapter<cuda::device_memory_pool_ref> adapter{pool};
     auto* ptr = adapter.allocate(stream, 1024, 128);
-    CCCLRT_CHECK(ptr != nullptr);
-    CCCLRT_CHECK(pool.attribute(cuda::memory_pool_attributes::used_mem_current) > 0);
+    CHECK(ptr != nullptr);
+    CHECK(pool.attribute(cuda::memory_pool_attributes::used_mem_current) > 0);
     adapter.deallocate(stream, ptr, 1024, 128);
-    CCCLRT_CHECK(pool.attribute(cuda::memory_pool_attributes::used_mem_current) == 0);
+    CHECK(pool.attribute(cuda::memory_pool_attributes::used_mem_current) == 0);
   }
   SECTION("Test wrapping a synchronous resource")
   {
     cuda::mr::synchronous_resource_adapter<cuda::mr::legacy_pinned_memory_resource> adapter{
       cuda::mr::legacy_pinned_memory_resource{}};
     auto* ptr = adapter.allocate(stream, 1024, 128);
-    CCCLRT_CHECK(ptr != nullptr);
+    CHECK(ptr != nullptr);
     adapter.deallocate(stream, ptr, 1024, 128);
   }
   SECTION("test property passing through")

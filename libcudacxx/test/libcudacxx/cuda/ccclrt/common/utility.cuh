@@ -23,27 +23,7 @@
 #include <new> // IWYU pragma: keep (needed for placement new)
 
 #include "test_macros.h"
-
-TEST_DEVICE_FUNC inline void ccclrt_require_impl(
-  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
-{
-  if (!condition)
-  {
-    // TODO do warp aggregate prints for easier readability?
-    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
-           filename,
-           linenum,
-           funcname,
-           blockIdx.x,
-           blockIdx.y,
-           blockIdx.z,
-           threadIdx.x,
-           threadIdx.y,
-           threadIdx.z,
-           condition_text);
-    __trap();
-  }
-}
+#include <c2h/catch2_test_macros.h>
 
 namespace
 {
@@ -65,13 +45,13 @@ public:
   explicit _malloc_pinned(std::size_t size)
   {
     cuda::__ensure_current_context guard(cuda::device_ref{0});
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
+    REQUIRE_CUDART(cudaMallocHost(&pv, size));
   }
 
   ~_malloc_pinned()
   {
     cuda::__ensure_current_context guard(cuda::device_ref{0});
-    [[maybe_unused]] auto status = ::cudaFreeHost(pv);
+    REQUIRE_CUDART(cudaFreeHost(pv));
   }
 
   template <class T>
@@ -133,8 +113,8 @@ struct verify_n
   TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     // TODO: fix clang CUDA require macro
-    // CCCLRT_REQUIRE(*pi == N);
-    ccclrt_require_impl(*pi == N, "*pi == N", __FILE__, __LINE__, __PRETTY_FUNCTION__);
+    // REQUIRE(*pi == N);
+    REQUIRE_DEVICE(*pi == N);
   }
 };
 
@@ -185,7 +165,7 @@ void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
 {
   cuda::__ensure_current_context guard(stream);
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);
-  assert(cudaGetLastError() == cudaSuccess);
+  REQUIRE_CUDART(cudaGetLastError());
 }
 } // namespace test
 } // namespace

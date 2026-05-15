@@ -71,7 +71,7 @@ bool equal_range(const Buffer& buf)
     }
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
     check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }
@@ -157,7 +157,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffe
     }
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
     check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
-    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
     return true;
   }

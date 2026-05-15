@@ -73,36 +73,36 @@ C2H_CCCLRT_TEST("cuda::buffer iterators", "[container][buffer]", test_types)
   SECTION("cuda::buffer::begin/end no allocation")
   {
     Buffer buf = make_buffer(stream, extract_properties<Buffer>::get_resource(), 0, T());
-    CCCLRT_CHECK(buf.begin() == iterator{nullptr});
-    CCCLRT_CHECK(cuda::std::as_const(buf).begin() == const_iterator{nullptr});
-    CCCLRT_CHECK(buf.cbegin() == const_iterator{nullptr});
+    CHECK(buf.begin() == iterator{nullptr});
+    CHECK(cuda::std::as_const(buf).begin() == const_iterator{nullptr});
+    CHECK(buf.cbegin() == const_iterator{nullptr});
 
-    CCCLRT_CHECK(buf.end() == iterator{nullptr});
-    CCCLRT_CHECK(cuda::std::as_const(buf).end() == const_iterator{nullptr});
-    CCCLRT_CHECK(buf.cend() == const_iterator{nullptr});
+    CHECK(buf.end() == iterator{nullptr});
+    CHECK(cuda::std::as_const(buf).end() == const_iterator{nullptr});
+    CHECK(buf.cend() == const_iterator{nullptr});
 
-    CCCLRT_CHECK(buf.begin() == buf.end());
-    CCCLRT_CHECK(cuda::std::as_const(buf).begin() == cuda::std::as_const(buf).end());
-    CCCLRT_CHECK(buf.cbegin() == buf.cend());
+    CHECK(buf.begin() == buf.end());
+    CHECK(cuda::std::as_const(buf).begin() == cuda::std::as_const(buf).end());
+    CHECK(buf.cbegin() == buf.cend());
   }
 
   SECTION("cuda::buffer::begin/end with allocation")
   {
     Buffer buf{stream, resource, 42, cuda::no_init}; // Note we do not care about the elements just the sizes
     // begin points to the element at data()
-    CCCLRT_CHECK(buf.begin() == iterator{buf.data()});
-    CCCLRT_CHECK(cuda::std::as_const(buf).begin() == const_iterator{buf.data()});
-    CCCLRT_CHECK(buf.cbegin() == const_iterator{buf.data()});
+    CHECK(buf.begin() == iterator{buf.data()});
+    CHECK(cuda::std::as_const(buf).begin() == const_iterator{buf.data()});
+    CHECK(buf.cbegin() == const_iterator{buf.data()});
 
     // end points to the element at data() + 42
-    CCCLRT_CHECK(buf.end() == iterator{buf.data() + 42});
-    CCCLRT_CHECK(cuda::std::as_const(buf).end() == const_iterator{buf.data() + 42});
-    CCCLRT_CHECK(buf.cend() == const_iterator{buf.data() + 42});
+    CHECK(buf.end() == iterator{buf.data() + 42});
+    CHECK(cuda::std::as_const(buf).end() == const_iterator{buf.data() + 42});
+    CHECK(buf.cend() == const_iterator{buf.data() + 42});
 
     // begin and end are not equal
-    CCCLRT_CHECK(buf.begin() != buf.end());
-    CCCLRT_CHECK(cuda::std::as_const(buf).begin() != cuda::std::as_const(buf).end());
-    CCCLRT_CHECK(buf.cbegin() != buf.cend());
+    CHECK(buf.begin() != buf.end());
+    CHECK(cuda::std::as_const(buf).begin() != cuda::std::as_const(buf).end());
+    CHECK(buf.cbegin() != buf.cend());
   }
 
   SECTION("cuda::buffer::rbegin/rend properties")
@@ -126,35 +126,35 @@ C2H_CCCLRT_TEST("cuda::buffer iterators", "[container][buffer]", test_types)
   SECTION("cuda::buffer::rbegin/rend no allocation")
   {
     Buffer buf = make_buffer(stream, extract_properties<Buffer>::get_resource(), 0, T());
-    CCCLRT_CHECK(buf.rbegin() == reverse_iterator{iterator{nullptr}});
-    CCCLRT_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
-    CCCLRT_CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
+    CHECK(buf.rbegin() == reverse_iterator{iterator{nullptr}});
+    CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
+    CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
 
-    CCCLRT_CHECK(buf.rend() == reverse_iterator{iterator{nullptr}});
-    CCCLRT_CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{nullptr}});
-    CCCLRT_CHECK(buf.crend() == const_reverse_iterator{const_iterator{nullptr}});
+    CHECK(buf.rend() == reverse_iterator{iterator{nullptr}});
+    CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{nullptr}});
+    CHECK(buf.crend() == const_reverse_iterator{const_iterator{nullptr}});
 
-    CCCLRT_CHECK(buf.rbegin() == buf.rend());
-    CCCLRT_CHECK(cuda::std::as_const(buf).rbegin() == cuda::std::as_const(buf).rend());
-    CCCLRT_CHECK(buf.crbegin() == buf.crend());
+    CHECK(buf.rbegin() == buf.rend());
+    CHECK(cuda::std::as_const(buf).rbegin() == cuda::std::as_const(buf).rend());
+    CHECK(buf.crbegin() == buf.crend());
   }
 
   SECTION("cuda::buffer::rbegin/rend with allocation")
   {
     Buffer buf{stream, resource, 42, cuda::no_init}; // Note we do not care about the elements just the sizes
     // rbegin points to the element at data() + 42
-    CCCLRT_CHECK(buf.rbegin() == reverse_iterator{iterator{buf.data() + 42}});
-    CCCLRT_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
-    CCCLRT_CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
+    CHECK(buf.rbegin() == reverse_iterator{iterator{buf.data() + 42}});
+    CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
+    CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});
 
     // rend points to the element at data()
-    CCCLRT_CHECK(buf.rend() == reverse_iterator{iterator{buf.data()}});
-    CCCLRT_CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{buf.data()}});
-    CCCLRT_CHECK(buf.crend() == const_reverse_iterator{const_iterator{buf.data()}});
+    CHECK(buf.rend() == reverse_iterator{iterator{buf.data()}});
+    CHECK(cuda::std::as_const(buf).rend() == const_reverse_iterator{const_iterator{buf.data()}});
+    CHECK(buf.crend() == const_reverse_iterator{const_iterator{buf.data()}});
 
     // begin and end are not equal
-    CCCLRT_CHECK(buf.rbegin() != buf.rend());
-    CCCLRT_CHECK(cuda::std::as_const(buf).rbegin() != cuda::std::as_const(buf).rend());
-    CCCLRT_CHECK(buf.crbegin() != buf.crend());
+    CHECK(buf.rbegin() != buf.rend());
+    CHECK(cuda::std::as_const(buf).rbegin() != cuda::std::as_const(buf).rend());
+    CHECK(buf.crbegin() != buf.crend());
   }
 }

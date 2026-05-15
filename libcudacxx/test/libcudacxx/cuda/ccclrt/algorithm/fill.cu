@@ -30,7 +30,7 @@ C2H_CCCLRT_TEST("Fill", "[algorithm]")
     std::vector<int> host_vector(42);
     {
       cuda::__ensure_current_context ctx_setter{cuda::device_ref{0}};
-      CUDART(cudaMemcpyAsync(
+      REQUIRE_CUDART(cudaMemcpyAsync(
         host_vector.data(), buffer.data(), buffer.size() * sizeof(int), cudaMemcpyDefault, _stream.get()));
     }
 
