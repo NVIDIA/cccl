@@ -600,25 +600,28 @@ struct DeviceTopK
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input keys
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output keys
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] d_values_in
-  //!   Pointer to the input values
+  //!   Random-access iterator to the input sequence containing the values associated to each key
   //!
   //! @param[out] d_values_out
-  //!   Pointer to the K output values
+  //!   Random-access iterator to the output sequence of values, corresponding to the top k keys, where k values will be
+  //!   written to
   //!
   //! @param[in] num_items
-  //!   Number of input items
+  //!   Number of items to be read and processed from `d_keys_in` and `d_values_in` each
   //!
   //! @param[in] k
-  //!   The K value
+  //!   The value of K, which is the number of largest pairs to find from `num_items` pairs. Capped to a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] decomposer
-  //!   Decomposer object for interpreting user-defined key types
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
   //!
   //! @param[in] env
   //!   @rst
@@ -773,6 +776,10 @@ struct DeviceTopK
   //! @rst
   //! Finds the smallest K keys and their corresponding values from an unordered input sequence of key-value pairs.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.5.
   //!
@@ -817,22 +824,24 @@ struct DeviceTopK
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input keys
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output keys
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] d_values_in
-  //!   Pointer to the input values
+  //!   Random-access iterator to the input sequence containing the values associated to each key
   //!
   //! @param[out] d_values_out
-  //!   Pointer to the K output values
+  //!   Random-access iterator to the output sequence of values, corresponding to the top k keys, where k values will be
+  //!   written to
   //!
   //! @param[in] num_items
-  //!   Number of input items
+  //!   Number of items to be read and processed from `d_keys_in` and `d_values_in` each
   //!
   //! @param[in] k
-  //!   The K value
+  //!   The value of K, which is the number of lowest pairs to find from `num_items` pairs. Capped to a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] env
   //!   @rst
@@ -1018,6 +1027,10 @@ struct DeviceTopK
   //! Finds the smallest K keys and their corresponding values from an unordered input sequence of key-value pairs,
   //! using a decomposer to interpret user-defined key types.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.5.
   //!
@@ -1059,31 +1072,35 @@ struct DeviceTopK
   //!  The integral type of variable k
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of decomposer
+  //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
+  //!   constituent arithmetic types.
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input keys
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output keys
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] d_values_in
-  //!   Pointer to the input values
+  //!   Random-access iterator to the input sequence containing the values associated to each key
   //!
   //! @param[out] d_values_out
-  //!   Pointer to the K output values
+  //!   Random-access iterator to the output sequence of values, corresponding to the top k keys, where k values will be
+  //!   written to
   //!
   //! @param[in] num_items
-  //!   Number of input items
+  //!   Number of items to be read and processed from `d_keys_in` and `d_values_in` each
   //!
   //! @param[in] k
-  //!   The K value
+  //!   The value of K, which is the number of lowest pairs to find from `num_items` pairs. Capped to a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] decomposer
-  //!   Decomposer object for interpreting user-defined key types
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
   //!
   //! @param[in] env
   //!   @rst
@@ -1221,6 +1238,10 @@ struct DeviceTopK
   //! @rst
   //! Finds the largest K keys from an unordered input sequence.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.5.
   //!
@@ -1259,16 +1280,17 @@ struct DeviceTopK
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input keys
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output keys
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] num_items
-  //!   Number of input items
+  //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The K value
+  //!   The value of K, which is the number of largest keys to find from `num_items` keys. Capped to a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] env
   //!   @rst
@@ -1429,6 +1451,10 @@ struct DeviceTopK
   //! Finds the largest K keys from an unordered input sequence,
   //! using a decomposer to interpret user-defined key types.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.5.
   //!
@@ -1464,25 +1490,28 @@ struct DeviceTopK
   //!  The integral type of variable k
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of decomposer
+  //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
+  //!   constituent arithmetic types.
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input keys
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output keys
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] num_items
-  //!   Number of input items
+  //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The K value
+  //!   The value of K, which is the number of largest keys to find from `num_items` keys. Capped to a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] decomposer
-  //!   Decomposer object for interpreting user-defined key types
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
   //!
   //! @param[in] env
   //!   @rst
@@ -1625,6 +1654,10 @@ struct DeviceTopK
   //! @rst
   //! Finds the smallest K keys from an unordered input sequence.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.5.
   //!
@@ -1663,16 +1696,17 @@ struct DeviceTopK
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input keys
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output keys
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] num_items
-  //!   Number of input items
+  //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The K value
+  //!   The value of K, which is the number of lowest keys to find from `num_items` keys. Capped to a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] env
   //!   @rst
@@ -1833,6 +1867,10 @@ struct DeviceTopK
   //! Finds the smallest K keys from an unordered input sequence,
   //! using a decomposer to interpret user-defined key types.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.5.
   //!
@@ -1868,25 +1906,28 @@ struct DeviceTopK
   //!  The integral type of variable k
   //!
   //! @tparam DecomposerT
-  //!   **[inferred]** Type of decomposer
+  //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
+  //!   constituent arithmetic types.
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input keys
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output keys
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] num_items
-  //!   Number of input items
+  //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The K value
+  //!   The value of K, which is the number of lowest keys to find from `num_items` keys. Capped to a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] decomposer
-  //!   Decomposer object for interpreting user-defined key types
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
   //!
   //! @param[in] env
   //!   @rst
