@@ -336,14 +336,13 @@ template <class _Tp>
   const _Tp __realx = ::cuda::std::fabs(__x.real());
   _Tp __imagx       = __x.imag();
 
-  // __realx == INFINITY overrides __imagx == NAN.
+  // __realx == inf overrides __imagx == nan:
   if (__realx == numeric_limits<_Tp>::infinity())
   {
     __imagx = ::cuda::std::copysign(_Tp{0}, __imagx);
   }
 
-  // A somewhat strange special-within-special case that
-  // cannot really be made to pass through nicely.
+  // A somewhat strange special-within-special case:
   if ((__realx == _Tp{0}) && ::cuda::std::isinf(__imagx))
   {
     // C11 DR471
@@ -362,7 +361,7 @@ template <class _Tp>
 
   if (__realx_reduced >= __reduction_needed_bound)
   {
-    // Set some very specific (per type) values to help with range reduction.
+    // Set some very specific values to help with range reduction.
     const _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(648.0) : static_cast<_Tp>(58.0f);
 
     // Use two intervals to reduce values. Some values will be reduced twice.
