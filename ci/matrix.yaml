@@ -80,10 +80,10 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.X','13.0', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
-    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc15', 'clang20'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14', 'msvc14.39'], gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14', 'msvc2022'],  gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc15', 'clang20', 'msvc2022'],  gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang',   'msvc'],      gpu: 'rtx2080'}
     - {jobs: ['install'], project: 'packaging'}
     # NVBench Helper testing:
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -138,7 +138,7 @@ workflows:
     - {project: 'cccl_c_stf',      jobs: ['test'], ctk: '13.X', cxx: 'gcc13',               gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     # Packaging / install
-    - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'packaging', jobs: ['test'], args: '-min-cmake', gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'packaging', jobs: ['install']}
     # NVBench Helper testing:
@@ -196,8 +196,8 @@ workflows:
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
-    - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
-    - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
+    - {jobs: ['test_gpu'], project: 'thrust', cxx: ['gcc', 'msvc'], cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
+    - {jobs: ['test_gpu'], project: 'thrust', cxx: ['gcc', 'msvc'], cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
     # NVRTC tests don't currently support 12.0:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
@@ -214,10 +214,10 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
-    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc15', 'clang20'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14', 'msvc14.39'], gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14', 'msvc2022'],  gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc15', 'clang20', 'msvc2022'],  gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang',   'msvc'],      gpu: 'rtx2080'}
     - {jobs: ['install'], project: 'packaging'}
     # NVBench Helper testing:
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -285,8 +285,8 @@ workflows:
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
-    - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
-    - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
+    - {jobs: ['test_gpu'], project: 'thrust', cxx: ['gcc', 'msvc'], cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
+    - {jobs: ['test_gpu'], project: 'thrust', cxx: ['gcc', 'msvc'], cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
     # sm: all-cccl:
     - {jobs: ['build'], project: ['thrust', 'libcudacxx', 'cudax'], std: 'max', sm: 'all-cccl' }
@@ -306,10 +306,10 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: ['gcc13', 'msvc2022']}
     # CCCL packaging:
-    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc15', 'clang20'],   gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14', 'msvc14.39'], gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14', 'msvc2022'],  gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc15', 'clang20', 'msvc2022'],  gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang',   'msvc'],      gpu: 'rtx2080'}
     - {jobs: ['install'], project: 'packaging'}
     # NVBench Helper:
     - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -611,6 +611,7 @@ projects:
 gpus:
   t4:         { sm: 75  } # 16 GB,  10 runners
   rtx2080:    { sm: 75  } #  8 GB,  12 runners
+  a100:       { sm: 80  }
   rtxa6000:   { sm: 86  } # 48 GB,  12 runners
   l4:         { sm: 89  } # 24 GB,  48 runners
   rtx4090:    { sm: 89  } # 24 GB,  10 runners

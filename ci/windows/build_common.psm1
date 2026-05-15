@@ -19,18 +19,26 @@ $ErrorActionPreference = "Stop"
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
 $script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
 
-Write-Host "=== Docker Container Resource Info ==="
+Write-Host "::group::Environment Information"
 Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
 Get-WmiObject Win32_OperatingSystem | ForEach-Object {
     Write-Host ("Memory: total={0:N1} GB, free={1:N1} GB" -f ($_.TotalVisibleMemorySize / 1MB), ($_.FreePhysicalMemory / 1MB))
 }
-Write-Host "======================================"
 
 # Extract the CL version for export to build scripts:
-$script:CL_VERSION_STRING = & cl.exe /?
-if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
-    $CL_VERSION = [version]$matches[1]
-    Write-Host "Detected cl.exe version: $CL_VERSION"
+$CL_VERSION = cmd /c "`"$script:HOST_COMPILER`" /? 2>&1" | Select-String "Compiler Version"
+$CL_VERSION -match ".*Compiler Version ([0-9]+\.[0-9]+)\..*"
+$CL_VERSION = [version]$matches[1]
+Write-Host "Detected cl.exe version: $CL_VERSION"
+
+$CUDA_VERSION = cmd /c "nvcc --version 2>&1" | Select-String "Cuda compilation tools, release (\d+\.\d+)"
+$CUDA_VERSION -match ".*Cuda compilation tools, release ([0-9]+\.[0-9]+),.*"
+$CUDA_VERSION = [version]$matches[1]
+Write-Host "Detected nvcc version: $CUDA_VERSION"
+
+# If both versions are set and CCCL_BUILD_INFIX is not defined, set it to cudaXX.Y-clXX.YY
+if ($CL_VERSION -and $CUDA_VERSION -and -not $env:CCCL_BUILD_INFIX) {
+    $env:CCCL_BUILD_INFIX = "cuda{0}-cl{1}" -f $CUDA_VERSION, $CL_VERSION
 }
 
 $script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
@@ -45,22 +53,26 @@ if ($env:GITHUB_ACTIONS) {
     $script:GLOBAL_CMAKE_OPTIONS += ' "-DCCCL_ENABLE_WERROR=OFF" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=ON"'
 }
 
-if (-not $env:CCCL_BUILD_INFIX) {
-    $env:CCCL_BUILD_INFIX = ""
-}
-
 # Presets will be configured in this directory:
 $BUILD_DIR = "../build/$env:CCCL_BUILD_INFIX"
 
-If(!(test-path -PathType container "../build")) {
-    New-Item -ItemType Directory -Path "../build"
+# Create the build dir and symlink it to build/latest:
+$latest_link = "../build/latest"
+$BUILD_DIR = (New-Item -ItemType Directory -Path $BUILD_DIR -Force -ErrorAction Stop).FullName
+
+# Idempotently (re)create the `latest` symlink. Avoid Remove-Item, which on Windows
+# PowerShell 5.1 follows directory symlinks and refuses to delete a non-empty target.
+$existing_link = Get-Item -LiteralPath $latest_link -Force -ErrorAction SilentlyContinue
+if ($existing_link) {
+    if ($existing_link.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+        # Existing symlink/junction -- .Delete() removes the link only, not the target.
+        $existing_link.Delete()
+    } else {
+        # Real file or directory at the link path -- bail out rather than risk data loss.
+        throw "Refusing to replace non-symlink '$latest_link' (Attributes=$($existing_link.Attributes)) with a symlink to '$BUILD_DIR'."
+    }
 }
-
-# The most recent build will always be symlinked to cccl/build/latest
-New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
-
-# Convert to an absolute path:
-$BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
+New-Item -ItemType SymbolicLink -Path $latest_link -Target $BUILD_DIR | Out-Null
 
 # Prepare environment for CMake:
 $env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
@@ -68,14 +80,14 @@ $env:CTEST_PARALLEL_LEVEL = 1
 $env:CUDAHOSTCXX = $script:HOST_COMPILER
 $env:CXX = $script:HOST_COMPILER
 
-Write-Host "========================================"
-Write-Host "Begin build"
 Write-Host "pwd=$pwd"
 Write-Host "BUILD_DIR=$BUILD_DIR"
 Write-Host "CXX_STANDARD=$CXX_STANDARD"
 Write-Host "CXX=$env:CXX"
 Write-Host "CUDACXX=$env:CUDACXX"
 Write-Host "CUDAHOSTCXX=$env:CUDAHOSTCXX"
+Write-Host "CL_VERSION=$CL_VERSION"
+Write-Host "CUDA_VERSION=$CUDA_VERSION"
 Write-Host "TBB_ROOT=$env:TBB_ROOT"
 Write-Host "NVCC_VERSION=$NVCC_VERSION"
 Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
@@ -84,10 +96,10 @@ Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
 Write-Host "GLOBAL_CMAKE_OPTIONS=$script:GLOBAL_CMAKE_OPTIONS"
 Write-Host "Current commit is:"
 Write-Host "$(git log -1 --format=short)"
-Write-Host "========================================"
-
-cmake --version
-ctest --version
+Write-Host "$(sccache --version)"
+Write-Host "$(cmake --version)"
+Write-Host "$(ctest --version)"
+Write-Host "::endgroup::"
 
 function configure_preset {
     Param(
@@ -102,6 +114,9 @@ function configure_preset {
     )
 
     $step = "$BUILD_NAME (configure)"
+
+    Write-Host "::group::$step - $PRESET"
+    $now = Get-Date
 
     # CMake must be invoked in the same directory as the presets file:
     pushd ".."
@@ -124,7 +139,11 @@ function configure_preset {
     }
 
     popd
-    Write-Host "$step complete."
+
+    Write-Host "::endgroup::"
+    $end = Get-Date
+    $elapsed = "{0:hh\:mm\:ss}" -f ($end - $now)
+    Write-Host "$step complete in $elapsed" -ForegroundColor Blue
 }
 
 function build_preset {
@@ -138,6 +157,9 @@ function build_preset {
     )
 
     $step = "$BUILD_NAME (build)"
+
+    Write-Host "::group::$step - $PRESET"
+    $now = Get-Date
 
     # CMake must be invoked in the same directory as the presets file:
     pushd ".."
@@ -153,7 +175,10 @@ function build_preset {
     sccache --show-adv-stats
     sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 
-    echo "$step complete"
+    Write-Host "::endgroup::"
+    $end = Get-Date
+    $elapsed = "{0:hh\:mm\:ss}" -f ($end - $now)
+    Write-Host "$step complete in $elapsed" -ForegroundColor Blue
 
     If ($test_result -ne 0) {
          throw "$step Failed"
@@ -174,6 +199,9 @@ function test_preset {
 
     $step = "$BUILD_NAME (test)"
 
+    Write-Host "::group::$step - $PRESET"
+    $now = Get-Date
+
     # CTest must be invoked in the same directory as the presets file:
     pushd ".."
 
@@ -184,7 +212,10 @@ function test_preset {
 
     sccache --show-adv-stats
 
-    echo "$step complete"
+    Write-Host "::endgroup::"
+    $end = Get-Date
+    $elapsed = "{0:hh\:mm\:ss}" -f ($end - $now)
+    Write-Host "$step complete in $elapsed" -ForegroundColor Blue
 
     If ($test_result -ne 0) {
          throw "$step Failed"
