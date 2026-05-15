@@ -38,6 +38,7 @@
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
@@ -50,7 +51,6 @@
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__ranges/unwrap_end.h>
 #  include <cuda/std/__type_traits/decay.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstdint>
@@ -115,7 +115,7 @@ public:
   friend class buffer;
 
   // For now we require trivially copyable type to simplify the implementation
-  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
+  static_assert(::cuda::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
 
   // At least one of the properties must signal an execution space
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -475,6 +475,92 @@ public:
   [[nodiscard]] _CCCL_HOST_API const_pointer data() const noexcept
   {
     return __buf_.data();
+  }
+
+  //! @brief Gets a reference to the element at index `__i`. Requires ``cuda::host_accessible`` property.
+  //! @throw std::out_of_range if `__i < size()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& at(size_type __i)
+  {
+    if (__i >= size())
+    {
+      _CCCL_THROW(::std::out_of_range, "__i must be less than size()");
+    }
+    return data()[__i];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& at(size_type __i) const
+  {
+    if (__i >= size())
+    {
+      _CCCL_THROW(::std::out_of_range, "__i must be less than size()");
+    }
+    return data()[__i];
+  }
+
+  //! @brief Gets a reference to the element at index `__i`. Requires ``cuda::host_accessible`` property.
+  //! @pre `__i < size()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& operator[](size_type __i) noexcept
+  {
+    _CCCL_ASSERT(__i < size(), "__i must be less than size()");
+    return data()[__i];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& operator[](size_type __i) const noexcept
+  {
+    _CCCL_ASSERT(__i < size(), "__i must be less than size()");
+    return data()[__i];
+  }
+
+  //! @brief Gets a reference to the first element. Requires ``cuda::host_accessible`` property.
+  //! @pre `!empty()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& front() noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[0];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& front() const noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[0];
+  }
+
+  //! @brief Gets a reference to the last element. Requires ``cuda::host_accessible`` property.
+  //! @pre `!empty()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& back() noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[size() - 1];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& back() const noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[size() - 1];
   }
 
   //! @brief Returns a span over the first \p __count elements.

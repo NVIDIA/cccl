@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/util_device.cuh>
@@ -185,7 +185,7 @@ private:
   template <typename ActivePolicyT>
   struct policy_getter
   {
-    _CCCL_API constexpr auto operator()() -> detail::merge_sort::merge_sort_policy
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() -> detail::merge_sort::merge_sort_policy
     {
       using mp = typename ActivePolicyT::MergeSortPolicy;
       return {mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
@@ -279,7 +279,7 @@ public:
     auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
     auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
-    const int block_threads =
+    const int threads_per_block =
       detail::merge_sort::merge_sort_vsmem_helper_t<
         policy_getter<ActivePolicyT>,
         KeyInputIteratorT,
@@ -289,10 +289,10 @@ public:
         OffsetT,
         CompareOpT,
         KeyT,
-        ValueT>::policy.block_threads;
+        ValueT>::policy.threads_per_block;
 
     // Invoke DeviceMergeSortBlockSortKernel
-    launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, true)
+    launcher_factory(static_cast<int>(num_tiles), threads_per_block, 0, stream, true)
       .doit(kernel_source.MergeSortBlockSortKernel(),
             ping,
             d_input_keys,
@@ -360,7 +360,7 @@ public:
       }
 
       // Merge
-      launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, true)
+      launcher_factory(static_cast<int>(num_tiles), threads_per_block, 0, stream, true)
         .doit(kernel_source.MergeSortMergeKernel(),
               ping,
               d_output_keys,
@@ -558,7 +558,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
     if (const auto error = CubDebug(
-          launcher_factory(static_cast<int>(num_tiles), active_policy.block_threads, 0, stream, true)
+          launcher_factory(static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream, true)
             .doit(kernel_source.MergeSortBlockSortKernel(),
                   ping,
                   d_input_keys,
@@ -623,7 +623,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return error;
       }
       if (const auto error = CubDebug(
-            launcher_factory(static_cast<int>(num_tiles), active_policy.block_threads, 0, stream, true)
+            launcher_factory(static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream, true)
               .doit(kernel_source.MergeSortMergeKernel(),
                     ping,
                     d_output_keys,

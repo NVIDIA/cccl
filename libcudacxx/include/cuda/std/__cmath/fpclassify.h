@@ -79,7 +79,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __fpclassify_impl(_Tp __x) noexcept
 {
-  static_assert(numeric_limits<_Tp>::has_denorm, "The type must have denorm support");
+  static_assert(__fp_has_denorm_v<__fp_format_of_v<_Tp>>, "The type must have denorm support");
 
   if constexpr (numeric_limits<_Tp>::has_quiet_NaN || numeric_limits<_Tp>::has_signaling_NaN)
   {
@@ -186,7 +186,7 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
 {
-  return ((__x.__x & __fp_exp_mask_of_v<__nv_fp8_e8m0>) == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
+  return (__x.__x == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 

@@ -225,14 +225,14 @@ public:
 #  endif // _CCCL_CUDA_COMPILATION()
 };
 
-_CCCL_HOST_DEVICE this_thread() -> this_thread<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread() -> this_thread<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE this_thread(const _Hierarchy&) -> this_thread<__hierarchy_type_of<_Hierarchy>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread(const _Hierarchy&) -> this_thread<__hierarchy_type_of<_Hierarchy>>;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
-_CCCL_HOST_DEVICE this_thread(const ::cooperative_groups::thread_block_tile<1, void>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread(const ::cooperative_groups::thread_block_tile<1, void>&)
   -> this_thread<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
@@ -283,15 +283,15 @@ public:
 #  endif // _CCCL_CUDA_COMPILATION()
 };
 
-_CCCL_HOST_DEVICE this_warp() -> this_warp<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp() -> this_warp<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE this_warp(const _Hierarchy&) -> this_warp<__hierarchy_type_of<_Hierarchy>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp(const _Hierarchy&) -> this_warp<__hierarchy_type_of<_Hierarchy>>;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
 template <class _Parent>
-_CCCL_HOST_DEVICE this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&)
   -> this_warp<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
@@ -341,14 +341,15 @@ public:
 #  endif // _CCCL_CUDA_COMPILATION()
 };
 
-_CCCL_HOST_DEVICE this_block() -> this_block<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block() -> this_block<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE this_block(const _Hierarchy&) -> this_block<__hierarchy_type_of<_Hierarchy>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block(const _Hierarchy&) -> this_block<__hierarchy_type_of<_Hierarchy>>;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
-_CCCL_HOST_DEVICE this_block(const ::cooperative_groups::thread_block&) -> this_block<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block(const ::cooperative_groups::thread_block&)
+  -> this_block<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
@@ -411,14 +412,15 @@ public:
 #  endif // _CCCL_CUDA_COMPILATION()
 };
 
-_CCCL_HOST_DEVICE this_cluster() -> this_cluster<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster() -> this_cluster<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE this_cluster(const _Hierarchy&) -> this_cluster<__hierarchy_type_of<_Hierarchy>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster(const _Hierarchy&) -> this_cluster<__hierarchy_type_of<_Hierarchy>>;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
-_CCCL_HOST_DEVICE this_cluster(const ::cooperative_groups::cluster_group&) -> this_cluster<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster(const ::cooperative_groups::cluster_group&)
+  -> this_cluster<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 
 // Synchronizing whole grid requires driver support and the kernel must be launched using the cooperative launch API.
@@ -469,27 +471,24 @@ class this_grid : __this_group_base<grid_level, _Hierarchy>
       }
 
       unsigned __old_barrier_value;
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_70,
-        ({
-          asm volatile("atom.add.release.gpu.u32 %0, [%1], %2;"
-                       : "=r"(__old_barrier_value)
-                       : "l"(__barrier_ptr), "r"(__nblocks)
-                       : "memory");
-          unsigned __curr_barrier_value;
-          do
-          {
-            asm volatile("ld.acquire.gpu.u32 %0, [%1];" : "=r"(__curr_barrier_value) : "l"(__barrier_ptr) : "memory");
-          } while (static_cast<int>(__old_barrier_value) < 0 == static_cast<int>(__curr_barrier_value) < 0);
-        }),
-        ({
-          ::__threadfence();
-          __old_barrier_value = ::atomicAdd(__barrier_ptr, __nblocks);
-          while (static_cast<int>(__old_barrier_value) < 0 == static_cast<int>(*__barrier_ptr) < 0)
-          {
-          }
-          ::__threadfence();
-        }))
+#    if _CCCL_HAS_NV_ATOMIC_BUILTINS()
+      __old_barrier_value =
+        __nv_atomic_fetch_add(__barrier_ptr, __nblocks, __NV_ATOMIC_RELEASE, __NV_THREAD_SCOPE_DEVICE);
+#    else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
+      asm volatile("atom.add.release.gpu.u32 %0, [%1], %2;"
+                   : "=r"(__old_barrier_value)
+                   : "l"(__barrier_ptr), "r"(__nblocks)
+                   : "memory");
+#    endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
+      unsigned __curr_barrier_value;
+      do
+      {
+#    if _CCCL_HAS_NV_ATOMIC_BUILTINS()
+        __nv_atomic_load(__barrier_ptr, &__curr_barrier_value, __NV_ATOMIC_ACQUIRE, __NV_THREAD_SCOPE_DEVICE);
+#    else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
+        asm volatile("ld.acquire.gpu.u32 %0, [%1];" : "=r"(__curr_barrier_value) : "l"(__barrier_ptr) : "memory");
+#    endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
+      } while (static_cast<int>(__old_barrier_value) < 0 == static_cast<int>(__curr_barrier_value) < 0);
     }
 
     // Wait for the thread 0 to finish the inter block synchronization.
@@ -533,14 +532,15 @@ public:
 #  endif // _CCCL_CUDA_COMPILATION()
 };
 
-_CCCL_HOST_DEVICE this_grid() -> this_grid<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid() -> this_grid<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<_Hierarchy>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<_Hierarchy>>;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
-_CCCL_HOST_DEVICE this_grid(const ::cooperative_groups::grid_group&) -> this_grid<__implicit_hierarchy_t>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid(const ::cooperative_groups::grid_group&)
+  -> this_grid<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 _CCCL_TEMPLATE(class _Level, class... _Args)

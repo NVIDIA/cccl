@@ -188,7 +188,7 @@ struct IntComparableWith
   }
 };
 template <class T>
-TEST_FUNC IntComparableWith(T) -> IntComparableWith<T>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES IntComparableWith(T) -> IntComparableWith<T>;
 
 template <class T>
 struct IntSentinelWith
@@ -262,7 +262,7 @@ struct IntSentinelWith
   }
 };
 template <class T>
-TEST_FUNC IntSentinelWith(T) -> IntSentinelWith<T>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES IntSentinelWith(T) -> IntSentinelWith<T>;
 
 struct NotIncrementable
 {

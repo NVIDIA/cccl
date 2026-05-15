@@ -416,7 +416,7 @@ C2H_TEST("let_value can nest", "[adaptors][let_value]")
 constexpr struct test_query_t : ex::forwarding_query_t
 {
   template <class Env>
-  _CCCL_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
   {
     return env.query(*this);
   }

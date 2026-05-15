@@ -99,9 +99,7 @@ public:
   using iterator_type = _Iter;
 
   using iterator_category =
-    _If<__has_random_access_traversal<_Iter>,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+    _If<__has_random_access_traversal<_Iter>, random_access_iterator_tag, __iterator_traits_category_or_concept_t<_Iter>>;
   using pointer          = typename iterator_traits<_Iter>::pointer;
   using iterator_concept = _If<random_access_iterator<_Iter>, random_access_iterator_tag, bidirectional_iterator_tag>;
   using value_type       = iter_value_t<_Iter>;

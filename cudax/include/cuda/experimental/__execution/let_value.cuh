@@ -67,7 +67,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
 
   // This environment is part of the receiver used to connect the secondary sender.
   template <class _SetTag, class _Attrs, class... _Env>
-  _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr auto __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept
   {
     if constexpr (__callable<get_completion_scheduler_t<_SetTag>, const _Attrs&, __fwd_env_t<const _Env&>...>)
     {
@@ -103,7 +103,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   {
     using __base_t = __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>;
 
-    _CCCL_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
+    _CCCL_HOST_DEVICE_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
         : __base_t(__ref_rcvr(__rcvr))
     {}
   };
@@ -143,7 +143,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     using receiver_concept = receiver_t;
 
     template <class... _As>
-    _CCCL_API void __complete(_SetTag, _As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void __complete(_SetTag, _As&&... __as) noexcept
     {
       _CCCL_TRY
       {
@@ -167,30 +167,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     }
 
     template <class _Tag, class... _As>
-    _CCCL_API void __complete(_Tag, _As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void __complete(_Tag, _As&&... __as) noexcept
     {
       // Forward the completion to the receiver unchanged.
       _Tag{}(static_cast<_Rcvr&&>(__state_->__rcvr_.__base()), static_cast<_As&&>(__as)...);
     }
 
     template <class... _As>
-    _CCCL_API void set_value(_As&&... __as) noexcept
+    _CCCL_HOST_DEVICE_API void set_value(_As&&... __as) noexcept
     {
       __complete(execution::set_value, static_cast<_As&&>(__as)...);
     }
 
     template <class _Error>
-    _CCCL_API void set_error(_Error&& __error) noexcept
+    _CCCL_HOST_DEVICE_API void set_error(_Error&& __error) noexcept
     {
       __complete(execution::set_error, static_cast<_Error&&>(__error));
     }
 
-    _CCCL_API void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API void set_stopped() noexcept
     {
       __complete(execution::set_stopped);
     }
 
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_.__base()));
     }
@@ -212,13 +212,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     using __env2_t                = __let_t::__env2_t<_SetTag, env_of_t<_CvSndr>, env_of_t<_Rcvr>>;
     using __sndr1_rcvr_t          = __sndr1_rcvr_t<_SetTag, _Fn, _Rcvr, __env2_t, __completions_t>;
 
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr& __sndr, _Fn& __fn, _Rcvr& __rcvr, __env2_t&& __env2) noexcept(
-      __nothrow_decay_copyable<_Fn, _Rcvr, __env2_t> && __nothrow_connectable<_CvSndr, __sndr1_rcvr_t>)
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(
+      _CvSndr& __sndr,
+      _Fn& __fn,
+      _Rcvr& __rcvr,
+      __env2_t&& __env2) noexcept(__nothrow_decay_copyable<_Fn, _Rcvr, __env2_t>
+                                  && __nothrow_connectable<_CvSndr, __sndr1_rcvr_t>)
         : __state_{{{static_cast<_Rcvr&&>(__rcvr), static_cast<__env2_t&&>(__env2)}, static_cast<_Fn&&>(__fn)}}
         , __opstate1_(execution::connect(static_cast<_CvSndr&&>(__sndr), __sndr1_rcvr_t{&__state_}))
     {}
 
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
       __nothrow_decay_copyable<_Fn, _Rcvr, __env2_t> && __nothrow_connectable<_CvSndr, __sndr1_rcvr_t>)
         : __opstate_t(
             __sndr, __fn, __rcvr, __let_t::__mk_env2<_SetTag>(execution::get_env(__sndr), execution::get_env(__rcvr)))
@@ -226,7 +230,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       execution::start(__opstate1_);
     }
@@ -251,7 +255,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   //! queried. For example, you may be querying a let_value sender for its set_error
   //! completion domain.
   template <class _SetTag, class _SetTag2, class _Sndr, class _Fn, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completion_domain() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __get_completion_domain() noexcept
   {
     if constexpr (sender_in<_Sndr, _Env...>)
     {
@@ -276,7 +280,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct __transform_args_fn
   {
     template <class... _Ts>
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const
     {
       if constexpr (!__decay_copyable<_Ts...>)
       {
@@ -314,7 +318,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct __completion_behavior_transform_fn
   {
     template <class _Tag, class... _Ts>
-    [[nodiscard]] _CCCL_API constexpr auto operator()(_Tag (*)(_Ts...)) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Tag (*)(_Ts...)) const noexcept
     {
       if constexpr (::cuda::std::__type_callable<__sndr2_fn<_Fn>, _Ts...>::value)
       {
@@ -359,19 +363,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
                                                   // extended (host/device) lambda
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) &&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr) &&
     {
       return _LetTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) const&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr) const&
     {
       return _LetTag()(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API friend auto operator|(_Sndr __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto operator|(_Sndr __sndr, __closure_t __self)
     {
       return _LetTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
     }
@@ -388,10 +392,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_base_t : __let_t
   //! @tparam _Fn The function to be called when the predecessor sender
   //! completes.
   template <class _Sndr, class _Fn>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn __fn) const noexcept;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
 struct let_value_t : __let_base_t<let_value_t>
@@ -426,15 +430,16 @@ struct __let_t::__attrs_t
 {
   using __set_tag_t = __set_tag_for_t<_LetTag>;
 
-  _CCCL_API constexpr explicit __attrs_t(const __sndr_t<_LetTag, _Sndr, _Fn>& __self) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __attrs_t(const __sndr_t<_LetTag, _Sndr, _Fn>& __self) noexcept
       : __self_(__self)
   {}
 
   template <class _Tag>
-  _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>) const = delete;
+  _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_scheduler_t<_Tag>) const = delete;
 
   template <class... _Env>
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<__set_tag_t>, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_domain_t<__set_tag_t>, const _Env&...) const noexcept
     -> __let_completion_domain_t<__set_tag_t, __set_tag_t, _Sndr, _Fn, _Env...>
   {
     return {};
@@ -443,7 +448,7 @@ struct __let_t::__attrs_t
   _CCCL_TEMPLATE(class _Tag, class... _Env)
   _CCCL_REQUIRES(::cuda::std::__is_included_in_v<_Tag, set_error_t, set_stopped_t> _CCCL_AND(
     __has_nothrow_completions<__set_tag_t, _Sndr, _Fn, _Env>::value&&...))
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_Tag>, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_domain_t<_Tag>, const _Env&...) const noexcept
     -> __common_domain_t<__compl_domain_t<_Tag, _Sndr, __fwd_env_t<_Env>...>,
                          __let_completion_domain_t<__set_tag_t, _Tag, _Sndr, _Fn, _Env...>>
   {
@@ -452,7 +457,8 @@ struct __let_t::__attrs_t
 
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES((!__has_nothrow_completions<__set_tag_t, _Sndr, _Fn, _Env>::value))
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, const _Env&) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  query(get_completion_domain_t<set_error_t>, const _Env&) const noexcept
     -> __common_domain_t<__compl_domain_t<__set_tag_t, _Sndr, __fwd_env_t<_Env>>,
                          __compl_domain_t<set_error_t, _Sndr, __fwd_env_t<_Env>>,
                          __let_completion_domain_t<__set_tag_t, set_error_t, _Sndr, _Fn, _Env>>
@@ -461,7 +467,7 @@ struct __let_t::__attrs_t
   }
 
   template <class... _Env>
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
   {
 #if _CCCL_CUDACC_BELOW(12, 9)
     if constexpr (sender_in<_Sndr> || (sender_in<_Sndr, __fwd_env_t<_Env>> && ...))
@@ -496,7 +502,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
   using __set_tag_t    = __set_tag_for_t<_LetTag>;
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -520,7 +526,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
   }
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__completions) = __get_completion_signatures<_Self, _Env...>())
     {
@@ -534,7 +540,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) && noexcept(
+  _CCCL_HOST_DEVICE_API auto connect(_Rcvr __rcvr) && noexcept(
     __nothrow_constructible<__opstate_t<__set_tag_t, _Sndr, _Fn, _Rcvr>, _Sndr, _Fn, _Rcvr>)
     -> __opstate_t<__set_tag_t, _Sndr, _Fn, _Rcvr>
   {
@@ -543,14 +549,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& noexcept(
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) const& noexcept(
     __nothrow_constructible<__opstate_t<__set_tag_t, const _Sndr&, _Fn, _Rcvr>, const _Sndr&, const _Fn&, _Rcvr>)
     -> __opstate_t<__set_tag_t, const _Sndr&, _Fn, _Rcvr>
   {
     return __opstate_t<__set_tag_t, const _Sndr&, _Fn, _Rcvr>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept
   {
     return __attrs_t<_LetTag, _Sndr, _Fn>(*this);
   }
@@ -589,7 +595,7 @@ using __all_non_dependent_t = ::cuda::std::__fold_and<(!dependent_sender<_Sndr>)
 
 template <class _LetTag>
 template <class _Sndr, class _Fn>
-[[nodiscard]] _CCCL_API constexpr auto __let_base_t<_LetTag>::operator()(_Sndr __sndr, _Fn __fn) const
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __let_base_t<_LetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
   using __sndr_t = typename _LetTag::template __sndr_t<_Sndr, _Fn>;
 
@@ -619,7 +625,7 @@ template <class _Sndr, class _Fn>
 
 template <class _LetTag>
 template <class _Fn>
-[[nodiscard]] _CCCL_API constexpr auto __let_base_t<_LetTag>::operator()(_Fn __fn) const noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __let_base_t<_LetTag>::operator()(_Fn __fn) const noexcept
 {
   using __closure_t = typename _LetTag::template __closure_t<_Fn>;
   return __closure_t{{static_cast<_Fn&&>(__fn)}};

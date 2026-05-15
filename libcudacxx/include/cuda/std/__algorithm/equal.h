@@ -103,8 +103,8 @@ equal(_InputIterator1 __first1,
     __first2,
     __last2,
     __pred,
-    typename iterator_traits<_InputIterator1>::iterator_category(),
-    typename iterator_traits<_InputIterator2>::iterator_category());
+    __iterator_traits_category_or_concept_t<_InputIterator1>(),
+    __iterator_traits_category_or_concept_t<_InputIterator2>());
 }
 
 template <class _InputIterator1, class _InputIterator2>
@@ -117,8 +117,8 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
     __first2,
     __last2,
     __equal_to{},
-    typename iterator_traits<_InputIterator1>::iterator_category(),
-    typename iterator_traits<_InputIterator2>::iterator_category());
+    __iterator_traits_category_or_concept_t<_InputIterator1>(),
+    __iterator_traits_category_or_concept_t<_InputIterator2>());
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr filter_view(View, Pred); // explicit since C++23
 
 #include <cuda/std/cassert>

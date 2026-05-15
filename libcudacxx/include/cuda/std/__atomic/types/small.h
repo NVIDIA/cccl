@@ -40,20 +40,20 @@ using __atomic_small_proxy_t = _If<is_signed_v<_Tp>, int32_t, uint32_t>;
 
 // Arithmetic conversions to/from proxy types
 template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
+_CCCL_HOST_DEVICE_API constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   return static_cast<__atomic_small_proxy_t<_Tp>>(__val);
 }
 
 template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API constexpr _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
+_CCCL_HOST_DEVICE_API constexpr _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   return static_cast<_Tp>(__val);
 }
 
 // Non-arithmetic conversion to/from proxy types
 template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
+_CCCL_HOST_DEVICE_API __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
   ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
@@ -66,7 +66,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #endif
 
 template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
+_CCCL_HOST_DEVICE_API _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   // GCC starting with GCC8 warns about our extended floating point types having protected data members
   _Tp __temp{};
@@ -83,11 +83,11 @@ struct __atomic_small_storage
   using __proxy_t                     = __atomic_small_proxy_t<_Tp>;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_small_tag;
 
-  _CCCL_API constexpr explicit __atomic_small_storage() noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __atomic_small_storage() noexcept
       : __a_value{__proxy_t{}}
   {}
 
-  _CCCL_API constexpr explicit __atomic_small_storage(_Tp __value) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __atomic_small_storage(_Tp __value) noexcept
       : __a_value{__atomic_small_to_32(__value)}
   {}
 
@@ -95,26 +95,27 @@ struct __atomic_small_storage
 };
 
 template <typename _Sto, typename _Up, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
+_CCCL_HOST_DEVICE_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
 {
   __atomic_init_dispatch(&__a->__a_value, __atomic_small_to_32(__val));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
 {
   __atomic_store_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{});
 }
 
 template <typename _Sto, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
+_CCCL_HOST_DEVICE_API auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(__atomic_load_dispatch(&__a->__a_value, __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -123,7 +124,7 @@ _CCCL_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order _
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API bool __atomic_compare_exchange_weak_dispatch(
+_CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_weak_dispatch(
   _Sto* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure, _Sco = {})
 {
   using _Tp            = __atomic_underlying_t<_Sto>;
@@ -147,7 +148,7 @@ _CCCL_API bool __atomic_compare_exchange_weak_dispatch(
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API bool __atomic_compare_exchange_strong_dispatch(
+_CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_strong_dispatch(
   _Sto* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure, _Sco = {})
 {
   using _Tp        = __atomic_underlying_t<_Sto>;
@@ -166,7 +167,7 @@ _CCCL_API bool __atomic_compare_exchange_strong_dispatch(
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -175,7 +176,7 @@ _CCCL_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order 
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -184,7 +185,7 @@ _CCCL_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order 
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -193,7 +194,7 @@ _CCCL_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_orde
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -202,7 +203,7 @@ _CCCL_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -211,7 +212,7 @@ _CCCL_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_orde
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);
@@ -221,7 +222,7 @@ _CCCL_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);

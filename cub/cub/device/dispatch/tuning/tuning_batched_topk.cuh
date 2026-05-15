@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 
 #include <cuda/__device/compute_capability.h>
@@ -23,20 +24,51 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
 {
+struct epilogue_policy
+{
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  BlockStoreAlgorithm store_algorithm;
+  BlockScanAlgorithm scan_algorithm;
+
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  {
+    return lhs.items_per_thread == rhs.items_per_thread && lhs.load_algorithm == rhs.load_algorithm
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm;
+  }
+
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const epilogue_policy& lhs, const epilogue_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const epilogue_policy& p)
+  {
+    return os
+        << "epilogue_policy { .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
 struct worker_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   BlockStoreAlgorithm store_algorithm;
 
-  _CCCL_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
+  epilogue_policy epilogue;
+
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm
+        && lhs.epilogue == rhs.epilogue;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -44,9 +76,33 @@ struct worker_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
   {
-    return os
-        << "worker_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-        << ", .load_algorithm = " << p.load_algorithm << ", .store_algorithm = " << p.store_algorithm << " }";
+    return os << "worker_policy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+              << ", .store_algorithm = " << p.store_algorithm << ", .epilogue = " << p.epilogue << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+struct multi_worker_policy
+{
+  int threads_per_block;
+  int items_per_thread;
+
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
+  }
+
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const multi_worker_policy& lhs, const multi_worker_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const multi_worker_policy& p)
+  {
+    return os << "multi_worker_policy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -56,13 +112,15 @@ struct batched_topk_policy
   // The list of per-segment agent policies is ordered by decreasing tile size. At compile time, the smallest policy
   // whose tile size still covers the upper bound of the segment size is selected.
   ::cuda::std::array<worker_policy, 6> worker_per_segment_policies;
+  multi_worker_policy multi_worker_per_segment_policy;
 
-  _CCCL_API constexpr friend bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
-    return lhs.worker_per_segment_policies == rhs.worker_per_segment_policies;
+    return lhs.worker_per_segment_policies == rhs.worker_per_segment_policies
+        && lhs.multi_worker_per_segment_policy == rhs.multi_worker_per_segment_policy;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -79,7 +137,7 @@ struct batched_topk_policy
       }
       os << p.worker_per_segment_policies[i];
     }
-    return os << " } }";
+    return os << " }, .multi_worker_per_segment_policy = " << p.multi_worker_per_segment_policy << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -91,25 +149,30 @@ concept batched_topk_policy_selector = policy_selector<T, batched_topk_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> batched_topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> batched_topk_policy
   {
     constexpr auto load_alg  = BLOCK_LOAD_WARP_TRANSPOSE;
     constexpr auto store_alg = BLOCK_STORE_WARP_TRANSPOSE;
-    return batched_topk_policy{{{
-      worker_policy{256, 64, load_alg, store_alg},
-      worker_policy{256, 32, load_alg, store_alg},
-      worker_policy{256, 16, load_alg, store_alg},
-      worker_policy{256, 8, load_alg, store_alg},
-      worker_policy{256, 4, load_alg, store_alg},
-      worker_policy{128, 2, load_alg, store_alg},
-    }}};
+    constexpr auto scan_alg  = BLOCK_SCAN_WARP_SCANS;
+    constexpr auto epilogue  = epilogue_policy{16, load_alg, store_alg, scan_alg};
+    return batched_topk_policy{
+      {{
+        worker_policy{256, 64, load_alg, store_alg, epilogue},
+        worker_policy{256, 32, load_alg, store_alg, epilogue},
+        worker_policy{256, 16, load_alg, store_alg, epilogue},
+        worker_policy{256, 8, load_alg, store_alg, epilogue},
+        worker_policy{256, 4, load_alg, store_alg, epilogue},
+        worker_policy{128, 2, load_alg, store_alg, epilogue},
+      }},
+      multi_worker_policy{256, 64}};
   }
 };
 
 template <typename KeyT, typename ValueT, typename SegmentSizeT, ::cuda::std::int64_t MaxK>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> batched_topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> batched_topk_policy
   {
     return policy_selector{}(cc);
   }

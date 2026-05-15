@@ -101,6 +101,11 @@
 #  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)
 #endif
 
+#define _CCCL_HAS_SIMD_F32X2_INTRINSICS() (_CCCL_CUDACC_AT_LEAST(12, 8) && _CCCL_HAS_CTK() && !_CCCL_COMPILER(CLANG))
+#define _CCCL_HAS_SIMD_F32X2_PTX()        (__cccl_ptx_isa >= 860ULL)
+
+#define _CCCL_HAS_SIMD_F32X2() (_CCCL_HAS_SIMD_F32X2_INTRINSICS() || _CCCL_HAS_SIMD_F32X2_PTX())
+
 // Third party libraries
 
 #if (__has_include(<dlpack/dlpack.h>) || __has_include(<dlpack.h>)) && \

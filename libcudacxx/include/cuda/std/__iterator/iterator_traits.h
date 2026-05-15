@@ -154,23 +154,24 @@ struct __iter_traits_cache
 template <class _Iter>
 using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
 
-#if defined(_GLIBCXX_DEBUG)
+#if _CCCL_HOSTED()
+#  if defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::value)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#endif // _GLIBCXX_DEBUG
-#if _CCCL_HOST_STD_LIB(LIBSTDCXX)
+#  endif // _GLIBCXX_DEBUG
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
-#if _CCCL_HOST_STD_LIB(LIBCXX)
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
+#  if _CCCL_HOST_STD_LIB(LIBCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
 _CCCL_API inline auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
-#elif _CCCL_HOST_STD_LIB(STL)
+#  elif _CCCL_HOST_STD_LIB(STL)
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
@@ -195,7 +196,9 @@ _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-#endif // _CCCL_HOST_STD_LIB(STL)
+#  endif // _CCCL_HOST_STD_LIB(STL)
+#endif // _CCCL_HOSTED()
+
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
 _CCCL_API inline auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
@@ -234,6 +237,9 @@ _CCCL_CONCEPT __has_member_pointer = _CCCL_REQUIRES_EXPR((_Tp))(typename(typenam
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_iterator_category = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::iterator_category));
+
+template <class _Tp>
+_CCCL_CONCEPT __has_member_iterator_concept = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::iterator_concept));
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -565,6 +571,45 @@ using __iter_diff_t = typename iterator_traits<_Iter>::difference_type;
 
 template <class _Iter>
 using __iter_value_type = typename iterator_traits<_Iter>::value_type;
+
+// C++20 iterators do not play nicely with C++17 interfaces, because they commmonly use `iterator_concept` to
+// communicate their iterator category. Deduce the actual iterator category from the maximum of `iterator_concept` and
+// `iterator_category`
+template <class _Iter>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __iterator_traits_category_or_concept() noexcept
+{
+  if constexpr (!__has_member_iterator_concept<_Iter>)
+  {
+    return __iterator_category_type<_Iter>{};
+  }
+  else if constexpr (__has_contiguous_traversal<_Iter>)
+  {
+    return contiguous_iterator_tag{};
+  }
+  else if constexpr (__has_random_access_traversal<_Iter>)
+  {
+    return random_access_iterator_tag{};
+  }
+  else if constexpr (__has_bidirectional_traversal<_Iter>)
+  {
+    return bidirectional_iterator_tag{};
+  }
+  else if constexpr (__has_forward_traversal<_Iter>)
+  {
+    return forward_iterator_tag{};
+  }
+  else if constexpr (__has_input_traversal<_Iter>)
+  {
+    return input_iterator_tag{};
+  }
+  else // if constexpr (__has_member_iterator_category<_Iter>)
+  {
+    return typename _Iter::iterator_category{};
+  }
+}
+
+template <class _Iter>
+using __iterator_traits_category_or_concept_t = decltype(::cuda::std::__iterator_traits_category_or_concept<_Iter>());
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -21,7 +21,7 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::find
 {
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           int VecSize,
           CacheLoadModifier LoadModifier,
@@ -36,7 +36,7 @@ struct agent_t
   // Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, VecSize>::Type;
 
-  static constexpr int tile_size = BlockThreads * ItemsPerThread;
+  static constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
 
   // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
   static constexpr bool attempt_vectorization =
@@ -100,14 +100,14 @@ struct agent_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < number_of_vectors; ++i)
     {
-      vec_items[i] = d_vec_in[BlockThreads * i];
+      vec_items[i] = d_vec_in[ThreadsPerBlock * i];
     }
 
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       OffsetT nth_vector_of_thread = i / VecSize;
       OffsetT element_in_vector    = i % VecSize;
-      OffsetT vector_of_tile       = nth_vector_of_thread * BlockThreads + threadIdx.x;
+      OffsetT vector_of_tile       = nth_vector_of_thread * ThreadsPerBlock + threadIdx.x;
 
       OffsetT index = tile_offset + vector_of_tile * VecSize + element_in_vector;
 

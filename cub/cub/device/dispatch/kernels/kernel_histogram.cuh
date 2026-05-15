@@ -18,6 +18,7 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
 
 CUB_NAMESPACE_BEGIN
@@ -80,7 +81,7 @@ struct Transforms
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "convertible to `int`.");
-    static_assert(::cuda::std::is_trivially_copyable_v<CommonT>,
+    static_assert(::cuda::is_trivially_copyable_v<CommonT>,
                   "The common type of `LevelT` and `SampleT` must be "
                   "trivially copyable.");
 
@@ -456,7 +457,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -475,7 +476,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.block_threads,
+    AgentHistogramPolicy<hp.threads_per_block,
                          hp.pixels_per_thread,
                          hp.load_algorithm,
                          hp.load_modifier,
@@ -616,7 +617,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -661,7 +662,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.block_threads,
+    AgentHistogramPolicy<hp.threads_per_block,
                          hp.pixels_per_thread,
                          hp.load_algorithm,
                          hp.load_modifier,

@@ -72,12 +72,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   // Returns the completion signatures of a child sender. Throws an exception if
   // the child sender has more than one set_value completion signature.
   template <class _Child, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __child_completions();
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __child_completions();
 
   // Merges the completion signatures of the child senders into a single set of
   // completion signatures for the when_all sender.
   template <class... _Completions>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __merge_completions(_Completions...);
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __merge_completions(_Completions...);
 
   /// The receivers connected to the when_all's sub-operations expose this as
   /// their environment. Its `get_stop_token` query returns the token from
@@ -91,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
     __state_t& __state_;
 
-    [[nodiscard]] _CCCL_API constexpr auto query(get_stop_token_t) const noexcept -> inplace_stop_token
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }
@@ -99,7 +99,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
       noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
         -> __query_result_t<env_of_t<__rcvr_t>, _Query, _Args...>
     {
@@ -116,7 +116,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     __state_t& __state_;
 
     template <class... _Ts>
-    _CCCL_API constexpr void set_value(_Ts&&... __ts) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_value(_Ts&&... __ts) noexcept
     {
       constexpr ::cuda::std::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -124,19 +124,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     template <class _Error>
-    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
     }
 
-    _CCCL_API constexpr void set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
     {
       __state_.__set_stopped();
       __state_.__arrive();
     }
 
-    _CCCL_API constexpr auto get_env() const noexcept -> __env_t<_StateZip>
+    _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_t<_StateZip>
     {
       return {__state_};
     }
@@ -173,7 +173,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     using __stop_tok_t _CCCL_NODEBUG_ALIAS      = stop_token_of_t<env_of_t<_Rcvr>>;
     using __stop_callback_t _CCCL_NODEBUG_ALIAS = stop_callback_for_t<__stop_tok_t, __on_stop_request>;
 
-    _CCCL_API explicit __state_t(_Rcvr __rcvr, size_t __count)
+    _CCCL_HOST_DEVICE_API explicit __state_t(_Rcvr __rcvr, size_t __count)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __count_{__count}
         , __stop_source_{}
@@ -185,7 +185,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     {}
 
     template <size_t _Index, size_t... _Jdx, class... _Ts>
-    _CCCL_API void __set_value(::cuda::std::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
+    _CCCL_HOST_DEVICE_API void
+    __set_value(::cuda::std::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
     {
       if constexpr (!__same_as<__values_t, __nil>)
       {
@@ -209,7 +210,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     template <class _Error>
-    _CCCL_API void __set_error(_Error&& __err) noexcept
+    _CCCL_HOST_DEVICE_API void __set_error(_Error&& __err) noexcept
     {
       // TODO: Use weaker memory orders
       if (__error != __state_.exchange(__error))
@@ -235,7 +236,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       }
     }
 
-    _CCCL_API void __set_stopped() noexcept
+    _CCCL_HOST_DEVICE_API void __set_stopped() noexcept
     {
       ::cuda::std::underlying_type_t<__estate_t> __expected = __started;
       // Transition to the "stopped" state if and only if we're in the
@@ -248,7 +249,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       }
     }
 
-    _CCCL_API void __arrive() noexcept
+    _CCCL_HOST_DEVICE_API void __arrive() noexcept
     {
       if (0 == --__count_)
       {
@@ -256,7 +257,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       }
     }
 
-    _CCCL_API void __complete() noexcept
+    _CCCL_HOST_DEVICE_API void __complete() noexcept
     {
       // Stop callback is no longer needed. Destroy it.
       __on_stop_.__destroy();
@@ -294,7 +295,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct __start_all
   {
     template <class... _Ops>
-    _CCCL_API void operator()(_Ops&... __ops) const noexcept
+    _CCCL_HOST_DEVICE_API void operator()(_Ops&... __ops) const noexcept
     {
       (execution::start(__ops), ...);
     }
@@ -323,7 +324,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     struct __connect_subs_fn
     {
       template <class... _CvSndrs>
-      _CCCL_API constexpr auto
+      _CCCL_HOST_DEVICE_API constexpr auto
       operator()(__state_t& __state, ::cuda::std::__ignore_t, ::cuda::std::__ignore_t, _CvSndrs&&... __sndrs_) const
       {
         using __state_ref_t _CCCL_NODEBUG_ALIAS = __zip<__state_t>;
@@ -348,7 +349,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
     /// Initialize the data member, connect all the sub-operations and
     /// save the resulting operation states in __sub_ops_.
-    _CCCL_API constexpr explicit __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
         , __sub_ops_{::cuda::std::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
@@ -356,7 +357,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     _CCCL_IMMOVABLE(__opstate_t);
 
     /// Start all the sub-operations.
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       // register stop callback:
       __state_.__on_stop_.__construct(
@@ -391,11 +392,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
 public:
   template <class... _Sndrs>
-  _CCCL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto when_all_t::__child_completions()
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto when_all_t::__child_completions()
 {
   using __env_t _CCCL_NODEBUG_ALIAS = prop<get_stop_token_t, inplace_stop_token>;
   _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, __fwd_env_t<_Env>>...>())
@@ -417,7 +418,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
 
 template <class... _Completions>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto when_all_t::__merge_completions(_Completions... __cs)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto when_all_t::__merge_completions(_Completions... __cs)
 {
   // Use _CUDAX_LET_COMPLETIONS to ensure all completions are valid:
   _CUDAX_LET_COMPLETIONS(auto(__tmp) = (completion_signatures{}, ..., __cs)) // NB: uses overloaded comma operator
@@ -469,25 +470,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   using __sndrs_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<when_all_t, ::cuda::std::__ignore_t, _Sndrs...>;
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completions_and_offsets()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __get_completions_and_offsets()
   {
     return __merge_completions(__child_completions<::cuda::std::__copy_cvref_t<_Self, _Sndrs>, _Env...>()...);
   }
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return __get_completions_and_offsets<_Self, _Env...>().first;
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cp, __sndrs_t>(static_cast<__sndrs_t&&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
@@ -498,27 +500,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
     using __when_all_domain_t = __common_domain_t<__completion_domain_of_t<set_value_t, _Sndrs, _Env...>...>;
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, const _Env&...) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    query(get_completion_domain_t<set_value_t>, const _Env&...) const noexcept
       -> __when_all_domain_t<set_value_t, _Env...>;
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, const _Env&...) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    query(get_completion_domain_t<set_error_t>, const _Env&...) const noexcept
       -> __common_domain_t<__when_all_domain_t<set_value_t, _Env...>,
                            __when_all_domain_t<set_error_t, _Env...>,
                            __when_all_domain_t<set_stopped_t, _Env...>>;
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_stopped_t>, const _Env&...) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+    query(get_completion_domain_t<set_stopped_t>, const _Env&...) const noexcept
       -> __common_domain_t<__when_all_domain_t<set_value_t, _Env...>, __when_all_domain_t<set_stopped_t, _Env...>>;
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
     {
       return (execution::min) (execution::get_completion_behavior<_Sndrs, _Env...>()...);
     }
   };
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __attrs_t
   {
     return {};
   }
@@ -529,7 +534,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t<>::__attrs_t : __inln_
 {};
 
 template <class... _Sndrs>
-_CCCL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+_CCCL_HOST_DEVICE_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {

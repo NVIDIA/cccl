@@ -101,14 +101,10 @@ bool validation(const thrust::device_vector<TupleT>& input,
 template <typename T, typename OffsetT>
 void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using wrapped_init_t = cub::NullType;
-  using value_t        = T;
-  using tuple_t        = impl::triplet_t<value_t>;
-  using op_t           = impl::unitriangular_dim3_op;
-  using accum_t        = tuple_t;
-  using input_it_t     = const tuple_t*;
-  using output_it_t    = tuple_t*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+  using value_t                  = T;
+  using tuple_t                  = impl::triplet_t<value_t>;
+  using op_t                     = impl::unitriangular_dim3_op;
+  using accum_t [[maybe_unused]] = tuple_t;
 
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
@@ -133,40 +129,24 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   auto d_input  = thrust::raw_pointer_cast(input.data());
   auto d_output = thrust::raw_pointer_cast(output.data());
 
-  size_t tmp_size;
-  cub::detail::scan::dispatch_with_accum<accum_t>(
-    nullptr,
-    tmp_size,
-    d_input,
-    d_output,
-    op_t{},
-    wrapped_init_t{},
-    input.size(),
-    bench_stream
-#if !TUNE_BASE
-    ,
-    policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::scan::dispatch_with_accum<accum_t>(
-      d_tmp,
-      tmp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceScan::InclusiveScan,
+      "InclusiveScan failed",
       d_input,
       d_output,
       op_t{},
-      wrapped_init_t{},
-      input.size(),
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      policy_selector<accum_t>{}
-#endif // !TUNE_BASE
-    );
+      static_cast<OffsetT>(input.size()),
+      env);
   });
 
   // for validation use (recommended for integral types and smallish input sizes)

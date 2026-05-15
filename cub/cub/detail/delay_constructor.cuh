@@ -69,12 +69,14 @@ struct delay_constructor_policy
   unsigned int delay;
   unsigned int l2_write_latency;
 
-  _CCCL_API constexpr friend bool operator==(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
   {
     return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -191,7 +193,7 @@ struct delay_constructor_for<delay_constructor_kind::reduce_by_key, Delay, L2Wri
 template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
 using delay_constructor_t = typename delay_constructor_for<Kind, Delay, L2WriteLatency>::type;
 
-_CCCL_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_trivially_copyable)
+_CCCL_HOST_DEVICE_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_trivially_copyable)
 {
   if (is_primitive_or_trivially_copyable)
   {
@@ -200,7 +202,7 @@ _CCCL_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_t
   return delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
 }
 
-_CCCL_API constexpr auto default_reduce_by_key_delay_constructor_policy(
+_CCCL_HOST_DEVICE_API constexpr auto default_reduce_by_key_delay_constructor_policy(
   int key_size,
   int value_size,
   bool key_is_primitive_or_trivially_copyable,

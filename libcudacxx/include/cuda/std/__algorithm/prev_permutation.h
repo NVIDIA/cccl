@@ -46,6 +46,7 @@ __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
     return _Result(::cuda::std::move(__last_iter), false);
   }
 
+  bool __result = true;
   while (true)
   {
     _BidirectionalIterator __ip1 = __i;
@@ -56,14 +57,17 @@ __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
         ;
       _IterOps<_AlgPolicy>::iter_swap(__i, __j);
       ::cuda::std::__reverse<_AlgPolicy>(__ip1, __last_iter);
-      return _Result(::cuda::std::move(__last_iter), true);
+      __result = true;
+      break;
     }
     if (__i == __first)
     {
       ::cuda::std::__reverse<_AlgPolicy>(__first, __last_iter);
-      return _Result(::cuda::std::move(__last_iter), false);
+      __result = false;
+      break;
     }
   }
+  return _Result(::cuda::std::move(__last_iter), __result);
 }
 
 _CCCL_EXEC_CHECK_DISABLE

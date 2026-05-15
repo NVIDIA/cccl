@@ -640,8 +640,6 @@ class Configuration(object):
     def configure_ccache(self):
         use_ccache_default = os.environ.get("CMAKE_CUDA_COMPILER_LAUNCHER") is not None
         use_ccache = self.get_lit_bool("use_ccache", use_ccache_default)
-        if "enable-tile" in self.config.available_features:
-            return
         if use_ccache and not self.cxx.type == "nvrtcc":
             self.cxx.use_ccache = True
             self.lit_config.note("enabling ccache")
@@ -1408,6 +1406,9 @@ class Configuration(object):
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4180"]
                 # warning C4309: 'moo': truncation of constant value
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4309"]
+                # warning C4505: unreferenced local function has been removed
+                # CUDA's host_runtime.h emits this for __cudaUnregisterBinaryUtil.
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4505"]
                 # warning C4996: deprecation warnings
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4996"]
             else:

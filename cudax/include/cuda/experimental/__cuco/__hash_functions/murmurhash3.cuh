@@ -47,7 +47,8 @@
 namespace cuda::experimental::cuco
 {
 template <typename _Key>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
+__fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
 {
   static_assert(sizeof(_Key) == 4, "Key type must be 4 bytes in size.");
 
@@ -62,7 +63,8 @@ template <typename _Key>
 
 #if _CCCL_HAS_INT128()
 template <typename _Key>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t __fmix64(_Key __key, ::cuda::std::uint64_t __seed = 0) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
+__fmix64(_Key __key, ::cuda::std::uint64_t __seed = 0) noexcept
 {
   static_assert(sizeof(_Key) == 8, "Key type must be 8 bytes in size.");
 
@@ -88,14 +90,14 @@ struct _MurmurHash3_32
   static constexpr ::cuda::std::uint32_t __block_size = 4;
   static constexpr ::cuda::std::uint32_t __chunk_size = 4;
 
-  _CCCL_API constexpr _MurmurHash3_32(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr _MurmurHash3_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //! @param __key The input argument to hash
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
@@ -106,7 +108,7 @@ struct _MurmurHash3_32
   //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
@@ -114,7 +116,7 @@ struct _MurmurHash3_32
 
 private:
   template <class _Holder>
-  [[nodiscard]] _CCCL_API ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::uint32_t __h1 = __seed_;
 
@@ -162,7 +164,8 @@ private:
     return __h1;
   }
 
-  [[nodiscard]] _CCCL_API ::cuda::std::uint32_t __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
+  __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     const auto __bytes = ::cuda::std::as_bytes(__keys).data();
     const auto __size  = __keys.size_bytes();
