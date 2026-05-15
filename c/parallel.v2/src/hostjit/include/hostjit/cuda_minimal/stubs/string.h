@@ -1,6 +1,6 @@
 #ifndef _HOSTJIT_STRING_H
 #define _HOSTJIT_STRING_H
-#include "stddef.h"
+#include <stddef.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -2,6 +2,6 @@
 #ifndef _HOSTJIT_CLIMITS
 #define _HOSTJIT_CLIMITS
 
-#include "limits.h"
+#include <limits.h>
 
 #endif // _HOSTJIT_CLIMITS

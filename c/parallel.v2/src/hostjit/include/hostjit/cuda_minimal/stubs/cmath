@@ -2,6 +2,6 @@
 #ifndef _HOSTJIT_CMATH
 #define _HOSTJIT_CMATH
 
-#include "math.h"
+#include <math.h>
 
 #endif // _HOSTJIT_CMATH

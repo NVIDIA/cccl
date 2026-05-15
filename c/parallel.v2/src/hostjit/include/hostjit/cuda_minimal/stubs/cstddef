@@ -3,7 +3,7 @@
 #ifndef _HOSTJIT_CSTDDEF
 #define _HOSTJIT_CSTDDEF
 
-#include "stddef.h"
+#include <stddef.h>
 
 
 namespace std {
