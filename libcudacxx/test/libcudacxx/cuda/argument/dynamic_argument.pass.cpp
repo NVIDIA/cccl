@@ -101,9 +101,11 @@ TEST_FUNC constexpr bool test()
 
   // Unwrap: scalar
   {
-    auto da       = cuda::argument::__immediate{7};
-    const auto& v = cuda::argument::__unwrap(da);
+    auto da = cuda::argument::__immediate{7};
+    auto& v = cuda::argument::__unwrap(da);
     assert(v == 7);
+    v = 8;
+    assert(da.arg == 8);
   }
 
   // Unwrap: span
@@ -113,6 +115,20 @@ TEST_FUNC constexpr bool test()
     const auto& v = cuda::argument::__unwrap(da);
     assert(v.size() == 3);
     assert(v[1] == 20);
+  }
+
+  // Unwrap: rvalue scalar returns by value
+  {
+    const auto& v = cuda::argument::__unwrap(cuda::argument::__immediate{7});
+    assert(v == 7);
+  }
+
+  // Unwrap: rvalue span returns by value
+  {
+    int arr[3] = {10, 20, 30};
+    auto v     = cuda::argument::__unwrap(cuda::argument::__immediate{cuda::std::span<int>{arr, 3}});
+    assert(v.size() == 3);
+    assert(v[2] == 30);
   }
 
   return true;

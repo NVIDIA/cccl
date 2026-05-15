@@ -70,6 +70,14 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::argument::__is_bounds_v<decltype(b)>);
   }
 
+  // Static and runtime bounds intersection
+  {
+    static_assert(cuda::argument::__has_bounds_intersection<int, cuda::argument::__static_bounds<1, 100>>(
+      cuda::argument::__runtime_bounds<int>{50, 200}));
+    static_assert(!cuda::argument::__has_bounds_intersection<int, cuda::argument::__static_bounds<100, 200>>(
+      cuda::argument::__runtime_bounds<int>{0, 50}));
+  }
+
   // Non-bounds type
   {
     static_assert(!cuda::argument::__is_bounds_v<int>);

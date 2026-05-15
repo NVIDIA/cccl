@@ -80,9 +80,9 @@ TEST_FUNC constexpr bool test()
 
   // Unwrap: deferred_value
   {
-    int val       = 99;
-    auto def      = cuda::argument::__deferred_value{cuda::std::span<int, 1>{&val, 1}};
-    const auto& v = cuda::argument::__unwrap(def);
+    int val  = 99;
+    auto def = cuda::argument::__deferred_value{cuda::std::span<int, 1>{&val, 1}};
+    auto& v  = cuda::argument::__unwrap(def);
     assert(v[0] == 99);
   }
 
@@ -93,6 +93,21 @@ TEST_FUNC constexpr bool test()
     const auto& v = cuda::argument::__unwrap(def);
     assert(v.size() == 3);
     assert(v[1] == 20);
+  }
+
+  // Unwrap: rvalue deferred_value returns by value
+  {
+    int val = 99;
+    auto v  = cuda::argument::__unwrap(cuda::argument::__deferred_value{cuda::std::span<int, 1>{&val, 1}});
+    assert(v[0] == 99);
+  }
+
+  // Unwrap: rvalue deferred_sequence returns by value
+  {
+    int arr[3] = {10, 20, 30};
+    auto v     = cuda::argument::__unwrap(cuda::argument::__deferred_sequence{cuda::std::span<int>{arr, 3}});
+    assert(v.size() == 3);
+    assert(v[2] == 30);
   }
 
   return true;

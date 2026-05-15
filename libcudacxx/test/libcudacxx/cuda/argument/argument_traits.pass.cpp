@@ -65,8 +65,15 @@ TEST_FUNC void test()
 
   static_assert(cuda::argument::__traits<int>::lowest == cuda::std::numeric_limits<int>::lowest());
   static_assert(cuda::argument::__traits<int>::max == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::argument::__traits<const int>::lowest == cuda::std::numeric_limits<int>::lowest());
+  static_assert(cuda::argument::__traits<int&>::max == cuda::std::numeric_limits<int>::max());
   static_assert(cuda::argument::__traits<float>::lowest == cuda::std::numeric_limits<float>::lowest());
   static_assert(cuda::argument::__traits<float>::max == cuda::std::numeric_limits<float>::max());
+  static_assert(
+    cuda::argument::__traits<const cuda::argument::__immediate<int, cuda::argument::__static_bounds<1, 8>>>::lowest
+    == 1);
+  static_assert(
+    cuda::argument::__traits<cuda::argument::__immediate<int, cuda::argument::__static_bounds<1, 8>>&>::max == 8);
 
   // --- Free function bounds on plain values ---
 
