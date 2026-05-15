@@ -62,7 +62,8 @@ struct __fn
   _CCCL_REQUIRES(input_range<_Rp> _CCCL_AND indirect_unary_predicate<_Pred, projected<iterator_t<_Rp>, _Proj>>)
   [[nodiscard]] _CCCL_API constexpr borrowed_iterator_t<_Rp> operator()(_Rp&& __r, _Pred __pred, _Proj __proj = {}) const
   {
-    return __find_if_impl(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r), __pred, __proj);
+    return __find_if_impl(
+      ::cuda::std::ranges::__begin_cpo{}(__r), ::cuda::std::ranges::__end_cpo{}(__r), __pred, __proj);
   }
 };
 _CCCL_END_NAMESPACE_CPO

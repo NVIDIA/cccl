@@ -178,9 +178,9 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr explicit span(_Range&& __r)
-      : __data_{::cuda::std::ranges::data(__r)}
+      : __data_{::cuda::std::ranges::__data_cpo{}(__r)}
   {
-    _CCCL_ASSERT(::cuda::std::ranges::size(__r) == _Extent, "size mismatch in span's constructor (range)");
+    _CCCL_ASSERT(::cuda::std::ranges::__size_cpo{}(__r) == _Extent, "size mismatch in span's constructor (range)");
   }
 
   // Deviation from P4144R1 Hana Dusikova's proposed fix: uses initializer_list<_InitListValueType>
@@ -247,10 +247,12 @@ public:
   _CCCL_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
-    static_assert(_Offset == 0 ? true : _Offset <= _Extent,
-                  "span<T, N>::subspan<Offset, Count>(): Offset out of range");
-    static_assert(_Count == dynamic_extent || (_Count == 0 ? true : _Count <= _Extent - _Offset),
-                  "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
+    if constexpr (_Offset != 0)
+    {
+      static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
+      static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset,
+                    "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
+    }
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
@@ -430,8 +432,8 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr span(_Range&& __r)
-      : __data_(::cuda::std::ranges::data(__r))
-      , __size_{::cuda::std::ranges::size(__r)}
+      : __data_(::cuda::std::ranges::__data_cpo{}(__r))
+      , __size_{::cuda::std::ranges::__size_cpo{}(__r)}
   {}
 
   // Deviation from P4144R1 Hana Dusikova's proposed fix: uses initializer_list<_InitListValueType>
