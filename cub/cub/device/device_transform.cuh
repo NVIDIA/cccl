@@ -70,7 +70,7 @@ struct DeviceTransform
     TransformOp transform_op,
     Env env)
   {
-    using offset_t = int64_t;
+    using offset_t = uint64_t;
 
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 

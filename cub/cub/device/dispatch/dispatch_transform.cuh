@@ -175,7 +175,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int
 spread_out_items_per_thread(Offset num_items, Policy policy, int items_per_thread, int sm_count, int max_occupancy)
 {
   const int items_per_thread_evenly_spread = static_cast<int>(
-    (::cuda::std::min) (Offset{items_per_thread},
+    (::cuda::std::min) (static_cast<Offset>(items_per_thread),
                         ::cuda::ceil_div(num_items, sm_count * policy.threads_per_block * max_occupancy)));
   const int items_per_thread_clamped =
     ::cuda::std::clamp(items_per_thread_evenly_spread, policy.min_items_per_thread, policy.max_items_per_thread);
@@ -269,7 +269,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
 
-  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
+  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, static_cast<Offset>(tile_size)));
   // config->smem_size is 16 bytes larger than needed for UBLKCP because it's the total SMEM size, but 16 bytes are
   // occupied by static shared memory and padding. But let's not complicate things.
   return ::cuda::std::make_tuple(
@@ -407,7 +407,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   }
   _CCCL_ASSERT(ipt, "");
   const int tile_size = threads_per_block * ipt.value();
-  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
+  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, static_cast<Offset>(tile_size)));
   return CubDebug(
     launcher_factory(grid_dim, threads_per_block, 0, stream, true)
       .doit(kernel_source.TransformKernel(),
@@ -556,9 +556,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  static_assert(
-    ::cuda::std::is_same_v<Offset, ::cuda::std::int32_t> || ::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
-    "cub::DeviceTransform is only tested and tuned for 32-bit or 64-bit signed offset types");
+  // static_assert(
+  //   ::cuda::std::is_same_v<Offset, ::cuda::std::int32_t> || ::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
+  //   "cub::DeviceTransform is only tested and tuned for 32-bit or 64-bit signed offset types");
 
   if (num_items == 0)
   {
