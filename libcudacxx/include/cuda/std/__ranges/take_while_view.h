@@ -164,7 +164,7 @@ public:
 
   _CCCL_API constexpr take_while_view(_View __base, _Pred __pred)
       : view_interface<take_while_view<_View, _Pred>>()
-      , __pred_(::cuda::std::in_place, ::cuda::std::move(__pred))
+      , __pred_(in_place_t{}, ::cuda::std::move(__pred))
       , __base_(::cuda::std::move(__base))
   {}
 
