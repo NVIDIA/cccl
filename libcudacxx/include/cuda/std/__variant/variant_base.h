@@ -300,7 +300,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
-        in_place,
+        in_place_t{},
         __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
@@ -316,7 +316,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
-        in_place,
+        in_place_t{},
         __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
@@ -332,7 +332,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place_t{}, ::cuda::std::forward<_Args>(__args)...);
     return __a.__value;
   }
 
