@@ -340,7 +340,7 @@ struct rle_non_trivial_runs_policy
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450};
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const rle_non_trivial_runs_policy& lhs, const rle_non_trivial_runs_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -349,7 +349,7 @@ struct rle_non_trivial_runs_policy
         && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const rle_non_trivial_runs_policy& lhs, const rle_non_trivial_runs_policy& rhs)
   {
     return !(lhs == rhs);
@@ -382,7 +382,7 @@ struct policy_selector
   bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
   bool key_is_trivially_copyable;
 
-  _CCCL_API constexpr auto
+  _CCCL_HOST_DEVICE_API constexpr auto
   make_default_policy(BlockLoadAlgorithm block_load_alg, int delay_ctor_key_size, CacheLoadModifier load_mod) const
   {
     const int nominal_4B_items_per_thread = 15;
@@ -399,7 +399,8 @@ struct policy_selector
         delay_ctor_key_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rle_non_trivial_runs_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> rle_non_trivial_runs_policy
   {
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -605,7 +606,8 @@ static_assert(rle_non_trivial_runs_policy_selector<policy_selector>);
 template <class LengthT, class KeyT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rle_non_trivial_runs_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> rle_non_trivial_runs_policy
   {
     constexpr policy_selector selector{
       sizeof(LengthT),

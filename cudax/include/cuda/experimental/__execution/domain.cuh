@@ -89,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @return The result of applying the sender operation.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tag, class _Sndr, class... _Args>
-  _CCCL_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
     noexcept(_Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) //
     -> __apply_sender_result_t<_Tag, _Sndr, _Args...>
   {
@@ -107,7 +107,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OpTag, class _Sndr, class _Env)
   _CCCL_REQUIRES(__has_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
-  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto
+  transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
     noexcept(__nothrow_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
       -> __transform_sender_result_t<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>
   {
@@ -117,7 +118,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API static constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto
   transform_sender(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) //
     noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
@@ -154,7 +155,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT indeterminate_domain
 {
   _CCCL_HIDE_FROM_ABI indeterminate_domain() = default;
 
-  _CCCL_API constexpr indeterminate_domain(::cuda::std::__ignore_t) noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr indeterminate_domain(::cuda::std::__ignore_t) noexcept {}
 
   //! @brief Transforms a sender with an optional environment.
   //!
@@ -170,7 +171,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT indeterminate_domain
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OpTag, class _Sndr, class _Env)
   _CCCL_REQUIRES(__has_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
-  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto
+  transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
     noexcept(__nothrow_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
       -> __transform_sender_result_t<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>
   {
@@ -186,14 +188,14 @@ struct __hide_query
 {
   static_assert(__nothrow_movable<_Env>);
 
-  _CCCL_API explicit constexpr __hide_query(_Env&& __env, _Queries...) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr __hide_query(_Env&& __env, _Queries...) noexcept
       : __env_{static_cast<_Env&&>(__env)}
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _As)
   _CCCL_REQUIRES(__none_of<_Query, _Queries...> _CCCL_AND __queryable_with<_Env, _Query, _As...>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Query __query, const _As&... __as) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Query __query, const _As&... __as) const
     noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> __query_result_t<_Env, _Query, _As...>
   {
     return __env_.query(__query, __as...);
@@ -206,7 +208,7 @@ private:
 template <class _Env>
 struct __hide_scheduler : __hide_query<_Env, get_scheduler_t, get_domain_t>
 {
-  _CCCL_API explicit constexpr __hide_scheduler(_Env&& __env) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr __hide_scheduler(_Env&& __env) noexcept
       : __hide_query<_Env, get_scheduler_t, get_domain_t>{static_cast<_Env&&>(__env), {}, {}}
   {}
 };
@@ -228,7 +230,7 @@ struct get_domain_t
   //! @brief If there is a @c get_domain_t query in @c __env, return it.
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_domain_t>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env&) const noexcept
     -> decay_t<__query_result_t<_Env, get_domain_t>>
   {
     using __domain_t = decay_t<__query_result_t<_Env, get_domain_t>>;
@@ -241,7 +243,7 @@ struct get_domain_t
   //! otherwise.
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES((!__queryable_with<_Env, get_domain_t>) _CCCL_AND __callable<get_scheduler_t, const _Env&>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env&) const noexcept
   {
     using __sch_t      = __scheduler_of_t<const _Env&>;
     using __env_t      = __hide_scheduler<const _Env&>; // to prevent recursion
@@ -252,12 +254,13 @@ struct get_domain_t
   }
 
   //! @brief Fall back to the default domain if no other domain is found.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t) const noexcept -> default_domain
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::std::__ignore_t) const noexcept
+    -> default_domain
   {
     return {};
   }
 
-  _CCCL_API static constexpr auto query(forwarding_query_t) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept
   {
     return true;
   }
@@ -281,14 +284,14 @@ struct get_completion_domain_t
   {
     _CCCL_TEMPLATE(class _Attrs)
     _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_domain_t>)
-    _CCCL_API constexpr auto operator()(const _Attrs&, cuda::std::__ignore_t = {}) const noexcept
+    _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Attrs&, cuda::std::__ignore_t = {}) const noexcept
     {
       return decay_t<__query_result_t<_Attrs, get_completion_domain_t>>{};
     }
 
     _CCCL_TEMPLATE(class _Attrs, class _Env)
     _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_domain_t, const _Env&>)
-    _CCCL_API constexpr auto operator()(const _Attrs&, const _Env&) const noexcept
+    _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Attrs&, const _Env&) const noexcept
     {
       return decay_t<__query_result_t<_Attrs, get_completion_domain_t, const _Env&>>{};
     }
@@ -296,7 +299,7 @@ struct get_completion_domain_t
 
 private:
   template <class _Sch, class Domain, class... _Env>
-  _CCCL_API static constexpr void __check_scheduler_domain() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr void __check_scheduler_domain() noexcept
   {
     static_assert(__same_as<Domain, __scheduler_domain_t<_Sch, const _Env&...>>,
                   "the sender's completion scheduler's domain does not match the domain returned by the scheduler");
@@ -319,7 +322,7 @@ private:
   }
 
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
     // If __attrs has a completion domain, then return it:
     if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
@@ -399,7 +402,7 @@ struct __not_a_domain
 {
   _CCCL_HIDE_FROM_ABI __not_a_domain() = default;
   template <class _Domain>
-  _CCCL_API constexpr __not_a_domain(_Domain&&) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __not_a_domain(_Domain&&) noexcept
   {}
 };
 

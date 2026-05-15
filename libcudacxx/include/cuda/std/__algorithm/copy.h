@@ -86,13 +86,11 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _CCCL_API constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [[maybe_unused]] _Tp* __last)
 {
-#if !_CCCL_TILE_COMPILATION() // pointer values cannot be compared
-  if (!::cuda::std::is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     return __first < __needle;
   }
   else
-#endif // !_CCCL_TILE_COMPILATION()
   {
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
     NV_IF_ELSE_TARGET(NV_IS_HOST,

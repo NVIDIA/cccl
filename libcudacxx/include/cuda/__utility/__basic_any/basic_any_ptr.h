@@ -61,12 +61,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::remove_const_t<_Tp>)
   _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Up, interface_type> _CCCL_AND(
     __is_const_ptr || !::cuda::std::is_const_v<_Tp>))
-  _CCCL_API __basic_any(_Tp* __obj) noexcept
+  _CCCL_HOST_DEVICE_API __basic_any(_Tp* __obj) noexcept
   {
     operator=(__obj);
   }
 
-  _CCCL_API __basic_any(__basic_any const& __other) noexcept
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any const& __other) noexcept
   {
     __convert_from(__other);
   }
@@ -74,21 +74,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface*>, __basic_any<_Interface*>>)
-  _CCCL_API __basic_any(__basic_any<_OtherInterface*> const& __other) noexcept
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_OtherInterface*> const& __other) noexcept
   {
     __convert_from(__other);
   }
 
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_OtherInterface>&, __basic_any<_Interface&>>)
-  _CCCL_API __basic_any(__basic_any<_OtherInterface>* __other) noexcept
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_OtherInterface>* __other) noexcept
   {
     __convert_from(__other);
   }
 
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any<_Interface&>>)
-  _CCCL_API __basic_any(__basic_any<_OtherInterface> const* __other) noexcept
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_OtherInterface> const* __other) noexcept
   {
     __convert_from(__other);
   }
@@ -97,7 +97,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   _CCCL_REQUIRES(__is_interface<_OtherInterface<_Super>>
                    _CCCL_AND ::cuda::std::derived_from<__basic_any<_Super>, _OtherInterface<_Super>>
                      _CCCL_AND ::cuda::std::same_as<__normalized_interface_of<__basic_any<_Super>*>, _Interface*>)
-  _CCCL_API explicit __basic_any(_OtherInterface<_Super>* __self) noexcept
+  _CCCL_HOST_DEVICE_API explicit __basic_any(_OtherInterface<_Super>* __self) noexcept
   {
     __convert_from(__basic_any_from(__self));
   }
@@ -106,7 +106,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   _CCCL_REQUIRES(__is_interface<_OtherInterface<_Super>>
                    _CCCL_AND ::cuda::std::derived_from<__basic_any<_Super>, _OtherInterface<_Super>>
                      _CCCL_AND ::cuda::std::same_as<__normalized_interface_of<__basic_any<_Super> const*>, _Interface*>)
-  _CCCL_API explicit __basic_any(_OtherInterface<_Super> const* __self) noexcept
+  _CCCL_HOST_DEVICE_API explicit __basic_any(_OtherInterface<_Super> const* __self) noexcept
   {
     __convert_from(__basic_any_from(__self));
   }
@@ -114,7 +114,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   //!
   //! Assignment operators
   //!
-  _CCCL_API auto operator=(::cuda::std::nullptr_t) noexcept -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(::cuda::std::nullptr_t) noexcept -> __basic_any&
   {
     reset();
     return *this;
@@ -124,14 +124,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND //
                    __satisfies<_Up, interface_type> _CCCL_AND //
                  (__is_const_ptr || !::cuda::std::is_const_v<_Tp>))
-  _CCCL_API auto operator=(_Tp* __obj) noexcept -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(_Tp* __obj) noexcept -> __basic_any&
   {
     __vptr_for<interface_type> __vptr = ::cuda::__get_vtable_ptr_for<interface_type, _Up>();
     __ref_.__set_ref(__obj ? __vptr : nullptr, __obj);
     return *this;
   }
 
-  _CCCL_API auto operator=(__basic_any const& __other) noexcept -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any const& __other) noexcept -> __basic_any&
   {
     __convert_from(__other);
     return *this;
@@ -140,7 +140,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface*>, __basic_any<_Interface*>>)
-  _CCCL_API auto operator=(__basic_any<_OtherInterface*> const& __other) noexcept -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface*> const& __other) noexcept -> __basic_any&
   {
     __convert_from(__other);
     return *this;
@@ -148,7 +148,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
 
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_OtherInterface>&, __basic_any<_Interface&>>)
-  _CCCL_API auto operator=(__basic_any<_OtherInterface>* __other) noexcept -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface>* __other) noexcept -> __basic_any&
   {
     __convert_from(__other);
     return *this;
@@ -156,7 +156,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
 
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any<_Interface&>>)
-  _CCCL_API auto operator=(__basic_any<_OtherInterface> const* __other) noexcept -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface> const* __other) noexcept -> __basic_any&
   {
     __convert_from(__other);
     return *this;
@@ -167,7 +167,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   //!
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::remove_pointer_t<_Tp>, class _Vp = ::cuda::std::remove_const_t<_Up>)
   _CCCL_REQUIRES(__satisfies<_Vp, _Interface> _CCCL_AND(__is_const_ptr || !::cuda::std::is_const_v<_Up>))
-  _CCCL_API auto emplace(::cuda::std::type_identity_t<_Up>* __obj) noexcept
+  _CCCL_HOST_DEVICE_API auto emplace(::cuda::std::type_identity_t<_Up>* __obj) noexcept
     -> ::cuda::std::__maybe_const<__is_const_ptr, _Vp>*&
   {
     __vptr_for<interface_type> __vptr = ::cuda::__get_vtable_ptr_for<interface_type, _Vp>();
@@ -176,13 +176,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   }
 
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
-  [[nodiscard]] _CCCL_API auto operator==(__basic_any const& __other) const noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator==(__basic_any const& __other) const noexcept -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__get_optr()) == *static_cast<__void_ptr_t>(__other.__get_optr());
   }
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  [[nodiscard]] _CCCL_API friend auto operator==(__basic_any const& __lhs, __basic_any const& __rhs) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
+  operator==(__basic_any const& __lhs, __basic_any const& __rhs) noexcept -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__lhs.__get_optr()) == *static_cast<__void_ptr_t>(__rhs.__get_optr());
@@ -208,7 +209,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
     return __ref_;
   }
 
-  [[nodiscard]] _CCCL_API auto type() const noexcept -> ::cuda::std::__type_info_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto type() const noexcept -> ::cuda::std::__type_info_ref
   {
     return __ref_.__vptr_ != nullptr
            ? (__is_const_ptr ? *__get_rtti()->__object_info_->__const_pointer_typeid_
@@ -216,23 +217,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
            : _CCCL_TYPEID(void);
   }
 
-  [[nodiscard]] _CCCL_API auto interface() const noexcept -> ::cuda::std::__type_info_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto interface() const noexcept -> ::cuda::std::__type_info_ref
   {
     return __ref_.__vptr_ != nullptr ? *__get_rtti()->__interface_typeid_ : _CCCL_TYPEID(interface_type);
   }
 
-  [[nodiscard]] _CCCL_API auto has_value() const noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto has_value() const noexcept -> bool
   {
     return __ref_.__vptr_ != nullptr;
   }
 
-  _CCCL_API void reset() noexcept
+  _CCCL_HOST_DEVICE_API void reset() noexcept
   {
     __vptr_for<interface_type> __vptr = nullptr;
     __ref_.__set_ref(__vptr, nullptr);
   }
 
-  [[nodiscard]] _CCCL_API explicit operator bool() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API explicit operator bool() const noexcept
   {
     return __ref_.__vptr_ != nullptr;
   }
@@ -250,13 +251,13 @@ private:
   friend struct __basic_any_access;
 
   template <class _SrcCvAny>
-  _CCCL_API void __convert_from(_SrcCvAny* __other) noexcept
+  _CCCL_HOST_DEVICE_API void __convert_from(_SrcCvAny* __other) noexcept
   {
     __other ? __ref_.__set_ref(__other->__get_vptr(), __other->__get_optr()) : reset();
   }
 
   template <class _OtherInterface>
-  _CCCL_API void __convert_from(__basic_any<_OtherInterface*> const& __other) noexcept
+  _CCCL_HOST_DEVICE_API void __convert_from(__basic_any<_OtherInterface*> const& __other) noexcept
   {
     using __other_interface_t _CCCL_NODEBUG_ALIAS = ::cuda::std::remove_const_t<_OtherInterface>;
     auto __to_vptr = __try_vptr_cast<__other_interface_t, interface_type>(__other.__get_vptr());
@@ -264,22 +265,23 @@ private:
     __ref_.__set_ref(__to_vptr, __to_optr);
   }
 
-  [[nodiscard]] _CCCL_API auto __get_optr() noexcept -> ::cuda::std::__maybe_const<__is_const_ptr, void>**
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_optr() noexcept -> ::cuda::std::__maybe_const<__is_const_ptr, void>**
   {
     return &__ref_.__optr_;
   }
 
-  [[nodiscard]] _CCCL_API auto __get_optr() const noexcept -> ::cuda::std::__maybe_const<__is_const_ptr, void>* const*
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_optr() const noexcept
+    -> ::cuda::std::__maybe_const<__is_const_ptr, void>* const*
   {
     return &__ref_.__optr_;
   }
 
-  [[nodiscard]] _CCCL_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
   {
     return __ref_.__vptr_;
   }
 
-  [[nodiscard]] _CCCL_API auto __get_rtti() const noexcept -> __rtti const*
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __ref_.__vptr_ ? __ref_.__vptr_->__query_interface(__iunknown()) : nullptr;
   }

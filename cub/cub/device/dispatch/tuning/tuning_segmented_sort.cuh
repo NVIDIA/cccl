@@ -38,7 +38,7 @@ struct segmented_radix_sort_policy
   BlockScanAlgorithm scan_algorithm;
   int radix_bits;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -47,7 +47,7 @@ struct segmented_radix_sort_policy
         && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const segmented_radix_sort_policy& lhs, const segmented_radix_sort_policy& rhs)
   {
     return !(lhs == rhs);
@@ -74,17 +74,17 @@ struct sub_warp_merge_sort_policy
   CacheLoadModifier load_modifier;
   WarpStoreAlgorithm store_algorithm;
 
-  [[nodiscard]] _CCCL_API constexpr int segments_per_block() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int segments_per_block() const
   {
     return threads_per_block / warp_threads;
   }
 
-  [[nodiscard]] _CCCL_API constexpr int items_per_tile() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
   {
     return warp_threads * items_per_thread;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const sub_warp_merge_sort_policy& lhs, const sub_warp_merge_sort_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.warp_threads == rhs.warp_threads
@@ -92,7 +92,7 @@ struct sub_warp_merge_sort_policy
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const sub_warp_merge_sort_policy& lhs, const sub_warp_merge_sort_policy& rhs)
   {
     return !(lhs == rhs);
@@ -117,14 +117,14 @@ struct segmented_sort_policy
   sub_warp_merge_sort_policy medium_segment;
   int partitioning_threshold;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const segmented_sort_policy& lhs, const segmented_sort_policy& rhs)
   {
     return lhs.large_segment == rhs.large_segment && lhs.small_segment == rhs.small_segment
         && lhs.medium_segment == rhs.medium_segment && lhs.partitioning_threshold == rhs.partitioning_threshold;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const segmented_sort_policy& lhs, const segmented_sort_policy& rhs)
   {
     return !(lhs == rhs);
@@ -151,12 +151,12 @@ struct policy_selector
   int value_size;
   bool keys_only;
 
-  _CCCL_API constexpr auto __dominant_size() const
+  _CCCL_HOST_DEVICE_API constexpr auto __dominant_size() const
   {
     return ::cuda::std::max(key_size, value_size);
   }
 
-  _CCCL_API constexpr auto __make_scaled_segmented_radix_sort_policy(
+  _CCCL_HOST_DEVICE_API constexpr auto __make_scaled_segmented_radix_sort_policy(
     int nominal_4B_threads_per_block,
     int nominal_4B_items_per_thread,
     BlockLoadAlgorithm load_algorithm,
@@ -176,7 +176,8 @@ struct policy_selector
       radix_bits};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> segmented_sort_policy
   {
     const auto scale_items = [&](int nominal_4b_items_per_thread) {
       return nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
@@ -279,7 +280,8 @@ static_assert(segmented_sort_policy_selector<policy_selector>);
 template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> segmented_sort_policy
   {
     return policy_selector{int{sizeof(KeyT)}, int{sizeof(ValueT)}, ::cuda::std::is_same_v<ValueT, NullType>}(cc);
   }

@@ -82,7 +82,7 @@ inline constexpr int structured_binding_size = __structured_binding_size_impl<_S
 struct __any_t
 {
   template <class _Ty>
-  _CCCL_API operator _Ty&&();
+  _CCCL_HOST_DEVICE_API operator _Ty&&();
 };
 
 _CCCL_DIAG_PUSH
@@ -94,16 +94,16 @@ template <class _Ty, bool = ::cuda::std::is_aggregate_v<_Ty>>
 struct __arity_of_t
 {
   template <class... _Ts, class _Uy = _Ty, class _Uy2 = decltype(_Uy{_Ts{}...}), class _Self = __arity_of_t>
-  _CCCL_API auto operator()(_Ts... __ts) -> decltype(_Self{}(__ts..., __any_t{}));
+  _CCCL_HOST_DEVICE_API auto operator()(_Ts... __ts) -> decltype(_Self{}(__ts..., __any_t{}));
 
   template <class... _Ts>
-  _CCCL_API auto operator()(_Ts...) const -> char (*)[sizeof...(_Ts) + 1];
+  _CCCL_HOST_DEVICE_API auto operator()(_Ts...) const -> char (*)[sizeof...(_Ts) + 1];
 };
 
 template <class _Ty>
 struct __arity_of_t<_Ty, false>
 {
-  _CCCL_API auto operator()() const -> char*;
+  _CCCL_HOST_DEVICE_API auto operator()() const -> char*;
 };
 
 _CCCL_DIAG_POP
@@ -155,23 +155,23 @@ struct __unpack
 {
   // This is to generate a compile-time error if the sender type cannot be used to
   // initialize a structured binding.
-  _CCCL_API void operator()(::cuda::std::__ignore_t,
-                            __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity>,
-                            ::cuda::std::__ignore_t) const;
+  _CCCL_HOST_DEVICE_API void operator()(::cuda::std::__ignore_t,
+                                        __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity>,
+                                        ::cuda::std::__ignore_t) const;
 };
 
-#  define _CCCL_UNPACK_SENDER(_Arity)                                                                               \
-    template <>                                                                                                     \
-    struct __unpack<2 + _Arity>                                                                                     \
-    {                                                                                                               \
-      _CCCL_EXEC_CHECK_DISABLE                                                                                      \
-      template <class _Visitor, class _Sndr, class _Context>                                                        \
-      _CCCL_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const           \
-        -> decltype(auto)                                                                                           \
-      {                                                                                                             \
-        auto&& [__tag, __data _CCCL_PP_REPEAT(_Arity, _CCCL_BIND_CHILD)] = static_cast<_Sndr&&>(__sndr);            \
-        return __visitor(__context, __tag, _CCCL_FWD_LIKE(_Sndr, __data) _CCCL_PP_REPEAT(_Arity, _CCCL_FWD_CHILD)); \
-      }                                                                                                             \
+#  define _CCCL_UNPACK_SENDER(_Arity)                                                                                 \
+    template <>                                                                                                       \
+    struct __unpack<2 + _Arity>                                                                                       \
+    {                                                                                                                 \
+      _CCCL_EXEC_CHECK_DISABLE                                                                                        \
+      template <class _Visitor, class _Sndr, class _Context>                                                          \
+      _CCCL_HOST_DEVICE_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const \
+        -> decltype(auto)                                                                                             \
+      {                                                                                                               \
+        auto&& [__tag, __data _CCCL_PP_REPEAT(_Arity, _CCCL_BIND_CHILD)] = static_cast<_Sndr&&>(__sndr);              \
+        return __visitor(__context, __tag, _CCCL_FWD_LIKE(_Sndr, __data) _CCCL_PP_REPEAT(_Arity, _CCCL_FWD_CHILD));   \
+      }                                                                                                               \
     }
 
 _CCCL_UNPACK_SENDER(0);
@@ -187,7 +187,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
   _CCCL_TEMPLATE(class _Visitor, class _Sndr, class _Context)
   _CCCL_REQUIRES((structured_binding_size<_Sndr> >= 2))
-  _CCCL_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const -> decltype(auto)
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const
+    -> decltype(auto)
   {
     // This `if constexpr` shouldn't be needed given the `requires` clause above. It is
     // here because nvcc 12.0 has a bug where the full signature of the function template
