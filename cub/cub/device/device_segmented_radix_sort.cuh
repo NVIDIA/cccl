@@ -564,7 +564,7 @@ public:
         end_bit,
         false,
         stream,
-        {},
+        /* decomposer */ {},
         tuning_env);
     });
   }
@@ -713,7 +713,7 @@ public:
         end_bit,
         true,
         stream,
-        {},
+        /* decomposer */ {},
         tuning_env);
     });
   }
@@ -1220,7 +1220,7 @@ public:
         end_bit,
         false,
         stream,
-        {},
+        /* decomposer */ {},
         tuning_env);
     });
   }
@@ -1369,7 +1369,7 @@ public:
         end_bit,
         true,
         stream,
-        {},
+        /* decomposer */ {},
         tuning_env);
     });
   }
@@ -1841,7 +1841,7 @@ public:
         end_bit,
         false,
         stream,
-        {},
+        /* decomposer */ {},
         tuning_env);
     });
   }
@@ -1981,7 +1981,7 @@ public:
         end_bit,
         true,
         stream,
-        {},
+        /* decomposer */ {},
         tuning_env);
     });
   }
@@ -2445,7 +2445,7 @@ public:
         end_bit,
         false,
         stream,
-        detail::identity_decomposer_t{},
+        /* decomposer */ {},
         tuning_env);
     });
   }
@@ -2585,7 +2585,7 @@ public:
         end_bit,
         true,
         stream,
-        {},
+        /* decomposer */ {},
         tuning_env);
     });
   }
