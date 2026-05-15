@@ -25,15 +25,15 @@ message(
   "Building for CUDA ${CUDA_VERSION_MAJOR}, output directory: ${CUDA_VERSION_DIR}"
 )
 
-# Build cccl.c.parallel.v2 (HostJIT-based) and add CCCL's install rules.
-# Set CCCL_PYTHON_USE_V2=OFF to keep building against the legacy v1 (NVRTC)
-# library instead.
+# Build cuda_cccl against either cccl.c.parallel (v1, NVRTC) by default or
+# cccl.c.parallel.v2 (HostJIT) when CCCL_PYTHON_USE_V2=ON. v2 is opt-in until
+# it replaces v1 across the matrix.
 set(_cccl_root ../..)
 set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
 option(
   CCCL_PYTHON_USE_V2
   "Build cuda_cccl against cccl.c.parallel.v2 (HostJIT)."
-  ON
+  OFF
 )
 if (CCCL_PYTHON_USE_V2)
   set(CCCL_ENABLE_C_PARALLEL_V2 ON)
