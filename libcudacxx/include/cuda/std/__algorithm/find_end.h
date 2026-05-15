@@ -45,13 +45,16 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   {
     return __r;
   }
-  while (true)
+  bool __searching = true;
+  while (__searching)
   {
-    while (true)
+    while (__searching)
     {
       if (__first1 == __last1) // if source exhausted return last correct answer
       {
-        return __r; //    (or __last1 if never found)
+        // return __r; //    (or __last1 if never found)
+        __searching = false;
+        break;
       }
       if (__pred(*__first1, *__first2))
       {
@@ -62,7 +65,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
     // *__first1 matches *__first2, now match elements after here
     _ForwardIterator1 __m1 = __first1;
     _ForwardIterator2 __m2 = __first2;
-    while (true)
+    while (__searching)
     {
       if (++__m2 == __last2)
       { // Pattern exhausted, record answer and search for another one
@@ -72,7 +75,9 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
       }
       if (++__m1 == __last1) // Source exhausted, return last answer
       {
-        return __r;
+        // return __r;
+        __searching = false;
+        break;
       }
       if (!__pred(*__m1, *__m2)) // mismatch, restart with a new __first
       {
@@ -81,6 +86,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
       } // else there is a match, check next elements
     }
   }
+  return __r;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
