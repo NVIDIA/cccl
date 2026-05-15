@@ -250,6 +250,9 @@ public:
     if constexpr (_Offset != 0)
     {
       static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
+    }
+    if constexpr (_Count != 0)
+    {
       static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset,
                     "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
     }
