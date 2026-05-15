@@ -491,7 +491,9 @@ public:
                                         ::cuda::std::index_sequence<_Indices...>) const
       noexcept(__zip_iter_constraints<_Iterators...>::__all_noexcept_swappable)
     {
-      (::cuda::std::ranges::iter_swap(::cuda::std::get<_Indices>(__iters1), ::cuda::std::get<_Indices>(__iters2)), ...);
+      (::cuda::std::ranges::__iter_swap_cpo{}(
+         ::cuda::std::get<_Indices>(__iters1), ::cuda::std::get<_Indices>(__iters2)),
+       ...);
     }
   };
 
