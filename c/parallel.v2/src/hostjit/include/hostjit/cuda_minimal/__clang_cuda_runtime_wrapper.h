@@ -1,4 +1,4 @@
-/*===---- ClangJIT CUDA runtime wrapper - replaces clang's wrapper ----------===
+/*===---- HostJIT CUDA runtime wrapper - replaces clang's wrapper ----------===
  *
  * This is a self-contained replacement for clang's __clang_cuda_runtime_wrapper.h.
  * Instead of #include_next-ing the real wrapper (which has fragile ordering
@@ -57,6 +57,11 @@
 #  include <climits>
 #  include <cmath>
 #  include <cstddef>
+// string.h must precede __clang_cuda_device_functions.h: cuda_fp16.hpp uses
+// memcpy from __host__ __device__ ctors. device_functions.h only declares a
+// __device__ memcpy, so the host-side call site needs the stub's host-callable
+// __builtin_memcpy overload visible first.
+#  include <string.h>
 
 // ---- Clang device function wrappers (local copies, CUDA < 9.0 removed) ----
 // NOTE: libdevice_declares.h must precede device_functions.h — the latter calls

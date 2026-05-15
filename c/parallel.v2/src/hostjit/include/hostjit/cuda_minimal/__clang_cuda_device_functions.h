@@ -1703,11 +1703,11 @@ __DEVICE__ long long clock64()
   return __nvvm_read_ptx_sreg_clock64();
 }
 
-static __host__ __device__ __forceinline__ void* memcpy(void* __a, const void* __b, size_t __c)
+__DEVICE__ void* memcpy(void* __a, const void* __b, size_t __c)
 {
   return __builtin_memcpy(__a, __b, __c);
 }
-static __host__ __device__ __forceinline__ void* memset(void* __a, int __b, size_t __c)
+__DEVICE__ void* memset(void* __a, int __b, size_t __c)
 {
   return __builtin_memset(__a, __b, __c);
 }

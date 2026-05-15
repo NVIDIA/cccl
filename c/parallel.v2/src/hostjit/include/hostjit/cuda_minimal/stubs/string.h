@@ -8,6 +8,10 @@ inline void* memcpy(void* __s1, const void* __s2, size_t __n)
 {
   return __builtin_memcpy(__s1, __s2, __n);
 }
+inline void* memset(void* __s, int __c, size_t __n)
+{
+  return __builtin_memset(__s, __c, __n);
+}
 inline void* memmove(void* __s1, const void* __s2, size_t __n)
 {
   return __builtin_memmove(__s1, __s2, __n);
