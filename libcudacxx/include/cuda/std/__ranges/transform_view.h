@@ -413,7 +413,7 @@ public:
   _CCCL_API constexpr transform_view(_View __base, _Fn __func)
       : view_interface<transform_view<_View, _Fn>>()
       , __base_(::cuda::std::move(__base))
-      , __func_(::cuda::std::in_place, ::cuda::std::move(__func))
+      , __func_(in_place_t{}, ::cuda::std::move(__func))
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)

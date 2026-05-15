@@ -84,7 +84,7 @@ public:
 
   _CCCL_API constexpr explicit drop_while_view(_View __base, _Pred __pred)
       : __base_{::cuda::std::move(__base)}
-      , __pred_{::cuda::std::in_place, ::cuda::std::move(__pred)}
+      , __pred_{in_place_t{}, ::cuda::std::move(__pred)}
 
   {}
 

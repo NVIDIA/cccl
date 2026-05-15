@@ -91,7 +91,7 @@ public:                                                                         
                                                                                  \
   template <class... _Args>                                                      \
   _CCCL_API explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
-      : __head_(in_place, ::cuda::std::forward<_Args>(__args)...)                \
+      : __head_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)            \
   {}                                                                             \
                                                                                  \
   template <size_t _Ip, class... _Args>                                          \
