@@ -20,12 +20,6 @@ workflows:
   #   - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtx2080',
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
-  override:
-    # Temporary: while v2 is in development, only exercise the v2 jobs on PRs.
-    # Remove this block once we want the regular pull_request matrix again.
-    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
