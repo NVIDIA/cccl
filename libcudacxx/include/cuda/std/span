@@ -247,10 +247,12 @@ public:
   _CCCL_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
-    static_assert(_Offset == 0 ? true : _Offset <= _Extent,
-                  "span<T, N>::subspan<Offset, Count>(): Offset out of range");
-    static_assert(_Count == dynamic_extent || (_Count == 0 ? true : _Count <= _Extent - _Offset),
-                  "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
+    if constexpr (_Offset != 0)
+    {
+      static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
+      static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset,
+                    "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
+    }
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
