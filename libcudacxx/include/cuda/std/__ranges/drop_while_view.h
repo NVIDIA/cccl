@@ -128,7 +128,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
-    return ::cuda::std::ranges::end(__base_);
+    return ::cuda::std::ranges::__end_cpo{}(__base_);
   }
 };
 
