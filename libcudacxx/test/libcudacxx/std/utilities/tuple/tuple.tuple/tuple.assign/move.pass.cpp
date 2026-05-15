@@ -58,7 +58,9 @@ struct CountAssign
   }
   TEST_FUNC CountAssign& operator=(CountAssign&&)
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     ++moved;
+#endif // !_CCCL_TILE_COMPILATION()
     return *this;
   }
 };
