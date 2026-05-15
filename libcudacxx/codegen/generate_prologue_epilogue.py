@@ -156,15 +156,17 @@ _CCCL_DIAG_SUPPRESS_MSVC(4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 
 // Suppress compiler warnings about C++ extensions.
 
 #if _CCCL_COMPILER(GCC, >=, 12)
+_CCCL_DIAG_SUPPRESS_GCC("-Wc++20-extensions")
 _CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
 #endif // _CCCL_COMPILER(GCC, >=, 12)
 #if _CCCL_COMPILER(GCC, >=, 14)
 _CCCL_DIAG_SUPPRESS_GCC("-Wc++26-extensions")
 #endif // _CCCL_COMPILER(GCC, >=, 14)
 
+_CCCL_DIAG_SUPPRESS_CLANG("-Wc++20-extensions")
 #if _CCCL_COMPILER(CLANG, >=, 17)
-_CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++23-extensions")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
 #else // ^^^ _CCCL_COMPILER(CLANG, >=, 17) ^^^ / vvv _CCCL_COMPILER(CLANG, <, 17) vvv
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++2b-extensions")
 #endif // ^^^ _CCCL_COMPILER(CLANG, <, 17) ^^^
