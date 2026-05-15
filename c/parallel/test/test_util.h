@@ -73,6 +73,8 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
   }
 
   const std::string sass{std::istreambuf_iterator<char>(temp_out_file), std::istreambuf_iterator<char>()};
+  temp_out_file.close();
+
   if (!fs::remove(temp_out_filename))
   {
     throw std::runtime_error("Failed to remove temporary file.");
