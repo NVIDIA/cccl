@@ -34,14 +34,16 @@ template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
 [[nodiscard]] _CCCL_API constexpr bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _BinaryPredicate __pred)
 {
+  bool __result = true;
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
   {
     if (!__pred(*__first1, *__first2))
     {
-      return false;
+      __result = false;
+      break;
     }
   }
-  return true;
+  return __result;
 }
 
 template <class _InputIterator1, class _InputIterator2>
@@ -61,14 +63,16 @@ template <class _BinaryPredicate, class _InputIterator1, class _InputIterator2>
   input_iterator_tag,
   input_iterator_tag)
 {
+  bool __result = true;
   for (; __first1 != __last1 && __first2 != __last2; ++__first1, (void) ++__first2)
   {
     if (!__pred(*__first1, *__first2))
     {
-      return false;
+      __result = false;
+      break;
     }
   }
-  return __first1 == __last1 && __first2 == __last2;
+  return __result && __first1 == __last1 && __first2 == __last2;
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
