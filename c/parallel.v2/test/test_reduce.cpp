@@ -391,7 +391,6 @@ struct invocation_counter_state_t
 
 C2H_TEST("Reduce works with stateful operators", "[reduce]")
 {
-  SKIP("v2: stateful-op marshaling crashes with illegal memory access");
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
   stateful_operation_t<invocation_counter_state_t> op = make_operation(

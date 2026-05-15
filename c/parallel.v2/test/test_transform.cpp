@@ -787,7 +787,6 @@ struct transform_stateful_counter_state_t
 
 C2H_TEST("Transform works with stateful unary operators", "[transform]")
 {
-  SKIP("v2: stateful-op marshaling crashes with illegal memory access");
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
   const std::vector<int> host_counter{0};
   pointer_t<int> counter(host_counter);

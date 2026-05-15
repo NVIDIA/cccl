@@ -97,20 +97,29 @@ std::string generate_binary_functor(cccl_op_t op, const std::string& accum_type,
   // void* anyway, so the concrete arg types only need to be addressable.
   if (is_stateful)
   {
+    // Embed the user's state bytes inline. When CUB launches a kernel with
+    // this functor by value, the bytes ride along in the launch-arg buffer
+    // into device constant memory, so the address handed to the user's op
+    // (`state_bytes`) is a valid device-side pointer. Storing a host pointer
+    // here would crash on first device-side dereference.
+    const size_t state_size  = op.size > 0 ? op.size : 1;
+    const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     return std::format(
       "struct {0} {{\n"
-      "  void* state;\n"
+      "  alignas({3}) unsigned char state_bytes[{4}];\n"
       "  template <typename _A, typename _B>\n"
       "  __host__ __device__ __forceinline__\n"
       "  {1} operator()(const _A& a, const _B& b) const {{\n"
       "    {1} result;\n"
-      "    {2}(state, (void*)&a, (void*)&b, (void*)&result);\n"
+      "    {2}((void*)state_bytes, (void*)&a, (void*)&b, (void*)&result);\n"
       "    return result;\n"
       "  }}\n"
       "}};\n\n",
       functor_name,
       accum_type,
-      op_name);
+      op_name,
+      state_align,
+      state_size);
   }
   else
   {
@@ -137,19 +146,25 @@ std::string generate_comparison_functor(cccl_op_t op, const std::string& key_typ
 
   if (is_stateful)
   {
+    // See generate_binary_functor: state must travel by value via kernel-arg
+    // copy, not by host pointer, or the device-side deref crashes.
+    const size_t state_size  = op.size > 0 ? op.size : 1;
+    const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     return std::format(
-      "struct {} {{\n"
-      "  void* state;\n"
+      "struct {0} {{\n"
+      "  alignas({3}) unsigned char state_bytes[{4}];\n"
       "  __host__ __device__ __forceinline__\n"
-      "  bool operator()(const {}& a, const {}& b) const {{\n"
+      "  bool operator()(const {1}& a, const {2}& b) const {{\n"
       "    bool result;\n"
-      "    {}(state, (void*)&a, (void*)&b, (void*)&result);\n"
+      "    {5}((void*)state_bytes, (void*)&a, (void*)&b, (void*)&result);\n"
       "    return result;\n"
       "  }}\n"
       "}};\n\n",
       functor_name,
       key_type,
       key_type,
+      state_align,
+      state_size,
       op_name);
   }
   else
@@ -333,7 +348,9 @@ OperatorCode make_binary_op(
 
   if (is_stateful)
   {
-    result.setup_code = std::format("{} {}{{{}}};", functor_name, var_name, state_param);
+    const size_t state_size = op.size > 0 ? op.size : 1;
+    result.setup_code       = std::format(
+      "{0} {1}; __builtin_memcpy({1}.state_bytes, {2}, {3});", functor_name, var_name, state_param, state_size);
   }
   else
   {
@@ -397,13 +414,17 @@ OperatorCode make_unary_op(
   // Functor struct
   if (is_stateful)
   {
+    // See generate_binary_functor: state must travel by value via kernel-arg
+    // copy, not by host pointer, or the device-side deref crashes.
+    const size_t state_size  = op.size > 0 ? op.size : 1;
+    const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     result.preamble += std::format(
-      "struct {} {{\n"
-      "  void* state;\n"
+      "struct {0} {{\n"
+      "  alignas({4}) unsigned char state_bytes[{5}];\n"
       "  __host__ __device__ __forceinline__\n"
-      "  {} operator()(const {}& a) const {{\n"
-      "    {} result;\n"
-      "    {}(state, (void*)&a, (void*)&result);\n"
+      "  {1} operator()(const {2}& a) const {{\n"
+      "    {3} result;\n"
+      "    {6}((void*)state_bytes, (void*)&a, (void*)&result);\n"
       "    return result;\n"
       "  }}\n"
       "}};\n\n",
@@ -411,8 +432,11 @@ OperatorCode make_unary_op(
       out_type,
       in_type,
       out_type,
+      state_align,
+      state_size,
       op_name);
-    result.setup_code = std::format("{} {}{{{}}};", functor_name, var_name, state_param);
+    result.setup_code = std::format(
+      "{0} {1}; __builtin_memcpy({1}.state_bytes, {2}, {3});", functor_name, var_name, state_param, state_size);
   }
   else
   {
@@ -463,7 +487,9 @@ OperatorCode make_comparison_op(
 
   if (is_stateful)
   {
-    result.setup_code = std::format("{} {}{{{}}};", functor_name, var_name, state_param);
+    const size_t state_size = op.size > 0 ? op.size : 1;
+    result.setup_code       = std::format(
+      "{0} {1}; __builtin_memcpy({1}.state_bytes, {2}, {3});", functor_name, var_name, state_param, state_size);
   }
   else
   {

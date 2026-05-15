@@ -147,7 +147,6 @@ struct invocation_counter_state_t
 
 C2H_TEST("for_each works with stateful operators", "[for_each]")
 {
-  SKIP("v2: stateful-op marshaling crashes with illegal memory access");
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
   invocation_counter_state_t op_state                 = {counter.ptr};
@@ -180,7 +179,6 @@ struct large_state_t
 
 C2H_TEST("for_each works with large stateful operators", "[for_each]")
 {
-  SKIP("v2: stateful-op marshaling crashes with illegal memory access");
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
   large_state_t op_state                 = {1, counter.ptr, 2, 3, 4};

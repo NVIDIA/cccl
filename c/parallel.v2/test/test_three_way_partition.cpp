@@ -331,7 +331,6 @@ struct selector_state_t
 struct ThreeWayPartition_StatefulOperations_Fixture_Tag;
 C2H_TEST("ThreeWayPartition works with stateful operations", "[three_way_partition]")
 {
-  SKIP("v2: stateful-op marshaling crashes with illegal memory access");
   using key_t          = int;
   using num_selected_t = int;
 

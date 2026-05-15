@@ -138,14 +138,10 @@ def _backend_uses_v2() -> bool:
 # reason for each so it's clear why it's deferred rather than fixed.
 _V2_BROKEN_TESTS = {
     "test_segmented_sort_op_kind": "cudaErrorMisalignedAddress at runtime; v2 segmented_sort path",
-    "test_select_with_side_effect_counting_rejects": "v2 select side-effect path",
 }
 
 
 def pytest_collection_modifyitems(config, items):
-    skip_stateful_for_v2 = pytest.mark.skip(
-        reason="v2 (HostJIT) backend: stateful-op marshaling is not yet implemented"
-    )
     using_v2 = _backend_uses_v2()
     for item in items:
         # Check if the 'no_numba' marker is present on the test item
@@ -157,21 +153,9 @@ def pytest_collection_modifyitems(config, items):
         if not using_v2:
             continue
 
-        # Skip stateful-op tests on the v2 backend (known limitation: state
-        # marshaling between host and JIT'd device code is incomplete and
-        # crashes with CUDA_ERROR_ILLEGAL_ADDRESS).
-        lowered_name = item.name.lower()
-        if "stateful" in lowered_name:
-            item.add_marker(skip_stateful_for_v2)
-
-        # fp16 (__half) is supported on v2 now — algorithm sources include
-        # <cuda_fp16.h> and CCCL_DISABLE_FP16_SUPPORT is no longer set. Keep
-        # `skip_fp16_for_v2` defined above so it's trivial to re-enable if a
-        # regression shows up.
-
         # Explicit per-test deferrals.
         # `item.originalname` is the function name without parametrize suffix;
-        # `item.name` includes it. Either match deferr the test.
+        # `item.name` includes it. Either match defers the test.
         bare = getattr(item, "originalname", item.name)
         if bare in _V2_BROKEN_TESTS:
             item.add_marker(

@@ -80,11 +80,21 @@ static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
   // user_op_t functor
   if (stateful)
   {
-    src += "struct user_op_t {\n";
-    src += "  void* state;\n";
+    // State bytes are embedded by value, not via host pointer; the bytes
+    // travel into device constant memory through the kernel-arg copy when
+    // CUB launches the kernel. See operators.cpp:generate_binary_functor.
+    const size_t state_size  = op.size > 0 ? op.size : 1;
+    const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     src += std::format(
-      "  __device__ __forceinline__ void operator()({}* input) const {{ {}(state, input); }}\n", data_type, op_name);
-    src += "};\n\n";
+      "struct user_op_t {{\n"
+      "  alignas({0}) unsigned char state_bytes[{1}];\n"
+      "  __device__ __forceinline__ void operator()({2}* input) const "
+      "{{ {3}((void*)state_bytes, input); }}\n"
+      "}};\n\n",
+      state_align,
+      state_size,
+      data_type,
+      op_name);
   }
   else
   {
@@ -136,7 +146,8 @@ void for_kernel(DataIt d_data, OffsetT num_items, OpT user_op)
   src += "    in_0_it_t in_0 = static_cast<in_0_it_t>(d_in_0);\n";
   if (stateful)
   {
-    src += "    user_op_t op_0{op_0_state};\n";
+    const size_t state_size = op.size > 0 ? op.size : 1;
+    src += std::format("    user_op_t op_0; __builtin_memcpy(op_0.state_bytes, op_0_state, {});\n", state_size);
   }
   else
   {
