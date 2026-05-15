@@ -550,27 +550,23 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, SegmentSizeT>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<::cuda::std::int64_t>(num_items),
-          static_cast<::cuda::std::int64_t>(num_segments),
-          d_begin_offsets,
-          d_end_offsets,
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          {},
-          policy_selector_t{});
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<::cuda::std::int64_t>(num_items),
+        static_cast<::cuda::std::int64_t>(num_segments),
+        d_begin_offsets,
+        d_end_offsets,
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -1208,27 +1204,23 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, SegmentSizeT>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          num_items,
-          num_segments,
-          d_begin_offsets,
-          d_end_offsets,
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          {},
-          policy_selector_t{});
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        num_items,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -1831,27 +1823,23 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, SegmentSizeT>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          num_items,
-          num_segments,
-          d_begin_offsets,
-          d_end_offsets,
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          {},
-          policy_selector_t{});
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        num_items,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -2437,27 +2425,23 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, SegmentSizeT>;
-        using policy_selector_t         = ::cuda::std::execution::
-          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
-        return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          num_items,
-          num_segments,
-          d_begin_offsets,
-          d_end_offsets,
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          detail::identity_decomposer_t{},
-          policy_selector_t{});
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        num_items,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        detail::identity_decomposer_t{},
+        tuning_env);
+    });
   }
 
   //! @rst

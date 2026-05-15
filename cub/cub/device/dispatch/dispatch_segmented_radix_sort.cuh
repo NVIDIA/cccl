@@ -883,21 +883,8 @@ template <SortOrder Order,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename DecomposerT    = identity_decomposer_t,
-          typename PolicySelector = policy_selector_from_types<KeyT, ValueT, SegmentSizeT>,
-          typename KernelSource   = DeviceSegmentedRadixSortKernelSource<
-              PolicySelector,
-              Order,
-              KeyT,
-              ValueT,
-              BeginOffsetIteratorT,
-              EndOffsetIteratorT,
-              SegmentSizeT,
-              DecomposerT>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-#if _CCCL_HAS_CONCEPTS()
-  requires segmented_radix_sort_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
+          typename DecomposerT = identity_decomposer_t,
+          typename TuningEnvT  = ::cuda::std::execution::env<>>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -911,11 +898,27 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   int end_bit,
   bool is_overwrite_okay,
   cudaStream_t stream,
-  DecomposerT decomposer                 = {},
-  PolicySelector policy_selector         = {},
-  KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {})
+  DecomposerT decomposer = {},
+  TuningEnvT             = {})
 {
+  using default_policy_selector_t = policy_selector_from_types<KeyT, ValueT, SegmentSizeT>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, segmented_radix_sort_policy, default_policy_selector_t>;
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(segmented_radix_sort_policy_selector<policy_selector_t>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+  auto kernel_source = DeviceSegmentedRadixSortKernelSource<
+    policy_selector_t,
+    Order,
+    KeyT,
+    ValueT,
+    BeginOffsetIteratorT,
+    EndOffsetIteratorT,
+    SegmentSizeT,
+    DecomposerT>{};
+  auto launcher_factory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{};
+
   if (num_items == 0 || num_segments == 0 || (begin_bit == end_bit && is_overwrite_okay))
   {
     if (d_temp_storage == nullptr)
@@ -930,18 +933,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
-  const segmented_radix_sort_policy active_policy = policy_selector(cc);
-
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceSegmentedRadixSort to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  const segmented_radix_sort_policy active_policy = policy_selector_t{}(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
