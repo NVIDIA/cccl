@@ -941,4 +941,132 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending can be tuned", "[segmente
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+C2H_TEST("DeviceSegmentedRadixSort::SortPairs DoubleBuffer can be tuned", "[segmented_radix_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  auto keys       = c2h::device_vector<int>(10'000);
+  auto alt_keys   = c2h::device_vector<int>(10'000);
+  auto values     = c2h::device_vector<int>(10'000);
+  auto alt_values = c2h::device_vector<int>(10'000);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys.data()), thrust::raw_pointer_cast(alt_keys.data()));
+  cub::DoubleBuffer<int> d_values(thrust::raw_pointer_cast(values.data()), thrust::raw_pointer_cast(alt_values.data()));
+
+  auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_radix_sort_block_size_tuning<int, int, target_block_size>{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortPairs(
+      d_keys,
+      d_values,
+      static_cast<int>(keys.size()),
+      1,
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer can be tuned",
+         "[segmented_radix_sort][device]",
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  auto keys       = c2h::device_vector<int>(10'000);
+  auto alt_keys   = c2h::device_vector<int>(10'000);
+  auto values     = c2h::device_vector<int>(10'000);
+  auto alt_values = c2h::device_vector<int>(10'000);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys.data()), thrust::raw_pointer_cast(alt_keys.data()));
+  cub::DoubleBuffer<int> d_values(thrust::raw_pointer_cast(values.data()), thrust::raw_pointer_cast(alt_values.data()));
+
+  auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_radix_sort_block_size_tuning<int, int, target_block_size>{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortPairsDescending(
+      d_keys,
+      d_values,
+      static_cast<int>(keys.size()),
+      1,
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys DoubleBuffer can be tuned", "[segmented_radix_sort][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  auto keys     = c2h::device_vector<int>(10'000);
+  auto alt_keys = c2h::device_vector<int>(10'000);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys.data()), thrust::raw_pointer_cast(alt_keys.data()));
+
+  auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_radix_sort_block_size_tuning<int, cub::NullType, target_block_size>{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortKeys(
+      d_keys,
+      static_cast<int>(keys.size()),
+      1,
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer can be tuned",
+         "[segmented_radix_sort][device]",
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  auto keys     = c2h::device_vector<int>(10'000);
+  auto alt_keys = c2h::device_vector<int>(10'000);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys.data()), thrust::raw_pointer_cast(alt_keys.data()));
+
+  auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_radix_sort_block_size_tuning<int, cub::NullType, target_block_size>{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortKeysDescending(
+      d_keys,
+      static_cast<int>(keys.size()),
+      1,
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 #endif // TEST_LAUNCH == 0
