@@ -102,14 +102,13 @@ public:
   //!   that the relative order of these two elements will be preserved by sort.
   //!
   //! @tparam CompareOp Comparison functor type
-  //! @tparam REVERSE If true, sorts in reverse order
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op)
   {
-    Sort_<CompareOp, REVERSE>(keys, nullptr, compare_op);
+    Sort_<CompareOp, false>(keys, nullptr, compare_op);
   }
 
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
@@ -123,13 +122,12 @@ public:
   //!   after any value in the `valid_items` boundaries.
   //!
   //! @tparam CompareOp Comparison functor type
-  //! @tparam REVERSE If true, sorts in reverse order
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the warp
   //! @param[in] oob_default Default value for out-of-bound items
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
@@ -142,7 +140,7 @@ public:
         keys[i] = oob_default;
       }
     }
-    Sort_<CompareOp, REVERSE>(keys, nullptr, compare_op);
+    Sort_<CompareOp, false>(keys, nullptr, compare_op);
   }
 
   //! @brief Sorts keys across a warp of threads using bitonic sorting network.
@@ -153,15 +151,14 @@ public:
   //!   that the relative order of these two elements will be preserved by sort.
   //!
   //! @tparam CompareOp Comparison functor type
-  //! @tparam REVERSE If true, sorts in reverse order
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the warp
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items)
   {
-    Sort_<CompareOp, REVERSE>(keys, nullptr, compare_op, valid_items);
+    Sort_<CompareOp, false>(keys, nullptr, compare_op, valid_items);
   }
 
   //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
@@ -172,16 +169,15 @@ public:
   //!   that the relative order of these two elements will be preserved by sort.
   //!
   //! @tparam CompareOp Comparison functor type
-  //! @tparam REVERSE If true, sorts in reverse order
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in,out] values Values to sort (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], CompareOp compare_op)
   {
-    Sort_<CompareOp, REVERSE>(keys, values, compare_op);
+    Sort_<CompareOp, false>(keys, values, compare_op);
   }
 
   //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
@@ -195,14 +191,13 @@ public:
   //!   after any value in the `valid_items` boundaries.
   //!
   //! @tparam CompareOp Comparison functor type
-  //! @tparam REVERSE If true, sorts in reverse order
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in,out] values Values to sort (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the warp
   //! @param[in] oob_default Default value for out-of-bound keys
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[ITEMS_PER_THREAD],
        ValueT (&values)[ITEMS_PER_THREAD],
@@ -219,7 +214,7 @@ public:
         keys[i] = oob_default;
       }
     }
-    Sort_<CompareOp, REVERSE>(keys, values, compare_op);
+    Sort_<CompareOp, false>(keys, values, compare_op);
   }
 
   //! @brief Sorts key-value pairs across a warp of threads using bitonic sorting network.
@@ -230,75 +225,16 @@ public:
   //!   that the relative order of these two elements will be preserved by sort.
   //!
   //! @tparam CompareOp Comparison functor type
-  //! @tparam REVERSE If true, sorts in reverse order
   //!
   //! @param[in,out] keys Keys to sort, in striped arrangement
   //! @param[in,out] values Values to sort (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the warp
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items)
   {
-    Sort_<CompareOp, REVERSE>(keys, values, compare_op, valid_items);
-  }
-
-  //! @brief Merges a bitonic sequence of keys across a warp of threads into a monotonic sequence.
-  //!
-  //! @tparam CompareOp Comparison functor type
-  //!
-  //! @param[in,out] keys Keys to merge, in striped arrangement. Input keys must form a bitonic sequence
-  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void Merge(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op)
-  {
-    Merge_<CompareOp, false>(keys, nullptr, compare_op);
-  }
-
-  //! @brief Merges a bitonic sequence of keys across a warp of threads into a monotonic sequence.
-  //!
-  //! @tparam CompareOp Comparison functor type
-  //!
-  //! @param[in,out] keys Keys to merge, in striped arrangement. Input keys must form a bitonic sequence.
-  //!   The first part of the input should be sorted with Sort<CompareOp, true>, and the
-  //!   second part with Sort<CompareOp, false>.
-  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  //! @param[in] valid_items Total number of valid items across the warp
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void Merge(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items)
-  {
-    Merge_<CompareOp, false>(keys, nullptr, compare_op, valid_items);
-  }
-
-  //! @brief Merges a bitonic sequence of key-value pairs across a warp of threads into a monotonic sequence.
-  //!
-  //! @tparam CompareOp Comparison functor type
-  //!
-  //! @param[in,out] keys Keys to merge, in striped arrangement. Input keys must form a bitonic sequence
-  //! @param[in,out] values Values to merge (reordered to match key order)
-  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  Merge(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], CompareOp compare_op)
-  {
-    Merge_<CompareOp, false>(keys, values, compare_op);
-  }
-
-  //! @brief Merges a bitonic sequence of key-value pairs across a warp of threads into a monotonic sequence.
-  //!
-  //! @tparam CompareOp Comparison functor type
-  //!
-  //! @param[in,out] keys Keys to merge, in striped arrangement. Input keys must form a bitonic sequence.
-  //!   The first part of the input should be sorted with Sort<CompareOp, true>, and the
-  //!   second part with Sort<CompareOp, false>.
-  //! @param[in,out] values Values to merge (reordered to match key order)
-  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
-  //! @param[in] valid_items Total number of valid items across the warp
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  Merge(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items)
-  {
-    Merge_<CompareOp, false>(keys, values, compare_op, valid_items);
+    Sort_<CompareOp, false>(keys, values, compare_op, valid_items);
   }
 
 private:
@@ -321,6 +257,20 @@ private:
     Merge_<CompareOp, REVERSE>(keys, values, compare_op);
   }
 
+  //! @brief Merges a bitonic sequence of key-value pairs across a warp of threads into a monotonic sequence.
+  //!
+  //! @tparam CompareOp Comparison functor type
+  //! @tparam REVERSE If true, results are in reverse order
+  //!
+  //! @param[in,out] keys Keys to merge, in striped arrangement. Input keys must form a bitonic sequence meeting one of
+  //! these conditions:
+  //!   (1) `ITEMS_PER_THREAD` is a power of 2
+  //!   (2) If `ITEMS_PER_THREAD` is not a power of 2 and `REVERSE` is false: the sequence must be reverse-sorted first,
+  //!       then sorted
+  //!   (3) If `ITEMS_PER_THREAD` is not a power of 2 and `REVERSE` is true: the sequence must be sorted first, then
+  //!       reverse-sorted
+  //! @param[in,out] values Values to merge (reordered to match key order)
+  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp, bool REVERSE>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Merge_(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op)
@@ -386,6 +336,18 @@ private:
     }
   }
 
+  //! @brief Merges a bitonic sequence of key-value pairs across a warp of threads into a monotonic sequence.
+  //!
+  //! @tparam CompareOp Comparison functor type
+  //! @tparam REVERSE If true, results are in reverse order
+  //!
+  //! @param[in,out] keys Keys to merge, in striped arrangement. Input keys must form a bitonic sequence meeting one of
+  //! these conditions:
+  //!   (1) If `REVERSE` is false: the sequence must be reverse-sorted first, then sorted
+  //!   (2) If `REVERSE` is true: the sequence must be sorted first, then reverse-sorted
+  //! @param[in,out] values Values to merge (reordered to match key order)
+  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
+  //! @param[in] valid_items Total number of valid items across the warp
   template <typename CompareOp, bool REVERSE>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Merge_(KeyT* _CCCL_RESTRICT keys, ValueT* _CCCL_RESTRICT values, CompareOp compare_op, int valid_items)
@@ -446,13 +408,13 @@ template <typename KeyT, typename ValueT>
 class WarpBitonicSort<1, KeyT, ValueT>
 {
 public:
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void Sort(KeyT (&keys)[1], CompareOp compare_op)
   {
-    Sort_<CompareOp, REVERSE>(keys, nullptr, compare_op);
+    Sort_<CompareOp, false>(keys, nullptr, compare_op);
   }
 
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
@@ -461,22 +423,22 @@ public:
     {
       keys[0] = oob_default;
     }
-    Sort_<CompareOp, REVERSE>(keys, nullptr, compare_op);
+    Sort_<CompareOp, false>(keys, nullptr, compare_op);
   }
 
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void Sort(KeyT (&keys)[1], CompareOp compare_op, int valid_items)
   {
-    Sort_<CompareOp, REVERSE>(keys, nullptr, compare_op, valid_items);
+    Sort_<CompareOp, false>(keys, nullptr, compare_op, valid_items);
   }
 
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op)
   {
-    Sort_<CompareOp, REVERSE>(keys, values, compare_op);
+    Sort_<CompareOp, false>(keys, values, compare_op);
   }
 
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
@@ -485,39 +447,14 @@ public:
     {
       keys[0] = oob_default;
     }
-    Sort_<CompareOp, REVERSE>(keys, values, compare_op);
+    Sort_<CompareOp, false>(keys, values, compare_op);
   }
 
-  template <typename CompareOp, bool REVERSE = false>
+  template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE static void
   Sort(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items)
   {
-    Sort_<CompareOp, REVERSE>(keys, values, compare_op, valid_items);
-  }
-
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void Merge(KeyT (&keys)[1], CompareOp compare_op)
-  {
-    Merge_<CompareOp, false>(keys, nullptr, compare_op);
-  }
-
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void Merge(KeyT (&keys)[1], CompareOp compare_op, int valid_items)
-  {
-    Merge_<CompareOp, false>(keys, nullptr, compare_op, valid_items);
-  }
-
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void Merge(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op)
-  {
-    Merge_<CompareOp, false>(keys, values, compare_op);
-  }
-
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  Merge(KeyT (&keys)[1], ValueT (&values)[1], CompareOp compare_op, int valid_items)
-  {
-    Merge_<CompareOp, false>(keys, values, compare_op, valid_items);
+    Sort_<CompareOp, false>(keys, values, compare_op, valid_items);
   }
 
 private:
