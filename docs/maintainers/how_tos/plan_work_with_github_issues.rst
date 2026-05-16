@@ -76,6 +76,10 @@ Update the issue when:
 - important context, decisions, or blockers appear;
 - the issue is no longer relevant and should be closed.
 
+Use issue comments for questions, decisions, blockers, and context that
+others may need to find later. If a comment changes the issue's scope or close
+condition, update the issue body as well.
+
 Complete assigned issues
 ------------------------
 
