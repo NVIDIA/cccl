@@ -76,6 +76,21 @@ Update the issue when:
 - important context, decisions, or blockers appear;
 - the issue is no longer relevant and should be closed.
 
+Complete assigned issues
+------------------------
+
+Use the issue's close condition to decide when the work is done. Often, this
+means opening a PR that completes the work described by the issue. Follow the
+:doc:`contributing guidelines </cccl/contributing>` for how to prepare and
+submit the PR.
+
+Link the PR to the issue so GitHub can close the issue when the PR merges. For
+example, include ``Fixes #123`` in the PR description.
+
+Linked PRs also keep the GitHub Project status current. A linked draft PR keeps
+the issue ``In Progress``. When the PR is ready for review, automation moves the
+issue to ``Review``.
+
 Plan release-critical work
 --------------------------
 
