@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6141774: Internal compiler error: Dependency graph after simplification validation failed!
-
 // size_t count() const; // constexpr since C++23
 
 #include <cuda/std/bitset>
