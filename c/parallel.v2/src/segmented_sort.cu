@@ -192,7 +192,7 @@ try
 
   build_ptr->cc           = cc_major * 10 + cc_minor;
   build_ptr->cubin        = cccl::detail::copy_cubin(jit.cubin, &build_ptr->cubin_size);
-  build_ptr->jit_compiler = jit.compiler;
+  build_ptr->jit_compiler = jit.compiler.release();
   build_ptr->sort_fn      = jit.fn_ptr;
   build_ptr->key_type     = d_keys_in.value_type;
   build_ptr->value_type   = d_values_in.value_type;

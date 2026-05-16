@@ -5,6 +5,7 @@
 #include <format>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <stdexcept>
 
 #include <hostjit/codegen/bitcode.hpp>
@@ -355,12 +356,12 @@ std::string CubCall::source() const
   }
 
   // Assemble the complete source
-  std::string src;
-  src += "#include <cuda_runtime.h>\n";
-  src += "#include <cuda_fp16.h>\n";
-  src += "#include <cuda/std/iterator>\n";
-  src += "#include <cuda/std/functional>\n";
-  src += "#include <cuda/functional>\n";
+  std::string src = R"(#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <cuda/std/iterator>
+#include <cuda/std/functional>
+#include <cuda/functional>
+)";
   if (tuple_inputs_)
   {
     src += "#include <cuda/std/tuple>\n";
@@ -369,11 +370,13 @@ std::string CubCall::source() const
 
   src += preamble;
 
-  src += "#ifdef _WIN32\n"
-         "#define EXPORT __declspec(dllexport)\n"
-         "#else\n"
-         "#define EXPORT __attribute__((visibility(\"default\")))\n"
-         "#endif\n\n";
+  src += R"(#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+
+)";
 
   // Function signature
   src += std::format("extern \"C\" EXPORT int {}(\n", fn_name_);
@@ -407,8 +410,9 @@ std::string CubCall::source() const
   src += ");\n\n";
 
   // Error return
-  src += "    return (int)err;\n"
-         "}\n";
+  src += R"(    return (int)err;
+}
+)";
 
   return src;
 }
@@ -527,12 +531,12 @@ CubCallResult CubCall::compile(
     f << cuda_source;
   }
 
-  // 4. Compile
-  auto* compiler = new JITCompiler(jit_config);
+  // 4. Compile. unique_ptr ensures the JITCompiler is freed if the next two
+  // checks throw; .release() transfers ownership to CubCallResult on success.
+  auto compiler = std::make_unique<JITCompiler>(jit_config);
   if (!compiler->compile(cuda_source))
   {
     std::string err = compiler->getLastError();
-    delete compiler;
     bitcode.cleanup();
     throw std::runtime_error("CubCall compilation failed: " + err);
   }
@@ -544,14 +548,12 @@ CubCallResult CubCall::compile(
   auto fn    = compiler->getFunction<fn_t>(fn_name_);
   if (!fn)
   {
-    std::string err = compiler->getLastError();
-    delete compiler;
-    throw std::runtime_error("CubCall function lookup failed: " + err);
+    throw std::runtime_error("CubCall function lookup failed: " + compiler->getLastError());
   }
 
   // 6. Copy cubin
   auto cubin = compiler->getCubin();
 
-  return CubCallResult{compiler, reinterpret_cast<void*>(fn), std::move(cubin)};
+  return CubCallResult{compiler.release(), reinterpret_cast<void*>(fn), std::move(cubin)};
 }
 } // namespace hostjit::codegen

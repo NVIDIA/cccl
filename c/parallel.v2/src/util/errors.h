@@ -13,8 +13,5 @@
 #include <cuda.h>
 #include <nvrtc.h>
 
-#include <nvrtc/nvjitlink_helper.h>
-
 void check(nvrtcResult result);
 void check(CUresult result);
-void check(nvJitLinkResult result);

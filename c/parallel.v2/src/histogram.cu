@@ -193,11 +193,12 @@ try
     BitcodeCollector bitcode(jit_config, reinterpret_cast<uintptr_t>(build_ptr));
     bitcode.add_iterator(d_samples, "samples");
     // bitcode files are written to jit_config.device_bitcode_files; cleanup temp files after compile
-    auto* compiler = new hostjit::JITCompiler(jit_config);
+    // unique_ptr owns the JITCompiler so any early return frees it; we
+    // .release() into build_ptr->jit_compiler (raw void*) on success.
+    auto compiler = std::make_unique<hostjit::JITCompiler>(jit_config);
     if (!compiler->compile(source))
     {
       fprintf(stderr, "\nJIT compilation failed: %s\n", compiler->getLastError().c_str());
-      delete compiler;
       bitcode.cleanup();
       return CUDA_ERROR_UNKNOWN;
     }
@@ -208,13 +209,12 @@ try
     {
       fprintf(
         stderr, "\nJIT symbol lookup failed for 'cccl_jit_histogram_even': %s\n", compiler->getLastError().c_str());
-      delete compiler;
       return CUDA_ERROR_UNKNOWN;
     }
 
     build_ptr->cc                  = cc_major * 10 + cc_minor;
     build_ptr->cubin               = cccl::detail::copy_cubin(compiler->getCubin(), &build_ptr->cubin_size);
-    build_ptr->jit_compiler        = compiler;
+    build_ptr->jit_compiler        = compiler.release();
     build_ptr->histogram_fn        = fn_ptr;
     build_ptr->counter_type        = d_output_histograms.value_type;
     build_ptr->level_type          = lower_level.type;

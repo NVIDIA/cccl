@@ -29,11 +29,3 @@ void check(CUresult result)
     throw std::runtime_error(std::string("CUDA error: ") + str);
   }
 }
-
-void check(nvJitLinkResult result)
-{
-  if (result != NVJITLINK_SUCCESS)
-  {
-    throw std::runtime_error(std::string("nvJitLink error: ") + std::to_string(result));
-  }
-}

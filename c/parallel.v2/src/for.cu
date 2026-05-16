@@ -42,17 +42,18 @@ static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
   std::string storage_preamble;
   const std::string data_type = resolve_type(d_data.value_type, "for_value_t", storage_preamble);
 
-  std::string src;
-  src += "#include <cuda_runtime.h>\n";
-  src += "#include <cuda_fp16.h>\n";
-  src += "#include <cub/agent/agent_for.cuh>\n";
-  src += "#include <climits>\n\n";
+  std::string src = R"(#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <cub/agent/agent_for.cuh>
+#include <climits>
 
-  src += "#ifdef _WIN32\n"
-         "#define EXPORT __declspec(dllexport)\n"
-         "#else\n"
-         "#define EXPORT __attribute__((visibility(\"default\")))\n"
-         "#endif\n\n";
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+
+)";
 
   src += storage_preamble;
 
@@ -98,20 +99,26 @@ static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
   }
   else
   {
-    src += "struct user_op_t {\n";
     src += std::format(
-      "  __device__ __forceinline__ void operator()({}* input) const {{ {}(input); }}\n", data_type, op_name);
-    src += "};\n\n";
+      R"(struct user_op_t {{
+  __device__ __forceinline__ void operator()({}* input) const {{ {}(input); }}
+}};
+
+)",
+      data_type,
+      op_name);
   }
 
   // Policy
-  src += "using OffsetT = unsigned long long;\n";
-  src += "using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;\n";
-  src += "struct device_for_policy {\n"
-         "  struct ActivePolicy {\n"
-         "    using for_policy_t = policy_dim_t;\n"
-         "  };\n"
-         "};\n\n";
+  src += R"(using OffsetT = unsigned long long;
+using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
+struct device_for_policy {
+  struct ActivePolicy {
+    using for_policy_t = policy_dim_t;
+  };
+};
+
+)";
 
   // Template kernel
   src += std::format(
@@ -140,10 +147,11 @@ void for_kernel(DataIt d_data, OffsetT num_items, OpT user_op)
 )");
 
   // Host wrapper
-  src += "extern \"C\" EXPORT int cccl_jit_for(\n"
-         "    void* d_in_0, unsigned long long num_items, void* op_0_state\n"
-         ") {\n";
-  src += "    in_0_it_t in_0 = static_cast<in_0_it_t>(d_in_0);\n";
+  src += R"(extern "C" EXPORT int cccl_jit_for(
+    void* d_in_0, unsigned long long num_items, void* op_0_state
+) {
+    in_0_it_t in_0 = static_cast<in_0_it_t>(d_in_0);
+)";
   if (stateful)
   {
     const size_t state_size = op.size > 0 ? op.size : 1;
@@ -153,13 +161,14 @@ void for_kernel(DataIt d_data, OffsetT num_items, OpT user_op)
   {
     src += "    user_op_t op_0{};\n";
   }
-  src += "    if (num_items == 0) return 0;\n";
-  src += "    constexpr unsigned long long items_per_block = 512ULL;\n";
-  src += "    unsigned long long block_sz = (num_items + items_per_block - 1) / items_per_block;\n";
-  src += "    if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;\n";
-  src += "    for_kernel<<<(unsigned int)block_sz, 256>>>(in_0, num_items, op_0);\n";
-  src += "    return (int)cudaPeekAtLastError();\n";
-  src += "}\n";
+  src += R"(    if (num_items == 0) return 0;
+    constexpr unsigned long long items_per_block = 512ULL;
+    unsigned long long block_sz = (num_items + items_per_block - 1) / items_per_block;
+    if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;
+    for_kernel<<<(unsigned int)block_sz, 256>>>(in_0, num_items, op_0);
+    return (int)cudaPeekAtLastError();
+}
+)";
 
   return src;
 }
@@ -259,12 +268,12 @@ try
     f << cuda_source;
   }
 
-  // Compile
-  auto* compiler = new JITCompiler(jit_config);
+  // Compile. unique_ptr owns the JITCompiler so any early throw frees it; we
+  // .release() into build_ptr->jit_compiler (raw void*) on the success path.
+  auto compiler = std::make_unique<JITCompiler>(jit_config);
   if (!compiler->compile(cuda_source))
   {
     std::string err = compiler->getLastError();
-    delete compiler;
     bitcode.cleanup();
     throw std::runtime_error("for compilation failed: " + err);
   }
@@ -275,9 +284,7 @@ try
   auto fn    = compiler->getFunction<fn_t>("cccl_jit_for");
   if (!fn)
   {
-    std::string err = compiler->getLastError();
-    delete compiler;
-    throw std::runtime_error("for function lookup failed: " + err);
+    throw std::runtime_error("for function lookup failed: " + compiler->getLastError());
   }
 
   auto cubin = compiler->getCubin();
@@ -292,7 +299,7 @@ try
     build_ptr->cubin      = cubin_copy;
     build_ptr->cubin_size = cubin.size();
   }
-  build_ptr->jit_compiler = compiler;
+  build_ptr->jit_compiler = compiler.release();
   build_ptr->for_fn       = reinterpret_cast<void*>(fn);
 
   return CUDA_SUCCESS;

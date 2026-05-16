@@ -45,32 +45,35 @@ static std::string make_binary_search_source(
   const std::string mode_str =
     (mode == CCCL_BINARY_SEARCH_LOWER_BOUND) ? "cub::detail::find::lower_bound" : "cub::detail::find::upper_bound";
 
-  std::string src;
-  src += "#include <cuda_runtime.h>\n";
-  src += "#include <cuda_fp16.h>\n";
-  src += "#include <cuda/__iterator/zip_iterator.h>\n";
-  src += "#include <cub/agent/agent_for.cuh>\n";
-  src += "#include <cub/detail/binary_search_helpers.cuh>\n";
-  src += "#include <climits>\n\n";
+  std::string src = R"(#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <cuda/__iterator/zip_iterator.h>
+#include <cub/agent/agent_for.cuh>
+#include <cub/detail/binary_search_helpers.cuh>
+#include <climits>
 
-  src += "#ifdef _WIN32\n"
-         "#define EXPORT __declspec(dllexport)\n"
-         "#else\n"
-         "#define EXPORT __attribute__((visibility(\"default\")))\n"
-         "#endif\n\n";
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+
+)";
 
   src += data_code.preamble;
   src += values_code.preamble;
   src += out_code.preamble;
   src += op_code.preamble;
 
-  src += "using OffsetT = unsigned long long;\n";
-  src += "using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;\n";
-  src += "struct device_for_policy {\n"
-         "  struct ActivePolicy {\n"
-         "    using for_policy_t = policy_dim_t;\n"
-         "  };\n"
-         "};\n\n";
+  src += R"(using OffsetT = unsigned long long;
+using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
+struct device_for_policy {
+  struct ActivePolicy {
+    using for_policy_t = policy_dim_t;
+  };
+};
+
+)";
 
   // Template kernel — types deduced when called with <<< >>>
   src += std::format(
@@ -102,22 +105,24 @@ void binary_search_kernel(DataIt d_data, OffsetT num_data, ValuesIt d_values, Of
     mode_str);
 
   // Host wrapper function
-  src += "extern \"C\" EXPORT int cccl_jit_binary_search(\n"
-         "    void* d_in_0, unsigned long long num_items,\n"
-         "    void* d_in_1, unsigned long long num_values,\n"
-         "    void* d_out_0, void* op_0_state\n"
-         ") {\n";
+  src += R"(extern "C" EXPORT int cccl_jit_binary_search(
+    void* d_in_0, unsigned long long num_items,
+    void* d_in_1, unsigned long long num_values,
+    void* d_out_0, void* op_0_state
+) {
+)";
   src += "    " + data_code.setup_code + "\n";
   src += "    " + values_code.setup_code + "\n";
   src += "    " + out_code.setup_code + "\n";
   src += "    " + op_code.setup_code + "\n";
-  src += "    if (num_values == 0) return 0;\n";
-  src += "    constexpr unsigned long long items_per_block = 512ULL;\n";
-  src += "    unsigned long long block_sz = (num_values + items_per_block - 1) / items_per_block;\n";
-  src += "    if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;\n";
-  src += "    binary_search_kernel<<<(unsigned int)block_sz, 256>>>(in_0, num_items, in_1, num_values, out_0, op_0);\n";
-  src += "    return (int)cudaPeekAtLastError();\n";
-  src += "}\n";
+  src += R"(    if (num_values == 0) return 0;
+    constexpr unsigned long long items_per_block = 512ULL;
+    unsigned long long block_sz = (num_values + items_per_block - 1) / items_per_block;
+    if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;
+    binary_search_kernel<<<(unsigned int)block_sz, 256>>>(in_0, num_items, in_1, num_values, out_0, op_0);
+    return (int)cudaPeekAtLastError();
+}
+)";
 
   return src;
 }
@@ -218,12 +223,12 @@ try
   // Generate source
   std::string cuda_source = make_binary_search_source(d_data, d_values, d_out, op, mode);
 
-  // Compile
-  auto* compiler = new JITCompiler(jit_config);
+  // Compile. unique_ptr owns the JITCompiler so any early throw frees it; we
+  // .release() into build_ptr->jit_compiler (raw void*) on the success path.
+  auto compiler = std::make_unique<JITCompiler>(jit_config);
   if (!compiler->compile(cuda_source))
   {
     std::string err = compiler->getLastError();
-    delete compiler;
     bitcode.cleanup();
     throw std::runtime_error("binary_search compilation failed: " + err);
   }
@@ -234,9 +239,7 @@ try
   auto fn    = compiler->getFunction<fn_t>("cccl_jit_binary_search");
   if (!fn)
   {
-    std::string err = compiler->getLastError();
-    delete compiler;
-    throw std::runtime_error("binary_search function lookup failed: " + err);
+    throw std::runtime_error("binary_search function lookup failed: " + compiler->getLastError());
   }
 
   auto cubin = compiler->getCubin();
@@ -251,7 +254,7 @@ try
     build_ptr->cubin      = cubin_copy;
     build_ptr->cubin_size = cubin.size();
   }
-  build_ptr->jit_compiler     = compiler;
+  build_ptr->jit_compiler     = compiler.release();
   build_ptr->binary_search_fn = reinterpret_cast<void*>(fn);
 
   return CUDA_SUCCESS;

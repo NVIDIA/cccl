@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -243,7 +244,7 @@ inline hostjit::CompilerConfig make_jit_config(
 }
 
 // Build a JITCompiler from the standard set of path parameters.
-inline hostjit::JITCompiler* make_jit_compiler(
+inline std::unique_ptr<hostjit::JITCompiler> make_jit_compiler(
   int cc_major,
   int cc_minor,
   const char* ctk_root,
@@ -251,16 +252,17 @@ inline hostjit::JITCompiler* make_jit_compiler(
   cccl_build_config* config,
   const char* entry_point_name = nullptr)
 {
-  return new hostjit::JITCompiler(
+  return std::make_unique<hostjit::JITCompiler>(
     make_jit_config(cc_major, cc_minor, ctk_root, cccl_include_path, config, entry_point_name));
 }
 
 // Compile a CUDA source string and return (compiler, fn_ptr, cubin).
-// On failure, deletes the compiler and returns {nullptr, nullptr, {}}.
+// The compiler is owned by the returned JITResult; transfer ownership to a
+// raw `void*` build-result slot with `result.compiler.release()`.
 struct JITResult
 {
-  hostjit::JITCompiler* compiler = nullptr;
-  void* fn_ptr                   = nullptr;
+  std::unique_ptr<hostjit::JITCompiler> compiler;
+  void* fn_ptr = nullptr;
   std::vector<char> cubin;
 };
 
@@ -273,24 +275,22 @@ inline JITResult compile_jit_source(
   const char* cccl_include_path,
   cccl_build_config* config)
 {
-  auto* compiler = make_jit_compiler(cc_major, cc_minor, ctk_root, cccl_include_path, config, fn_name);
+  auto compiler = make_jit_compiler(cc_major, cc_minor, ctk_root, cccl_include_path, config, fn_name);
   if (!compiler->compile(source))
   {
     fprintf(stderr, "\nJIT compilation failed: %s\n", compiler->getLastError().c_str());
-    delete compiler;
     return {};
   }
   void* fn_ptr = compiler->getFunction<void*>(fn_name);
   if (!fn_ptr)
   {
     fprintf(stderr, "\nJIT symbol lookup failed for '%s': %s\n", fn_name, compiler->getLastError().c_str());
-    delete compiler;
     return {};
   }
   JITResult result;
-  result.compiler = compiler;
   result.fn_ptr   = fn_ptr;
   result.cubin    = compiler->getCubin();
+  result.compiler = std::move(compiler);
   return result;
 }
 
