@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/atomic>
@@ -68,8 +69,16 @@ public:
   _CCCL_HIDE_FROM_ABI __shared_block_ptr() = default;
 
   //! @brief Constructs a new control block, forwarding arguments to the payload.
+  template <class... _Args>
+  _CCCL_HOST_API explicit __shared_block_ptr(::cuda::std::in_place_type_t<_Payload>, _Args&&... __args)
+      : __block_(new __block_t(::cuda::std::forward<_Args>(__args)...))
+  {}
+
+  //! @brief Constructs a new control block, forwarding arguments to the payload.
   _CCCL_TEMPLATE(class _Arg, class... _Rest)
-  _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __shared_block_ptr>) )
+  _CCCL_REQUIRES(
+    (!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __shared_block_ptr>)
+    && (!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, ::cuda::std::in_place_type_t<_Payload>>) )
   _CCCL_HOST_API explicit __shared_block_ptr(_Arg&& __arg, _Rest&&... __rest)
       : __block_(new __block_t(::cuda::std::forward<_Arg>(__arg), ::cuda::std::forward<_Rest>(__rest)...))
   {}
