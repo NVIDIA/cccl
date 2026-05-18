@@ -15,9 +15,9 @@
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/concepts>
 
 #if _CCCL_HOSTED()
@@ -61,12 +61,6 @@ template <typename T>
 concept find_bound_sorted_values_policy_selector = policy_selector<T, find_bound_sorted_values_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-[[nodiscard]] _CCCL_API inline constexpr int
-nominal_4b_items_to_items(int nominal_4b_items_per_thread, int combined_type_size)
-{
-  return ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / combined_type_size, 1, nominal_4b_items_per_thread);
-}
-
 struct policy_selector
 {
   int range_type_size;
@@ -76,7 +70,7 @@ struct policy_selector
     -> find_bound_sorted_values_policy
   {
     const int combined_size = range_type_size + values_type_size;
-    const int ipt           = nominal_4b_items_to_items(15, combined_size);
+    const int ipt           = detail::nominal_4B_items_to_items(15, combined_size);
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {

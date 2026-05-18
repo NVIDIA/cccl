@@ -693,7 +693,7 @@ struct DeviceFind
   //!   with ``comp``.
   //! - @devicestorage
   //!
-  //! .. versionadded:: 3.4.0
+  //! .. versionadded:: 3.5.0
   //!
   //! @endrst
   //!
@@ -793,7 +793,7 @@ struct DeviceFind
   //! precondition that ``[d_values, d_values + values_num_items)`` is also
   //! sorted consistently with ``comp``.
   //!
-  //! .. versionadded:: 3.4.0
+  //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
@@ -933,7 +933,7 @@ struct DeviceFind
   //!   with ``comp``.
   //! - @devicestorage
   //!
-  //! .. versionadded:: 3.4.0
+  //! .. versionadded:: 3.5.0
   //!
   //! @endrst
   //!
@@ -1033,7 +1033,7 @@ struct DeviceFind
   //! precondition that ``[d_values, d_values + values_num_items)`` is also
   //! sorted consistently with ``comp``.
   //!
-  //! .. versionadded:: 3.4.0
+  //! .. versionadded:: 3.5.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
