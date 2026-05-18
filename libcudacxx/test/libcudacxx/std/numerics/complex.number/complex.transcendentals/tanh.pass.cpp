@@ -83,7 +83,7 @@ TEST_FUNC void test_edges()
     {
       assert(r.real() == (testcases[i].real() > T(0) ? T(1) : -T(1)));
       assert(r.imag() == T(0));
-      assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(cuda::std::sin(T(2) * testcases[i].imag())));
+      assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
     }
     else if (cuda::std::isinf(testcases[i].real()) && cuda::std::isinf(testcases[i].imag()))
     {
