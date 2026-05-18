@@ -139,64 +139,44 @@ public:
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, __t...)
   {}
 
-  template <class... _Args>
-  struct __expands_to_this_tuple : false_type
-  {};
-
-  template <class _Arg>
-  struct __expands_to_this_tuple<_Arg> : is_same<remove_cvref_t<_Arg>, tuple>
-  {};
-
-  template <class... _Up>
-  using __variadic_constraints =
-    _If<!__expands_to_this_tuple<_Up...>::value && sizeof...(_Up) == sizeof...(_Tp),
-        typename _Constraints::template __variadic_constraints<_Up...>,
-        __invalid_tuple_constraints>;
-
-  template <class... _Up,
-            class _Constraints                                       = __variadic_constraints<_Up...>,
+  template <class... _UTypes,
+            class _Constraints = decltype(_Constraints::template __check_variadic_constructible<_UTypes...>()),
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API constexpr tuple(_Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
-      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
+  _CCCL_API constexpr tuple(_UTypes&&... __u) noexcept(_Constraints::__nothrow_constructible)
+      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
-  template <class... _Up,
-            class _Constraints                                       = __variadic_constraints<_Up...>,
+  template <class... _UTypes,
+            class _Constraints = decltype(_Constraints::template __check_variadic_constructible<_UTypes...>()),
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_API constexpr explicit tuple(_Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
-      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
-  {}
-
-  template <class... _Up>
-  using __variadic_constraints_less_rank =
-    _If<!__expands_to_this_tuple<_Up...>::value,
-        typename _Constraints::template __variadic_constraints_less_rank<_Up...>,
-        __invalid_tuple_constraints>;
-
-  template <class... _Up,
-            class _Constraints                                       = __variadic_constraints_less_rank<_Up...>,
-            enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int>        = 0,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API constexpr explicit tuple(_Up&&... __u) noexcept(is_nothrow_constructible_v<_BaseT, _Up...>)
-      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
+  _CCCL_API constexpr explicit tuple(_UTypes&&... __u) noexcept(_Constraints::__nothrow_constructible)
+      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class _Alloc,
-            class... _Up,
-            class _Constraints                                       = __variadic_constraints<_Up...>,
+            class... _UTypes,
+            class _Constraints = decltype(_Constraints::template __check_variadic_constructible<_UTypes...>()),
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _Up&&... __u) noexcept(
+  _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
     _Constraints::__nothrow_constructible)
-      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
+      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class _Alloc,
-            class... _Up,
-            class _Constraints                                       = __variadic_constraints<_Up...>,
+            class... _UTypes,
+            class _Constraints = decltype(_Constraints::template __check_variadic_constructible<_UTypes...>()),
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, _Up&&... __u) noexcept(
+  _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
     _Constraints::__nothrow_constructible)
-      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
+      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
+  {}
+
+  template <class... _UTypes,
+            class _Constraints = decltype(_Constraints::template __check_variadic_constructible_less_rank<_UTypes...>()),
+            enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int>  = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  _CCCL_API constexpr explicit tuple(_UTypes&&... __u) noexcept(_Constraints::__nothrow_constructible)
+      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class _Tuple>
@@ -228,6 +208,14 @@ private:
   {}
 
 public:
+  template <class... _Args>
+  struct __expands_to_this_tuple : false_type
+  {};
+
+  template <class _Arg>
+  struct __expands_to_this_tuple<_Arg> : is_same<remove_cvref_t<_Arg>, tuple>
+  {};
+
   template <class _Tuple,
             class _Constraints                                        = __tuple_like_constraints<_Tuple>,
             enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,

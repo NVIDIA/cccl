@@ -35,6 +35,7 @@
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
@@ -216,37 +217,91 @@ struct __tuple_constraints
     }
   }
 
-  template <class... _Args>
-  struct __variadic_constraints
+  template <class... _UTypes>
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __disambiguating_constraints() noexcept
   {
-    static constexpr bool __constructible = __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Types...>>;
+    if constexpr (sizeof...(_Types) == 1)
+    { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
+      using _U0 = __type_index_c<0, _UTypes...>;
+      return !is_same_v<remove_cvref_t<_U0>, tuple<_Types...>>;
+    }
+    else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
+    { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
+      //    !is_same_v<remove_cvref_t<U0>, allocator_arg_t> || is_same_v<remove_cvref_t<T0>, allocator_arg_t>>
+      using _U0 = __type_index_c<0, _UTypes...>;
+      using _T0 = __type_index_c<0, _Types...>;
+      return !is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>;
+    }
+    else
+    { // 12.3: otherwise, true_type
+      return true;
+    }
+  }
 
-    static constexpr bool __implicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Types...>>
-      && __tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Types...>>;
-
-    static constexpr bool __explicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Types...>>
-      && !__tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Types...>>;
-
-    static constexpr bool __nothrow_constructible = (is_nothrow_constructible_v<_Types, _Args> && ...);
-  };
-
-  template <class... _Args>
-  struct __variadic_constraints_less_rank
+  template <class... _UTypes>
+  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_constructible() noexcept
   {
-    static constexpr bool __implicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
-      && __tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
-      && __tuple_types_all_default_constructible_v<
-        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_Args)>>;
+    if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
+    { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr (sizeof...(_Types) == 0)
+    { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr (!__disambiguating_constraints<_UTypes...>())
+    { // [tuple.cnstr]-13.3: disambiguating-constraint is true
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
+    { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+      constexpr bool __is_implicit = (is_convertible_v<_UTypes, _Types> && ...);
+      constexpr bool __is_nothrow  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
+      return _TupleConstructorTraits<__is_implicit, !__is_implicit, __is_nothrow>{};
+    }
+    else
+    {
+      return _InvalidTupleConstructor{};
+    }
+  }
 
-    static constexpr bool __explicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
-      && !__tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
-      && __tuple_types_all_default_constructible_v<
-        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_Args)>>;
-  };
+  // Get the constraints for the constructor with less rank
+  template <class... _UTypes>
+  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __get_sub_constraints(__tuple_types<_UTypes...>) noexcept
+    -> __tuple_constraints<_UTypes...>;
+
+  template <class... _UTypes>
+  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_constructible_less_rank() noexcept
+  {
+    if constexpr (sizeof...(_UTypes) == 0)
+    {
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr (sizeof...(_UTypes) < sizeof...(_Types))
+    {
+      using __constraints_with_arg =
+        decltype(__get_sub_constraints(__make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>{}));
+      using __constraints_defaulted = decltype(__get_sub_constraints(
+        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>{}));
+
+      // The constructor is always explicit.
+      constexpr bool __is_arg_constructible =
+        decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>())::__implicit_constructible
+        || decltype(__constraints_with_arg::template __check_variadic_constructible<
+                    _UTypes...>())::__explicit_constructible;
+      constexpr bool __rest_is_default_constructible =
+        decltype(__constraints_defaulted::__check_default_constructible())::__implicit_constructible
+        || decltype(__constraints_defaulted::__check_default_constructible())::__explicit_constructible;
+      constexpr bool __is_nothrow =
+        decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>())::__nothrow_constructible
+        && decltype(__constraints_defaulted::__check_default_constructible())::__nothrow_constructible;
+      return _TupleConstructorTraits<false, __is_arg_constructible && __rest_is_default_constructible, __is_nothrow>{};
+    }
+    else
+    {
+      return _InvalidTupleConstructor{};
+    }
+  }
 
   template <class _Tuple>
   struct __valid_tuple_like_constraints
