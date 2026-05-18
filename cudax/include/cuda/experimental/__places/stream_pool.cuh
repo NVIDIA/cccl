@@ -70,7 +70,7 @@ inline int get_device_from_stream(cudaStream_t stream)
   {
     return cuda_try<cudaGetDevice>();
   }
-  
+
   // If the stream is currently capturing, ``cudaStreamGetDevice`` /
   // ``cuStreamGetCtx`` are not allowed and would invalidate the capture.
   // Fall back to the current device: STF's own stream pool is allocated
@@ -78,7 +78,7 @@ inline int get_device_from_stream(cudaStream_t stream)
   // while that context is captured is assumed to live on that same device.
   if (is_stream_capturing(stream))
   {
-      return cuda_try<cudaGetDevice>();
+    return cuda_try<cudaGetDevice>();
   }
 
 #if _CCCL_CTK_AT_LEAST(12, 8)
@@ -118,7 +118,7 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
   {
     return k_no_stream_id;
   }
-  
+
   // ``cuStreamGetId`` is not capture-safe: during
   // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` it rejects the query
   // *and* invalidates the capture itself. Gate on ``cudaStreamIsCapturing``

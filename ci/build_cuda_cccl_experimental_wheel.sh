@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Target script for `docker run` command in build_cuda_cccl_experimental_python_experimental.sh
