@@ -21,10 +21,9 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ constexpr void
-test(It i,
-     typename cuda::std::iterator_traits<It>::difference_type n,
-     typename cuda::std::iterator_traits<It>::value_type x)
+TEST_FUNC constexpr void test(It i,
+                              typename cuda::std::iterator_traits<It>::difference_type n,
+                              typename cuda::std::iterator_traits<It>::value_type x)
 {
   using value_type = typename cuda::std::iterator_traits<It>::value_type;
   const cuda::std::reverse_iterator<It> r(i);
@@ -32,7 +31,7 @@ test(It i,
   assert(rr == x);
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   const char* s = "1234567890";
   test(random_access_iterator<const char*>(s + 5), 4, '1');
@@ -45,6 +44,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

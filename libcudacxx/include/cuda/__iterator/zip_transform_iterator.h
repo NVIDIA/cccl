@@ -26,6 +26,7 @@
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/__iterator/zip_common.h>
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
@@ -204,12 +205,14 @@ public:
   {}
 
   //! @brief Constructs a @c zip_transform_iterator from a tuple of iterators
+  //! @param __fun The functor used to transform dereferenced elements.
   //! @param __iters A tuple or pair of iterators
   _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __iters)
       : __store_(::cuda::std::move(__iters), ::cuda::std::move(__fun))
   {}
 
   //! @brief Constructs a @c zip_transform_iterator from variadic set of iterators
+  //! @param __fun The functor used to transform dereferenced elements.
   //! @param __iters The input iterators
   _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, _Iterators... __iters)
       : __store_(::cuda::std::tuple<_Iterators...>{::cuda::std::move(__iters)...}, ::cuda::std::move(__fun))
@@ -548,15 +551,16 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
   -> zip_transform_iterator<_Fn, _Iterators...>;
 
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, _Iterators...) -> zip_transform_iterator<_Fn, _Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_transform_iterator(_Fn, _Iterators...)
+  -> zip_transform_iterator<_Fn, _Iterators...>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c zip_transform_iterator from a tuple of iterators.
-//! @param __fun The functor used to transform the input ranges
+//! @param __fun The functor used to transform dereferenced elements.
 //! @param __t The tuple of iterators to wrap
 //! @relates zip_transform_iterator
 template <class _Fn, class... _Iterators>
@@ -569,7 +573,7 @@ make_zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __t) no
 }
 
 //! @brief Creates a @c zip_transform_iterator from a variadic number of iterators.
-//! @param __fun The functor used to transform the input ranges
+//! @param __fun The functor used to transform dereferenced elements.
 //! @param __iters The iterators to wrap
 //! @relates zip_transform_iterator
 template <class _Fn, class... _Iterators>

@@ -17,6 +17,8 @@
  */
 #include <cuda/experimental/stf.cuh>
 
+#include <iostream>
+
 #include <cusolverDn.h>
 
 #include <cublas_v2.h>
@@ -122,7 +124,7 @@ public:
     assert(grid_p * grid_q == ndevs);
 
     // std::cout << "FOUND " << ndevs << " DEVICES "
-    //          << "p=" << grid_p << " q=" << grid_q << std::endl;
+    //          << "p=" << grid_p << " q=" << grid_q << '\n';
   }
 
   int get_preferred_devid(int row, int col)
@@ -865,7 +867,7 @@ void PDTRSM(cublasSideMode_t side,
             matrix<double>& B)
 {
   nvtx_range r("PDTRSM");
-  //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
+  //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << '\n';
 
   if (side == CUBLAS_SIDE_LEFT)
   {
@@ -930,7 +932,7 @@ void PDTRSM(cublasSideMode_t side,
     // TODO
     abort();
   }
-  //    std::cout << "[PDTRSM] END" << std::endl;
+  //    std::cout << "[PDTRSM] END" << '\n';
 }
 
 void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
@@ -941,7 +943,7 @@ void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
   ctx.get_dot()->set_current_color("green");
 #endif
 
-  //    std::cout << "[PDPOTRS] START" << std::endl;
+  //    std::cout << "[PDPOTRS] START" << '\n';
   // Call the parallel functions.
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_T : CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
@@ -952,7 +954,7 @@ void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
 
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_N : CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
-  //    std::cout << "[PDPOTRS] END" << std::endl;
+  //    std::cout << "[PDPOTRS] END" << '\n';
 }
 
 /***************************************************************************/ /**
@@ -1615,18 +1617,18 @@ void run(int N, int NB)
   if (check_result_potrs)
   {
     double residual = sqrt(res_nrm2) / sqrt(Bref_nrm2);
-    // std::cout << "[POTRS] ||AX - B|| : " << sqrt(res_nrm2) << std::endl;
-    // std::cout << "[POTRS] ||B|| : " << sqrt(Bref_nrm2) << std::endl;
-    // std::cout << "[POTRS] RESIDUAL (||AX - B||/||B||) : " << residual << std::endl;
+    // std::cout << "[POTRS] ||AX - B|| : " << sqrt(res_nrm2) << '\n';
+    // std::cout << "[POTRS] ||B|| : " << sqrt(Bref_nrm2) << '\n';
+    // std::cout << "[POTRS] RESIDUAL (||AX - B||/||B||) : " << residual << '\n';
     EXPECT(residual < 0.01);
   }
 
   if (check_result)
   {
     double residual_potri = sqrt(res_nrm2_potri) / sqrt(b_nrm2_potri);
-    // std::cout << "[POTRI] RESIDUAL ||A * ((A^-1)B) - B|| : " << sqrt(res_nrm2_potri) << std::endl;
-    // std::cout << "[POTRI] RESIDUAL ||B|| : " << sqrt(b_nrm2_potri) << std::endl;
-    // std::cout << "[POTRI] RESIDUAL (||A * ((A^-1)B) - B||/||B||) : " << residual_potri << std::endl;
+    // std::cout << "[POTRI] RESIDUAL ||A * ((A^-1)B) - B|| : " << sqrt(res_nrm2_potri) << '\n';
+    // std::cout << "[POTRI] RESIDUAL ||B|| : " << sqrt(b_nrm2_potri) << '\n';
+    // std::cout << "[POTRI] RESIDUAL (||A * ((A^-1)B) - B||/||B||) : " << residual_potri << '\n';
     EXPECT(residual_potri < 0.0001);
   }
 
@@ -1638,10 +1640,10 @@ void run(int N, int NB)
 
 #if 0
 
-    std::cout << "Print A^-1 after PDLAUUM : " << std::endl;
+    std::cout << "Print A^-1 after PDLAUUM : " << '\n';
     A.print();
 
-    std::cout << "RES after AX - B POTRI : " << std::endl;
+    std::cout << "RES after AX - B POTRI : " << '\n';
     Bref_potri.print();
 
     // This should be almost identity
@@ -1652,8 +1654,7 @@ void run(int N, int NB)
   cuda_safe_call(cudaEventElapsedTime(&milliseconds, startEvent, stopEvent));
 
   double gflops = flops_dpotri((double) N) / (1000000000.0);
-  std::cout
-    << "[PDPOTRI] ELAPSED: " << milliseconds << " ms, GFLOPS: " << gflops / (milliseconds / 1000.0) << std::endl;
+  std::cout << "[PDPOTRI] ELAPSED: " << milliseconds << " ms, GFLOPS: " << gflops / (milliseconds / 1000.0) << '\n';
 }
 
 int main(int argc, char** argv)

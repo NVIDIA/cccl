@@ -15,9 +15,7 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -36,7 +34,7 @@ enum class delay_constructor_kind
   reduce_by_key
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kind)
 {
   switch (kind)
@@ -63,7 +61,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kin
       return os << "<unknown delay_constructor_kind: " << static_cast<int>(kind) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 struct delay_constructor_policy
 {
@@ -71,23 +69,25 @@ struct delay_constructor_policy
   unsigned int delay;
   unsigned int l2_write_latency;
 
-  _CCCL_API constexpr friend bool operator==(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
   {
     return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const delay_constructor_policy& p)
   {
     return os << "delay_constructor_policy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 template <typename DelayConstructor>
@@ -193,7 +193,7 @@ struct delay_constructor_for<delay_constructor_kind::reduce_by_key, Delay, L2Wri
 template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
 using delay_constructor_t = typename delay_constructor_for<Kind, Delay, L2WriteLatency>::type;
 
-_CCCL_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_trivially_copyable)
+_CCCL_HOST_DEVICE_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_trivially_copyable)
 {
   if (is_primitive_or_trivially_copyable)
   {
@@ -202,7 +202,7 @@ _CCCL_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_t
   return delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
 }
 
-_CCCL_API constexpr auto default_reduce_by_key_delay_constructor_policy(
+_CCCL_HOST_DEVICE_API constexpr auto default_reduce_by_key_delay_constructor_policy(
   int key_size,
   int value_size,
   bool key_is_primitive_or_trivially_copyable,

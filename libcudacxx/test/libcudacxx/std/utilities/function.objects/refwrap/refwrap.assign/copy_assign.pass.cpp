@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // <functional>
 
 // reference_wrapper
@@ -25,18 +29,18 @@ class functor1
 struct convertible_to_int_ref
 {
   int val = 0;
-  __host__ __device__ operator int&()
+  TEST_FUNC operator int&()
   {
     return val;
   }
-  __host__ __device__ operator int const&() const
+  TEST_FUNC operator int const&() const
   {
     return val;
   }
 };
 
 template <class T>
-__host__ __device__ void test(T& t)
+TEST_FUNC void test(T& t)
 {
   cuda::std::reference_wrapper<T> r(t);
   T t2 = t;
@@ -45,10 +49,10 @@ __host__ __device__ void test(T& t)
   assert(&r2.get() == &t);
 }
 
-__host__ __device__ void f() {}
-__host__ __device__ void g() {}
+TEST_FUNC void f() {}
+TEST_FUNC void g() {}
 
-__host__ __device__ void test_function()
+TEST_FUNC void test_function()
 {
   cuda::std::reference_wrapper<void()> r(f);
   cuda::std::reference_wrapper<void()> r2(g);
@@ -75,9 +79,9 @@ int main(int, char**)
 
   {
     using Ref = cuda::std::reference_wrapper<int>;
-    static_assert((cuda::std::is_assignable<Ref&, int&>::value), "");
-    static_assert((!cuda::std::is_assignable<Ref&, int>::value), "");
-    static_assert((!cuda::std::is_assignable<Ref&, int&&>::value), "");
+    static_assert((cuda::std::is_assignable<Ref&, int&>::value));
+    static_assert((!cuda::std::is_assignable<Ref&, int>::value));
+    static_assert((!cuda::std::is_assignable<Ref&, int&&>::value));
   }
 
   return 0;

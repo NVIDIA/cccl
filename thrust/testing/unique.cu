@@ -293,7 +293,7 @@ VariableUnitTest<TestUniqueCount, IntegralTypes> TestUniqueCountInstance;
 template <typename T>
 struct TestUniqueMemoryAccess
 {
-  void operator()(void)
+  void operator()()
   {
     thrust::device_vector<cuda::std::array<T, 100>> v(10);
     thrust::unique(v.begin(), v.end());

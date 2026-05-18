@@ -56,13 +56,13 @@ struct SpecialMemberTest
 };
 
 template <class... Args>
-static __host__ __device__ void sink(Args&&...)
+static TEST_FUNC void sink(Args&&...)
 {}
 
 template <class... TestTypes>
 struct DoTestsMetafunction
 {
-  __host__ __device__ DoTestsMetafunction()
+  TEST_FUNC DoTestsMetafunction()
   {
     sink(SpecialMemberTest<TestTypes>{}...);
   }

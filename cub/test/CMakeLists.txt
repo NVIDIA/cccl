@@ -197,11 +197,23 @@ function(
       endif()
     endif()
   else() # Not catch2:
-    cccl_add_executable(
-      ${test_target}
-      SOURCES "${test_src}"
-      NO_METATARGETS # Added manually for non-fail tests
-    )
+    _cub_is_fail_test(is_fail_test "${test_src}")
+
+    if (is_fail_test)
+      cccl_add_executable(
+        ${test_target}
+        SOURCES "${test_src}"
+        NO_CLANG_TIDY
+        NO_METATARGETS
+      )
+    else()
+      cccl_add_executable(
+        ${test_target}
+        SOURCES "${test_src}"
+        METATARGET_PATH ${metatarget_path}
+      )
+    endif()
+
     target_link_libraries(
       ${test_target}
       PRIVATE #
@@ -215,7 +227,23 @@ function(
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
     endif()
 
-    _cub_is_fail_test(is_fail_test "${test_src}")
+    if (
+      "${test_src}" MATCHES "test_future_arch\\.cu$"
+      AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+      AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "13.0.0"
+    )
+      # In future arch test, we replace __CUDA_ARCH__ and __CUDA_ARCH_LIST__ with our own values. However, nvcc
+      # preincludes <cuda_runtime.h> header, already working with __CUDA_ARCH__. So, we define the <cuda_runtime.h>'s
+      # include guard macro so we can modify the values before including the header inside the source file.
+      target_compile_definitions(${test_target} PRIVATE __CUDA_RUNTIME_H__)
+
+      # Force only 1 architecture to be compiled. It must be the newest supported architecture.
+      set_target_properties(
+        ${test_target}
+        PROPERTIES CUDA_ARCHITECTURES "121-virtual"
+      )
+    endif()
+
     if (is_fail_test)
       cccl_add_xfail_compile_target_test(
         ${test_target}
@@ -224,8 +252,6 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      cccl_ensure_metatargets(${test_target} METATARGET_PATH ${metatarget_path})
-
       add_test(
         NAME ${test_target}
         # gersemi: off
@@ -398,5 +424,4 @@ foreach (test_src IN LISTS test_srcs)
 endforeach() # Source file
 
 add_subdirectory(cmake)
-add_subdirectory(ptx-json)
 add_subdirectory(cubin-check)

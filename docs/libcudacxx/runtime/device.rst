@@ -1,7 +1,7 @@
 .. _cccl-runtime-device:
 
 Devices
-=======
+========
 
 :cpp:class:`cuda::device_ref`
 -------------------------------
@@ -40,7 +40,7 @@ Example:
 
    void print_devices() {
      for (auto& dev : cuda::devices) {
-       std::cout << "Device " << dev.get() << ": " << dev.name() << std::endl;
+       std::cout << "Device " << dev.get() << ": " << dev.name() << '\n';
      }
    }
 

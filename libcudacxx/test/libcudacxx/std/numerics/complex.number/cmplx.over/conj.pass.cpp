@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cuda/std/complex>
 
 // template<class T>      complex<T>           conj(const complex<T>&);
@@ -25,30 +28,30 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
-__host__ __device__ void test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
+TEST_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::conj(x)), cuda::std::complex<double>>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::conj(x)), cuda::std::complex<double>>::value));
   assert(cuda::std::conj(x) == conj(cuda::std::complex<double>(x, 0)));
 }
 
 template <class T>
-__host__ __device__ void test(T x, typename cuda::std::enable_if<cuda::std::is_floating_point<T>::value>::type* = 0)
+TEST_FUNC void test(T x, typename cuda::std::enable_if<cuda::std::is_floating_point<T>::value>::type* = 0)
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::conj(x)), cuda::std::complex<T>>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::conj(x)), cuda::std::complex<T>>::value));
   assert(cuda::std::conj(x) == conj(cuda::std::complex<T>(x, 0)));
 }
 
 template <class T>
-__host__ __device__ void test(
+TEST_FUNC void test(
   T x,
   typename cuda::std::enable_if<!cuda::std::is_integral<T>::value && !cuda::std::is_floating_point<T>::value>::type* = 0)
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::conj(x)), cuda::std::complex<T>>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::conj(x)), cuda::std::complex<T>>::value));
   assert(cuda::std::conj(x) == conj(cuda::std::complex<T>(x, 0)));
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<T>(0);
   test<T>(1);

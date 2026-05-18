@@ -23,64 +23,64 @@ using cuda::std::copy_constructible;
 // too.
 namespace MoveConstructibleTests
 {
-static_assert(copy_constructible<int>, "");
-static_assert(copy_constructible<int*>, "");
-static_assert(copy_constructible<int&>, "");
-static_assert(copy_constructible<const int>, "");
-static_assert(copy_constructible<const int&>, "");
-static_assert(copy_constructible<volatile int>, "");
-static_assert(copy_constructible<volatile int&>, "");
-static_assert(copy_constructible<int (*)()>, "");
-static_assert(copy_constructible<int (&)()>, "");
-static_assert(copy_constructible<HasDefaultOps>, "");
-static_assert(copy_constructible<const CustomMoveCtor&>, "");
-static_assert(copy_constructible<volatile CustomMoveCtor&>, "");
-static_assert(copy_constructible<const CustomMoveAssign&>, "");
-static_assert(copy_constructible<volatile CustomMoveAssign&>, "");
-static_assert(copy_constructible<int HasDefaultOps::*>, "");
-static_assert(copy_constructible<void (HasDefaultOps::*)(int)>, "");
-static_assert(copy_constructible<MemberLvalueReference>, "");
+static_assert(copy_constructible<int>);
+static_assert(copy_constructible<int*>);
+static_assert(copy_constructible<int&>);
+static_assert(copy_constructible<const int>);
+static_assert(copy_constructible<const int&>);
+static_assert(copy_constructible<volatile int>);
+static_assert(copy_constructible<volatile int&>);
+static_assert(copy_constructible<int (*)()>);
+static_assert(copy_constructible<int (&)()>);
+static_assert(copy_constructible<HasDefaultOps>);
+static_assert(copy_constructible<const CustomMoveCtor&>);
+static_assert(copy_constructible<volatile CustomMoveCtor&>);
+static_assert(copy_constructible<const CustomMoveAssign&>);
+static_assert(copy_constructible<volatile CustomMoveAssign&>);
+static_assert(copy_constructible<int HasDefaultOps::*>);
+static_assert(copy_constructible<void (HasDefaultOps::*)(int)>);
+static_assert(copy_constructible<MemberLvalueReference>);
 
-static_assert(!copy_constructible<void>, "");
-static_assert(!copy_constructible<CustomMoveAssign>, "");
-static_assert(!copy_constructible<const CustomMoveCtor>, "");
-static_assert(!copy_constructible<volatile CustomMoveCtor>, "");
-static_assert(!copy_constructible<const CustomMoveAssign>, "");
-static_assert(!copy_constructible<volatile CustomMoveAssign>, "");
-static_assert(!copy_constructible<int[10]>, "");
-static_assert(!copy_constructible<DeletedMoveCtor>, "");
-static_assert(!copy_constructible<ImplicitlyDeletedMoveCtor>, "");
-static_assert(!copy_constructible<DeletedMoveAssign>, "");
-static_assert(!copy_constructible<ImplicitlyDeletedMoveAssign>, "");
+static_assert(!copy_constructible<void>);
+static_assert(!copy_constructible<CustomMoveAssign>);
+static_assert(!copy_constructible<const CustomMoveCtor>);
+static_assert(!copy_constructible<volatile CustomMoveCtor>);
+static_assert(!copy_constructible<const CustomMoveAssign>);
+static_assert(!copy_constructible<volatile CustomMoveAssign>);
+static_assert(!copy_constructible<int[10]>);
+static_assert(!copy_constructible<DeletedMoveCtor>);
+static_assert(!copy_constructible<ImplicitlyDeletedMoveCtor>);
+static_assert(!copy_constructible<DeletedMoveAssign>);
+static_assert(!copy_constructible<ImplicitlyDeletedMoveAssign>);
 
-static_assert(copy_constructible<DeletedMoveCtor&>, "");
-static_assert(copy_constructible<const DeletedMoveCtor&>, "");
-static_assert(copy_constructible<ImplicitlyDeletedMoveCtor&>, "");
-static_assert(copy_constructible<const ImplicitlyDeletedMoveCtor&>, "");
-static_assert(copy_constructible<DeletedMoveAssign&>, "");
-static_assert(copy_constructible<const DeletedMoveAssign&>, "");
-static_assert(copy_constructible<ImplicitlyDeletedMoveAssign&>, "");
-static_assert(copy_constructible<const ImplicitlyDeletedMoveAssign&>, "");
+static_assert(copy_constructible<DeletedMoveCtor&>);
+static_assert(copy_constructible<const DeletedMoveCtor&>);
+static_assert(copy_constructible<ImplicitlyDeletedMoveCtor&>);
+static_assert(copy_constructible<const ImplicitlyDeletedMoveCtor&>);
+static_assert(copy_constructible<DeletedMoveAssign&>);
+static_assert(copy_constructible<const DeletedMoveAssign&>);
+static_assert(copy_constructible<ImplicitlyDeletedMoveAssign&>);
+static_assert(copy_constructible<const ImplicitlyDeletedMoveAssign&>);
 
 // different to moveconstructible.pass.cpp
-static_assert(!copy_constructible<int&&>, "");
-static_assert(!copy_constructible<const int&&>, "");
-static_assert(!copy_constructible<volatile int&&>, "");
-static_assert(!copy_constructible<CustomMoveCtor>, "");
-static_assert(!copy_constructible<MoveOnly>, "");
-static_assert(!copy_constructible<const CustomMoveCtor&&>, "");
-static_assert(!copy_constructible<volatile CustomMoveCtor&&>, "");
-static_assert(!copy_constructible<const CustomMoveAssign&&>, "");
-static_assert(!copy_constructible<volatile CustomMoveAssign&&>, "");
-static_assert(!copy_constructible<DeletedMoveCtor&&>, "");
-static_assert(!copy_constructible<const DeletedMoveCtor&&>, "");
-static_assert(!copy_constructible<ImplicitlyDeletedMoveCtor&&>, "");
-static_assert(!copy_constructible<const ImplicitlyDeletedMoveCtor&&>, "");
-static_assert(!copy_constructible<DeletedMoveAssign&&>, "");
-static_assert(!copy_constructible<const DeletedMoveAssign&&>, "");
-static_assert(!copy_constructible<ImplicitlyDeletedMoveAssign&&>, "");
-static_assert(!copy_constructible<const ImplicitlyDeletedMoveAssign&&>, "");
-static_assert(!copy_constructible<MemberRvalueReference>, "");
+static_assert(!copy_constructible<int&&>);
+static_assert(!copy_constructible<const int&&>);
+static_assert(!copy_constructible<volatile int&&>);
+static_assert(!copy_constructible<CustomMoveCtor>);
+static_assert(!copy_constructible<MoveOnly>);
+static_assert(!copy_constructible<const CustomMoveCtor&&>);
+static_assert(!copy_constructible<volatile CustomMoveCtor&&>);
+static_assert(!copy_constructible<const CustomMoveAssign&&>);
+static_assert(!copy_constructible<volatile CustomMoveAssign&&>);
+static_assert(!copy_constructible<DeletedMoveCtor&&>);
+static_assert(!copy_constructible<const DeletedMoveCtor&&>);
+static_assert(!copy_constructible<ImplicitlyDeletedMoveCtor&&>);
+static_assert(!copy_constructible<const ImplicitlyDeletedMoveCtor&&>);
+static_assert(!copy_constructible<DeletedMoveAssign&&>);
+static_assert(!copy_constructible<const DeletedMoveAssign&&>);
+static_assert(!copy_constructible<ImplicitlyDeletedMoveAssign&&>);
+static_assert(!copy_constructible<const ImplicitlyDeletedMoveAssign&&>);
+static_assert(!copy_constructible<MemberRvalueReference>);
 } // namespace MoveConstructibleTests
 
 namespace CopyConstructibleTests
@@ -88,46 +88,46 @@ namespace CopyConstructibleTests
 struct CopyCtorUserDefined
 {
   CopyCtorUserDefined(CopyCtorUserDefined&&) noexcept = default;
-  __host__ __device__ CopyCtorUserDefined(const CopyCtorUserDefined&);
+  TEST_FUNC CopyCtorUserDefined(const CopyCtorUserDefined&);
 };
-static_assert(copy_constructible<CopyCtorUserDefined>, "");
+static_assert(copy_constructible<CopyCtorUserDefined>);
 
 struct CopyAssignUserDefined
 {
   CopyAssignUserDefined& operator=(CopyAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyAssignUserDefined& operator=(const CopyAssignUserDefined&);
+  TEST_FUNC CopyAssignUserDefined& operator=(const CopyAssignUserDefined&);
 };
-static_assert(!copy_constructible<CopyAssignUserDefined>, "");
+static_assert(!copy_constructible<CopyAssignUserDefined>);
 
 struct CopyCtorAndAssignUserDefined
 {
   CopyCtorAndAssignUserDefined(CopyCtorAndAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyCtorAndAssignUserDefined(const CopyCtorAndAssignUserDefined&);
+  TEST_FUNC CopyCtorAndAssignUserDefined(const CopyCtorAndAssignUserDefined&);
   CopyCtorAndAssignUserDefined& operator=(CopyCtorAndAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyCtorAndAssignUserDefined& operator=(const CopyCtorAndAssignUserDefined&);
+  TEST_FUNC CopyCtorAndAssignUserDefined& operator=(const CopyCtorAndAssignUserDefined&);
 };
-static_assert(copy_constructible<CopyCtorAndAssignUserDefined>, "");
+static_assert(copy_constructible<CopyCtorAndAssignUserDefined>);
 
 struct CopyCtorDeleted
 {
   CopyCtorDeleted(CopyCtorDeleted&&) noexcept = default;
   CopyCtorDeleted(const CopyCtorDeleted&)     = delete;
 };
-static_assert(!copy_constructible<CopyCtorDeleted>, "");
+static_assert(!copy_constructible<CopyCtorDeleted>);
 
 struct CopyAssignDeleted
 {
   CopyAssignDeleted(CopyAssignDeleted&&) noexcept = default;
   CopyAssignDeleted(const CopyAssignDeleted&)     = delete;
 };
-static_assert(!copy_constructible<CopyAssignDeleted>, "");
+static_assert(!copy_constructible<CopyAssignDeleted>);
 
 struct CopyCtorHasMutableRef
 {
   CopyCtorHasMutableRef(CopyCtorHasMutableRef&&) noexcept = default;
   CopyCtorHasMutableRef(CopyCtorHasMutableRef&)           = default;
 };
-static_assert(!copy_constructible<CopyCtorHasMutableRef>, "");
+static_assert(!copy_constructible<CopyCtorHasMutableRef>);
 
 #if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
                                                 // constructor
@@ -137,7 +137,7 @@ struct CopyCtorProhibitsMutableRef
   CopyCtorProhibitsMutableRef(const CopyCtorProhibitsMutableRef&)     = default;
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&)           = delete;
 };
-static_assert(!copy_constructible<CopyCtorProhibitsMutableRef>, "");
+static_assert(!copy_constructible<CopyCtorProhibitsMutableRef>);
 #endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 
 struct CopyAssignHasMutableRef
@@ -145,7 +145,7 @@ struct CopyAssignHasMutableRef
   CopyAssignHasMutableRef& operator=(CopyAssignHasMutableRef&&) noexcept = default;
   CopyAssignHasMutableRef& operator=(CopyAssignHasMutableRef&)           = default;
 };
-static_assert(!copy_constructible<CopyAssignHasMutableRef>, "");
+static_assert(!copy_constructible<CopyAssignHasMutableRef>);
 
 #if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
                                                 // assignment
@@ -155,7 +155,7 @@ struct CopyAssignProhibitsMutableRef
   CopyAssignProhibitsMutableRef& operator=(const CopyAssignProhibitsMutableRef&)     = default;
   CopyAssignProhibitsMutableRef& operator=(CopyAssignProhibitsMutableRef&)           = delete;
 };
-static_assert(!copy_constructible<CopyAssignProhibitsMutableRef>, "");
+static_assert(!copy_constructible<CopyAssignProhibitsMutableRef>);
 #endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 
 struct CopyCtorOnly
@@ -163,14 +163,14 @@ struct CopyCtorOnly
   CopyCtorOnly(CopyCtorOnly&&) noexcept = delete;
   CopyCtorOnly(const CopyCtorOnly&)     = default;
 };
-static_assert(!copy_constructible<CopyCtorOnly>, "");
+static_assert(!copy_constructible<CopyCtorOnly>);
 
 struct CopyAssignOnly
 {
   CopyAssignOnly& operator=(CopyAssignOnly&&) noexcept = delete;
   CopyAssignOnly& operator=(const CopyAssignOnly&)     = default;
 };
-static_assert(!copy_constructible<CopyAssignOnly>, "");
+static_assert(!copy_constructible<CopyAssignOnly>);
 
 struct CopyOnly
 {
@@ -180,14 +180,14 @@ struct CopyOnly
   CopyOnly& operator=(CopyOnly&&) noexcept = delete;
   CopyOnly& operator=(const CopyOnly&)     = default;
 };
-static_assert(!copy_constructible<CopyOnly>, "");
+static_assert(!copy_constructible<CopyOnly>);
 
 struct ExplicitlyCopyable
 {
   ExplicitlyCopyable(ExplicitlyCopyable&&) = default;
-  __host__ __device__ explicit ExplicitlyCopyable(const ExplicitlyCopyable&);
+  TEST_FUNC explicit ExplicitlyCopyable(const ExplicitlyCopyable&);
 };
-static_assert(!copy_constructible<ExplicitlyCopyable>, "");
+static_assert(!copy_constructible<ExplicitlyCopyable>);
 } // namespace CopyConstructibleTests
 
 int main(int, char**)

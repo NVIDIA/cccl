@@ -23,12 +23,9 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -53,16 +50,6 @@ struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typenam
   {}
 
   CUB_DEFINE_SUB_POLICY_GETTER(ThreeWayPartition)
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"ThreeWayPartitionPolicy">() = ThreeWayPartition().EncodedPolicy(),
-                  key<"DelayConstructor">() =
-                    StaticPolicyT::ThreeWayPartitionPolicy::detail::delay_constructor_t::EncodedConstructor()>();
-  }
-#endif
 };
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -431,37 +418,37 @@ struct policy_hub
 
 struct three_way_partition_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   BlockScanAlgorithm block_scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.block_scan_algorithm == rhs.block_scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const three_way_partition_policy& policy)
   {
     return os
-        << "three_way_partition_policy { .block_threads = " << policy.block_threads
+        << "three_way_partition_policy { .threads_per_block = " << policy.threads_per_block
         << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
         << ", .load_modifier = " << policy.load_modifier << ", .block_scan_algorithm = " << policy.block_scan_algorithm
         << ", .delay_constructor = " << policy.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -475,7 +462,8 @@ struct policy_selector
   int input_size;
   int offset_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> three_way_partition_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> three_way_partition_policy
   {
     const auto default_policy = three_way_partition_policy{
       256,
@@ -485,7 +473,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       default_delay_constructor_policy(true)}; // we assume that the OffsetT is trivially copyable
 
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       // offset_size == 4 && input_size == 1
       // trp_0.ipt_12.tpb_256.ns_792.dcid_6.l2w_365 1.063960  0.978016  1.072833  1.301435
@@ -559,7 +547,7 @@ struct policy_selector
       // fall through to SM90
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (offset_size == 4 && input_size == 1)
       {
@@ -664,12 +652,12 @@ struct policy_selector
       return default_policy;
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return default_policy;
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (offset_size == 4 && input_size == 2)
       {
@@ -726,10 +714,11 @@ static_assert(three_way_partition_policy_selector<policy_selector>);
 template <typename InputT, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> three_way_partition_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> three_way_partition_policy
   {
     constexpr auto selector = policy_selector{classify_type<InputT>, int{sizeof(InputT)}, int{sizeof(OffsetT)}};
-    return selector(arch);
+    return selector(cc);
   }
 };
 } // namespace detail::three_way_partition

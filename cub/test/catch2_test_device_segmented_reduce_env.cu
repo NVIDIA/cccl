@@ -139,6 +139,86 @@ TEST_CASE("Device segmented argmax works with default environment", "[segmented_
   REQUIRE(h_out[2].value == 2);
 }
 
+TEST_CASE("Device fixed-size segmented reduce works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedReduce::Reduce(
+            d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0));
+
+  thrust::device_vector<int> expected{21, 8};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented sum works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<int> expected{21, 8};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented min works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<int> expected{6, 0};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented max works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<int> expected{8, 5};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented argmin works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented argmax works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
+  REQUIRE(d_out == expected);
+}
+
 #endif
 
 C2H_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]")
@@ -256,13 +336,8 @@ C2H_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]
 
   device_segmented_reduce_argmin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 3);
-  REQUIRE(h_out[0].value == 5);
-  REQUIRE(h_out[1].key == 1);
-  REQUIRE(h_out[1].value == 0);
-  REQUIRE(h_out[2].key == 0);
-  REQUIRE(h_out[2].value == 1);
+  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{3, 5}, {1, 0}, {0, 1}};
+  REQUIRE(d_out == expected);
 }
 
 C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]")
@@ -283,256 +358,281 @@ C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]
 
   device_segmented_reduce_argmax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 0);
-  REQUIRE(h_out[0].value == 8);
-  REQUIRE(h_out[1].key == 2);
-  REQUIRE(h_out[1].value == 9);
-  REQUIRE(h_out[2].key == 1);
-  REQUIRE(h_out[2].value == 2);
-}
-
-TEST_CASE("Device segmented reduce uses custom stream", "[segmented_reduce][device]")
-{
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<int> d_out(3);
-
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Reduce(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      num_segments,
-      d_offsets_it,
-      d_offsets_it + 1,
-      ::cuda::std::plus<>{},
-      0));
-
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
-  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce(
-    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, env);
-
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
-  thrust::device_vector<int> expected{26, 12, 3};
+  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {2, 9}, {1, 2}};
   REQUIRE(d_out == expected);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-TEST_CASE("Device segmented sum uses custom stream", "[segmented_reduce][device]")
+template <int ThreadsPerBlock>
+struct segmented_reduce_tuning
 {
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<int> d_out(3);
-
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Sum(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
-
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
-  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce_sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
-  thrust::device_vector<int> expected{26, 12, 3};
-  REQUIRE(d_out == expected);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
-}
-
-TEST_CASE("Device segmented min uses custom stream", "[segmented_reduce][device]")
-{
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<int> d_out(3);
-
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Min(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
-
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
-  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce_min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
-  thrust::device_vector<int> expected{5, 0, 1};
-  REQUIRE(d_out == expected);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
-}
-
-TEST_CASE("Device segmented max uses custom stream", "[segmented_reduce][device]")
-{
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<int> d_out(3);
-
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Max(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
-
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
-  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce_max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
-  thrust::device_vector<int> expected{8, 9, 2};
-  REQUIRE(d_out == expected);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
-}
-
-TEST_CASE("Device segmented argmin uses custom stream", "[segmented_reduce][device]")
-{
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMin(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
-
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
-  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce_argmin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 3);
-  REQUIRE(h_out[0].value == 5);
-  REQUIRE(h_out[1].key == 1);
-  REQUIRE(h_out[1].value == 0);
-  REQUIRE(h_out[2].key == 0);
-  REQUIRE(h_out[2].value == 1);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
-}
-
-TEST_CASE("Device segmented argmax uses custom stream", "[segmented_reduce][device]")
-{
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMax(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
-
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
-  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce_argmax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 0);
-  REQUIRE(h_out[0].value == 8);
-  REQUIRE(h_out[1].key == 2);
-  REQUIRE(h_out[1].value == 9);
-  REQUIRE(h_out[2].key == 1);
-  REQUIRE(h_out[2].value == 2);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
-}
-
-template <int BlockThreads>
-struct reduce_tuning
-{
-  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::segmented_reduce::segmented_reduce_policy
   {
     auto rp = cub::detail::reduce::agent_reduce_policy{
-      BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {rp, rp, rp};
+      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    // need the repetition of the return type for GCC9
+    return cub::detail::segmented_reduce::segmented_reduce_policy{
+      rp,
+      cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT},
+      cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT}};
   }
 };
 
-struct unrelated_policy
-{};
+using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 64>, cuda::std::integral_constant<int, 128>>;
 
-struct unrelated_tuning
+#if TEST_LAUNCH != 1
+
+C2H_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][device]", block_sizes)
 {
-  // should never be called
-  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
-  {
-    throw 1337;
-  }
-};
-
-using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
-
-C2H_TEST("Device segmented sum can be tuned", "[segmented_reduce][device]", block_sizes)
-{
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
   int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(3);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
 
-  auto error =
-    cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{21, 0, 17};
+  device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, env);
 
+  thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_block_size[0] == target_block_size);
 }
+
+C2H_TEST("Fixed-size DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, segment_size, reduce_op, 0, env);
+
+  thrust::device_vector<int> expected{21, 8};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_out(3);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  // use block_size_recording_iterator to embed blockDim info in the input type and query after
+  // since Sum can not take a custom reduction_op
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_sum(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::device_vector<int> expected{4, 3, 2};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Fixed-size DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_out(2);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  // use block_size_recording_iterator to embed blockDim info in the input type and query after
+  // since Sum can not take a custom reduction_op
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_sum(d_in, d_out.begin(), num_segments, segment_size, env);
+
+  thrust::device_vector<int> expected{3, 3};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_out(3);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_min(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::device_vector<int> expected{1, 1, 1};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Fixed-size DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_out(2);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_min(d_in, d_out.begin(), num_segments, segment_size, env);
+
+  thrust::device_vector<int> expected{1, 1};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_out(3);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_max(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::device_vector<int> expected{1, 1, 1};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Fixed-size DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_out(2);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_max(d_in, d_out.begin(), num_segments, segment_size, env);
+
+  thrust::device_vector<int> expected{1, 1};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_argmin(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
+  for (int i = 0; i < num_segments; i++)
+  {
+    REQUIRE(h_out[i].key == 0);
+    REQUIRE(h_out[i].value == 1);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_argmin(d_in, d_out.begin(), num_segments, segment_size, env);
+
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 1}, {0, 1}};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_argmax(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
+  for (int i = 0; i < num_segments; i++)
+  {
+    REQUIRE(h_out[i].key == 0);
+    REQUIRE(h_out[i].value == 1);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+  thrust::device_vector<unsigned int> d_block_size(1);
+
+  auto d_in = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto env  = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
+
+  device_segmented_reduce_argmax(d_in, d_out.begin(), num_segments, segment_size, env);
+
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 1}, {0, 1}};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1

@@ -34,6 +34,7 @@
 #include <thrust/iterator/iterator_categories.h>
 
 #include <cuda/__fwd/iterator.h>
+#include <cuda/std/__fwd/common_iterator.h>
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -76,12 +77,8 @@ struct lazy_trait
 //! at compile-time. You can specialize cuda::std::iterator_traits for your own iterator types if needed.
 //! deprecated [Since 3.0]
 template <typename T>
-using iterator_traits CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits instead") =
-// FIXME(bgruber): switching to ::cuda::std::iterator_traits<T> breaks some tests, e.g. cub.test.device_merge_sort.lid_1
-#if _CCCL_COMPILER(NVRTC)
-  ::cuda
-#endif // _CCCL_COMPILER(NVRTC)
-  ::std::iterator_traits<T>;
+using iterator_traits
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits instead") = ::cuda::std::iterator_traits<T>;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
@@ -151,7 +148,7 @@ using iterator_difference_t
 //! Trait obtaining the iterator traversal category of an iterator type.
 template <typename Iterator>
 struct iterator_traversal
-    : detail::iterator_category_to_traversal<typename iterator_traits<Iterator>::iterator_category>
+    : detail::iterator_category_to_traversal<::cuda::std::__iterator_traits_category_or_concept_t<Iterator>>
 {};
 
 //! Alias to the iterator traversal category of an iterator type.
@@ -168,7 +165,7 @@ struct iterator_system_impl
 
 template <typename Iterator>
 struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_traits<Iterator>::iterator_category>>
-    : iterator_category_to_system<typename iterator_traits<Iterator>::iterator_category>
+    : iterator_category_to_system<::cuda::std::__iterator_traits_category_or_concept_t<Iterator>>
 {};
 } // namespace detail
 
@@ -315,6 +312,13 @@ struct iterator_traversal<::cuda::zip_transform_iterator<Fn, Iterators...>>
 {
   using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };
+
+template <class Iter, class Sent>
+struct iterator_system<::cuda::std::common_iterator<Iter, Sent>> : iterator_system<Iter>
+{};
+template <class Iter, class Sent>
+struct iterator_traversal<::cuda::std::common_iterator<Iter, Sent>> : iterator_traversal<Iter>
+{};
 
 //! \} // end iterator_traits
 

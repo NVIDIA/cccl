@@ -471,10 +471,10 @@ try
     cccl_type_enum::CCCL_UINT32};
 
   const auto [large_selector_name, large_selector_src] = get_specialization<segmented_sort_large_selector_tag>(
-    template_id<user_operation_traits>(), large_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), large_selector_op, selector_result_t, selector_input_t);
 
   const auto [small_selector_name, small_selector_src] = get_specialization<segmented_sort_small_selector_tag>(
-    template_id<user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
 
   const auto policy_sel = cub::detail::segmented_sort::policy_selector{
     static_cast<int>(keys_in_it.value_type.size),
@@ -483,7 +483,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream segmented_sort_policy_sel_str;
-  segmented_sort_policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  segmented_sort_policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto segmented_sort_policy_expr = std::format(
     "cub::detail::segmented_sort::policy_selector_from_types<{}, {}>",
@@ -497,7 +497,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream partition_policy_sel_str;
-  partition_policy_sel_str << partition_policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  partition_policy_sel_str << partition_policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto three_way_partition_policy_expr = std::format(
     "cub::detail::three_way_partition::policy_selector_from_types<cub::detail::segmented_sort::local_segment_index_t, "
@@ -535,10 +535,10 @@ using namespace cub::detail;
 using namespace cub::detail::segmented_sort;
 using namespace cub::detail::three_way_partition;
 static_assert(
-  device_segmented_sort_policy_selector()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {12},
+  device_segmented_sort_policy_selector()(current_tuning_cc()) == {12},
   "Host generated and JIT compiled policy mismatch");
 static_assert(
-  device_three_way_partition_policy_selector()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {14},
+  device_three_way_partition_policy_selector()(current_tuning_cc()) == {14},
   "Host generated and JIT compiled three-way partition policy mismatch");
 )XXX",
     jit_template_header_contents, // 0

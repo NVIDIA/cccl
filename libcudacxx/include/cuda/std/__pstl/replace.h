@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__functional/equal_to_value.h>
 #  include <cuda/__nvtx/nvtx.h>
@@ -92,7 +92,7 @@ _CCCL_HOST_API void replace(
       __policy,
       __first,
       ::cuda::std::move(__last),
-      ::cuda::std::move(__first),
+      __first,
       __replace_return_value{__new_value},
       ::cuda::equal_to_value{__old_value});
   }
@@ -109,6 +109,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_REPLACE_H

@@ -19,12 +19,12 @@
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
 #  define ASSERT_REFERENCE_BINDS_TEMPORARY(...) \
-    static_assert(cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>, "")
+    static_assert(cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>)
 #  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) \
-    static_assert(!cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>, "")
+    static_assert(!cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>)
 #else
-#  define ASSERT_REFERENCE_BINDS_TEMPORARY(...)     static_assert(true, "")
-#  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) static_assert(true, "")
+#  define ASSERT_REFERENCE_BINDS_TEMPORARY(...)     static_assert(true)
+#  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) static_assert(true)
 #endif
 
 template <class Tp>
@@ -32,7 +32,7 @@ struct ConvertsTo
 {
   using RawTp = typename cuda::std::remove_cv<typename cuda::std::remove_reference<Tp>::type>::type;
 
-  __host__ __device__ operator Tp() const
+  TEST_FUNC operator Tp() const
   {
     return static_cast<Tp>(value);
   }
@@ -45,7 +45,7 @@ struct Base
 struct Derived : Base
 {};
 
-static_assert(cuda::std::is_same<decltype("abc"), decltype(("abc"))>::value, "");
+static_assert(cuda::std::is_same<decltype("abc"), decltype(("abc"))>::value);
 // cuda::std::string not supported
 /*
 ASSERT_REFERENCE_BINDS_TEMPORARY(cuda::std::string const&, decltype("abc"));
@@ -56,8 +56,8 @@ ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(int&, const ConvertsTo<int&>&);
 ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(const int&, ConvertsTo<int&>&);
 ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(Base&, Derived&);
 
-static_assert(cuda::std::is_constructible<int&, cuda::std::reference_wrapper<int>>::value, "");
-static_assert(cuda::std::is_constructible<int const&, cuda::std::reference_wrapper<int>>::value, "");
+static_assert(cuda::std::is_constructible<int&, cuda::std::reference_wrapper<int>>::value);
+static_assert(cuda::std::is_constructible<int const&, cuda::std::reference_wrapper<int>>::value);
 
 template <class T>
 struct CannotDeduce
@@ -66,10 +66,10 @@ struct CannotDeduce
 };
 
 template <class... Args>
-__host__ __device__ void F(typename CannotDeduce<cuda::std::tuple<Args...>>::type const&)
+TEST_FUNC void F(typename CannotDeduce<cuda::std::tuple<Args...>>::type const&)
 {}
 
-__host__ __device__ void compile_tests()
+TEST_FUNC void compile_tests()
 {
   {
     F<int, int const&>(cuda::std::make_tuple(42, 42));
@@ -96,7 +96,7 @@ __host__ __device__ void compile_tests()
   }
 }
 
-__host__ __device__ void allocator_tests()
+TEST_FUNC void allocator_tests()
 {
   // cuda::std::allocator not supported
   // cuda::std::allocator<void> alloc;

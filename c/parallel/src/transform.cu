@@ -16,6 +16,7 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/memory>
 
@@ -71,7 +72,7 @@ get_kernel_name(std::string_view input_iterator_t, std::string_view output_itera
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true, {2}, {3}, {4}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -91,7 +92,7 @@ std::string get_kernel_name(std::string_view input1_iterator_t,
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}, "
+    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true, {2}, {3}, {4}, "
     "{5}>",
     chained_policy_t, // 0
     offset_t, // 1
@@ -219,8 +220,8 @@ try
       template_id<output_iterator_traits>(),
       tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
       tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
-  const auto [op_name, op_src] = get_specialization<unary_transform_operation_tag, user_operation_traits>(
-    template_id<user_operation_traits>(),
+  const auto [op_name, op_src] = get_specialization<unary_transform_operation_tag, unary_user_operation_traits>(
+    template_id<unary_user_operation_traits>(),
     op,
     tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
     tagged_arg<input_storage_t, cccl_type_info>{input_it.value_type});
@@ -231,7 +232,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{}>, {}>",
@@ -255,7 +256,7 @@ struct __align__({4}) output_storage_t {{
 using device_transform_policy = {8};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {9}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1
@@ -327,7 +328,7 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cache                      = new transform::cache();
 
   // avoid new and delete which requires the allocated and freed types to match
-  static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
   build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
@@ -361,7 +362,7 @@ CUresult cccl_device_unary_transform(
       ::cuda::std::tuple<indirect_iterator_t>{d_in},
       indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
-      transform::cdt::always_true_predicate{},
+      ::cuda::always_true{},
       indirect_arg_t{op},
       stream,
       *static_cast<cub::detail::transform::policy_selector<1>*>(build.runtime_policy),
@@ -411,8 +412,8 @@ try
       template_id<output_iterator_traits>(),
       tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
       tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
-  const auto [op_name, op_src] = get_specialization<binary_transform_operation_tag, user_operation_traits>(
-    template_id<user_operation_traits>(),
+  const auto [op_name, op_src] = get_specialization<binary_transform_operation_tag, binary_user_operation_traits>(
+    template_id<binary_user_operation_traits>(),
     op,
     tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
     tagged_arg<input1_storage_t, cccl_type_info>{input1_it.value_type},
@@ -425,7 +426,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",
@@ -454,7 +455,7 @@ struct __align__({6}) output_storage_t {{
 using device_transform_policy = {11};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {12}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input1_it.value_type.size, // 1
@@ -528,7 +529,7 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cache                      = new transform::cache();
 
   // avoid new and delete which requires the allocated and freed types to match
-  static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  static_assert(::cuda::is_trivially_copyable_v<decltype(policy_sel)>);
   build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
@@ -564,7 +565,7 @@ CUresult cccl_device_binary_transform(
       ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
       indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
-      transform::cdt::always_true_predicate{},
+      ::cuda::always_true{},
       indirect_arg_t{op},
       stream,
       *static_cast<cub::detail::transform::policy_selector<2>*>(build.runtime_policy),

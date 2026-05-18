@@ -168,7 +168,7 @@ struct DeviceHistogram
     LevelT lower_level,
     LevelT upper_level,
     OffsetT num_samples,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -324,7 +324,7 @@ struct DeviceHistogram
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
@@ -493,7 +493,7 @@ struct DeviceHistogram
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -539,7 +539,7 @@ public:
     const LevelT lower_level[NUM_ACTIVE_CHANNELS],
     const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -728,7 +728,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
 
@@ -736,12 +736,15 @@ public:
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
+    auto policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>{};
+
     if constexpr (sizeof(OffsetT) > sizeof(int))
     {
       if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
       {
         // Down-convert OffsetT data type
-        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::DispatchEven(
+        return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -753,11 +756,12 @@ public:
           (int) num_rows,
           (int) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample);
+          is_byte_sample,
+          policy_selector);
       }
     }
 
-    return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::DispatchEven(
+    return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -769,7 +773,8 @@ public:
       num_rows,
       (OffsetT) (row_stride_bytes / sizeof(SampleT)),
       stream,
-      is_byte_sample);
+      is_byte_sample,
+      policy_selector);
   }
 
   //! Deprecate [Since 3.0]
@@ -791,7 +796,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -918,7 +923,7 @@ public:
     int num_levels,
     const LevelT* d_levels,
     OffsetT num_samples,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -1061,7 +1066,7 @@ public:
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
@@ -1219,7 +1224,7 @@ public:
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
     ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -1253,7 +1258,7 @@ public:
     const int num_levels[NUM_ACTIVE_CHANNELS],
     const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -1430,7 +1435,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
@@ -1438,12 +1443,15 @@ public:
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
+    auto policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>{};
+
     if constexpr (sizeof(OffsetT) > sizeof(int))
     {
       if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
       {
         // Down-convert OffsetT data type
-        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::DispatchRange(
+        return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -1454,11 +1462,12 @@ public:
           (int) num_rows,
           (int) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample);
+          is_byte_sample,
+          policy_selector);
       }
     }
 
-    return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::DispatchRange(
+    return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -1469,7 +1478,8 @@ public:
       num_rows,
       (OffsetT) (row_stride_bytes / sizeof(SampleT)),
       stream,
-      is_byte_sample);
+      is_byte_sample,
+      policy_selector);
   }
 
   //! Deprecate [Since 3.0]
@@ -1490,7 +1500,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -1980,40 +1990,44 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
+        auto policy_selector =
+          detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>{};
+
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::
-              DispatchEven(
-                storage,
-                bytes,
-                d_samples,
-                d_histogram,
-                num_levels,
-                lower_level,
-                upper_level,
-                (int) num_row_pixels,
-                (int) num_rows,
-                (int) (row_stride_bytes / sizeof(SampleT)),
-                stream,
-                is_byte_sample);
+            return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+              storage,
+              bytes,
+              d_samples,
+              d_histogram,
+              num_levels,
+              lower_level,
+              upper_level,
+              (int) num_row_pixels,
+              (int) num_rows,
+              (int) (row_stride_bytes / sizeof(SampleT)),
+              stream,
+              is_byte_sample,
+              policy_selector);
           }
         }
-        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::
-          DispatchEven(
-            storage,
-            bytes,
-            d_samples,
-            d_histogram,
-            num_levels,
-            lower_level,
-            upper_level,
-            num_row_pixels,
-            num_rows,
-            (OffsetT) (row_stride_bytes / sizeof(SampleT)),
-            stream,
-            is_byte_sample);
+
+        return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+          storage,
+          bytes,
+          d_samples,
+          d_histogram,
+          num_levels,
+          lower_level,
+          upper_level,
+          num_row_pixels,
+          num_rows,
+          (OffsetT) (row_stride_bytes / sizeof(SampleT)),
+          stream,
+          is_byte_sample,
+          policy_selector);
       });
   }
 
@@ -2435,38 +2449,42 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
+        auto policy_selector =
+          detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>{};
+
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::
-              DispatchRange(
-                storage,
-                bytes,
-                d_samples,
-                d_histogram,
-                num_levels,
-                d_levels,
-                (int) num_row_pixels,
-                (int) num_rows,
-                (int) (row_stride_bytes / sizeof(SampleT)),
-                stream,
-                is_byte_sample);
+            return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+              storage,
+              bytes,
+              d_samples,
+              d_histogram,
+              num_levels,
+              d_levels,
+              (int) num_row_pixels,
+              (int) num_rows,
+              (int) (row_stride_bytes / sizeof(SampleT)),
+              stream,
+              is_byte_sample,
+              policy_selector);
           }
         }
-        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::
-          DispatchRange(
-            storage,
-            bytes,
-            d_samples,
-            d_histogram,
-            num_levels,
-            d_levels,
-            num_row_pixels,
-            num_rows,
-            (OffsetT) (row_stride_bytes / sizeof(SampleT)),
-            stream,
-            is_byte_sample);
+
+        return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+          storage,
+          bytes,
+          d_samples,
+          d_histogram,
+          num_levels,
+          d_levels,
+          num_row_pixels,
+          num_rows,
+          (OffsetT) (row_stride_bytes / sizeof(SampleT)),
+          stream,
+          is_byte_sample,
+          policy_selector);
       });
   }
 

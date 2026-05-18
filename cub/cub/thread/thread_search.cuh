@@ -24,6 +24,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 
 #include <nv/target>
 
@@ -153,9 +154,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
     OffsetT half = num_items >> 1;
 
     bool lt;
-    NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (lt = __hlt(val, input[retval + half]);),
-                 (lt = __half2float(val) < __half2float(input[retval + half]);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                      (lt = __hlt(val, input[retval + half]);),
+                      (lt = __half2float(val) < __half2float(input[retval + half]);));
 
     if (lt)
     {
@@ -192,9 +193,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
     OffsetT half = num_items >> 1;
 
     bool lt;
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (lt = __hlt(val, input[retval + half]);),
-                 (lt = __bfloat162float(val) < __bfloat162float(input[retval + half]);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (lt = __hlt(val, input[retval + half]);),
+                      (lt = __bfloat162float(val) < __bfloat162float(input[retval + half]);));
 
     if (lt)
     {

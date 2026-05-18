@@ -22,8 +22,13 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // _CCCL_STD_VER >= 2023
+
 template <class T>
-__host__ __device__ constexpr void test_signbit(const T pos)
+TEST_FUNC constexpr void test_signbit(const T pos)
 {
   assert(cuda::std::signbit(pos) == false);
 
@@ -48,7 +53,7 @@ __host__ __device__ constexpr void test_signbit(const T pos)
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type(float val)
+TEST_FUNC constexpr void test_type(float val)
 {
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::signbit(T{}))>);
   if constexpr (cuda::std::is_integral_v<T>)
@@ -95,7 +100,7 @@ __host__ __device__ constexpr void test_type(float val)
   }
 }
 
-__host__ __device__ constexpr bool test(float val)
+TEST_FUNC constexpr bool test(float val)
 {
   test_type<float>(val);
   test_type<double>(val);
@@ -146,7 +151,7 @@ __host__ __device__ constexpr bool test(float val)
 }
 
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-__host__ __device__ constexpr bool test_constexpr(float val)
+TEST_FUNC constexpr bool test_constexpr(float val)
 {
   test_type<float>(val);
   test_type<double>(val);

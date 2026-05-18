@@ -22,7 +22,9 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/grid/grid_even_share.cuh>
+#include <cub/util_arch.cuh>
 
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -78,9 +80,9 @@ template <typename PolicySelector,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).alt_upsweep.block_threads
-                                     : PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).upsweep.block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
+__launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_upsweep.threads_per_block
+                                     : current_policy<PolicySelector>().upsweep.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys,
     _CCCL_GRID_CONSTANT OffsetT* const d_spine,
     _CCCL_GRID_CONSTANT const OffsetT /*num_items*/,
@@ -89,23 +91,23 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_
     GridEvenShare<OffsetT> even_share,
     _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
-  static constexpr radix_sort_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr radix_sort_policy policy = current_policy<PolicySelector>();
   static constexpr radix_sort_upsweep_policy active_upsweep_policy =
     ALT_DIGIT_BITS ? policy.alt_upsweep : policy.upsweep;
   static constexpr radix_sort_downsweep_policy active_downsweep_policy =
     ALT_DIGIT_BITS ? policy.alt_downsweep : policy.downsweep;
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(active_upsweep_policy.block_threads * active_upsweep_policy.items_per_thread,
-                     active_downsweep_policy.block_threads * active_downsweep_policy.items_per_thread);
+    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
 
-  using ActiveUpsweepPolicyT =
-    AgentRadixSortUpsweepPolicy<active_upsweep_policy.block_threads,
-                                active_upsweep_policy.items_per_thread,
-                                void,
-                                active_upsweep_policy.load_modifier,
-                                active_upsweep_policy.radix_bits,
-                                NoScaling<active_upsweep_policy.block_threads, active_upsweep_policy.items_per_thread>>;
+  using ActiveUpsweepPolicyT = AgentRadixSortUpsweepPolicy<
+    active_upsweep_policy.threads_per_block,
+    active_upsweep_policy.items_per_thread,
+    void,
+    active_upsweep_policy.load_modifier,
+    active_upsweep_policy.radix_bits,
+    NoScaling<active_upsweep_policy.threads_per_block, active_upsweep_policy.items_per_thread>>;
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
   using AgentRadixSortUpsweepT =
@@ -142,23 +144,25 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_
  *   Total number of bin-counts
  */
 template <typename PolicySelector, typename OffsetT>
-__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).scan.block_threads, 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
+__launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_block, 1)
+  _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
     _CCCL_GRID_CONSTANT OffsetT* const d_spine, _CCCL_GRID_CONSTANT const int num_counts)
 {
-  static constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).scan;
-  using ScanPolicy                    = AgentScanPolicy<
-                       policy.block_threads,
-                       policy.items_per_thread,
-                       void,
-                       policy.load_algorithm,
-                       policy.load_modifier,
-                       policy.store_algorithm,
-                       policy.scan_algorithm,
-                       NoScaling<policy.block_threads, policy.items_per_thread>,
-                       delay_constructor_t<policy.delay_constructor.kind,
-                                           policy.delay_constructor.delay,
-                                           policy.delay_constructor.l2_write_latency>>;
+  static constexpr scan_policy active_policy = current_policy<PolicySelector>().scan;
+  static_assert(active_policy.algorithm == scan_algorithm::lookback);
+  static constexpr scan_lookback_policy policy = active_policy.lookback;
+  using ScanPolicy                             = AgentScanPolicy<
+                                0,
+                                0,
+                                void,
+                                policy.load_algorithm,
+                                policy.load_modifier,
+                                policy.store_algorithm,
+                                policy.scan_algorithm,
+                                NoScaling<policy.threads_per_block, policy.items_per_thread>,
+                                delay_constructor_t<policy.delay_constructor.kind,
+                                                    policy.delay_constructor.delay,
+                                                    policy.delay_constructor.l2_write_latency>>;
 
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT = scan::AgentScan<ScanPolicy, OffsetT*, OffsetT*, ::cuda::std::plus<>, OffsetT, OffsetT, OffsetT>;
@@ -239,9 +243,9 @@ template <typename PolicySelector,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).alt_downsweep.block_threads
-                                     : PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).downsweep.block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
+__launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_downsweep.threads_per_block
+                                     : current_policy<PolicySelector>().downsweep.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
     _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
@@ -253,7 +257,7 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_
     GridEvenShare<OffsetT> even_share,
     _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
-  static constexpr radix_sort_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr radix_sort_policy policy = current_policy<PolicySelector>();
 
   static constexpr radix_sort_upsweep_policy active_upsweep_policy =
     ALT_DIGIT_BITS ? policy.alt_upsweep : policy.upsweep;
@@ -261,11 +265,11 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_
     ALT_DIGIT_BITS ? policy.alt_downsweep : policy.downsweep;
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(active_upsweep_policy.block_threads * active_upsweep_policy.items_per_thread,
-                     active_downsweep_policy.block_threads * active_downsweep_policy.items_per_thread);
+    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
 
   using ActiveDownsweepPolicyT = AgentRadixSortDownsweepPolicy<
-    active_downsweep_policy.block_threads,
+    active_downsweep_policy.threads_per_block,
     active_downsweep_policy.items_per_thread,
     void,
     active_downsweep_policy.load_algorithm,
@@ -273,7 +277,7 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_
     active_downsweep_policy.rank_algorithm,
     active_downsweep_policy.scan_algorithm,
     active_downsweep_policy.radix_bits,
-    NoScaling<active_downsweep_policy.block_threads, active_downsweep_policy.items_per_thread>>;
+    NoScaling<active_downsweep_policy.threads_per_block, active_downsweep_policy.items_per_thread>>;
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
   using AgentRadixSortDownsweepT = radix_sort::
@@ -334,8 +338,8 @@ template <typename PolicySelector,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
-__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads, 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
+__launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block, 1)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
     _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
@@ -346,8 +350,8 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_ti
     _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   // Constants
-  static constexpr radix_sort_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  static constexpr int BLOCK_THREADS        = policy.single_tile.block_threads;
+  static constexpr radix_sort_policy policy = current_policy<PolicySelector>();
+  static constexpr int BLOCK_THREADS        = policy.single_tile.threads_per_block;
   static constexpr int ITEMS_PER_THREAD     = policy.single_tile.items_per_thread;
   static constexpr bool KEYS_ONLY           = ::cuda::std::is_same_v<ValueT, NullType>;
 
@@ -400,7 +404,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_ti
   {
     // Register pressure work-around: moving num_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    num_items = ShuffleIndex<warp_threads>(num_items, 0, 0xffffffff);
+    num_items = ::cuda::device::warp_shuffle_idx(num_items, 0);
 
     BlockLoadValues(temp_storage.load_values).Load(d_values_in, values, num_items);
 
@@ -450,19 +454,23 @@ template <typename PolicySelector,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
-  PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
-    .histogram.block_threads) void DeviceRadixSortHistogramKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
-                                                                  _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-                                                                  _CCCL_GRID_CONSTANT const OffsetT num_items,
-                                                                  _CCCL_GRID_CONSTANT const int start_bit,
-                                                                  _CCCL_GRID_CONSTANT const int end_bit,
-                                                                  _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) void DeviceRadixSortHistogramKernel(
+  _CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
+  _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  _CCCL_GRID_CONSTANT const int start_bit,
+  _CCCL_GRID_CONSTANT const int end_bit,
+  _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
-  static constexpr radix_sort_histogram_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).histogram;
+  static constexpr radix_sort_histogram_policy policy = current_policy<PolicySelector>().histogram;
 
   using HistogramPolicyT =
-    AgentRadixSortHistogramPolicy<policy.block_threads, policy.items_per_thread, policy.num_parts, void, policy.radix_bits>;
+    AgentRadixSortHistogramPolicy<policy.threads_per_block,
+                                  policy.items_per_thread,
+                                  policy.num_parts,
+                                  void,
+                                  policy.radix_bits>;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
   __shared__ typename AgentT::TempStorage temp_storage;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
@@ -477,8 +485,7 @@ template <typename PolicySelector,
           typename PortionOffsetT,
           typename AtomicOffsetT = PortionOffsetT,
           typename DecomposerT   = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).onesweep.block_threads)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().onesweep.threads_per_block)
   DeviceRadixSortOnesweepKernel(
     _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
     _CCCL_GRID_CONSTANT AtomicOffsetT* const d_ctrs,
@@ -493,9 +500,9 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).onesweep.
     _CCCL_GRID_CONSTANT const int num_bits,
     _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
-  static constexpr radix_sort_onesweep_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).onesweep;
+  static constexpr radix_sort_onesweep_policy policy = current_policy<PolicySelector>().onesweep;
   using OnesweepPolicyT                              = AgentRadixSortOnesweepPolicy<
-                                 policy.block_threads,
+                                 policy.threads_per_block,
                                  policy.items_per_thread,
                                  void,
                                  policy.rank_num_parts,
@@ -503,7 +510,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).onesweep.
                                  policy.scan_algorithm,
                                  policy.store_algorithm,
                                  policy.radix_bits,
-                                 NoScaling<policy.block_threads, policy.items_per_thread>>;
+                                 NoScaling<policy.threads_per_block, policy.items_per_thread>>;
 
   using AgentT =
     AgentRadixSortOnesweep<OnesweepPolicyT,
@@ -536,15 +543,14 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).onesweep.
  * Exclusive sum kernel
  */
 template <typename PolicySelector, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
 {
-  static constexpr radix_sort_exclusive_sum_policy policy =
-    PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).exclusive_sum;
-  constexpr int RADIX_BITS      = policy.radix_bits;
-  constexpr int RADIX_DIGITS    = 1 << RADIX_BITS;
-  constexpr int BLOCK_THREADS   = policy.block_threads;
-  constexpr int BINS_PER_THREAD = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
-  using BlockScan               = cub::BlockScan<OffsetT, BLOCK_THREADS>;
+  static constexpr radix_sort_exclusive_sum_policy policy = current_policy<PolicySelector>().exclusive_sum;
+  constexpr int RADIX_BITS                                = policy.radix_bits;
+  constexpr int RADIX_DIGITS                              = 1 << RADIX_BITS;
+  constexpr int BLOCK_THREADS                             = policy.threads_per_block;
+  constexpr int BINS_PER_THREAD                           = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  using BlockScan                                         = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename BlockScan::TempStorage temp_storage;
 
   // load the bins

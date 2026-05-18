@@ -111,7 +111,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   void _CCCL_DEVICE copy_arg(char* buffer, size_t& offset, const Arg& arg) const
   {
     // TODO(bgruber): we should make sure that we can actually byte-wise copy Arg, but this fails with some tests
-    // static_assert(::cuda::std::is_trivially_copyable<Arg>::value, "");
+    // static_assert(::cuda::std::is_trivially_copyable<Arg>::value);
     offset = align_up<Arg>(offset);
     ::memcpy(buffer + offset, static_cast<const void*>(&arg), sizeof(arg));
     offset += sizeof(Arg);
@@ -151,7 +151,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class K, class... Args>
-  _CCCL_API _CCCL_FORCEINLINE cudaError_t doit(K k, Args const&... args) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t doit(K k, Args const&... args) const
   {
     NV_IF_TARGET(NV_IS_HOST, (return doit_host(k, args...);), (return doit_device(k, args...);));
   }

@@ -198,13 +198,19 @@ public:
 
   template <class _Tuple>
   using __tuple_like_constraints =
-    _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>,
+    // clang-tidy has fallen off its rocker and claims we can use the non-existent
+    // __tuple_like_with_size_v here.
+    _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>, // NOLINT(modernize-type-traits)
         typename __tuple_constraints<_Tp...>::template __tuple_like_constraints<_Tuple>,
         __invalid_tuple_constraints>;
 
   // Horrible hack to make tuple_of_iterator_references work
   template <class _TupleOfIteratorReferences,
-            enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int>   = 0,
+            // clang-tidy has fallen off its rocker and claims we can use the non-existent
+            // __tuple_of_iterato_references_v here.
+            // NOLINTBEGIN(modernize-type-traits)
+            enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0,
+            // NOLINTEND(modernize-type-traits)
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
       : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{})
@@ -222,8 +228,9 @@ public:
   template <class _Tuple,
             class _Constraints                                        = __tuple_like_constraints<_Tuple>,
             enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
-            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
-            enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
+            // clang-tidy is confused. We are already using _v here
+            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>         = 0, // NOLINT(modernize-type-traits)
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
       : __base_(::cuda::std::forward<_Tuple>(__t))
   {}
@@ -272,19 +279,20 @@ public:
   _CCCL_HIDE_FROM_ABI tuple& operator=(const tuple& __t) = default;
   _CCCL_HIDE_FROM_ABI tuple& operator=(tuple&& __t)      = default;
 
-  template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple>, int> = 0>
+  // clang-tidy is confused, we are already using enable_if_t here...
+  template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple>, int> = 0> // NOLINT(modernize-type-traits)
   _CCCL_API inline tuple& operator=(_Tuple&& __t) noexcept(is_nothrow_assignable_v<_BaseT&, _Tuple>)
   {
     __base_.operator=(::cuda::std::forward<_Tuple>(__t));
     return *this;
   }
 
-  _CCCL_API void swap(tuple& __t)
+  _CCCL_API void swap(tuple& __t) noexcept(noexcept(__base_.swap(__t.__base_)))
   {
     __base_.swap(__t.__base_);
   }
 
-  _CCCL_API friend void swap(tuple& __t, tuple& __u)
+  _CCCL_API friend void swap(tuple& __t, tuple& __u) noexcept(noexcept(__t.swap(__u)))
   {
     __t.swap(__u);
   }
@@ -428,15 +436,15 @@ public:
 };
 
 template <class... _Tp>
-_CCCL_HOST_DEVICE tuple(_Tp...) -> tuple<_Tp...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(_Tp...) -> tuple<_Tp...>;
 template <class _Tp1, class _Tp2>
-_CCCL_HOST_DEVICE tuple(pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
-_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, _Tp...) -> tuple<_Tp...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(allocator_arg_t, _Alloc, _Tp...) -> tuple<_Tp...>;
 template <class _Alloc, class _Tp1, class _Tp2>
-_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
-_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
 
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>

@@ -16,10 +16,11 @@
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
+#include <cub/util_arch.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -55,32 +56,32 @@ namespace detail::reduce
  *   Binary reduction functor
  */
 template <typename PolicySelector, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
-    .reduce.block_threads)) void DeterministicDeviceReduceKernel(InputIteratorT d_in,
-                                                                 AccumT* d_out,
-                                                                 int num_items,
-                                                                 ReductionOpT reduction_op,
-                                                                 TransformOpT transform_op,
-                                                                 const int reduce_grid_size)
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)) void DeterministicDeviceReduceKernel(
+  InputIteratorT d_in,
+  AccumT* d_out,
+  int num_items,
+  ReductionOpT reduction_op,
+  TransformOpT transform_op,
+  const int reduce_grid_size)
 {
-  constexpr rfa::reduce_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce;
+  constexpr rfa::reduce_policy policy = current_policy<PolicySelector>().reduce;
   constexpr int items_per_thread      = policy.items_per_thread;
-  constexpr int block_threads         = policy.block_threads;
+  constexpr int threads_per_block     = policy.threads_per_block;
 
-  using block_reduce_t = BlockReduce<AccumT, block_threads, policy.block_algorithm>;
+  using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;
 
   using ftype              = typename AccumT::ftype;
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
-  const int tid            = block_threads * blockIdx.x + threadIdx.x;
+  const int tid            = threads_per_block * blockIdx.x + threadIdx.x;
 
   ftype* shared_bins = detail::rfa::get_shared_bin_array<ftype, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < bin_length; index += block_threads)
+  for (int index = threadIdx.x; index < bin_length; index += threads_per_block)
   {
     shared_bins[index] = AccumT::initialize_bin(index);
   }
@@ -90,7 +91,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   AccumT thread_aggregate{};
   int count = 0;
 
-  int n_threads = reduce_grid_size * block_threads;
+  int n_threads = reduce_grid_size * threads_per_block;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (unsigned i = tid; i < static_cast<unsigned>(num_items); i += (n_threads * items_per_thread))
@@ -187,8 +188,8 @@ template <typename PolicySelector,
           typename InitT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads),
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
+  int(current_policy<PolicySelector>().single_tile.threads_per_block),
   1) void DeterministicDeviceReduceSingleTileKernel(InputIteratorT d_in,
                                                     OutputIteratorT d_out,
                                                     int num_items,
@@ -196,10 +197,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     InitT init,
                                                     TransformOpT transform_op)
 {
-  constexpr rfa::single_tile_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile;
-  constexpr int block_threads              = policy.block_threads;
+  constexpr rfa::single_tile_policy policy = current_policy<PolicySelector>().single_tile;
+  constexpr int threads_per_block          = policy.threads_per_block;
 
-  using block_reduce_t = BlockReduce<AccumT, block_threads, policy.block_algorithm>;
+  using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.block_algorithm>;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;
@@ -220,7 +221,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   float_type* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < bin_length; index += block_threads)
+  for (int index = threadIdx.x; index < bin_length; index += threads_per_block)
   {
     shared_bins[index] = AccumT::initialize_bin(index);
   }
@@ -231,7 +232,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
 
   // Consume block aggregates of previous kernel
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = threadIdx.x; i < num_items; i += block_threads)
+  for (int i = threadIdx.x; i < num_items; i += threads_per_block)
   {
     thread_aggregate += transform_op(d_in[i]);
   }

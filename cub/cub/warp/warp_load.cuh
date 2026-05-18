@@ -24,10 +24,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -110,7 +107,7 @@ enum WarpLoadAlgorithm
   WARP_LOAD_TRANSPOSE
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorithm)
 {
   switch (algorithm)
@@ -127,7 +124,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
       return os << "<unknown WarpLoadAlgorithm: " << static_cast<int>(algorithm) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The WarpLoad class provides :ref:`collective <collective-primitives>` data movement methods for
@@ -173,7 +170,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
+//!        constexpr int threads_per_block = 256;
 //!        constexpr int items_per_thread = 4;
 //!
 //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -182,7 +179,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!                                   cub::WARP_LOAD_TRANSPOSE,
 //!                                   warp_threads>;
 //!
-//!        constexpr int warps_in_block = block_threads / warp_threads;
+//!        constexpr int warps_in_block = threads_per_block / warp_threads;
 //!        constexpr int tile_size = items_per_thread * warp_threads;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
@@ -469,7 +466,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -478,7 +475,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -521,7 +518,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -530,7 +527,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
@@ -576,7 +573,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
+  //!        constexpr int threads_per_block = 256;
   //!        constexpr int items_per_thread = 4;
   //!
   //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
@@ -585,7 +582,7 @@ public:
   //!                                   cub::WARP_LOAD_TRANSPOSE,
   //!                                   warp_threads>;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
+  //!        constexpr int warps_in_block = threads_per_block / warp_threads;
   //!        constexpr int tile_size = items_per_thread * warp_threads;
   //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!

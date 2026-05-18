@@ -23,14 +23,11 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -81,28 +78,28 @@ enum class accum_size
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class T>
-_CCCL_API constexpr primitive_key is_primitive_key()
+_CCCL_HOST_DEVICE_API constexpr primitive_key is_primitive_key()
 {
   return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class T>
-_CCCL_API constexpr primitive_accum is_primitive_accum()
+_CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 {
   return detail::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class ReductionOpT>
-_CCCL_API constexpr primitive_op is_primitive_op()
+_CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_t<ReductionOpT>::value ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class KeyT>
-_CCCL_API constexpr key_size classify_key_size()
+_CCCL_HOST_DEVICE_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -115,7 +112,7 @@ _CCCL_API constexpr key_size classify_key_size()
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class AccumT>
-_CCCL_API constexpr accum_size classify_accum_size()
+_CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -947,36 +944,36 @@ struct policy_hub
 
 struct reduce_by_key_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const reduce_by_key_policy& p)
   {
     return os
-        << "reduce_by_key_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
+        << "reduce_by_key_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
         << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -998,7 +995,7 @@ struct policy_selector
   bool accum_is_primitive;
   bool op_is_primitive;
 
-  _CCCL_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
+  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
   {
     constexpr int nominal_4B_items_per_thread = 6;
     const int combined_input_bytes            = key_size + accum_size;
@@ -1018,7 +1015,8 @@ struct policy_selector
         accum_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> reduce_by_key_policy
   {
     // bail out if we don't know the operation. TODO(bgruber): drop this check when we make the tuning API public
     if (!op_is_primitive)
@@ -1028,7 +1026,7 @@ struct policy_selector
 
     const bool use_tuning = (key_is_primitive || key_size == 16) && (accum_is_primitive || accum_size == 16);
 
-    if (arch >= ::cuda::arch_id::sm_100 && use_tuning) // if we don't have a tuning, fall back to SM90
+    if (cc >= ::cuda::compute_capability{10, 0} && use_tuning) // if we don't have a tuning, fall back to SM90
     {
       if (key_size == 1 && accum_size == 1)
       {
@@ -1192,7 +1190,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (use_tuning)
       {
@@ -1415,12 +1413,12 @@ struct policy_selector
       return __make_default_policy(LOAD_DEFAULT);
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return __make_default_policy(LOAD_LDG);
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (use_tuning)
       {
@@ -1636,7 +1634,8 @@ static_assert(reduce_by_key_policy_selector<policy_selector>);
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_by_key_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const
+    -> reduce_by_key_policy
   {
     using ReduceByKeyPolicyT = typename PolicyHub::MaxPolicy::ReduceByKeyPolicyT;
     return reduce_by_key_policy{
@@ -1653,16 +1652,17 @@ struct policy_selector_from_hub
 template <class ReductionOpT, class AccumT, class KeyT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> reduce_by_key_policy
   {
     return policy_selector{
       int{sizeof(KeyT)},
       int{sizeof(AccumT)},
       classify_type<AccumT>,
       is_primitive_v<KeyT>,
-      ::cuda::std::is_trivially_copyable_v<KeyT>,
+      ::cuda::is_trivially_copyable_v<KeyT>,
       is_primitive_v<AccumT>,
-      basic_binary_op_t<ReductionOpT>::value}(arch);
+      basic_binary_op_t<ReductionOpT>::value}(cc);
   }
 };
 } // namespace detail::reduce_by_key

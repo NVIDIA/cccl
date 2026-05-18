@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>
 #include <cuda/std/cassert>
@@ -17,8 +17,9 @@
 #include <cuda/std/type_traits>
 
 #include "hierarchy_queries.h"
+#include "test_macros.h"
 
-__device__ void test_warp()
+TEST_DEVICE_FUNC void test_warp()
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 

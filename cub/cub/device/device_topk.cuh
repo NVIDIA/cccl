@@ -23,6 +23,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -85,6 +86,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   // Query relevant properties from the environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
+  // Extract policy selector from environment tuning
+  using default_policy_selector_t = topk::policy_selector_from_types<it_value_t<KeyInputIteratorT>>;
+  using tuning_env_t =
+    ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<tuning_env_t, topk::topk_policy, default_policy_selector_t>;
+
   return topk::dispatch<SelectDirection>(
     d_temp_storage,
     temp_storage_bytes,
@@ -95,7 +103,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
     static_cast<offset_t>(num_items),
     static_cast<out_offset_t>(k),
     decomposer,
-    stream.get());
+    stream.get(),
+    policy_selector_t{});
 }
 
 template <topk::select SelectDirection,
@@ -256,9 +265,8 @@ struct DeviceTopK
     typename ValueOutputIteratorT,
     typename NumItemsT,
     typename NumOutItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             int> = 0>
+    typename EnvT = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -392,9 +400,8 @@ struct DeviceTopK
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
-    ::cuda::std::enable_if_t<
-      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
-      cudaError_t>
+    ::cuda::std::enable_if_t<detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>,
+                             cudaError_t>
     MaxPairs(void* d_temp_storage,
              size_t& temp_storage_bytes,
              KeyInputIteratorT d_keys_in,
@@ -409,7 +416,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type_v<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
@@ -510,9 +517,8 @@ struct DeviceTopK
     typename ValueOutputIteratorT,
     typename NumItemsT,
     typename NumOutItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             int> = 0>
+    typename EnvT = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -646,9 +652,8 @@ struct DeviceTopK
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
-    ::cuda::std::enable_if_t<
-      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
-      cudaError_t>
+    ::cuda::std::enable_if_t<detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>,
+                             cudaError_t>
     MinPairs(void* d_temp_storage,
              size_t& temp_storage_bytes,
              KeyInputIteratorT d_keys_in,
@@ -663,7 +668,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type_v<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
@@ -749,9 +754,8 @@ struct DeviceTopK
     typename KeyOutputIteratorT,
     typename NumItemsT,
     typename NumOutItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             int> = 0>
+    typename EnvT = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -868,9 +872,8 @@ struct DeviceTopK
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
-    ::cuda::std::enable_if_t<
-      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
-      cudaError_t>
+    ::cuda::std::enable_if_t<detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>,
+                             cudaError_t>
     MaxKeys(void* d_temp_storage,
             size_t& temp_storage_bytes,
             KeyInputIteratorT d_keys_in,
@@ -883,7 +886,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type_v<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
@@ -969,9 +972,8 @@ struct DeviceTopK
     typename KeyOutputIteratorT,
     typename NumItemsT,
     typename NumOutItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             int> = 0>
+    typename EnvT = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1088,9 +1090,8 @@ struct DeviceTopK
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
-    ::cuda::std::enable_if_t<
-      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
-      cudaError_t>
+    ::cuda::std::enable_if_t<detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>,
+                             cudaError_t>
     MinKeys(void* d_temp_storage,
             size_t& temp_storage_bytes,
             KeyInputIteratorT d_keys_in,
@@ -1103,7 +1104,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type_v<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 

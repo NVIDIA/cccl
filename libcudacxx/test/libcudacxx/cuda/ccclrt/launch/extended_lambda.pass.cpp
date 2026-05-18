@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: indirect call is unsupported in tile code
+
 // ADDITIONAL_COMPILE_FLAGS: --extended-lambda
 // UNSUPPORTED: nvrtc
 
@@ -16,20 +19,21 @@
 #include <cuda/stream>
 
 #include "../common/utility.cuh"
+#include "test_macros.h"
 
-__host__ void test_extended_lambda()
+void test_extended_lambda()
 {
   cuda::stream stream{cuda::devices[0]};
   test::pinned<int> i(0);
   auto config           = cuda::block_dims<32>() & cuda::grid_dims<1>();
-  auto assign_42_lambda = [] __device__(int* pi) {
+  auto assign_42_lambda = [] TEST_DEVICE_FUNC(int* pi) {
     *pi = 42;
   };
   cuda::launch(stream, config, assign_42_lambda, i.get());
   stream.sync();
   assert(*i == 42);
 
-  auto assign_1337_lambda = [] __device__(auto config, int* pi) {
+  auto assign_1337_lambda = [] TEST_DEVICE_FUNC(auto config, int* pi) {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == 32);
     static_assert(cuda::block.count(cuda::grid, config) == 1);
     *pi = 1337;

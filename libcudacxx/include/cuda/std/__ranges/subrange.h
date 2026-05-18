@@ -53,10 +53,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
@@ -278,19 +274,19 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))
+      : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(__range, ::cuda::std::ranges::size(__range))
+      : subrange(__range, ::cuda::std::ranges::__size_cpo{}(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
   _CCCL_API constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
-      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __n)
+      : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __n)
   {}
 
   // This often ICEs all of clang and old gcc when it encounteres a rvalue subrange in a pipe
@@ -371,7 +367,7 @@ public:
     {
       if (__n < 0)
       {
-        ::cuda::std::ranges::advance(__begin_, __n);
+        ::cuda::std::ranges::__advance_cpo{}(__begin_, __n);
         if constexpr (_StoreSize)
         {
           __size_ += ::cuda::std::__to_unsigned_like(-__n);
@@ -380,7 +376,7 @@ public:
       }
     }
 
-    [[maybe_unused]] const auto __d = __n - ::cuda::std::ranges::advance(__begin_, __n, __end_);
+    [[maybe_unused]] const auto __d = __n - ::cuda::std::ranges::__advance_cpo{}(__begin_, __n, __end_);
     if constexpr (_StoreSize)
     {
       __size_ -= ::cuda::std::__to_unsigned_like(__d);
@@ -391,16 +387,16 @@ public:
 
 _CCCL_TEMPLATE(class _Iter, class _Sent)
 _CCCL_REQUIRES(input_or_output_iterator<_Iter> _CCCL_AND sentinel_for<_Sent, _Iter>)
-_CCCL_HOST_DEVICE subrange(_Iter, _Sent) -> subrange<_Iter, _Sent>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Iter, _Sent) -> subrange<_Iter, _Sent>;
 
 _CCCL_TEMPLATE(class _Iter, class _Sent)
 _CCCL_REQUIRES(input_or_output_iterator<_Iter> _CCCL_AND sentinel_for<_Sent, _Iter>)
-_CCCL_HOST_DEVICE subrange(_Iter, _Sent, make_unsigned_t<iter_difference_t<_Iter>>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Iter, _Sent, make_unsigned_t<iter_difference_t<_Iter>>)
   -> subrange<_Iter, _Sent, subrange_kind::sized>;
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(borrowed_range<_Range>)
-_CCCL_HOST_DEVICE subrange(_Range&&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Range&&)
   -> subrange<iterator_t<_Range>,
               sentinel_t<_Range>,
               (sized_range<_Range> || sized_sentinel_for<sentinel_t<_Range>, iterator_t<_Range>>)
@@ -409,7 +405,7 @@ _CCCL_HOST_DEVICE subrange(_Range&&)
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(borrowed_range<_Range>)
-_CCCL_HOST_DEVICE subrange(_Range&&, make_unsigned_t<range_difference_t<_Range>>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES subrange(_Range&&, make_unsigned_t<range_difference_t<_Range>>)
   -> subrange<iterator_t<_Range>, sentinel_t<_Range>, subrange_kind::sized>;
 
 // Not _CCCL_TEMPLATE because we need to forward declare them
@@ -502,8 +498,6 @@ struct tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

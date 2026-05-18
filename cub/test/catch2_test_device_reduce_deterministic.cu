@@ -26,7 +26,7 @@ using float_type_list = c2h::type_list<float, double>;
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
-  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::rfa::rfa_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::rfa::rfa_policy
   {
     return {{BlockSize, ItemsPerThread, cub::BLOCK_REDUCE_RAKING},
             {BlockSize, ItemsPerThread, cub::BLOCK_REDUCE_RAKING}};
@@ -149,10 +149,10 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   c2h::device_vector<type> d_output_p2(1);
 
   auto env1 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
-                                        cuda::execution::__tune(custom_policy_selector<1, 128>{})};
+                                        cuda::execution::tune(custom_policy_selector<1, 128>{})};
 
   auto env2 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
-                                        cuda::execution::__tune(custom_policy_selector<2, 256>{})};
+                                        cuda::execution::tune(custom_policy_selector<2, 256>{})};
 
   auto error1 =
     cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, cuda::std::plus<type>{}, type{}, env1);

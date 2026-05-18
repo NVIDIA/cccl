@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ constexpr void test(Iter first, Iter last, const T& value)
+TEST_FUNC constexpr void test(Iter first, Iter last, const T& value)
 {
   Iter i = cuda::std::upper_bound(first, last, value, cuda::std::less<int>());
   for (Iter j = first; j != i; ++j)
@@ -38,7 +38,7 @@ __host__ __device__ constexpr void test(Iter first, Iter last, const T& value)
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   constexpr int M = 10;
   auto v          = get_data(M);
@@ -48,7 +48,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int d[] = {0, 1, 2, 3};
   for (int* e = d; e < d + 4; ++e)
@@ -64,13 +64,20 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<const int*>>();
   test<const int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

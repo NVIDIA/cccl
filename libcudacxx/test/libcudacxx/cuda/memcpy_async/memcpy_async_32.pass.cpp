@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 // UNSUPPORTED: pre-sm-70
 
 // clang-cuda < 20 errors out with "fatal error: error in backend: Cannot cast between two non-generic address spaces"

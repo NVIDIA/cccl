@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 #include <cuda/functional>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -21,7 +24,7 @@
  **********************************************************************************************************************/
 
 template <class T>
-__host__ __device__ constexpr T get_value()
+TEST_FUNC constexpr T get_value()
 {
   if constexpr (cuda::std::is_same_v<T, bool>)
   {
@@ -45,7 +48,7 @@ __host__ __device__ constexpr T get_value()
  **********************************************************************************************************************/
 
 template <class Op, class T>
-__host__ __device__ constexpr void test_identity_impl2()
+TEST_FUNC constexpr void test_identity_impl2()
 {
   using U = cuda::std::remove_cv_t<T>;
   Op op{};
@@ -58,7 +61,7 @@ __host__ __device__ constexpr void test_identity_impl2()
 }
 
 template <class Op, class T>
-__host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe_unused]] T identity)
+TEST_FUNC constexpr void test_identity_impl(bool has_identity, [[maybe_unused]] T identity)
 {
   assert((has_identity == cuda::has_identity_element_v<Op, T>) );
   if constexpr (cuda::has_identity_element_v<Op, T>)
@@ -93,14 +96,14 @@ __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe
 }
 
 template <template <class...> class Op, class T>
-__host__ __device__ constexpr void test_identity(bool has_identity, T identity)
+TEST_FUNC constexpr void test_identity(bool has_identity, T identity)
 {
   test_identity_impl<Op<T>, T>(has_identity, identity);
   test_identity_impl<Op<>, T>(has_identity, identity);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_identity_integral()
+TEST_FUNC constexpr void test_identity_integral()
 {
   test_identity<cuda::std::plus, T>(true, T{});
   test_identity<cuda::std::multiplies, T>(true, T{1});
@@ -111,7 +114,7 @@ __host__ __device__ constexpr void test_identity_integral()
   test_identity<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::lowest());
 }
 
-__host__ __device__ constexpr void test_identity_integral()
+TEST_FUNC constexpr void test_identity_integral()
 {
   test_identity<cuda::std::logical_and, bool>(true, true);
   test_identity<cuda::std::logical_or, bool>(true, false);
@@ -136,7 +139,7 @@ __host__ __device__ constexpr void test_identity_integral()
 // floating-point
 
 template <class T>
-__host__ __device__ constexpr void test_identity_floating_point()
+TEST_FUNC constexpr void test_identity_floating_point()
 {
   test_identity<cuda::std::plus, T>(true, cuda::std::__fp_neg(T{}));
   test_identity<cuda::std::multiplies, T>(true, cuda::std::__fp_one<T>());
@@ -144,7 +147,7 @@ __host__ __device__ constexpr void test_identity_floating_point()
   test_identity<cuda::maximum, T>(true, cuda::std::__fp_neg(::cuda::std::__fp_inf<T>()));
 }
 
-__host__ __device__ constexpr void test_identity_floating_point()
+TEST_FUNC constexpr void test_identity_floating_point()
 {
   test_identity_floating_point<float>();
   test_identity_floating_point<double>();
@@ -153,7 +156,7 @@ __host__ __device__ constexpr void test_identity_floating_point()
 #endif // _CCCL_HAS_FLOAT128()
 }
 
-__host__ __device__ void test_identity_extended_floating_point()
+TEST_FUNC void test_identity_extended_floating_point()
 {
 #if _CCCL_HAS_NVFP16()
   test_identity_floating_point<__half>();
@@ -170,20 +173,20 @@ __host__ __device__ void test_identity_extended_floating_point()
  **********************************************************************************************************************/
 
 template <template <class...> class Op, class T>
-__host__ __device__ constexpr bool no_identity()
+TEST_FUNC constexpr bool no_identity()
 {
   return !cuda::has_identity_element_v<Op<T>, T> && !cuda::has_identity_element_v<Op<>, T>;
 }
 
 template <class T>
-__host__ __device__ constexpr void test_no_identity()
+TEST_FUNC constexpr void test_no_identity()
 {
   static_assert(no_identity<cuda::std::minus, T>());
   static_assert(no_identity<cuda::std::divides, T>());
   static_assert(no_identity<cuda::std::modulus, T>());
 }
 
-__host__ __device__ constexpr void test_negative_integral()
+TEST_FUNC constexpr void test_negative_integral()
 {
   test_no_identity<signed char>();
   test_no_identity<unsigned char>();
@@ -201,7 +204,7 @@ __host__ __device__ constexpr void test_negative_integral()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr void test_negative_floating_point()
+TEST_FUNC constexpr void test_negative_floating_point()
 {
   test_no_identity<float>();
   test_no_identity<double>();
@@ -210,7 +213,7 @@ __host__ __device__ constexpr void test_negative_floating_point()
 #endif // _CCCL_HAS_FLOAT128()
 }
 
-__host__ __device__ void test_negative_extended_floating_point()
+TEST_FUNC void test_negative_extended_floating_point()
 {
 #if _CCCL_HAS_NVFP16()
   test_no_identity<__half>();
@@ -224,7 +227,7 @@ __host__ __device__ void test_negative_extended_floating_point()
  * Test dispatch
  **********************************************************************************************************************/
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_identity_integral();
   test_identity_floating_point();
@@ -233,7 +236,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ bool test_extended_floating_point()
+TEST_FUNC bool test_extended_floating_point()
 {
   test_identity_extended_floating_point();
   test_negative_extended_floating_point();

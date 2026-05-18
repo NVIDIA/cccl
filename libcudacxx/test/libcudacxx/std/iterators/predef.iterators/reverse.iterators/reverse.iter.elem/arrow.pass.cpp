@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <cuda/std/iterator>
 
 // reverse_iterator
@@ -34,27 +37,27 @@ class A
   int data_;
 
 public:
-  __host__ __device__ A()
+  TEST_FUNC A()
       : data_(1)
   {}
-  __host__ __device__ ~A()
+  TEST_FUNC ~A()
   {
     data_ = -1;
   }
 
-  __host__ __device__ int get() const
+  TEST_FUNC int get() const
   {
     return data_;
   }
 
-  __host__ __device__ friend bool operator==(const A& x, const A& y)
+  TEST_FUNC friend bool operator==(const A& x, const A& y)
   {
     return x.data_ == y.data_;
   }
 };
 
 template <class It>
-__host__ __device__ void test(It i, typename cuda::std::iterator_traits<It>::value_type x)
+TEST_FUNC void test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 {
   cuda::std::reverse_iterator<It> r(i);
   assert(r->get() == x.get());
@@ -65,28 +68,28 @@ class B
   int data_;
 
 public:
-  __host__ __device__ B(int d = 1)
+  TEST_FUNC B(int d = 1)
       : data_(d)
   {}
-  __host__ __device__ ~B()
+  TEST_FUNC ~B()
   {
     data_ = -1;
   }
 
-  __host__ __device__ int get() const
+  TEST_FUNC int get() const
   {
     return data_;
   }
 
-  __host__ __device__ friend bool operator==(const B& x, const B& y)
+  TEST_FUNC friend bool operator==(const B& x, const B& y)
   {
     return x.data_ == y.data_;
   }
-  __host__ __device__ const B* operator&() const
+  TEST_FUNC const B* operator&() const
   {
     return nullptr;
   }
-  __host__ __device__ B* operator&()
+  TEST_FUNC B* operator&()
   {
     return nullptr;
   }
@@ -97,16 +100,16 @@ class C
   int data_;
 
 public:
-  __host__ __device__ constexpr C()
+  TEST_FUNC constexpr C()
       : data_(1)
   {}
 
-  __host__ __device__ constexpr int get() const
+  TEST_FUNC constexpr int get() const
   {
     return data_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const C& x, const C& y)
+  TEST_FUNC friend constexpr bool operator==(const C& x, const C& y)
   {
     return x.data_ == y.data_;
   }
@@ -155,7 +158,7 @@ int main(int, char**)
     using RI         = cuda::std::reverse_iterator<const C*>;
     constexpr RI it1 = cuda::std::make_reverse_iterator(gC + 1);
 
-    static_assert(it1->get() == gC[0].get(), "");
+    static_assert(it1->get() == gC[0].get());
   }
 #endif // !TEST_COMPILER(NVRTC) && _CCCL_BUILTIN_ADDRESSOF
   {

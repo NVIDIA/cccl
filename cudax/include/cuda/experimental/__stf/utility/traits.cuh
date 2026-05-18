@@ -42,11 +42,11 @@ namespace cuda::experimental::stf
  * @brief Yields a string form of type name. Exact spelling not guaranteed (e.g. `type_name<int*>` may be `"int*"`,
  * `"int *"` etc).
  *
- * Thin wrapper around `cuda::std::__pretty_nameof<T>()` returning `::std::string_view`.
+ * Thin wrapper around `cuda::std::__pretty_nameof<T>()` returning ``std::string_view``.
  *
  * @tparam T The type to show.
  *
- * @snippet unittest.h type_name
+ * @snippet unittest.cuh type_name
  */
 template <class T>
 inline const ::std::string_view type_name{
@@ -87,69 +87,6 @@ class print_type_name_and_fail
 {
   static_assert(::std::integral_constant<T*, nullptr>::value, "Type name is: ");
 };
-
-namespace reserved
-{
-/**
- * @brief A singleton template class implementing the Meyers Singleton design pattern.
- *
- * @tparam T The type of the singleton object.
- *
- * It uses the "Construct On First Use Idiom" to prevent issues related to
- * the static initialization order fiasco.
- *
- * Usage rules:
- * - The default constructor of `T` should be protected.
- * - The destructor of `T` should be protected.
- * - The copy and move constructors of `T` should be disabled (implicit if you follow the rules above).
- *
- * Example usage:
- * ```cpp
- * class my_singleton : public meyers_singleton<my_singleton> {
- * protected:
- *   my_singleton() = default;
- *   ~my_singleton() = default;
- * };
- * ```
- */
-template <class T>
-class meyers_singleton
-{
-protected:
-  template <class U>
-  struct wrapper
-  {
-    using type = U;
-  };
-  friend typename wrapper<T>::type;
-
-  meyers_singleton()                        = default;
-  ~meyers_singleton()                       = default;
-  meyers_singleton(const meyers_singleton&) = delete;
-  meyers_singleton(meyers_singleton&&)      = delete;
-
-public:
-  /**
-   * @brief Provides access to the single instance of the class.
-   *
-   * @return T& A reference to the singleton instance.
-   *
-   * If the instance hasn't been created yet, this function will create it.
-   */
-  static T& instance()
-  {
-    static_assert(!::std::is_default_constructible_v<T>,
-                  "Make the default constructor of your Meyers singleton protected.");
-    static_assert(!::std::is_destructible_v<T>, "Make the destructor of your Meyers singleton protected.");
-    static_assert(!::std::is_copy_constructible_v<T>, "Disable the copy constructor of your Meyers singleton.");
-    static_assert(!::std::is_move_constructible_v<T>, "Disable the move constructor of your Meyers singleton.");
-    struct U : T
-    {};
-    static U instance;
-    return instance;
-  }
-};
-} // end namespace reserved
 
 /**
  * @brief Converts an array-like object (such as an `std::array`) to an `std::tuple`.

@@ -8,7 +8,6 @@
 #include <thrust/fill.h>
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -16,6 +15,7 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/std/bit>
 
 #include <cstdint>
@@ -27,7 +27,7 @@
 
 #include "thrust/device_vector.h"
 
-namespace
+namespace detail
 {
 constexpr double lognormal_mean  = 3.0;
 constexpr double lognormal_sigma = 1.2;
@@ -561,10 +561,7 @@ void gen(executor exec, seed_t seed, cuda::std::span<T> span, bit_entropy entrop
 {
   generator_t{}.generate(exec, seed, span, entropy, min, max);
 }
-} // namespace
 
-namespace detail
-{
 template <typename T>
 void gen_host(seed_t seed, cuda::std::span<T> span, bit_entropy entropy, T min, T max)
 {
@@ -591,9 +588,9 @@ struct offset_to_iterator_t
 template <class T>
 struct repeat_index_t
 {
-  __host__ __device__ __forceinline__ thrust::constant_iterator<T> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<T> operator()(std::size_t i)
   {
-    return thrust::constant_iterator<T>(static_cast<T>(i));
+    return cuda::constant_iterator<T>(static_cast<T>(i));
   }
 };
 
@@ -688,10 +685,7 @@ std::size_t gen_uniform_offsets(
 
   return tail(thrust::host);
 }
-} // namespace detail
 
-namespace detail
-{
 /**
  * @brief Generates a vector of random key segments.
  *

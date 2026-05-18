@@ -21,6 +21,8 @@
 #include <cuda/std/inplace_vector>
 #include <cuda/std/string_view>
 
+#include "test_macros.h"
+
 #if defined(_LIBCUDACXX_HAS_STRING)
 static_assert(
   cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string>, cuda::std::ranges::dangling>);

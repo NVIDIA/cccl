@@ -16,20 +16,22 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <cuda::std::indirectly_readable I, class O>
-__host__ __device__ constexpr bool indirectly_copyable_subsumption()
+TEST_FUNC constexpr bool indirectly_copyable_subsumption()
 {
   return false;
 }
 
 template <class I, class O>
   requires cuda::std::indirectly_copyable<I, O>
-__host__ __device__ constexpr bool indirectly_copyable_subsumption()
+TEST_FUNC constexpr bool indirectly_copyable_subsumption()
 {
   return true;
 }
 
-static_assert(indirectly_copyable_subsumption<int*, int*>(), "");
+static_assert(indirectly_copyable_subsumption<int*, int*>());
 
 int main(int, char**)
 {

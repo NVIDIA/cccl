@@ -188,7 +188,7 @@ public:
    * Parameters can be specified in any order. All are optional. It is illegal to pass the same parameter type more
    * than once.
    *
-   * @param P... Types of parameters
+   * @tparam P Types of parameters
    * @param p Values of parameters
    */
   template <typename... P>

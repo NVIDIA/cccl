@@ -22,12 +22,12 @@ class NotARep
 {};
 
 using Duration = cuda::std::chrono::seconds;
-__host__ __device__ Duration operator%=(Duration d, NotARep)
+TEST_FUNC Duration operator%=(Duration d, NotARep)
 {
   return d;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::chrono::microseconds us(11);
   us %= 3;

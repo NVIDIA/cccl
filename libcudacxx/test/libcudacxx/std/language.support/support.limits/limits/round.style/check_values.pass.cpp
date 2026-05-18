@@ -14,14 +14,19 @@
 
 #include "test_macros.h"
 
+// denorm_style has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // _CCCL_STD_VER >= 2023
+
 using one = char;
 struct two
 {
   one _[2];
 };
 
-__host__ __device__ one test(cuda::std::float_denorm_style);
-__host__ __device__ two test(int);
+TEST_FUNC one test(cuda::std::float_denorm_style);
+TEST_FUNC two test(int);
 
 int main(int, char**)
 {

@@ -44,7 +44,7 @@ private:
   type* __f_{};
 
   static _CCCL_API void __fun(_Tp&) noexcept;
-  static void __fun(_Tp&&) = delete;
+  static void __fun(_Tp&&) = delete; // NOLINT(modernize-use-equals-delete)
 
 public:
   template <
@@ -76,7 +76,7 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr reference_wrapper<_Tp> ref(_Tp& __t) noexcept

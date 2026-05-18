@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -16,7 +16,7 @@ setup_python_env "${py_version}"
 # Fetch or build the cuda_cccl wheel:
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" ${wheel_artifact_name} /home/coder/cccl/
+  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
 else
   "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
 fi
@@ -27,4 +27,4 @@ python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
 
 # Run tests for coop module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n auto -v coop/
+python -m pytest -n auto -v coop/_experimental/

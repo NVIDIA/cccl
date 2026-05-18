@@ -16,6 +16,7 @@
 // Use the CCCL compiler detection
 #define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
 #define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILATION() _CCCL_CUDA_COMPILATION()
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -23,6 +24,10 @@
 #define TEST_DIAG_SUPPRESS_NVHPC(...) _CCCL_DIAG_SUPPRESS_NVHPC(__VA_ARGS__)
 #define TEST_DIAG_SUPPRESS_MSVC(...)  _CCCL_DIAG_SUPPRESS_MSVC(__VA_ARGS__)
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_BEGIN_NV_DIAG_SUPPRESS(__VA_ARGS__)
+
+// Use the CCCL host device function
+#define TEST_FUNC        _CCCL_HOST_DEVICE _CCCL_TILE
+#define TEST_DEVICE_FUNC _CCCL_DEVICE _CCCL_TILE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
@@ -94,7 +99,7 @@
 #define TEST_IGNORE_NODISCARD (void)
 
 #if TEST_COMPILER(NVRTC, >=, 13)
-#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION __host__ __device__
+#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION TEST_FUNC
 #else
 #  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
 #endif
@@ -109,13 +114,13 @@ inline void DoNotOptimize(Tp const& value)
 }
 #else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv
 template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp const& value)
+TEST_FUNC inline void DoNotOptimize(Tp const& value)
 {
   asm volatile("" : : "r,m"(value) : "memory");
 }
 
 template <class Tp>
-__host__ __device__ inline void DoNotOptimize(Tp& value)
+TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
 #  if TEST_COMPILER(CLANG)
   asm volatile("" : "+r,m"(value) : : "memory");
@@ -133,15 +138,15 @@ __host__ __device__ inline void DoNotOptimize(Tp& value)
 #  define _STATIC_MEMBER_IMPL(type) static type v;
 #endif
 
-#define STATIC_MEMBER_VAR(name, type)     \
-  __host__ __device__ static type& name() \
-  {                                       \
-    _STATIC_MEMBER_IMPL(type);            \
-    return v;                             \
+#define STATIC_MEMBER_VAR(name, type) \
+  TEST_FUNC static type& name()       \
+  {                                   \
+    _STATIC_MEMBER_IMPL(type);        \
+    return v;                         \
   }
 
 template <class... T>
-__host__ __device__ constexpr bool unused(T&&...)
+TEST_FUNC constexpr bool unused(T&&...)
 {
   return true;
 }

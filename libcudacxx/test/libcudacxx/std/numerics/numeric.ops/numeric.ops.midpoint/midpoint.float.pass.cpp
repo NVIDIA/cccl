@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <numeric>
 
 // template <class _Float>
@@ -21,28 +24,28 @@
 
 //  Totally arbitrary picks for precision
 template <typename T>
-__host__ __device__ constexpr T fp_error_pct();
+TEST_FUNC constexpr T fp_error_pct();
 
 template <>
-__host__ __device__ constexpr float fp_error_pct<float>()
+TEST_FUNC constexpr float fp_error_pct<float>()
 {
   return 1.0e-4f;
 }
 
 template <>
-__host__ __device__ constexpr double fp_error_pct<double>()
+TEST_FUNC constexpr double fp_error_pct<double>()
 {
   return 1.0e-12;
 }
 
 template <>
-__host__ __device__ constexpr long double fp_error_pct<long double>()
+TEST_FUNC constexpr long double fp_error_pct<long double>()
 {
   return 1.0e-13l;
 }
 
 template <typename T>
-__host__ __device__ void fp_test()
+TEST_FUNC void fp_test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::midpoint(T(), T()))>);
   static_assert(noexcept(cuda::std::midpoint(T(), T())));

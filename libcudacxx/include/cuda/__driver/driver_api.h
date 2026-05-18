@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
@@ -32,11 +33,13 @@
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  if _CCCL_OS(WINDOWS)
-#    include <windows.h>
-#  else
-#    include <dlfcn.h>
-#  endif
+#  if _CCCL_HOSTED()
+#    if _CCCL_OS(WINDOWS)
+#      include <windows.h>
+#    else
+#      include <dlfcn.h>
+#    endif
+#  endif // _CCCL_HOSTED()
 
 #  include <cuda.h>
 
@@ -55,11 +58,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 // cudaGetDriverEntryPoint function is deprecated
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
+#  if _CCCL_HOSTED()
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
   const char* __fn_name = "cuGetProcAddress_v2";
-#  if _CCCL_OS(WINDOWS)
+#    if _CCCL_OS(WINDOWS)
   static auto __driver_library = ::LoadLibraryExA("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
   if (__driver_library == nullptr)
   {
@@ -70,12 +74,12 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   {
     _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
   }
-#  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
-#    if _CCCL_OS(ANDROID)
+#    else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
+#      if _CCCL_OS(ANDROID)
   const char* __driver_library_name = "libcuda.so";
-#    else // ^^^ _CCCL_OS(ANDROID) ^^^ / vvv !_CCCL_OS(ANDROID) vvv
+#      else // ^^^ _CCCL_OS(ANDROID) ^^^ / vvv !_CCCL_OS(ANDROID) vvv
   const char* __driver_library_name = "libcuda.so.1";
-#    endif // ^^^ !_CCCL_OS(ANDROID) ^^^
+#      endif // ^^^ !_CCCL_OS(ANDROID) ^^^
   static void* __driver_library = ::dlopen(__driver_library_name, RTLD_NOW);
   if (__driver_library == nullptr)
   {
@@ -86,16 +90,31 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   {
     _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
   }
-#  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
+#    endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+[[nodiscard]]
+_CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn(decltype(cuGetProcAddress)* __ptr = nullptr, bool __set = false)
+  -> decltype(cuGetProcAddress)*
+{
+  static decltype(cuGetProcAddress)* __fn = __ptr;
+
+  if (__set)
+  {
+    __fn = __ptr;
+  }
+
+  return __fn;
+}
+#  endif // !_CCCL_HOSTED()
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 //! @brief Makes the driver version from major and minor version.
 [[nodiscard]] _CCCL_HOST_API constexpr int __make_version(int __major, int __minor) noexcept
 {
-  _CCCL_ASSERT(__major >= 12, "invalid major CUDA Driver version");
+  _CCCL_ASSERT(__major >= 2, "invalid major CUDA Driver version");
   _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
   return __major * 1000 + __minor * 10;
 }
@@ -252,6 +271,15 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __deviceTotalMem(int __ordinal)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceTotalMem);
+  ::std::size_t __result;
+  ::CUdevice __dev = __deviceGet(__ordinal);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query total memory of a device", &__result, __dev);
+  return static_cast<::cuda::std::size_t>(__result);
+}
+
 // Primary context management
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __primaryCtxRetain(::CUdevice __dev)
@@ -375,20 +403,23 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t 
   if constexpr (sizeof(_Tp) == 1)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD8Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned char>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else if constexpr (sizeof(_Tp) == 2)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD16Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned short>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else if constexpr (sizeof(_Tp) == 4)
   {
     static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD32Async);
+    auto __bits             = ::cuda::std::bit_cast<unsigned int>(__value);
     ::cuda::__driver::__call_driver_fn(
-      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __bits, __count, __stream);
   }
   else
   {
@@ -417,10 +448,19 @@ _CCCL_HOST_API inline ::cuda::std::size_t __mempoolGetAttribute(::CUmemoryPool _
   return __value;
 }
 
-_CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
+_CCCL_HOST_API inline ::cudaError_t __mempoolDestroyNoThrow(::CUmemoryPool __pool) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolDestroy);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to destroy a memory pool", __pool);
+  return static_cast<::cudaError_t>(__driver_fn(__pool));
+}
+
+_CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
+{
+  ::cudaError_t __status = ::cuda::__driver::__mempoolDestroyNoThrow(__pool);
+  if (__status != ::cudaSuccess)
+  {
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to destroy a memory pool");
+  }
 }
 
 _CCCL_HOST_API inline ::CUdeviceptr

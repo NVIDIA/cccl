@@ -21,9 +21,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -544,7 +542,7 @@ enum BlockStoreAlgorithm
   BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 {
   switch (algo)
@@ -565,7 +563,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
       return os << "<unknown BlockStoreAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockStore class provides :ref:`collective <collective-primitives>` data movement
@@ -680,9 +678,9 @@ class BlockStore
 
   static_assert((Algorithm != BLOCK_STORE_WARP_TRANSPOSE && Algorithm != BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
                   || (BLOCK_THREADS % detail::warp_threads == 0),
-                "BlockThreads must be a multiple of warp_threads for this BlockStoreAlgorithm");
+                "Threads per block must be a multiple of warp_threads for this BlockStoreAlgorithm");
 
-  _CCCL_API static constexpr auto temp_storage_helper()
+  _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_STRIPED
                   || Algorithm == BLOCK_STORE_VECTORIZE)

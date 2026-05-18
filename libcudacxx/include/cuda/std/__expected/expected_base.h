@@ -55,10 +55,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 struct __expected_construct_from_invoke_tag
 {
   _CCCL_HIDE_FROM_ABI explicit __expected_construct_from_invoke_tag() = default;
@@ -67,7 +63,7 @@ struct __expected_construct_from_invoke_tag
 template <class _Tp, class _Err, bool = is_trivially_destructible_v<_Tp> && is_trivially_destructible_v<_Err>>
 union __expected_union_t
 {
-  struct __empty_t
+  struct __empty_cpo
   {};
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -122,7 +118,7 @@ union __expected_union_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
-  _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+  _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
   _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
   _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
 };
@@ -130,7 +126,7 @@ union __expected_union_t
 template <class _Tp, class _Err>
 union __expected_union_t<_Tp, _Err, true>
 {
-  struct __empty_t
+  struct __empty_cpo
   {};
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -181,7 +177,7 @@ union __expected_union_t<_Tp, _Err, true>
       : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
   {}
 
-  _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+  _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
   _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
   _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
 };
@@ -204,8 +200,7 @@ struct __expected_destruct<_Tp, _Err, false, false>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
+      : __union_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class... _Args>
@@ -222,10 +217,9 @@ struct __expected_destruct<_Tp, _Err, false, false>
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
-                 in_place,
+                 in_place_t{},
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -270,8 +264,7 @@ struct __expected_destruct<_Tp, _Err, true, false>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
+      : __union_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class... _Args>
@@ -288,10 +281,9 @@ struct __expected_destruct<_Tp, _Err, true, false>
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
-                 in_place,
+                 in_place_t{},
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -332,8 +324,7 @@ struct __expected_destruct<_Tp, _Err, false, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
+      : __union_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class... _Args>
@@ -350,10 +341,9 @@ struct __expected_destruct<_Tp, _Err, false, true>
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
-                 in_place,
+                 in_place_t{},
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -395,8 +385,7 @@ struct __expected_destruct<_Tp, _Err, true, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
+      : __union_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class... _Args>
@@ -413,10 +402,9 @@ struct __expected_destruct<_Tp, _Err, true, true>
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
-                 in_place,
+                 in_place_t{},
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -432,8 +420,6 @@ struct __expected_destruct<_Tp, _Err, true, true>
       , __has_val_(false)
   {}
 };
-
-_CCCL_DIAG_POP
 
 template <class _Tp, class _Err>
 struct __expected_storage : __expected_destruct<_Tp, _Err>
@@ -759,16 +745,13 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__deleted> : __expe
 };
 
 // expected<void, E> base classtemplate <class _Tp, class _Err>
-// MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 template <class _Err>
 struct __expected_destruct<void, _Err, false, false>
 {
   _CCCL_NO_UNIQUE_ADDRESS union __expected_union_t
   {
-    struct __empty_t
+    struct __empty_cpo
     {};
 
     _CCCL_API constexpr __expected_union_t() noexcept
@@ -796,7 +779,7 @@ struct __expected_destruct<void, _Err, false, false>
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
-    _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+    _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
     _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
   } __union_{};
   bool __has_val_{true};
@@ -845,7 +828,7 @@ struct __expected_destruct<void, _Err, false, true>
   // Using `_CCCL_NO_UNIQUE_ADDRESS` here crashes nvcc
   /* _CCCL_NO_UNIQUE_ADDRESS */ union __expected_union_t
   {
-    struct __empty_t
+    struct __empty_cpo
     {};
 
     _CCCL_API constexpr __expected_union_t() noexcept
@@ -869,7 +852,7 @@ struct __expected_destruct<void, _Err, false, true>
         : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
     {}
 
-    _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+    _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
     _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
   } __union_{};
   bool __has_val_{true};
@@ -880,7 +863,6 @@ struct __expected_destruct<void, _Err, false, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
       : __union_()
-      , __has_val_(true)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -909,8 +891,6 @@ struct __expected_destruct<void, _Err, false, true>
       : __has_val_(__has_val)
   {}
 };
-
-_CCCL_DIAG_POP
 
 template <class _Err>
 struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>

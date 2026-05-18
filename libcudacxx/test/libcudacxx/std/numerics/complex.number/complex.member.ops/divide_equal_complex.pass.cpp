@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cuda/std/complex>
 
 // complex& operator/=(const complex& rhs);
@@ -19,7 +22,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::complex<T> c(-4, 7.5);
   const cuda::std::complex<T> c2(1.5, 2.5);
@@ -63,10 +66,10 @@ int main(int, char**)
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
 #if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #  if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #endif // _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
 

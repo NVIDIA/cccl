@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/util_arch.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -116,8 +117,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires three_way_partition_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
+__launch_bounds__(current_policy<PolicySelector>().threads_per_block)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const FirstOutputIteratorT d_first_part_out,
     _CCCL_GRID_CONSTANT const SecondOutputIteratorT d_second_part_out,
@@ -130,9 +131,9 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_thr
     _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
-  static constexpr auto active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr auto active_policy = current_policy<PolicySelector>();
   using AgentThreeWayPartitionPolicyT = AgentThreeWayPartitionPolicy<
-    active_policy.block_threads,
+    active_policy.threads_per_block,
     active_policy.items_per_thread,
     active_policy.load_algorithm,
     active_policy.load_modifier,
@@ -193,7 +194,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_thr
  *   (i.e., length of @p d_selected_out)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
   ScanTileStateT tile_state,
   _CCCL_GRID_CONSTANT const int num_tiles,
   _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)

@@ -26,9 +26,11 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/climits>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstring>
-#endif // !_CCCL_COMPILER(NVRTC)
+#elif _CCCL_HOSTJIT()
+#  include <string.h>
+#endif // _CCCL_HOSTJIT()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -166,17 +168,19 @@ template <class _CharT>
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
 
+  bool __reached_end = false;
   while (*__lhs == *__rhs)
   {
     if (*__lhs == _CharT('\0'))
     {
-      return 0;
+      __reached_end = true;
+      break;
     }
 
     ++__lhs;
     ++__rhs;
   }
-  return (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
+  return __reached_end ? 0 : (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -212,22 +216,24 @@ __cccl_strncmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs, size_t _
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
 
+  int __result = 0;
   while (__n--)
   {
     if (*__lhs != *__rhs)
     {
-      return (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
+      __result = (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
+      break;
     }
 
     if (*__lhs == _CharT('\0'))
     {
-      return 0;
+      break;
     }
 
     ++__lhs;
     ++__rhs;
   }
-  return 0;
+  return __result;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -260,15 +266,17 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
 {
+  bool __reached_end = false;
   while (*__ptr != __c)
   {
     if (*__ptr == _CharT('\0'))
     {
-      return nullptr;
+      __reached_end = true;
+      break;
     }
     ++__ptr;
   }
-  return __ptr;
+  return __reached_end ? nullptr : __ptr;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -352,15 +360,17 @@ template <class _CharT>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
+  _Tp* __result = nullptr;
   while (__n--)
   {
     if (*__ptr == __c)
     {
-      return __ptr;
+      __result = __ptr;
+      break;
     }
     ++__ptr;
   }
-  return nullptr;
+  return __result;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -427,14 +437,16 @@ template <class _Tp>
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMMOVE)
+#  if defined(_CCCL_BUILTIN_MEMMOVE)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMMOVE(__dst, __src, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memmove_impl_host(__dst, __src, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memmove_impl_constexpr(__dst, __src, __n);
 }
 
@@ -446,16 +458,18 @@ __cccl_memcmp_impl_constexpr(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noe
 {
   using _Up = __make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
 
+  int __result = 0;
   while (__n--)
   {
     if (*__lhs != *__rhs)
     {
-      return static_cast<_Up>(*__lhs) < static_cast<_Up>(*__rhs) ? -1 : 1;
+      __result = static_cast<_Up>(*__lhs) < static_cast<_Up>(*__rhs) ? -1 : 1;
+      break;
     }
     ++__lhs;
     ++__rhs;
   }
-  return 0;
+  return __result;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -476,14 +490,16 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMCMP)
+#  if defined(_CCCL_BUILTIN_MEMCMP)
     return _CCCL_BUILTIN_MEMCMP(__lhs, __rhs, __n * sizeof(_Tp));
-#else // ^^^ _CCCL_BUILTIN_MEMCMP ^^^ / vvv !_CCCL_BUILTIN_MEMCMP vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMCMP ^^^ / vvv !_CCCL_BUILTIN_MEMCMP vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcmp_impl_host(__lhs, __rhs, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMCMP ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMCMP ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
 }
 
@@ -514,14 +530,16 @@ __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __s
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMCPY)
+#  if defined(_CCCL_BUILTIN_MEMCPY)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMCPY(__dst, __src, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMCPY ^^^ / vvv !_CCCL_BUILTIN_MEMCPY vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMCPY ^^^ / vvv !_CCCL_BUILTIN_MEMCPY vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcpy_impl_host(__dst, __src, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMCPY ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMCPY ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memcpy_impl_constexpr(__dst, __src, __n);
 }
 
@@ -557,14 +575,16 @@ template <class _Tp>
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMSET)
+#  if defined(_CCCL_BUILTIN_MEMSET)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMSET(__ptr, __c, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMSET ^^^ / vvv !_CCCL_BUILTIN_MEMSET vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMSET ^^^ / vvv !_CCCL_BUILTIN_MEMSET vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memset_impl_host(__ptr, __c, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMSET ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMSET ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memset_impl_constexpr(__ptr, __c, __n);
 }
 

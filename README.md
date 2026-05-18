@@ -88,7 +88,7 @@ int main() {
 
   auto const err = cudaDeviceSynchronize();
   if (err != cudaSuccess) {
-    std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
+    std::cout << "Error: " << cudaGetErrorString(err) << '\n';
     return -1;
   }
 
@@ -507,6 +507,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [Hypre](https://github.com/hypre-space/hypre) - Multigrid linear solvers
 - [LightSeq](https://github.com/bytedance/lightseq) - Training and inference for sequence processing and generation
 - [MatX](https://github.com/NVIDIA/matx) - Numerical computing library using expression templates to provide efficient, Python-like syntax
+- [Parrot](https://github.com/NVlabs/parrot) - Array fusion GPU library
 - [PyTorch](https://github.com/pytorch/pytorch) - Tensor and neural network computations
 - [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations

@@ -44,34 +44,22 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   SelectDirectionParamT select_directions,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items_guarantee,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
-  using value_it_t = cub::NullType**;
-
   auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::batched_topk::dispatch_batched_topk<
-    KeyInputItItT,
-    KeyOutputItItT,
-    value_it_t,
-    value_it_t,
-    SegmentSizeParamT,
-    KParamT,
-    SelectDirectionParamT,
-    NumSegmentsParameterT,
-    TotalNumItemsGuaranteeT>::
-    dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      values_it,
-      values_it,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items_guarantee,
-      stream);
+  return cub::detail::batched_topk::dispatch(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_key_segments_it,
+    d_key_segments_out_it,
+    values_it,
+    values_it,
+    segment_sizes,
+    k,
+    select_directions,
+    num_segments,
+    total_num_items_guarantee,
+    stream);
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2

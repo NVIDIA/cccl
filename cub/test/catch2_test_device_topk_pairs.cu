@@ -35,7 +35,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_pairs(
   ValueOutputIteratorT d_values_out,
   NumItemsT num_items,
   NumOutItemsT k,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   auto stream_env = cuda::stream_ref{stream};
   auto requirements =

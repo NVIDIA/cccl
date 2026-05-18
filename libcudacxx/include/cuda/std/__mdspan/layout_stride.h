@@ -122,6 +122,7 @@ private:
     const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
   {
     // nvcc believes strides is unused here
+    bool __result = true;
     if constexpr (extents_type::rank() != 0)
     {
       index_type __size = 1;
@@ -130,26 +131,30 @@ private:
         // We can only check correct conversion of _OtherIndexType if it is an integral
         if (__conversion_may_overflow(__strides[__r]))
         {
-          return false;
+          __result = false;
+          break;
         }
         if (__ext.extent(__r) == index_type{0})
         {
-          return true;
+          __result = true;
+          break;
         }
 
         index_type __prod = (__ext.extent(__r) - 1);
         if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
         {
-          return false;
+          __result = false;
+          break;
         }
         if (__add_overflow(__size, __prod, &__size))
         {
-          return false;
+          __result = false;
+          break;
         }
       }
     }
 
-    return true;
+    return __result;
   }
 
   // compute offset of a strided layout mapping
@@ -258,15 +263,17 @@ public:
     __bubble_sort_by_strides(__permute);
 
     // check that this permutations represents a growing set
+    bool __result = true;
     for (rank_type __i = 1; __i < __rank_; __i++)
     {
       if (static_cast<index_type>(__strides()[__permute[__i]])
           < static_cast<index_type>(__strides()[__permute[__i - 1]]) * extents().extent(__permute[__i - 1]))
       {
-        return false;
+        __result = false;
+        break;
       }
     }
-    return true;
+    return __result;
   }
   [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping(index_sequence<>) const noexcept
   {
@@ -476,14 +483,17 @@ public:
               __r_largest = __r;
             }
           }
+
+          bool __result = true;
           for (rank_type __r = 0; __r != __rank_; __r++)
           {
             if (extents().extent(__r) == 0 && __r != __r_largest)
             {
-              return false;
+              __result = false;
+              break;
             }
           }
-          return true;
+          return __result;
         }
       }
       else

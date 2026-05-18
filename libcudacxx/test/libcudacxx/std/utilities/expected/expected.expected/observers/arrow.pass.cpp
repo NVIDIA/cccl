@@ -26,18 +26,18 @@ template <class T>
 constexpr bool ArrowNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().operator->())>> =
   noexcept(cuda::std::declval<T>().operator->());
 
-static_assert(!ArrowNoexcept<int>, "");
+static_assert(!ArrowNoexcept<int>);
 
-static_assert(ArrowNoexcept<cuda::std::expected<int, int>>, "");
-static_assert(ArrowNoexcept<const cuda::std::expected<int, int>>, "");
+static_assert(ArrowNoexcept<cuda::std::expected<int, int>>);
+static_assert(ArrowNoexcept<const cuda::std::expected<int, int>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // const
   {
     const cuda::std::expected<int, int> e(5);
     decltype(auto) x = e.operator->();
-    static_assert(cuda::std::same_as<const int*, decltype(x)>, "");
+    static_assert(cuda::std::same_as<const int*, decltype(x)>);
     assert(x == &(e.value()));
     assert(*x == 5);
   }
@@ -46,7 +46,7 @@ __host__ __device__ constexpr bool test()
   {
     cuda::std::expected<int, int> e(5);
     decltype(auto) x = e.operator->();
-    static_assert(cuda::std::same_as<int*, decltype(x)>, "");
+    static_assert(cuda::std::same_as<int*, decltype(x)>);
     assert(x == &(e.value()));
     assert(*x == 5);
   }
@@ -58,7 +58,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

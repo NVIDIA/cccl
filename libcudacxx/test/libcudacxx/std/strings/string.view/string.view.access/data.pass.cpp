@@ -19,7 +19,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_data()
+TEST_FUNC constexpr void test_data()
 {
   using CharT = typename SV::value_type;
 
@@ -43,7 +43,7 @@ __host__ __device__ constexpr void test_data()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_data<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

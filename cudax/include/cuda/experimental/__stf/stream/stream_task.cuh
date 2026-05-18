@@ -464,7 +464,11 @@ protected:
  * obtained object can be used with dynamic dependencies.
  */
 template <typename... Data>
-class stream_task : public stream_task<>
+class stream_task
+// Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
+    : public stream_task<>
+#endif
 {
 public:
   /**

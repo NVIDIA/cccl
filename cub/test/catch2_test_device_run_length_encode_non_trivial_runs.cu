@@ -252,7 +252,7 @@ struct device_rle_policy_selector
   static constexpr int threads = 96;
   static constexpr int items   = 15;
 
-  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
     -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
     return {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS};
@@ -274,7 +274,7 @@ struct CustomDeviceRunLengthEncode
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
     int num_items, // Signed integer type for global offsets
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return cub::detail::rle::dispatch(
       d_temp_storage,
@@ -397,7 +397,7 @@ try
 }
 catch (const std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
@@ -449,5 +449,5 @@ try
 }
 catch (const std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }

@@ -25,17 +25,26 @@ TEST_GLOBAL_VARIABLE int A_count = 0;
 
 struct A
 {
-  __host__ __device__ A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
   {
-    ++A_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++A_count;
+    }
   }
-  __host__ __device__ A(const A&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A(const A&)
   {
-    ++A_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++A_count;
+    }
   }
-  __host__ __device__ virtual ~A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 virtual ~A()
   {
-    --A_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      --A_count;
+    }
   }
 };
 
@@ -43,23 +52,33 @@ TEST_GLOBAL_VARIABLE int B_count = 0;
 
 struct B : public A
 {
-  __host__ __device__ B()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 B()
   {
-    ++B_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++B_count;
+    }
   }
-  __host__ __device__ B(const B&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 B(const B&)
       : A()
   {
-    ++B_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++B_count;
+    }
   }
-  __host__ __device__ virtual ~B()
+  TEST_FUNC virtual TEST_CONSTEXPR_CXX23 ~B()
   {
-    --B_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      --B_count;
+    }
   }
 };
 
 template <class T>
-typename cuda::std::enable_if<!cuda::std::is_array<T>::value, T*>::type __host__ __device__ newValue(int num_elements)
+typename cuda::std::enable_if<!cuda::std::is_array<T>::value, T*>::type TEST_FUNC TEST_CONSTEXPR_CXX23
+newValue(int num_elements)
 {
   assert(num_elements == 1);
   return new T;
@@ -67,7 +86,7 @@ typename cuda::std::enable_if<!cuda::std::is_array<T>::value, T*>::type __host__
 
 template <class T>
 typename cuda::std::enable_if<cuda::std::is_array<T>::value, typename cuda::std::remove_all_extents<T>::type*>::type
-  __host__ __device__
+  TEST_FUNC TEST_CONSTEXPR_CXX23
   newValue(int num_elements)
 {
   using VT = typename cuda::std::remove_all_extents<T>::type;
@@ -77,10 +96,10 @@ typename cuda::std::enable_if<cuda::std::is_array<T>::value, typename cuda::std:
 
 struct IncompleteType;
 
-__host__ __device__ void checkNumIncompleteTypeAlive(int i);
-__host__ __device__ int getNumIncompleteTypeAlive();
-__host__ __device__ IncompleteType* getNewIncomplete();
-__host__ __device__ IncompleteType* getNewIncompleteArray(int size);
+TEST_FUNC void checkNumIncompleteTypeAlive(int i);
+TEST_FUNC int getNumIncompleteTypeAlive();
+TEST_FUNC IncompleteType* getNewIncomplete();
+TEST_FUNC IncompleteType* getNewIncompleteArray(int size);
 
 template <class ThisT, class... Args>
 struct args_is_this_type : cuda::std::false_type
@@ -103,26 +122,26 @@ struct StoresIncomplete
   StoresIncomplete(StoresIncomplete&&)      = default;
 
   template <class... Args>
-  __host__ __device__ StoresIncomplete(Args&&... args)
+  TEST_FUNC StoresIncomplete(Args&&... args)
       : m_ptr(cuda::std::forward<Args>(args)...)
   {
-    static_assert(!args_is_this_type<StoresIncomplete, Args...>::value, "");
+    static_assert(!args_is_this_type<StoresIncomplete, Args...>::value);
   }
 
-  __host__ __device__ ~StoresIncomplete();
+  TEST_FUNC ~StoresIncomplete();
 
-  __host__ __device__ IncompleteType* get() const
+  TEST_FUNC IncompleteType* get() const
   {
     return m_ptr.get();
   }
-  __host__ __device__ Del& get_deleter()
+  TEST_FUNC Del& get_deleter()
   {
     return m_ptr.get_deleter();
   }
 };
 
 template <class IncompleteT = IncompleteType, class Del = cuda::std::default_delete<IncompleteT>, class... Args>
-__host__ __device__ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_args)
+TEST_FUNC void doIncompleteTypeTest(int expect_alive, Args&&... ctor_args)
 {
   checkNumIncompleteTypeAlive(expect_alive);
   {
@@ -140,48 +159,48 @@ __host__ __device__ void doIncompleteTypeTest(int expect_alive, Args&&... ctor_a
   checkNumIncompleteTypeAlive(0);
 }
 
-#define INCOMPLETE_TEST_EPILOGUE()                                            \
-  _LIBCUDACXX_DEVICE int is_incomplete_test_anchor = is_incomplete_test();    \
-                                                                              \
-  TEST_GLOBAL_VARIABLE int IncompleteType_count = 0;                          \
-  struct IncompleteType                                                       \
-  {                                                                           \
-    __host__ __device__ IncompleteType()                                      \
-    {                                                                         \
-      ++IncompleteType_count;                                                 \
-    }                                                                         \
-    __host__ __device__ ~IncompleteType()                                     \
-    {                                                                         \
-      --IncompleteType_count;                                                 \
-    }                                                                         \
-  };                                                                          \
-                                                                              \
-  __host__ __device__ void checkNumIncompleteTypeAlive(int i)                 \
-  {                                                                           \
-    assert(IncompleteType_count == i);                                        \
-  }                                                                           \
-  __host__ __device__ int getNumIncompleteTypeAlive()                         \
-  {                                                                           \
-    return IncompleteType_count;                                              \
-  }                                                                           \
-  __host__ __device__ IncompleteType* getNewIncomplete()                      \
-  {                                                                           \
-    return new IncompleteType;                                                \
-  }                                                                           \
-  __host__ __device__ IncompleteType* getNewIncompleteArray(int size)         \
-  {                                                                           \
-    return new IncompleteType[size];                                          \
-  }                                                                           \
-                                                                              \
-  template <class IncompleteT, class Del>                                     \
-  __host__ __device__ StoresIncomplete<IncompleteT, Del>::~StoresIncomplete() \
+#define INCOMPLETE_TEST_EPILOGUE()                                         \
+  _LIBCUDACXX_DEVICE int is_incomplete_test_anchor = is_incomplete_test(); \
+                                                                           \
+  TEST_GLOBAL_VARIABLE int IncompleteType_count = 0;                       \
+  struct IncompleteType                                                    \
+  {                                                                        \
+    TEST_FUNC IncompleteType()                                             \
+    {                                                                      \
+      ++IncompleteType_count;                                              \
+    }                                                                      \
+    TEST_FUNC ~IncompleteType()                                            \
+    {                                                                      \
+      --IncompleteType_count;                                              \
+    }                                                                      \
+  };                                                                       \
+                                                                           \
+  TEST_FUNC void checkNumIncompleteTypeAlive(int i)                        \
+  {                                                                        \
+    assert(IncompleteType_count == i);                                     \
+  }                                                                        \
+  TEST_FUNC int getNumIncompleteTypeAlive()                                \
+  {                                                                        \
+    return IncompleteType_count;                                           \
+  }                                                                        \
+  TEST_FUNC IncompleteType* getNewIncomplete()                             \
+  {                                                                        \
+    return new IncompleteType;                                             \
+  }                                                                        \
+  TEST_FUNC IncompleteType* getNewIncompleteArray(int size)                \
+  {                                                                        \
+    return new IncompleteType[size];                                       \
+  }                                                                        \
+                                                                           \
+  template <class IncompleteT, class Del>                                  \
+  TEST_FUNC StoresIncomplete<IncompleteT, Del>::~StoresIncomplete()        \
   {}
 
-#define DEFINE_AND_RUN_IS_INCOMPLETE_TEST(...)                  \
-  __host__ __device__ static constexpr int is_incomplete_test() \
-  {                                                             \
-    __VA_ARGS__ return 0;                                       \
-  }                                                             \
+#define DEFINE_AND_RUN_IS_INCOMPLETE_TEST(...)        \
+  TEST_FUNC static constexpr int is_incomplete_test() \
+  {                                                   \
+    __VA_ARGS__ return 0;                             \
+  }                                                   \
   INCOMPLETE_TEST_EPILOGUE()
 
 #endif // TEST_SUPPORT_UNIQUE_PTR_TEST_HELPER_H

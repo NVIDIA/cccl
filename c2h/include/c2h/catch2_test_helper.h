@@ -19,6 +19,7 @@
 #include <type_traits>
 
 #include <c2h/catch2_main.h>
+#include <c2h/catch2_test_macros.h>
 #include <c2h/checked_allocator.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
@@ -31,35 +32,6 @@
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
-
-// workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
-#if _CCCL_COMPILER(NVHPC)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
-#endif
-// The nv_diagnostic pragmas in Catch2 macros cause cicc to hang indefinitely in CTK 13.0.
-// See NVBugs 5475335.
-#if _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, ==, 13, 0)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#endif
-// workaround for error
-// * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
-// * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
-//              (pragma.c, line 526 in alloc_copy_of_pending_pragma)
-// see also upstream Catch2 issue: https://github.com/catchorg/Catch2/issues/2636
-#if _CCCL_COMPILER(MSVC)
-#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  undef CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
-#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
-#  define CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
-#endif
 
 #ifndef VAR_IDX
 #  define VAR_IDX 0
@@ -521,7 +493,19 @@ auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
 }
 
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+template <typename T1,
+          typename T2,
+          // provide this operator only when the pair's content is also streamable
+          ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream>()
+                                       << ::cuda::std::declval<T1>() << ::cuda::std::declval<T2>())>* = nullptr>
+::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
+{
+  return os << "[" << pair.first << ", " << pair.second << "]";
+}
+
 template <size_t N, typename... T>
 enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}
@@ -583,26 +567,26 @@ class nvtx_fixture
 
 #define C2H_TEST_IMPL(ID, NAME, TAG, ...)                                  \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST(NAME, TAG, ...) C2H_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...)            \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
   C2H_TEST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_LIST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...) \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>;   \
-  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
   C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)

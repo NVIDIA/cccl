@@ -51,47 +51,23 @@ merge(execution_policy<Derived>& policy,
         return result_begin;
       }
 
-      auto value_nullptr = static_cast<cub::NullType*>(nullptr);
-      const auto stream  = cuda_cub::stream(policy);
-      cudaError_t status;
+      const auto stream   = cuda_cub::stream(policy);
       size_t storage_size = 0;
-      THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
-        status,
-        cub::detail::merge::dispatch,
-        num_keys1,
-        num_keys2,
-        (nullptr,
-         storage_size,
-         keys1_begin,
-         value_nullptr,
-         num_keys1_fixed,
-         keys2_begin,
-         value_nullptr,
-         num_keys2_fixed,
-         result_begin,
-         value_nullptr,
-         compare_op,
-         stream));
+      cudaError_t status  = cub::DeviceMerge::MergeKeys(
+        nullptr, storage_size, keys1_begin, num_keys1, keys2_begin, num_keys2, result_begin, compare_op, stream);
       throw_on_error(status, "merge: failed on 1st step");
 
       thrust::detail::temporary_array<char, Derived> temp_storage(policy, storage_size);
-      THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
-        status,
-        cub::detail::merge::dispatch,
+      status = cub::DeviceMerge::MergeKeys(
+        temp_storage.data().get(),
+        storage_size,
+        keys1_begin,
         num_keys1,
+        keys2_begin,
         num_keys2,
-        (temp_storage.data().get(),
-         storage_size,
-         keys1_begin,
-         value_nullptr,
-         num_keys1_fixed,
-         keys2_begin,
-         value_nullptr,
-         num_keys2_fixed,
-         result_begin,
-         value_nullptr,
-         compare_op,
-         stream));
+        result_begin,
+        compare_op,
+        stream);
       throw_on_error(status, "merge: failed on 2nd step");
 
       status = cuda_cub::synchronize_optional(policy);
@@ -137,46 +113,37 @@ template <class Derived,
                           return {keys_out_begin, items_out_begin};
                         }
 
-                        const auto stream = cuda_cub::stream(policy);
-                        cudaError_t status;
+                        const auto stream   = cuda_cub::stream(policy);
                         size_t storage_size = 0;
-                        THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
-                          status,
-                          cub::detail::merge::dispatch,
+                        cudaError_t status  = cub::DeviceMerge::MergePairs(
+                          nullptr,
+                          storage_size,
+                          keys1_begin,
+                          items1_begin,
                           num_keys1,
+                          keys2_begin,
+                          items2_begin,
                           num_keys2,
-                          (nullptr,
-                           storage_size,
-                           keys1_begin,
-                           items1_begin,
-                           num_keys1_fixed,
-                           keys2_begin,
-                           items2_begin,
-                           num_keys2_fixed,
-                           keys_out_begin,
-                           items_out_begin,
-                           compare_op,
-                           stream));
+                          keys_out_begin,
+                          items_out_begin,
+                          compare_op,
+                          stream);
                         throw_on_error(status, "merge: failed on 1st step");
 
                         thrust::detail::temporary_array<char, Derived> temp_storage(policy, storage_size);
-                        THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
-                          status,
-                          cub::detail::merge::dispatch,
+                        status = cub::DeviceMerge::MergePairs(
+                          temp_storage.data().get(),
+                          storage_size,
+                          keys1_begin,
+                          items1_begin,
                           num_keys1,
+                          keys2_begin,
+                          items2_begin,
                           num_keys2,
-                          (temp_storage.data().get(),
-                           storage_size,
-                           keys1_begin,
-                           items1_begin,
-                           num_keys1_fixed,
-                           keys2_begin,
-                           items2_begin,
-                           num_keys2_fixed,
-                           keys_out_begin,
-                           items_out_begin,
-                           compare_op,
-                           stream));
+                          keys_out_begin,
+                          items_out_begin,
+                          compare_op,
+                          stream);
                         throw_on_error(status, "merge: failed on 2nd step");
 
                         status = cuda_cub::synchronize_optional(policy);

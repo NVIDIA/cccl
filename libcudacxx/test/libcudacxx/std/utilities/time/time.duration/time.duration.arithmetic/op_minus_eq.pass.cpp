@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::chrono::seconds s(3);
   s -= cuda::std::chrono::seconds(2);

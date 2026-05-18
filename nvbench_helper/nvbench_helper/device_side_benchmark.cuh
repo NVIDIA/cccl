@@ -32,8 +32,8 @@ __device__ __forceinline__ static void sink(T value)
   }
 }
 
-template <int BlockThreads, int UnrollFactor, typename ActionT, typename T>
-__launch_bounds__(BlockThreads) __global__ static void benchmark_kernel(_CCCL_GRID_CONSTANT const ActionT action)
+template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T>
+__launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(_CCCL_GRID_CONSTANT const ActionT action)
 {
   auto data = generate_random_data<T>();
   cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {

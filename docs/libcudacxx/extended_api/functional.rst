@@ -7,10 +7,10 @@ Functional
    :hidden:
    :maxdepth: 1
 
+   functional/always_true_false
    functional/proclaim_return_type
    functional/maximum_minimum
    functional/operator_properties
-   memory/get_device_address
 
 .. list-table::
    :widths: 25 45 30 30
@@ -20,6 +20,14 @@ Functional
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
+
+   * - :ref:`cuda::always_true <libcudacxx-extended-api-functional-always-true-false>`
+     - Function object that always returns ``true``
+     - CCCL 3.4.0
+
+   * - :ref:`cuda::always_false <libcudacxx-extended-api-functional-always-true-false>`
+     - Function object that always returns ``false``
+     - CCCL 3.4.0
 
    * - :ref:`cuda::maximum <libcudacxx-extended-api-functional-maximum-minimum>`
      - Returns the maximum of two values

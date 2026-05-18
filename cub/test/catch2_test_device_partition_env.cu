@@ -9,8 +9,10 @@ struct stream_registry_factory_t;
 
 #include <cub/device/device_partition.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 
 #include "catch2_test_device_select_common.cuh"
@@ -24,6 +26,17 @@ DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::Flagged, device_partition_flagged);
 #include <c2h/catch2_test_helper.h>
 
 namespace stdexec = cuda::std::execution;
+
+template <typename T>
+struct greater_than_t
+{
+  T compare;
+
+  __host__ __device__ bool operator()(const T& a) const
+  {
+    return a > compare;
+  }
+};
 
 #if TEST_LAUNCH == 0
 
@@ -71,6 +84,38 @@ TEST_CASE("Device partition flagged works with default environment", "[partition
 
   REQUIRE(d_num_selected == expected_num_selected);
   REQUIRE(d_out == expected_output);
+}
+
+TEST_CASE("Device partition three-way works with default environment", "[partition][device]")
+{
+  auto d_in             = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
+  auto d_small_out      = c2h::device_vector<int>(8);
+  auto d_large_out      = c2h::device_vector<int>(8);
+  auto d_unselected_out = c2h::device_vector<int>(8);
+  auto d_num_selected   = c2h::device_vector<int>(2);
+
+  less_than_t<int> small_selector{7};
+  greater_than_t<int> large_selector{50};
+
+  auto error = cub::DevicePartition::If(
+    d_in.begin(),
+    d_small_out.begin(),
+    d_large_out.begin(),
+    d_unselected_out.begin(),
+    d_num_selected.begin(),
+    static_cast<int>(d_in.size()),
+    small_selector,
+    large_selector);
+  REQUIRE(error == cudaSuccess);
+
+  REQUIRE(d_num_selected[0] == 5);
+  REQUIRE(d_num_selected[1] == 1);
+  d_small_out.resize(d_num_selected[0]);
+  d_large_out.resize(d_num_selected[1]);
+  c2h::device_vector<int> expected_small{0, 2, 3, 5, 2};
+  c2h::device_vector<int> expected_large{81};
+  REQUIRE(d_small_out == expected_small);
+  REQUIRE(d_large_out == expected_large);
 }
 
 #endif
@@ -141,6 +186,55 @@ C2H_TEST("Device partition flagged uses environment", "[partition][device]")
   REQUIRE(d_out == expected_output);
 }
 
+C2H_TEST("Device partition three-way uses environment", "[partition][device]")
+{
+  auto d_in             = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
+  auto d_small_out      = c2h::device_vector<int>(8);
+  auto d_large_out      = c2h::device_vector<int>(8);
+  auto d_unselected_out = c2h::device_vector<int>(8);
+  auto d_num_selected   = c2h::device_vector<int>(2);
+
+  less_than_t<int> small_selector{7};
+  greater_than_t<int> large_selector{50};
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DevicePartition::If(
+      nullptr,
+      expected_bytes_allocated,
+      d_in.begin(),
+      d_small_out.begin(),
+      d_large_out.begin(),
+      d_unselected_out.begin(),
+      d_num_selected.begin(),
+      static_cast<int>(d_in.size()),
+      small_selector,
+      large_selector));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_partition_if(
+    d_in.begin(),
+    d_small_out.begin(),
+    d_large_out.begin(),
+    d_unselected_out.begin(),
+    d_num_selected.begin(),
+    static_cast<int>(d_in.size()),
+    small_selector,
+    large_selector,
+    env);
+
+  REQUIRE(d_num_selected[0] == 5);
+  REQUIRE(d_num_selected[1] == 1);
+  d_small_out.resize(d_num_selected[0]);
+  d_large_out.resize(d_num_selected[1]);
+  c2h::device_vector<int> expected_small{0, 2, 3, 5, 2};
+  c2h::device_vector<int> expected_large{81};
+  REQUIRE(d_small_out == expected_small);
+  REQUIRE(d_large_out == expected_large);
+}
+
 TEST_CASE("Device partition uses custom stream", "[partition][device]")
 {
   using value_t     = int;
@@ -177,3 +271,119 @@ TEST_CASE("Device partition uses custom stream", "[partition][device]")
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+#if TEST_LAUNCH != 1
+
+struct less_than_5_t
+{
+  __host__ __device__ bool operator()(int val) const
+  {
+    return val < 5;
+  }
+};
+
+template <unsigned int BlockThreads>
+struct partition_policy_selector
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::select::select_if_policy
+  {
+    return {static_cast<int>(BlockThreads),
+            10,
+            cub::BLOCK_LOAD_DIRECT,
+            cub::LOAD_DEFAULT,
+            cub::BLOCK_SCAN_WARP_SCANS,
+            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+  }
+};
+
+template <unsigned int BlockThreads>
+struct three_way_partition_policy_selector
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::three_way_partition::three_way_partition_policy
+  {
+    return {static_cast<int>(BlockThreads),
+            10,
+            cub::BLOCK_LOAD_DIRECT,
+            cub::LOAD_DEFAULT,
+            cub::BLOCK_SCAN_WARP_SCANS,
+            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+  }
+};
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+C2H_TEST("DevicePartition::If can be tuned", "[partition][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_out                               = c2h::device_vector<int>(8);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  block_size_extracting_op<less_than_5_t> select_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto env = cuda::execution::tune(partition_policy_selector<target_block_size>{});
+
+  device_partition_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, env);
+  REQUIRE(d_num_selected[0] == 4);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DevicePartition::Flagged can be tuned", "[partition][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_out                               = c2h::device_vector<int>(8);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  block_size_extracting_constant_iterator flags_begin(1, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(partition_policy_selector<target_block_size>{});
+
+  device_partition_flagged(d_in.begin(), flags_begin, d_out.begin(), d_num_selected.begin(), 8, env);
+  REQUIRE(d_num_selected[0] == 8);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+struct less_than_7_t
+{
+  __host__ __device__ bool operator()(int val) const
+  {
+    return val < 7;
+  }
+};
+
+C2H_TEST("DevicePartition::If three-way can be tuned", "[partition][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto d_in                                = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
+  auto d_small_out                         = c2h::device_vector<int>(8);
+  auto d_large_out                         = c2h::device_vector<int>(8);
+  auto d_unselected_out                    = c2h::device_vector<int>(8);
+  auto d_num_selected                      = c2h::device_vector<int>(2);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  block_size_extracting_op<less_than_7_t> small_selector{thrust::raw_pointer_cast(d_block_size.data())};
+  greater_than_t<int> large_selector{50};
+
+  auto env = cuda::execution::tune(three_way_partition_policy_selector<target_block_size>{});
+
+  device_partition_if(
+    d_in.begin(),
+    d_small_out.begin(),
+    d_large_out.begin(),
+    d_unselected_out.begin(),
+    d_num_selected.begin(),
+    static_cast<int>(d_in.size()),
+    small_selector,
+    large_selector,
+    env);
+  REQUIRE(d_num_selected[0] == 5);
+  REQUIRE(d_num_selected[1] == 1);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1

@@ -3,21 +3,26 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>
 #include <cuda/std/cstddef>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Level, class Hierarchy>
-__device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy& hier)
 {
+  using ProductType =
+    cuda::std::conditional_t<cuda::std::is_same_v<Level, cuda::grid_level>, cuda::std::uint64_t, cuda::std::uint32_t>;
+
   // 1. Test cuda::block_level::dims(x, hier) signature.
   static_assert(
     cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::block_level::dims(level, hier))>);
@@ -39,7 +44,7 @@ __device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
   static_assert(noexcept(cuda::block_level::static_count(level, hier)));
 
   // 5. Test cuda::block_level::count(x, hier) signature.
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::block_level::count(level, hier))>);
+  static_assert(cuda::std::is_same_v<ProductType, decltype(cuda::block_level::count(level, hier))>);
   static_assert(noexcept(cuda::block_level::count(level, hier)));
 
   // 6. Test cuda::block_level::index(x, hier) signature.
@@ -48,12 +53,12 @@ __device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
   static_assert(noexcept(cuda::block_level::index(level, hier)));
 
   // 7. Test cuda::block_level::rank(x, hier) signature.
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::block_level::rank(level, hier))>);
+  static_assert(cuda::std::is_same_v<ProductType, decltype(cuda::block_level::rank(level, hier))>);
   static_assert(noexcept(cuda::block_level::rank(level, hier)));
 }
 
 template <class T, class Level, class Hierarchy>
-__device__ void test_query_as_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_as_signatures(const Level& level, const Hierarchy& hier)
 {
   // 1. Test cuda::block_level::dims_as(x, hier) signature.
   static_assert(
@@ -81,7 +86,7 @@ __device__ void test_query_as_signatures(const Level& level, const Hierarchy& hi
 }
 
 template <class InLevel, class Hierarchy>
-__device__ void test(const InLevel& in_level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const InLevel& in_level, const Hierarchy& hier)
 {
   test_query_signatures(in_level, hier);
   test_query_as_signatures<short>(in_level, hier);
@@ -93,12 +98,9 @@ __device__ void test(const InLevel& in_level, const Hierarchy& hier)
 }
 
 template <class Hierarchy>
-__device__ void test(const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const Hierarchy& hier)
 {
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    test(cuda::cluster, hier);
-  }
+  test(cuda::cluster, hier);
   test(cuda::grid, hier);
 }
 
@@ -108,22 +110,22 @@ __global__ void test_kernel(Hierarchy hier)
   test(hier);
 }
 
-#define TEST_KERNEL_INSTANTIATE(...)                                                 \
-  template __global__ void test_kernel<decltype(cuda::make_hierarchy(__VA_ARGS__))>( \
-    decltype(cuda::make_hierarchy(__VA_ARGS__)))
+#define TEST_KERNEL_INSTANTIATE(...)                                                              \
+  template __global__ void test_kernel<decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__})>( \
+    decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__}))
 
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::block_dims(dim3{}));
 
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims<1>(), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims<1>(), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims(dim3{}), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims(dim3{}), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims(dim3{}), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims<1>(), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims<1>(), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims(dim3{}), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims(dim3{}), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims(dim3{}), cuda::block_dims(dim3{}));
 
 int main(int, char**)

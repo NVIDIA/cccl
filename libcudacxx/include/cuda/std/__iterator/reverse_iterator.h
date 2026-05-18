@@ -61,7 +61,8 @@ inline constexpr bool __noexcept_rev_iter_iter_move = false;
 
 template <class _Iter>
 inline constexpr bool __noexcept_rev_iter_iter_move<_Iter, void_t<decltype(--::cuda::std::declval<_Iter&>())>> =
-  is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::ranges::iter_move(--::cuda::std::declval<_Iter&>()));
+  is_nothrow_copy_constructible_v<_Iter>
+  && noexcept(::cuda::std::ranges::__iter_move_cpo{}(--::cuda::std::declval<_Iter&>()));
 
 template <class _Iter, class _Iter2, class = void>
 inline constexpr bool __noexcept_rev_iter_iter_swap = false;
@@ -69,7 +70,7 @@ inline constexpr bool __noexcept_rev_iter_iter_swap = false;
 template <class _Iter, class _Iter2>
 inline constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
   is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
-  && noexcept(::cuda::std::ranges::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
+  && noexcept(::cuda::std::ranges::__iter_swap_cpo{}(--declval<_Iter&>(), --declval<_Iter2&>()));
 
 // MSVC has issues with `is_nothrow_convertible_v` sometimes, so do the noexcept expression
 template <class _Iter, class _Iter2, class = void>
@@ -99,9 +100,7 @@ public:
   using iterator_type = _Iter;
 
   using iterator_category =
-    _If<__has_random_access_traversal<_Iter>,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+    _If<__has_random_access_traversal<_Iter>, random_access_iterator_tag, __iterator_traits_category_or_concept_t<_Iter>>;
   using pointer          = typename iterator_traits<_Iter>::pointer;
   using iterator_concept = _If<random_access_iterator<_Iter>, random_access_iterator_tag, bidirectional_iterator_tag>;
   using value_type       = iter_value_t<_Iter>;
@@ -148,8 +147,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
   {
-    _Iter __tmp = current;
-    return *--__tmp;
+    return *::cuda::std::prev(current);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -250,7 +248,7 @@ public:
   iter_move(const reverse_iterator& __i) noexcept(__noexcept_rev_iter_iter_move<_Iter2>)
   {
     auto __tmp = __i.base();
-    return ::cuda::std::ranges::iter_move(--__tmp);
+    return ::cuda::std::ranges::__iter_move_cpo{}(--__tmp);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -260,7 +258,7 @@ public:
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
-    return ::cuda::std::ranges::iter_swap(--__xtmp, --__ytmp);
+    return ::cuda::std::ranges::__iter_swap_cpo{}(--__xtmp, --__ytmp);
   }
 
   _CCCL_EXEC_CHECK_DISABLE

@@ -52,7 +52,7 @@ void for_each_in_extents(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   op_t<T, OffsetT> op{temp_in, temp_out};
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::DeviceFor::ForEachInExtents(ext, op, launch.get_stream());
+    _CCCL_TRY_CUDA_API(cub::DeviceFor::ForEachInExtents, "ForEachInExtents failed", ext, op, launch.get_stream());
   });
 }
 

@@ -40,8 +40,8 @@ int main(int, char**)
 
   {
     constexpr cuda::std::tuple<int, const int, double, double> p5{1, 2, 3.4, 5.6};
-    static_assert(cuda::std::get<int>(p5) == 1, "");
-    static_assert(cuda::std::get<const int>(p5) == 2, "");
+    static_assert(cuda::std::get<int>(p5) == 1);
+    static_assert(cuda::std::get<const int>(p5) == 2);
   }
 
   {
@@ -52,6 +52,7 @@ int main(int, char**)
     assert(i2 == 2);
   }
 
+#if !_CCCL_TILE_COMPILATION() // dynamic memory allocation with non-placement ::operator new is unsupported in tile code
   {
     using upint = cuda::std::unique_ptr<int>;
     cuda::std::tuple<upint> t(upint(new int(4)));
@@ -67,31 +68,32 @@ int main(int, char**)
     assert(*p == 4);
     assert(cuda::std::get<upint>(t) != nullptr);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     int x = 42;
     int y = 43;
     cuda::std::tuple<int&, int const&> const t(x, y);
-    static_assert(cuda::std::is_same<int&, decltype(cuda::std::get<int&>(cuda::std::move(t)))>::value, "");
-    static_assert(noexcept(cuda::std::get<int&>(cuda::std::move(t))), "");
-    static_assert(cuda::std::is_same<int const&, decltype(cuda::std::get<int const&>(cuda::std::move(t)))>::value, "");
-    static_assert(noexcept(cuda::std::get<int const&>(cuda::std::move(t))), "");
+    static_assert(cuda::std::is_same<int&, decltype(cuda::std::get<int&>(cuda::std::move(t)))>::value);
+    static_assert(noexcept(cuda::std::get<int&>(cuda::std::move(t))));
+    static_assert(cuda::std::is_same<int const&, decltype(cuda::std::get<int const&>(cuda::std::move(t)))>::value);
+    static_assert(noexcept(cuda::std::get<int const&>(cuda::std::move(t))));
   }
 
   {
     int x = 42;
     int y = 43;
     cuda::std::tuple<int&&, int const&&> const t(cuda::std::move(x), cuda::std::move(y));
-    static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<int&&>(cuda::std::move(t)))>::value, "");
-    static_assert(noexcept(cuda::std::get<int&&>(cuda::std::move(t))), "");
+    static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<int&&>(cuda::std::move(t)))>::value);
+    static_assert(noexcept(cuda::std::get<int&&>(cuda::std::move(t))));
     static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(t)))>::value,
                   "");
-    static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(t))), "");
+    static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(t))));
   }
   {
     constexpr const cuda::std::tuple<int, const int, double, double> t{1, 2, 3.4, 5.6};
-    static_assert(cuda::std::get<int>(cuda::std::move(t)) == 1, "");
-    static_assert(cuda::std::get<const int>(cuda::std::move(t)) == 2, "");
+    static_assert(cuda::std::get<int>(cuda::std::move(t)) == 1);
+    static_assert(cuda::std::get<const int>(cuda::std::move(t)) == 2);
   }
 
   return 0;

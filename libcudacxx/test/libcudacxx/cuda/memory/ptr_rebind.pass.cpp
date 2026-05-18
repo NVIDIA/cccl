@@ -8,20 +8,25 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <typename T, typename U, typename V>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   uintptr_t ptr_int         = 16;
   [[maybe_unused]] auto ptr = reinterpret_cast<T>(ptr_int);
   static_assert(cuda::std::is_same_v<U, decltype(cuda::ptr_rebind<V>(ptr))>);
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test<char*, char*, char>();
   test<char*, short*, short>();

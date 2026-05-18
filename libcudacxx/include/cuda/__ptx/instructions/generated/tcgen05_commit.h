@@ -19,7 +19,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void
 tcgen05_commit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -62,7 +62,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_commit_multicast(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar, ::cuda::std::uint16_t __ctaMask)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)

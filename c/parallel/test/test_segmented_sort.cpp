@@ -49,7 +49,7 @@ struct TestParameters
   static constexpr bool m_descending     = descending;
   static constexpr bool m_overwrite_okay = overwrite_okay;
 
-  constexpr TestParameters() {}
+  constexpr TestParameters() = default;
 
   constexpr bool is_descending() const
   {
@@ -679,6 +679,7 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
 
   // Create expected result
   std::vector<std::pair<key_t, item_t>> key_value_pairs;
+  key_value_pairs.reserve(n_elems);
   for (std::size_t i = 0; i < n_elems; ++i)
   {
     key_value_pairs.emplace_back(host_keys[i], host_values[i]);

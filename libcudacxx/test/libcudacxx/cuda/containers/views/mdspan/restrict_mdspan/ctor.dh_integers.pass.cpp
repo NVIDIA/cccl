@@ -45,34 +45,25 @@ _CCCL_CONCEPT check_mdspan_ctor_implicit2 =
   _CCCL_REQUIRES_EXPR((MDS, variadic Args), MDS m, Args... args)((m = {args...}));
 
 template <class MDS>
-__host__ __device__ void check_implicit_construction(MDS);
+TEST_FUNC cuda::std::true_type check_implicit_construction(MDS);
 
 template <class MDS, class... Args>
-__host__ __device__ constexpr bool check_implicit_construction_impl(...)
-{
-  return false;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(...) -> cuda::std::false_type;
 template <class MDS, class... Args>
-__host__ __device__ constexpr auto check_implicit_construction_impl(int)
-  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<Args>()...}), true)
-{
-  return true;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(int)
+  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<Args>()...}));
 
 template <class MDS, class... Args>
-_CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Args...>(0);
+_CCCL_CONCEPT check_mdspan_ctor_implicit = decltype(check_implicit_construction_impl<MDS, Args...>(0))::value;
 
 template <bool mec, bool ac, class H, class M, class A, class... Idxs, cuda::std::enable_if_t<mec && ac, int> = 0>
-__host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
+TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
 {
   using MDS = cuda::restrict_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
+  move_counted_handle<typename MDS::element_type>::reset();
   MDS m(handle, idxs...);
   test_move_counter<MDS, H>();
 
@@ -80,7 +71,7 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   static_assert(check_mdspan_ctor_implicit<MDS, H, cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>>,
                 "");
   // check that the constructor from integral is explicit
-  static_assert(!check_mdspan_ctor_implicit<MDS, H, Idxs...>, "");
+  static_assert(!check_mdspan_ctor_implicit<MDS, H, Idxs...>);
 
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
@@ -88,17 +79,17 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   test_equality_accessor(m, A{});
 }
 template <bool mec, bool ac, class H, class M, class A, class... Idxs, cuda::std::enable_if_t<!(mec && ac), int> = 0>
-__host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
+TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
 {
   using MDS = cuda::restrict_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
-  static_assert(!cuda::std::is_constructible<MDS, const H&, Idxs...>::value, "");
+  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
+  static_assert(!cuda::std::is_constructible<MDS, const H&, Idxs...>::value);
 }
 
 template <bool mec, bool ac, class H, class L, class A>
-__host__ __device__ constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
+TEST_FUNC constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // construct from just dynamic extents
@@ -121,7 +112,7 @@ __host__ __device__ constexpr void mixin_extents(const H& handle, const L& layou
 }
 
 template <bool ac, class H, class A>
-__host__ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
+TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   mixin_extents<true, ac>(handle, cuda::std::layout_left(), acc);
   mixin_extents<true, ac>(handle, cuda::std::layout_right(), acc);
@@ -150,20 +141,20 @@ __host__ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible<T>::value, int> = 0>
-__host__ __device__ constexpr void mixin_accessor()
+TEST_FUNC constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   mixin_layout<true>(elements.data(), cuda::std::default_accessor<T>());
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible<T>::value, int> = 0>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void mixin_accessor()
+TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   mixin_layout<true>(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   mixin_accessor<int>();
   mixin_accessor<const int>();
@@ -174,21 +165,21 @@ __host__ __device__ constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   using mds_t                         = cuda::restrict_mdspan<float, cuda::std::extents<int, 3, D, D>>;
   // sanity check
-  static_assert(cuda::std::is_constructible<mds_t, float*, int, int, int>::value, "");
-  static_assert(cuda::std::is_constructible<mds_t, float*, int, int>::value, "");
+  static_assert(cuda::std::is_constructible<mds_t, float*, int, int, int>::value);
+  static_assert(cuda::std::is_constructible<mds_t, float*, int, int>::value);
   // wrong number of arguments
-  static_assert(!cuda::std::is_constructible<mds_t, float*, int>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, int, int>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, int>::value);
+  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, int, int>::value);
   // not convertible to int
-  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, cuda::std::dextents<int, 1>>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, cuda::std::dextents<int, 1>>::value);
 
   // test non-constructibility from wrong handle_type
-  static_assert(!cuda::std::is_constructible<mds_t, const float*, int, int>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, const float*, int, int>::value);
 
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_evil()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_evil()
 {
   mixin_accessor<MinimalElementType>();
   mixin_accessor<const MinimalElementType>();
@@ -201,8 +192,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

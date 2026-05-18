@@ -69,32 +69,32 @@ int main(int, char**)
 {
   {
     using It = cuda::std::iterator_traits<test_iterator>;
-    static_assert((cuda::std::is_same<It::difference_type, int>::value), "");
-    static_assert((cuda::std::is_same<It::value_type, A>::value), "");
-    static_assert((cuda::std::is_same<It::pointer, A*>::value), "");
-    static_assert((cuda::std::is_same<It::reference, A&>::value), "");
-    static_assert((cuda::std::is_same<It::iterator_category, cuda::std::forward_iterator_tag>::value), "");
+    static_assert((cuda::std::is_same<It::difference_type, int>::value));
+    static_assert((cuda::std::is_same<It::value_type, A>::value));
+    static_assert((cuda::std::is_same<It::pointer, A*>::value));
+    static_assert((cuda::std::is_same<It::reference, A&>::value));
+    static_assert((cuda::std::is_same<It::iterator_category, cuda::std::forward_iterator_tag>::value));
   }
 
 #if !TEST_COMPILER(NVRTC)
   { // std::vector
     using It = cuda::std::iterator_traits<typename std::vector<int>::iterator>;
-    static_assert((cuda::std::is_same<It::difference_type, std::ptrdiff_t>::value), "");
-    static_assert((cuda::std::is_same<It::value_type, int>::value), "");
-    static_assert((cuda::std::is_same<It::pointer, int*>::value), "");
-    static_assert((cuda::std::is_same<It::reference, int&>::value), "");
-    static_assert((cuda::std::is_same<It::iterator_category, std::random_access_iterator_tag>::value), "");
+    static_assert((cuda::std::is_same<It::difference_type, std::ptrdiff_t>::value));
+    static_assert((cuda::std::is_same<It::value_type, int>::value));
+    static_assert((cuda::std::is_same<It::pointer, int*>::value));
+    static_assert((cuda::std::is_same<It::reference, int&>::value));
+    static_assert((cuda::std::is_same<It::iterator_category, std::random_access_iterator_tag>::value));
 
-    static_assert(cuda::std::__has_random_access_traversal<typename std::vector<int>::iterator>, "");
+    static_assert(cuda::std::__has_random_access_traversal<typename std::vector<int>::iterator>);
   }
 
   { // specialization of std::iterator_traits
     using It = cuda::std::iterator_traits<specialized_test_iterator>;
-    static_assert((cuda::std::is_same<It::difference_type, unsigned short>::value), "");
-    static_assert((cuda::std::is_same<It::value_type, int>::value), "");
-    static_assert((cuda::std::is_same<It::pointer, double*>::value), "");
-    static_assert((cuda::std::is_same<It::reference, long&>::value), "");
-    static_assert((cuda::std::is_same<It::iterator_category, cuda::std::bidirectional_iterator_tag>::value), "");
+    static_assert((cuda::std::is_same<It::difference_type, unsigned short>::value));
+    static_assert((cuda::std::is_same<It::value_type, int>::value));
+    static_assert((cuda::std::is_same<It::pointer, double*>::value));
+    static_assert((cuda::std::is_same<It::reference, long&>::value));
+    static_assert((cuda::std::is_same<It::iterator_category, cuda::std::bidirectional_iterator_tag>::value));
   }
 #endif // !TEST_COMPILER(NVRTC)
 

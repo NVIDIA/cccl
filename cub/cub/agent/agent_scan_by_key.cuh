@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file AgentScanByKey implements a stateful abstraction of CUDA thread blocks
- *       for participating in device-wide prefix scan by key.
+ * @file
+ * @brief AgentScanByKey implements a stateful abstraction of CUDA thread blocks
+ *        for participating in device-wide prefix scan by key.
  */
 
 #pragma once
@@ -45,7 +46,7 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread                 = 1,
           BlockLoadAlgorithm LoadAlgorithm   = BLOCK_LOAD_DIRECT,
           CacheLoadModifier LoadModifier     = LOAD_DEFAULT,
@@ -54,7 +55,7 @@ template <int BlockThreads,
           typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentScanByKeyPolicy
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;

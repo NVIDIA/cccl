@@ -65,11 +65,6 @@ macro(cccl_get_dlpack)
   CPMAddPackage("gh:dmlc/dlpack#v1.2")
 endmacro()
 
-macro(cccl_get_json)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:nlohmann/json@3.12.0")
-endmacro()
-
 macro(cccl_get_libcudacxx)
   find_package(
     libcudacxx
@@ -82,7 +77,7 @@ endmacro()
 
 set(
   CCCL_NVBENCH_SHA
-  "728212f9f162d1e598c21cc0fff456eb999b971a"
+  "373970323f3e2a3995761ea682ca64dfcbdd1e26"
   CACHE STRING
   "SHA/tag to use for CCCL's NVBench."
 )

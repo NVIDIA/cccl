@@ -1,7 +1,7 @@
 .. _libcudacxx-module:
 
 libcu++
-=======
+========
 
 .. toctree::
    :hidden:
@@ -9,11 +9,11 @@ libcu++
 
    Overview <self>
    setup
-   releases
    standard_api
    extended_api
    runtime
    ptx_api
+   tile
    API reference <api/index>
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++

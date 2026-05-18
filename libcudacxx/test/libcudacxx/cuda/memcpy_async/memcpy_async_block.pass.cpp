@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 // UNSUPPORTED: pre-sm-70
 
 // clang-cuda < 20 errors out with "fatal error: error in backend: Cannot cast between two non-generic address spaces"
@@ -21,6 +25,7 @@
 #include <cuda/barrier>
 
 #include "cuda_space_selector.h"
+#include "test_macros.h"
 
 inline constexpr int thread_block_size = 64;
 
@@ -30,7 +35,7 @@ template <class T,
           template <typename, typename> class BarrierSelector,
           cuda::thread_scope BarrierScope,
           typename... CompletionF>
-__device__ __noinline__ void test_fully_specialized()
+TEST_DEVICE_FUNC __noinline__ void test_fully_specialized()
 {
   // these tests focus on non-trivial thread ids and concurrent calls in the presence of other threads
 
@@ -102,14 +107,14 @@ __device__ __noinline__ void test_fully_specialized()
 
 struct completion
 {
-  __device__ void operator()() const {}
+  TEST_DEVICE_FUNC void operator()() const {}
 };
 
 template <class T,
           template <typename, typename> class SourceSelector,
           template <typename, typename> class DestSelector,
           template <typename, typename> class BarrierSelector>
-__device__ __noinline__ void test_select_scope()
+TEST_DEVICE_FUNC __noinline__ void test_select_scope()
 {
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_system>();
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_device>();
@@ -122,21 +127,21 @@ __device__ __noinline__ void test_select_scope()
 }
 
 template <class T, template <typename, typename> class SourceSelector, template <typename, typename> class DestSelector>
-__device__ __noinline__ void test_select_barrier()
+TEST_DEVICE_FUNC __noinline__ void test_select_barrier()
 {
   test_select_scope<T, SourceSelector, DestSelector, shared_memory_selector>();
   test_select_scope<T, SourceSelector, DestSelector, global_memory_selector>();
 }
 
 template <class T, template <typename, typename> class SourceSelector>
-__device__ __noinline__ void test_select_destination()
+TEST_DEVICE_FUNC __noinline__ void test_select_destination()
 {
   test_select_barrier<T, SourceSelector, shared_memory_selector>();
   test_select_barrier<T, SourceSelector, global_memory_selector>();
 }
 
 template <class T>
-__device__ __noinline__ void test_select_source()
+TEST_DEVICE_FUNC __noinline__ void test_select_source()
 {
   test_select_destination<T, shared_memory_selector>();
   test_select_destination<T, global_memory_selector>();

@@ -15,7 +15,6 @@
 #include <cub/detail/warpspeed/constant_assert.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 
-#include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/std/cstdint>
 
@@ -32,9 +31,9 @@ struct SkipSync
 
 struct SyncHandler
 {
+  // reducing these values to the actually used number of resources and phases does not improve performance
   static constexpr int mMaxNumResources = 10;
   static constexpr int mMaxNumPhases    = 4;
-  static constexpr int mMaxNumStages    = 32;
 
   // Whether barriers have been initialized.
   bool mHasInitialized = false;
@@ -50,7 +49,7 @@ struct SyncHandler
 
   // we need constant destruction for the host side single stage SMEM amount, which is only possible in C++20
 #if _CCCL_STD_VER >= 2020
-  _CCCL_API constexpr ~SyncHandler()
+  _CCCL_HOST_DEVICE_API constexpr ~SyncHandler()
   {
     _WS_CONSTANT_ASSERT(mHasInitialized, "SyncHandler must have been initialized at end of kernel.");
   }
@@ -64,7 +63,7 @@ struct SyncHandler
   SyncHandler& operator=(const SyncHandler&&) = delete; // Delete move assignment
 
   // registerResource and registerPhase can be called on host and device.
-  [[nodiscard]] _CCCL_API constexpr int registerResource(int numStages)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int registerResource(int numStages)
   {
     _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot register resource after SyncHandler has been initialized.");
     // Avoid exceeding the max number of stages
@@ -79,7 +78,7 @@ struct SyncHandler
     return handle;
   }
 
-  _CCCL_API void constexpr registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
+  _CCCL_HOST_DEVICE_API void constexpr registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
   {
     _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot register phase after SyncHandler has been initialized.");
     _WS_CONSTANT_ASSERT(resourceHandle < mNextResourceHandle, "Invalid resource handle.");
@@ -95,51 +94,46 @@ struct SyncHandler
   }
 
   // clusterInitSync can only be called on device.
+  template <int NumThreads>
   _CCCL_DEVICE_API void clusterInitSync(SpecialRegisters sr, SkipSync)
   {
     _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot initialize SyncHandler twice.");
     mHasInitialized = true;
 
-    // TODO: This could take a Group parameter to split the barrier
-    // initialization across groups. Or it could take the number of warps in the
-    // block as a parameter.
-
-    // TODO: This could use vectorized mbarrier initialization
-    if (sr.warpIdx == 0 && ::cuda::ptx::elect_sync(~0))
+    // All warps iterate through all resources and phases. Since all array indices have to be statically resolved by the
+    // SROA optimization to avoid spilling to local memory, we cannot split the iteration among warps etc.
+    for (int ri = 0; ri < mMaxNumResources; ri++)
     {
-      for (int ri = 0; ri < mMaxNumResources; ++ri)
+      if (ri >= mNextResourceHandle)
       {
-        if (mNextResourceHandle <= ri)
-        {
-          continue;
-        }
-        int resNumPhases = mNumPhases[ri];
-        int numStages    = mNumStages[ri];
+        break;
+      }
+      const int resNumPhases = mNumPhases[ri];
+      const int numStages    = mNumStages[ri];
 
-        // We loop over all phases with a conditional on resNumPhases. If we
-        // directly loop over only resNumPhases, then the SROA optimization does
-        // not kick in and the mPtrBar and mNumOwningThreads arrays are
-        // spilled to the stack.
-        for (int pi = 0; pi < mMaxNumPhases; ++pi)
+      for (int pi = 0; pi < mMaxNumPhases; pi++)
+      {
+        if (pi >= resNumPhases)
         {
-          if (pi < resNumPhases)
-          {
-            uint64_t* ptrBar     = mPtrBar[ri][pi];
-            int numOwningThreads = mNumOwningThreads[ri][pi];
-            for (int si = 0; si < numStages; ++si)
-            {
-              ::cuda::ptx::mbarrier_init(&ptrBar[si], numOwningThreads);
-            }
-          }
+          break;
+        }
+
+        uint64_t* ptrBar     = mPtrBar[ri][pi];
+        int numOwningThreads = mNumOwningThreads[ri][pi];
+        // use block strided iteration to vectorize setup of barriers
+        for (int si = sr.threadIdxX; si < numStages; si += NumThreads)
+        {
+          ::cuda::ptx::mbarrier_init(&ptrBar[si], numOwningThreads);
         }
       }
     }
   }
 
+  template <int NumThreads>
   _CCCL_DEVICE_API void clusterInitSync(SpecialRegisters sr)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                   clusterInitSync(sr, SkipSync{});
+                   clusterInitSync<NumThreads>(sr, SkipSync{});
                    __cluster_barrier_arrive_relaxed();
                    __cluster_barrier_wait();
                  }))

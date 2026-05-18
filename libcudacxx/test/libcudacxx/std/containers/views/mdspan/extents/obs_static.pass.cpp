@@ -38,13 +38,12 @@ template <class E,
           size_t... StaticExts,
           size_t... Indices,
           cuda::std::enable_if_t<(rank > 0), int> = 0>
-__host__ __device__ void
-test_static_observers(cuda::std::index_sequence<StaticExts...>, cuda::std::index_sequence<Indices...>)
+TEST_FUNC void test_static_observers(cuda::std::index_sequence<StaticExts...>, cuda::std::index_sequence<Indices...>)
 {
   static_assert(noexcept(E::rank()));
-  static_assert(E::rank() == rank, "");
+  static_assert(E::rank() == rank);
   static_assert(noexcept(E::rank_dynamic()));
-  static_assert(E::rank_dynamic() == rank_dynamic, "");
+  static_assert(E::rank_dynamic() == rank_dynamic);
 
   // Let's only test this if the call isn't a precondition violation
   static_assert(noexcept(E::static_extent(0)));
@@ -58,24 +57,23 @@ template <class E,
           size_t... StaticExts,
           size_t... Indices,
           cuda::std::enable_if_t<(rank == 0), int> = 0>
-__host__ __device__ void
-test_static_observers(cuda::std::index_sequence<StaticExts...>, cuda::std::index_sequence<Indices...>)
+TEST_FUNC void test_static_observers(cuda::std::index_sequence<StaticExts...>, cuda::std::index_sequence<Indices...>)
 {
   static_assert(noexcept(E::rank()));
-  static_assert(E::rank() == rank, "");
+  static_assert(E::rank() == rank);
   static_assert(noexcept(E::rank_dynamic()));
-  static_assert(E::rank_dynamic() == rank_dynamic, "");
+  static_assert(E::rank_dynamic() == rank_dynamic);
 }
 
 template <class E, size_t rank, size_t rank_dynamic, size_t... StaticExts>
-__host__ __device__ void test_static_observers()
+TEST_FUNC void test_static_observers()
 {
   test_static_observers<E, rank, rank_dynamic>(
     cuda::std::index_sequence<StaticExts...>(), cuda::std::make_index_sequence<sizeof...(StaticExts)>());
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   constexpr size_t S                  = 5;

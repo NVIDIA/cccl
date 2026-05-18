@@ -29,9 +29,9 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const year_month>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const year_month>().ok())>);
 
-  static_assert(!year_month{year{-32768}, January}.ok(), ""); // Bad year
-  static_assert(!year_month{year{2019}, month{}}.ok(), ""); // Bad month
-  static_assert(year_month{year{2019}, January}.ok(), ""); // Both OK
+  static_assert(!year_month{year{-32768}, January}.ok()); // Bad year
+  static_assert(!year_month{year{2019}, month{}}.ok()); // Bad month
+  static_assert(year_month{year{2019}, January}.ok()); // Both OK
 
   for (unsigned i = 0; i <= 50; ++i)
   {

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6080486 : error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
+
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -27,7 +30,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
 template <class T, template <class, size_t> class Range>
-__host__ __device__ constexpr void test_ranges()
+TEST_FUNC constexpr void test_ranges()
 {
   { // inplace_vector<T, 0>::assign_range with an empty input
     cuda::std::inplace_vector<T, 0> vec{};
@@ -64,7 +67,7 @@ __host__ __device__ constexpr void test_ranges()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // inplace_vector<T, 0>::assign(count, const T&)
     cuda::std::inplace_vector<T, 0> vec{};
@@ -223,7 +226,7 @@ __host__ __device__ constexpr void test()
   test_ranges<T, cuda::std::array>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -325,7 +328,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

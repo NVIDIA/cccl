@@ -25,7 +25,7 @@ _CCCL_CONCEPT HasIterCategory =
 #endif // !TEST_COMPILER(NVRTC)
 
 template <template <class...> class Traits>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using Iter       = cuda::transform_iterator<Increment, int*>;
@@ -125,7 +125,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<cuda::std::iterator_traits>();
 #if !TEST_COMPILER(NVRTC)

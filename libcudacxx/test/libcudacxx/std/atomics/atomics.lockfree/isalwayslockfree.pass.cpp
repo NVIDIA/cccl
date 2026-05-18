@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, c++98, c++03, c++11, c++14, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -27,7 +30,7 @@
 #endif // !TEST_COMPILER(NVRTC)
 
 template <typename T>
-__host__ __device__ void checkAlwaysLockFree()
+TEST_FUNC void checkAlwaysLockFree()
 {
   if (cuda::std::atomic<T>::is_always_lock_free)
   {
@@ -49,16 +52,16 @@ template <bool Disable                      = NeedWorkaroundForPR31864,
           cuda::std::enable_if_t<!Disable>* = nullptr,
           class LLong                       = long long,
           class ULLong                      = unsigned long long>
-__host__ __device__ void checkLongLongTypes()
+TEST_FUNC void checkLongLongTypes()
 {
-  static_assert(cuda::std::atomic<LLong>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<ULLong>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE), "");
+  static_assert(cuda::std::atomic<LLong>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE));
+  static_assert(cuda::std::atomic<ULLong>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE));
 }
 
 // Used to make the calls to __atomic_always_lock_free dependent on a template
 // parameter.
 template <class T>
-__host__ __device__ constexpr size_t getSizeOf()
+TEST_FUNC constexpr size_t getSizeOf()
 {
   return sizeof(T);
 }
@@ -67,15 +70,15 @@ template <bool Enable                     = NeedWorkaroundForPR31864,
           cuda::std::enable_if_t<Enable>* = nullptr,
           class LLong                     = long long,
           class ULLong                    = unsigned long long>
-__host__ __device__ void checkLongLongTypes()
+TEST_FUNC void checkLongLongTypes()
 {
   constexpr bool ExpectLockFree = __atomic_always_lock_free(getSizeOf<LLong>(), 0);
-  static_assert(cuda::std::atomic<LLong>::is_always_lock_free == ExpectLockFree, "");
-  static_assert(cuda::std::atomic<ULLong>::is_always_lock_free == ExpectLockFree, "");
-  static_assert((0 != LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE) == ExpectLockFree, "");
+  static_assert(cuda::std::atomic<LLong>::is_always_lock_free == ExpectLockFree);
+  static_assert(cuda::std::atomic<ULLong>::is_always_lock_free == ExpectLockFree);
+  static_assert((0 != LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE) == ExpectLockFree);
 }
 
-__host__ __device__ void run()
+TEST_FUNC void run()
 {
 // structs and unions can't be defined in the template invocation.
 // Work around this with a typedef.
@@ -141,21 +144,21 @@ __host__ __device__ void run()
   });
 
   // C macro and static constexpr must be consistent.
-  static_assert(cuda::std::atomic<bool>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_BOOL_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<char>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<signed char>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<unsigned char>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<char16_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR16_T_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<char32_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR32_T_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<wchar_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_WCHAR_T_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<short>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_SHORT_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<unsigned short>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_SHORT_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<int>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_INT_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<unsigned int>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_INT_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<long>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LONG_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<unsigned long>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LONG_LOCK_FREE), "");
+  static_assert(cuda::std::atomic<bool>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_BOOL_LOCK_FREE));
+  static_assert(cuda::std::atomic<char>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE));
+  static_assert(cuda::std::atomic<signed char>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE));
+  static_assert(cuda::std::atomic<unsigned char>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE));
+  static_assert(cuda::std::atomic<char16_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR16_T_LOCK_FREE));
+  static_assert(cuda::std::atomic<char32_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_CHAR32_T_LOCK_FREE));
+  static_assert(cuda::std::atomic<wchar_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_WCHAR_T_LOCK_FREE));
+  static_assert(cuda::std::atomic<short>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_SHORT_LOCK_FREE));
+  static_assert(cuda::std::atomic<unsigned short>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_SHORT_LOCK_FREE));
+  static_assert(cuda::std::atomic<int>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_INT_LOCK_FREE));
+  static_assert(cuda::std::atomic<unsigned int>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_INT_LOCK_FREE));
+  static_assert(cuda::std::atomic<long>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LONG_LOCK_FREE));
+  static_assert(cuda::std::atomic<unsigned long>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LONG_LOCK_FREE));
   checkLongLongTypes();
-  static_assert(cuda::std::atomic<void*>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE), "");
+  static_assert(cuda::std::atomic<void*>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE));
   static_assert(
     cuda::std::atomic<cuda::std::nullptr_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE), "");
 }

@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -66,20 +67,20 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
   [[nodiscard]] _CCCL_HOST_API static _OutputIterator
   __par_impl(const _Policy& __policy, _OutputIterator __result, const int64_t __count, _UnaryOp __func)
   {
-    auto __stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    const auto __ret = __result + __count;
-
-    // We pass the policy as an environment to device_transform
+    // We pass the policy as an environment to DeviceTransform
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceTransform::Generate,
       "__pstl_cuda_generate: call to cub device_transform::Generate failed",
-      ::cuda::std::move(__result),
+      __result,
       __count,
       ::cuda::std::move(__func),
-      __stream);
+      __policy);
 
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
-    return __ret;
+
+    return __result + __count;
   }
 
   _CCCL_TEMPLATE(class _Policy, class _OutputIterator, class _Size, class _UnaryOp)
@@ -89,11 +90,11 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(__policy, ::cuda::std::move(__result), __count, ::cuda::std::move(__func));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -101,9 +102,10 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

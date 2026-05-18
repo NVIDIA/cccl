@@ -16,9 +16,7 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/util_device.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -26,26 +24,26 @@ namespace detail::for_each
 {
 struct for_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
 
-  _CCCL_API constexpr friend bool operator==(const for_policy& lhs, const for_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const for_policy& lhs, const for_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const for_policy& lhs, const for_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const for_policy& lhs, const for_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const for_policy& policy)
   {
-    return os << "for_policy { .block_threads = " << policy.block_threads
+    return os << "for_policy { .threads_per_block = " << policy.threads_per_block
               << ", .items_per_thread = " << policy.items_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -55,7 +53,7 @@ concept for_policy_selector = policy_selector<T, for_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> for_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> for_policy
   {
     return for_policy{256, 2};
   }

@@ -19,119 +19,89 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
 template <typename InputT>
-struct policy_hub_t
+struct bench_policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::select::select_if_policy
   {
-    using SelectIfPolicyT =
-      cub::AgentSelectIfPolicy<TUNE_THREADS_PER_BLOCK,
-                               TUNE_ITEMS_PER_THREAD,
-                               TUNE_LOAD_ALGORITHM,
-                               TUNE_LOAD_MODIFIER,
-                               cub::BLOCK_SCAN_WARP_SCANS,
-                               delay_constructor_t>;
-  };
-
-  using MaxPolicy = policy_t;
+    return {TUNE_THREADS_PER_BLOCK,
+            TUNE_ITEMS_PER_THREAD,
+            (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
+            (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
+            cub::BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy};
+  }
 };
 #endif // !TUNE_BASE
 
-template <typename T, typename OffsetT, typename InPlace>
-static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace>)
+template <typename T, typename InPlace>
+static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
 {
-  using input_it_t        = const T*;
-  using flag_it_t         = cub::NullType*;
-  using output_it_t       = T*;
-  using num_selected_it_t = OffsetT*;
-  using select_op_t       = cub::NullType;
-  using equality_op_t     = ::cuda::std::equal_to<>;
-  using offset_t          = OffsetT;
-  constexpr cub::SelectImpl selection_option =
-    InPlace::value ? cub::SelectImpl::SelectPotentiallyInPlace : cub::SelectImpl::Select;
-
-#if !TUNE_BASE
-  using policy_t   = policy_hub_t<T>;
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    selection_option,
-    policy_t>;
-#else // TUNE_BASE
-  using dispatch_t =
-    cub::DispatchSelectIf<input_it_t,
-                          flag_it_t,
-                          output_it_t,
-                          num_selected_it_t,
-                          select_op_t,
-                          equality_op_t,
-                          offset_t,
-                          selection_option>;
-#endif // TUNE_BASE
+  using offset_t = int64_t;
 
   // Retrieve axis parameters
-  const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  constexpr std::size_t min_segment_size = 1;
-  const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
+  const auto elements         = state.get_int64("Elements{io}");
+  const auto max_segment_size = state.get_int64("MaxSegSize");
 
-  thrust::device_vector<T> in = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
-  thrust::device_vector<T> out(elements);
+  thrust::device_vector<T> in = generate.uniform.key_segments(elements, /* min_segmented_size */ 1, max_segment_size);
+  thrust::device_vector<T> out(elements, thrust::no_init);
   thrust::device_vector<offset_t> num_unique_out(1);
 
-  input_it_t d_in                = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out              = thrust::raw_pointer_cast(out.data());
-  flag_it_t d_flags              = nullptr;
-  num_selected_it_t d_num_unique = thrust::raw_pointer_cast(num_unique_out.data());
+  T* d_in                = thrust::raw_pointer_cast(in.data());
+  T* d_out               = thrust::raw_pointer_cast(out.data());
+  offset_t* d_num_unique = thrust::raw_pointer_cast(num_unique_out.data());
 
-  // Get temporary storage requirements
-  std::size_t temp_size{};
-  dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_flags, d_out, d_num_unique, select_op_t{}, equality_op_t{}, elements, 0);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-  // Get number of unique elements
-  dispatch_t::Dispatch(
-    temp_storage, temp_size, d_in, d_flags, d_out, d_num_unique, select_op_t{}, equality_op_t{}, elements, 0);
-
+  // Get number of unique elements for metrics
+  _CCCL_TRY_CUDA_API(
+    cub::DeviceSelect::Unique,
+    "select_unique failed",
+    d_in,
+    d_out,
+    d_num_unique,
+    static_cast<offset_t>(elements),
+    ::cuda::std::equal_to<>{});
   cudaDeviceSynchronize();
-  const OffsetT num_unique = num_unique_out[0];
+  const offset_t num_unique = num_unique_out[0];
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(num_unique);
   state.add_global_memory_writes<offset_t>(1);
 
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      temp_storage,
-      temp_size,
-      d_in,
-      d_flags,
-      d_out,
-      d_num_unique,
-      select_op_t{},
-      equality_op_t{},
-      elements,
-      launch.get_stream());
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_policy_selector<T>{})
+#endif // !TUNE_BASE
+    );
+    if constexpr (InPlace::value)
+    {
+      _CCCL_TRY_CUDA_API(
+        cub::DeviceSelect::Unique,
+        "select_unique failed",
+        d_in,
+        d_num_unique,
+        static_cast<offset_t>(elements),
+        ::cuda::std::equal_to<>{},
+        env);
+    }
+    else
+    {
+      _CCCL_TRY_CUDA_API(
+        cub::DeviceSelect::Unique,
+        "select_unique failed",
+        d_in,
+        d_out,
+        d_num_unique,
+        static_cast<offset_t>(elements),
+        ::cuda::std::equal_to<>{},
+        env);
+    }
   });
 }
 
@@ -143,12 +113,8 @@ using is_in_place = nvbench::type_list<TUNE_InPlace>; // expands to "false_type"
 using is_in_place = nvbench::type_list<false_type, true_type>;
 #endif // TUNE_InPlace
 
-// The implementation of DeviceSelect for 64-bit offset types uses a streaming approach, where it runs multiple passes
-// using a 32-bit offset type, so we only need to test one (to save time for tuning and the benchmark CI).
-using select_offset_types = nvbench::type_list<int64_t>;
-
-NVBENCH_BENCH_TYPES(unique, NVBENCH_TYPE_AXES(fundamental_types, select_offset_types, is_in_place))
+NVBENCH_BENCH_TYPES(unique, NVBENCH_TYPE_AXES(fundamental_types, is_in_place))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "InPlace{ct}"})
+  .set_type_axes_names({"T{ct}", "InPlace{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});

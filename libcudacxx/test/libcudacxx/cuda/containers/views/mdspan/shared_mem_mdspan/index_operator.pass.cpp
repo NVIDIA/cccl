@@ -40,30 +40,26 @@ TEST_DIAG_SUPPRESS_GCC("-Wcomma-subscript")
 #endif // TEST_COMPILER(GCC, >=, 10)
 
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0)
 {
   return mds[i0];
 }
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
-template <
-  class MDS,
-  class... Indices,
-  class = cuda::std::enable_if_t<
-    cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Indices>()...]), typename MDS::reference>>,
-  int>
-= 0 > __device__ constexpr bool check_operator_constraints(MDS m, Indices... idxs)
+template <class MDS, class... Indices>
+  requires requires(MDS mds, Indices... indices) { mds[indices...]; }
+TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS m, Indices... idxs)
 {
   unused(m[idxs...]);
   return true;
 }
 #else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
-template <
-  class MDS,
-  class Index,
-  class = cuda::std::enable_if_t<
-    cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Index>()]), typename MDS::reference>>>
-__device__ constexpr bool check_operator_constraints(MDS m, Index idx)
+template <class MDS,
+          class Index,
+          cuda::std::enable_if_t<cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Index>()]),
+                                                      typename MDS::reference>,
+                                 int> = 0>
+TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS m, Index idx)
 {
   unused(m[idx]);
   return true;
@@ -71,29 +67,29 @@ __device__ constexpr bool check_operator_constraints(MDS m, Index idx)
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
 template <class MDS, class... Indices>
-__device__ constexpr bool check_operator_constraints(MDS, Indices...)
+TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS, Indices...)
 {
   return false;
 }
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 template <class MDS>
-__device__ constexpr auto& access(MDS mds)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds)
 {
   return mds[];
 }
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0, int64_t i1)
 {
   return mds[i0, i1];
 }
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2)
 {
   return mds[i0, i1, i2];
 }
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2, int64_t i3)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2, int64_t i3)
 {
   return mds[i0, i1, i2, i3];
 }
@@ -101,7 +97,7 @@ __device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2, i
 
 // We must ensure that we do not try to access multiarg accessors
 template <class MDS, class Arg, cuda::std::enable_if_t<(MDS::extents_type::rank() == 1), int> = 0>
-__device__ constexpr void assert_access(MDS mds, Arg arg)
+TEST_DEVICE_FUNC constexpr void assert_access(MDS mds, Arg arg)
 {
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(arg)));
   int* ptr2 = &access(mds, arg);
@@ -109,7 +105,7 @@ __device__ constexpr void assert_access(MDS mds, Arg arg)
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() == sizeof...(Args)), int> = 0>
-__device__ constexpr void assert_access(MDS mds, Args... args)
+TEST_DEVICE_FUNC constexpr void assert_access(MDS mds, Args... args)
 {
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(args...)));
@@ -121,7 +117,7 @@ __device__ constexpr void assert_access(MDS mds, Args... args)
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() == sizeof...(Args)), int> = 0>
-__device__ constexpr void iterate(MDS mds, Args... args)
+TEST_DEVICE_FUNC constexpr void iterate(MDS mds, Args... args)
 {
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(args...)));
   assert_access(mds, args...);
@@ -134,7 +130,7 @@ __device__ constexpr void iterate(MDS mds, Args... args)
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() != sizeof...(Args)), int> = 0>
-__device__ constexpr void iterate(MDS mds, Args... args)
+TEST_DEVICE_FUNC constexpr void iterate(MDS mds, Args... args)
 {
   constexpr int r = static_cast<int>(MDS::extents_type::rank()) - 1 - static_cast<int>(sizeof...(Args));
   for (typename MDS::index_type i = 0; i < mds.extents().extent(r); i++)
@@ -144,7 +140,7 @@ __device__ constexpr void iterate(MDS mds, Args... args)
 }
 
 template <class Mapping>
-__device__ void test_iteration(Mapping m)
+TEST_DEVICE_FUNC void test_iteration(Mapping m)
 {
   __shared__ cuda::std::array<int, 1024> iteration_data;
   using MDS = cuda::shared_memory_mdspan<int, typename Mapping::extents_type, typename Mapping::layout_type>;
@@ -153,7 +149,7 @@ __device__ void test_iteration(Mapping m)
 }
 
 template <class Layout>
-__device__ void test_layout()
+TEST_DEVICE_FUNC void test_layout()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, D>(1)));
@@ -166,52 +162,52 @@ __device__ void test_layout()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));
   __shared__ int data[16];
   // Check operator constraint for number of arguments
-  static_assert(check_operator_constraints(
+  assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0));
-  static_assert(!check_operator_constraints(
+  assert(!check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0, 0));
 
   // Check operator constraint for convertibility of arguments to index_type
-  static_assert(check_operator_constraints(
+  assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), IntType(0)));
-  static_assert(!check_operator_constraints(
+  assert(!check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned, D>(1))), IntType(0)));
 
   // Check operator constraint for no-throw-constructibility of index_type from arguments
-  static_assert(!check_operator_constraints(
+  assert(!check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D>(1))),
     IntType(0)));
 
   // Check that mixed integrals work: note the second one tests that mdspan casts: layout_wrapping_integral does not
   // accept IntType
-  static_assert(check_operator_constraints(
+  assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D, D>(1, 1))),
     int(0),
     size_t(0)));
-  static_assert(check_operator_constraints(
+  assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
     unsigned(0),
     IntType(0)));
 
   constexpr bool t = true;
   constexpr bool o = false;
-  static_assert(!check_operator_constraints(
+  assert(!check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
     unsigned(0),
     IntConfig<o, o, t, t>(0)));
-  static_assert(check_operator_constraints(
+  assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
     unsigned(0),
     IntConfig<o, t, t, t>(0)));
-  static_assert(check_operator_constraints(
+  assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
     unsigned(0),
     IntConfig<o, t, o, t>(0)));
-  static_assert(!check_operator_constraints(
+  assert(!check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
     unsigned(0),
     IntConfig<t, o, o, t>(0)));
-  static_assert(check_operator_constraints(
+  assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
     unsigned(0),
     IntConfig<t, o, t, o>(0)));
@@ -221,22 +217,22 @@ __device__ void test_layout()
   // const&, no-throw-ctor from non-const
   if constexpr (cuda::std::is_same_v<Layout, cuda::std::layout_left>)
   {
-    static_assert(!check_operator_constraints(
+    assert(!check_operator_constraints(
       cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
       cuda::std::array{IntConfig<o, o, t, t>(0)}));
-    static_assert(!check_operator_constraints(
+    assert(!check_operator_constraints(
       cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
       cuda::std::array{IntConfig<o, t, t, t>(0)}));
-    static_assert(!check_operator_constraints(
+    assert(!check_operator_constraints(
       cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
       cuda::std::array{IntConfig<t, o, o, t>(0)}));
-    static_assert(!check_operator_constraints(
+    assert(!check_operator_constraints(
       cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
       cuda::std::array{IntConfig<t, t, o, t>(0)}));
-    static_assert(check_operator_constraints(
+    assert(check_operator_constraints(
       cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
       cuda::std::array{IntConfig<t, o, t, o>(0)}));
-    static_assert(check_operator_constraints(
+    assert(check_operator_constraints(
       cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
       cuda::std::array{IntConfig<t, t, t, t>(0)}));
 

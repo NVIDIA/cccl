@@ -135,24 +135,24 @@ public:
 
   /*! Destructor. Releases all held memory to upstream.
    */
-  ~unsynchronized_pool_resource()
+  ~unsynchronized_pool_resource() override
   {
     release();
   }
 
 private:
   using void_ptr        = typename Upstream::pointer;
-  using void_ptr_traits = thrust::detail::pointer_traits<void_ptr>;
-  using char_ptr        = typename void_ptr_traits::template rebind<char>::other;
+  using void_ptr_traits = ::cuda::std::pointer_traits<void_ptr>;
+  using char_ptr        = typename void_ptr_traits::template rebind<char>;
 
   struct block_descriptor;
   struct chunk_descriptor;
   struct oversized_block_descriptor;
 
-  using block_descriptor_ptr           = typename void_ptr_traits::template rebind<block_descriptor>::other;
-  using chunk_descriptor_ptr           = typename void_ptr_traits::template rebind<chunk_descriptor>::other;
-  using oversized_block_descriptor_ptr = typename void_ptr_traits::template rebind<oversized_block_descriptor>::other;
-  using oversized_block_ptr_traits     = thrust::detail::pointer_traits<oversized_block_descriptor_ptr>;
+  using block_descriptor_ptr           = typename void_ptr_traits::template rebind<block_descriptor>;
+  using chunk_descriptor_ptr           = typename void_ptr_traits::template rebind<chunk_descriptor>;
+  using oversized_block_descriptor_ptr = typename void_ptr_traits::template rebind<oversized_block_descriptor>;
+  using oversized_block_ptr_traits     = ::cuda::std::pointer_traits<oversized_block_descriptor_ptr>;
 
   struct block_descriptor
   {
@@ -218,7 +218,7 @@ public:
     }
 
     // deallocate memory allocated for the buckets
-    while (detail::pointer_traits<chunk_descriptor_ptr>::get(m_allocated))
+    while (::cuda::std::to_address(m_allocated))
     {
       chunk_descriptor_ptr alloc = m_allocated;
       m_allocated                = thrust::raw_reference_cast(*m_allocated).next;
@@ -230,7 +230,7 @@ public:
     }
 
     // deallocate cached oversized/overaligned memory
-    while (oversized_block_ptr_traits::get(m_oversized))
+    while (::cuda::std::to_address(m_oversized))
     {
       oversized_block_descriptor_ptr alloc = m_oversized;
       m_oversized                          = thrust::raw_reference_cast(*m_oversized).next;
@@ -244,8 +244,7 @@ public:
     m_cached_oversized = oversized_block_descriptor_ptr();
   }
 
-  [[nodiscard]] virtual void_ptr
-  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] void_ptr do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     bytes = (std::max) (bytes, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
@@ -257,7 +256,7 @@ public:
       {
         oversized_block_descriptor_ptr ptr       = m_cached_oversized;
         oversized_block_descriptor_ptr* previous = &m_cached_oversized;
-        while (oversized_block_ptr_traits::get(ptr))
+        while (::cuda::std::to_address(ptr))
         {
           oversized_block_descriptor desc = *ptr;
           bool is_good                    = desc.size >= bytes && desc.alignment >= alignment;
@@ -307,7 +306,7 @@ public:
 
               ptr = static_cast<oversized_block_descriptor_ptr>(static_cast<void_ptr>(ret + bytes));
 
-              if (oversized_block_ptr_traits::get(desc.prev))
+              if (::cuda::std::to_address(desc.prev))
               {
                 thrust::raw_reference_cast(*desc.prev).next = ptr;
               }
@@ -316,7 +315,7 @@ public:
                 m_oversized = ptr;
               }
 
-              if (oversized_block_ptr_traits::get(desc.next))
+              if (::cuda::std::to_address(desc.next))
               {
                 thrust::raw_reference_cast(*desc.next).prev = ptr;
               }
@@ -347,7 +346,7 @@ public:
       *block            = desc;
       m_oversized       = block;
 
-      if (oversized_block_ptr_traits::get(desc.next))
+      if (::cuda::std::to_address(desc.next))
       {
         oversized_block_descriptor next = *desc.next;
         next.prev                       = block;
@@ -367,7 +366,7 @@ public:
 
     // if the free list of the bucket has no elements, allocate a new chunk
     // and split it into blocks pushed to the free list
-    if (!detail::pointer_traits<block_descriptor_ptr>::get(bucket.free_list))
+    if (!::cuda::std::to_address(bucket.free_list))
     {
       std::size_t n = bucket.previous_allocated_count;
       if (n == 0)
@@ -424,13 +423,13 @@ public:
     return static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(block)) - bytes);
   }
 
-  virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed
-    assert(reinterpret_cast<::cuda::std::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);
+    assert(reinterpret_cast<::cuda::std::intmax_t>(::cuda::std::to_address(p)) % alignment == 0);
 
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)
@@ -451,7 +450,7 @@ public:
           desc.current_size = desc.size;
           block =
             static_cast<oversized_block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(p) + desc.size));
-          if (oversized_block_ptr_traits::get(desc.prev))
+          if (::cuda::std::to_address(desc.prev))
           {
             thrust::raw_reference_cast(*desc.prev).next = block;
           }
@@ -460,7 +459,7 @@ public:
             m_oversized = block;
           }
 
-          if (oversized_block_ptr_traits::get(desc.next))
+          if (::cuda::std::to_address(desc.next))
           {
             thrust::raw_reference_cast(*desc.next).prev = block;
           }
@@ -472,7 +471,7 @@ public:
         return;
       }
 
-      if (oversized_block_ptr_traits::get(desc.prev))
+      if (::cuda::std::to_address(desc.prev))
       {
         thrust::raw_reference_cast(*desc.prev).next = desc.next;
       }
@@ -481,7 +480,7 @@ public:
         m_oversized = desc.next;
       }
 
-      if (oversized_block_ptr_traits::get(desc.next))
+      if (::cuda::std::to_address(desc.next))
       {
         thrust::raw_reference_cast(*desc.next).prev = desc.prev;
       }

@@ -27,7 +27,7 @@
 
 // Common requirements of all layout mappings
 template <class M, size_t... Idxs>
-__host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
+TEST_FUNC void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
 {
   using E = typename M::extents_type;
   static_assert(cuda::std::__is_cuda_std_extents_v<E>);
@@ -61,14 +61,14 @@ __host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idx
 }
 
 template <class L, class E>
-__host__ __device__ void test_layout_mapping_requirements()
+TEST_FUNC void test_layout_mapping_requirements()
 {
   using M = typename L::template mapping<E>;
   test_mapping_requirements<M>(cuda::std::make_index_sequence<E::rank()>());
 }
 
 template <class E>
-__host__ __device__ void test_layout_mapping_stride_relaxed()
+TEST_FUNC void test_layout_mapping_stride_relaxed()
 {
   test_layout_mapping_requirements<cuda::layout_stride_relaxed, E>();
 }

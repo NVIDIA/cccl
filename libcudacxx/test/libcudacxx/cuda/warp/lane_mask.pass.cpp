@@ -7,18 +7,23 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/warp>
 
+#include "test_macros.h"
+
 using cuda::device::lane_mask;
 
 inline constexpr unsigned active_lanes      = 21;
 inline constexpr unsigned active_lanes_mask = (1u << active_lanes) - 1;
 
-__device__ constexpr void test_constructors()
+TEST_DEVICE_FUNC constexpr void test_constructors()
 {
   // default constructor
   static_assert(cuda::std::is_nothrow_default_constructible_v<lane_mask>);
@@ -39,7 +44,7 @@ __device__ constexpr void test_constructors()
   }
 }
 
-__device__ constexpr void test_member_functions()
+TEST_DEVICE_FUNC constexpr void test_member_functions()
 {
   // value()
   static_assert(cuda::std::is_same_v<cuda::std::uint32_t, decltype(lane_mask{}.value())>);
@@ -51,7 +56,7 @@ __device__ constexpr void test_member_functions()
   }
 }
 
-__device__ constexpr void test_conversion_operators()
+TEST_DEVICE_FUNC constexpr void test_conversion_operators()
 {
   // explicit conversion to uint32_t
   static_assert(cuda::std::is_constructible_v<cuda::std::uint32_t, lane_mask>);
@@ -64,7 +69,7 @@ __device__ constexpr void test_conversion_operators()
   }
 }
 
-__device__ constexpr void test_bitwise_operators()
+TEST_DEVICE_FUNC constexpr void test_bitwise_operators()
 {
   constexpr auto v1{0xf0f0f0f0u};
   constexpr auto v2{0x0f0f0f0fu};
@@ -163,7 +168,7 @@ __device__ constexpr void test_bitwise_operators()
   }
 }
 
-__device__ constexpr void test_comparison_operators()
+TEST_DEVICE_FUNC constexpr void test_comparison_operators()
 {
   constexpr auto v1{0xf0f0f0f0u};
   constexpr auto v2{0x0f0f0f0fu};
@@ -181,7 +186,7 @@ __device__ constexpr void test_comparison_operators()
   assert(!(lane_mask{v1} != lane_mask{v1}));
 }
 
-__device__ void test_static_methods()
+TEST_DEVICE_FUNC void test_static_methods()
 {
   // none
   static_assert(cuda::std::is_same_v<lane_mask, decltype(lane_mask::none())>);
@@ -256,7 +261,7 @@ __device__ void test_static_methods()
   }
 }
 
-__device__ constexpr bool test_constexpr()
+TEST_DEVICE_FUNC constexpr bool test_constexpr()
 {
   test_constructors();
   test_member_functions();

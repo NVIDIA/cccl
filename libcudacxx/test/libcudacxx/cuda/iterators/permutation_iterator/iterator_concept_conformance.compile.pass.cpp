@@ -15,7 +15,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::random_access_iterator<
                 cuda::permutation_iterator<contiguous_iterator<int*>, random_access_iterator<int*>>>);

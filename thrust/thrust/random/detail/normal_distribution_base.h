@@ -74,20 +74,6 @@ template <typename RealType>
 class normal_distribution_portable
 {
 protected:
-  normal_distribution_portable()
-      : m_r1()
-      , m_r2()
-      , m_cached_rho()
-      , m_valid(false)
-  {}
-
-  normal_distribution_portable(const normal_distribution_portable& other)
-      : m_r1(other.m_r1)
-      , m_r2(other.m_r2)
-      , m_cached_rho(other.m_cached_rho)
-      , m_valid(other.m_valid)
-  {}
-
   void reset()
   {
     m_valid = false;
@@ -126,8 +112,8 @@ protected:
   }
 
 private:
-  RealType m_r1, m_r2, m_cached_rho;
-  bool m_valid;
+  RealType m_r1{}, m_r2{}, m_cached_rho{};
+  bool m_valid{false};
 };
 
 template <typename RealType>

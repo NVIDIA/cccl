@@ -31,6 +31,11 @@
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
@@ -38,12 +43,12 @@
 
 // Compatibility helpers for thrust to convert between `std::complex` and `cuda::std::complex`
 // todo: find a way to get rid of this include
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <complex> // for std::complex stream operators
 
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up(&)[2]>(__c)[0]
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -76,10 +81,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_COMPLEX_ALIGNAS complex
 public:
   using value_type = _Tp;
 
-  _CCCL_API constexpr complex(const value_type& __re = value_type(), const value_type& __im = value_type())
+  _CCCL_API constexpr complex(const value_type& __re = value_type(),
+                              const value_type& __im = value_type()) noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __re_(__re)
       , __im_(__im)
   {}
+
+  _CCCL_HIDE_FROM_ABI constexpr complex(const complex&) noexcept(is_nothrow_copy_constructible_v<_Tp>) = default;
+  _CCCL_HIDE_FROM_ABI constexpr complex(complex&&) noexcept(is_nothrow_move_constructible_v<_Tp>)      = default;
+
+  _CCCL_HIDE_FROM_ABI constexpr complex& operator=(const complex&) noexcept(is_nothrow_copy_assignable_v<_Tp>) = default;
+  _CCCL_HIDE_FROM_ABI constexpr complex& operator=(complex&&) noexcept(is_nothrow_move_assignable_v<_Tp>) = default;
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _CCCL_API constexpr complex(const complex<_Up>& __c)
@@ -110,7 +122,7 @@ public:
     return *this;
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _Up>
   _CCCL_API inline complex(const ::std::complex<_Up>& __other)
       : __re_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other))
@@ -129,7 +141,7 @@ public:
   {
     return {__re_, __im_};
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   [[nodiscard]] _CCCL_API constexpr value_type real() const
   {
@@ -559,7 +571,7 @@ template <class _Tp>
 }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
@@ -587,7 +599,7 @@ template <class _Tp, class _Up>
   return !(__x == __y);
 }
 #  endif // _CCCL_STD_VER <= 2017
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 // real
 
@@ -645,7 +657,7 @@ template <class _Tp>
   return 0;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _Tp, class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
@@ -660,7 +672,7 @@ template <class _Tp, class _CharT, class _Traits>
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -14,21 +14,23 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <class I, class O>
   requires cuda::std::indirectly_movable<I, O>
-__host__ __device__ constexpr bool indirectly_movable_storable_subsumption()
+TEST_FUNC constexpr bool indirectly_movable_storable_subsumption()
 {
   return false;
 }
 
 template <class I, class O>
   requires cuda::std::indirectly_movable_storable<I, O>
-__host__ __device__ constexpr bool indirectly_movable_storable_subsumption()
+TEST_FUNC constexpr bool indirectly_movable_storable_subsumption()
 {
   return true;
 }
 
-static_assert(indirectly_movable_storable_subsumption<int*, int*>(), "");
+static_assert(indirectly_movable_storable_subsumption<int*, int*>());
 
 int main(int, char**)
 {

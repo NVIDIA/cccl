@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val, int expected)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val, int expected)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::__fp_get_exp(cuda::std::declval<T>())), int>);
   static_assert(noexcept(cuda::std::__fp_get_exp(cuda::std::declval<T>())));
@@ -25,7 +25,7 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val, int exp
 }
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
 
@@ -70,12 +70,14 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
   }
   if constexpr (cuda::std::__fp_has_nan_v<fmt>)
   {
+#if _CCCL_HAS_NVFP8_E4M3()
     if constexpr (cuda::std::is_same_v<T, __nv_fp8_e4m3>)
     {
       // __nv_fp8_e4m3 has only 2 NaNs so more of exponent are valid
       test_fp_get_exp(cuda::std::numeric_limits<T>::quiet_NaN(), cuda::std::__fp_exp_max_v<fmt>);
     }
     else
+#endif // _CCCL_HAS_NVFP8_E4M3()
     {
       test_fp_get_exp(cuda::std::numeric_limits<T>::quiet_NaN(), cuda::std::__fp_exp_max_v<fmt> + 1);
     }
@@ -87,12 +89,12 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
 }
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test(T val = T{1.0f})
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test(T val = T{1.0f})
 {
   test_fp_get_exp<T>(val);
 }
 
-__host__ __device__ bool test(float val)
+TEST_FUNC bool test(float val)
 {
   test<float>(val);
   test<double>(val);
@@ -129,7 +131,7 @@ __host__ __device__ bool test(float val)
   return true;
 }
 
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr(float val)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr(float val)
 {
   test<float>(val);
   test<double>(val);

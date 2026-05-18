@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 //  ... test case crashes clang.
@@ -82,7 +85,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void do_test()
+TEST_FUNC void do_test()
 {
   using X = typename cuda::std::remove_pointer<T>::type;
   Selector<T, constructor_initializer> sel;
@@ -124,7 +127,7 @@ __host__ __device__ void do_test()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   do_test<A, T, Selector>();
 }

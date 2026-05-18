@@ -17,8 +17,13 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm and numeric_limits::has_denorm_loss have been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // _CCCL_STD_VER >= 2023
+
 template <class T, cuda::std::float_denorm_style expected>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::has_denorm == expected, "has_denorm test 1");
   static_assert(cuda::std::numeric_limits<const T>::has_denorm == expected, "has_denorm test 2");
