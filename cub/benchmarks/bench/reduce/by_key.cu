@@ -33,58 +33,40 @@ struct bench_reduce_by_key_policy_selector
 #endif // !TUNE_BASE
 
 template <class KeyT, class ValueT, class OffsetT>
-static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using equality_op_t  = ::cuda::std::equal_to<>;
   using reduction_op_t = ::cuda::std::plus<>;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<offset_t> num_runs_out(1);
+  thrust::device_vector<OffsetT> num_runs_out(1);
   thrust::device_vector<ValueT> in_vals(elements);
   thrust::device_vector<ValueT> out_vals(elements);
   thrust::device_vector<KeyT> out_keys(elements);
   thrust::device_vector<KeyT> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  const KeyT* d_in_keys    = thrust::raw_pointer_cast(in_keys.data());
-  KeyT* d_out_keys         = thrust::raw_pointer_cast(out_keys.data());
-  const ValueT* d_in_vals  = thrust::raw_pointer_cast(in_vals.data());
-  ValueT* d_out_vals       = thrust::raw_pointer_cast(out_vals.data());
-  offset_t* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
+  const KeyT* d_in_keys   = thrust::raw_pointer_cast(in_keys.data());
+  KeyT* d_out_keys        = thrust::raw_pointer_cast(out_keys.data());
+  const ValueT* d_in_vals = thrust::raw_pointer_cast(in_vals.data());
+  ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
+  OffsetT* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
 
-  std::uint8_t* d_temp_storage{};
-  std::size_t temp_storage_bytes{};
-  const auto num_items = static_cast<offset_t>(elements);
+  caching_allocator_t alloc;
 
-  auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::reduce_by_key::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in_keys,
-      d_out_keys,
-      d_in_vals,
-      d_out_vals,
-      d_num_runs_out,
-      equality_op_t{},
-      reduction_op_t{},
-      num_items,
-      stream
-#if !TUNE_BASE
-      ,
-      bench_reduce_by_key_policy_selector{}
-#endif
-    );
-  };
-
-  dispatch_on_stream(cudaStream_t{nullptr});
-
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  dispatch_on_stream(cudaStream_t{nullptr});
+  // Run once to get the number of runs for reporting
+  _CCCL_TRY_CUDA_API(
+    cub::DeviceReduce::ReduceByKey,
+    "ReduceByKey failed",
+    d_in_keys,
+    d_out_keys,
+    d_in_vals,
+    d_out_vals,
+    d_num_runs_out,
+    reduction_op_t{},
+    static_cast<OffsetT>(elements),
+    alloc);
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 
@@ -96,7 +78,25 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   state.add_global_memory_writes<OffsetT>(1);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_on_stream(launch.get_stream());
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_reduce_by_key_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceReduce::ReduceByKey,
+      "ReduceByKey failed",
+      d_in_keys,
+      d_out_keys,
+      d_in_vals,
+      d_out_vals,
+      d_num_runs_out,
+      reduction_op_t{},
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 
@@ -123,7 +123,7 @@ using value_types = nvbench::type_list<TUNE_ValueT>;
 using value_types = all_types;
 #endif // TUNE_ValueT
 
-NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_types))
+NVBENCH_BENCH_TYPES(reduce_by_key, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
