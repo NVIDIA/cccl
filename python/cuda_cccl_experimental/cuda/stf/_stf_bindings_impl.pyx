@@ -383,6 +383,39 @@ class AccessMode(IntFlag):
     WRITE = STF_WRITE
     RW    = STF_RW
 
+
+def _logical_data_full(ctx, shape, fill_value, dtype=None, where=None, exec_place=None, name=None, *, no_export=False):
+    """Shared implementation for ``context`` and ``stackable_context`` initializers."""
+    if dtype is None:
+        dtype = np.array(fill_value).dtype
+    else:
+        dtype = np.dtype(dtype)
+
+    if exec_place is not None:
+        if hasattr(exec_place, 'kind') and exec_place.kind == "host":
+            raise NotImplementedError(
+                "exec_place.host() is not yet supported for logical_data_full. "
+                "Use exec_place.device() or omit exec_place parameter."
+            )
+
+    if no_export:
+        ld = ctx.logical_data_empty(shape, dtype, name, no_export=True)
+    else:
+        ld = ctx.logical_data_empty(shape, dtype, name)
+
+    try:
+        from cuda.stf.fill_utils import init_logical_data
+        init_logical_data(ctx, ld, fill_value, where, exec_place)
+    except ImportError as e:
+        raise RuntimeError("Fill support (cuda.core) is not available for logical_data_full") from e
+
+    return ld
+
+
+def _logical_data_default_dtype(dtype):
+    return np.float64 if dtype is None else dtype
+
+
 class stf_cai:
     """
     Wrapper that exposes CUDA Array Interface v3 for interop (torch, cupy, etc.).
@@ -2064,31 +2097,7 @@ cdef class context:
         >>> # With a symbol name
         >>> ld = ctx.logical_data_full((200, 200), 0.0, name="epsilon")
         """
-        # Infer dtype from fill_value if not provided
-        if dtype is None:
-            dtype = np.array(fill_value).dtype
-        else:
-            dtype = np.dtype(dtype)
-
-        # Validate exec_place - host execution not yet supported
-        if exec_place is not None:
-            if hasattr(exec_place, 'kind') and exec_place.kind == "host":
-                raise NotImplementedError(
-                    "exec_place.host() is not yet supported for logical_data_full. "
-                    "Use exec_place.device() or omit exec_place parameter."
-                )
-
-        # Create empty logical data
-        ld = self.logical_data_empty(shape, dtype, name)
-
-        # Initialize with the specified value (cuda.core.Buffer.fill; CuPy/Numba fallback for 8-byte)
-        try:
-            from cuda.stf.fill_utils import init_logical_data
-            init_logical_data(self, ld, fill_value, where, exec_place)
-        except ImportError as e:
-            raise RuntimeError("Fill support (cuda.core) is not available for logical_data_full") from e
-
-        return ld
+        return _logical_data_full(self, shape, fill_value, dtype, where, exec_place, name)
 
     def logical_data_zeros(self, shape, dtype=None, where=None, exec_place=None, str name=None):
         """
@@ -2122,8 +2131,7 @@ cdef class context:
         >>> # Create on host memory with a name
         >>> ld = ctx.logical_data_zeros((50, 50), where=data_place.host(), name="Z")
         """
-        if dtype is None:
-            dtype = np.float64
+        dtype = _logical_data_default_dtype(dtype)
         return self.logical_data_full(shape, 0.0, dtype, where, exec_place, name)
 
     def logical_data_ones(self, shape, dtype=None, where=None, exec_place=None, str name=None):
@@ -2158,8 +2166,7 @@ cdef class context:
         >>> # Create on specific device with a name
         >>> ld = ctx.logical_data_ones((50, 50), name="ones")
         """
-        if dtype is None:
-            dtype = np.float64
+        dtype = _logical_data_default_dtype(dtype)
         return self.logical_data_full(shape, 1.0, dtype, where, exec_place, name)
 
     def token(self):
@@ -3057,6 +3064,36 @@ cdef class stackable_context:
         if name is not None:
             out.set_symbol(name)
         return out
+
+    def logical_data_full(
+        self,
+        shape,
+        fill_value,
+        dtype=None,
+        where=None,
+        exec_place=None,
+        str name=None,
+        *,
+        bint no_export=False,
+    ):
+        """Create stackable logical data initialized with a constant value.
+
+        This mirrors :meth:`context.logical_data_full` for stackable contexts.
+        The allocation is created as stackable logical data, then initialized
+        by an STF task in the current stackable scope. If ``no_export=True``,
+        the logical data remains local to the head scope.
+        """
+        return _logical_data_full(self, shape, fill_value, dtype, where, exec_place, name, no_export=no_export)
+
+    def logical_data_zeros(self, shape, dtype=None, where=None, exec_place=None, str name=None, *, bint no_export=False):
+        """Create stackable logical data filled with zeros."""
+        dtype = _logical_data_default_dtype(dtype)
+        return self.logical_data_full(shape, 0.0, dtype, where, exec_place, name, no_export=no_export)
+
+    def logical_data_ones(self, shape, dtype=None, where=None, exec_place=None, str name=None, *, bint no_export=False):
+        """Create stackable logical data filled with ones."""
+        dtype = _logical_data_default_dtype(dtype)
+        return self.logical_data_full(shape, 1.0, dtype, where, exec_place, name, no_export=no_export)
 
     def token(self):
         """Create a synchronization token."""
