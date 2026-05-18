@@ -364,10 +364,10 @@ template <class _Tp>
   if (__real_x_reduced >= __reduction_needed_bound)
   {
     // Set some very specific values to help with range reduction.
-    constexpr _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(648.0) : _Tp{58.0f};
+    constexpr _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? _Tp{648.0} : _Tp{58.0f};
 
     // Use two intervals to reduce values. Some values will be reduced twice.
-    constexpr _Tp __large_interval_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(334.0) : _Tp{34.0f};
+    constexpr _Tp __large_interval_bound = is_same_v<_Tp, double> ? _Tp{334.0} : _Tp{34.0f};
 
     // Has very low ulp error for c-r exp(__large_interval_subtract_factor).
     constexpr _Tp __large_interval_subtract_factor =
