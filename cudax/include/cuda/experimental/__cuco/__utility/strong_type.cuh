@@ -36,14 +36,14 @@ struct __strong_type
   //!
   //! Parameter:
   //! - `v`: Value to be wrapped as a strong type
-  _CCCL_API explicit constexpr __strong_type(_Tp __v)
+  _CCCL_HOST_DEVICE_API explicit constexpr __strong_type(_Tp __v)
       : __value{__v}
   {}
 
   //! Implicit conversion operator to the underlying value.
   //!
   //! Returns: Underlying value
-  _CCCL_API constexpr operator _Tp() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr operator _Tp() const noexcept
   {
     return __value;
   }
@@ -56,7 +56,7 @@ struct __strong_type
 #define CUDAX_CUCO_DEFINE_STRONG_TYPE(Name, Type)                      \
   struct Name : public ::cuda::experimental::cuco::__strong_type<Type> \
   {                                                                    \
-    _CCCL_API explicit constexpr Name(Type __value)                    \
+    _CCCL_HOST_DEVICE_API explicit constexpr Name(Type __value)        \
         : ::cuda::experimental::cuco::__strong_type<Type>(__value)     \
     {}                                                                 \
   };

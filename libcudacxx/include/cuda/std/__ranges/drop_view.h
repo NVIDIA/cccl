@@ -64,7 +64,7 @@ template <class _View, enable_if_t<view<_View>, int> = 0>
 #endif // !_CCCL_HAS_CONCEPTS()
 class drop_view : public view_interface<drop_view<_View>>
 {
-  // We cache begin() whenever ::cuda::std::ranges::next is not guaranteed O(1) to provide an
+  // We cache begin() whenever ::cuda::std::ranges::__next_cpo{} is not guaranteed O(1) to provide an
   // amortized O(1) begin() method. If this is an input_range, then we cannot cache
   // begin because begin is not equality preserving.
   // Note: drop_view<input-range>::begin() is still trivially amortized O(1) because
@@ -115,21 +115,22 @@ public:
   {
     if constexpr (random_access_range<_View2> && sized_range<_View2>)
     {
-      const auto __dist = ::cuda::std::min(::cuda::std::ranges::distance(__base_), __count_);
-      return ::cuda::std::ranges::begin(__base_) + __dist;
+      const auto __dist = ::cuda::std::min(::cuda::std::ranges::__distance_cpo{}(__base_), __count_);
+      return ::cuda::std::ranges::__begin_cpo{}(__base_) + __dist;
     }
     else if constexpr (_UseCache)
     {
       if (!__cached_begin_.__has_value())
       {
-        __cached_begin_.__emplace(
-          ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), __count_, ::cuda::std::ranges::end(__base_)));
+        __cached_begin_.__emplace(::cuda::std::ranges::__next_cpo{}(
+          ::cuda::std::ranges::__begin_cpo{}(__base_), __count_, ::cuda::std::ranges::__end_cpo{}(__base_)));
       }
       return *__cached_begin_;
     }
     else
     {
-      return ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), __count_, ::cuda::std::ranges::end(__base_));
+      return ::cuda::std::ranges::__next_cpo{}(
+        ::cuda::std::ranges::__begin_cpo{}(__base_), __count_, ::cuda::std::ranges::__end_cpo{}(__base_));
     }
   }
 
@@ -137,28 +138,28 @@ public:
   _CCCL_REQUIRES(random_access_range<const _View2>&& sized_range<const _View2>)
   _CCCL_API constexpr auto begin() const
   {
-    const auto __dist = ::cuda::std::min(::cuda::std::ranges::distance(__base_), __count_);
-    return ::cuda::std::ranges::begin(__base_) + __dist;
+    const auto __dist = ::cuda::std::min(::cuda::std::ranges::__distance_cpo{}(__base_), __count_);
+    return ::cuda::std::ranges::__begin_cpo{}(__base_) + __dist;
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   _CCCL_API constexpr auto end()
   {
-    return ::cuda::std::ranges::end(__base_);
+    return ::cuda::std::ranges::__end_cpo{}(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(range<const _View2>)
   _CCCL_API constexpr auto end() const
   {
-    return ::cuda::std::ranges::end(__base_);
+    return ::cuda::std::ranges::__end_cpo{}(__base_);
   }
 
   template <class _Self = drop_view>
   _CCCL_API static constexpr auto __size(_Self& __self)
   {
-    const auto __s = ::cuda::std::ranges::size(__self.__base_);
+    const auto __s = ::cuda::std::ranges::__size_cpo{}(__self.__base_);
     const auto __c = static_cast<decltype(__s)>(__self.__count_);
     return __s < __c ? 0 : __s - __c;
   }
@@ -179,7 +180,7 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE drop_view(_Range&&, range_difference_t<_Range>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES drop_view(_Range&&, range_difference_t<_Range>)
   -> drop_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _Tp>
@@ -294,14 +295,14 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __rng, _Np&& __n) const
     // Note: deliberately not forwarding `__rng` to guard against double moves.
     noexcept(noexcept(__passthrough_type_t<_RawRange>(
-      ::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)),
-      ::cuda::std::ranges::end(__rng)))) -> __passthrough_type_t<_RawRange>
+      ::cuda::std::ranges::__begin_cpo{}(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n)),
+      ::cuda::std::ranges::__end_cpo{}(__rng)))) -> __passthrough_type_t<_RawRange>
   {
     return __passthrough_type_t<_RawRange>(
-      ::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)),
-      ::cuda::std::ranges::end(__rng));
+      ::cuda::std::ranges::__begin_cpo{}(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n)),
+      ::cuda::std::ranges::__end_cpo{}(__rng));
   }
 
   // [range.drop.overview]: the `subrange (StoreSize == true)` case.
@@ -311,19 +312,20 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __rng, _Np&& __n) const
     // Note: deliberately not forwarding `__rng` to guard against double moves.
     noexcept(noexcept(_RawRange(
-      ::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)),
-      ::cuda::std::ranges::end(__rng),
+      ::cuda::std::ranges::__begin_cpo{}(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n)),
+      ::cuda::std::ranges::__end_cpo{}(__rng),
       ::cuda::std::__to_unsigned_like(
-        ::cuda::std::ranges::distance(__rng)
-        - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))) -> _RawRange
+        ::cuda::std::ranges::__distance_cpo{}(__rng)
+        - ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__rng), ::cuda::std::forward<_Np>(__n))))))
+      -> _RawRange
   {
     // Introducing local variables avoids calculating `min` and `distance` twice (at the cost of diverging from the
     // expression used in the `noexcept` clause and the return statement).
-    auto dist    = ::cuda::std::ranges::distance(__rng);
+    auto dist    = ::cuda::std::ranges::__distance_cpo{}(__rng);
     auto clamped = ::cuda::std::min<_Dist>(dist, ::cuda::std::forward<_Np>(__n));
-    return _RawRange(::cuda::std::ranges::begin(__rng) + clamped,
-                     ::cuda::std::ranges::end(__rng),
+    return _RawRange(::cuda::std::ranges::__begin_cpo{}(__rng) + clamped,
+                     ::cuda::std::ranges::__end_cpo{}(__rng),
                      ::cuda::std::__to_unsigned_like(dist - clamped));
   }
 
@@ -335,14 +337,14 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const
     noexcept(noexcept(::cuda::std::ranges::views::repeat(
       ::cuda::std::forward_like<_Range>(*__range.__value_),
-      ::cuda::std::ranges::distance(__range)
-        - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
+      ::cuda::std::ranges::__distance_cpo{}(__range)
+        - ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__range), ::cuda::std::forward<_Np>(__n)))))
       -> _RawRange
   {
     return ::cuda::std::ranges::views::repeat(
       ::cuda::std::forward_like<_Range>(*__range.__value_),
-      ::cuda::std::ranges::distance(__range)
-        - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)));
+      ::cuda::std::ranges::__distance_cpo{}(__range)
+        - ::cuda::std::min<_Dist>(::cuda::std::ranges::__distance_cpo{}(__range), ::cuda::std::forward<_Np>(__n)));
   }
 
   // [range.take.overview]: the `repeat_view` "otherwise" case.

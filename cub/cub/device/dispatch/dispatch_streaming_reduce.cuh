@@ -279,14 +279,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
   global_accum_t* const d_global_aggregates = static_cast<global_accum_t*>(allocations[1]);
 
-  accumulating_out_op = accumulating_transform_output_op_t{
-    true,
-    is_single_partition,
-    d_global_aggregates,
-    (d_global_aggregates + 1),
-    d_result_out,
-    local_to_global_op,
-    reduce_op};
+  accumulating_out_op.d_previous_aggregate = d_global_aggregates;
+  accumulating_out_op.d_aggregate_out      = d_global_aggregates + 1;
 
   for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
        current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))

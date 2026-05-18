@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 #include <cuda/std/algorithm.search_n.h>
 #include <cuda/std/cassert>
 
@@ -15,13 +18,13 @@
 
 struct equal_to
 {
-  __host__ __device__ constexpr bool operator()(int a, int b) const
+  TEST_FUNC constexpr bool operator()(int a, int b) const
   {
     return a == b;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int h[] = {1, 2, 2, 2, 3};
   assert(cuda::std::search_n(h, h + 5, 3, 2) == h + 1);

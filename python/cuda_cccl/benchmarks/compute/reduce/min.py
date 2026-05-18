@@ -44,9 +44,16 @@ def bench_reduce_min(state: bench.State):
         init_val = np.finfo(dtype).max
     h_init = np.array([init_val], dtype=dtype)
 
-    reducer = make_reduce_into(d_in, d_out, OpKind.MINIMUM, h_init)
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.MINIMUM, h_init=h_init)
 
-    temp_storage_bytes = reducer(None, d_in, d_out, OpKind.MINIMUM, num_items, h_init)
+    temp_storage_bytes = reducer(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=OpKind.MINIMUM,
+        h_init=h_init,
+    )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
@@ -56,13 +63,13 @@ def bench_reduce_min(state: bench.State):
 
     def launcher(launch: bench.Launch):
         reducer(
-            temp_storage,
-            d_in,
-            d_out,
-            OpKind.MINIMUM,
-            num_items,
-            h_init,
-            launch.get_stream(),
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=OpKind.MINIMUM,
+            h_init=h_init,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

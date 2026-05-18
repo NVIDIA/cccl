@@ -48,7 +48,7 @@ struct __fmt_formatter_str
   //! @return An iterator pointing to the end of the parsed format specification.
   //!
   template <class _ParseCtx>
-  _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
+  _CCCL_HOST_DEVICE_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
     typename _ParseCtx::iterator __result = __parser_.__parse(__ctx, ::cuda::std::__fmt_spec_fields_str());
     ::cuda::std::__fmt_process_display_type_str(__parser_.__type_);
@@ -63,7 +63,7 @@ struct __fmt_formatter_str
   //! @return An iterator pointing to the end of the formatted output.
   //!
   template <class _Tp, class _FmtCtx>
-  _CCCL_API typename _FmtCtx::iterator format(_Tp __value, _FmtCtx& __ctx) const
+  _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator format(_Tp __value, _FmtCtx& __ctx) const
   {
     return __format(__value, __ctx);
   }
@@ -72,7 +72,7 @@ private:
   //!
   //! @brief Creates a parser for string formatting specifications.
   //!
-  [[nodiscard]] _CCCL_API static constexpr __fmt_spec_parser<_CharT> __make_parser()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr __fmt_spec_parser<_CharT> __make_parser()
   {
     __fmt_spec_parser<_CharT> __parser{};
     __parser.__alignment_ = ::cuda::std::to_underlying(__fmt_spec_alignment::__left);
@@ -87,7 +87,7 @@ private:
   //! @return An iterator pointing to the end of the formatted output.
   //!
   template <class _FmtCtx>
-  [[nodiscard]] _CCCL_API typename _FmtCtx::iterator __format(const _CharT* __str, _FmtCtx& __ctx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator __format(const _CharT* __str, _FmtCtx& __ctx) const
   {
     return __format(basic_string_view{__str}, __ctx);
   }
@@ -100,7 +100,8 @@ private:
   //! @return An iterator pointing to the end of the formatted output.
   //!
   template <class _FmtCtx, size_t _Size>
-  [[nodiscard]] _CCCL_API typename _FmtCtx::iterator __format(const _CharT (&__str)[_Size], _FmtCtx& __ctx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator
+  __format(const _CharT (&__str)[_Size], _FmtCtx& __ctx) const
   {
     const _CharT* const __pzero = char_traits<_CharT>::find(__str, _Size, _CharT{});
     _CCCL_ASSERT(__pzero != nullptr, "formatting a non-null-terminated array");
@@ -115,7 +116,7 @@ private:
   //! @return An iterator pointing to the end of the formatted output.
   //!
   template <class _FmtCtx, class _Traits>
-  [[nodiscard]] _CCCL_API typename _FmtCtx::iterator
+  [[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator
   __format(basic_string_view<_CharT, _Traits> __str, _FmtCtx& __ctx) const
   {
     basic_string_view __str2{__str.data(), __str.size()};

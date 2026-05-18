@@ -33,18 +33,20 @@ template <class _Compare, class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr bool __lexicographical_compare(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
 {
+  bool __result = false;
   for (; __first2 != __last2; ++__first1, (void) ++__first2)
   {
     if (__first1 == __last1 || __comp(*__first1, *__first2))
     {
-      return true;
+      __result = true;
+      break;
     }
     if (__comp(*__first2, *__first1))
     {
-      return false;
+      break;
     }
   }
-  return false;
+  return __result;
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Compare>

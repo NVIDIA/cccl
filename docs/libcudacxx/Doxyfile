@@ -19,10 +19,11 @@ INPUT                  = ../../libcudacxx/include/cuda/__algorithm \
                          ../../libcudacxx/include/cuda/__memory_pool \
                          ../../libcudacxx/include/cuda/__memory_resource \
                          ../../libcudacxx/include/cuda/__stream \
-                         ../../libcudacxx/include/nv
+                         ../../libcudacxx/include/nv \
+                         ../../libcudacxx/include/cuda/std/__cccl/os.h
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/*
+EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/* */std/__cccl/compiler.h
 EXCLUDE_SYMBOLS        = *detail* *__* _LIBCUDACXX_*
 
 FILE_PATTERNS          = *.h *.hpp *.cuh
@@ -80,6 +81,7 @@ PREDEFINED = \
     "__cccl_lib_mdspan" \
     "_CCCL_AND=&&" \
     "_CCCL_API=inline" \
+    "_CCCL_HOST_DEVICE_API=inline" \
     "_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT="\
     "_CCCL_BEGIN_NAMESPACE_CUDA=namespace cuda {" \
     "_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE=namespace cuda::device {" \

@@ -33,6 +33,7 @@
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -43,7 +44,6 @@
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 
 #  include <cuda/experimental/__copy/copy_contiguous.cuh>
@@ -125,7 +125,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     && ::cuda::std::is_convertible_v<_AccessorPolicyOut, __default_accessor_out>;
   constexpr bool __are_byte_copyable =
     ::cuda::std::is_same_v<::cuda::std::remove_cv_t<_TpIn>, ::cuda::std::remove_cv_t<_TpOut>>
-    && ::cuda::std::is_trivially_copyable_v<_TpIn> //
+    && ::cuda::is_trivially_copyable_v<_TpIn> //
     && __have_default_accessors;
 
   if (__tensor_size == 1 && __are_byte_copyable)

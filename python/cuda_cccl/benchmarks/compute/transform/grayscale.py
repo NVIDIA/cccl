@@ -63,14 +63,20 @@ def bench_transform_grayscale(state: bench.State):
         state.skip("Skipping: out of memory.")
         return
 
-    transformer = make_unary_transform(d_pixels, d_out, to_grayscale)
+    transformer = make_unary_transform(d_in=d_pixels, d_out=d_out, op=to_grayscale)
 
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_pixels.dtype.itemsize)
     state.add_global_memory_writes(num_elements * d_out.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        transformer(d_pixels, d_out, to_grayscale, num_elements, launch.get_stream())
+        transformer(
+            d_in=d_pixels,
+            d_out=d_out,
+            op=to_grayscale,
+            num_items=num_elements,
+            stream=launch.get_stream(),
+        )
 
     state.exec(launcher, batched=False)
 

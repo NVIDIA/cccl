@@ -410,7 +410,8 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
 
   // Thrust historically provided a non-standard pointer_to for pointer<void>
   template <class T, enable_if_t<(is_void_v<element_type> || is_same_v<T, element_type>), int> = 0>
-  [[nodiscard]] _CCCL_API inline static pointer pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static pointer
+  pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
     return static_cast<element_type*>(::cuda::std::addressof(r));
   }
@@ -418,7 +419,7 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
   //! @brief Retrieve the address of the element pointed at by an thrust pointer
   //! @param iter A thrust::pointer
   //! @return A pointer to the element pointed to by the thrust pointer
-  [[nodiscard]] _CCCL_API static constexpr raw_pointer to_address(const pointer iter) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr raw_pointer to_address(const pointer iter) noexcept
   {
     return iter.get();
   }

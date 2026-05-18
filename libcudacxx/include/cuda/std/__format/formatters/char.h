@@ -46,7 +46,7 @@ struct __fmt_formatter_char
   //! @return An iterator pointing to the end of the parsed format specification.
   //!
   template <class _ParseCtx>
-  _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
+  _CCCL_HOST_DEVICE_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
     typename _ParseCtx::iterator __result = __parser_.__parse(__ctx, ::cuda::std::__fmt_spec_fields_int());
     ::cuda::std::__fmt_process_parsed_char(__parser_);
@@ -61,7 +61,7 @@ struct __fmt_formatter_char
   //! @return An iterator pointing to the end of the formatted output.
   //!
   template <class _FmtCtx>
-  _CCCL_API typename _FmtCtx::iterator format(_CharT __value, _FmtCtx& __ctx) const
+  _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator format(_CharT __value, _FmtCtx& __ctx) const
   {
     using _Up = make_unsigned_t<_CharT>;
 
@@ -94,7 +94,7 @@ struct __fmt_formatter_char
   //!
   _CCCL_TEMPLATE(class _FmtCtx, class _CharT2 = _CharT)
   _CCCL_REQUIRES(is_same_v<_CharT2, wchar_t>)
-  _CCCL_API typename _FmtCtx::iterator format(char __value, _FmtCtx& __ctx) const
+  _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator format(char __value, _FmtCtx& __ctx) const
   {
     return format(static_cast<wchar_t>(static_cast<unsigned char>(__value)), __ctx);
   }

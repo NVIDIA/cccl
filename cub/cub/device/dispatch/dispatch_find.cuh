@@ -40,7 +40,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::find
 {
 template <typename ValueType, typename OffsetT>
-__launch_bounds__(1) __global__ void init_found_pos_pointer(ValueType* found_pos_ptr, OffsetT num_items)
+__launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void init_found_pos_pointer(ValueType* found_pos_ptr, OffsetT num_items)
 {
   // we immediately trigger launching the find kernel, before waiting for a previous kernel
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -52,12 +52,12 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
 #if _CCCL_HAS_CONCEPTS()
   requires find_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
   IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
   constexpr find_policy policy = current_policy<PolicySelector>();
   using agent_find_t =
-    agent_t<policy.block_threads,
+    agent_t<policy.threads_per_block,
             policy.items_per_thread,
             policy.vec_size,
             policy.load_modifier,
@@ -72,8 +72,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KER
 }
 
 template <typename ValueType, typename OutputIteratorT>
-__launch_bounds__(1) __global__
-  void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
+__launch_bounds__(1)
+  _CCCL_KERNEL_ATTRIBUTES void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   *d_out = *found_pos_ptr;
@@ -125,7 +125,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+  const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
   int device_ordinal;
@@ -144,7 +144,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   auto kernel_ptr                  = find_kernel<PolicySelector, unwrapped_input_iterator_t, OffsetT, PredicateT>;
 
   int find_if_sm_occupancy;
-  if (const auto error = CubDebug(cub::MaxSmOccupancy(find_if_sm_occupancy, kernel_ptr, active_policy.block_threads)))
+  if (const auto error =
+        CubDebug(cub::MaxSmOccupancy(find_if_sm_occupancy, kernel_ptr, active_policy.threads_per_block)))
   {
     return error;
   }
@@ -190,7 +191,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
   auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
   if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                                    findif_grid_size, active_policy.block_threads, 0, stream, true)
+                                    findif_grid_size, active_policy.threads_per_block, 0, stream, true)
                                     .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
   {
     return error;

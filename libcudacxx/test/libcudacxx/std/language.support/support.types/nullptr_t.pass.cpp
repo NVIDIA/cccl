@@ -86,9 +86,11 @@ int main(int, char**)
     test_conversions<cuda::std::nullptr_t>();
     test_conversions<void*>();
     test_conversions<A*>();
+#if !_CCCL_TILE_COMPILATION() // error: taking address of a function is unsupported in tile code
     test_conversions<void (*)()>();
     test_conversions<void (A::*)()>();
     test_conversions<int A::*>();
+#endif // !_CCCL_TILE_COMPILATION()
   }
   {
     // TODO Enable this assertion when all compilers implement core DR 583.
@@ -96,7 +98,9 @@ int main(int, char**)
     test_comparisons<cuda::std::nullptr_t>();
     test_comparisons<void*>();
     test_comparisons<A*>();
+#if !_CCCL_TILE_COMPILATION() // error: taking address of a function is unsupported in tile code
     test_comparisons<void (*)()>();
+#endif // !_CCCL_TILE_COMPILATION()
   }
   test_nullptr_conversions();
 
