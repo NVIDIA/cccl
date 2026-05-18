@@ -346,7 +346,8 @@ C2H_TEST("Device ArgMax can be tuned", "[reduce][device]", block_sizes)
 template <int BlockThreads>
 struct reduce_by_key_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::reduce_by_key::reduce_by_key_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce_by_key::reduce_by_key_policy
   {
     return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}};
   }
