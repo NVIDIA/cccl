@@ -50,26 +50,26 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class... _Tp>
-inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp> && ...);
+template <class... _Types>
+inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Types> && ...);
 
-template <class... _Tp>
-inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Tp> && ...);
+template <class... _Types>
+inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Types> && ...);
 
 // Traits forwarding to `__tuple_types`
 template <class>
 inline constexpr bool __tuple_types_all_default_constructible_v = false;
 
-template <class... _Tp>
-inline constexpr bool __tuple_types_all_default_constructible_v<__tuple_types<_Tp...>> =
-  (is_default_constructible_v<_Tp> && ...);
+template <class... _Types>
+inline constexpr bool __tuple_types_all_default_constructible_v<__tuple_types<_Types...>> =
+  (is_default_constructible_v<_Types> && ...);
 
 template <class, class>
 inline constexpr bool __tuple_types_same_size = false;
 
-template <class... _Tp, class... _Up>
-inline constexpr bool __tuple_types_same_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> =
-  sizeof...(_Tp) == sizeof...(_Up);
+template <class... _Types, class... _UTypes>
+inline constexpr bool __tuple_types_same_size<__tuple_types<_Types...>, __tuple_types<_UTypes...>> =
+  sizeof...(_Types) == sizeof...(_UTypes);
 
 // __tuple_constructible
 template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
@@ -86,10 +86,10 @@ template <class _From, class _To>
 inline constexpr bool __tuple_constructible<_From, _To, true, true> =
   __tuple_types_constructible<__make_tuple_types_t<_From>, __make_tuple_types_t<_To>>;
 
-template <class _Tp, class _Up>
+template <class _Types, class _UTypes>
 struct __tuple_constructible_struct
 {
-  static constexpr bool value = __tuple_constructible<_Tp, _Up>;
+  static constexpr bool value = __tuple_constructible<_Types, _UTypes>;
 };
 
 // __tuple_nothrow_constructible
@@ -172,67 +172,68 @@ struct __invalid_tuple_constraints
   static constexpr bool __nothrow_less_than_comparable = false;
 };
 
-template <class... _Tp>
+template <class... _Types>
 struct __tuple_constraints
 {
-  static constexpr bool __default_constructible = (is_default_constructible_v<_Tp> && ...);
+  static constexpr bool __default_constructible = (is_default_constructible_v<_Types> && ...);
 
-  static constexpr bool __nothrow_default_constructible = (is_nothrow_default_constructible_v<_Tp> && ...);
+  static constexpr bool __nothrow_default_constructible = (is_nothrow_default_constructible_v<_Types> && ...);
 
-  static constexpr bool __implicit_default_constructible = (__is_implicitly_default_constructible<_Tp>::value && ...);
+  static constexpr bool __implicit_default_constructible =
+    (__is_implicitly_default_constructible<_Types>::value && ...);
 
   static constexpr bool __explicit_default_constructible = __default_constructible && !__implicit_default_constructible;
 
   static constexpr bool __implicit_variadic_copy_constructible =
-    __tuple_constructible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>
-    && __tuple_convertible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>;
+    __tuple_constructible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>
+    && __tuple_convertible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>;
 
   static constexpr bool __explicit_variadic_copy_constructible =
-    __tuple_constructible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>
-    && !__tuple_convertible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>;
+    __tuple_constructible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>
+    && !__tuple_convertible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>;
 
-  static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Tp> && ...);
+  static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Types> && ...);
 
   template <class... _Args>
   struct __variadic_constraints
   {
-    static constexpr bool __constructible = __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
+    static constexpr bool __constructible = __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Types...>>;
 
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>
-      && __tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
+      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Types...>>
+      && __tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Types...>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>
-      && !__tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
+      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Types...>>
+      && !__tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Types...>>;
 
-    static constexpr bool __nothrow_constructible = (is_nothrow_constructible_v<_Tp, _Args> && ...);
+    static constexpr bool __nothrow_constructible = (is_nothrow_constructible_v<_Types, _Args> && ...);
   };
 
   template <class... _Args>
   struct __variadic_constraints_less_rank
   {
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
-      && __tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
+      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
+      && __tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
       && __tuple_types_all_default_constructible_v<
-        __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
+        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_Args)>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
-      && !__tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
+      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
+      && !__tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Args)>>
       && __tuple_types_all_default_constructible_v<
-        __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
+        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_Args)>>;
   };
 
   template <class _Tuple>
   struct __valid_tuple_like_constraints
   {
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && __tuple_convertible<_Tuple, __tuple_types<_Tp...>>;
+      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && __tuple_convertible<_Tuple, __tuple_types<_Types...>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && !__tuple_convertible<_Tuple, __tuple_types<_Tp...>>;
+      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && !__tuple_convertible<_Tuple, __tuple_types<_Types...>>;
   };
 
   template <class _Tuple>
@@ -243,8 +244,8 @@ struct __tuple_constraints
         : _Or<
             // Don't attempt the two checks below if the tuple we are given
             // has the same type as this tuple.
-            _IsSame<remove_cvref_t<_Tuple2>, tuple<_Tp...>>,
-            _Lazy<_And, _Not<is_constructible<_Tp..., _Tuple2>>, _Not<is_convertible<_Tuple2, _Tp...>>>>
+            _IsSame<remove_cvref_t<_Tuple2>, tuple<_Types...>>,
+            _Lazy<_And, _Not<is_constructible<_Types..., _Tuple2>>, _Not<is_convertible<_Tuple2, _Types...>>>>
     {};
 
     // This trait is used to disable the tuple-like constructor when
@@ -254,28 +255,30 @@ struct __tuple_constraints
     using _PreferTupleLikeConstructor = _PreferTupleLikeConstructorImpl<_Tuple2>;
 
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && __tuple_convertible<_Tuple, __tuple_types<_Tp...>>
+      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && __tuple_convertible<_Tuple, __tuple_types<_Types...>>
       && _PreferTupleLikeConstructor<_Tuple>::value;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && !__tuple_convertible<_Tuple, __tuple_types<_Tp...>>
+      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && !__tuple_convertible<_Tuple, __tuple_types<_Types...>>
       && _PreferTupleLikeConstructor<_Tuple>::value;
   };
 
   template <class _Tuple>
   using __tuple_like_constraints =
-    conditional_t<sizeof...(_Tp) == 1,
+    conditional_t<sizeof...(_Types) == 1,
                   __valid_tuple_like_constraints_rank_one<_Tuple>,
                   __valid_tuple_like_constraints<_Tuple>>;
 
-  template <class... _Up>
+  template <class... _UTypes>
   struct __comparison
   {
-    static constexpr bool __equality_comparable         = (__is_cpp17_equality_comparable_v<_Tp, _Up> && ...);
-    static constexpr bool __nothrow_equality_comparable = (__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up> && ...);
+    static constexpr bool __equality_comparable = (__is_cpp17_equality_comparable_v<_Types, _UTypes> && ...);
+    static constexpr bool __nothrow_equality_comparable =
+      (__is_cpp17_nothrow_equality_comparable_v<_Types, _UTypes> && ...);
 
-    static constexpr bool __less_than_comparable         = (__is_cpp17_less_than_comparable_v<_Tp, _Up> && ...);
-    static constexpr bool __nothrow_less_than_comparable = (__is_cpp17_nothrow_less_than_comparable_v<_Tp, _Up> && ...);
+    static constexpr bool __less_than_comparable = (__is_cpp17_less_than_comparable_v<_Types, _UTypes> && ...);
+    static constexpr bool __nothrow_less_than_comparable =
+      (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
   };
 };
 
