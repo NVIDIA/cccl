@@ -144,6 +144,52 @@ def test_logical_data_init_exec_place():
     assert np.allclose(ones, 1.0)
 
 
+def test_stackable_logical_data_init_exec_place():
+    n = 1024
+    full = np.empty(n, dtype=np.float32)
+    zeros = np.empty(n, dtype=np.float32)
+    ones = np.empty(n, dtype=np.float32)
+
+    ctx = stf.stackable_context()
+    lfull = ctx.logical_data_full(
+        (n,), 3.0, dtype=np.float32, exec_place=stf.exec_place.device(0)
+    )
+    lzeros = ctx.logical_data_zeros(
+        (n,), dtype=np.float32, exec_place=stf.exec_place.device(0)
+    )
+    lones = ctx.logical_data_ones(
+        (n,), dtype=np.float32, exec_place=stf.exec_place.device(0)
+    )
+    lfull_out = ctx.logical_data(full)
+    lzeros_out = ctx.logical_data(zeros)
+    lones_out = ctx.logical_data(ones)
+
+    threads_per_block = 256
+    blocks = (n + threads_per_block - 1) // threads_per_block
+
+    with ctx.graph_scope():
+        with ctx.task(lfull.read(), lfull_out.write()) as t:
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            dsrc, ddst = numba_arguments(t)
+            copy[blocks, threads_per_block, nb_stream](dsrc, ddst)
+
+        with ctx.task(lzeros.read(), lzeros_out.write()) as t:
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            dsrc, ddst = numba_arguments(t)
+            copy[blocks, threads_per_block, nb_stream](dsrc, ddst)
+
+        with ctx.task(lones.read(), lones_out.write()) as t:
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            dsrc, ddst = numba_arguments(t)
+            copy[blocks, threads_per_block, nb_stream](dsrc, ddst)
+
+    ctx.finalize()
+
+    assert np.allclose(full, 3.0)
+    assert np.allclose(zeros, 0.0)
+    assert np.allclose(ones, 1.0)
+
+
 @cuda.jit
 def laplacian_5pt_kernel(u_in, u_out, dx, dy):
     """
