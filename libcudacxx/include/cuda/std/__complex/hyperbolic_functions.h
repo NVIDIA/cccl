@@ -343,7 +343,7 @@ template <class _Tp>
   }
 
   // A somewhat strange special-within-special case:
-  if ((__real_x_abs == _Tp{0}) && ::cuda::std::isinf(__imag_x))
+  if ((__real_x_abs == _Tp{0}) && !::cuda::std::isfinite(__imag_x))
   {
     // C11 DR471
     return complex<_Tp>{::cuda::std::copysign(_Tp{0}, __x.real()), numeric_limits<_Tp>::quiet_NaN()};
