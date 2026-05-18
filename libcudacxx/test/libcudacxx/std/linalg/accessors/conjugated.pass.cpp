@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
+// error: a non-__tile__ variable cannot be used in tile code
 
 #include <cuda/std/cassert>
 #include <cuda/std/complex>

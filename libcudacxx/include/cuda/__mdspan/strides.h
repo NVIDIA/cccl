@@ -229,14 +229,16 @@ public:
     }
     else
     {
+      bool __result = true;
       for (rank_type __r = 0; __r != __rank_; __r++)
       {
         if (::cuda::std::cmp_not_equal(__lhs.stride(__r), __rhs.stride(__r)))
         {
-          return false;
+          __result = false;
+          break;
         }
       }
-      return true;
+      return __result;
     }
   }
 

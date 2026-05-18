@@ -160,6 +160,15 @@
       }
     },
     {
+      "name": "libcudacxx-cpp23",
+      "displayName": "libcu++: C++23",
+      "inherits": "libcudacxx",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CUDA_STANDARD": "23"
+      }
+    },
+    {
       "name": "libcudacxx-nvrtc",
       "inherits": "libcudacxx",
       "cacheVariables": {

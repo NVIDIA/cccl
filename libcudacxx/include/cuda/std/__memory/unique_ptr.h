@@ -90,7 +90,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Up>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, void>
-  operator()(_Up* __ptr) const noexcept
+  operator()([[maybe_unused]] _Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
 #if _CCCL_TILE_COMPILATION()

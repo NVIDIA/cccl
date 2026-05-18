@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // flags<Flags...> allows at most one overaligned_flag<N>.
 
 #include <cuda/std/__simd_>

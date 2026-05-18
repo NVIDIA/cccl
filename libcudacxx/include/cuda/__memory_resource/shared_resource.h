@@ -62,7 +62,7 @@ struct shared_resource
   //! @param __args The arguments to be passed to the \c _Resource constructor.
   template <class... _Args>
   explicit shared_resource(::cuda::std::in_place_type_t<_Resource>, _Args&&... __args)
-      : __block_(::cuda::std::forward<_Args>(__args)...)
+      : __block_(::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   //! @brief Copy-constructs a \c shared_resource object resulting in an copy that shares
