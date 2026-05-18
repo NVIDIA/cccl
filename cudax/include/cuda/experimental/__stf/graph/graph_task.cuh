@@ -110,7 +110,7 @@ public:
       // stay held across the start()/end_uncleared() boundary; transfer ownership
       // into the task-owned capture_lock_ member here.
       begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
-      capture_lock_ = ::std::move(lock);
+      capture_lock_ = mv(lock);
 #else // _CCCL_CTK_AT_LEAST(12, 3)
       // Legacy path (CTK 12.0-12.2): capture into a fresh per-task graph and
       // embed it as a child-graph node in ctx_graph from end_uncleared(). The
@@ -142,15 +142,9 @@ public:
     // capture_lock_. Move it into a local unique_lock so RAII releases it at
     // the end of this function. On the non-capture path, acquire a fresh lock
     // here just like the legacy code did.
-    ::std::unique_lock<::std::mutex> lock;
-    if (is_capture_enabled())
-    {
-      lock = ::std::move(capture_lock_);
-    }
-    else
-    {
-      lock = lock_ctx_graph();
-    }
+    ::std::unique_lock<::std::mutex> lock = is_capture_enabled()
+      ? mv(capture_lock_)
+      : lock_ctx_graph();
 #else // _CCCL_CTK_AT_LEAST(12, 3)
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
