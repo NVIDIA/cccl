@@ -695,11 +695,11 @@ public:
 
   /// @brief Materialize all streams in the pool as a vector. Triggers lazy
   /// creation of every empty slot.
-  inline ::std::vector<cudaStream_t> pick_all_streams(exec_place_resources& res) const;
+  ::std::vector<cudaStream_t> pick_all_streams(exec_place_resources& res) const;
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  inline ::std::vector<cudaStream_t> pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const;
+  ::std::vector<cudaStream_t> pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const;
 
   const ::std::shared_ptr<impl>& get_impl() const
   {
