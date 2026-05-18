@@ -33,11 +33,12 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
   // Test make_instance(...).
   {
     const auto parent_group = cudax::make_this_group(level, config);
+    const ThreadsInWarpMappingResult prev_mapping_result;
 
     const cudax::group_by mapping{2};
     const Synchronizer synchronizer{};
 
-    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group);
+    const auto mapping_result = mapping.map(parent_group, prev_mapping_result);
     const auto synchronizer_instance =
       synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
 

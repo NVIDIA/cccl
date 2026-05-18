@@ -15,13 +15,13 @@
 
 struct find_if_not_is_even
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {2, 4, 5};
   assert(*cuda::std::find_if_not(a, a + 3, find_if_not_is_even{}) == 5);

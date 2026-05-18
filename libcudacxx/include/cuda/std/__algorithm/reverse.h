@@ -63,7 +63,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
 _CCCL_API constexpr void __reverse(_BidirectionalIterator __first, _Sentinel __last)
 {
-  using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_BidirectionalIterator>;
+  using _IterCategory = __iterator_traits_category_or_concept_t<_BidirectionalIterator>;
   ::cuda::std::__reverse_impl<_AlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), _IterCategory());
 }
 

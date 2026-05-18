@@ -43,9 +43,16 @@ def bench_reduce_custom(state: bench.State):
 
     h_init = np.zeros(1, dtype=dtype)
 
-    reducer = make_reduce_into(d_in, d_out, max_op, h_init)
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=max_op, h_init=h_init)
 
-    temp_storage_bytes = reducer(None, d_in, d_out, max_op, num_items, h_init)
+    temp_storage_bytes = reducer(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=max_op,
+        h_init=h_init,
+    )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
@@ -55,7 +62,13 @@ def bench_reduce_custom(state: bench.State):
 
     def launcher(launch: bench.Launch):
         reducer(
-            temp_storage, d_in, d_out, max_op, num_items, h_init, launch.get_stream()
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=max_op,
+            h_init=h_init,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

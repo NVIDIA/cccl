@@ -76,7 +76,7 @@ struct __stride_compare
   const ::cuda::std::array<_StrideT, _MaxRank>& __strides;
 
   template <typename _Idx>
-  [[nodiscard]] _CCCL_API bool operator()(const _Idx __lhs, const _Idx __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(const _Idx __lhs, const _Idx __rhs) const noexcept
   {
     return ::cuda::experimental::__abs_integer(__strides[__lhs])
          < ::cuda::experimental::__abs_integer(__strides[__rhs]);

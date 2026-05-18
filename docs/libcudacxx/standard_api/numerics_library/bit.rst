@@ -3,6 +3,16 @@
 ``<cuda/std/bit>``
 ==================
 
+``cuda::std::bit_cast``
+-----------------------
+
+``cuda::std::bit_cast`` extended the standard ``std::bit_cast`` to also recognize CUDA extended floating-point scalar and vector types as trivially copyable.
+
+**Limitations**
+
+- The function can be used in ``constexpr`` contexts only when the source and destination types are trivially copyable.
+- The function cannot be used in ``constexpr`` contexts with MSVC <= 19.25 and GCC <= 10.
+
 CUDA Performance Considerations
 -------------------------------
 

@@ -144,6 +144,28 @@ public:
   stream_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
   {
+    // When the caller supplies their own ``async_resources_handle``, its
+    // stream pool is very likely already populated with streams that carry
+    // residual work from previous contexts. Folding those streams into an
+    // on-going capture -- which STF would attempt the first time the pool is
+    // queried during task submission -- is rejected by CUDA with
+    // ``cudaErrorStreamCaptureIsolation``. Contexts created *without* an
+    // explicit handle get a fresh, empty pool and are capture-safe; that is
+    // the supported in-capture configuration.
+    if (state().user_provided_handle)
+    {
+      cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+      cuda_safe_call(cudaStreamIsCapturing(user_stream, &capture_status));
+      EXPECT(capture_status == cudaStreamCaptureStatusNone,
+             "stream_ctx(user_stream, handle): user_stream is in a CUDA graph "
+             "capture but a caller-provided async_resources_handle was "
+             "supplied. The handle's stream pool may carry uncaptured work "
+             "that cannot be legally joined into the on-going capture. Either "
+             "end the capture before constructing the context, or construct "
+             "the context without an explicit handle so a fresh empty pool is "
+             "used.");
+    }
+
     // We set the user stream as the entry point after the creation of the
     // context so that we can manipulate the object, not its shared_ptr
     // implementation

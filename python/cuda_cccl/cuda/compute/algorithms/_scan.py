@@ -116,12 +116,13 @@ class _Scan:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
         op: Callable | OpAdapter,
-        num_items: int,
         init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+        num_items: int,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
@@ -173,10 +174,11 @@ class _Scan:
 # TODO Accept stream
 @cache_with_registered_key_functions
 def make_exclusive_scan(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
@@ -194,7 +196,7 @@ def make_exclusive_scan(
         op: Binary scan operator.
             The signature is ``(T, T) -> T``, where ``T`` is the data type of
             the initial value ``init_value``.
-        init_value: Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value
+        init_value: Numpy array, device array, or GPU struct storing initial value of the scan
 
     Returns:
         A callable object that can be used to perform the scan
@@ -204,10 +206,11 @@ def make_exclusive_scan(
 
 
 def exclusive_scan(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct,
     num_items: int,
     stream=None,
 ):
@@ -234,20 +237,37 @@ def exclusive_scan(
         num_items: Number of items to scan
         stream: CUDA stream for the operation (optional)
     """
-    scanner = make_exclusive_scan(d_in, d_out, op, init_value)
-    tmp_storage_bytes = scanner(None, d_in, d_out, op, num_items, init_value, stream)
+    scanner = make_exclusive_scan(d_in=d_in, d_out=d_out, op=op, init_value=init_value)
+    tmp_storage_bytes = scanner(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        op=op,
+        init_value=init_value,
+        num_items=num_items,
+        stream=stream,
+    )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    scanner(tmp_storage, d_in, d_out, op, num_items, init_value, stream)
+    scanner(
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        op=op,
+        init_value=init_value,
+        num_items=num_items,
+        stream=stream,
+    )
 
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_registered_key_functions
 def make_inclusive_scan(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
@@ -275,10 +295,11 @@ def make_inclusive_scan(
 
 
 def inclusive_scan(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
     num_items: int,
     stream=None,
 ):
@@ -305,7 +326,23 @@ def inclusive_scan(
         num_items: Number of items to scan
         stream: CUDA stream for the operation (optional)
     """
-    scanner = make_inclusive_scan(d_in, d_out, op, init_value)
-    tmp_storage_bytes = scanner(None, d_in, d_out, op, num_items, init_value, stream)
+    scanner = make_inclusive_scan(d_in=d_in, d_out=d_out, op=op, init_value=init_value)
+    tmp_storage_bytes = scanner(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        op=op,
+        init_value=init_value,
+        num_items=num_items,
+        stream=stream,
+    )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    scanner(tmp_storage, d_in, d_out, op, num_items, init_value, stream)
+    scanner(
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        op=op,
+        init_value=init_value,
+        num_items=num_items,
+        stream=stream,
+    )

@@ -109,12 +109,12 @@ def test_device_histogram_basic_use(dtype, num_samples):
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
     cuda.compute.histogram_even(
-        d_samples,
-        d_histogram,
-        num_levels,
-        lower_level,
-        upper_level,
-        num_samples,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        num_output_levels=num_levels,
+        lower_level=lower_level,
+        upper_level=upper_level,
+        num_samples=num_samples,
     )
 
     h_expected = compute_reference_histogram(
@@ -143,12 +143,12 @@ def test_device_histogram_sample_iterator():
     upper_level = np.int32(adjusted_total_samples)
 
     cuda.compute.histogram_even(
-        counting_it,
-        d_histogram,
-        num_levels,
-        lower_level,
-        upper_level,
-        adjusted_total_samples,
+        d_samples=counting_it,
+        d_histogram=d_histogram,
+        num_output_levels=num_levels,
+        lower_level=lower_level,
+        upper_level=upper_level,
+        num_samples=adjusted_total_samples,
     )
 
     # Each bin should have exactly samples_per_bin elements
@@ -169,7 +169,12 @@ def test_device_histogram_single_sample():
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
     cuda.compute.histogram_even(
-        d_samples, d_histogram, num_levels, lower_level, upper_level, 1
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        num_output_levels=num_levels,
+        lower_level=lower_level,
+        upper_level=upper_level,
+        num_samples=1,
     )
 
     # Sample 5.0 should go into bin 2 (bins: [0,2.5), [2.5,5), [5,7.5), [7.5,10))
@@ -190,12 +195,12 @@ def test_device_histogram_out_of_range():
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
     cuda.compute.histogram_even(
-        d_samples,
-        d_histogram,
-        num_levels,
-        lower_level,
-        upper_level,
-        len(h_samples),
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        num_output_levels=num_levels,
+        lower_level=lower_level,
+        upper_level=upper_level,
+        num_samples=len(h_samples),
     )
 
     # Only 0.5 (bin 0) and 5.5 (bin 1) should be counted
@@ -223,12 +228,12 @@ def test_device_histogram_with_stream(cuda_stream):
         d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
     cuda.compute.histogram_even(
-        d_samples,
-        d_histogram,
-        num_levels,
-        lower_level,
-        upper_level,
-        len(h_samples),
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        num_output_levels=num_levels,
+        lower_level=lower_level,
+        upper_level=upper_level,
+        num_samples=len(h_samples),
         stream=cuda_stream,
     )
 
@@ -254,12 +259,12 @@ def test_device_histogram_with_constant_iterator():
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
     cuda.compute.histogram_even(
-        constant_it,
-        d_histogram,
-        num_levels,
-        lower_level,
-        upper_level,
-        num_samples,
+        d_samples=constant_it,
+        d_histogram=d_histogram,
+        num_output_levels=num_levels,
+        lower_level=lower_level,
+        upper_level=upper_level,
+        num_samples=num_samples,
     )
 
     h_result = cp.asnumpy(d_histogram)
@@ -286,12 +291,12 @@ def test_histogram_even():
 
     # Run histogram with automatic temp storage allocation
     cuda.compute.histogram_even(
-        d_samples,
-        d_histogram,
-        num_levels,
-        lower_level,
-        upper_level,
-        num_samples,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        num_output_levels=num_levels,
+        lower_level=lower_level,
+        upper_level=upper_level,
+        num_samples=num_samples,
     )
 
     # Check the result is correct
@@ -328,31 +333,31 @@ def test_histogram_cache_bug_crosses_256_bin_threshold():
     d_histogram[:num_bins_1] = 0
 
     hist = cuda.compute.make_histogram_even(
-        d_samples,
-        d_histogram[:num_bins_1],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
+        d_samples=d_samples,
+        d_histogram=d_histogram[:num_bins_1],
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
     )
     temp_bytes = hist(
-        None,
-        d_samples,
-        d_histogram[:num_bins_1],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
+        temp_storage=None,
+        d_samples=d_samples,
+        d_histogram=d_histogram[:num_bins_1],
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
     )
     temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
     hist(
-        temp_storage,
-        d_samples,
-        d_histogram[:num_bins_1],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
+        temp_storage=temp_storage,
+        d_samples=d_samples,
+        d_histogram=d_histogram[:num_bins_1],
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
     )
     cp.cuda.Device().synchronize()
     assert int(d_histogram[:num_bins_1].sum()) == num_samples
@@ -366,32 +371,32 @@ def test_histogram_cache_bug_crosses_256_bin_threshold():
     d_histogram[:num_bins_2] = 0
 
     hist2 = cuda.compute.make_histogram_even(
-        d_samples,
-        d_histogram[:num_bins_2],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
+        d_samples=d_samples,
+        d_histogram=d_histogram[:num_bins_2],
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
     )
 
     temp_bytes2 = hist2(
-        None,
-        d_samples,
-        d_histogram[:num_bins_2],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
+        temp_storage=None,
+        d_samples=d_samples,
+        d_histogram=d_histogram[:num_bins_2],
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
     )
     temp_storage2 = cp.empty(temp_bytes2, dtype=np.uint8)
     hist2(
-        temp_storage2,
-        d_samples,
-        d_histogram[:num_bins_2],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_samples,
+        temp_storage=temp_storage2,
+        d_samples=d_samples,
+        d_histogram=d_histogram[:num_bins_2],
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_samples,
     )
     cp.cuda.Device().synchronize()
     assert int(d_histogram[:num_bins_2].sum()) == num_samples

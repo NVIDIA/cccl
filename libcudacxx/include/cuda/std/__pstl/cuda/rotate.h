@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -35,6 +36,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/transform_iterator.h>
@@ -114,7 +116,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         tuple<_InputIterator>{::cuda::std::move(__first)},
         __storage.template __get_ptr<1>(),
         __count,
-        CUB_NS_QUALIFIER::detail::transform::always_true_predicate{},
+        ::cuda::always_true{},
         identity{},
         __policy);
 
@@ -146,11 +148,11 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(__policy, ::cuda::std::move(__first), ::cuda::std::move(__middle), ::cuda::std::move(__last));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -158,9 +160,10 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

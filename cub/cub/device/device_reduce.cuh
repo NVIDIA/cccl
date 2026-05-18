@@ -89,7 +89,7 @@ inline constexpr bool is_non_deterministic_v =
 struct DeviceReduce
 {
 private:
-  template <typename TuningEnvT,
+  template <typename EnvT,
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
@@ -98,8 +98,6 @@ private:
             typename NumItemsT,
             ::cuda::execution::determinism::__determinism_t Determinism>
   CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumItemsT num_items,
@@ -107,102 +105,63 @@ private:
     TransformOpT transform_op,
     T init,
     ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
-    cudaStream_t stream)
+    EnvT env)
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
 
-    return detail::reduce::dispatch<accum_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      static_cast<offset_t>(num_items),
-      reduction_op,
-      init,
-      stream,
-      transform_op,
-      policy_selector{});
-  }
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_env_t = decltype(tuning);
 
-  template <typename TuningEnvT,
-            typename InputIteratorT,
-            typename OutputIteratorT,
-            typename ReductionOpT,
-            typename TransformOpT,
-            typename T,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumItemsT num_items,
-    ReductionOpT,
-    TransformOpT transform_op,
-    T init,
-    ::cuda::execution::determinism::gpu_to_gpu_t,
-    cudaStream_t stream)
-  {
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = ::cuda::std::
-      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::rfa::rfa_policy, default_policy_selector>;
-
-    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      static_cast<offset_t>(num_items),
-      init,
-      stream,
-      transform_op,
-      policy_selector{});
-  }
-
-  template <typename TuningEnvT,
-            typename InputIteratorT,
-            typename OutputIteratorT,
-            typename ReductionOpT,
-            typename TransformOpT,
-            typename T,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumItemsT num_items,
-    ReductionOpT reduction_op,
-    TransformOpT transform_op,
-    T init,
-    ::cuda::execution::determinism::not_guaranteed_t,
-    cudaStream_t stream)
-  {
-    using offset_t                = detail::choose_offset_t<NumItemsT>;
-    using accum_t                 = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
-
-    return detail::reduce::dispatch_nondeterministic<accum_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
-      static_cast<offset_t>(num_items),
-      reduction_op,
-      init,
-      stream,
-      transform_op,
-      policy_selector{});
+      if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
+      {
+        // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
+        (void) reduction_op;
+        using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
+        using policy_selector =
+          ::cuda::std::execution::__query_result_or_t<tuning_env_t, detail::rfa::rfa_policy, default_policy_selector>;
+        return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
+          storage, bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op, policy_selector{});
+      }
+      else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
+      {
+        using default_policy_selector =
+          detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+        using policy_selector =
+          ::cuda::std::execution::__query_result_or_t<tuning_env_t,
+                                                      detail::reduce_nondeterministic::reduce_nondeterministic_policy,
+                                                      default_policy_selector>;
+        return detail::reduce_nondeterministic::dispatch<accum_t>(
+          storage,
+          bytes,
+          d_in,
+          THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+          static_cast<offset_t>(num_items),
+          reduction_op,
+          init,
+          stream,
+          transform_op,
+          policy_selector{});
+      }
+      else
+      {
+        using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+        using policy_selector         = ::cuda::std::execution::
+          __query_result_or_t<tuning_env_t, detail::reduce::reduce_policy, default_policy_selector>;
+        return detail::reduce::dispatch<accum_t>(
+          storage,
+          bytes,
+          d_in,
+          d_out,
+          static_cast<offset_t>(num_items),
+          reduction_op,
+          init,
+          stream,
+          transform_op,
+          policy_selector{});
+      }
+    });
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
@@ -283,13 +242,7 @@ private:
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
 
-      // Dispatch with environment - handles all boilerplate
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          using tuning_t = decltype(tuning);
-          return reduce_impl<tuning_t>(
-            storage, bytes, d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, stream);
-        });
+      return reduce_impl(d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, env);
     }
   }
 
@@ -598,21 +551,8 @@ public:
 
     using InitT = OutputT;
 
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return reduce_impl<tuning_t>(
-        storage,
-        bytes,
-        d_in,
-        d_out,
-        num_items,
-        ::cuda::std::plus<>{},
-        ::cuda::std::identity{},
-        InitT{},
-        determinism_t{},
-        stream);
-    });
+    return reduce_impl(
+      d_in, d_out, num_items, ::cuda::std::plus<>{}, ::cuda::std::identity{}, InitT{}, determinism_t{}, env);
   }
 
   //! @rst
@@ -916,21 +856,9 @@ public:
 
     using InitT    = OutputT;
     using limits_t = ::cuda::std::numeric_limits<InitT>;
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return reduce_impl<tuning_t>(
-        storage,
-        bytes,
-        d_in,
-        d_out,
-        num_items,
-        ::cuda::minimum<>{},
-        ::cuda::std::identity{},
-        limits_t::max(),
-        determinism_t{},
-        stream);
-    });
+
+    return reduce_impl(
+      d_in, d_out, num_items, ::cuda::minimum<>{}, ::cuda::std::identity{}, limits_t::max(), determinism_t{}, env);
   }
 
 private:
@@ -955,7 +883,7 @@ private:
       d_min_out,
       d_index_out,
       static_cast<GlobalOffsetT>(num_items),
-      detail::arg_less{compare_op},
+      detail::arg_reduce_op{compare_op},
       stream);
   }
 
@@ -1128,59 +1056,27 @@ private:
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported");
 
-    // Query relevant properties from the environment
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
+    using PerPartitionOffsetT     = int; // used by the kernel to index within one partition
+    using GlobalOffsetT           = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+    using input_value_t           = detail::it_value_t<InputIteratorT>;
+    using output_extremum_t       = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
+    using reduce_op_t             = detail::arg_reduce_op<CompareOpT>;
+    using default_policy_selector = detail::reduce::
+      policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, output_extremum_t>, PerPartitionOffsetT, reduce_op_t>;
 
-    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
-    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
-
-    // Query the required temporary storage size
-    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
           d_temp_storage,
           temp_storage_bytes,
           d_in,
           d_min_out,
           d_index_out,
           static_cast<GlobalOffsetT>(num_items),
-          detail::arg_less{compare_op},
-          stream.get()))
-    {
-      return error;
-    }
-
-    // TODO(gevtushenko): use uninitialized buffer when it's available
-    if (const auto error =
-          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
-    {
-      return error;
-    }
-
-    // Run the algorithm
-    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_min_out,
-      d_index_out,
-      static_cast<GlobalOffsetT>(num_items),
-      detail::arg_less{compare_op},
-      stream.get());
-
-    // Try to deallocate regardless of the error to avoid memory leaks
-    const auto deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
-
-    if (error != cudaSuccess)
-    {
-      // Reduction error takes precedence over deallocation error since it happens first
-      return error;
-    }
-
-    return deallocate_error;
+          reduce_op_t{compare_op},
+          stream,
+          policy_selector);
+      });
   }
 
 public:
@@ -1283,7 +1179,8 @@ public:
     ::cuda::std::int64_t num_items,
     EnvT env = {})
   {
-    return ArgMin(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
+    return __arg_min_env(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
   //! @rst
@@ -1602,26 +1499,12 @@ public:
     // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
     using determinism_t = ::cuda::execution::determinism::run_to_run_t;
 
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-
+    using OutputT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using InitT    = OutputT;
     using limits_t = ::cuda::std::numeric_limits<InitT>;
 
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return reduce_impl<tuning_t>(
-        storage,
-        bytes,
-        d_in,
-        d_out,
-        num_items,
-        ::cuda::maximum<>{},
-        ::cuda::std::identity{},
-        limits_t::lowest(),
-        determinism_t{},
-        stream);
-    });
+    return reduce_impl(
+      d_in, d_out, num_items, ::cuda::maximum<>{}, ::cuda::std::identity{}, limits_t::lowest(), determinism_t{}, env);
   }
 
   //! @rst
@@ -1741,14 +1624,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
     return __arg_min(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_max_out,
-      d_index_out,
-      num_items,
-      detail::arg_less{detail::swap_args{compare_op}},
-      stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, detail::swap_args{compare_op}, stream);
   }
 
   //! @rst
@@ -1767,8 +1643,9 @@ public:
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = nullptr)
   {
-    return ArgMax(
-      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::less{}, stream);
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+    return __arg_min(
+      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::greater{}, stream);
   }
 
   //! @rst
@@ -1985,7 +1862,7 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, env);
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::swap_args{compare_op}, env);
   }
 
   //! @overload
@@ -2005,7 +1882,7 @@ public:
          EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_max{}, env);
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, ::cuda::std::greater{}, env);
   }
 
   //! @rst
@@ -2360,20 +2237,27 @@ public:
     using OffsetT    = detail::choose_offset_t<NumItemsT>;
     using EqualityOp = ::cuda::std::equal_to<>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::reduce_by_key::dispatch(
-        storage,
-        bytes,
-        d_keys_in,
-        d_unique_out,
-        d_values_in,
-        d_aggregates_out,
-        d_num_runs_out,
-        EqualityOp{},
-        reduction_op,
-        static_cast<OffsetT>(num_items),
-        stream);
-    });
+    using AccumT = ::cuda::std::
+      __accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>, detail::it_value_t<ValuesInputIteratorT>>;
+    using KeyT = detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>;
+    using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<ReductionOpT, AccumT, KeyT>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::reduce_by_key::dispatch(
+          storage,
+          bytes,
+          d_keys_in,
+          d_unique_out,
+          d_values_in,
+          d_aggregates_out,
+          d_num_runs_out,
+          EqualityOp{},
+          reduction_op,
+          static_cast<OffsetT>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst

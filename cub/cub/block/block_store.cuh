@@ -678,9 +678,9 @@ class BlockStore
 
   static_assert((Algorithm != BLOCK_STORE_WARP_TRANSPOSE && Algorithm != BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
                   || (BLOCK_THREADS % detail::warp_threads == 0),
-                "BlockThreads must be a multiple of warp_threads for this BlockStoreAlgorithm");
+                "Threads per block must be a multiple of warp_threads for this BlockStoreAlgorithm");
 
-  _CCCL_API static constexpr auto temp_storage_helper()
+  _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_STRIPED
                   || Algorithm == BLOCK_STORE_VECTORIZE)

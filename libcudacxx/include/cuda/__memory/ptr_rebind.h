@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__memory/runtime_assume_aligned.h>
+#include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstdint>
@@ -31,7 +31,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API inline _Up* ptr_rebind(_Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API _Up* ptr_rebind(_Tp* __ptr) noexcept
 {
   if constexpr (::cuda::std::is_same_v<_Up, _Tp>) // also handle _Tp == _Up == void
   {
@@ -40,30 +40,30 @@ template <typename _Up, typename _Tp>
   else if constexpr (::cuda::std::is_void_v<_Up>) // _Tp: non-void, _Up: void
   {
     _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
-    return ::cuda::std::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), alignof(_Tp));
+    return ::cuda::std::assume_aligned<alignof(_Tp)>(reinterpret_cast<_Up*>(__ptr));
   }
   else
   {
     constexpr auto __max_alignment = alignof(_Up) > alignof(_Tp) ? alignof(_Up) : alignof(_Tp);
     _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
-    return ::cuda::std::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), __max_alignment);
+    return ::cuda::std::assume_aligned<__max_alignment>(reinterpret_cast<_Up*>(__ptr));
   }
 }
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API inline const _Up* ptr_rebind(const _Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API const _Up* ptr_rebind(const _Tp* __ptr) noexcept
 {
   return ::cuda::ptr_rebind<const _Up>(const_cast<_Tp*>(__ptr));
 }
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API inline volatile _Up* ptr_rebind(volatile _Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API volatile _Up* ptr_rebind(volatile _Tp* __ptr) noexcept
 {
   return ::cuda::ptr_rebind<volatile _Up>(const_cast<_Tp*>(__ptr));
 }
 
 template <typename _Up, typename _Tp>
-[[nodiscard]] _CCCL_API inline const volatile _Up* ptr_rebind(const volatile _Tp* __ptr) noexcept
+[[nodiscard]] _CCCL_API const volatile _Up* ptr_rebind(const volatile _Tp* __ptr) noexcept
 {
   return ::cuda::ptr_rebind<const volatile _Up>(const_cast<_Tp*>(__ptr));
 }

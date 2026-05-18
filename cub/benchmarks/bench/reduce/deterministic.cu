@@ -1,7 +1,10 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#include <cub/device/device_reduce.cuh>
+
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.require.h>
 
 #include <nvbench_helper.cuh>
 
@@ -26,45 +29,32 @@ struct policy_selector_t
 template <class T>
 void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 {
-  using input_it_t  = const T*;
-  using output_it_t = T*;
-
-  using init_t      = T;
-  using accum_t     = T;
-  using transform_t = ::cuda::std::identity;
+  using init_t = T;
 
   const auto elements = static_cast<int>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
 
-  input_it_t d_in   = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out = thrust::raw_pointer_cast(out.data());
+  const T* d_in = thrust::raw_pointer_cast(in.data());
+  T* d_out      = thrust::raw_pointer_cast(out.data());
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(out.size());
 
-  std::size_t temp_storage_bytes{};
-  // we explicitly provide template arguments to override accum_t
-  cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t>(
-    nullptr, temp_storage_bytes, d_in, d_out, elements, init_t{}, /* stream */ nullptr);
-
-  thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
-  auto* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    cub::detail::rfa::dispatch<
-      input_it_t,
-      output_it_t,
-      int,
-      init_t,
-      transform_t,
-      accum_t
+    auto env = cub_bench_env(
+      alloc,
+      launch,
+      cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)
 #if !TUNE_BASE
-      ,
-      policy_selector_t
+        ,
+      cuda::execution::tune(policy_selector_t{})
 #endif // !TUNE_BASE
-      >(d_temp_storage, temp_storage_bytes, d_in, d_out, elements, {}, launch.get_stream());
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, elements, cuda::std::plus<>{}, init_t{}, env);
   });
 }
 

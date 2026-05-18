@@ -96,11 +96,11 @@ private:
   // We are relying on either initial value being `NullType`
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
-  static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = agent_policy.block_threads;
-  static constexpr int items_per_thread = agent_policy.items_per_thread;
-  static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int max_segments     = agent_policy.max_segments;
+  static constexpr bool is_inclusive     = ForceInclusive || !has_init;
+  static constexpr int threads_per_block = agent_policy.threads_per_block;
+  static constexpr int items_per_thread  = agent_policy.items_per_thread;
+  static constexpr int tile_items        = threads_per_block * items_per_thread;
+  static constexpr int max_segments      = agent_policy.max_segments;
 
   static constexpr bool multi_segment_enabled = (max_segments > 1);
 
@@ -108,9 +108,9 @@ private:
   static constexpr auto store_algorithm = agent_policy.store_algorithm;
   static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
 
-  using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, load_algorithm>;
-  using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, store_algorithm>;
-  using block_scan_t  = BlockScan<AccumT, block_threads, scan_algorithm>;
+  using block_load_t  = BlockLoad<AccumT, threads_per_block, items_per_thread, load_algorithm>;
+  using block_store_t = BlockStore<AccumT, threads_per_block, items_per_thread, store_algorithm>;
+  using block_scan_t  = BlockScan<AccumT, threads_per_block, scan_algorithm>;
 
   union _single_segment_algorithms_storage_t
   {
@@ -126,11 +126,11 @@ private:
 
   using augmented_accum_t = agent_segmented_scan_compute_t<AccumT, max_segments>;
 
-  using block_load_aug_t    = BlockLoad<augmented_accum_t, block_threads, items_per_thread, load_algorithm>;
-  using block_store_aug_t   = BlockStore<augmented_accum_t, block_threads, items_per_thread, store_algorithm>;
-  using block_scan_aug_t    = BlockScan<augmented_accum_t, block_threads, scan_algorithm>;
-  using block_offset_scan_t = BlockScan<OffsetT, block_threads, scan_algorithm>;
-  using block_reduce_t      = BlockReduce<unsigned int, block_threads>;
+  using block_load_aug_t    = BlockLoad<augmented_accum_t, threads_per_block, items_per_thread, load_algorithm>;
+  using block_store_aug_t   = BlockStore<augmented_accum_t, threads_per_block, items_per_thread, store_algorithm>;
+  using block_scan_aug_t    = BlockScan<augmented_accum_t, threads_per_block, scan_algorithm>;
+  using block_offset_scan_t = BlockScan<OffsetT, threads_per_block, scan_algorithm>;
+  using block_reduce_t      = BlockReduce<unsigned int, threads_per_block>;
 
   union _multiple_segment_algorithms_storage_t
   {
@@ -288,7 +288,7 @@ public:
       }
 
       n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
-      unsigned n_chunks        = ::cuda::ceil_div(n_segments, block_threads);
+      unsigned n_chunks        = ::cuda::ceil_div(n_segments, threads_per_block);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
@@ -296,7 +296,7 @@ public:
 
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
-        const unsigned work_id = chunk_id * block_threads + tid;
+        const unsigned work_id = chunk_id * threads_per_block + tid;
 
         // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
@@ -582,7 +582,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().block.block_threads)
+__launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,

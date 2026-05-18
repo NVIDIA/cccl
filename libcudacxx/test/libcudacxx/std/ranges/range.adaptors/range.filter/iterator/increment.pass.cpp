@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr iterator& operator++();
 // constexpr void operator++(int);
 // constexpr iterator operator++(int) requires forward_range<V>;
