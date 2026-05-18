@@ -33,7 +33,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
     static_cast<std::int64_t>(s.needles),
     s.output_ptr(),
     comp,
-    0);
+    nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
