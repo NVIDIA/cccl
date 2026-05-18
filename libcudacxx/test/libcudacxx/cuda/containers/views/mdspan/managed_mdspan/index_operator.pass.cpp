@@ -46,12 +46,8 @@ TEST_FUNC constexpr auto& access(MDS mds, int64_t i0)
 }
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
-template <
-  class MDS,
-  class... Indices,
-  class  = cuda::std::enable_if_t<
-     cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Indices>()...]), typename MDS::reference>,
-     int> = 0>
+template <class MDS, class... Indices>
+  requires requires(MDS mds, Indices... indices) { mds[indices...]; }
 TEST_FUNC constexpr bool check_operator_constraints(MDS m, Indices... idxs)
 {
   unused(m[idxs...]);

@@ -50,25 +50,25 @@ public:
   basic_format_context& operator=(const basic_format_context&) = delete;
   basic_format_context& operator=(basic_format_context&&)      = delete;
 
-  [[nodiscard]] _CCCL_API basic_format_arg<basic_format_context> arg(size_t __id) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_arg<basic_format_context> arg(size_t __id) const noexcept
   {
     return __args_.get(__id);
   }
-  [[nodiscard]] _CCCL_API iterator out()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API iterator out()
   {
     return ::cuda::std::move(__out_it_);
   }
-  _CCCL_API void advance_to(iterator __it)
+  _CCCL_HOST_DEVICE_API void advance_to(iterator __it)
   {
     __out_it_ = ::cuda::std::move(__it);
   }
 
   template <class _OtherOutIt, class _OtherCharT>
-  _CCCL_API friend basic_format_context<_OtherOutIt, _OtherCharT>
+  _CCCL_HOST_DEVICE_API friend basic_format_context<_OtherOutIt, _OtherCharT>
     __fmt_make_format_context(_OtherOutIt, basic_format_args<basic_format_context<_OtherOutIt, _OtherCharT>>);
 
 private:
-  _CCCL_API explicit basic_format_context(_OutIt __out_it, basic_format_args<basic_format_context> __args)
+  _CCCL_HOST_DEVICE_API explicit basic_format_context(_OutIt __out_it, basic_format_args<basic_format_context> __args)
       : __out_it_(::cuda::std::move(__out_it))
       , __args_(__args)
   {}
@@ -80,7 +80,7 @@ private:
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_format_context);
 
 template <class _OutIt, class _CharT>
-[[nodiscard]] _CCCL_API basic_format_context<_OutIt, _CharT>
+[[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_context<_OutIt, _CharT>
 __fmt_make_format_context(_OutIt __out_it, basic_format_args<basic_format_context<_OutIt, _CharT>> __args)
 {
   return basic_format_context{::cuda::std::move(__out_it), __args};

@@ -799,13 +799,13 @@ struct checking_identity
     // only the SM100 tuning will pick the warpspeed implementation currently, so only verify on that architecture.
     // < SM100 and SM120 will use the old scan implementation for this scan operator, which passes invalid data.
     NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_120,
+      (), //
       NV_PROVIDES_SM_100,
       ({
         _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
         _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
-      }),
-      NV_PROVIDES_SM_120,
-      ());
+      }));
 
     return sentinel;
   }

@@ -56,7 +56,7 @@ private:
 
       struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
       {
-        _CCCL_API constexpr auto operator()() const
+        _CCCL_HOST_DEVICE_API constexpr auto operator()() const
         {
           return policy_t{active_policy.worker_per_segment_policies[Index],
                           active_policy.multi_worker_per_segment_policy};
@@ -87,7 +87,7 @@ public:
 
   struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
   {
-    _CCCL_API constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
       return policy;
     }
@@ -123,8 +123,8 @@ __launch_bounds__(int(
     KParameterT,
     SelectDirectionParameterT,
     NumSegmentsParameterT,
-    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.threads_per_block)) __global__
-  void device_segmented_topk_kernel(
+    LargeSegmentTileOffsetT>::policy.worker_per_segment_policy.threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
     ValueInputItItT d_value_segments_it,

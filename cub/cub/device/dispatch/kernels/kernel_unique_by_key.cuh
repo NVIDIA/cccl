@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_unique_by_key.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_arch.cuh>
@@ -41,7 +41,7 @@ struct host_policy_provider
 
   struct fallback_pol_getter
   {
-    _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
       unique_by_key_policy policy = PolicyGetter{}();
       policy.threads_per_block    = 64;

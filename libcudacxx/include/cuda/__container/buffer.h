@@ -328,7 +328,7 @@ public:
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
-               static_cast<size_type>(::cuda::std::ranges::size(__range)),
+               static_cast<size_type>(::cuda::std::ranges::__size_cpo{}(__range)),
                __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
@@ -336,7 +336,7 @@ public:
                   "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      ::cuda::std::ranges::begin(__range),
+      ::cuda::std::ranges::__begin_cpo{}(__range),
       ::cuda::std::ranges::__unwrap_end(__range),
       __unwrapped_begin(),
       __buf_.size());
@@ -351,8 +351,8 @@ public:
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
-               static_cast<size_type>(
-                 ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
+               static_cast<size_type>(::cuda::std::ranges::__distance_cpo{}(
+                 ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range))),
                __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
@@ -360,7 +360,7 @@ public:
                   "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      ::cuda::std::ranges::begin(__range),
+      ::cuda::std::ranges::__begin_cpo{}(__range),
       ::cuda::std::ranges::__unwrap_end(__range),
       __unwrapped_begin(),
       __buf_.size());
@@ -475,6 +475,92 @@ public:
   [[nodiscard]] _CCCL_HOST_API const_pointer data() const noexcept
   {
     return __buf_.data();
+  }
+
+  //! @brief Gets a reference to the element at index `__i`. Requires ``cuda::host_accessible`` property.
+  //! @throw std::out_of_range if `__i < size()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& at(size_type __i)
+  {
+    if (__i >= size())
+    {
+      _CCCL_THROW(::std::out_of_range, "__i must be less than size()");
+    }
+    return data()[__i];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& at(size_type __i) const
+  {
+    if (__i >= size())
+    {
+      _CCCL_THROW(::std::out_of_range, "__i must be less than size()");
+    }
+    return data()[__i];
+  }
+
+  //! @brief Gets a reference to the element at index `__i`. Requires ``cuda::host_accessible`` property.
+  //! @pre `__i < size()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& operator[](size_type __i) noexcept
+  {
+    _CCCL_ASSERT(__i < size(), "__i must be less than size()");
+    return data()[__i];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& operator[](size_type __i) const noexcept
+  {
+    _CCCL_ASSERT(__i < size(), "__i must be less than size()");
+    return data()[__i];
+  }
+
+  //! @brief Gets a reference to the first element. Requires ``cuda::host_accessible`` property.
+  //! @pre `!empty()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& front() noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[0];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& front() const noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[0];
+  }
+
+  //! @brief Gets a reference to the last element. Requires ``cuda::host_accessible`` property.
+  //! @pre `!empty()`.
+  //! @since CCCL 3.4, CUDA Toolkit 13.4.
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API _Tp& back() noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[size() - 1];
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(bool _IsHostAccessible = ::cuda::mr::__is_host_accessible<_Properties...>)
+  _CCCL_REQUIRES(_IsHostAccessible)
+  [[nodiscard]] _CCCL_HOST_API const _Tp& back() const noexcept
+  {
+    _CCCL_ASSERT(!empty(), "the buffer must not be empty");
+    return data()[size() - 1];
   }
 
   //! @brief Returns a span over the first \p __count elements.

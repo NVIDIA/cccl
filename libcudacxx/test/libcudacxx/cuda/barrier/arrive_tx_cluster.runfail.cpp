@@ -10,6 +10,7 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
+// UNSUPPORTED: clang && !nvcc
 
 // UNSUPPORTED: no_execute
 

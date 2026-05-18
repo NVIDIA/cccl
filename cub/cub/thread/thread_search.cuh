@@ -24,6 +24,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 
 #include <nv/target>
 

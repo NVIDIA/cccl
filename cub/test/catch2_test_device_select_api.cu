@@ -101,3 +101,80 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   d_data.resize(d_num_selected_out[0]);
   REQUIRE(d_data == expected);
 }
+
+C2H_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[select][device]")
+{
+  // example-begin select-unique-inplace
+  constexpr int num_items                       = 8;
+  thrust::device_vector<int> d_data             = {0, 2, 2, 9, 5, 5, 5, 8};
+  thrust::device_vector<int> d_num_selected_out = {0};
+
+  // Determine temporary device storage requirements
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_data.begin(), d_num_selected_out.begin(), num_items);
+
+  // Allocate temporary storage
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+
+  // Run selection
+  cub::DeviceSelect::Unique(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_data.begin(),
+    d_num_selected_out.begin(),
+    num_items);
+
+  // Resize input to new length
+  d_data.resize(d_num_selected_out[0]);
+
+  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  // example-end select-unique-inplace
+
+  REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
+  REQUIRE(d_data == expected);
+}
+
+// example-begin select-unique-inplace-eqop-myequalityop
+struct my_equality_op
+{
+  __host__ __device__ bool operator()(int lhs, int rhs) const
+  {
+    return lhs == rhs;
+  }
+};
+// example-end select-unique-inplace-eqop-myequalityop
+
+C2H_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int data elements", "[select][device]")
+{
+  // example-begin select-unique-inplace-eqop
+  constexpr int num_items                       = 8;
+  thrust::device_vector<int> d_data             = {0, 2, 2, 9, 5, 5, 5, 8};
+  thrust::device_vector<int> d_num_selected_out = {0};
+  my_equality_op equality_op{};
+
+  // Determine temporary device storage requirements
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSelect::Unique(
+    nullptr, temp_storage_bytes, d_data.begin(), d_num_selected_out.begin(), num_items, equality_op);
+
+  // Allocate temporary storage
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+
+  // Run selection
+  cub::DeviceSelect::Unique(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_data.begin(),
+    d_num_selected_out.begin(),
+    num_items,
+    equality_op);
+
+  // Resize input to new length
+  d_data.resize(d_num_selected_out[0]);
+
+  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  // example-end select-unique-inplace-eqop
+
+  REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
+  REQUIRE(d_data == expected);
+}

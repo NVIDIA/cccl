@@ -44,7 +44,7 @@ struct SmemResourceRaw
   ::cuda::std::uint64_t* mPtrBar[mMaxNumPhases]{};
   int mParity[mMaxNumPhases]{};
 
-  _CCCL_API constexpr SmemResourceRaw(
+  _CCCL_HOST_DEVICE_API constexpr SmemResourceRaw(
     SyncHandler& syncHandler, void* ptrBase, int sizeBytes, int strideBytes, int stageCount) noexcept
       : mResourceHandle(syncHandler.registerResource(stageCount))
       , mSizeBytes(sizeBytes)
@@ -64,7 +64,7 @@ struct SmemResourceRaw
   }
 
   template <int numSquads>
-  _CCCL_API constexpr void
+  _CCCL_HOST_DEVICE_API constexpr void
   addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
   {
     int numOwningThreads = squadCountThreads(squads);
@@ -77,7 +77,7 @@ struct SmemResourceRaw
   }
 
   template <int numSquads>
-  _CCCL_API constexpr void
+  _CCCL_HOST_DEVICE_API constexpr void
   addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads])
   {
     void* ptrBar_raw = smemAllocator.alloc(mStageCount * sizeof(::cuda::std::uint64_t), alignof(::cuda::std::uint64_t));
@@ -90,13 +90,15 @@ struct SmemResourceRaw
     addPhase(syncHandler, ptrBar, squads);
   }
 
-  _CCCL_API void addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc& squad)
+  _CCCL_HOST_DEVICE_API void
+  addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc& squad)
   {
     const SquadDesc squads[] = {squad};
     addPhase(syncHandler, ptrBarrier, squads);
   }
 
-  _CCCL_API constexpr void addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad)
+  _CCCL_HOST_DEVICE_API constexpr void
+  addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad)
   {
     const SquadDesc squads[] = {squad};
     addPhase(syncHandler, smemAllocator, squads);

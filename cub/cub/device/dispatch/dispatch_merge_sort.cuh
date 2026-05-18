@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/util_device.cuh>
@@ -185,7 +185,7 @@ private:
   template <typename ActivePolicyT>
   struct policy_getter
   {
-    _CCCL_API constexpr auto operator()() -> detail::merge_sort::merge_sort_policy
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() -> detail::merge_sort::merge_sort_policy
     {
       using mp = typename ActivePolicyT::MergeSortPolicy;
       return {mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};

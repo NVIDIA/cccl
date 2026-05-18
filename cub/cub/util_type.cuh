@@ -25,7 +25,6 @@
 #include <thrust/iterator/detail/any_assign.h>
 
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -990,7 +989,7 @@ using BaseTraits = detail::BaseTraits<_CATEGORY, _PRIMITIVE, _UnsignedBits, T>;
 //! * The arithmetic throughput of the type is similar to other built-in types of the same size
 //! For other types, if you want to use them with radix sort, please use the decomposer interface of the radix sort.
 // clang-format off
-template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, false, T, T> {};
+template <typename T, typename = T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, false, T, T> {};
 
 template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, NullType, NullType> {};
 
@@ -1093,15 +1092,15 @@ private:
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, unsigned long long, double> {};
 #  if _CCCL_HAS_NVFP16()
-    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, unsigned short, __half> {};
+    template <typename T> struct NumericTraits<__half, T> :          BaseTraits<FLOATING_POINT, true, unsigned short, T> {};
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
-    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, unsigned short, __nv_bfloat16> {};
+    template <typename T> struct NumericTraits<__nv_bfloat16, T> :   BaseTraits<FLOATING_POINT, true, unsigned short, T> {};
 #  endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8()
-    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
-    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
+    template <typename T> struct NumericTraits<__nv_fp8_e4m3, T> :   BaseTraits<FLOATING_POINT, true, unsigned char, T> {};
+    template <typename T> struct NumericTraits<__nv_fp8_e5m2, T> :   BaseTraits<FLOATING_POINT, true, unsigned char, T> {};
 #endif // _CCCL_HAS_NVFP8()
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, typename UnitWord<bool>::VolatileWord, bool> {};
