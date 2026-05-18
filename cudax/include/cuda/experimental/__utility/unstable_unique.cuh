@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__utility/move.h>
@@ -31,7 +33,7 @@ namespace cuda::experimental
 //!
 //! Operates from both sides of the range, moving elements from the right-hand
 //! side to the left to eliminate duplicates. The relative order of elements is
-//! not preserved.
+//! not preserved. Requires a bidirectional iterator.
 //!
 //! @tparam _Iterator The type of the iterator.
 //! @tparam _BinaryPredicate The type of the predicate.
@@ -44,15 +46,14 @@ namespace cuda::experimental
 template <class _Iterator, class _BinaryPredicate>
 _CCCL_HOST_API _Iterator unstable_unique(_Iterator __first, _Iterator __last, _BinaryPredicate __pred)
 {
+  static_assert(::cuda::std::bidirectional_iterator<_Iterator>, "unstable_unique requires a bidirectional iterator");
   if (__first == __last || ::cuda::std::next(__first) == __last)
   {
     return __last;
   }
 
-  ++__first;
   bool __first_is_known_duplicate = false;
-
-  for (; __first < __last; ++__first)
+  for (++__first; __first != __last; ++__first)
   {
     if (!__first_is_known_duplicate)
     {
@@ -61,14 +62,14 @@ _CCCL_HOST_API _Iterator unstable_unique(_Iterator __first, _Iterator __last, _B
         continue;
       }
     }
-    _CCCL_ASSERT(__first < __last, "unstable_unique: iterator out of range");
+    _CCCL_ASSERT(__first != __last, "unstable_unique: iterator out of range");
     for (--__last;; --__last)
     {
       if (__first == __last)
       {
         return __first;
       }
-      _CCCL_ASSERT(__first < __last, "unstable_unique: iterator out of range");
+      _CCCL_ASSERT(__first != __last, "unstable_unique: iterator out of range");
       if (!__pred(*__last, *::cuda::std::prev(__last)))
       {
         break;
@@ -95,9 +96,7 @@ _CCCL_HOST_API _Iterator unstable_unique(_Iterator __first, _Iterator __last, _B
 template <class _Iterator>
 _CCCL_HOST_API _Iterator unstable_unique(_Iterator __first, _Iterator __last)
 {
-  return ::cuda::experimental::unstable_unique(__first, __last, [](const auto& __a, const auto& __b) {
-    return __a == __b;
-  });
+  return ::cuda::experimental::unstable_unique(__first, __last, ::cuda::std::equal_to<>{});
 }
 } // namespace cuda::experimental
 

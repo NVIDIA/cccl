@@ -8,8 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/functional>
+
 #include <cuda/experimental/__utility/unstable_unique.cuh>
 
+#include <algorithm>
+#include <iterator>
+#include <list>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -66,9 +71,31 @@ TEST_CASE("unstable_unique trailing unique", "[utility]")
 TEST_CASE("unstable_unique with custom predicate", "[utility]")
 {
   std::vector<int> v = {1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 4, 5};
-  auto new_end       = cudax::unstable_unique(v.begin(), v.end(), [](int a, int b) {
-    return a == b;
-  });
+  auto new_end       = cudax::unstable_unique(v.begin(), v.end(), cuda::std::equal_to<int>{});
   REQUIRE(v.begin() + 5 == new_end);
   REQUIRE(std::vector<int>{1, 5, 4, 3, 2, 1, 1, 1, 1, 2, 2, 2, 3, 4, 5} == v);
+}
+
+TEST_CASE("unstable_unique on bidirectional iterators (std::list)", "[utility]")
+{
+  // std::list has bidirectional (not random-access) iterators -- exercises the
+  // !=-based loop termination path.
+  std::list<int> l = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+  auto new_end     = cudax::unstable_unique(l.begin(), l.end());
+  REQUIRE(std::distance(l.begin(), new_end) == 5);
+
+  std::vector<int> deduped(l.begin(), new_end);
+  std::sort(deduped.begin(), deduped.end());
+  REQUIRE(std::vector<int>({1, 2, 3, 4, 5}) == deduped);
+}
+
+TEST_CASE("unstable_unique on bidirectional iterators with custom predicate", "[utility]")
+{
+  std::list<int> l = {1, 1, 1, 1, 1, 2, 2, 3};
+  auto new_end     = cudax::unstable_unique(l.begin(), l.end(), cuda::std::equal_to<int>{});
+  REQUIRE(std::distance(l.begin(), new_end) == 3);
+
+  std::vector<int> deduped(l.begin(), new_end);
+  std::sort(deduped.begin(), deduped.end());
+  REQUIRE(std::vector<int>({1, 2, 3}) == deduped);
 }
