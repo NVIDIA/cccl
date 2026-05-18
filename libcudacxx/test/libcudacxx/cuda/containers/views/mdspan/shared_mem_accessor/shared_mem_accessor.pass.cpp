@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+// UNSUPPORTED: enable-tile
+// error: calling a __device__ function("__isShared(const void *)") is not allowed
 
 #include <cuda/mdspan>
 

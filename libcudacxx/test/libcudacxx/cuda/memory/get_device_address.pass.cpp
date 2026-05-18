@@ -11,6 +11,7 @@
 // UNSUPPORTED: enable-tile
 // error: asm statement is unsupported in tile code
 
+#include <cuda/devices>
 #include <cuda/memory>
 #include <cuda/std/cassert>
 
@@ -41,6 +42,15 @@ void test_host(T& object)
 
   {
     T* device_address = cuda::get_device_address(object);
+
+    cudaPointerAttributes attributes;
+    cudaError_t status = cudaPointerGetAttributes(&attributes, device_address);
+    assert(status == cudaSuccess);
+    assert(attributes.devicePointer == device_address);
+  }
+
+  {
+    T* device_address = cuda::get_device_address(object, cuda::device_ref{0});
 
     cudaPointerAttributes attributes;
     cudaError_t status = cudaPointerGetAttributes(&attributes, device_address);

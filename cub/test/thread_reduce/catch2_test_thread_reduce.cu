@@ -8,6 +8,7 @@
 #include <cuda/functional>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
 #include <cstring>
@@ -63,8 +64,6 @@ __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperato
   *d_out = cub::ThreadReduce(span, reduce_operator);
 }
 
-#if _CCCL_STD_VER >= 2023
-
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
@@ -79,8 +78,6 @@ __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOpera
   cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
   *d_out = cub::ThreadReduce(mdspan, reduce_operator);
 }
-
-#endif // _CCCL_STD_VER >= 2023
 
 /***********************************************************************************************************************
  * CUB operator to STD operator
@@ -354,11 +351,9 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 
-#if _CCCL_STD_VER >= 2023
   thread_reduce_kernel_mdspan<max_size>
     <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
-#endif // _CCCL_STD_VER >= 2023
 }

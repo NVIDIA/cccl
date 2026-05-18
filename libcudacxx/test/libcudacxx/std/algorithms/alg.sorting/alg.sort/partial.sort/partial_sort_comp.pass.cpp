@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6076227: ICE when validating tile MLIR
-
 // CONSTEXPR_STEPS: 15000000
 
 // <algorithm>

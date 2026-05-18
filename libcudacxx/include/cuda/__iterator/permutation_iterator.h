@@ -164,7 +164,7 @@ public:
   {}
 
   //! @brief Constructs an @c permutation_iterator from an iterator and an optional index
-  //! @param __iter The iterator to to index from
+  //! @param __iter The iterator to index from
   //! @param __index The iterator with the permutations
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator(_Iter __iter, _Index __index) noexcept(

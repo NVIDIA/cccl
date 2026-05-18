@@ -362,14 +362,16 @@ _CCCL_TEMPLATE(class _To, class _From, size_t _Size)
 _CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __are_representable_as(span<_From, _Size> __values)
 {
+  bool __result = true;
   for (size_t __i = 0; __i != _Size; __i++)
   {
     if (!__mdspan_detail::__is_representable_as<_To>(__values[__i]))
     {
-      return false;
+      __result = false;
+      break;
     }
   }
-  return true;
+  return __result;
 }
 
 // ------------------------------------------------------------------
@@ -603,14 +605,16 @@ public:
     }
     else if constexpr (rank() != 0)
     {
+      bool __result = true;
       for (rank_type __r = 0; __r != __rank_; __r++)
       {
         if (::cuda::std::cmp_not_equal(__lhs.extent(__r), __rhs.extent(__r)))
         {
-          return false;
+          __result = false;
+          break;
         }
       }
-      return true;
+      return __result;
     }
     else // MSVC needs this or it complains about unreachable code in the first condition
     {
@@ -651,6 +655,7 @@ template <class _Extents>
 [[nodiscard]] _CCCL_API constexpr bool __required_span_size_is_representable(const _Extents& __ext) noexcept
 {
   using ::cuda::std::__mdspan_detail::__mul_overflow;
+  bool __result = true;
   if constexpr (_Extents::rank() != 0)
   {
     using __index_type  = typename _Extents::index_type;
@@ -660,11 +665,12 @@ template <class _Extents>
     {
       if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
       {
-        return false;
+        __result = false;
+        break;
       }
     }
   }
-  return true;
+  return __result;
 }
 
 // Function to check whether a set of indices are a multidimensional

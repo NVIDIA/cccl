@@ -218,6 +218,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __advance_cpo = __advance::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

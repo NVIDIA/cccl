@@ -121,7 +121,7 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
       static_assert(cuda::std::is_same_v<decltype(v2), const T&>);
       CCCLRT_CHECK(v2 == T(4));
 
-      CHECK_THROWS_AS((buf.at(4)), std::out_of_range);
+      CHECK_THROWS_AS(((void) buf.at(4)), std::out_of_range);
     }
   }
 

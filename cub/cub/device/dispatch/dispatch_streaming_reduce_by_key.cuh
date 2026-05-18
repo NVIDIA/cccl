@@ -32,24 +32,19 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce_by_key
 {
-template <
-  typename OverrideAccumT = use_default,
-  typename KeysInputIteratorT,
-  typename UniqueOutputIteratorT,
-  typename ValuesInputIteratorT,
-  typename AggregatesOutputIteratorT,
-  typename NumRunsOutputIteratorT,
-  typename EqualityOpT,
-  typename ReductionOpT,
-  typename OffsetT,
-  typename AccumT = ::cuda::std::conditional_t<
-    !::cuda::std::is_same_v<OverrideAccumT, use_default>,
-    OverrideAccumT,
-    ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>, it_value_t<ValuesInputIteratorT>>>,
-  typename PolicySelector =
-    policy_selector_from_types<ReductionOpT,
-                               AccumT,
-                               non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>>
+template <typename KeysInputIteratorT,
+          typename UniqueOutputIteratorT,
+          typename ValuesInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename NumRunsOutputIteratorT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
+          typename PolicySelector =
+            policy_selector_from_types<ReductionOpT,
+                                       AccumT,
+                                       non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
