@@ -371,13 +371,14 @@ template <class _Tp>
 
     // Has very low ulp error for c-r exp(__large_interval_subtract_factor).
     constexpr _Tp __large_interval_subtract_factor =
-      is_same_v<_Tp, double> ? _Tp{-6.2800006538698050917e2} : _Tp{-48.061161f};
+      is_same_v<_Tp, double> ? _Tp{-6.2800006538698050917e2} : _Tp{-48.795158386f};
 
     // exp(__large_interval_subtract_factor)
     constexpr _Tp __large_interval_mul_factor =
-      is_same_v<_Tp, double> ? _Tp{1.83247039732913163759e-273} : _Tp{1.340611578e-21f};
+      is_same_v<_Tp, double> ? _Tp{1.83247039732913163759e-273} : _Tp{6.4347543e-22f};
 
     // Has very low ulp error for c-r exp(__small_interval_subtract_factor).
+    // We also require (__large_interval_mul_factor*__small_interval_mul_factor) to round well.
     constexpr _Tp __small_interval_subtract_factor =
       is_same_v<_Tp, double> ? _Tp{-3.1400000790995977695e2} : _Tp{-24.34370422f};
 
