@@ -1,0 +1,205 @@
+digraph dot {
+subgraph cluster_1 {
+label="graph_1" graph[style="dashed"];
+"graph_1_node_0"[style="solid" shape="rectangle" label="0
+graph_3
+"];
+
+"graph_1_node_1"[style="solid" shape="rectangle" label="1
+graph_6
+"];
+
+"graph_1_node_2"[style="solid" shape="rectangle" label="2
+graph_9
+"];
+
+"graph_1_node_3"[style="bold" shape="octagon" label="3
+join_branches_1bf489c2_cuda_kernel_forward
+"];
+
+"graph_1_node_4"[style="solid" shape="rectangle" label="4
+EMPTY
+"];
+
+"graph_1_node_5"[style="solid" shape="rectangle" label="5
+EMPTY
+"];
+
+"graph_1_node_0" -> "graph_1_node_3";
+"graph_1_node_1" -> "graph_1_node_3";
+"graph_1_node_2" -> "graph_1_node_3";
+"graph_1_node_3" -> "graph_1_node_4";
+"graph_1_node_4" -> "graph_1_node_5";
+}
+subgraph cluster_3 {
+label="graph_3" graph[style="dashed"];
+"graph_3_node_0"[style="bold" shape="octagon" label="0
+seed_branch_476090cd_cuda_kernel_forward
+"];
+
+"graph_3_node_1"[style="solid" shape="rectangle" label="1
+EMPTY
+"];
+
+"graph_3_node_2"[style="bold" shape="record" label="{
+CONDITIONAL
+| {ID | 2}
+| {Conditional Type| WHILE}
+| {True|graph_4}
+}
+"];
+
+"graph_3_node_3"[style="bold" shape="octagon" label="3
+_ZN4cuda12experimental3stf8reserved15condition_resetILb1EEEvy
+"];
+
+"graph_3_node_4"[style="solid" shape="rectangle" label="4
+EMPTY
+"];
+
+"graph_3_node_0" -> "graph_3_node_1";
+"graph_3_node_1" -> "graph_3_node_2";
+"graph_3_node_2" -> "graph_3_node_3";
+}
+subgraph cluster_6 {
+label="graph_6" graph[style="dashed"];
+"graph_6_node_0"[style="bold" shape="octagon" label="0
+seed_branch_476090cd_cuda_kernel_forward
+"];
+
+"graph_6_node_1"[style="solid" shape="rectangle" label="1
+EMPTY
+"];
+
+"graph_6_node_2"[style="bold" shape="record" label="{
+CONDITIONAL
+| {ID | 2}
+| {Conditional Type| WHILE}
+| {True|graph_7}
+}
+"];
+
+"graph_6_node_3"[style="bold" shape="octagon" label="3
+_ZN4cuda12experimental3stf8reserved15condition_resetILb1EEEvy
+"];
+
+"graph_6_node_4"[style="solid" shape="rectangle" label="4
+EMPTY
+"];
+
+"graph_6_node_0" -> "graph_6_node_1";
+"graph_6_node_1" -> "graph_6_node_2";
+"graph_6_node_2" -> "graph_6_node_3";
+}
+subgraph cluster_9 {
+label="graph_9" graph[style="dashed"];
+"graph_9_node_0"[style="bold" shape="octagon" label="0
+seed_branch_476090cd_cuda_kernel_forward
+"];
+
+"graph_9_node_1"[style="solid" shape="rectangle" label="1
+EMPTY
+"];
+
+"graph_9_node_2"[style="bold" shape="record" label="{
+CONDITIONAL
+| {ID | 2}
+| {Conditional Type| WHILE}
+| {True|graph_10}
+}
+"];
+
+"graph_9_node_3"[style="bold" shape="octagon" label="3
+_ZN4cuda12experimental3stf8reserved15condition_resetILb1EEEvy
+"];
+
+"graph_9_node_4"[style="solid" shape="rectangle" label="4
+EMPTY
+"];
+
+"graph_9_node_0" -> "graph_9_node_1";
+"graph_9_node_1" -> "graph_9_node_2";
+"graph_9_node_2" -> "graph_9_node_3";
+}
+subgraph cluster_4 {
+label="graph_4" graph[style="dashed"];
+"graph_4_node_0"[style="bold" shape="octagon" label="0
+relax_branch_dbb9f8e8_cuda_kernel_forward
+"];
+
+"graph_4_node_1"[style="solid" shape="rectangle" label="1
+EMPTY
+"];
+
+"graph_4_node_2"[style="bold" shape="octagon" label="2
+_ZN38_GLOBAL__N__78b4a031_6_stf_cu_b8f341cd31stf_stackable_while_cond_kernelIfEEvPKT_ydi
+"];
+
+"graph_4_node_3"[style="solid" shape="rectangle" label="3
+EMPTY
+"];
+
+"graph_4_node_4"[style="solid" shape="rectangle" label="4
+EMPTY
+"];
+
+"graph_4_node_0" -> "graph_4_node_1";
+"graph_4_node_1" -> "graph_4_node_2";
+"graph_4_node_2" -> "graph_4_node_3";
+"graph_4_node_3" -> "graph_4_node_4";
+}
+subgraph cluster_7 {
+label="graph_7" graph[style="dashed"];
+"graph_7_node_0"[style="bold" shape="octagon" label="0
+relax_branch_dbb9f8e8_cuda_kernel_forward
+"];
+
+"graph_7_node_1"[style="solid" shape="rectangle" label="1
+EMPTY
+"];
+
+"graph_7_node_2"[style="bold" shape="octagon" label="2
+_ZN38_GLOBAL__N__78b4a031_6_stf_cu_b8f341cd31stf_stackable_while_cond_kernelIfEEvPKT_ydi
+"];
+
+"graph_7_node_3"[style="solid" shape="rectangle" label="3
+EMPTY
+"];
+
+"graph_7_node_4"[style="solid" shape="rectangle" label="4
+EMPTY
+"];
+
+"graph_7_node_0" -> "graph_7_node_1";
+"graph_7_node_1" -> "graph_7_node_2";
+"graph_7_node_2" -> "graph_7_node_3";
+"graph_7_node_3" -> "graph_7_node_4";
+}
+subgraph cluster_10 {
+label="graph_10" graph[style="dashed"];
+"graph_10_node_0"[style="bold" shape="octagon" label="0
+relax_branch_dbb9f8e8_cuda_kernel_forward
+"];
+
+"graph_10_node_1"[style="solid" shape="rectangle" label="1
+EMPTY
+"];
+
+"graph_10_node_2"[style="bold" shape="octagon" label="2
+_ZN38_GLOBAL__N__78b4a031_6_stf_cu_b8f341cd31stf_stackable_while_cond_kernelIfEEvPKT_ydi
+"];
+
+"graph_10_node_3"[style="solid" shape="rectangle" label="3
+EMPTY
+"];
+
+"graph_10_node_4"[style="solid" shape="rectangle" label="4
+EMPTY
+"];
+
+"graph_10_node_0" -> "graph_10_node_1";
+"graph_10_node_1" -> "graph_10_node_2";
+"graph_10_node_2" -> "graph_10_node_3";
+"graph_10_node_3" -> "graph_10_node_4";
+}
+}
