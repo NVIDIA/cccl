@@ -45,7 +45,7 @@ struct Derived : cuda::std::tuple<T>
   TEST_FUNC operator cuda::std::tuple<U>() &&
   {
     ++count;
-    return {};
+    return cuda::std::tuple<U>{};
   }
 };
 
@@ -57,7 +57,7 @@ struct ExplicitDerived : cuda::std::tuple<T>
   TEST_FUNC explicit operator cuda::std::tuple<U>() &&
   {
     ++count;
-    return {};
+    return cuda::std::tuple<U>{};
   }
 };
 
@@ -67,35 +67,29 @@ int main(int, char**)
     [[maybe_unused]] cuda::std::tuple<Explicit> foo = Derived<int>{42};
     assert(count == 1);
     [[maybe_unused]] cuda::std::tuple<Explicit> bar(Derived<int>{42});
-    assert(count == 2);
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (assert(count == 2);), (assert(count == 1);)) // nvbug6202272
   }
   count = 0;
   {
     [[maybe_unused]] cuda::std::tuple<Implicit> foo = Derived<int>{42};
     assert(count == 1);
     [[maybe_unused]] cuda::std::tuple<Implicit> bar(Derived<int>{42});
-    assert(count == 2);
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (assert(count == 2);), (assert(count == 1);)) // nvbug6202272
   }
   count = 0;
   {
     static_assert(!cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value);
     [[maybe_unused]] cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42});
-    assert(count == 1);
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (assert(count == 1);), (assert(count == 0);)) // nvbug6202272
   }
   count = 0;
   {
-    // FIXME: Libc++ incorrectly rejects this code.
-#ifndef _CUDA_STD_VERSION
-    cuda::std::tuple<Implicit> foo = ExplicitDerived<int>{42};
-    static_assert(cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Implicit>>::value,
-                  "correct STLs accept this");
-#else
-    static_assert(!cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Implicit>>::value,
-                  "libc++ incorrectly rejects this");
-#endif
+    [[maybe_unused]] cuda::std::tuple<Implicit> foo = ExplicitDerived<int>{42};
+    static_assert(cuda::std::is_convertible_v<ExplicitDerived<int>, cuda::std::tuple<Implicit>>);
     assert(count == 0);
-    [[maybe_unused]] cuda::std::tuple<Implicit> bar(ExplicitDerived<int>{42});
-    assert(count == 1);
+    ExplicitDerived<int> d{42};
+    [[maybe_unused]] cuda::std::tuple<Implicit> bar(cuda::std::move(d));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (assert(count == 1);), (assert(count == 0);)) // nvbug6202272
   }
   count = 0;
 

@@ -20,10 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/different_from.h>
+#include <cuda/std/__fwd/get.h>
+#include <cuda/std/__fwd/pair.h>
+#include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
@@ -47,6 +52,7 @@
 #include <cuda/std/__type_traits/lazy.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -155,7 +161,7 @@ inline constexpr bool __tuple_nothrow_assignable<_From, _To, true> =
   __tuple_types_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
 
 // __tuple_like_with_size
-template <class _Tuple, size_t _ExpectedSize, bool = __tuple_like_ext<remove_cvref_t<_Tuple>>>
+template <class _Tuple, size_t _ExpectedSize, bool = __tuple_like<_Tuple>>
 inline constexpr bool __tuple_like_with_size = false;
 
 template <class _Tuple, size_t _ExpectedSize>
@@ -303,48 +309,63 @@ struct __tuple_constraints
     }
   }
 
-  template <class _Tuple>
-  struct __valid_tuple_like_constraints
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _UTuple, size_t... _Indices>
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto
+  __check_tuple_like_constructible(__tuple_indices<_Indices...>) noexcept
   {
-    static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && __tuple_convertible<_Tuple, __tuple_types<_Types...>>;
+    using ::cuda::std::get;
+    if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
+    { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr (sizeof...(_Types) == 0)
+    { // Avoids issues with the size 1 constructor below
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr (!__tuple_like_with_size<_UTuple, sizeof...(_Types)>)
+    { // [tuple#cnstr]-21.1: sizeof...(Types) equals sizeof...(UTypes), and
+      // [tuple#cnstr]-25.1: sizeof...(Types) is 2,
+      // [tuple#cnstr]-29.3: sizeof...(Types) equals sizeof...(UTypes), and
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr ((sizeof...(_Types) == 1) && __is_cuda_std_tuple<remove_cvref_t<_UTuple>>
+                       && (is_same_v<_Types, tuple_element_t<_Indices, remove_cvref_t<_UTuple>>> && ...))
+    { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1
+      // [tuple#cnstr]-21.3: is_same_v<T, U> is false
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr ((sizeof...(_Types) == 1) && (is_convertible_v<_UTuple, _Types> && ...))
+    { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
+      // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr ((sizeof...(_Types) == 1) && (is_constructible_v<_Types, _UTuple> && ...))
+    { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
+      // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
+      return _InvalidTupleConstructor{};
+    }
+    else if constexpr (!(is_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...))
+    { // [tuple.cnstr]-21.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
+      // [tuple.cnstr]-25.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
+      // [tuple.cnstr]-29.4: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
+      return _InvalidTupleConstructor{};
+    }
+    else
+    { // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
+      // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
+      // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
+      constexpr bool __is_implicit =
+        (is_convertible_v<decltype(get<_Indices>(::cuda::std::declval<_UTuple>())), _Types> && ...);
+      constexpr bool __is_nothrow =
+        (is_nothrow_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return _TupleConstructorTraits<__is_implicit, !__is_implicit, __is_nothrow>{};
+    }
+  }
 
-    static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && !__tuple_convertible<_Tuple, __tuple_types<_Types...>>;
-  };
-
-  template <class _Tuple>
-  struct __valid_tuple_like_constraints_rank_one
-  {
-    template <class _Tuple2>
-    struct _PreferTupleLikeConstructorImpl
-        : _Or<
-            // Don't attempt the two checks below if the tuple we are given
-            // has the same type as this tuple.
-            _IsSame<remove_cvref_t<_Tuple2>, tuple<_Types...>>,
-            _Lazy<_And, _Not<is_constructible<_Types..., _Tuple2>>, _Not<is_convertible<_Tuple2, _Types...>>>>
-    {};
-
-    // This trait is used to disable the tuple-like constructor when
-    // the UTypes... constructor should be selected instead.
-    // See LWG issue #2549.
-    template <class _Tuple2>
-    using _PreferTupleLikeConstructor = _PreferTupleLikeConstructorImpl<_Tuple2>;
-
-    static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && __tuple_convertible<_Tuple, __tuple_types<_Types...>>
-      && _PreferTupleLikeConstructor<_Tuple>::value;
-
-    static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, __tuple_types<_Types...>> && !__tuple_convertible<_Tuple, __tuple_types<_Types...>>
-      && _PreferTupleLikeConstructor<_Tuple>::value;
-  };
-
-  template <class _Tuple>
-  using __tuple_like_constraints =
-    conditional_t<sizeof...(_Types) == 1,
-                  __valid_tuple_like_constraints_rank_one<_Tuple>,
-                  __valid_tuple_like_constraints<_Tuple>>;
+  template <class _UTuple>
+  using __tuple_like_construction =
+    decltype(__check_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{}));
 
   template <class... _UTypes>
   struct __comparison

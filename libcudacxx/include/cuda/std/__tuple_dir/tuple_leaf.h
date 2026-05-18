@@ -366,6 +366,8 @@ _CCCL_DIAG_POP
 
 struct __tuple_variadic_constructor_tag
 {};
+struct __tuple_like_constructor_tag
+{};
 
 // __tuple_impl
 
@@ -427,20 +429,19 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   template <class _Tuple, size_t _Indx2>
   using __tuple_elem_at = tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
 
-  // cannot use inline variable here
-  template <class _Tuple, enable_if_t<__tuple_constructible_struct<_Tuple, __tuple_types<_Tp...>>::value, int> = 0>
-  _CCCL_API constexpr __tuple_impl(_Tuple&& __t) noexcept(__tuple_nothrow_constructible<_Tuple, __tuple_types<_Tp...>>)
-      : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...
+  template <class _Tuple, class _Constraints = typename _Constraints::template __tuple_like_construction<_Tuple>>
+  _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag,
+                                   _Tuple&& __t) noexcept(_Constraints::__nothrow_constructible)
+      : __tuple_leaf<_Indx, _Tp>(::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
-  // cannot use inline variable here
   template <class _Alloc,
             class _Tuple,
-            enable_if_t<__tuple_constructible_struct<_Tuple, __tuple_types<_Tp...>>::value, int> = 0>
-  _CCCL_API inline __tuple_impl(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
+            class _Constraints = typename _Constraints::template __tuple_like_construction<_Tuple>>
+  _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
                                  __a,
-                                 ::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...
+                                 ::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, __tuple_types<_Tp...>>, int> = 0>
