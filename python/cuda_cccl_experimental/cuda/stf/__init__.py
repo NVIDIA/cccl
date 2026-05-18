@@ -32,12 +32,14 @@ else:
         stackable_context,
     )
     from .device_array import DeviceArray
+    from .task_graph import TaskGraph, task_graph
 
     __all__ = [
         "_BINDINGS_AVAILABLE",
         "AccessMode",
         "CudaStream",
         "DeviceArray",
+        "TaskGraph",
         "async_resources",
         "context",
         "dep",
@@ -49,4 +51,5 @@ else:
         "data_place",
         "machine_init",
         "stackable_context",
+        "task_graph",
     ]

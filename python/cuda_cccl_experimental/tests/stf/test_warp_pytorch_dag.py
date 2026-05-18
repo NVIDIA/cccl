@@ -210,27 +210,25 @@ def test_warp_pytorch_mixed_in_captured_dag():
 
     X = np.ones(N, dtype=np.float32)
 
-    outer_ctx = stf.stackable_context()
+    graph = stf.task_graph()
+    outer_ctx = graph.context
     lX = outer_ctx.logical_data(X)
 
-    outer_ctx.push()
+    with graph:
+        with wp_stf.task(outer_ctx, lX.rw()) as (s, wX):
+            wp.launch(scale_kernel, dim=N, inputs=[wX, 3.0], stream=s)
 
-    with wp_stf.task(outer_ctx, lX.rw()) as (s, wX):
-        wp.launch(scale_kernel, dim=N, inputs=[wX, 3.0], stream=s)
+        with pytorch_task(outer_ctx, lX.rw()) as (tX,):
+            tX.add_(7.0)
 
-    with pytorch_task(outer_ctx, lX.rw()) as (tX,):
-        tX.add_(7.0)
-
-    with wp_stf.task(outer_ctx, lX.rw()) as (s, wX):
-        wp.launch(square_kernel, dim=N, inputs=[wX], stream=s)
-
-    step_graph = outer_ctx.pop_prologue_shared()
+        with wp_stf.task(outer_ctx, lX.rw()) as (s, wX):
+            wp.launch(square_kernel, dim=N, inputs=[wX], stream=s)
 
     for _ in range(FRAMES):
-        step_graph.launch()
+        graph.launch()
 
-    step_graph.reset()
-    outer_ctx.finalize()
+    graph.reset()
+    graph.finalize()
 
     # Reference: apply the same closed-form per-frame map FRAMES times.
     ref = np.ones(N, dtype=np.float32)

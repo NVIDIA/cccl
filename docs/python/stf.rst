@@ -65,6 +65,36 @@ The ``cuda.stf`` package does not ship Numba/PyTorch helpers; see
 and `pytorch_task.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl_experimental/tests/stf/pytorch_task.py>`_
 for examples.
 
+Record-once task graphs
+-----------------------
+
+For repeated work, use :func:`task_graph() <cuda.stf.task_graph>` to record an
+STF task DAG once and launch it many times. The graph owns a
+``stackable_context`` exposed as ``graph.context``. Declare logical data before
+recording, enter ``with graph:`` exactly once to submit tasks, then call
+``graph.launch()`` whenever the recorded graph should replay.
+
+.. literalinclude:: ../../python/cuda_cccl_experimental/tests/stf/test_task_graph.py
+   :language: python
+   :pyobject: test_task_graph_relaunch
+   :caption: Record once and replay with ``stf.task_graph()``. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl_experimental/tests/stf/test_task_graph.py>`__
+
+``graph.context.task(...)`` is intentionally valid only while ``with graph:``
+is active. This catches the common mistake of submitting a task to the owned
+context outside the recorded graph. Data declarations such as
+``graph.context.logical_data(...)`` and ``graph.context.token()`` remain valid
+outside the recording block so buffers and ordering tokens can be prepared
+first.
+
+Keep the Python objects backing recorded logical data alive for as long as the
+graph may launch. ``task_graph()`` records work against the memory referenced by
+objects such as NumPy arrays, Warp arrays, PyTorch tensors, or CuPy arrays; it
+does not take ownership of those Python objects or extend their lifetime.
+
+The lower-level ``stackable_context.pop_prologue_shared()`` API remains
+available for advanced code that manages stackable scopes manually, but most
+Python examples should prefer ``task_graph()``.
+
 Places
 ------
 
