@@ -201,15 +201,20 @@ struct __tuple_constraints
     }
   }
 
-  static constexpr bool __implicit_variadic_copy_constructible =
-    __tuple_constructible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>
-    && __tuple_convertible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>;
-
-  static constexpr bool __explicit_variadic_copy_constructible =
-    __tuple_constructible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>
-    && !__tuple_convertible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>;
-
-  static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Types> && ...);
+  template <int = 0>
+  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_copy_constructible() noexcept
+  {
+    if constexpr (sizeof...(_Types) >= 1 && (is_copy_constructible_v<_Types> && ...))
+    { // [tuple.cnstr]-9: sizeof...(Types)  ≥ 1 and is_copy_constructible_v<Types> is true for all i.
+      constexpr bool __is_implicit = (is_convertible_v<const _Types&, _Types> && ...);
+      constexpr bool __is_nothrow  = (is_nothrow_copy_constructible_v<_Types> && ...);
+      return _TupleConstructorTraits<__is_implicit, !__is_implicit, __is_nothrow>{};
+    }
+    else
+    {
+      return _InvalidTupleConstructor{};
+    }
+  }
 
   template <class... _Args>
   struct __variadic_constraints
