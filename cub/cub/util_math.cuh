@@ -62,15 +62,14 @@ constexpr _CCCL_HOST_DEVICE int nominal_8B_items_to_items(int nominal_items_per_
   {
     return nominal_items_per_thread;
   }
-  return ::cuda::std::clamp(
-    ::cuda::ceil_div(nominal_items_per_thread * 8, item_size), 1, nominal_items_per_thread);
+  return ::cuda::std::clamp(::cuda::ceil_div(nominal_items_per_thread * 8, item_size), 1, nominal_items_per_thread);
 }
 } // namespace detail
 
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_items_per_thread, int combined_bytes)
 {
-  return (::cuda::std::min) (nominal_items_per_thread,
-                             (::cuda::std::max) (1, nominal_items_per_thread * 8 / combined_bytes));
+  return (
+    ::cuda::std::min) (nominal_items_per_thread, (::cuda::std::max) (1, nominal_items_per_thread * 8 / combined_bytes));
 }
 
 template <typename T>
