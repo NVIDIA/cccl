@@ -35,25 +35,23 @@ struct bench_reduce_by_key_policy_selector
 template <class KeyT, class ValueT, class OffsetT>
 static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using equality_op_t  = ::cuda::std::equal_to<>;
   using reduction_op_t = ::cuda::std::plus<>;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<offset_t> num_runs_out(1);
+  thrust::device_vector<OffsetT> num_runs_out(1);
   thrust::device_vector<ValueT> in_vals(elements);
   thrust::device_vector<ValueT> out_vals(elements);
   thrust::device_vector<KeyT> out_keys(elements);
   thrust::device_vector<KeyT> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  const KeyT* d_in_keys    = thrust::raw_pointer_cast(in_keys.data());
-  KeyT* d_out_keys         = thrust::raw_pointer_cast(out_keys.data());
-  const ValueT* d_in_vals  = thrust::raw_pointer_cast(in_vals.data());
-  ValueT* d_out_vals       = thrust::raw_pointer_cast(out_vals.data());
-  offset_t* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
+  const KeyT* d_in_keys   = thrust::raw_pointer_cast(in_keys.data());
+  KeyT* d_out_keys        = thrust::raw_pointer_cast(out_keys.data());
+  const ValueT* d_in_vals = thrust::raw_pointer_cast(in_vals.data());
+  ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
+  OffsetT* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
 
   caching_allocator_t alloc;
 
