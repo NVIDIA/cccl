@@ -364,27 +364,27 @@ template <class _Tp>
   if (__real_x_reduced >= __reduction_needed_bound)
   {
     // Set some very specific values to help with range reduction.
-    constexpr _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? _Tp{648.0} : _Tp{58.0f};
+    constexpr _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(648.0) : _Tp{58.0f};
 
     // Use two intervals to reduce values. Some values will be reduced twice.
-    constexpr _Tp __large_interval_bound = is_same_v<_Tp, double> ? _Tp{334.0} : _Tp{34.0f};
+    constexpr _Tp __large_interval_bound = is_same_v<_Tp, double> ? static_cast<_Tp>(334.0) : _Tp{34.0f};
 
     // Has very low ulp error for c-r exp(__large_interval_subtract_factor).
     constexpr _Tp __large_interval_subtract_factor =
-      is_same_v<_Tp, double> ? _Tp{-6.2800006538698050917e2} : _Tp{-48.795158386f};
+      is_same_v<_Tp, double> ? static_cast<_Tp>(-6.2800006538698050917e2) : _Tp{-48.795158386f};
 
     // exp(__large_interval_subtract_factor)
     constexpr _Tp __large_interval_mul_factor =
-      is_same_v<_Tp, double> ? _Tp{1.83247039732913163759e-273} : _Tp{6.4347543e-22f};
+      is_same_v<_Tp, double> ? static_cast<_Tp>(1.83247039732913163759e-273) : _Tp{6.4347543e-22f};
 
     // Has very low ulp error for c-r exp(__small_interval_subtract_factor).
     // We also require (__large_interval_mul_factor*__small_interval_mul_factor) to round well.
     constexpr _Tp __small_interval_subtract_factor =
-      is_same_v<_Tp, double> ? _Tp{-3.1400000790995977695e2} : _Tp{-24.34370422f};
+      is_same_v<_Tp, double> ? static_cast<_Tp>(-3.1400000790995977695e2) : _Tp{-24.34370422f};
 
     // exp(__small_interval_subtract_factor)
     constexpr _Tp __small_interval_mul_factor =
-      is_same_v<_Tp, double> ? _Tp{4.2808424752052536879e-137} : _Tp{2.6770937897e-11f};
+      is_same_v<_Tp, double> ? static_cast<_Tp>(4.2808424752052536879e-137) : _Tp{2.6770937897e-11f};
 
     // Clamp huge values, doesn't change result.
     if (__real_x_reduced > __clamp_huge_values_bound)
