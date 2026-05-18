@@ -666,8 +666,7 @@ _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_get
                             vsmem_helper_t::vsmem_per_block};
 }
 
-template <
-          typename KeysInputIteratorT,
+template <typename KeysInputIteratorT,
           typename UniqueOutputIteratorT,
           typename ValuesInputIteratorT,
           typename AggregatesOutputIteratorT,
@@ -675,8 +674,7 @@ template <
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT =
-            ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
+          typename AccumT         = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
           typename KeyT           = non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>,
           typename PolicySelector = policy_selector_from_types<ReductionOpT, AccumT, KeyT>>
 #if _CCCL_HAS_CONCEPTS()
