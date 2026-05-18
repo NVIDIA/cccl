@@ -82,48 +82,49 @@ public:
     return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
-  template <class _Constraints                                               = __tuple_constraints<_Tp...>,
-            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
-  _CCCL_API constexpr tuple() noexcept(_Constraints::__nothrow_default_constructible)
+  using _Constraints = __tuple_constraints<_Tp...>;
+
+  template <class _Constraints = decltype(__tuple_constraints<_Tp...>::__check_default_constructible()),
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple() noexcept(_Constraints::__nothrow_constructible)
   {}
 
-  template <class _Constraints                                               = __tuple_constraints<_Tp...>,
-            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
-  _CCCL_API explicit constexpr tuple() noexcept(_Constraints::__nothrow_default_constructible)
+  template <class _Constraints = decltype(__tuple_constraints<_Tp...>::__check_default_constructible()),
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  _CCCL_API explicit constexpr tuple() noexcept(_Constraints::__nothrow_constructible)
   {}
 
   _CCCL_HIDE_FROM_ABI tuple(tuple const&) = default;
   _CCCL_HIDE_FROM_ABI tuple(tuple&&)      = default;
 
   template <class _Alloc,
-            class _Constraints                                               = __tuple_constraints<_Tp...>,
-            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
-  _CCCL_API inline tuple(allocator_arg_t, _Alloc const& __a) noexcept(_Constraints::__nothrow_default_constructible)
+            class _Constraints = decltype(__tuple_constraints<_Tp...>::__check_default_constructible()),
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple(allocator_arg_t, _Alloc const& __a) noexcept(_Constraints::__nothrow_constructible)
       : __base_(allocator_arg_t(), __a)
   {}
 
   template <class _Alloc,
-            class _Constraints                                               = __tuple_constraints<_Tp...>,
-            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
-  explicit
-    _CCCL_API inline tuple(allocator_arg_t, _Alloc const& __a) noexcept(_Constraints::__nothrow_default_constructible)
+            class _Constraints = decltype(__tuple_constraints<_Tp...>::__check_default_constructible()),
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  _CCCL_API explicit constexpr tuple(allocator_arg_t, _Alloc const& __a) noexcept(_Constraints::__nothrow_constructible)
       : __base_(allocator_arg_t(), __a)
   {}
 
-  template <class _Constraints                                                     = __tuple_constraints<_Tp...>,
+  template <class _Constraints                                                     = _Constraints,
             enable_if_t<_Constraints::__implicit_variadic_copy_constructible, int> = 0>
   _CCCL_API constexpr tuple(const _Tp&... __t) noexcept(_Constraints::__nothrow_variadic_copy_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
-  template <class _Constraints                                                     = __tuple_constraints<_Tp...>,
+  template <class _Constraints                                                     = _Constraints,
             enable_if_t<_Constraints::__explicit_variadic_copy_constructible, int> = 0>
   _CCCL_API constexpr explicit tuple(const _Tp&... __t) noexcept(_Constraints::__nothrow_variadic_copy_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
   template <class _Alloc,
-            class _Constraints                                                     = __tuple_constraints<_Tp...>,
+            class _Constraints                                                     = _Constraints,
             enable_if_t<_Constraints::__implicit_variadic_copy_constructible, int> = 0>
   _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     _Constraints::__nothrow_variadic_copy_constructible)
@@ -131,7 +132,7 @@ public:
   {}
 
   template <class _Alloc,
-            class _Constraints                                                     = __tuple_constraints<_Tp...>,
+            class _Constraints                                                     = _Constraints,
             enable_if_t<_Constraints::__explicit_variadic_copy_constructible, int> = 0>
   _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     _Constraints::__nothrow_variadic_copy_constructible)
@@ -149,7 +150,7 @@ public:
   template <class... _Up>
   using __variadic_constraints =
     _If<!__expands_to_this_tuple<_Up...>::value && sizeof...(_Up) == sizeof...(_Tp),
-        typename __tuple_constraints<_Tp...>::template __variadic_constraints<_Up...>,
+        typename _Constraints::template __variadic_constraints<_Up...>,
         __invalid_tuple_constraints>;
 
   template <class... _Up,
@@ -169,7 +170,7 @@ public:
   template <class... _Up>
   using __variadic_constraints_less_rank =
     _If<!__expands_to_this_tuple<_Up...>::value,
-        typename __tuple_constraints<_Tp...>::template __variadic_constraints_less_rank<_Up...>,
+        typename _Constraints::template __variadic_constraints_less_rank<_Up...>,
         __invalid_tuple_constraints>;
 
   template <class... _Up,
@@ -203,7 +204,7 @@ public:
     // clang-tidy has fallen off its rocker and claims we can use the non-existent
     // __tuple_like_with_size_v here.
     _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>, // NOLINT(modernize-type-traits)
-        typename __tuple_constraints<_Tp...>::template __tuple_like_constraints<_Tuple>,
+        typename _Constraints::template __tuple_like_constraints<_Tuple>,
         __invalid_tuple_constraints>;
 
   // Horrible hack to make tuple_of_iterator_references work
@@ -302,7 +303,7 @@ public:
   template <class... _Up>
   using __comparison_constraints =
     _If<(sizeof...(_Tp) == sizeof...(_Up)),
-        typename __tuple_constraints<_Tp...>::template __comparison<_Up...>,
+        typename _Constraints::template __comparison<_Up...>,
         __invalid_tuple_constraints>;
 
   _CCCL_EXEC_CHECK_DISABLE

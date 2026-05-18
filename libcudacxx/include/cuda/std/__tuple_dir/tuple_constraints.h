@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/tuple.h>
+#include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like_ext.h>
@@ -160,6 +161,16 @@ template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
   _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
 
+template <bool _IsImplicitlyConstructible, bool _IsExplicitlyConstructible, bool _IsNothrowConstructible>
+struct _TupleConstructorTraits
+{
+  static constexpr bool __implicit_constructible = _IsImplicitlyConstructible;
+  static constexpr bool __explicit_constructible = _IsExplicitlyConstructible;
+  static constexpr bool __nothrow_constructible  = _IsNothrowConstructible;
+};
+
+using _InvalidTupleConstructor = _TupleConstructorTraits<false, false, false>;
+
 struct __invalid_tuple_constraints
 {
   static constexpr bool __implicit_constructible = false;
@@ -175,14 +186,20 @@ struct __invalid_tuple_constraints
 template <class... _Types>
 struct __tuple_constraints
 {
-  static constexpr bool __default_constructible = (is_default_constructible_v<_Types> && ...);
-
-  static constexpr bool __nothrow_default_constructible = (is_nothrow_default_constructible_v<_Types> && ...);
-
-  static constexpr bool __implicit_default_constructible =
-    (__is_implicitly_default_constructible<_Types>::value && ...);
-
-  static constexpr bool __explicit_default_constructible = __default_constructible && !__implicit_default_constructible;
+  template <int = 0>
+  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_default_constructible() noexcept
+  {
+    if constexpr ((is_default_constructible_v<_Types> && ...))
+    { // [tuple.cnstr]-6: is_default_constructible_v<Types> is true for all i.
+      constexpr bool __is_implicit = (__is_implicitly_default_constructible<_Types>::value && ...);
+      constexpr bool __is_nothrow  = (is_nothrow_default_constructible_v<_Types> && ...);
+      return _TupleConstructorTraits<__is_implicit, !__is_implicit, __is_nothrow>{};
+    }
+    else
+    {
+      return _InvalidTupleConstructor{};
+    }
+  }
 
   static constexpr bool __implicit_variadic_copy_constructible =
     __tuple_constructible<__tuple_types<const _Types&...>, __tuple_types<_Types...>>
