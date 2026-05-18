@@ -165,8 +165,6 @@ public:
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
     }
 
-    cudaGraphNode_t n;
-
     auto done_prereqs = event_list();
 
     if (done_nodes.size() > 0)
@@ -253,6 +251,7 @@ public:
         const cudaGraphNode_t* deps = ready_dependencies.data();
 
         assert(ctx_graph);
+        cudaGraphNode_t n;
 #if _CCCL_CTK_AT_LEAST(13, 0)
         // Move ownership so child graphs with memory alloc/free nodes
         // (e.g. from cudaMallocAsync during stream capture) are accepted.
