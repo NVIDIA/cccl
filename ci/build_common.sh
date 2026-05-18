@@ -154,7 +154,8 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-readonly N_CPUS="$(nproc --all --ignore=1)"
+N_CPUS="$(nproc --all --ignore=1)"
+readonly N_CPUS
 readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
@@ -371,7 +372,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" cmake --build --parallel $PARALLEL_LEVEL --preset="$PRESET" ${VERBOSE:+-v} "${BUILD_COMMANDS[@]}" || status=$?
+    run_ci_timed_command "$GROUP_NAME" cmake --build --parallel "$PARALLEL_LEVEL" --preset="$PRESET" ${VERBOSE:+-v} "${BUILD_COMMANDS[@]}" || status=$?
     popd > /dev/null
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
