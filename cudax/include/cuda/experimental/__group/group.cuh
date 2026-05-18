@@ -204,9 +204,9 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t count(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
   {
-    return count_as<::cuda::std::size_t>(__in_level);
+    return count_as<typename _InLevel::__product_type>(__in_level);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
@@ -224,9 +224,9 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t rank(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
   {
-    return rank_as<::cuda::std::size_t>(__in_level);
+    return rank_as<typename _InLevel::__product_type>(__in_level);
   }
 };
 

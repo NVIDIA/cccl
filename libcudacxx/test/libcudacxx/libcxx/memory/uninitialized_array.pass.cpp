@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>

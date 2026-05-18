@@ -34,7 +34,7 @@ class __fmt_output_buffer
 public:
   using value_type = _CharT;
 
-  _CCCL_API void push_back(_CharT __c)
+  _CCCL_HOST_DEVICE_API void push_back(_CharT __c)
   {
     _CCCL_ASSERT(false, "unimplemented __fmt_output_buffer push_back method called");
     (void) __c;

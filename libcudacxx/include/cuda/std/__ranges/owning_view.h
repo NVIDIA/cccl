@@ -92,63 +92,63 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr iterator_t<_Rp> begin()
   {
-    return ::cuda::std::ranges::begin(__r_);
+    return ::cuda::std::ranges::__begin_cpo{}(__r_);
   }
   [[nodiscard]] _CCCL_API constexpr sentinel_t<_Rp> end()
   {
-    return ::cuda::std::ranges::end(__r_);
+    return ::cuda::std::ranges::__end_cpo{}(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto begin() const
   {
-    return ::cuda::std::ranges::begin(__r_);
+    return ::cuda::std::ranges::__begin_cpo{}(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto end() const
   {
-    return ::cuda::std::ranges::end(__r_);
+    return ::cuda::std::ranges::__end_cpo{}(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(invocable<::cuda::std::ranges::__empty::__fn, _Range&>)
   [[nodiscard]] _CCCL_API constexpr bool empty()
   {
-    return ::cuda::std::ranges::empty(__r_);
+    return ::cuda::std::ranges::__empty_cpo{}(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(invocable<::cuda::std::ranges::__empty::__fn, const _Range&>)
   [[nodiscard]] _CCCL_API constexpr bool empty() const
   {
-    return ::cuda::std::ranges::empty(__r_);
+    return ::cuda::std::ranges::__empty_cpo{}(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<_Range>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::size(__r_);
+    return ::cuda::std::ranges::__size_cpo{}(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(__r_);
+    return ::cuda::std::ranges::__size_cpo{}(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<_Range>)
   [[nodiscard]] _CCCL_API constexpr auto data()
   {
-    return ::cuda::std::ranges::data(__r_);
+    return ::cuda::std::ranges::__data_cpo{}(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto data() const
   {
-    return ::cuda::std::ranges::data(__r_);
+    return ::cuda::std::ranges::__data_cpo{}(__r_);
   }
 };
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(owning_view);

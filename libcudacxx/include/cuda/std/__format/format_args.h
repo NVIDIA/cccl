@@ -35,7 +35,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_args
 {
 public:
   template <class... _Args>
-  _CCCL_API basic_format_args(const __format_arg_store<_Context, _Args...>& __store) noexcept
+  _CCCL_HOST_DEVICE_API basic_format_args(const __format_arg_store<_Context, _Args...>& __store) noexcept
       : __size_(sizeof...(_Args))
   {
     if constexpr (sizeof...(_Args) != 0)
@@ -52,7 +52,7 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_API basic_format_arg<_Context> get(size_t __id) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API basic_format_arg<_Context> get(size_t __id) const noexcept
   {
     if (__id >= __size_)
     {
@@ -68,7 +68,7 @@ public:
     return __unpacked_.__args[__id];
   }
 
-  [[nodiscard]] _CCCL_API size_t __size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t __size() const noexcept
   {
     return __size_;
   }
@@ -103,14 +103,14 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES basic_format_args(__format_arg_store<_Context, 
   -> basic_format_args<_Context>;
 
 template <class _Context = format_context, class... _Args>
-[[nodiscard]] _CCCL_API __format_arg_store<_Context, _Args...> make_format_args(_Args&... __args)
+[[nodiscard]] _CCCL_HOST_DEVICE_API __format_arg_store<_Context, _Args...> make_format_args(_Args&... __args)
 {
   return __format_arg_store<_Context, _Args...>(__args...);
 }
 
 #if _CCCL_HAS_WCHAR_T()
 template <class... _Args>
-[[nodiscard]] _CCCL_API __format_arg_store<wformat_context, _Args...> make_wformat_args(_Args&... __args)
+[[nodiscard]] _CCCL_HOST_DEVICE_API __format_arg_store<wformat_context, _Args...> make_wformat_args(_Args&... __args)
 {
   return __format_arg_store<wformat_context, _Args...>(__args...);
 }

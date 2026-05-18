@@ -16,37 +16,24 @@
 template <typename KeyT, typename ValueT, typename OffsetT>
 void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-
-  constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
-  constexpr bool is_overwrite_ok      = false;
-  using key_t                         = KeyT;
-  using value_t                       = ValueT;
-
-  if constexpr (!fits_in_default_shared_memory<key_t, value_t, offset_t, sort_order>())
+  if constexpr (!fits_in_default_shared_memory<KeyT, ValueT, OffsetT, cub::SortOrder::Ascending>())
   {
     return;
   }
-
-  constexpr int begin_bit = 0;
-  constexpr int end_bit   = sizeof(key_t) * 8;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  thrust::device_vector<key_t> keys_buffer_1     = generate(elements, entropy);
-  thrust::device_vector<value_t> values_buffer_1 = generate(elements);
-  thrust::device_vector<key_t> keys_buffer_2(elements);
-  thrust::device_vector<value_t> values_buffer_2(elements);
+  thrust::device_vector<KeyT> keys_in = generate(elements, entropy);
+  thrust::device_vector<KeyT> keys_out(elements, thrust::no_init);
+  thrust::device_vector<ValueT> values_in = generate(elements);
+  thrust::device_vector<ValueT> values_out(elements, thrust::no_init);
 
-  key_t* d_keys_buffer_1     = thrust::raw_pointer_cast(keys_buffer_1.data());
-  key_t* d_keys_buffer_2     = thrust::raw_pointer_cast(keys_buffer_2.data());
-  value_t* d_values_buffer_1 = thrust::raw_pointer_cast(values_buffer_1.data());
-  value_t* d_values_buffer_2 = thrust::raw_pointer_cast(values_buffer_2.data());
-
-  cub::DoubleBuffer<key_t> d_keys(d_keys_buffer_1, d_keys_buffer_2);
-  cub::DoubleBuffer<value_t> d_values(d_values_buffer_1, d_values_buffer_2);
+  const KeyT* d_keys_in     = thrust::raw_pointer_cast(keys_in.data());
+  KeyT* d_keys_out          = thrust::raw_pointer_cast(keys_out.data());
+  const ValueT* d_values_in = thrust::raw_pointer_cast(values_in.data());
+  ValueT* d_values_out      = thrust::raw_pointer_cast(values_out.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -55,48 +42,27 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
   state.add_global_memory_writes<KeyT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
-  // Allocate temporary storage:
-  std::size_t temp_size{};
-  cub::detail::radix_sort::dispatch<sort_order>(
-    nullptr,
-    temp_size,
-    d_keys,
-    d_values,
-    static_cast<offset_t>(elements),
-    begin_bit,
-    end_bit,
-    is_overwrite_ok,
-    nullptr /* stream */
-#if !TUNE_BASE
-    ,
-    cub::detail::identity_decomposer_t{},
-    policy_selector<KeyT>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::DoubleBuffer<key_t> keys     = d_keys;
-    cub::DoubleBuffer<value_t> values = d_values;
-
-    cub::detail::radix_sort::dispatch<sort_order>(
-      temp_storage,
-      temp_size,
-      keys,
-      values,
-      static_cast<offset_t>(elements),
-      begin_bit,
-      end_bit,
-      is_overwrite_ok,
-      launch.get_stream()
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-        ,
-      cub::detail::identity_decomposer_t{},
-      policy_selector<KeyT>{}
+      ,
+      cuda::execution::tune(policy_selector<KeyT, ValueT, OffsetT>{})
 #endif // !TUNE_BASE
     );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRadixSort::SortPairs,
+      "SortPairs failed",
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      static_cast<OffsetT>(elements),
+      0,
+      sizeof(KeyT) * 8,
+      env);
   });
 }
 

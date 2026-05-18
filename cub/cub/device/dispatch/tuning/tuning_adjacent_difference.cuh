@@ -32,7 +32,7 @@ struct adjacent_difference_policy
   CacheLoadModifier load_modifier;
   BlockStoreAlgorithm store_algorithm;
 
-  _CCCL_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const adjacent_difference_policy& lhs, const adjacent_difference_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -40,7 +40,7 @@ struct adjacent_difference_policy
         && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  _CCCL_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const adjacent_difference_policy& lhs, const adjacent_difference_policy& rhs)
   {
     return !(lhs == rhs);
@@ -66,7 +66,8 @@ struct policy_selector
   int value_type_size;
   bool may_alias;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> adjacent_difference_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> adjacent_difference_policy
   {
     return adjacent_difference_policy{
       128,
@@ -85,7 +86,8 @@ static_assert(adjacent_difference_policy_selector<policy_selector>);
 template <typename InputIteratorT, bool MayAlias>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> adjacent_difference_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> adjacent_difference_policy
   {
     constexpr auto policies = policy_selector{static_cast<int>(sizeof(it_value_t<InputIteratorT>)), MayAlias};
     return policies(cc);

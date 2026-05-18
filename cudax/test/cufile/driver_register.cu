@@ -47,7 +47,7 @@ void test_register_native_handle()
   CUDAX_REQUIRE(file.get() != nullptr);
 
   // 4. Reregistering the same file handle should result in an cufile_error.
-  CHECK_THROWS_AS(cudax::cufile_driver.register_native_handle(fd), cudax::cufile_error);
+  CHECK_THROWS_AS((void) cudax::cufile_driver.register_native_handle(fd), cudax::cufile_error);
 
   // 5. Deregister the cuFile handles. Can be called multiple times.
   cudax::cufile_driver.deregister_native_handle(file);

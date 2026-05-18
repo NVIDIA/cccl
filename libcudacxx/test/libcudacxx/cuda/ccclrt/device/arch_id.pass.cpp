@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: return in loop statement is not supported
+
 #include <cuda/devices>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>

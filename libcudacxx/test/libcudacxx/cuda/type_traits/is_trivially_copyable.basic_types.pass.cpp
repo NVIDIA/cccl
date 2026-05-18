@@ -7,11 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda_bf16.h>
-#include <cuda_fp16.h>
-
 #include <cuda/type_traits>
 
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 template <class T>
@@ -23,7 +21,7 @@ TEST_FUNC void test_is_trivially_copyable()
   static_assert(cuda::is_trivially_copyable_v<const T>);
 }
 
-__host__ __device__ void test_single_types()
+TEST_FUNC void test_single_types()
 {
   // standard trivially copyable types
   test_is_trivially_copyable<int>();

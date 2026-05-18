@@ -63,15 +63,6 @@ else()
 endif()
 
 option(CCCL_ENABLE_TILE "Enable tile support" OFF)
-if (CCCL_ENABLE_TILE) # TODO(miscco) sccache currently does not support tile
-  unset(ENV{CMAKE_C_COMPILER_LAUNCHER})
-  unset(ENV{CMAKE_CXX_COMPILER_LAUNCHER})
-  unset(ENV{CMAKE_CUDA_COMPILER_LAUNCHER})
-
-  unset(CMAKE_C_COMPILER_LAUNCHER CACHE)
-  unset(CMAKE_CXX_COMPILER_LAUNCHER CACHE)
-  unset(CMAKE_CUDA_COMPILER_LAUNCHER CACHE)
-endif()
 
 option(
   CCCL_ENABLE_UNSTABLE

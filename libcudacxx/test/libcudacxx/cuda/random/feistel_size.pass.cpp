@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
-
 #include <cuda/__random/feistel_bijection.h>
 #include <cuda/std/cassert>
 #include <cuda/std/random>
