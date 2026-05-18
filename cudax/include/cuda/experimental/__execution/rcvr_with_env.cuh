@@ -42,7 +42,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_with_rcvr_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
   {
     return __rcvr_->__env_.query(_Query{}, static_cast<_Args&&>(__args)...);
@@ -54,7 +54,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_with_rcvr_t
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES((!__queryable_with<_Env, _Query, _Args...>)
                    _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Rcvr>, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<env_of_t<_Rcvr>, _Query, _Args...>)
       -> __query_result_t<env_of_t<_Rcvr>, _Query, _Args...>
   {
@@ -71,22 +71,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_with_rcvr_t
 template <class _Rcvr, class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 {
-  [[nodiscard]] _CCCL_API auto __base() && noexcept -> _Rcvr&&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __base() && noexcept -> _Rcvr&&
   {
     return static_cast<_Rcvr&&>(*this);
   }
 
-  [[nodiscard]] _CCCL_API auto __base() & noexcept -> _Rcvr&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __base() & noexcept -> _Rcvr&
   {
     return *this;
   }
 
-  [[nodiscard]] _CCCL_API auto __base() const& noexcept -> _Rcvr const&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __base() const& noexcept -> _Rcvr const&
   {
     return *this;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_with_rcvr_t<_Env, _Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_with_rcvr_t<_Env, _Rcvr>
   {
     return __env_with_rcvr_t<_Env, _Rcvr>{this};
   }

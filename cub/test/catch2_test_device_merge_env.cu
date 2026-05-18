@@ -29,7 +29,7 @@ using block_size_extracting_less_t = block_size_extracting_op<cuda::std::less<>>
 template <int ThreadsPerBlock>
 struct merge_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::merge::merge_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::merge::merge_policy
   {
     return {ThreadsPerBlock, 1, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false};
   }

@@ -37,25 +37,25 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __intrusive_queue<_Next>
 public:
   _CCCL_HIDE_FROM_ABI __intrusive_queue() noexcept = default;
 
-  _CCCL_API __intrusive_queue(__intrusive_queue&& __other) noexcept
+  _CCCL_HOST_DEVICE_API __intrusive_queue(__intrusive_queue&& __other) noexcept
       : __head_(::cuda::std::exchange(__other.__head_, nullptr))
       , __tail_(::cuda::std::exchange(__other.__tail_, nullptr))
   {}
 
-  _CCCL_API auto operator=(__intrusive_queue&& __other) noexcept -> __intrusive_queue&
+  _CCCL_HOST_DEVICE_API auto operator=(__intrusive_queue&& __other) noexcept -> __intrusive_queue&
   {
     __head_ = ::cuda::std::exchange(__other.__head_, nullptr);
     __tail_ = ::cuda::std::exchange(__other.__tail_, nullptr);
     return *this;
   }
 
-  _CCCL_API ~__intrusive_queue()
+  _CCCL_HOST_DEVICE_API ~__intrusive_queue()
   {
     _CCCL_ASSERT(empty(), "");
   }
 
   [[nodiscard]]
-  _CCCL_API static auto make_reversed(_Item* __list) noexcept -> __intrusive_queue
+  _CCCL_HOST_DEVICE_API static auto make_reversed(_Item* __list) noexcept -> __intrusive_queue
   {
     _Item* __new_head = nullptr;
     _Item* __new_tail = __list;
@@ -75,7 +75,7 @@ public:
   }
 
   [[nodiscard]]
-  _CCCL_API static auto make(_Item* __list) noexcept -> __intrusive_queue
+  _CCCL_HOST_DEVICE_API static auto make(_Item* __list) noexcept -> __intrusive_queue
   {
     __intrusive_queue __result{};
     __result.__head_ = __list;
@@ -92,19 +92,19 @@ public:
   }
 
   [[nodiscard]]
-  _CCCL_API auto empty() const noexcept -> bool
+  _CCCL_HOST_DEVICE_API auto empty() const noexcept -> bool
   {
     return __head_ == nullptr;
   }
 
-  _CCCL_API void clear() noexcept
+  _CCCL_HOST_DEVICE_API void clear() noexcept
   {
     __head_ = nullptr;
     __tail_ = nullptr;
   }
 
   [[nodiscard]]
-  _CCCL_API auto pop_front() noexcept -> _Item*
+  _CCCL_HOST_DEVICE_API auto pop_front() noexcept -> _Item*
   {
     _CCCL_ASSERT(!empty(), "");
     _Item* __item = ::cuda::std::exchange(__head_, __head_->*_Next);
@@ -118,7 +118,7 @@ public:
     return __item;
   }
 
-  _CCCL_API void push_front(_Item* __item) noexcept
+  _CCCL_HOST_DEVICE_API void push_front(_Item* __item) noexcept
   {
     _CCCL_ASSERT(__item != nullptr, "");
     __item->*_Next = __head_;
@@ -129,7 +129,7 @@ public:
     }
   }
 
-  _CCCL_API void push_back(_Item* __item) noexcept
+  _CCCL_HOST_DEVICE_API void push_back(_Item* __item) noexcept
   {
     _CCCL_ASSERT(__item != nullptr, "");
     __item->*_Next                        = nullptr;
@@ -137,7 +137,7 @@ public:
     __tail_                               = __item;
   }
 
-  _CCCL_API void append(__intrusive_queue __other) noexcept
+  _CCCL_HOST_DEVICE_API void append(__intrusive_queue __other) noexcept
   {
     if (!__other.empty())
     {
@@ -146,7 +146,7 @@ public:
     }
   }
 
-  _CCCL_API void prepend(__intrusive_queue __other) noexcept
+  _CCCL_HOST_DEVICE_API void prepend(__intrusive_queue __other) noexcept
   {
     if (!__other.empty())
     {
@@ -171,33 +171,33 @@ public:
 
     _CCCL_HIDE_FROM_ABI iterator() noexcept = default;
 
-    _CCCL_API explicit iterator(_Item* __pred, _Item* __item) noexcept
+    _CCCL_HOST_DEVICE_API explicit iterator(_Item* __pred, _Item* __item) noexcept
         : __predecessor_(__pred)
         , __item_(__item)
     {}
 
     [[nodiscard]]
-    _CCCL_API auto operator*() const noexcept -> _Item* const&
+    _CCCL_HOST_DEVICE_API auto operator*() const noexcept -> _Item* const&
     {
       _CCCL_ASSERT(__item_ != nullptr, "");
       return __item_;
     }
 
     [[nodiscard]]
-    _CCCL_API auto operator->() const noexcept -> _Item* const*
+    _CCCL_HOST_DEVICE_API auto operator->() const noexcept -> _Item* const*
     {
       _CCCL_ASSERT(__item_ != nullptr, "");
       return &__item_;
     }
 
-    _CCCL_API auto operator++() noexcept -> iterator&
+    _CCCL_HOST_DEVICE_API auto operator++() noexcept -> iterator&
     {
       _CCCL_ASSERT(__item_ != nullptr, "");
       __predecessor_ = ::cuda::std::exchange(__item_, __item_->*_Next);
       return *this;
     }
 
-    _CCCL_API auto operator++(int) noexcept -> iterator
+    _CCCL_HOST_DEVICE_API auto operator++(int) noexcept -> iterator
     {
       iterator __result = *this;
       ++*this;
@@ -205,13 +205,13 @@ public:
     }
 
     [[nodiscard]]
-    _CCCL_API friend auto operator==(const iterator& __lhs, const iterator& __rhs) noexcept -> bool
+    _CCCL_HOST_DEVICE_API friend auto operator==(const iterator& __lhs, const iterator& __rhs) noexcept -> bool
     {
       return __lhs.__item_ == __rhs.__item_;
     }
 
     [[nodiscard]]
-    _CCCL_API friend auto operator!=(const iterator& __lhs, const iterator& __rhs) noexcept -> bool
+    _CCCL_HOST_DEVICE_API friend auto operator!=(const iterator& __lhs, const iterator& __rhs) noexcept -> bool
     {
       return __lhs.__item_ != __rhs.__item_;
     }
@@ -221,18 +221,18 @@ public:
   };
 
   [[nodiscard]]
-  _CCCL_API auto begin() const noexcept -> iterator
+  _CCCL_HOST_DEVICE_API auto begin() const noexcept -> iterator
   {
     return iterator(nullptr, __head_);
   }
 
   [[nodiscard]]
-  _CCCL_API auto end() const noexcept -> iterator
+  _CCCL_HOST_DEVICE_API auto end() const noexcept -> iterator
   {
     return iterator(__tail_, nullptr);
   }
 
-  _CCCL_API void splice(iterator pos, __intrusive_queue& other, iterator first, iterator last) noexcept
+  _CCCL_HOST_DEVICE_API void splice(iterator pos, __intrusive_queue& other, iterator first, iterator last) noexcept
   {
     if (first == last)
     {
@@ -269,18 +269,18 @@ public:
     }
   }
 
-  _CCCL_API auto front() const noexcept -> _Item* const&
+  _CCCL_HOST_DEVICE_API auto front() const noexcept -> _Item* const&
   {
     return __head_;
   }
 
-  _CCCL_API auto back() const noexcept -> _Item* const&
+  _CCCL_HOST_DEVICE_API auto back() const noexcept -> _Item* const&
   {
     return __tail_;
   }
 
 private:
-  _CCCL_API explicit __intrusive_queue(_Item* __head, _Item* __tail) noexcept
+  _CCCL_HOST_DEVICE_API explicit __intrusive_queue(_Item* __head, _Item* __tail) noexcept
       : __head_(__head)
       , __tail_(__tail)
   {}

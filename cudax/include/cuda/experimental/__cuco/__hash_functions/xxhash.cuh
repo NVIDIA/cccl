@@ -88,14 +88,14 @@ private:
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
-  _CCCL_API constexpr _XXHash_32(::cuda::std::uint32_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr _XXHash_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
     // explicit copy to avoid emitting a bunch of LDG.8 instructions
@@ -108,7 +108,7 @@ public:
   //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
@@ -121,7 +121,7 @@ private:
   //! @param __holder The input argument to hash in form of a byte holder
   //! @return The resulting hash value
   template <class _Holder>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
     ::cuda::std::uint32_t __offset = 0;
     ::cuda::std::uint32_t __h32    = {};
@@ -181,7 +181,8 @@ private:
   //! @tparam _Extent The extent type
   //! @param __holder The input argument to hash in form of a span
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_API ::cuda::std::uint32_t __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t
+  __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
   {
     auto __bytes      = ::cuda::std::as_bytes(__keys).data();
     const auto __size = __keys.size_bytes();
@@ -247,7 +248,8 @@ private:
     return __finalize(__h32);
   }
 
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __finalize(::cuda::std::uint32_t __h) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t
+  __finalize(::cuda::std::uint32_t __h) const noexcept
   {
     __h ^= __h >> 15;
     __h *= __prime2;
@@ -277,7 +279,7 @@ public:
   //! @brief Constructs a XXH64 hash function with the given `seed`.
   //!
   //! @param seed A custom number to randomize the resulting hash value
-  _CCCL_API constexpr _XXHash_64(::cuda::std::uint64_t __seed = 0)
+  _CCCL_HOST_DEVICE_API constexpr _XXHash_64(::cuda::std::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
@@ -285,7 +287,7 @@ public:
   //!
   //! @param _Key The input argument to hash
   //! @return The resulting hash value for `key`
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t operator()(const _Key& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t operator()(const _Key& __key) const noexcept
   {
     if constexpr (sizeof(_Key) <= 16)
     {
@@ -304,7 +306,7 @@ public:
   //! @param __keys span of keys to hash
   //! @return The resulting hash value
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     return __compute_hash_span(__keys);
@@ -316,7 +318,8 @@ private:
   //! @tparam _Extent The extent type
   //! @param __keys span of keys to hash
   //! @return The resulting hash value
-  [[nodiscard]] _CCCL_API ::cuda::std::uint64_t __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
+  __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     auto __bytes      = ::cuda::std::as_bytes(__keys).data();
     const auto __size = __keys.size_bytes();
@@ -404,7 +407,7 @@ private:
   }
 
   // avalanche helper
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t __finalize(std::uint64_t __h) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t __finalize(std::uint64_t __h) const noexcept
   {
     __h ^= __h >> 33;
     __h *= __prime2;

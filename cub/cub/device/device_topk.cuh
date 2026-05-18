@@ -23,6 +23,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -85,6 +86,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   // Query relevant properties from the environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
+  // Extract policy selector from environment tuning
+  using default_policy_selector_t = topk::policy_selector_from_types<it_value_t<KeyInputIteratorT>>;
+  using tuning_env_t =
+    ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<tuning_env_t, topk::topk_policy, default_policy_selector_t>;
+
   return topk::dispatch<SelectDirection>(
     d_temp_storage,
     temp_storage_bytes,
@@ -95,7 +103,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
     static_cast<offset_t>(num_items),
     static_cast<out_offset_t>(k),
     decomposer,
-    stream.get());
+    stream.get(),
+    policy_selector_t{});
 }
 
 template <topk::select SelectDirection,

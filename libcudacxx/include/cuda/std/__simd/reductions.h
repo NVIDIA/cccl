@@ -62,7 +62,7 @@ inline constexpr bool __is_reduce_default_supported_operation_v =
   || __is_bit_xor_op_v<_BinaryOp>;
 
 template <typename _Tp, typename _BinaryOp>
-[[nodiscard]] _CCCL_API constexpr _Tp __default_identity_element() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp __default_identity_element() noexcept
 {
   if constexpr (__is_plus_op_v<_BinaryOp> || __is_bit_or_op_v<_BinaryOp> || __is_bit_xor_op_v<_BinaryOp>)
   {
@@ -88,7 +88,7 @@ template <typename _Tp, typename _BinaryOp>
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _BinaryOperation = plus<>)
 _CCCL_REQUIRES(__reduction_binary_operation<_BinaryOperation, _Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce(const basic_vec<_Tp, _Abi>& __x,
        _BinaryOperation __binary_op = {}) noexcept(__is_nothrow_reduction_binary_operation_v<_BinaryOperation, _Tp>)
 {
@@ -106,7 +106,7 @@ reduce(const basic_vec<_Tp, _Abi>& __x,
 // 2) unless BinaryOperation is one of plus<>, multiplies<>, bit_and<>, bit_or<>, or bit_xor<>
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _BinaryOperation)
 _CCCL_REQUIRES(__reduction_binary_operation<_BinaryOperation, _Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce(const basic_vec<_Tp, _Abi>& __x,
        const typename basic_vec<_Tp, _Abi>::mask_type& __mask,
        _BinaryOperation __binary_op,
@@ -128,7 +128,7 @@ reduce(const basic_vec<_Tp, _Abi>& __x,
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _BinaryOperation = plus<>)
 _CCCL_REQUIRES(__reduction_binary_operation<_BinaryOperation, _Tp> _CCCL_AND
                  __is_reduce_default_supported_operation_v<_BinaryOperation>)
-[[nodiscard]] _CCCL_API constexpr _Tp reduce(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce(
   const basic_vec<_Tp, _Abi>& __x,
   const typename basic_vec<_Tp, _Abi>::mask_type& __mask,
   const _BinaryOperation __binary_op = {}) noexcept(__is_nothrow_reduction_binary_operation_v<_BinaryOperation, _Tp>)
@@ -141,7 +141,7 @@ _CCCL_REQUIRES(__reduction_binary_operation<_BinaryOperation, _Tp> _CCCL_AND
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp reduce_min(const basic_vec<_Tp, _Abi>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce_min(const basic_vec<_Tp, _Abi>& __x) noexcept
 {
   auto __result = __x[0];
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -158,7 +158,7 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce_min(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>::mask_type& __mask) noexcept
 {
   auto __result = numeric_limits<_Tp>::max();
@@ -181,7 +181,7 @@ reduce_min(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>:
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp reduce_max(const basic_vec<_Tp, _Abi>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp reduce_max(const basic_vec<_Tp, _Abi>& __x) noexcept
 {
   auto __result = __x[0];
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -198,7 +198,7 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce_max(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>::mask_type& __mask) noexcept
 {
   auto __result = numeric_limits<_Tp>::lowest();
@@ -220,7 +220,7 @@ reduce_max(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>:
 // [simd.mask.reductions], mask reductions
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr bool all_of(const basic_mask<_Bytes, _Abi>& __k) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool all_of(const basic_mask<_Bytes, _Abi>& __k) noexcept
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (__simd_size_type __i = 0; __i < __k.__size; ++__i)
@@ -234,7 +234,7 @@ template <size_t _Bytes, typename _Abi>
 }
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr bool any_of(const basic_mask<_Bytes, _Abi>& __k) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool any_of(const basic_mask<_Bytes, _Abi>& __k) noexcept
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (__simd_size_type __i = 0; __i < __k.__size; ++__i)
@@ -248,13 +248,13 @@ template <size_t _Bytes, typename _Abi>
 }
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr bool none_of(const basic_mask<_Bytes, _Abi>& __k) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool none_of(const basic_mask<_Bytes, _Abi>& __k) noexcept
 {
   return !::cuda::std::simd::any_of(__k);
 }
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr __simd_size_type reduce_count(const basic_mask<_Bytes, _Abi>& __k) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __simd_size_type reduce_count(const basic_mask<_Bytes, _Abi>& __k) noexcept
 {
   __simd_size_type __count = 0;
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -266,7 +266,8 @@ template <size_t _Bytes, typename _Abi>
 }
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr __simd_size_type reduce_min_index(const basic_mask<_Bytes, _Abi>& __k) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __simd_size_type
+reduce_min_index(const basic_mask<_Bytes, _Abi>& __k) noexcept
 {
   _CCCL_ASSERT(::cuda::std::simd::any_of(__k), "No bits are set");
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -281,7 +282,8 @@ template <size_t _Bytes, typename _Abi>
 }
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr __simd_size_type reduce_max_index(const basic_mask<_Bytes, _Abi>& __k) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __simd_size_type
+reduce_max_index(const basic_mask<_Bytes, _Abi>& __k) noexcept
 {
   _CCCL_ASSERT(::cuda::std::simd::any_of(__k), "No bits are set");
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -299,35 +301,35 @@ template <size_t _Bytes, typename _Abi>
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(same_as<_Tp, bool>)
-[[nodiscard]] _CCCL_API constexpr bool all_of(const _Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool all_of(const _Tp __x) noexcept
 {
   return __x;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(same_as<_Tp, bool>)
-[[nodiscard]] _CCCL_API constexpr bool any_of(const _Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool any_of(const _Tp __x) noexcept
 {
   return __x;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(same_as<_Tp, bool>)
-[[nodiscard]] _CCCL_API constexpr bool none_of(const _Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool none_of(const _Tp __x) noexcept
 {
   return !__x;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(same_as<_Tp, bool>)
-[[nodiscard]] _CCCL_API constexpr __simd_size_type reduce_count(const _Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __simd_size_type reduce_count(const _Tp __x) noexcept
 {
   return __x;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(same_as<_Tp, bool>)
-[[nodiscard]] _CCCL_API constexpr __simd_size_type reduce_min_index(const _Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __simd_size_type reduce_min_index(const _Tp __x) noexcept
 {
   _CCCL_ASSERT(__x, "No bits are set");
   return 0;
@@ -335,7 +337,7 @@ _CCCL_REQUIRES(same_as<_Tp, bool>)
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(same_as<_Tp, bool>)
-[[nodiscard]] _CCCL_API constexpr __simd_size_type reduce_max_index(const _Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __simd_size_type reduce_max_index(const _Tp __x) noexcept
 {
   _CCCL_ASSERT(__x, "No bits are set");
   return 0;

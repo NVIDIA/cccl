@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_trivially_copyable()
+TEST_FUNC void test_is_trivially_copyable()
 {
   static_assert(cuda::is_trivially_copyable<T>::value);
   static_assert(cuda::is_trivially_copyable<const T>::value);
@@ -43,11 +43,11 @@ struct TrivialPod
 class NonTriviallyCopyable
 {
 public:
-  __host__ __device__ NonTriviallyCopyable(const NonTriviallyCopyable&) {} // NOLINT
+  TEST_FUNC NonTriviallyCopyable(const NonTriviallyCopyable&) {} // NOLINT
 };
 
 template <class T>
-__host__ __device__ void test_is_trivially_copyable_compositions()
+TEST_FUNC void test_is_trivially_copyable_compositions()
 {
   test_is_trivially_copyable<T[4]>();
   test_is_trivially_copyable<cuda::std::array<T, 4>>();
@@ -58,7 +58,7 @@ __host__ __device__ void test_is_trivially_copyable_compositions()
   test_is_trivially_copyable<TriviallyCopyableWrapper<T>>();
 }
 
-__host__ __device__ void test_composite_types()
+TEST_FUNC void test_composite_types()
 {
   test_is_trivially_copyable<int[4]>();
 
@@ -74,7 +74,7 @@ __host__ __device__ void test_composite_types()
   static_assert(!cuda::is_trivially_copyable_v<NonTriviallyCopyable>);
 }
 
-__host__ __device__ void test_extended_fp_types()
+TEST_FUNC void test_extended_fp_types()
 {
 #if _CCCL_HAS_NVFP16()
   test_is_trivially_copyable_compositions<__half>();

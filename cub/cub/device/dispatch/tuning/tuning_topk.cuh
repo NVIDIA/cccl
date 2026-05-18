@@ -26,7 +26,7 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::topk
 {
-_CCCL_API constexpr int calc_bits_per_pass(int key_size)
+_CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass(int key_size)
 {
   switch (key_size)
   {
@@ -41,7 +41,7 @@ _CCCL_API constexpr int calc_bits_per_pass(int key_size)
 }
 
 template <class KeyT>
-_CCCL_API constexpr int calc_bits_per_pass()
+_CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass()
 {
   return calc_bits_per_pass(int{sizeof(KeyT)});
 }
@@ -54,14 +54,14 @@ struct topk_policy
   BlockLoadAlgorithm load_algorithm;
   BlockScanAlgorithm scan_algorithm;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const topk_policy& lhs, const topk_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const topk_policy& lhs, const topk_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.bits_per_pass == rhs.bits_per_pass && lhs.load_algorithm == rhs.load_algorithm
         && lhs.scan_algorithm == rhs.scan_algorithm;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -85,7 +85,7 @@ struct policy_selector
 {
   int key_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
     constexpr int nominal_4b_items_per_thread = 4;
     const int bits_per_pass                   = calc_bits_per_pass(key_size);
@@ -111,7 +111,7 @@ static_assert(topk_policy_selector<policy_selector>);
 template <typename KeyT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
     constexpr auto policies = policy_selector{int{sizeof(KeyT)}};
     return policies(cc);

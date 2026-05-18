@@ -32,7 +32,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _ForwardIterator, class _Sentinel>
-_CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
+_CCCL_HOST_DEVICE_API constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, forward_iterator_tag)
 {
   while (true)
@@ -62,7 +62,7 @@ __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
-_CCCL_API constexpr pair<_BidirectionalIterator, _BidirectionalIterator>
+_CCCL_HOST_DEVICE_API constexpr pair<_BidirectionalIterator, _BidirectionalIterator>
 __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicate __pred, bidirectional_iterator_tag)
 {
   _BidirectionalIterator __original_last = _IterOps<_AlgPolicy>::next(__first, __sentinel);
@@ -96,7 +96,7 @@ __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicat
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator, class _Sentinel, class _Predicate, class _IterCategory>
-_CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
+_CCCL_HOST_DEVICE_API constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _IterCategory __iter_category)
 {
   return ::cuda::std::__partition_impl<remove_cvref_t<_Predicate>&, _AlgPolicy>(
@@ -105,7 +105,8 @@ __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _It
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
-_CCCL_API constexpr _ForwardIterator partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
+_CCCL_HOST_DEVICE_API constexpr _ForwardIterator
+partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   using _IterCategory = __iterator_traits_category_or_concept_t<_ForwardIterator>;
   auto __result       = ::cuda::std::__partition<_ClassicAlgPolicy>(

@@ -8,7 +8,10 @@ struct stream_registry_factory_t;
 
 #include <cub/device/device_segmented_sort.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+
+#include <cuda/__execution/tune.h>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -469,3 +472,130 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
   c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
+
+template <int BlockThreads>
+struct segmented_sort_tuning
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::segmented_sort::segmented_sort_policy
+  {
+    return {
+      cub::detail::segmented_sort::segmented_radix_sort_policy{
+        BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_BASIC, cub::BLOCK_SCAN_WARP_SCANS, 4},
+      cub::detail::segmented_sort::sub_warp_merge_sort_policy{
+        BlockThreads, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      cub::detail::segmented_sort::sub_warp_merge_sort_policy{
+        BlockThreads, 32, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      1000000};
+  }
+};
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+#if TEST_LAUNCH != 1
+
+C2H_TEST("DeviceSegmentedSort::SortKeys can be tuned", "[segmented_sort][keys][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  sort_keys(thrust::raw_pointer_cast(keys_in.data()),
+            thrust::raw_pointer_cast(keys_out.data()),
+            static_cast<int>(keys_in.size()),
+            1,
+            thrust::raw_pointer_cast(begin_offsets.data()),
+            end_offsets,
+            env);
+
+  c2h::device_vector<int> expected{0, 3, 5, 6, 7, 8, 9};
+  REQUIRE(keys_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedSort::SortKeysDescending can be tuned", "[segmented_sort][keys][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  sort_keys_descending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  c2h::device_vector<int> expected{9, 8, 7, 6, 5, 3, 0};
+  REQUIRE(keys_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedSort::StableSortKeys can be tuned", "[segmented_sort][keys][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  stable_sort_keys(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  c2h::device_vector<int> expected{0, 3, 5, 6, 7, 8, 9};
+  REQUIRE(keys_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceSegmentedSort::StableSortKeysDescending can be tuned", "[segmented_sort][keys][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  stable_sort_keys_descending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  c2h::device_vector<int> expected{9, 8, 7, 6, 5, 3, 0};
+  REQUIRE(keys_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1

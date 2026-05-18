@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__fwd/iterator.h>
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -159,6 +160,7 @@ public:
   //! @brief Constructs a @c tabulate_output_iterator with a given functor and an optional index
   //! @param __func the output function
   //! @param __index the position in the output sequence
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator(_Fn __func, _Index __index = 0) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Fn>)
       : __store_(__index, ::cuda::std::move(__func))
@@ -201,6 +203,7 @@ public:
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator& operator++() noexcept
   {
     ++__index();
@@ -208,6 +211,7 @@ public:
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator
   operator++(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
@@ -217,6 +221,7 @@ public:
   }
 
   //! @brief Decrements the @c tabulate_output_iterator by decrementing the stored index
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator& operator--() noexcept
   {
     --__index();
@@ -224,6 +229,7 @@ public:
   }
 
   //! @brief Decrements the @c tabulate_output_iterator by decrementing the stored index
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator
   operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
@@ -234,6 +240,7 @@ public:
 
   //! @brief Returns a copy of this @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
+  _CCCL_EXEC_CHECK_DISABLE
   template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(const tabulate_output_iterator& __iter, difference_type __n) //
@@ -245,6 +252,7 @@ public:
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
   //! @param __iter The original @c tabulate_output_iterator
+  _CCCL_EXEC_CHECK_DISABLE
   template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(difference_type __n, const tabulate_output_iterator& __iter) //
@@ -255,6 +263,7 @@ public:
 
   //! @brief Advances the @c tabulate_output_iterator by a given number of elements
   //! @param __n The number of elements to advance
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator& operator+=(difference_type __n) noexcept
   {
     __index() += __n;
@@ -263,6 +272,7 @@ public:
 
   //! @brief Returns a copy of this @c tabulate_output_iterator decremented a given number of elements
   //! @param __n The number of elements to decremented
+  _CCCL_EXEC_CHECK_DISABLE
   template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator-(const tabulate_output_iterator& __iter, difference_type __n) //
@@ -275,11 +285,12 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __rhs.__index() - __lhs.__index();
+    return __lhs.__index() - __rhs.__index();
   }
 
   //! @brief Decrements the @c tabulate_output_iterator by a given number of elements
   //! @param __n The number of elements to decrement
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr tabulate_output_iterator& operator-=(difference_type __n) noexcept
   {
     __index() -= __n;

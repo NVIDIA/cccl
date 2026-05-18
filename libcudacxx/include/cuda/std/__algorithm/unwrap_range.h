@@ -45,7 +45,7 @@ struct __unwrap_range_impl
   _CCCL_API static constexpr auto __unwrap(_Iter __first, _Sent __sent)
     requires random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>
   {
-    auto __last = ranges::next(__first, __sent);
+    auto __last = ::cuda::std::ranges::__next_cpo{}(__first, __sent);
     return pair{::cuda::std::__unwrap_iter(::cuda::std::move(__first)),
                 ::cuda::std::__unwrap_iter(::cuda::std::move(__last))};
   }

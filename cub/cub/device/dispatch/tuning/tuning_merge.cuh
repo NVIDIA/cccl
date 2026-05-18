@@ -34,14 +34,14 @@ struct merge_policy
   BlockStoreAlgorithm store_algorithm;
   bool use_block_load_to_shared;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const merge_policy& lhs, const merge_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const merge_policy& lhs, const merge_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm
         && lhs.use_block_load_to_shared == rhs.use_block_load_to_shared;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const merge_policy& lhs, const merge_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const merge_policy& lhs, const merge_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -74,7 +74,7 @@ struct policy_selector
   int value_size; // if 0, then this is a keys-only policy
   int offset_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
   {
     const int tune_type_size = key_size + value_size;
     const int ipt_800_plus   = nominal_4b_items_to_items(15, tune_type_size);
@@ -123,7 +123,7 @@ static_assert(merge_policy_selector<policy_selector>);
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
   {
     return policy_selector{
       int{sizeof(KeyT)}, ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)}, int{sizeof(OffsetT)}}(cc);

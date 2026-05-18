@@ -14,82 +14,46 @@
 template <typename T, typename OffsetT>
 void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-
-  constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
-  constexpr bool is_overwrite_ok      = false;
-  using key_t                         = T;
-  using value_t                       = cub::NullType;
-
-  if constexpr (!fits_in_default_shared_memory<T, value_t, offset_t, sort_order>())
+  using value_t = cub::NullType;
+  if constexpr (!fits_in_default_shared_memory<T, value_t, OffsetT, cub::SortOrder::Ascending>())
   {
     return;
   }
-
-  constexpr int begin_bit = 0;
-  constexpr int end_bit   = sizeof(key_t) * 8;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
   thrust::device_vector<T> buffer_1 = generate(elements, entropy);
-  thrust::device_vector<T> buffer_2(elements);
+  thrust::device_vector<T> buffer_2(elements, thrust::no_init);
 
-  key_t* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
-  key_t* d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
-
-  cub::DoubleBuffer<key_t> d_keys(d_buffer_1, d_buffer_2);
-  cub::DoubleBuffer<value_t> d_values;
+  const T* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
+  T* d_buffer_2       = thrust::raw_pointer_cast(buffer_2.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(elements);
 
-  // Allocate temporary storage:
-  std::size_t temp_size{};
-
-  cub::detail::radix_sort::dispatch<sort_order>(
-    nullptr,
-    temp_size,
-    d_keys,
-    d_values,
-    static_cast<offset_t>(elements),
-    begin_bit,
-    end_bit,
-    is_overwrite_ok,
-    nullptr /* stream */
-#if !TUNE_BASE
-    ,
-    cub::detail::identity_decomposer_t{},
-    policy_selector<key_t, value_t, offset_t>{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::DoubleBuffer<key_t> keys     = d_keys;
-    cub::DoubleBuffer<value_t> values = d_values;
-
-    cub::detail::radix_sort::dispatch<sort_order>(
-      temp_storage,
-      temp_size,
-      keys,
-      values,
-      static_cast<offset_t>(elements),
-      begin_bit,
-      end_bit,
-      is_overwrite_ok,
-      launch.get_stream()
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-        ,
-      cub::detail::identity_decomposer_t{},
-      policy_selector<KeyT>{}
+      ,
+      cuda::execution::tune(policy_selector<T, value_t, OffsetT>{})
 #endif // !TUNE_BASE
     );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceRadixSort::SortKeys,
+      "SortKeys failed",
+      d_buffer_1,
+      d_buffer_2,
+      static_cast<OffsetT>(elements),
+      0,
+      sizeof(T) * 8,
+      env);
   });
 }
 

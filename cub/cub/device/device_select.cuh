@@ -1606,6 +1606,177 @@ public:
   }
 
   //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //!
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector
+  //! using environment-based API:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-env
+  //!     :end-before: example-end select-unique-inplace-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename EnvT                                                            = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0,
+            ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, IteratorT, IteratorT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Unique(IteratorT d_data, NumSelectedIteratorT d_num_selected_out, ::cuda::std::int64_t num_items, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
+
+    using offset_t = ::cuda::std::int64_t;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
+        storage,
+        bytes,
+        d_data,
+        static_cast<NullType*>(nullptr),
+        d_data,
+        d_num_selected_out,
+        static_cast<offset_t>(num_items),
+        NullType{},
+        ::cuda::std::equal_to<>{},
+        stream);
+    });
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The user-provided equality operator, ``equality_op``, is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //!
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector
+  //! using a custom equality operator:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop-env
+  //!     :end-before: example-end select-unique-inplace-eqop-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Type of equality_op
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary equality operator
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename EqualityOpT,
+            typename EnvT                                                            = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<IteratorT, void*>, int> = 0,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, IteratorT, IteratorT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Unique(IteratorT d_data,
+         NumSelectedIteratorT d_num_selected_out,
+         ::cuda::std::int64_t num_items,
+         EqualityOpT equality_op,
+         EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
+
+    using offset_t = ::cuda::std::int64_t;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
+        storage,
+        bytes,
+        d_data,
+        static_cast<NullType*>(nullptr),
+        d_data,
+        d_num_selected_out,
+        static_cast<offset_t>(num_items),
+        NullType{},
+        equality_op,
+        stream);
+    });
+  }
+
+  //! @rst
   //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
   //! equal-valued keys, only the first key and its value from each run is selectively copied
   //! to ``d_keys_out`` and ``d_values_out``.
@@ -2062,6 +2233,179 @@ public:
       d_num_selected_out,
       SelectOp{},
       EqualityOp{},
+      static_cast<OffsetT>(num_items),
+      stream);
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace
+  //!     :end-before: example-end select-unique-inplace
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename IteratorT, typename NumSelectedIteratorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    NumSelectedIteratorT d_num_selected_out,
+    ::cuda::std::int64_t num_items,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
+
+    using OffsetT    = ::cuda::std::int64_t;
+    using SelectOp   = NullType; // Selection op (not used)
+    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
+
+    return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_data,
+      static_cast<NullType*>(nullptr),
+      d_data,
+      d_num_selected_out,
+      SelectOp{},
+      EqualityOp{},
+      static_cast<OffsetT>(num_items),
+      stream);
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The user-provided equality operator, ``equality_op``, is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop-myequalityop
+  //!     :end-before: example-end select-unique-inplace-eqop-myequalityop
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop
+  //!     :end-before: example-end select-unique-inplace-eqop
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Type of equality_op
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary predicate to determine equality
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename EqualityOpT,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, IteratorT, IteratorT>, int> = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    NumSelectedIteratorT d_num_selected_out,
+    ::cuda::std::int64_t num_items,
+    EqualityOpT equality_op,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
+
+    using OffsetT   = ::cuda::std::int64_t;
+    using SelectOpT = NullType; // Selection op (not used)
+
+    return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_data,
+      static_cast<NullType*>(nullptr),
+      d_data,
+      d_num_selected_out,
+      SelectOpT{},
+      equality_op,
       static_cast<OffsetT>(num_items),
       stream);
   }

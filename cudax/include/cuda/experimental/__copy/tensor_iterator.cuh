@@ -37,8 +37,9 @@ namespace cuda::experimental
  **********************************************************************************************************************/
 
 template <typename _ExtentT, ::cuda::std::size_t _Size, ::cuda::std::size_t... _Rp>
-[[nodiscard]] _CCCL_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, sizeof...(_Rp)> __extents_fast_div_mod_impl(
-  const ::cuda::std::array<_ExtentT, _Size>& __extents, ::cuda::std::index_sequence<_Rp...> = {}) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, sizeof...(_Rp)>
+__extents_fast_div_mod_impl(const ::cuda::std::array<_ExtentT, _Size>& __extents,
+                            ::cuda::std::index_sequence<_Rp...> = {}) noexcept
 {
   using __fast_mod_div_t = ::cuda::fast_mod_div<_ExtentT>;
   using __array_t        = ::cuda::std::array<__fast_mod_div_t, sizeof...(_Rp)>;
@@ -50,7 +51,7 @@ template <typename _ExtentT, ::cuda::std::size_t _Size, ::cuda::std::size_t... _
 //! @param[in] __extents Array of extents
 //! @return Array of precomputed fast modulo/division objects
 template <typename _ExtentT, ::cuda::std::size_t _Size>
-[[nodiscard]] _CCCL_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
 __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noexcept
 {
   using __seq_t = ::cuda::std::make_index_sequence<_Size>;
@@ -64,7 +65,7 @@ __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noe
 //! @param[in] __end     End index of the range (exclusive)
 //! @return Fast modulo/division object wrapping the product
 template <typename _ExtentT, ::cuda::std::size_t _Size>
-[[nodiscard]] _CCCL_API ::cuda::fast_mod_div<_ExtentT> __extent_product_in_range(
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::fast_mod_div<_ExtentT> __extent_product_in_range(
   const ::cuda::std::array<_ExtentT, _Size>& __extents, ::cuda::std::size_t __start, ::cuda::std::size_t __end) noexcept
 {
   using __fast_mod_div_t = ::cuda::fast_mod_div<_ExtentT>;
@@ -79,7 +80,7 @@ template <typename _ExtentT, ::cuda::std::size_t _Size>
 }
 
 template <typename _ExtentT, ::cuda::std::size_t _Size, ::cuda::std::size_t... _Rp>
-[[nodiscard]] _CCCL_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, sizeof...(_Rp)>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, sizeof...(_Rp)>
 __extents_product_fast_div_mod_impl(const ::cuda::std::array<_ExtentT, _Size>& __extents,
                                     ::cuda::std::index_sequence<_Rp...> = {}) noexcept
 {
@@ -93,7 +94,7 @@ __extents_product_fast_div_mod_impl(const ::cuda::std::array<_ExtentT, _Size>& _
 //! @param[in] __extents Array of extents
 //! @return Array of fast modulo/division objects for each cumulative product
 template <typename _ExtentT, ::cuda::std::size_t _Size>
-[[nodiscard]] _CCCL_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
 __extents_product_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noexcept
 {
   using __seq_t = ::cuda::std::make_index_sequence<_Size>;
@@ -143,7 +144,8 @@ struct __tensor_coord_iterator
   //!
   //! @param[in] __in_arraydex Linear tile index
   //! @return Array of coordinates into the tensor
-  [[nodiscard]] _CCCL_API ::cuda::std::array<_ExtentT, _Rank> operator()(_ExtentT __in_arraydex) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::array<_ExtentT, _Rank>
+  operator()(_ExtentT __in_arraydex) const noexcept
   {
     if constexpr (_Rank == 1)
     {

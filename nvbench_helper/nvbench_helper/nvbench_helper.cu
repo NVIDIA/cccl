@@ -27,7 +27,7 @@
 
 #include "thrust/device_vector.h"
 
-namespace
+namespace detail
 {
 constexpr double lognormal_mean  = 3.0;
 constexpr double lognormal_sigma = 1.2;
@@ -561,10 +561,7 @@ void gen(executor exec, seed_t seed, cuda::std::span<T> span, bit_entropy entrop
 {
   generator_t{}.generate(exec, seed, span, entropy, min, max);
 }
-} // namespace
 
-namespace detail
-{
 template <typename T>
 void gen_host(seed_t seed, cuda::std::span<T> span, bit_entropy entropy, T min, T max)
 {
@@ -688,10 +685,7 @@ std::size_t gen_uniform_offsets(
 
   return tail(thrust::host);
 }
-} // namespace detail
 
-namespace detail
-{
 /**
  * @brief Generates a vector of random key segments.
  *
