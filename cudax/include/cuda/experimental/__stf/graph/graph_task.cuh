@@ -142,9 +142,7 @@ public:
     // capture_lock_. Move it into a local unique_lock so RAII releases it at
     // the end of this function. On the non-capture path, acquire a fresh lock
     // here just like the legacy code did.
-    ::std::unique_lock<::std::mutex> lock = is_capture_enabled()
-      ? mv(capture_lock_)
-      : lock_ctx_graph();
+    ::std::unique_lock<::std::mutex> lock = is_capture_enabled() ? mv(capture_lock_) : lock_ctx_graph();
 #else // _CCCL_CTK_AT_LEAST(12, 3)
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
