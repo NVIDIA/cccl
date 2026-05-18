@@ -24,12 +24,11 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/midpoint.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/__hyperloglog/tuning.cuh>
 
@@ -43,7 +42,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf
 //! @note Precision must be >= 4.
 //!
-class _Finalizer
+class hllpp_finalizer
 {
   // Note: Most of the types in this implementation are explicit instead of relying on `auto` to
   // avoid confusion with the reference implementation.
@@ -52,9 +51,9 @@ public:
   //! @brief Constructs an HLL finalizer object.
   //!
   //! @param __precision_ HLL precision parameter
-  _CCCL_HOST_DEVICE_API constexpr _Finalizer(int __precision_) noexcept
+  _CCCL_HOST_DEVICE_API constexpr hllpp_finalizer(::cuda::std::int32_t __precision_) noexcept
       : __precision{__precision_}
-      , __m{static_cast<int>(1u << __precision_)}
+      , __m{static_cast<::cuda::std::int32_t>(1u << __precision_)}
   {
     _CCCL_ASSERT(::cuda::in_range(__precision_, 4, 18), "Precision must be between 4 and 18");
   }
@@ -65,7 +64,7 @@ public:
   //! @param __v Number of 0 registers
   //!
   //! @return Bias-corrected cardinality estimate
-  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::size_t operator()(double __z, int __v) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::size_t operator()(double __z, ::cuda::std::int32_t __v) const noexcept
   {
     double __e = __alpha_mm() / __z;
 
@@ -121,21 +120,21 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double __bias(double __e) const noexcept
   {
     const auto __anchor_index = __interpolation_anchor_index(__e);
-    const auto __n            = static_cast<int>(__raw_estimate_data_size(__precision));
+    const auto __n = static_cast<::cuda::std::int32_t>(__hyperloglog_ns::__raw_estimate_data_size(__precision));
 
-    auto __low  = ::cuda::std::max(__anchor_index - __k + 1, 0);
+    auto __low  = ::cuda::std::max(__anchor_index - __k + 1, ::cuda::std::int32_t{0});
     auto __high = ::cuda::std::min(__low + __k, __n);
     // Keep moving bounds as long as the (exclusive) high bound is closer to the estimate than
     // the lower (inclusive) bound.
-    while (__high < __n && __distance(__e, __high) < __distance(__e, __low))
+    while (__high < __n && this->__distance(__e, __high) < this->__distance(__e, __low))
     {
       __low += 1;
       __high += 1;
     }
 
-    const auto __biases = __bias_data(__precision);
+    const auto __biases = __hyperloglog_ns::__bias_data(__precision);
     double __bias_sum   = 0.0;
-    for (int __i = __low; __i < __high; ++__i)
+    for (::cuda::std::int32_t __i = __low; __i < __high; ++__i)
     {
       __bias_sum += __biases[__i];
     }
@@ -143,24 +142,23 @@ private:
     return __bias_sum / (__high - __low);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double __distance(double __e, int __i) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double __distance(double __e, ::cuda::std::int32_t __i) const noexcept
   {
-    const auto __diff = __e - __raw_estimate_data(__precision)[__i];
+    const auto __diff = __e - __hyperloglog_ns::__raw_estimate_data(__precision)[__i];
     return __diff * __diff;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __interpolation_anchor_index(double __e) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::int32_t
+  __interpolation_anchor_index(double __e) const noexcept
   {
-    const auto __estimates = __raw_estimate_data(__precision);
-    const auto __n         = static_cast<int>(__raw_estimate_data_size(__precision));
-    int __left             = 0;
-    int __right            = static_cast<int>(__n) - 1;
-    int __mid              = -1;
-    int __candidate_index  = 0; // Index of the closest element found
+    const auto __estimates = __hyperloglog_ns::__raw_estimate_data(__precision);
+    const auto __n         = static_cast<::cuda::std::int32_t>(__hyperloglog_ns::__raw_estimate_data_size(__precision));
+    ::cuda::std::int32_t __left  = 0;
+    ::cuda::std::int32_t __right = __n - 1;
 
     while (__left <= __right)
     {
-      __mid = ::cuda::std::midpoint(__left, __right);
+      const ::cuda::std::int32_t __mid = ::cuda::std::midpoint(__left, __right);
 
       if (__estimates[__mid] < __e)
       {
@@ -177,25 +175,14 @@ private:
       }
     }
 
-    // At this point, '__left' is the insertion point. We need to compare the elements at '__left' and
-    // '__left - 1' to find the closest one, taking care of boundary conditions.
-
-    constexpr auto __max_double = ::cuda::std::numeric_limits<double>::max();
-
-    // Distance from '__e' to the element at '__left', if within bounds
-    const double __dist_lhs =
-      __left < static_cast<int>(__n) ? ::cuda::std::abs(__estimates[__left] - __e) : __max_double;
-    // Distance from '__e' to the element at '__left - 1', if within bounds
-    const double __dist_rhs = __left - 1 >= 0 ? ::cuda::std::abs(__estimates[__left - 1] - __e) : __max_double;
-
-    __candidate_index = (__dist_lhs < __dist_rhs) ? __left : __left - 1;
-
-    return __candidate_index;
+    // At this point, '__left' is the binary-search insertion point. Spark uses the insertion
+    // point as the anchor index when the exact estimate is not present in the table.
+    return __left;
   }
 
-  static constexpr auto __k = 6; ///< Number of interpolation points to consider
-  int __precision; ///< HLL precision parameter
-  int __m; ///< Number of registers (2^precision)
+  static constexpr ::cuda::std::int32_t __k = 6; ///< Number of interpolation points to consider
+  ::cuda::std::int32_t __precision; ///< HLL precision parameter
+  ::cuda::std::int32_t __m; ///< Number of registers (2^precision)
 };
 } // namespace cuda::experimental::cuco::__hyperloglog_ns
 

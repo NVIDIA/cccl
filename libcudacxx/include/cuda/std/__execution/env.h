@@ -121,14 +121,16 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
 
 [[nodiscard]] _CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
 {
+  size_t __result = __npos;
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
     if (*__where)
     {
-      return static_cast<size_t>(__where - __begin);
+      __result = static_cast<size_t>(__where - __begin);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 } // namespace __detail
 

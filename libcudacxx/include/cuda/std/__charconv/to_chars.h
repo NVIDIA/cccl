@@ -62,26 +62,29 @@ template <class _Tp>
   {
     if (__uv < __ubase)
     {
-      return __r + 1;
+      __r += 1;
+      break;
     }
     else if (__uv < __ubase_2)
     {
-      return __r + 2;
+      __r += 2;
+      break;
     }
     else if (__uv < __ubase_3)
     {
-      return __r + 3;
+      __r += 3;
+      break;
     }
     else if (__uv < __ubase_4)
     {
-      return __r + 4;
+      __r += 4;
+      break;
     }
 
     __uv /= __ubase_4;
     __r += 4;
   }
-
-  _CCCL_UNREACHABLE();
+  return __r;
 }
 
 template <class _Tp>

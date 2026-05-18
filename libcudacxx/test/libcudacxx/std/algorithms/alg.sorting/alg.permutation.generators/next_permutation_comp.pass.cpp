@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6076227: ICE when validating tile MLIR
-
 // <algorithm>
 
 // template<BidirectionalIterator Iter, StrictWeakOrder<auto, Iter::value_type> Compare>

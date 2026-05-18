@@ -33,20 +33,29 @@ template <typename _Tp>
 {
 #if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
   using _Up = remove_volatile_t<_Tp>;
-  switch (__alignment)
+  if (__alignment == 1)
   {
-    case 1:
-      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 1));
-    case 2:
-      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 2));
-    case 4:
-      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 4));
-    case 8:
-      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 8));
-    case 16:
-      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 16));
-    default:
-      return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 32));
+    return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 1));
+  }
+  else if (__alignment == 2)
+  {
+    return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 2));
+  }
+  else if (__alignment == 4)
+  {
+    return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 4));
+  }
+  else if (__alignment == 8)
+  {
+    return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 8));
+  }
+  else if (__alignment == 16)
+  {
+    return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 16));
+  }
+  else
+  {
+    return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 32));
   }
 #else
   _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);

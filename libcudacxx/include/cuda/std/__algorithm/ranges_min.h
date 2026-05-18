@@ -60,8 +60,8 @@ struct __fn
                    _CCCL_AND indirectly_copyable_storable<iterator_t<_Rp>, range_value_t<_Rp>*>)
   [[nodiscard]] _CCCL_API constexpr range_value_t<_Rp> operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
   {
-    auto __first = ::cuda::std::ranges::begin(__r);
-    auto __last  = ::cuda::std::ranges::end(__r);
+    auto __first = ::cuda::std::ranges::__begin_cpo{}(__r);
+    auto __last  = ::cuda::std::ranges::__end_cpo{}(__r);
 
     _CCCL_ASSERT(__first != __last, "range must contain at least one element");
 
