@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -55,19 +55,19 @@ template <class _Tp>
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 arg(__nv_bfloat16 __re)
-{
-  return ::cuda::std::atan2(::__int2bfloat16_rn(0), __re);
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half arg(__half __re)
 {
   return ::cuda::std::atan2(::__int2half_rn(0), __re);
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 arg(__nv_bfloat16 __re)
+{
+  return ::cuda::std::atan2(::__int2bfloat16_rn(0), __re);
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)

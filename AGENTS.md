@@ -206,7 +206,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 ### Modules
 
 * **cuda.compute** — Device-level algorithms, iterators, custom GPU types
-* **cuda.coop** — Block/warp-level primitives
+* **cuda.coop._experimental** — Block/warp-level primitives for Numba CUDA
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -245,7 +245,7 @@ Requirements:
 import cuda.compute
 result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-from cuda import coop
+import cuda.coop._experimental as coop
 @cuda.jit
 def kernel(data):
     coop.block.reduce(data, binary_op)

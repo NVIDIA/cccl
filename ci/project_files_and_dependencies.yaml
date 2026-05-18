@@ -217,6 +217,7 @@ projects:
 ignore_regexes:
   - '.+\.md$'
   - '\.branch_notes/'
+  - '\.coderabbit\.yaml'
   - '\.clang-format'
   - '\.clangd'
   # Do not add .clang-tidy to this list. If we modify .clang-tidy to either add or remove

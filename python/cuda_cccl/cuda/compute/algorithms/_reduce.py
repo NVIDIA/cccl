@@ -71,11 +71,12 @@ class _Reduce:
 
     def __call__(
         self,
+        *,
         temp_storage,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
         num_items: int,
+        op: Callable | OpAdapter,
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
@@ -112,6 +113,7 @@ class _Reduce:
 
 @cache_with_registered_key_functions
 def make_reduce_into(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
@@ -150,10 +152,11 @@ def make_reduce_into(
 
 
 def reduce_into(
+    *,
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
-    op: Operator,
     num_items: int,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     stream=None,
     **kwargs,
@@ -173,14 +176,30 @@ def reduce_into(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array to store the result of the reduction
+        num_items: Number of items to reduce
         op: Binary operator to apply.
             The signature is ``(T, T) -> T``, where ``T`` is
             the data type of the initial value ``h_init``.
-        num_items: Number of items to reduce
         h_init: Initial value for the reduction
         stream: CUDA stream for the operation (optional)
     """
-    reducer = make_reduce_into(d_in, d_out, op, h_init, **kwargs)
-    tmp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init, stream)
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init, **kwargs)
+    tmp_storage_bytes = reducer(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, op, num_items, h_init, stream)
+    reducer(
+        temp_storage=tmp_storage,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=op,
+        h_init=h_init,
+        stream=stream,
+    )

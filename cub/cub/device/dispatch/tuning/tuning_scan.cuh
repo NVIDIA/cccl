@@ -31,6 +31,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
@@ -548,7 +549,7 @@ struct policy_hub
 
 struct scan_lookback_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
@@ -556,15 +557,17 @@ struct scan_lookback_policy
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  _CCCL_API constexpr friend bool operator==(const scan_lookback_policy& lhs, const scan_lookback_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const scan_lookback_policy& lhs, const scan_lookback_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
         && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const scan_lookback_policy& lhs, const scan_lookback_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const scan_lookback_policy& lhs, const scan_lookback_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -573,7 +576,7 @@ struct scan_lookback_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_lookback_policy& p)
   {
     return os
-        << "scan_lookback_policy { .block_threads = " << p.block_threads
+        << "scan_lookback_policy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
@@ -587,19 +590,21 @@ struct scan_warpspeed_policy
   int look_ahead_items_per_thread;
   int items_per_thread;
 
-  _CCCL_API constexpr int tile_size() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
     return items_per_thread * num_reduce_and_scan_warps * warp_threads;
   }
 
-  _CCCL_API constexpr friend bool operator==(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
   {
     return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
         && lhs.look_ahead_items_per_thread == rhs.look_ahead_items_per_thread
         && lhs.items_per_thread == rhs.items_per_thread;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -641,12 +646,12 @@ struct scan_policy
   scan_lookback_policy lookback;
   scan_warpspeed_policy warpspeed;
 
-  _CCCL_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
   {
     return lhs.lookback == rhs.lookback && lhs.warpspeed == rhs.warpspeed && lhs.algorithm == rhs.algorithm;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const scan_policy& lhs, const scan_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const scan_policy& lhs, const scan_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -665,8 +670,8 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, scan_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-_CCCL_API constexpr auto make_mem_scaled_lookback_scan_policy(
-  int nominal_4b_block_threads,
+_CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
+  int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
   int compute_t_size,
   BlockLoadAlgorithm load_algorithm,
@@ -675,11 +680,11 @@ _CCCL_API constexpr auto make_mem_scaled_lookback_scan_policy(
   BlockScanAlgorithm scan_algorithm,
   delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450}) -> scan_policy
 {
-  const auto scaled = scale_mem_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
+  const auto scaled = scale_mem_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return scan_policy{
     scan_algorithm::lookback,
     scan_lookback_policy{
-      scaled.block_threads,
+      scaled.threads_per_block,
       scaled.items_per_thread,
       load_algorithm,
       load_modifier,
@@ -689,33 +694,33 @@ _CCCL_API constexpr auto make_mem_scaled_lookback_scan_policy(
     scan_warpspeed_policy{}};
 }
 
-_CCCL_API constexpr warpspeed::SquadDesc squad_reduce(const scan_warpspeed_policy& policy)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_reduce(const scan_warpspeed_policy& policy)
 {
   return warpspeed::SquadDesc{0, policy.num_reduce_and_scan_warps};
 }
 
-_CCCL_API constexpr warpspeed::SquadDesc squad_scan_store(const scan_warpspeed_policy& policy)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan_store(const scan_warpspeed_policy& policy)
 {
   return warpspeed::SquadDesc{1, policy.num_reduce_and_scan_warps};
 }
 
-_CCCL_API constexpr warpspeed::SquadDesc squad_load(const scan_warpspeed_policy&)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load(const scan_warpspeed_policy&)
 {
   return warpspeed::SquadDesc{2, 1}; // no point in being more than 1 warp
 }
 
-_CCCL_API constexpr warpspeed::SquadDesc squad_sched(const scan_warpspeed_policy&)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_sched(const scan_warpspeed_policy&)
 {
   return warpspeed::SquadDesc{3, 1}; // no point in being more than 1 warp
 }
 
-_CCCL_API constexpr warpspeed::SquadDesc squad_lookback(const scan_warpspeed_policy&)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookback(const scan_warpspeed_policy&)
 {
   return warpspeed::SquadDesc{4, 1}; // must have 1 warp
 }
 
 // TODO(bgruber): put this somewhere else
-constexpr _CCCL_API bool is_arithmetic_type(type_t type)
+constexpr _CCCL_HOST_DEVICE_API bool is_arithmetic_type(type_t type)
 {
   switch (type)
   {
@@ -746,7 +751,7 @@ struct scan_stage_counts
   int num_sum_exclusive_cta_stages;
 };
 
-_CCCL_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
+_CCCL_HOST_DEVICE_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
 {
   // If numBlockIdxStages is one less than the number of stages, we find a small speedup compared to setting it equal to
   // num_stages. Not sure why. TODO(bgruber): make this tunable
@@ -766,7 +771,7 @@ struct ScanResourcesRaw
 };
 
 template <typename SmemInOutT, typename SmemNextBlockIdxT, typename SmemSumExclusiveCtaT, typename SmemSumThreadAndWarpT>
-_CCCL_API constexpr void setup_scan_resources(
+_CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
   const scan_warpspeed_policy& policy,
   warpspeed::SyncHandler& syncHandler,
   warpspeed::SmemAllocator& smemAllocator,
@@ -796,7 +801,7 @@ _CCCL_API constexpr void setup_scan_resources(
   smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
 }
 
-_CCCL_API constexpr auto smem_for_stages(
+_CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const scan_warpspeed_policy& policy,
   int num_stages,
   int input_size,
@@ -870,7 +875,7 @@ struct policy_selector
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
 
-  _CCCL_API constexpr auto get_sm100_fallback_warpspeed_policy() const -> scan_warpspeed_policy
+  _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_warpspeed_policy() const -> scan_warpspeed_policy
   {
     scan_warpspeed_policy warpspeed_policy{};
 
@@ -905,7 +910,7 @@ struct policy_selector
     return warpspeed_policy;
   }
 
-  _CCCL_API constexpr auto get_sm120_fallback_warpspeed_policy() const -> scan_warpspeed_policy
+  _CCCL_HOST_DEVICE_API constexpr auto get_sm120_fallback_warpspeed_policy() const -> scan_warpspeed_policy
   {
     auto policy = get_sm100_fallback_warpspeed_policy();
     if (operation_t == op_kind_t::other && is_arithmetic_type(input_type))
@@ -922,7 +927,7 @@ struct policy_selector
     return policy;
   }
 
-  _CCCL_API constexpr auto get_warpspeed_policy(::cuda::compute_capability cc) const
+  _CCCL_HOST_DEVICE_API constexpr auto get_warpspeed_policy(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<scan_warpspeed_policy>
   {
     if (cc >= ::cuda::compute_capability{12, 0})
@@ -980,7 +985,9 @@ struct policy_selector
     return {};
   }
 
-  _CCCL_API constexpr bool can_use_warpspeed([[maybe_unused]] const scan_warpspeed_policy& warpspeed_policy) const
+  _CCCL_HOST_DEVICE_API constexpr bool
+  can_use_warpspeed([[maybe_unused]] ::cuda::compute_capability cc,
+                    [[maybe_unused]] const scan_warpspeed_policy& warpspeed_policy) const
   {
     // We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
     // MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing
@@ -991,6 +998,15 @@ struct policy_selector
   || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1))) || defined(CCCL_DISABLE_WARPSPEED_SCAN)
     return false;
 #else
+#  if _CCCL_CUDACC_BELOW(13, 4)
+    if (cc == ::cuda::compute_capability{12, 0})
+    {
+      // Unfortunately, there seems to be a codegen bug in nvcc when targeting GB20x GPUs (sm120), so let's disable
+      // warpspeed scan until this is resolved. See: https://github.com/NVIDIA/cccl/issues/8528
+      return false;
+    }
+#  endif // _CCCL_CUDACC_BELOW(13, 4)
+
     if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
         || !output_default_constructible)
     {
@@ -1013,12 +1029,12 @@ struct policy_selector
 #endif
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
       const auto warpspeed_policy_opt = get_warpspeed_policy(cc);
-      if (warpspeed_policy_opt && can_use_warpspeed(*warpspeed_policy_opt))
+      if (warpspeed_policy_opt && can_use_warpspeed(cc, *warpspeed_policy_opt))
       {
         return {scan_algorithm::warpspeed, scan_lookback_policy{}, *warpspeed_policy_opt};
       }
@@ -1427,7 +1443,7 @@ struct benchmark_match_for_policy_selector<
 template <typename InputIteratorT, typename OutputIteratorT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
     using InputValueT  = it_value_t<InputIteratorT>;
     using OutputValueT = it_value_t<OutputIteratorT>;
@@ -1451,8 +1467,8 @@ struct policy_selector_from_types
       classify_op<ScanOpT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>,
-      ::cuda::std::is_trivially_copyable_v<InputValueT>,
-      ::cuda::std::is_trivially_copyable_v<OutputValueT>,
+      ::cuda::is_trivially_copyable_v<InputValueT>,
+      ::cuda::is_trivially_copyable_v<OutputValueT>,
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match};

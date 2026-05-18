@@ -81,22 +81,22 @@ def bench_histogram_even(state: bench.State):
     h_upper_level = np.array([upper_level], dtype=dtype)
 
     histogrammer = make_histogram_even(
-        d_samples,
-        d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_elements,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_elements,
     )
 
     temp_storage_bytes = histogrammer(
-        None,
-        d_samples,
-        d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
-        num_elements,
+        temp_storage=None,
+        d_samples=d_samples,
+        d_histogram=d_histogram,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
+        num_samples=num_elements,
     )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -107,14 +107,14 @@ def bench_histogram_even(state: bench.State):
 
     def launcher(launch: bench.Launch):
         histogrammer(
-            temp_storage,
-            d_samples,
-            d_histogram,
-            h_num_output_levels,
-            h_lower_level,
-            h_upper_level,
-            num_elements,
-            launch.get_stream(),
+            temp_storage=temp_storage,
+            d_samples=d_samples,
+            d_histogram=d_histogram,
+            h_num_output_levels=h_num_output_levels,
+            h_lower_level=h_lower_level,
+            h_upper_level=h_upper_level,
+            num_samples=num_elements,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

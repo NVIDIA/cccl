@@ -24,11 +24,11 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -197,7 +197,7 @@ namespace detail
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
-    : integral_constant<bool, ::cuda::std::is_trivially_copyable_v<T> || proclaim_trivially_relocatable<T>::value>
+    : integral_constant<bool, ::cuda::is_trivially_copyable_v<T> || proclaim_trivially_relocatable<T>::value>
 {};
 
 template <typename T, ::cuda::std::size_t N>

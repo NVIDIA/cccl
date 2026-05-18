@@ -66,14 +66,14 @@ def unique_by_key_device(
 ):
     # Call single-phase API directly with all parameters including num_items
     cuda.compute.unique_by_key(
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        op,
-        num_items,
-        stream,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )
 
 
@@ -441,13 +441,13 @@ def test_unique_by_key_well_known_equal_to(monkeypatch):
 
     # Run unique by key with well-known EQUAL_TO operation
     cuda.compute.unique_by_key(
-        d_in_keys,
-        d_in_values,
-        d_out_keys,
-        d_out_values,
-        d_num_selected,
-        OpKind.EQUAL_TO,
-        len(d_in_keys),
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_values,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_values,
+        d_out_num_selected=d_num_selected,
+        op=OpKind.EQUAL_TO,
+        num_items=len(d_in_keys),
     )
 
     # Check the result is correct

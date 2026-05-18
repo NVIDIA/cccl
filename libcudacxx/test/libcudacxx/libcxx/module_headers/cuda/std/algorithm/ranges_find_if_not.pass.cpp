@@ -15,20 +15,20 @@
 
 struct ranges_find_if_not_even
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
 };
 struct ranges_find_if_not_lt10
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x < 10;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {2, 4, 5};
   auto it = cuda::std::ranges::find_if_not(a, a + 3, ranges_find_if_not_even{});

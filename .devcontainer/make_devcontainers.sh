@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script parses the CI matrix.yaml file and generates a devcontainer.json file for each unique combination of
 # CUDA version, compiler name/version, and Ubuntu version. The devcontainer.json files are written to the

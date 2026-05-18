@@ -250,7 +250,7 @@ public:
   }
 
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
-  _CCCL_API explicit constexpr linear_congruential_engine(_Sseq& __q) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr linear_congruential_engine(_Sseq& __q) noexcept
   {
     seed(__q);
   }
@@ -259,7 +259,7 @@ public:
     seed(integral_constant<bool, __M == 0>(), integral_constant<bool, __C == 0>(), __s);
   }
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
-  _CCCL_API constexpr void seed(_Sseq& __q) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __q) noexcept
   {
     __seed(__q,
            integral_constant<uint32_t,

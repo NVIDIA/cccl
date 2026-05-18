@@ -110,13 +110,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
                       ::cuda::std::uint16_t __repr = ::cuda::std::__fp_get_storage(__x);
-                      switch (__repr)
+                      if (__repr == 7544)
                       {
-                        case 7544:
-                          __ret_repr.x -= 1;
-                          break;
-
-                        default:;
+                        __ret_repr.x -= 1;
                       }
 
                       return __ret_repr;
@@ -235,14 +231,18 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline constexpr int __ilogb_impl(_Tp __x) noexcept
 {
-  switch (::cuda::std::fpclassify(__x))
+  const auto __fp = ::cuda::std::fpclassify(__x);
+  if (__fp == FP_ZERO)
   {
-    case FP_ZERO:
-      return FP_ILOGB0;
-    case FP_NAN:
-      return FP_ILOGBNAN;
-    case FP_INFINITE:
-      return numeric_limits<int>::max();
+    return FP_ILOGB0;
+  }
+  else if (__fp == FP_NAN)
+  {
+    return FP_ILOGBNAN;
+  }
+  else if (__fp == FP_INFINITE)
+  {
+    return numeric_limits<int>::max();
   }
 
   constexpr auto __fmt = __fp_format_of_v<_Tp>;
@@ -465,17 +465,20 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline constexpr _Tp __logb_impl(_Tp __x) noexcept
 {
-  switch (::cuda::std::fpclassify(__x))
+  const auto __fp = ::cuda::std::fpclassify(__x);
+  if (__fp == FP_ZERO)
   {
-    case FP_ZERO:
-      return ::cuda::std::__fp_neg<_Tp>(::cuda::std::__fp_inf<_Tp>());
-    case FP_NAN:
-      return ::cuda::std::__fp_nan<_Tp>();
-    case FP_INFINITE:
-      return ::cuda::std::__fp_inf<_Tp>();
-    default:
-      break;
+    return ::cuda::std::__fp_neg<_Tp>(::cuda::std::__fp_inf<_Tp>());
   }
+  else if (__fp == FP_NAN)
+  {
+    return ::cuda::std::__fp_nan<_Tp>();
+  }
+  else if (__fp == FP_INFINITE)
+  {
+    return ::cuda::std::__fp_inf<_Tp>();
+  }
+
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv

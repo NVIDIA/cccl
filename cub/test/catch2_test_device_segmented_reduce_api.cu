@@ -8,6 +8,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 
+#include <cuda/std/functional>
 #include <cuda/std/utility>
 
 #include <climits>

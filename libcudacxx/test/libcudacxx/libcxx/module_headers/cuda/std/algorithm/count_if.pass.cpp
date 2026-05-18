@@ -15,13 +15,13 @@
 
 struct count_if_even
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 2, 3, 4};
   assert(cuda::std::count_if(a, a + 4, count_if_even{}) == 2);

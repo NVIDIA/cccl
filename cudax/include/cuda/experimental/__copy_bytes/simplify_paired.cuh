@@ -61,7 +61,7 @@ __reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) 
 struct __mode_compare_paired
 {
   template <typename _ExtentT, typename _SrcStrideT, typename _DstStrideT>
-  [[nodiscard]] _CCCL_API bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   operator()(const ::cuda::std::tuple<_ExtentT, _SrcStrideT, _DstStrideT>& __lhs,
              const ::cuda::std::tuple<_ExtentT, _SrcStrideT, _DstStrideT>& __rhs) const noexcept
   {

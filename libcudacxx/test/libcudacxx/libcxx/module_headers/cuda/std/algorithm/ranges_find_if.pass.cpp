@@ -15,20 +15,20 @@
 
 struct ranges_find_if_even
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 0;
   }
 };
 struct ranges_find_if_gt2
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x > 2;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {1, 2, 3};
   auto it = cuda::std::ranges::find_if(a, a + 3, ranges_find_if_even{});

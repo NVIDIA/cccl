@@ -418,22 +418,22 @@ struct policy_hub
 
 struct three_way_partition_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   BlockScanAlgorithm block_scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.block_scan_algorithm == rhs.block_scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
   {
     return !(lhs == rhs);
@@ -443,7 +443,7 @@ struct three_way_partition_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const three_way_partition_policy& policy)
   {
     return os
-        << "three_way_partition_policy { .block_threads = " << policy.block_threads
+        << "three_way_partition_policy { .threads_per_block = " << policy.threads_per_block
         << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
         << ", .load_modifier = " << policy.load_modifier << ", .block_scan_algorithm = " << policy.block_scan_algorithm
         << ", .delay_constructor = " << policy.delay_constructor << " }";
@@ -462,7 +462,8 @@ struct policy_selector
   int input_size;
   int offset_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> three_way_partition_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> three_way_partition_policy
   {
     const auto default_policy = three_way_partition_policy{
       256,
@@ -713,7 +714,8 @@ static_assert(three_way_partition_policy_selector<policy_selector>);
 template <typename InputT, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> three_way_partition_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> three_way_partition_policy
   {
     constexpr auto selector = policy_selector{classify_type<InputT>, int{sizeof(InputT)}, int{sizeof(OffsetT)}};
     return selector(cc);

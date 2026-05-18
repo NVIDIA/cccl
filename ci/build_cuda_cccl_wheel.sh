@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Target script for `docker run` command in build_cuda_cccl_python.sh
@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Install GCC 13 toolset (needed for the build)
 /workspace/ci/util/retry.sh 5 30 dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
-echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
+echo -e "#!/usr/bin/env bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
 # shellcheck disable=SC1091
 source /etc/profile.d/enable_devtools.sh
 

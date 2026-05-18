@@ -20,6 +20,6 @@ ${wheelPath} = Get-CudaCcclWheel
 
 Push-Location (Join-Path (Get-RepoRoot) "python/cuda_cccl/tests")
 try {
-    & $python -m pytest -n auto -v coop/
+    & $python -m pytest -n auto -v coop/_experimental/
 }
 finally { Pop-Location }
