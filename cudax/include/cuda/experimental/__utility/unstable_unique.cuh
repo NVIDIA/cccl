@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__utility/move.h>
