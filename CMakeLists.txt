@@ -28,6 +28,18 @@ list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(cmake/CCCLInstallRules.cmake)
 
+option(
+  _CCCL_USE_NVHPC_AS_CUDA_COMPILER
+  "Forces the use of NVHPC as the CUDA compiler. Internal only."
+  OFF
+)
+
+# NVHPC as CUDA compiler set-up must be done after enabling C++ language and before enabling CUDA language.
+if (_CCCL_USE_NVHPC_AS_CUDA_COMPILER)
+  include(cmake/CCCLSetUpNVHPCAsCUDACompiler.cmake)
+  _cccl_set_up_nvhpc_as_cuda_compiler()
+endif()
+
 # Support adding CCCL to a parent project via add_subdirectory.
 include(cmake/CCCLAddSubdirHelper.cmake) # Always include, this is used by subprojects as well.
 if (NOT CCCL_TOPLEVEL_PROJECT)
