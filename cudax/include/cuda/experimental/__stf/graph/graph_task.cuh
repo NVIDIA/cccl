@@ -580,9 +580,8 @@ private:
 
     // Ignore the returned graph handle: with BeginCaptureToGraph it is the
     // caller-supplied ctx_graph; do not make correctness depend on identity.
-    cudaGraph_t captured = nullptr;
+    [[maybe_unused]] cudaGraph_t captured = nullptr;
     cuda_safe_call(cudaStreamEndCapture(s, &captured));
-    (void) captured;
 
     cudaGraphNode_t done_node = nullptr;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
