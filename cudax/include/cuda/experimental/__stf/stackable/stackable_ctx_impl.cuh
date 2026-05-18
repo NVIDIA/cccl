@@ -851,10 +851,13 @@ public:
       // still running. Registering as a dangling event funnels into
       // `insert_fence`, which any subsequent task or `finalize()` will
       // pick up.
-      auto& parent_backend = parent_ctx.get_backend();
-      if (finalize_prereqs.size() > 0 && parent_backend.track_dangling_events())
+      if (!finalize_prereqs.empty())
       {
-        parent_backend.get_state().add_dangling_events(parent_backend, finalize_prereqs);
+        auto& parent_backend = parent_ctx.get_backend();
+        if (parent_backend.track_dangling_events())
+        {
+          parent_backend.get_state().add_dangling_events(parent_backend, finalize_prereqs);
+        }
       }
 
       // Destroy the resources used in the wrapper allocator (if any)
