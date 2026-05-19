@@ -42,10 +42,9 @@ CUB_NAMESPACE_BEGIN
 #  ifndef CUB_PTX_ARCH
 // deprecated in 3.1
 #    if _CCCL_CUDA_COMPILER(NVHPC)
-// __NVCOMPILER_CUDA_ARCH__ is the target PTX version, and is defined
-// when compiling both host code and device code. Currently, only one
-// PTX version can be targeted.
-#      define CUB_PTX_ARCH __NVCOMPILER_CUDA_ARCH__
+// NV_TARGET_MINIMUM_SM_INTEGER is the oldest target PTX version, and is defined when compiling both host code and
+// device code.
+#      define CUB_PTX_ARCH (NV_TARGET_MINIMUM_SM_INTEGER * 10)
 #    else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
 #      define CUB_PTX_ARCH _CCCL_PTX_ARCH()
 #    endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
@@ -184,7 +183,7 @@ struct NoScaling
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::compute_capability current_tuning_cc() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
-  return ::cuda::compute_capability(__NVCOMPILER_CUDA_ARCH__ / 10);
+  return ::cuda::compute_capability(NV_TARGET_MINIMUM_SM_INTEGER);
 #  elif _CCCL_DEVICE_COMPILATION()
   return ::cuda::device::current_compute_capability();
 #  else
