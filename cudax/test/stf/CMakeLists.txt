@@ -231,7 +231,6 @@ set(
   cuda/experimental/__stf/utility/scope_guard.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
-  cuda/experimental/__stf/utility/unstable_unique.cuh
 )
 
 cccl_get_cudatoolkit()
