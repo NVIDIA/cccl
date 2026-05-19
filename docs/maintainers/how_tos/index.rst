@@ -7,3 +7,4 @@ How-to guides for maintainers.
    :maxdepth: 1
 
    ../backport_process
+   plan_work_with_github_issues
