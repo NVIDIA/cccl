@@ -304,7 +304,7 @@ template <typename Derived,
           typename Traversal,
           typename Reference,
           typename Difference = ::cuda::std::ptrdiff_t>
-class iterator_facade
+class iterator_facade // NOLINT(bugprone-crtp-constructor-accessibility)
 {
 private:
   /*! \cond

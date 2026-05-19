@@ -52,6 +52,11 @@ _CCCL_DIAG_SUPPRESS_NVHPC(nodiscard_doesnt_apply)
 template <class _Level>
 struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_level_base<_Level>
 {
+private:
+  __native_hierarchy_level_base() = default;
+  friend _Level;
+
+public:
   using __base_type = hierarchy_level_base<_Level>;
   using __base_type::count;
   using __base_type::count_as;
@@ -164,7 +169,11 @@ _CCCL_DIAG_POP
 
 template <>
 struct __native_hierarchy_level_base<grid_level> : hierarchy_level_base<grid_level>
-{};
+{
+private:
+  __native_hierarchy_level_base() = default;
+  friend grid_level;
+};
 
 _CCCL_END_NAMESPACE_CUDA
 

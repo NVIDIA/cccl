@@ -54,7 +54,7 @@ inline constexpr bool __must_synthesize_assignment_v =
 // We need to ensure that __tuple_impl_sfinae_helper is unique for every instantiation of __tuple_impl, so its templated
 // on the impl
 template <class _Impl, bool _AllCopyAssignable, bool _AllMoveAssignable>
-struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper // NOLINT(bugprone-crtp-constructor-accessibility)
 {};
 
 template <class _Impl>

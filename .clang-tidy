@@ -35,7 +35,6 @@ Checks:
   - '-bugprone-misplaced-widening-cast'
   - '-bugprone-suspicious-include'
   - '-bugprone-exception-escape'
-  - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
   - '-bugprone-return-const-ref-from-parameter'

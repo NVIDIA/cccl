@@ -101,7 +101,9 @@ using device_t = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t
 //! \see execution_policy
 //! \see device_execution_policy
 template <typename DerivedPolicy>
-struct host_execution_policy : thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::execution_policy<DerivedPolicy>
+struct host_execution_policy
+    : thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::execution_policy<
+        DerivedPolicy> // NOLINT(bugprone-crtp-constructor-accessibility)
 {};
 
 //! \p device_execution_policy is the base class for all Thrust parallel execution policies which are derived from
@@ -158,8 +160,12 @@ struct host_execution_policy : thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::e
 //! \see execution_policy
 //! \see host_execution_policy
 template <typename DerivedPolicy>
-struct device_execution_policy : thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::execution_policy<DerivedPolicy>
-{};
+struct device_execution_policy // NOLINT(bugprone-crtp-constructor-accessibility)
+    : thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::execution_policy<DerivedPolicy>
+{
+  // This CRTP base is a documented user extension point, so its implicit constructor is
+  // intentionally public.
+};
 
 //! \p thrust::host is the default parallel execution policy associated with Thrust's host backend system configured by
 //! the \p THRUST_HOST_SYSTEM macro.

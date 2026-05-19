@@ -21,7 +21,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 template <class>
-struct execution_policy;
+struct execution_policy; // NOLINT(bugprone-crtp-constructor-accessibility)
 } // namespace system::detail::sequential
 
 namespace detail

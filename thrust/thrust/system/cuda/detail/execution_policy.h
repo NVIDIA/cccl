@@ -36,7 +36,7 @@ struct tag;
 //! \p thrust::cuda::execution_policy is the base class for all Thrust parallel execution
 //! policies which are derived from Thrust's CUDA backend system.
 template <class>
-struct execution_policy;
+struct execution_policy; // NOLINT(bugprone-crtp-constructor-accessibility)
 
 template <>
 struct execution_policy<tag> : thrust::execution_policy<tag>
@@ -50,7 +50,7 @@ struct tag
 {};
 
 template <class Derived>
-struct execution_policy : thrust::execution_policy<Derived>
+struct execution_policy : thrust::execution_policy<Derived> // NOLINT(bugprone-crtp-constructor-accessibility)
 {
   using tag_type = tag;
 
@@ -68,7 +68,8 @@ private:
   cudaStream_t stream;
 
 public:
-  _CCCL_HOST_DEVICE execute_on_stream_base(cudaStream_t stream_ = cuda_cub::default_stream())
+  _CCCL_HOST_DEVICE execute_on_stream_base( // NOLINT(bugprone-crtp-constructor-accessibility)
+    cudaStream_t stream_ = cuda_cub::default_stream())
       : stream(stream_)
   {}
 
@@ -93,7 +94,8 @@ private:
   cudaStream_t stream;
 
 public:
-  _CCCL_HOST_DEVICE execute_on_stream_nosync_base(cudaStream_t stream_ = cuda_cub::default_stream())
+  _CCCL_HOST_DEVICE execute_on_stream_nosync_base( // NOLINT(bugprone-crtp-constructor-accessibility)
+    cudaStream_t stream_ = cuda_cub::default_stream())
       : stream(stream_)
   {}
 

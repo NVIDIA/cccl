@@ -25,7 +25,7 @@ namespace detail
 struct tag;
 
 template <typename>
-struct execution_policy;
+struct execution_policy; // NOLINT(bugprone-crtp-constructor-accessibility)
 
 template <>
 struct execution_policy<tag> : cpp::execution_policy<tag>
@@ -37,7 +37,7 @@ struct tag : execution_policy<tag>
 {};
 
 template <typename Derived>
-struct execution_policy : cpp::execution_policy<Derived>
+struct execution_policy : cpp::execution_policy<Derived> // NOLINT(bugprone-crtp-constructor-accessibility)
 {
   using tag_type = tag;
 
