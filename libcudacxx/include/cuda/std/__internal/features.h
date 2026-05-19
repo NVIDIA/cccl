@@ -122,6 +122,8 @@
   ((_CCCL_HAS_SIMD_SAT_PTX() || _CCCL_HAS_SIMD_SAT_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
    && !_CCCL_TILE_COMPILATION())
 
+#define _CCCL_HAS_SIMD_VABSDIFF() _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
+
 // Third party libraries
 
 #if (__has_include(<dlpack/dlpack.h>) || __has_include(<dlpack.h>)) && \
