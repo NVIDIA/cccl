@@ -51,7 +51,6 @@ Checks:
   - '-bugprone-unhandled-self-assignment'
   - '-bugprone-casting-through-void'
   - '-bugprone-integer-division'
-  - '-bugprone-suspicious-stringview-data-usage'
   - '-bugprone-move-forwarding-reference'
   - '-bugprone-inc-dec-in-conditions'
   - '-bugprone-pointer-arithmetic-on-polymorphic-object'
