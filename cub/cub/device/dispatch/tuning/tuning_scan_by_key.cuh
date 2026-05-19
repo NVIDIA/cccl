@@ -1924,7 +1924,7 @@ struct policy_selector_from_types
       is_primitive<ValueT>::value,
       ::cuda::is_trivially_copyable_v<ValueT>,
       is_primitive<AccumT>::value,
-      ::cuda::std::is_trivially_copyable_v<AccumT>,
+      ::cuda::is_trivially_copyable_v<AccumT>,
       classify_type<KeyT>,
       classify_type<ValueT>,
       classify_type<AccumT>,
