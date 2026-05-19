@@ -45,7 +45,6 @@ Checks:
   - '-bugprone-use-after-move'
   - '-bugprone-sizeof-expression'
   - '-bugprone-undefined-memory-manipulation'
-  - '-bugprone-assignment-in-if-condition'
   - '-bugprone-unchecked-optional-access'
   - '-bugprone-unintended-char-ostream-output'
   - '-bugprone-unhandled-self-assignment'
