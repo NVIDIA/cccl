@@ -30,6 +30,8 @@ Checks:
   - '-modernize-use-auto'
   - 'clang-diagnostic-*'
   - 'bugprone-*'
+  # We probably want this eventually, but needs discussion
+  - '-bugprone-argument-comment'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
