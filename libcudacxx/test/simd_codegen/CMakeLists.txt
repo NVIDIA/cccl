@@ -34,6 +34,7 @@ if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   file(
     GLOB libcudacxx_simd_codegen_tests
     "floating_point/*.cu"
+    "idot/*.cu"
     "integer/*.cu"
     "vabsdiff/*.cu"
   )

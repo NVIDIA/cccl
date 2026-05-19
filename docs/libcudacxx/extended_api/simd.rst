@@ -9,6 +9,7 @@ SIMD
 
    simd/saturating_add
    simd/abs_diff
+   simd/idot
 
 .. list-table::
    :widths: 25 45 30 30
@@ -26,5 +27,10 @@ SIMD
 
    * - :ref:`cuda::simd::abs_diff <libcudacxx-extended-api-simd-abs-diff>`
      - Performs element-wise absolute difference of two integer ``basic_vec`` objects
+     - CCCL 3.5.0
+     - CUDA 13.5
+
+   * - :ref:`cuda::simd::idot <libcudacxx-extended-api-simd-idot>`
+     - Computes the integer dot product of two ``basic_vec`` objects and an accumulator
      - CCCL 3.5.0
      - CUDA 13.5
