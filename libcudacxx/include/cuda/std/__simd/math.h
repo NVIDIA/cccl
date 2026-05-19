@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_SIMD
-#define _CUDA_STD_SIMD
+#ifndef _CUDA_STD___SIMD_MATH_H
+#define _CUDA_STD___SIMD_MATH_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,13 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/simd.h>
-#include <cuda/std/__simd/abi.h>
-#include <cuda/std/__simd/basic_mask.h>
-#include <cuda/std/__simd/basic_vec.h>
-#include <cuda/std/__simd/flag.h>
-#include <cuda/std/__simd/math.h>
-#include <cuda/std/__simd/reductions.h>
-#include <cuda/std/__simd/type_traits.h>
+#include <cuda/std/__simd/math/abs.h>
+#include <cuda/std/__simd/math/classification.h>
+#include <cuda/std/__simd/math/common.h>
+#include <cuda/std/__simd/math/comparison.h>
+#include <cuda/std/__simd/math/exponential.h>
+#include <cuda/std/__simd/math/fma_lerp.h>
+#include <cuda/std/__simd/math/manipulation.h>
+#include <cuda/std/__simd/math/min_max.h>
+#include <cuda/std/__simd/math/modulo.h>
+#include <cuda/std/__simd/math/rounding.h>
+#include <cuda/std/__simd/math/trigonometric.h>
 
-#endif // _CUDA_STD_SIMD
+#endif // _CUDA_STD___SIMD_MATH_H
