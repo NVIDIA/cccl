@@ -57,11 +57,8 @@ inline constexpr bool __is_well_formed = false;
 
 template <typename _Tp, typename _Generator, __simd_size_type _Idx>
 inline constexpr bool
-  __is_well_formed<_Tp,
-                   _Generator,
-                   _Idx,
-                   void_t<decltype(declval<_Generator>()(integral_constant<__simd_size_type, _Idx>()))>> =
-    is_convertible_v<decltype(declval<_Generator>()(integral_constant<__simd_size_type, _Idx>())), _Tp>;
+  __is_well_formed<_Tp, _Generator, _Idx, void_t<decltype(declval<_Generator>()(__simd_size_constant<_Idx>()))>> =
+    is_convertible_v<decltype(declval<_Generator>()(__simd_size_constant<_Idx>())), _Tp>;
 
 template <typename _Tp, typename _Generator, __simd_size_type... _Indices>
 [[nodiscard]]

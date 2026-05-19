@@ -98,13 +98,13 @@ using integer_from_t = cuda::std::__make_nbit_int_t<Bytes * 8, true>;
 //----------------------------------------------------------------------------------------------------------------------
 // vec utilities
 
-template <typename T>
+template <typename T, int _Offset = 1>
 struct iota_generator
 {
   template <typename I>
   TEST_FUNC constexpr T operator()(I i) const noexcept
   {
-    return static_cast<T>(i + 1);
+    return static_cast<T>(i + _Offset);
   }
 };
 
