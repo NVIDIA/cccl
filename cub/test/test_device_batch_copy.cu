@@ -261,6 +261,7 @@ catch ([[maybe_unused]] std::bad_alloc& e)
     << TestDataGenToString(output_gen) << ")" //
     << "' due to insufficient memory: " << e.what() << "\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
+  return;
 }
 
 struct object_with_non_trivial_ctor
