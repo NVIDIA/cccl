@@ -87,7 +87,8 @@ void print(size_t m, size_t n, thrust::device_vector<T>& d_data)
   }
 }
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   size_t m = 3; // number of rows
   size_t n = 4; // number of columns

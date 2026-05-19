@@ -58,7 +58,8 @@ void simple_moving_average(const InputVector& data, size_t w, OutputVector& outp
   thrust::transform(temp.begin() + w, temp.end(), temp.begin(), output.begin(), minus_and_divide<T>(T(w)));
 }
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   // length of data series
   size_t n = 30;

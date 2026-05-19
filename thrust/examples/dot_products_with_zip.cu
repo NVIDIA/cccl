@@ -40,7 +40,8 @@ thrust::host_vector<float> random_vector(const size_t N, unsigned int seed = thr
   return temp;
 }
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   // number of vectors
   const size_t N = 1000;

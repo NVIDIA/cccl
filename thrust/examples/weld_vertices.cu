@@ -37,7 +37,8 @@
 // define a 2d float vector
 using vec2 = cuda::std::tuple<float, float>;
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   // allocate memory for input mesh representation
   thrust::device_vector<vec2> input(9);

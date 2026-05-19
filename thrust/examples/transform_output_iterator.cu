@@ -17,7 +17,8 @@ struct Functor
   }
 };
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   thrust::host_vector<float> u{4, 3, 2, 1};
   thrust::host_vector<float> v{-1, 1, 1, -1};
