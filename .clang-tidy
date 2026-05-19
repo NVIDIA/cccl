@@ -43,7 +43,6 @@ Checks:
   - '-bugprone-empty-catch'
   - '-bugprone-return-const-ref-from-parameter'
   - '-bugprone-use-after-move'
-  - '-bugprone-sizeof-expression'
   - '-bugprone-undefined-memory-manipulation'
   - '-bugprone-assignment-in-if-condition'
   - '-bugprone-unchecked-optional-access'
