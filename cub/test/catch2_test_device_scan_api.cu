@@ -38,3 +38,131 @@ C2H_TEST("Device inclusive scan works", "[scan][device]")
 
   REQUIRE(expected == out);
 }
+
+C2H_TEST("cub::DeviceScan::ExclusiveSum non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> input(1);
+  thrust::device_vector<int> out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveSum(nullptr, temp_storage_bytes, input.begin(), out.begin(), 1);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveSum non-env in-place API", "[scan][device]")
+{
+  thrust::device_vector<int> data(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveSum(nullptr, temp_storage_bytes, data.begin(), 1);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveScan non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> input(1);
+  thrust::device_vector<int> out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveScan(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveScan non-env in-place API", "[scan][device]")
+{
+  thrust::device_vector<int> data(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, 5, 1);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> input(1);
+  thrust::device_vector<int> out(1);
+  thrust::device_vector<int> init_storage(1, 5);
+  auto future_init          = cub::FutureValue<int>(thrust::raw_pointer_cast(init_storage.data()));
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveScan(
+    nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, future_init, 1);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env in-place API", "[scan][device]")
+{
+  thrust::device_vector<int> data(1);
+  thrust::device_vector<int> init_storage(1, 5);
+  auto future_init          = cub::FutureValue<int>(thrust::raw_pointer_cast(init_storage.data()));
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, future_init, 1);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveSum non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> input(1);
+  thrust::device_vector<int> out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveSum(nullptr, temp_storage_bytes, input.begin(), out.begin(), 1);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveSum non-env in-place API", "[scan][device]")
+{
+  thrust::device_vector<int> data(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveSum(nullptr, temp_storage_bytes, data.begin(), 1);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScan non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> input(1);
+  thrust::device_vector<int> out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 1);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScan non-env in-place API", "[scan][device]")
+{
+  thrust::device_vector<int> data(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, 1);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScanInit non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> input(1);
+  thrust::device_vector<int> out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveScanInit(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveSumByKey non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> keys(1);
+  thrust::device_vector<int> values_in(1);
+  thrust::device_vector<int> values_out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveSumByKey(
+    nullptr, temp_storage_bytes, keys.begin(), values_in.begin(), values_out.begin(), 1);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveScanByKey non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> keys(1);
+  thrust::device_vector<int> values_in(1);
+  thrust::device_vector<int> values_out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::ExclusiveScanByKey(
+    nullptr, temp_storage_bytes, keys.begin(), values_in.begin(), values_out.begin(), cuda::std::plus<>{}, 5, 1);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveSumByKey non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> keys(1);
+  thrust::device_vector<int> values_in(1);
+  thrust::device_vector<int> values_out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveSumByKey(
+    nullptr, temp_storage_bytes, keys.begin(), values_in.begin(), values_out.begin(), 1);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScanByKey non-env API", "[scan][device]")
+{
+  thrust::device_vector<int> keys(1);
+  thrust::device_vector<int> values_in(1);
+  thrust::device_vector<int> values_out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveScanByKey(
+    nullptr, temp_storage_bytes, keys.begin(), values_in.begin(), values_out.begin(), cuda::std::plus<>{}, 1);
+}
