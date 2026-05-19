@@ -39,8 +39,9 @@ template <class _InputIter>
 [[nodiscard]] _CCCL_API constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
+  // Must clone branches because sized_sentinel_for may require the type to be complete
   if constexpr (__has_random_access_traversal<_InputIter>) // To support pointers to incomplete types
-  {
+  { // NOLINT(bugprone-branch-clone)
     return __last - __first;
   }
   else if constexpr (sized_sentinel_for<_InputIter, _InputIter>)

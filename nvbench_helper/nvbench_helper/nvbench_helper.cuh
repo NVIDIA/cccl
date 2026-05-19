@@ -176,7 +176,7 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
     case bit_entropy::_0_201:
       return 0.201;
     case bit_entropy::_0_000:
-      return 0.0;
+      [[fallthrough]];
     default:
       return 0.0;
   }

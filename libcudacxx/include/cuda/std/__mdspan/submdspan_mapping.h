@@ -149,7 +149,7 @@ _CCCL_API constexpr bool __is_unit_stride_slice()
 {
   // [mdspan.sub.map.common-9.1]
   if constexpr (__is_strided_slice_stride_of_one<_SliceType>)
-  {
+  { // NOLINT(bugprone-branch-clone)
     return true;
   }
   // [mdspan.sub.map.common-9.2]

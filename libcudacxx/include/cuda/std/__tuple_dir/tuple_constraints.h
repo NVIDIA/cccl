@@ -170,7 +170,8 @@ template <class... _Types, class... _UTypes>
 __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
 {
   if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
-  { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
+  { // NOLINT(bugprone-branch-clone)
+    // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
     return __select_constructor::__none;
   }
   else if constexpr (sizeof...(_Types) == 0)
@@ -205,7 +206,7 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
     return __can_construct_implicitly ? __select_constructor::__implicit : __select_constructor::__explicit;
   }
   else
-  {
+  { // NOLINT(bugprone-branch-clone)
     return __select_constructor::__none;
   }
 }
@@ -215,7 +216,8 @@ template <class _Type, class _UType>
 __tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType>) noexcept
 {
   if constexpr (is_same_v<remove_cvref_t<_UType>, tuple<_Type>>)
-  { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
+  { // NOLINT(bugprone-branch-clone)
+    // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
     return __select_constructor::__none;
   }
   else if constexpr (!is_constructible_v<_Type, _UType>)
@@ -237,7 +239,7 @@ template <class... _Types, class... _UTypes>
 __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
 {
   if constexpr (!(sizeof...(_UTypes) < sizeof...(_Types)))
-  {
+  { // NOLINT(bugprone-branch-clone)
     return __select_constructor::__none;
   }
   else if constexpr (sizeof...(_UTypes) == 0)
@@ -250,7 +252,7 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
     using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
     if constexpr (::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
                   == __select_constructor::__none)
-    {
+    { // NOLINT(bugprone-branch-clone)
       return __select_constructor::__none;
     }
     else if constexpr (::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
@@ -276,7 +278,8 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indice
 {
   using ::cuda::std::get;
   if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
-  { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+  { // NOLINT(bugprone-branch-clone)
+    // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
     return __select_constructor::__none;
   }
   else if constexpr (is_same_v<_UTuple, const tuple<_Types...>&> || is_same_v<_UTuple, tuple<_Types...>&&>)
@@ -316,7 +319,8 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Type>, __tuple_indices<_I
 {
   using ::cuda::std::get;
   if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
-  { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+  { // NOLINT(bugprone-branch-clone)
+    // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
     return __select_constructor::__none;
   }
   else if constexpr (is_same_v<_UTuple, const tuple<_Type>&> || is_same_v<_UTuple, tuple<_Type>&&>)
@@ -351,7 +355,8 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Type>, __tuple_indices<_I
     return __select_constructor::__none;
   }
   else
-  { // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
+  { // NOLINT(bugprone-branch-clone)
+    // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
     // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
     // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
     return is_convertible_v<decltype(get<_Index>(::cuda::std::declval<_UTuple>())), _Type>
@@ -489,7 +494,8 @@ template <bool _IsConst, class... _Types, class... _UTypes>
 __tuple_select_converting_assignable(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
 {
   if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
-  { // [tuple.assign]-15.1: sizeof...(Types) equals sizeof...(UTypes) and
+  { // NOLINT(bugprone-branch-clone)
+    // [tuple.assign]-15.1: sizeof...(Types) equals sizeof...(UTypes) and
     return __select_assignment::__none;
   }
   else if constexpr (is_same_v<tuple<_Types...>, tuple<_UTypes...>>)
@@ -534,7 +540,8 @@ __tuple_select_tuple_like_assignable(__tuple_types<_Types...>, __tuple_indices<_
 {
   using ::cuda::std::get;
   if constexpr (is_same_v<remove_cvref_t<_UTuple>, tuple<_Types...>>)
-  { // [tuple.assign]-39.1: different-from<UTuple, tuple>
+  { // NOLINT(bugprone-branch-clone)
+    // [tuple.assign]-39.1: different-from<UTuple, tuple>
     return __select_assignment::__none;
   }
   else if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)

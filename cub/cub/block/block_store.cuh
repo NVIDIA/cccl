@@ -826,12 +826,7 @@ public:
       block_exchange(temp_storage).BlockedToStriped(items);
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE)
-    {
-      block_exchange(temp_storage).BlockedToWarpStriped(items);
-      StoreDirectWarpStriped(linear_tid, block_itr, items);
-    }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
       block_exchange(temp_storage).BlockedToWarpStriped(items);
       StoreDirectWarpStriped(linear_tid, block_itr, items);
@@ -893,17 +888,13 @@ public:
   template <typename OutputIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
   {
-    if constexpr (Algorithm == BLOCK_STORE_DIRECT)
+    if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_VECTORIZE)
     {
       StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
-    }
-    else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
-    {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
@@ -916,18 +907,7 @@ public:
       __syncthreads();
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE)
-    {
-      block_exchange(temp_storage).BlockedToWarpStriped(items);
-      if (linear_tid == 0)
-      {
-        // Move through volatile smem as a workaround to prevent RF spilling on subsequent loads
-        temp_storage.valid_items = valid_items;
-      }
-      __syncthreads();
-      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
-    }
-    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
       block_exchange(temp_storage).BlockedToWarpStriped(items);
       if (linear_tid == 0)

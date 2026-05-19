@@ -60,7 +60,7 @@ template <class _Fn, class... _Iterators>
   using _Constraints = __zip_iter_constraints<_Iterators...>;
   if constexpr (!::cuda::std::is_reference_v<
                   ::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iterators>...>>)
-  {
+  { // NOLINT(bugprone-branch-clone)
     return ::cuda::std::input_iterator_tag{};
   }
   else if constexpr (_Constraints::__all_random_access)
