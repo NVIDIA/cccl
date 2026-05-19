@@ -50,6 +50,11 @@ else()
   return()
 endif()
 
+if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
+  message("-- clang-cuda does not support the -dc simd codegen tests")
+  return()
+endif()
+
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
@@ -66,15 +71,31 @@ if (
   list(APPEND simd_codegen_sass_cuda_archs 100 120)
 endif()
 
+if (
+  CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9
+  AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
+)
+  list(APPEND simd_codegen_sass_cuda_archs 120f)
+endif()
+
 #-----------------------------------------------------------------------------------------------------------------------
 # HELPER FUNCTIONS
 
 function(simd_codegen_set_cuda_arch target_name arch)
-  set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES "${arch}")
+  if (arch MATCHES "[af]$")
+    set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES OFF)
+    target_compile_options(
+      ${target_name}
+      PRIVATE "--generate-code=arch=compute_${arch},code=sm_${arch}"
+    )
+  else()
+    set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES "${arch}")
+  endif()
 endfunction()
 
 # Given the test file content, extract the SM archs that are checked for.
 # SMXX:       any arch
+# SM1XX:      any SM100-series arch
 # SM100-PLUS: SM100 and newer
 function(simd_codegen_get_sass_check_prefixes out_var test_contents arch)
   set(check_prefixes SMXX)
@@ -88,6 +109,18 @@ function(simd_codegen_get_sass_check_prefixes out_var test_contents arch)
   )
   if (has_arch_prefix)
     list(APPEND check_prefixes "${arch_prefix}")
+  endif()
+
+  if (arch MATCHES "^1[0-9][0-9][af]?$")
+    string(
+      REGEX MATCH
+      "; SM1XX(:|-LABEL:|-NOT:|-NEXT:|-SAME:|-DAG:|-COUNT:|-EMPTY:)"
+      has_sm1xx_prefix
+      "${test_contents}"
+    )
+    if (has_sm1xx_prefix)
+      list(APPEND check_prefixes SM1XX)
+    endif()
   endif()
 
   string(
@@ -205,7 +238,7 @@ function(simd_codegen_add_sass_test test_path)
 endfunction()
 
 set(simd_codegen_sass_tests)
-file(GLOB simd_codegen_sass_tests "*.cu")
+file(GLOB simd_codegen_sass_tests "floating_point/*.cu" "integer/*.cu")
 
 add_subdirectory(load_store)
 

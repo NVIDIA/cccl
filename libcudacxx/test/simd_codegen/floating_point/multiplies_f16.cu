@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/std/__simd_> // IWYU pragma: keep
-#include <cuda/std/array>
 
 #if _CCCL_HAS_NVFP16()
 
@@ -17,34 +16,22 @@
 
 namespace simd = cuda::std::simd;
 
-using Vec_f16_4 = simd::basic_vec<__half, simd::fixed_size<4>>;
+using Vec_f16_x4 = simd::basic_vec<__half, simd::fixed_size<4>>;
 
-extern "C" __global__ void test_operator_multiplies_f16_4(const __half* lhs, const __half* rhs, __half* out)
+__device__ Vec_f16_x4 test_operator_multiplies_f16_x4(Vec_f16_x4 lhs, Vec_f16_x4 rhs)
 {
-  const cuda::std::array<__half, 4> lhs_values{lhs[0], lhs[1], lhs[2], lhs[3]};
-  const cuda::std::array<__half, 4> rhs_values{rhs[0], rhs[1], rhs[2], rhs[3]};
-
-  const Vec_f16_4 lhs_vec(lhs_values);
-  const Vec_f16_4 rhs_vec(rhs_values);
-  const Vec_f16_4 result = lhs_vec * rhs_vec;
-
-  out[0] = result[0];
-  out[1] = result[1];
-  out[2] = result[2];
-  out[3] = result[3];
+  return lhs * rhs;
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : test_operator_multiplies_f16_4
+; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_multiplies_f16_x4.*}}
 ; SM80: {{.*(HMUL2|HFMA2).*}}
 ; SM80: {{.*(HMUL2|HFMA2).*}}
 ; SM90: {{.*(HMUL2|HFMA2).*}}
 ; SM90: {{.*(HMUL2|HFMA2).*}}
-; SM100: {{.*(HMUL2|HFMA2).*}}
-; SM100: {{.*(HMUL2|HFMA2).*}}
-; SM120: {{.*(HMUL2|HFMA2).*}}
-; SM120: {{.*(HMUL2|HFMA2).*}}
+; SM1XX: {{.*(HMUL2|HFMA2).*}}
+; SM1XX: {{.*(HMUL2|HFMA2).*}}
 
 */
 
