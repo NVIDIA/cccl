@@ -1078,15 +1078,23 @@ struct policy_selector
     const int max_input_bytes  = (::cuda::std::max) (key_size, accum_size);
     const int combined_input_bytes = key_size + accum_size;
 
-    const auto default_items =
-      max_input_bytes <= 8
-        ? 9
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
-
-    const auto policy500_items =
-      max_input_bytes <= 8
-        ? 6
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
+    auto default_policy =
+      [&](CacheLoadModifier load_modifier,
+          int delay_ctor_key_size,
+          bool delay_ctor_key_is_primitive_or_trivially_copyable) -> scan_by_key_policy {
+      const auto items_per_thread =
+        max_input_bytes <= 8
+          ? 9
+          : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
+      return {256,
+              items_per_thread,
+              BLOCK_LOAD_WARP_TRANSPOSE,
+              load_modifier,
+              BLOCK_STORE_WARP_TRANSPOSE,
+              BLOCK_SCAN_WARP_SCANS,
+              default_reduce_by_key_delay_constructor_policy(
+                delay_ctor_key_size, sizeof(int), delay_ctor_key_is_primitive_or_trivially_copyable, true)};
+    };
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -1572,26 +1580,12 @@ struct policy_selector
 #endif
       }
 
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_DEFAULT, value_size, value_is_primitive_or_trivially_copyable);
     }
 
-    if (cc >= ::cuda::compute_capability{8, 6}) // && cc < ::cuda::compute_capability{9, 0}
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_CA,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), accum_size, true, accum_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_CA, accum_size, accum_is_primitive_or_trivially_copyable);
     }
 
     if (cc >= ::cuda::compute_capability{8, 0})
@@ -1893,36 +1887,27 @@ struct policy_selector
 #endif
       }
 
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_DEFAULT, value_size, value_is_primitive_or_trivially_copyable);
     }
 
-    if (cc >= ::cuda::compute_capability{6, 0})
+    if (cc >= ::cuda::compute_capability{5, 2})
     {
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_CA,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), accum_size, true, accum_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_CA, accum_size, accum_is_primitive_or_trivially_copyable);
     }
 
+    // SM50
+    const auto items_per_thread =
+      max_input_bytes <= 8
+        ? 6
+        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
     return {128,
-            policy500_items,
+            items_per_thread,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_CA,
             BLOCK_STORE_WARP_TRANSPOSE,
             BLOCK_SCAN_WARP_SCANS,
             default_reduce_by_key_delay_constructor_policy(
-              sizeof(int), accum_size, true, accum_is_primitive_or_trivially_copyable)};
+              accum_size, sizeof(int), accum_is_primitive_or_trivially_copyable, true)};
   }
 };
 
