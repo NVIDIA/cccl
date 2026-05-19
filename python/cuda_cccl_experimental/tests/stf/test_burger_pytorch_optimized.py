@@ -64,7 +64,7 @@ from torch._higher_order_ops import while_loop as hop_while_loop
 
 BURGER_PLOT = os.environ.get("BURGER_PLOT", "") != ""
 
-CG_CHECK_EVERY = 4   # sync every N CG iterations
+CG_CHECK_EVERY = 4  # sync every N CG iterations
 NEWTON_CHECK_EVERY = 1  # Newton converges in a few iterations; fine to sync each
 
 
@@ -586,12 +586,15 @@ def test_burger_pytorch_optimized_while_hop():
     assert not torch.isinf(tX_hop).any()
     rel = (tX_hop - tX_py).norm() / tX_py.norm()
     assert rel.item() < 1e-10, f"HOP vs Python CG results disagree: rel={rel.item()}"
-    print(f"HOP composition OK: {it_hop.item()} iters, rel_diff vs Python = {rel.item():.2e}")
+    print(
+        f"HOP composition OK: {it_hop.item()} iters, rel_diff vs Python = {rel.item():.2e}"
+    )
 
     # Steady-state timing
     N_REPS = 30
     torch.cuda.synchronize()
     import time as _time
+
     t0 = _time.perf_counter()
     for _ in range(N_REPS):
         tX_hop, _ = cg_solve_hop(tA_val, tB, N, max_cg, cg_tol_sq)

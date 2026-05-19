@@ -34,7 +34,9 @@ class _TaskGraphContext:
     def task(self, *args: Any, **kwargs: Any) -> Any:
         """Create a task only while the owning graph is recording."""
         if not self._owner._recording:
-            raise RuntimeError("ctx.task(...) is only valid while the owning task_graph is recording")
+            raise RuntimeError(
+                "ctx.task(...) is only valid while the owning task_graph is recording"
+            )
         return self._ctx.task(*args, **kwargs)
 
 
@@ -59,14 +61,18 @@ class TaskGraph:
         if self._recording:
             raise RuntimeError("task graph is already recording")
         if self._record_attempted:
-            raise RuntimeError("task graph has already been recorded; create a new task_graph()")
+            raise RuntimeError(
+                "task graph has already been recorded; create a new task_graph()"
+            )
 
         self._record_attempted = True
         self.context.raw.push()
         self._recording = True
         return None
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> bool:
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+    ) -> bool:
         try:
             if exc_type is None:
                 self._raw_graph = self.context.raw.pop_prologue_shared()
@@ -110,7 +116,9 @@ class TaskGraph:
         if self._failed:
             raise RuntimeError("task graph recording failed; create a new task_graph()")
         if self._raw_graph is None:
-            raise RuntimeError("task graph has no recorded graph yet; use `with graph:` first")
+            raise RuntimeError(
+                "task graph has no recorded graph yet; use `with graph:` first"
+            )
         return self._raw_graph
 
     def launch(self) -> None:

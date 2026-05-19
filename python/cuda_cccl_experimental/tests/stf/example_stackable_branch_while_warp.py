@@ -31,7 +31,6 @@ from warp import stf_experimental as wp_stf
 
 import cuda.stf as stf
 
-
 N = 64
 WHILE_ITERS = 2
 BRANCHES = (
@@ -113,7 +112,9 @@ def build_picture_graph():
                     y,
                     residual,
                 ):
-                    wp.launch(seed_branch, dim=N, inputs=[x, y, residual, bias], stream=stream)
+                    wp.launch(
+                        seed_branch, dim=N, inputs=[x, y, residual, bias], stream=stream
+                    )
 
                 with ctx.while_loop() as loop:
                     with wp_stf.task(ctx, l_y.rw(), l_residual.rw()) as (
@@ -121,7 +122,9 @@ def build_picture_graph():
                         y,
                         residual,
                     ):
-                        wp.launch(relax_branch, dim=N, inputs=[y, residual], stream=stream)
+                        wp.launch(
+                            relax_branch, dim=N, inputs=[y, residual], stream=stream
+                        )
 
                     loop.continue_while(l_residual, ">", 0.5)
             print(f"built branch: {name}")

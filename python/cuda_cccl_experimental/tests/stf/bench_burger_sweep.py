@@ -130,8 +130,12 @@ def main():
     p.add_argument("--substeps", type=int, default=10)
     p.add_argument("--timeout", type=int, default=900)
     p.add_argument("--out-json", default="burger_scaling.json")
-    p.add_argument("--out-plot", default=os.environ.get("BURGER_PLOT_OUT", "burger_scaling.png"))
-    p.add_argument("--skip-run", action="store_true", help="only re-plot from existing JSON")
+    p.add_argument(
+        "--out-plot", default=os.environ.get("BURGER_PLOT_OUT", "burger_scaling.png")
+    )
+    p.add_argument(
+        "--skip-run", action="store_true", help="only re-plot from existing JSON"
+    )
     p.add_argument(
         "--merge",
         action="store_true",
@@ -194,10 +198,26 @@ def _plot(results: list[dict], out_path: Path):
         by_variant.setdefault(r["variant"], []).append((r["N"], r["ms_per_step"]))
 
     style = {
-        "optimized":     {"marker": "s", "color": "#1f77b4", "label": "optimized (torch.compile + K=4 sync)"},
-        "optimized_hop": {"marker": "P", "color": "#9467bd", "label": "optimized + HOP while_loop CG"},
-        "stf_pytorch":   {"marker": "^", "color": "#2ca02c", "label": "STF + PyTorch tasks"},
-        "stf_numba":     {"marker": "D", "color": "#d62728", "label": "STF + Numba kernels"},
+        "optimized": {
+            "marker": "s",
+            "color": "#1f77b4",
+            "label": "optimized (torch.compile + K=4 sync)",
+        },
+        "optimized_hop": {
+            "marker": "P",
+            "color": "#9467bd",
+            "label": "optimized + HOP while_loop CG",
+        },
+        "stf_pytorch": {
+            "marker": "^",
+            "color": "#2ca02c",
+            "label": "STF + PyTorch tasks",
+        },
+        "stf_numba": {
+            "marker": "D",
+            "color": "#d62728",
+            "label": "STF + Numba kernels",
+        },
     }
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
@@ -209,7 +229,9 @@ def _plot(results: list[dict], out_path: Path):
         xs = [n for n, _ in pts]
         ys = [ms for _, ms in pts]
         s = style.get(variant, {"marker": "x", "color": "k", "label": variant})
-        ax.plot(xs, ys, marker=s["marker"], color=s["color"], label=s["label"], linewidth=2)
+        ax.plot(
+            xs, ys, marker=s["marker"], color=s["color"], label=s["label"], linewidth=2
+        )
     ax.set_xscale("log", base=2)
     ax.set_yscale("log")
     ax.set_xlabel("grid size N")
@@ -235,8 +257,17 @@ def _plot(results: list[dict], out_path: Path):
             if not xs:
                 continue
             s = style.get(variant, {"marker": "x", "color": "k", "label": variant})
-            ax.plot(xs, ys, marker=s["marker"], color=s["color"], label=s["label"], linewidth=2)
-        ax.axhline(1.0, color="#888888", linestyle="--", linewidth=1, label="optimized (1.0x)")
+            ax.plot(
+                xs,
+                ys,
+                marker=s["marker"],
+                color=s["color"],
+                label=s["label"],
+                linewidth=2,
+            )
+        ax.axhline(
+            1.0, color="#888888", linestyle="--", linewidth=1, label="optimized (1.0x)"
+        )
         ax.set_xscale("log", base=2)
         ax.set_xlabel("grid size N")
         ax.set_ylabel("speedup vs optimized PyTorch")
@@ -244,7 +275,9 @@ def _plot(results: list[dict], out_path: Path):
         ax.grid(True, which="both", alpha=0.3)
         ax.legend(fontsize="small")
     else:
-        ax.text(0.5, 0.5, "(optimized variant not in results)", ha="center", va="center")
+        ax.text(
+            0.5, 0.5, "(optimized variant not in results)", ha="center", va="center"
+        )
         ax.axis("off")
 
     fig.tight_layout()
@@ -255,7 +288,9 @@ def _plot(results: list[dict], out_path: Path):
     print()
     print("Summary (ms/step):")
     variants_in_order = [
-        v for v in ("optimized", "optimized_hop", "stf_pytorch", "stf_numba") if v in by_variant
+        v
+        for v in ("optimized", "optimized_hop", "stf_pytorch", "stf_numba")
+        if v in by_variant
     ]
     all_ns = sorted({n for pts in by_variant.values() for n, _ in pts})
     header = f"  {'N':>8}  " + "  ".join(f"{v:>14s}" for v in variants_in_order)
