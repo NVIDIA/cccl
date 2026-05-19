@@ -78,7 +78,8 @@ sort_unordered_results(thrust::host_vector<float> h_res_keys, thrust::host_vecto
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
-int main(int argc, char** argv)
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
 {
   int num_items = 10240;
   int k         = 10;

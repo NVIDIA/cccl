@@ -18,7 +18,8 @@ struct abs_diff
   }
 };
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   thrust::device_vector<float> d_a = {1.0, 2.0, 3.0, 4.0};
   thrust::device_vector<float> d_b = {2.0, 4.0, 3.0, 0.0};

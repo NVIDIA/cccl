@@ -41,7 +41,8 @@ std::bitset<64> to_binary_representation(custom_t value)
   return std::bitset<64>{bits};
 }
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   std::cout << "This example illustrates use of radix sort with custom type.\n";
   std::cout << "Let's define a simple structure of the following form:\n\n";

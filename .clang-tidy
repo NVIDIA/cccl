@@ -31,7 +31,6 @@ Checks:
   - 'clang-diagnostic-*'
   - 'bugprone-*'
   - '-bugprone-misplaced-widening-cast'
-  - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-branch-clone'
   - '-bugprone-argument-comment'
@@ -304,5 +303,4 @@ CheckOptions:
   bugprone-reserved-identifier.AllowedIdentifiers: '^_CCCL.*'
   performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
   performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
-  bugprone-exception-escape.CheckMain: false
 ...

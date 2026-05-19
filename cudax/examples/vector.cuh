@@ -93,7 +93,7 @@ private:
     using __cv_vector = ::cuda::std::__maybe_const<_Kind == __detail::__param_kind::_in, vector>;
 
   public:
-    explicit __action(::cuda::stream_ref __str, __cv_vector& __v) noexcept
+    explicit __action(::cuda::stream_ref __str, __cv_vector& __v)
         : __str_(__str)
         , __v_(__v)
     {
@@ -102,7 +102,7 @@ private:
 
     __action(__action&&) = delete;
 
-    ~__action()
+    ~__action() // NOLINT(bugprone-exception-escape)
     {
       __v_.sync_device_to_host(__str_, _Kind);
     }
@@ -118,20 +118,20 @@ private:
   };
 
   [[nodiscard]] friend __action<__detail::__param_kind::_inout>
-  transform_launch_argument(::cuda::stream_ref __str, vector& __v) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, vector& __v)
   {
     return __action<__detail::__param_kind::_inout>{__str, __v};
   }
 
   [[nodiscard]] friend __action<__detail::__param_kind::_in>
-  transform_launch_argument(::cuda::stream_ref __str, const vector& __v) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, const vector& __v)
   {
     return __action<__detail::__param_kind::_in>{__str, __v};
   }
 
   template <__detail::__param_kind _Kind>
   [[nodiscard]] friend __action<_Kind>
-  transform_launch_argument(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b)
   {
     return __action<_Kind>{__str, __b.__val};
   }

@@ -60,7 +60,8 @@ void print(const std::string& s, const Vector& v)
   std::cout << '\n';
 }
 
-int main()
+// TODO(jfaibussowit): Remove when CI clang-tidy is bumped to clang-22
+int main() // NOLINT(bugprone-exception-escape)
 {
   thrust::device_vector<int> d_counts = {3, 5, 2, 0, 1, 3, 4, 2, 4};
   thrust::device_vector<int> d_values = {1, 2, 3, 4, 5, 6, 7, 8, 9};
