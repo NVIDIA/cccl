@@ -17,6 +17,7 @@
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -324,7 +325,8 @@ c2h::host_vector<T> sorted_top_k(const c2h::host_vector<T>& in, int k)
 template <typename Container>
 auto to_span(Container&& v)
 {
-  return cuda::std::span{cuda::std::to_address(v.data()), v.size()};
+  using element_t = cuda::std::remove_pointer_t<decltype(cuda::std::to_address(v.data()))>;
+  return cuda::std::span<element_t>{cuda::std::to_address(v.data()), v.size()};
 }
 
 // --- Post-processing / comparison ---

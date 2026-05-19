@@ -360,8 +360,7 @@ C2H_TEST("block_topk_sieve correctly selects on plain random inputs",
   static constexpr int items_per_thread  = 5;
   static constexpr int tile_size         = threads_per_block * items_per_thread;
 
-  const c2h::seed_t seed = C2H_SEED(2);
-  rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+  rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(2).get()));
 
   c2h::host_vector<key_t> h_in = random_keys_centered<key_t>(tile_size, rng);
 
@@ -400,8 +399,7 @@ C2H_TEST("block_topk_sieve preserves keys bit-faithfully across FP edge cases",
   static constexpr int tile_size         = threads_per_block * items_per_thread;
   static_assert(tile_size >= 4, "FP edge-case poke needs at least 4 slots in h_in");
 
-  const c2h::seed_t seed = C2H_SEED(1);
-  rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+  rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
   c2h::host_vector<key_t> h_in = distinct_keys<key_t>(tile_size, rng);
   h_in[0]                      = static_cast<key_t>(-0.0);
   h_in[1]                      = static_cast<key_t>(+0.0);
@@ -495,15 +493,13 @@ C2H_TEST("block_topk_sieve::select_* selects the right top-k on a full tile",
   // Split fixed/random so the seed loop only fans out on the random draw.
   SECTION("fixed boundary_key")
   {
-    const c2h::seed_t seed = C2H_SEED(1);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
     const key_t boundary_key = GENERATE_COPY(boundary_key_generator<key_t>());
     run_check(rng, boundary_key);
   }
   SECTION("random boundary_key")
   {
-    const c2h::seed_t seed = C2H_SEED(2);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(2).get()));
     const key_t boundary_key = random_boundary_key<key_t>(rng);
     run_check(rng, boundary_key);
   }
@@ -553,15 +549,13 @@ C2H_TEST("block_topk_sieve handles partial tiles correctly", "[block][topk][rank
   // Split the boundary_key loop, see test 3.
   SECTION("fixed boundary_key")
   {
-    const c2h::seed_t seed = C2H_SEED(1);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
     const key_t boundary_key = GENERATE_COPY(boundary_key_generator<key_t>());
     run_check(rng, boundary_key);
   }
   SECTION("random boundary_key")
   {
-    const c2h::seed_t seed = C2H_SEED(2);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(2).get()));
     const key_t boundary_key = random_boundary_key<key_t>(rng);
     run_check(rng, boundary_key);
   }
@@ -641,15 +635,13 @@ C2H_TEST("block_topk_sieve resolves primary ties via a secondary refine", "[bloc
   // Split the boundary_key loop, see test 3.
   SECTION("fixed boundary_key")
   {
-    const c2h::seed_t seed = C2H_SEED(1);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
     const primary_t boundary_key = GENERATE_COPY(boundary_key_generator<primary_t>());
     run_check(rng, boundary_key);
   }
   SECTION("random boundary_key")
   {
-    const c2h::seed_t seed = C2H_SEED(2);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(2).get()));
     const primary_t boundary_key = random_boundary_key<primary_t>(rng);
     run_check(rng, boundary_key);
   }
@@ -717,8 +709,7 @@ C2H_TEST("block_topk_sieve produces the same selection across bit-window splits"
     // deterministically. `> 0` keeps `has_ties()` true to `hi == 0`.
     const int overhang = GENERATE_COPY(overhang_generator(k >= tile_size, {1, (tile_size - k) / 2}));
     // `key_t` is unsigned -- only the random draw applies.
-    const c2h::seed_t seed = C2H_SEED(1);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
     const key_t boundary_key = random_boundary_key<key_t>(rng);
     CAPTURE(k, overhang, boundary_key);
 
@@ -733,9 +724,8 @@ C2H_TEST("block_topk_sieve produces the same selection across bit-window splits"
     // byte still ties after the first `select_max`, but the next refine
     // over [16, 24) fully orders them, firing the iter-2 `!has_ties()`
     // break and skipping windows [8, 16) and [0, 8).
-    const int k            = GENERATE_COPY(values<int>({1, 11, tile_size / 4, tile_size - 1}));
-    const c2h::seed_t seed = C2H_SEED(1);
-    rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+    const int k = GENERATE_COPY(values<int>({1, 11, tile_size / 4, tile_size - 1}));
+    rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
     CAPTURE(k);
 
     c2h::host_vector<key_t> h_in = distinct_keys<key_t>(tile_size, rng);
@@ -762,8 +752,7 @@ C2H_TEST("block_topk_sieve handles k == 0", "[block][topk][rank][edge]")
   static constexpr bool blocked_input    = true;
   static constexpr bool select_max       = true;
 
-  const c2h::seed_t seed = C2H_SEED(1);
-  rng_t rng(static_cast<cuda::std::uint32_t>(seed.get()));
+  rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
   c2h::host_vector<key_t> h_in = distinct_keys<key_t>(tile_size, rng);
   c2h::device_vector<key_t> d_in(h_in);
   c2h::device_vector<key_t> d_keys_out(tile_size, key_t{});
