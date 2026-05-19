@@ -202,7 +202,7 @@ public:
     // static_assert(dimensions <= 2, "unsupported yet.");
     //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
-    auto decorated_s = dst_memory_node.getDataStream();
+    auto decorated_s = dst_memory_node.getDataStream(bctx.async_resources().get_place_resources());
     auto op          = stream_async_op(bctx, decorated_s, prereqs);
 
     if (bctx.generate_event_symbols())

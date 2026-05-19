@@ -103,7 +103,7 @@ public:
     if (is_capture_enabled())
     {
       // Select a stream from the pool
-      capture_stream = get_exec_place().getStream(true).stream;
+      capture_stream = get_exec_place().getStream(ctx.async_resources().get_place_resources(), true).stream;
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // New path: capture directly into ctx_graph via cudaStreamBeginCaptureToGraph.
       // ctx_graph is mutated for the full capture interval, so graph_mutex must
@@ -404,7 +404,7 @@ public:
       //
 
       // Get a stream from the pool associated to the execution place
-      capture_stream = get_exec_place().getStream(true).stream;
+      capture_stream = get_exec_place().getStream(ctx.async_resources().get_place_resources(), true).stream;
 
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // New path: capture directly into ctx_graph. ctx_graph is mutated for
@@ -760,7 +760,8 @@ public:
       auto lock = lock_ctx_graph();
 
       // Get a stream from the pool associated to the execution place
-      cudaStream_t capture_stream = get_exec_place().getStream(true).stream;
+      cudaStream_t capture_stream =
+        get_exec_place().getStream(ctx.async_resources().get_place_resources(), true).stream;
 
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // New path: capture directly into ctx_graph.
