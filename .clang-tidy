@@ -34,7 +34,6 @@ Checks:
   - '-bugprone-narrowing-conversions'
   - '-bugprone-misplaced-widening-cast'
   - '-bugprone-suspicious-include'
-  - '-bugprone-multi-level-implicit-pointer-conversion'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-forwarding-reference-overload'
