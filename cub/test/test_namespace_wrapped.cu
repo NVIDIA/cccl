@@ -24,6 +24,7 @@
 // Test that we can use a few common utilities and algorithms from wrapped
 // Thrust/CUB namespaces at runtime. More extensive testing is performed by the
 // header tests and the check_namespace.cmake test.
+
 int main(int argc, char** argv)
 {
   CommandLineArgs args(argc, argv);
