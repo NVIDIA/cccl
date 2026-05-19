@@ -32,8 +32,7 @@ void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator firs
 {
   using size_type  = ::cuda::std::iter_difference_t<Iterator>;
   const auto count = ::cuda::std::distance(first, last);
-  cuda_cub::transform_n(
-    policy, ::cuda::counting_iterator<size_type>{}, count, first, ::cuda::proclaim_copyable_arguments(tabulate_op));
+  cuda_cub::transform_n(policy, ::cuda::counting_iterator<size_type>{}, count, first, tabulate_op);
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
