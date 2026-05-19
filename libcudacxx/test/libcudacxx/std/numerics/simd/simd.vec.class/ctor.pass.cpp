@@ -473,7 +473,7 @@ TEST_FUNC constexpr void test_enable_abi_boundary()
   // the disabled specialization still exposes value_type / abi_type / mask_type
   static_assert(cuda::std::is_same_v<DisabledVec::value_type, T>);
   static_assert(cuda::std::is_same_v<DisabledVec::abi_type, simd::fixed_size<65>>);
-  static_assert(cuda::std::is_same_v<DisabledVec::mask_type, simd::basic_mask<sizeof(T), simd::fixed_size<65>>>);
+  static_assert(cuda::std::is_same_v<DisabledVec::mask_type, simd::mask<T, 65>>);
 }
 
 DEFINE_BASIC_VEC_TEST()
