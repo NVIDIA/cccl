@@ -1632,7 +1632,8 @@ struct Proxy
 
   _CCCL_TEMPLATE(class U)
   _CCCL_REQUIRES(cuda::std::constructible_from<T, U&&>)
-  TEST_FUNC constexpr Proxy(U&& u)
+  TEST_FUNC constexpr Proxy( // NOLINT(bugprone-forwarding-reference-overload)
+    U&& u)
       : data{cuda::std::forward<U>(u)}
   {}
 
@@ -1641,7 +1642,8 @@ struct Proxy
   _CCCL_TEMPLATE(class Other)
   _CCCL_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
                   && cuda::std::constructible_from<T, decltype(cuda::std::declval<Other>().getData())>) )
-  TEST_FUNC constexpr Proxy(Other&& other)
+  TEST_FUNC constexpr Proxy( // NOLINT(bugprone-forwarding-reference-overload)
+    Other&& other)
       : data{cuda::std::forward<Other>(other).getData()}
   {}
 
@@ -1801,7 +1803,8 @@ struct ProxyIterator : ProxyIteratorBase<Base>
 
   _CCCL_TEMPLATE(class T)
   _CCCL_REQUIRES(cuda::std::constructible_from<Base, T&&>)
-  TEST_FUNC constexpr ProxyIterator(T&& t)
+  TEST_FUNC constexpr ProxyIterator( // NOLINT(bugprone-forwarding-reference-overload)
+    T&& t)
       : base_{cuda::std::forward<T>(t)}
   {}
 

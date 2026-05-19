@@ -139,7 +139,8 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf( // NOLINT(bugprone-forwarding-reference-overload)
+    _Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
@@ -207,7 +208,8 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf( // NOLINT(bugprone-forwarding-reference-overload)
+    _Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
@@ -308,7 +310,8 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf( // NOLINT(bugprone-forwarding-reference-overload)
+    _Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 

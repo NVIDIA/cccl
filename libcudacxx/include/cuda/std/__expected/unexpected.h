@@ -68,7 +68,8 @@ public:
   _CCCL_TEMPLATE(class _Error = _Err)
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Error>, unexpected> && !is_same_v<remove_cvref_t<_Error>, in_place_t>
                   && is_constructible_v<_Err, _Error>) )
-  _CCCL_API constexpr explicit unexpected(_Error&& __error) noexcept(is_nothrow_constructible_v<_Err, _Error>)
+  _CCCL_API constexpr explicit unexpected( // NOLINT(bugprone-forwarding-reference-overload)
+    _Error&& __error) noexcept(is_nothrow_constructible_v<_Err, _Error>)
       : __unex_(::cuda::std::forward<_Error>(__error))
   {}
 

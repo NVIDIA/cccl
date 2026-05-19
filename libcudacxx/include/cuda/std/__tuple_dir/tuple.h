@@ -226,7 +226,8 @@ public:
             enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0,
             // NOLINTEND(modernize-type-traits)
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
-  _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
+  _CCCL_API constexpr tuple( // NOLINT(bugprone-forwarding-reference-overload)
+    _TupleOfIteratorReferences&& __t)
       : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{})
   {}
 
@@ -318,7 +319,8 @@ public:
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
             __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
             enable_if_t<__can_construct_implicitly<_Trait>, int>       = 0>
-  _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
+  _CCCL_API constexpr tuple( // NOLINT(bugprone-forwarding-reference-overload)
+    _Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
@@ -326,7 +328,8 @@ public:
             enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
             __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
             enable_if_t<__can_construct_explicitly<_Trait>, int>       = 0>
-  _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
+  _CCCL_API explicit constexpr tuple( // NOLINT(bugprone-forwarding-reference-overload)
+    _Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 

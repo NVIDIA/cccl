@@ -86,8 +86,9 @@ public:
                  // The following constraint seems to trip up a lot of compilers, so leave it out.
                  // _CCCL_AND ::cuda::std::constructible_from<_Up, _Tp>
                  _CCCL_AND __satisfies<_Up, _Interface>)
-  _CCCL_HOST_DEVICE_API __basic_any(_Tp&& __value) noexcept(
-    __is_small<_Up, __movable>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
+  _CCCL_HOST_DEVICE_API __basic_any( // NOLINT(bugprone-forwarding-reference-overload)
+    _Tp&& __value) noexcept(__is_small<_Up, __movable>(__size_, __align_)
+                            && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
   {
     __emplace<_Up>(static_cast<_Tp&&>(__value));
   }

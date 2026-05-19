@@ -141,13 +141,15 @@ public:
 
   _CCCL_TEMPLATE(class _Up = value_type)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, _Up>)
-  _CCCL_API constexpr optional(_Up&& __v)
+  _CCCL_API constexpr optional( // NOLINT(bugprone-forwarding-reference-overload)
+    _Up&& __v)
       : __base(in_place_t{}, ::cuda::std::forward<_Up>(__v))
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_explictly_constructible<_Tp, _Up>)
-  _CCCL_API constexpr explicit optional(_Up&& __v)
+  _CCCL_API constexpr explicit optional( // NOLINT(bugprone-forwarding-reference-overload)
+    _Up&& __v)
       : __base(in_place_t{}, ::cuda::std::forward<_Up>(__v))
   {}
 

@@ -42,8 +42,10 @@ private:
 public:
   __return_type_wrapper() = delete;
 
-  template <class _Fn, class = ::cuda::std::enable_if_t<::cuda::std::is_same_v<::cuda::std::decay_t<_Fn>, _DecayFn>>>
-  _CCCL_API constexpr explicit __return_type_wrapper(_Fn&& __fn) noexcept
+  _CCCL_TEMPLATE(class _Fn)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::decay_t<_Fn>, _DecayFn>)
+  _CCCL_API constexpr explicit __return_type_wrapper( // NOLINT(bugprone-forwarding-reference-overload)
+    _Fn&& __fn) noexcept
       : __fn_(::cuda::std::forward<_Fn>(__fn))
   {}
 

@@ -169,7 +169,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
-  _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __mdspan_ebco( // NOLINT(bugprone-forwarding-reference-overload)
+    _Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
@@ -267,7 +268,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES((!is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>) _CCCL_AND __is_constructible_from_one_arg<_Arg1>)
-  _CCCL_API constexpr __mdspan_ebco(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __mdspan_ebco( // NOLINT(bugprone-forwarding-reference-overload)
+    _Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
       , __base3()
