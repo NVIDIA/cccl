@@ -33,7 +33,7 @@ struct execution_policy_marker
 // 1. DerivedPolicy is derived from thrust::execution_policy below
 // 2. generic::foo takes thrust::execution_policy as a parameter
 template <typename DerivedPolicy>
-struct execution_policy_base : execution_policy_marker
+struct execution_policy_base : execution_policy_marker // NOLINT(bugprone-crtp-constructor-accessibility)
 {};
 
 template <typename DerivedPolicy>
@@ -112,8 +112,11 @@ constexpr _CCCL_HOST_DEVICE const DerivedPolicy& derived_cast(const execution_po
 //! \see host_execution_policy
 //! \see device_execution_policy
 template <typename DerivedPolicy>
-struct execution_policy : detail::execution_policy_base<DerivedPolicy>
-{};
+struct execution_policy // NOLINT(bugprone-crtp-constructor-accessibility)
+    : detail::execution_policy_base<DerivedPolicy>
+{
+  // This CRTP base is a documented user extension point, so its implicit constructor is intentionally public.
+};
 
 //! \}
 

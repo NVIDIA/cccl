@@ -170,12 +170,12 @@ public:
 
   /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
    */
-  _CCCL_HOST_DEVICE pointer()
+  _CCCL_HOST_DEVICE pointer() // NOLINT(bugprone-crtp-constructor-accessibility)
       : super_t(static_cast<Element*>(nullptr))
   {}
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE pointer(::cuda::std::nullptr_t)
+  _CCCL_HOST_DEVICE pointer(::cuda::std::nullptr_t) // NOLINT(bugprone-crtp-constructor-accessibility)
       : super_t(static_cast<Element*>(nullptr))
   {}
 

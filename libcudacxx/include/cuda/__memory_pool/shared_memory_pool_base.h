@@ -77,7 +77,8 @@ class __shared_memory_pool_base
 {
   ::cuda::mr::__shared_block_ptr<__pool_destroyer> __ref_;
 
-protected:
+  friend _Derived;
+
   _CCCL_HOST_API explicit __shared_memory_pool_base(no_init_t) noexcept
       : __memory_pool_base(::cudaMemPool_t{})
   {}
@@ -87,7 +88,6 @@ protected:
       , __ref_(__pool)
   {}
 
-public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_API __shared_memory_pool_base(const __shared_memory_pool_base& __other) noexcept
       : __memory_pool_base(__other.__pool_)
@@ -100,6 +100,7 @@ public:
       , __ref_(::cuda::std::move(__other.__ref_))
   {}
 
+public:
   __shared_memory_pool_base& operator=(const __shared_memory_pool_base&) = default;
   __shared_memory_pool_base& operator=(__shared_memory_pool_base&&)      = default;
 

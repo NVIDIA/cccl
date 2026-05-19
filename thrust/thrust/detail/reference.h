@@ -77,9 +77,9 @@ public:
   using pointer    = Pointer;
   using value_type = ::cuda::std::remove_cvref_t<Element>;
 
-  reference(reference const&) = default;
+  reference(reference const&) = default; // NOLINT(bugprone-crtp-constructor-accessibility)
 
-  reference(reference&&) = default;
+  reference(reference&&) = default; // NOLINT(bugprone-crtp-constructor-accessibility)
 
   /*! Construct a \p reference from another \p reference whose pointer type is
    *  convertible to \p pointer. After this \p reference is constructed, it
@@ -110,7 +110,7 @@ public:
    *
    *  \param ptr A \p pointer to construct from.
    */
-  _CCCL_HOST_DEVICE explicit reference(pointer const& p)
+  _CCCL_HOST_DEVICE explicit reference(pointer const& p) // NOLINT(bugprone-crtp-constructor-accessibility)
       : ptr(p)
   {}
 

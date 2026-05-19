@@ -63,6 +63,13 @@ _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Type>)
 template <class _Level>
 struct hierarchy_level_base
 {
+private:
+  hierarchy_level_base() = default;
+  friend _Level;
+  template <class>
+  friend struct __native_hierarchy_level_base;
+
+public:
   using level_type = _Level;
 
   template <class _InLevel>
@@ -224,9 +231,6 @@ struct hierarchy_level_base
 #  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
 private:
-  template <class>
-  friend struct __native_hierarchy_level_base;
-
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class... _Args>
   [[nodiscard]] _CCCL_API static constexpr auto __dims_as_impl(const _Args&... __args) noexcept

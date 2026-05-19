@@ -205,6 +205,10 @@ using __try_property_result_t =
 template <class _Derived>
 struct __with_try_get_property
 {
+private:
+  __with_try_get_property() = default;
+  friend _Derived;
+
   template <class _Property>
   [[nodiscard]] _CCCL_HOST_API friend auto try_get_property(const _Derived& __self, _Property) noexcept
     -> __try_property_result_t<_Property>

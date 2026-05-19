@@ -25,7 +25,7 @@ namespace detail
 struct tag;
 
 template <typename DerivedPolicy>
-struct execution_policy;
+struct execution_policy; // NOLINT(bugprone-crtp-constructor-accessibility)
 
 template <>
 struct execution_policy<tag> : system::detail::sequential::execution_policy<tag>
@@ -37,8 +37,10 @@ struct tag : execution_policy<tag>
 {};
 
 template <typename Derived>
-struct execution_policy : system::detail::sequential::execution_policy<Derived>
+struct execution_policy // NOLINT(bugprone-crtp-constructor-accessibility)
+    : system::detail::sequential::execution_policy<Derived>
 {
+  // This CRTP base is a documented user extension point, so its implicit constructor is intentionally public.
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor

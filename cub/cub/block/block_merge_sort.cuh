@@ -209,6 +209,8 @@ public:
   {};
 
   BlockMergeSortStrategy() = delete;
+
+private:
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(unsigned int linear_tid)
       : temp_storage(PrivateStorage())
       , linear_tid(linear_tid)
@@ -219,6 +221,9 @@ public:
       , linear_tid(linear_tid)
   {}
 
+  friend SynchronizationPolicy;
+
+public:
   _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_linear_tid() const
   {
     return linear_tid;

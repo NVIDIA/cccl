@@ -16,6 +16,8 @@ struct custom_type_state_t
   std::size_t val{};
 };
 
+// NOLINTBEGIN(bugprone-crtp-constructor-accessibility)
+
 template <template <typename> class... Policies>
 class custom_type_t
     : public custom_type_state_t
@@ -151,6 +153,8 @@ public:
     return result;
   }
 };
+
+// NOLINTEND(bugprone-crtp-constructor-accessibility)
 } // namespace c2h
 
 template <template <typename> class... Policies>

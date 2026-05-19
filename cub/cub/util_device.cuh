@@ -763,6 +763,9 @@ template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
 struct ChainedPolicy
 {
 private:
+  ChainedPolicy() = default;
+  friend PolicyT;
+
   static constexpr bool have_previous_policy = !::cuda::std::is_same_v<PolicyT, PrevPolicyT>;
 
 public:

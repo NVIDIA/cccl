@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! This enables the resource to be discovered inside a composed
 //! `cuda::std::execution::env` by the `get_memory_resource` customization point.
 template <class _Derived>
-struct memory_resource_base
+struct memory_resource_base // NOLINT(bugprone-crtp-constructor-accessibility)
 {
   [[nodiscard]] _CCCL_API constexpr const _Derived& query(const __get_memory_resource_t&) const noexcept
   {
