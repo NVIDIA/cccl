@@ -68,10 +68,10 @@ public:
   // on top of the pimpl `task` base, so copying it has no meaningful semantics.
   // Contexts (`stream_ctx`, `graph_ctx`, `context`) are pimpl handles and
   // remain copyable.
-  stream_task(const stream_task<>&)              = delete;
-  stream_task<>& operator=(const stream_task<>&) = delete;
-  stream_task(stream_task<>&&)                   = default;
-  stream_task<>& operator=(stream_task<>&&)      = default;
+  stream_task(const stream_task&)              = delete;
+  stream_task<>& operator=(const stream_task&) = delete;
+  stream_task(stream_task&&)                   = default;
+  stream_task<>& operator=(stream_task&&)      = default;
   ~stream_task()                                 = default;
 
   // Returns the stream associated to that task : any asynchronous operation
