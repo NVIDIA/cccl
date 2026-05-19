@@ -1397,8 +1397,8 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT,
-            typename NumItemsT,
+            typename InitValueIterT                                              = InitValueT*,
+            typename NumItemsT                                                   = int,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
@@ -2903,6 +2903,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive prefix sum-by-key of an ``int`` device vector.
   //!
@@ -3035,6 +3036,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive prefix scan-by-key of an ``int`` device vector.
   //!
@@ -3149,6 +3151,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix sum-by-key of an ``int`` device vector.
   //!
@@ -3256,6 +3259,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix scan-by-key of an ``int`` device vector.
   //!
