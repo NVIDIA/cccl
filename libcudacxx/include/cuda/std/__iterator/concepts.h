@@ -375,8 +375,11 @@ _CCCL_CONCEPT weakly_incrementable = _CCCL_FRAGMENT(__weakly_incrementable_, _Ip
 template <class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
   __incrementable_,
-  requires(_Ip __i)(
-    requires(regular<_Ip>), requires(weakly_incrementable<_Ip>), requires(same_as<_Ip, decltype(__i++)>)));
+  requires(_Ip __i)(requires(regular<_Ip>),
+                    requires(weakly_incrementable<_Ip>),
+                    // Requirement is unevaluated, not sure why clang-tidy complains
+                    // NOLINTNEXTLINE(bugprone-pointer-arithmetic-on-polymorphic-object)
+                    requires(same_as<_Ip, decltype(__i++)>)));
 
 template <class _Ip>
 _CCCL_CONCEPT incrementable = _CCCL_FRAGMENT(__incrementable_, _Ip);
