@@ -32,6 +32,8 @@ Checks:
   - 'bugprone-*'
   # We probably want this eventually, but needs discussion
   - '-bugprone-argument-comment'
+  # This is just noise for the most part
+  - '-bugprone-multi-level-implicit-pointer-conversion'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #

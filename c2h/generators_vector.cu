@@ -50,13 +50,14 @@ struct random_to_vec_item_t
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #  define VEC_SPECIALIZATION(T)                                                                                   \
-    template <>                                                                                                   \
-    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
+    temmplate<> void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                     \
     {                                                                                                             \
+      /* NOLINTBEGIN(bugprone-signed-char-misuse) */                                                              \
       const auto* dist = prepare_random_data(seed, data.size());                                                  \
       auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()};      \
       thrust::for_each(                                                                                           \
         device_policy, thrust::counting_iterator<size_t>{0}, thrust::counting_iterator<size_t>{data.size()}, op); \
+      /* NOLINTEND(bugprone-signed-char-misuse) */                                                                \
     }
 
 VEC_SPECIALIZATION(char2);
@@ -150,8 +151,10 @@ struct counter_to_cyclic_vector_t
     template <>                                                                                                 \
     void gen_values_cyclic<VEC_TYPE>(modulo_t mod, ::cuda::std::span<VEC_TYPE> data)                            \
     {                                                                                                           \
+      /* NOLINTBEGIN(bugprone-signed-char-misuse) */                                                            \
       thrust::tabulate(                                                                                         \
         device_policy, data.begin(), data.end(), counter_to_cyclic_vector_t<VEC_TYPE, SCALAR_TYPE>{mod.get()}); \
+      /* NOLINTEND(bugprone-signed-char-misuse) */                                                              \
     }
 
 VEC_GEN_MOD_SPECIALIZATION(short2, short);
