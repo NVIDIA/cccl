@@ -40,7 +40,6 @@ Checks:
   - '-bugprone-branch-clone'
   - '-bugprone-return-const-ref-from-parameter'
   - '-bugprone-use-after-move'
-  - '-bugprone-undefined-memory-manipulation'
   - '-bugprone-unchecked-optional-access'
   - '-bugprone-unintended-char-ostream-output'
   - '-bugprone-casting-through-void'
