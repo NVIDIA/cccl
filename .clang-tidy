@@ -40,7 +40,6 @@ Checks:
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
-  - '-bugprone-empty-catch'
   - '-bugprone-return-const-ref-from-parameter'
   - '-bugprone-use-after-move'
   - '-bugprone-sizeof-expression'

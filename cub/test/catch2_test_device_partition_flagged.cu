@@ -429,4 +429,5 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
 }
