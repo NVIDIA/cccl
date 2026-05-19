@@ -72,7 +72,7 @@ public:
   stream_task<>& operator=(const stream_task&) = delete;
   stream_task(stream_task&&)                   = default;
   stream_task<>& operator=(stream_task&&)      = default;
-  ~stream_task()                                 = default;
+  ~stream_task()                               = default;
 
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
