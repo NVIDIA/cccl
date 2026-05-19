@@ -60,6 +60,9 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     return result;
   }
 
+  // FIXME(bgruber): We must override CUB's accumulator type for backward compatibility until CCCL 4.0. Then we should
+  // switch to calling the CUB public API, which uses __accumulator_t. See also:
+  // https://github.com/NVIDIA/cccl/issues/3993
   using accum_t = thrust::detail::it_value_t<ValuesInIt>;
 
   // Convert to raw pointers if possible:
