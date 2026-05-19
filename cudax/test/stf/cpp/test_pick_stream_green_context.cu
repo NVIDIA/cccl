@@ -114,16 +114,6 @@ int main()
     decorated_stream dstream = gc_place0.getStream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
-
-    // create_stream() returns cudaStream_t; call with place activated so the stream is in the green context
-    {
-      exec_place_scope scope(gc_place0);
-      cudaStream_t created = gc_place0.create_stream();
-      EXPECT(created != nullptr);
-      EXPECT(get_device_from_stream(created) == current_device);
-      verify_stream_green_context(created, view0.g_ctx);
-      cuda_safe_call(cudaStreamDestroy(created));
-    }
   }
 
   // ==========================================================================
@@ -224,7 +214,7 @@ int main()
       auto view           = gc.get_view(0);
       exec_place gc_place = exec_place::green_ctx(view);
 
-      ctx.set_affinity({::std::make_shared<exec_place>(gc_place)});
+      ctx.push_affinity(::std::make_shared<exec_place>(gc_place));
 
       // Context pick_stream() respects the green context affinity
       cudaStream_t stream = ctx.pick_stream();
@@ -250,7 +240,7 @@ int main()
       auto view           = gc.get_view(0);
       exec_place gc_place = exec_place::green_ctx(view);
 
-      gctx.set_affinity({::std::make_shared<exec_place>(gc_place)});
+      gctx.push_affinity(::std::make_shared<exec_place>(gc_place));
 
       // Graph context also respects the execution place abstraction
       cudaStream_t graph_stream = gctx.pick_stream();
