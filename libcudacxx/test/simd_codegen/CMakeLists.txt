@@ -32,6 +32,16 @@ find_program(bash "bash" REQUIRED)
 set(libcudacxx_simd_codegen_tests)
 if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   file(GLOB libcudacxx_simd_codegen_tests "floating_point/*.cu" "integer/*.cu")
+  if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 13.2)
+    file(
+      GLOB libcudacxx_simd_codegen_saturation_add_tests
+      "saturation_add/*.cu"
+    )
+    list(
+      APPEND libcudacxx_simd_codegen_tests
+      ${libcudacxx_simd_codegen_saturation_add_tests}
+    )
+  endif()
 endif()
 
 set(simd_codegen_cuda_archs 80 90)
