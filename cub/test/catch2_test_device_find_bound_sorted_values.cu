@@ -87,6 +87,22 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues works", "[find][device][binary-sear
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound);
 }
 
+C2H_TEST("DeviceFind::LowerBoundSortedValues works with descending order",
+         "[find][device][binary-search]",
+         types)
+{
+  using value_type = c2h::get<0, TestType>;
+  test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, 7492, 749, cuda::std::greater<value_type>{});
+}
+
+C2H_TEST("DeviceFind::UpperBoundSortedValues works with descending order",
+         "[find][device][binary-search]",
+         types)
+{
+  using value_type = c2h::get<0, TestType>;
+  test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, 7492, 749, cuda::std::greater<value_type>{});
+}
+
 C2H_TEST("DeviceFind::LowerBoundSortedValues input sizes", "[find][device][binary-search]")
 {
   using value_type                   = int;
