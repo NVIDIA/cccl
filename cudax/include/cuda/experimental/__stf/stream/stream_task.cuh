@@ -124,9 +124,10 @@ public:
       _CCCL_ASSERT(automatic_stream, "automatic stream is not enabled");
 
       // Get stream for each place in the grid
+      auto& place_res = ctx.async_resources().get_place_resources();
       for (size_t i = 0; i < e_place.size(); ++i)
       {
-        stream_grid.push_back(e_place.get_place(i).getStream(true));
+        stream_grid.push_back(e_place.get_place(i).getStream(place_res, true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -135,8 +136,9 @@ public:
     {
       if (automatic_stream)
       {
-        bool found = false;
-        auto& pool = e_place.get_stream_pool(true);
+        bool found      = false;
+        auto& place_res = ctx.async_resources().get_place_resources();
+        auto& pool      = e_place.get_stream_pool(true, place_res);
 
         // To avoid creating inter stream dependencies when this is not
         // necessary, we try to reuse streams which belong to the pool,
@@ -178,7 +180,7 @@ public:
 
         if (!found)
         {
-          dstream = e_place.getStream(true);
+          dstream = e_place.getStream(place_res, true);
           //    fprintf(stderr, "COULD NOT REUSE ... selected stream ID %ld\n", dstream.id);
         }
       }

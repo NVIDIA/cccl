@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__places/exec/green_context.cuh>
+#include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
@@ -110,14 +111,14 @@ private:
   class impl
   {
   public:
-#if _CCCL_CTK_AT_LEAST(12, 4)
     impl()
     {
+#if _CCCL_CTK_AT_LEAST(12, 4)
       const int ndevices = cuda_try<cudaGetDeviceCount>();
       _CCCL_ASSERT(ndevices > 0, "invalid device count");
       per_device_gc_helper.resize(ndevices, nullptr);
-    }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+    }
 
   public:
     // This memorize what was the last event used to synchronize a pair of streams
@@ -125,6 +126,23 @@ private:
 
     /* Store previously instantiated graphs, indexed by the number of edges and nodes */
     executable_graph_cache cached_graphs;
+
+    /**
+     * @brief Per-place stream-pool registry owned by this handle.
+     *
+     * Stream pools used to live in process-global `exec_place::impl`
+     * singletons, which made their `cudaStream_t` handles outlive any
+     * individual STF context and broke after a `cudaDeviceReset()` (or any
+     * primary-context teardown by an external framework). They now live here,
+     * so each `async_resources_handle` owns the streams it caches and they
+     * are released when the handle is destroyed.
+     *
+     * Caveat for externally-owned places: green-context places carry their
+     * own pool (constructed from the user-provided `green_ctx_view`) and do
+     * not participate in this registry; the user is responsible for keeping
+     * the underlying `CUgreenCtx` alive while the place is in use.
+     */
+    ::cuda::experimental::places::exec_place_resources place_resources;
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
     ::std::vector<::std::shared_ptr<green_context_helper>> per_device_gc_helper;
@@ -145,6 +163,27 @@ public:
   explicit operator bool() const
   {
     return pimpl != nullptr;
+  }
+
+  /**
+   * @brief Default size of stream pools created for places looked up through
+   * this handle's registry. Re-exported here to support call sites that want
+   * to size buffers without including `places.cuh` directly.
+   */
+  static constexpr size_t pool_size = ::cuda::experimental::places::exec_place::impl::pool_size;
+
+  /**
+   * @brief Access the registry of per-place stream pools owned by this handle.
+   *
+   * The returned reference is valid for the lifetime of the handle (PIMPL
+   * shared state). Multiple handles produce independent registries; copies of
+   * the same handle share one registry. The registry itself is internally
+   * mutex-guarded for concurrent lookups.
+   */
+  [[nodiscard]] ::cuda::experimental::places::exec_place_resources& get_place_resources() const
+  {
+    assert(pimpl);
+    return pimpl->place_resources;
   }
 
   bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
@@ -265,3 +304,41 @@ UNITTEST("async_resources_handle is_default_constructible")
 };
 #endif
 } // namespace cuda::experimental::stf
+
+namespace cuda::experimental::places
+{
+// Convenience overloads on `exec_place` that accept an
+// `async_resources_handle` directly. These live here (rather than in
+// places.cuh) to avoid pulling STF headers into the standalone __places
+// layer; they are only available to code that already includes
+// async_resources_handle.cuh.
+
+[[nodiscard]] inline stream_pool&
+exec_place::get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const
+{
+  return get_stream_pool(for_computation, h.get_place_resources());
+}
+
+[[nodiscard]] inline decorated_stream
+exec_place::getStream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
+{
+  return getStream(h.get_place_resources(), for_computation);
+}
+
+[[nodiscard]] inline cudaStream_t
+exec_place::pick_stream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
+{
+  return pick_stream(h.get_place_resources(), for_computation);
+}
+
+[[nodiscard]] inline size_t exec_place::stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const
+{
+  return stream_pool_size(h.get_place_resources());
+}
+
+[[nodiscard]] inline ::std::vector<cudaStream_t>
+exec_place::pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const
+{
+  return pick_all_streams(h.get_place_resources());
+}
+} // namespace cuda::experimental::places
