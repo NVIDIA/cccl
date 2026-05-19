@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/assert.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/limits>
 
@@ -40,23 +39,20 @@ struct __no_bounds
 
 //! @brief Compile-time bounds on an argument value.
 //!
-//! The value type is deduced from the non-type template parameters.
+//! The bound types are deduced from the non-type template parameters.
 //!
 //! @tparam _Lowest The static lower bound.
 //! @tparam _Max The static upper bound.
 template <auto _Lowest, auto _Max>
 struct __static_bounds
 {
-  static_assert(::cuda::std::is_same_v<decltype(_Lowest), decltype(_Max)>, "Lowest and Max must have the same type");
   static_assert(_Lowest <= _Max, "Lowest must be <= Max");
 
-  using value_type = decltype(_Lowest);
-
-  [[nodiscard]] _CCCL_API static constexpr value_type lowest() noexcept
+  [[nodiscard]] _CCCL_API static constexpr decltype(_Lowest) lowest() noexcept
   {
     return _Lowest;
   }
-  [[nodiscard]] _CCCL_API static constexpr value_type max() noexcept
+  [[nodiscard]] _CCCL_API static constexpr decltype(_Max) max() noexcept
   {
     return _Max;
   }
@@ -77,8 +73,6 @@ inline constexpr bool __is_static_bounds_v<__static_bounds<_Lowest, _Max>> = tru
 template <class _Tp>
 struct __runtime_bounds
 {
-  using value_type = _Tp;
-
   _Tp lowest = ::cuda::std::numeric_limits<_Tp>::lowest();
   _Tp max    = ::cuda::std::numeric_limits<_Tp>::max();
 

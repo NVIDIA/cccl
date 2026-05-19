@@ -141,7 +141,7 @@ _CCCL_API constexpr bool __static_bound_in_range() noexcept
   }
   else if constexpr (::cuda::std::is_arithmetic_v<_RawTo> && ::cuda::std::is_arithmetic_v<_RawFrom>)
   {
-    return ::cuda::std::is_same_v<_RawTo, _RawFrom>;
+    return static_cast<_RawFrom>(static_cast<_RawTo>(_Value)) == _Value;
   }
   else
   {

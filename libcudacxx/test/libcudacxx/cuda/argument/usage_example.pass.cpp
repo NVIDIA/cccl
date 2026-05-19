@@ -189,7 +189,7 @@ TEST_FUNC constexpr bool test()
 
   // dynamic_argument float with static bounds
   {
-    constexpr auto seg_size = cuda::argument::__immediate{100.0f, cuda::argument::__bounds<1.0f, 256.0f>()};
+    constexpr auto seg_size = cuda::argument::__immediate{100.0f, cuda::argument::__bounds<1.0f, 256>()};
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(process_segments(seg_size) == 100);
   }
