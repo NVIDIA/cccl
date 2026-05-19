@@ -21,6 +21,7 @@ struct stream_registry_factory_t;
 #include <cuda/std/functional>
 
 #include <algorithm>
+#include <numeric>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -193,11 +194,11 @@ c2h::host_vector<int> sorted_top_k(const c2h::host_vector<int>& h_in, int k, boo
   auto sorted = h_in;
   if (largest)
   {
-    std::sort(sorted.begin(), sorted.end(), cuda::std::greater<int>{});
+    std::partial_sort(sorted.begin(), sorted.begin() + k, sorted.end(), cuda::std::greater<int>{});
   }
   else
   {
-    std::sort(sorted.begin(), sorted.end());
+    std::partial_sort(sorted.begin(), sorted.begin() + k, sorted.end());
   }
   sorted.resize(static_cast<size_t>(k));
   return sorted;
@@ -207,12 +208,9 @@ c2h::host_vector<int> sorted_top_k(const c2h::host_vector<int>& h_in, int k, boo
 C2H_TEST("DeviceTopK::MaxKeys env-alloc returns correct top K", "[topk][env]")
 {
   const int num_items = 256;
-  c2h::host_vector<int> h_in(num_items);
-  for (int i = 0; i < num_items; ++i)
-  {
-    h_in[i] = static_cast<int>((i * 1664525 + 1013904223) % 251);
-  }
-  c2h::device_vector<int> d_in    = h_in;
+  c2h::device_vector<int> d_in(num_items);
+  c2h::gen(C2H_SEED(1), d_in);
+  c2h::host_vector<int> h_in      = d_in;
   c2h::device_vector<int> d_out_k = c2h::device_vector<int>(8);
 
   auto env = topk_requirements();
@@ -228,12 +226,9 @@ C2H_TEST("DeviceTopK::MaxKeys env-alloc returns correct top K", "[topk][env]")
 C2H_TEST("DeviceTopK::MinKeys env-alloc returns correct bottom K", "[topk][env]")
 {
   const int num_items = 256;
-  c2h::host_vector<int> h_in(num_items);
-  for (int i = 0; i < num_items; ++i)
-  {
-    h_in[i] = static_cast<int>((i * 1664525 + 1013904223) % 251);
-  }
-  c2h::device_vector<int> d_in    = h_in;
+  c2h::device_vector<int> d_in(num_items);
+  c2h::gen(C2H_SEED(1), d_in);
+  c2h::host_vector<int> h_in      = d_in;
   c2h::device_vector<int> d_out_k = c2h::device_vector<int>(8);
 
   auto env = topk_requirements();
@@ -249,14 +244,11 @@ C2H_TEST("DeviceTopK::MinKeys env-alloc returns correct bottom K", "[topk][env]"
 C2H_TEST("DeviceTopK::MaxPairs env-alloc returns correct top K", "[topk][env]")
 {
   const int num_items = 256;
-  c2h::host_vector<int> h_keys_in(num_items);
+  c2h::device_vector<int> d_keys_in(num_items);
+  c2h::gen(C2H_SEED(1), d_keys_in);
+  c2h::host_vector<int> h_keys_in = d_keys_in;
   c2h::host_vector<int> h_values_in(num_items);
-  for (int i = 0; i < num_items; ++i)
-  {
-    h_keys_in[i]   = static_cast<int>((i * 1664525 + 1013904223) % 251);
-    h_values_in[i] = i;
-  }
-  c2h::device_vector<int> d_keys_in    = h_keys_in;
+  std::iota(h_values_in.begin(), h_values_in.end(), 0);
   c2h::device_vector<int> d_values_in  = h_values_in;
   c2h::device_vector<int> d_keys_out   = c2h::device_vector<int>(8);
   c2h::device_vector<int> d_values_out = c2h::device_vector<int>(8);
@@ -287,14 +279,11 @@ C2H_TEST("DeviceTopK::MaxPairs env-alloc returns correct top K", "[topk][env]")
 C2H_TEST("DeviceTopK::MinPairs env-alloc returns correct bottom K", "[topk][env]")
 {
   const int num_items = 256;
-  c2h::host_vector<int> h_keys_in(num_items);
+  c2h::device_vector<int> d_keys_in(num_items);
+  c2h::gen(C2H_SEED(1), d_keys_in);
+  c2h::host_vector<int> h_keys_in = d_keys_in;
   c2h::host_vector<int> h_values_in(num_items);
-  for (int i = 0; i < num_items; ++i)
-  {
-    h_keys_in[i]   = static_cast<int>((i * 1664525 + 1013904223) % 251);
-    h_values_in[i] = i;
-  }
-  c2h::device_vector<int> d_keys_in    = h_keys_in;
+  std::iota(h_values_in.begin(), h_values_in.end(), 0);
   c2h::device_vector<int> d_values_in  = h_values_in;
   c2h::device_vector<int> d_keys_out   = c2h::device_vector<int>(8);
   c2h::device_vector<int> d_values_out = c2h::device_vector<int>(8);

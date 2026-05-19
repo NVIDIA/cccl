@@ -52,7 +52,8 @@ C2H_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MaxKeys(d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), k, env);
@@ -81,7 +82,8 @@ C2H_TEST("cub::DeviceTopK::MinKeys env-alloc accepts stream_ref", "[topk][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MinKeys(d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), k, env);
@@ -111,7 +113,8 @@ C2H_TEST("cub::DeviceTopK::MaxPairs env-alloc accepts stream_ref", "[topk][env]"
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MaxPairs(
@@ -148,7 +151,8 @@ C2H_TEST("cub::DeviceTopK::MinPairs env-alloc accepts stream_ref", "[topk][env]"
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MinPairs(
@@ -185,7 +189,8 @@ C2H_TEST("cub::DeviceTopK::MaxKeys env-alloc with decomposer accepts stream_ref"
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MaxKeys(
@@ -220,7 +225,8 @@ C2H_TEST("cub::DeviceTopK::MinKeys env-alloc with decomposer accepts stream_ref"
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MinKeys(
@@ -257,7 +263,8 @@ C2H_TEST("cub::DeviceTopK::MaxPairs env-alloc with decomposer accepts stream_ref
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MaxPairs(
@@ -301,7 +308,8 @@ C2H_TEST("cub::DeviceTopK::MinPairs env-alloc with decomposer accepts stream_ref
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted),
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
+                             cuda::execution::output_ordering::unsorted),
     stream_ref};
 
   auto error = cub::DeviceTopK::MinPairs(
