@@ -47,6 +47,7 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
@@ -709,7 +710,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
-  _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __compressed_movable_box( // NOLINT(bugprone-forwarding-reference-overload)
+    _Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
@@ -802,7 +804,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
-  _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
+  _CCCL_API constexpr __compressed_movable_box( // NOLINT(bugprone-forwarding-reference-overload)
+    _Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
       : __base1(in_place_t{}, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
       , __base3()

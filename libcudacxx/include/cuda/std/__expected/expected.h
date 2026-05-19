@@ -213,7 +213,8 @@ public:
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
                    _CCCL_AND(!__is_cuda_std_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_convertible_v<_Up, _Tp>)
-  _CCCL_API constexpr expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
+  _CCCL_API constexpr expected( // NOLINT(bugprone-forwarding-reference-overload)
+    _Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
       : __base(in_place_t{}, ::cuda::std::forward<_Up>(__u))
   {}
 
@@ -221,7 +222,8 @@ public:
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
                    _CCCL_AND(!__is_cuda_std_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND(!is_convertible_v<_Up, _Tp>))
-  _CCCL_API constexpr explicit expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
+  _CCCL_API constexpr explicit expected( // NOLINT(bugprone-forwarding-reference-overload)
+    _Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
       : __base(in_place_t{}, ::cuda::std::forward<_Up>(__u))
   {}
 

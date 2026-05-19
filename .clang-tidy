@@ -34,7 +34,6 @@ Checks:
   - '-bugprone-misplaced-widening-cast'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
-  - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
   - '-bugprone-use-after-move'
   - '-bugprone-unchecked-optional-access'

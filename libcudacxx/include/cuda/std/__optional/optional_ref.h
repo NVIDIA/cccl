@@ -110,13 +110,15 @@ public:
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_construct_from_rvalue<_Up> _CCCL_AND is_convertible_v<_Up, _Tp&>)
-  _CCCL_API constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
+  _CCCL_API constexpr optional( // NOLINT(bugprone-forwarding-reference-overload)
+    _Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_construct_from_rvalue<_Up> _CCCL_AND(!is_convertible_v<_Up, _Tp&>))
-  _CCCL_API explicit constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
+  _CCCL_API explicit constexpr optional( // NOLINT(bugprone-forwarding-reference-overload)
+    _Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
 

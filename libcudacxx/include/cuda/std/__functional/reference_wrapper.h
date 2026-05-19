@@ -50,7 +50,8 @@ public:
   template <
     class _Up,
     class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(::cuda::std::declval<_Up>()))>>
-  _CCCL_API constexpr reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(::cuda::std::declval<_Up>())))
+  _CCCL_API constexpr reference_wrapper( // NOLINT(bugprone-forwarding-reference-overload)
+    _Up&& __u) noexcept(noexcept(__fun(::cuda::std::declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);
     __f_      = ::cuda::std::addressof(__f);
