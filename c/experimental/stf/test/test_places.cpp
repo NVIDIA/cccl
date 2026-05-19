@@ -388,6 +388,32 @@ C2H_TEST("exec_place_pick_stream standalone", "[places][scope][stream]")
   stf_exec_place_resources_destroy(res);
 }
 
+C2H_TEST("exec_place resources are independent", "[places][scope][stream]")
+{
+  stf_machine_init();
+  stf_exec_place_resources_handle res1 = stf_exec_place_resources_create();
+  stf_exec_place_resources_handle res2 = stf_exec_place_resources_create();
+  REQUIRE(res1 != nullptr);
+  REQUIRE(res2 != nullptr);
+
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
+
+  stf_exec_place_scope_handle scope = stf_exec_place_scope_enter(dev0, 0);
+  REQUIRE(scope != nullptr);
+
+  CUstream stream1 = stf_exec_place_pick_stream(res1, dev0, /*for_computation=*/1);
+  CUstream stream2 = stf_exec_place_pick_stream(res2, dev0, /*for_computation=*/1);
+  REQUIRE(stream1 != nullptr);
+  REQUIRE(stream2 != nullptr);
+  REQUIRE(stream1 != stream2);
+
+  stf_exec_place_scope_exit(scope);
+  stf_exec_place_destroy(dev0);
+  stf_exec_place_resources_destroy(res2);
+  stf_exec_place_resources_destroy(res1);
+}
+
 C2H_TEST("exec_place_pick_stream borrowed from context", "[places][scope][stream][ctx]")
 {
   stf_machine_init();
@@ -403,7 +429,8 @@ C2H_TEST("exec_place_pick_stream borrowed from context", "[places][scope][stream
 
   stf_exec_place_scope_exit(scope);
   stf_exec_place_destroy(dev0);
-  // `res` is borrowed: do NOT destroy it; ctx finalize releases it.
+  // `res` is a non-owning wrapper around context resources; destroy only the wrapper.
+  stf_exec_place_resources_destroy(res);
   stf_ctx_finalize(ctx);
 }
 

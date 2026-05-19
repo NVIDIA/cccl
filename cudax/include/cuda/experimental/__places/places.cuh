@@ -523,7 +523,7 @@ public:
      *                        derived overrides that need access to the
      *                        public-facing place).
      */
-    virtual stream_pool&
+    [[nodiscard]] virtual stream_pool&
     get_stream_pool(bool for_computation, exec_place_resources& res, [[maybe_unused]] const exec_place& self) const
     {
       auto& slot = res.get(this);
@@ -1175,10 +1175,10 @@ public:
         : exec_place::impl(data_place::device(devid))
         , devid_(devid)
     {
-      // Stream pools are no longer owned by the place itself; they live in
-      // an `exec_place_resources` registry (typically embedded in an
-      // `async_resources_handle`) and are looked up on demand by the default
-      // `exec_place::impl::get_stream_pool` override.
+      // Stream pools for this place live in an `exec_place_resources`
+      // registry (typically embedded in an `async_resources_handle`) and are
+      // looked up on demand by the default `exec_place::impl::get_stream_pool`
+      // override; nothing extra needs to be initialized here.
     }
 
     // Grid interface - device is a 1-element grid

@@ -24,6 +24,13 @@
 
 using namespace cuda::experimental::stf;
 
+struct stf_exec_place_resources_opaque_t
+{
+  exec_place_resources* resources;
+  bool owns_resources;
+  bool owns_handle;
+};
+
 namespace
 {
 static_assert(sizeof(pos4) == sizeof(stf_pos4), "pos4 and stf_pos4 must have identical layout for C/C++ interop");
@@ -84,6 +91,10 @@ template <class P>
   {
     return static_cast<stf_data_place_handle>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<P, exec_place_resources>)
+  {
+    static_assert(stf_dependent_false_v<P>, "use to_place_resources_opaque for exec_place_resources handles");
+  }
   else if constexpr (::std::is_same_v<P, context>)
   {
     return static_cast<stf_ctx_handle>(opaque_bits);
@@ -112,10 +123,6 @@ template <class P>
   {
     return static_cast<stf_exec_place_scope_handle>(opaque_bits);
   }
-  else if constexpr (::std::is_same_v<P, exec_place_resources>)
-  {
-    return static_cast<stf_exec_place_resources_handle>(opaque_bits);
-  }
 #if _CCCL_CTK_AT_LEAST(12, 4)
   else if constexpr (::std::is_same_v<P, green_context_helper>)
   {
@@ -132,7 +139,7 @@ template <class P>
 template <class Opaque>
 [[nodiscard]] auto* from_opaque_const(Opaque* h) noexcept
 {
-  static_assert(!is_complete_v<Opaque>);
+  static_assert(!is_complete_v<Opaque> || ::std::is_same_v<Opaque*, stf_exec_place_resources_handle>);
   const void* const opaque_bits = static_cast<const void*>(h);
 
   if constexpr (::std::is_same_v<Opaque*, stf_exec_place_handle>)
@@ -142,6 +149,10 @@ template <class Opaque>
   else if constexpr (::std::is_same_v<Opaque*, stf_data_place_handle>)
   {
     return static_cast<const data_place*>(opaque_bits);
+  }
+  else if constexpr (::std::is_same_v<Opaque*, stf_exec_place_resources_handle>)
+  {
+    return static_cast<const stf_exec_place_resources_opaque_t*>(opaque_bits)->resources;
   }
   else if constexpr (::std::is_same_v<Opaque*, stf_ctx_handle>)
   {
@@ -162,10 +173,6 @@ template <class Opaque>
   else if constexpr (::std::is_same_v<Opaque*, stf_exec_place_scope_handle>)
   {
     return static_cast<const exec_place_scope*>(opaque_bits);
-  }
-  else if constexpr (::std::is_same_v<Opaque*, stf_exec_place_resources_handle>)
-  {
-    return static_cast<const exec_place_resources*>(opaque_bits);
   }
 #if _CCCL_CTK_AT_LEAST(12, 4)
   else if constexpr (::std::is_same_v<Opaque*, stf_green_context_helper_handle>)
@@ -360,16 +367,34 @@ stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle
 
 stf_exec_place_resources_handle stf_exec_place_resources_create(void)
 {
-  return to_opaque(stf_try_allocate([] {
-    return new exec_place_resources{};
-  }));
+  return stf_try_allocate([] {
+    auto* res = new exec_place_resources{};
+    try
+    {
+      return new stf_exec_place_resources_opaque_t{res, true, true};
+    }
+    catch (...)
+    {
+      delete res;
+      throw;
+    }
+  });
 }
 
 void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h)
 {
-  // Borrowed handles obtained via stf_ctx_get_place_resources() must NOT be
-  // passed here; the API contract puts that burden on the caller.
-  delete from_opaque(h);
+  if (h == nullptr)
+  {
+    return;
+  }
+  if (h->owns_resources)
+  {
+    delete h->resources;
+  }
+  if (h->owns_handle)
+  {
+    delete h;
+  }
 }
 
 CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation)
@@ -642,10 +667,10 @@ void stf_ctx_finalize(stf_ctx_handle ctx)
 stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  // Borrowed reference into the context's `async_resources_handle`. The
-  // returned handle is NOT to be destroyed by the caller; its lifetime
-  // matches that of `ctx`.
-  return to_opaque(&from_opaque(ctx)->async_resources().get_place_resources());
+  auto* context_ptr = from_opaque(ctx);
+  return stf_try_allocate([context_ptr] {
+    return new stf_exec_place_resources_opaque_t{&context_ptr->async_resources().get_place_resources(), false, true};
+  });
 }
 
 cudaStream_t stf_fence(stf_ctx_handle ctx)

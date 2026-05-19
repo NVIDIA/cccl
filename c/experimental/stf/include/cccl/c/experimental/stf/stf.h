@@ -112,15 +112,13 @@ typedef struct stf_green_context_helper_opaque_t* stf_green_context_helper_handl
 //! \brief Opaque handle to an active exec_place_scope (RAII context activation).
 typedef struct stf_exec_place_scope_opaque_t* stf_exec_place_scope_handle;
 
-//! \brief Opaque handle to an \c exec_place_resources registry — the standalone
-//! per-place stream-pool registry. Owns the CUDA streams it lazily creates;
-//! they are released when the registry is destroyed.
+//! \brief Opaque handle to an \c exec_place_resources registry.
 //!
-//! The places layer is intentionally independent of STF contexts: callers may
-//! create and destroy their own registry via
-//! stf_exec_place_resources_create() / stf_exec_place_resources_destroy(),
-//! or they may borrow the registry embedded inside an STF context via
-//! stf_ctx_get_place_resources(). Borrowed handles must NOT be destroyed.
+//! Handles returned by stf_exec_place_resources_create() are owned by the
+//! caller and must be released with stf_exec_place_resources_destroy().
+//! Handles returned by stf_ctx_get_place_resources() do not own the context
+//! resources, but the handle itself should still be released with
+//! stf_exec_place_resources_destroy().
 typedef struct stf_exec_place_resources_opaque_t* stf_exec_place_resources_handle;
 
 //! \brief Forward declaration of \c stf_ctx_handle (full definition appears
@@ -222,29 +220,23 @@ stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle
 
 //! \brief Create a fresh, empty exec_place_resources registry.
 //!
-//! Pools are created lazily on first stf_exec_place_pick_stream() with a
-//! given place. The returned handle must be released with
-//! stf_exec_place_resources_destroy(); doing so releases every stream the
-//! registry has handed out.
-//!
-//! This entry point lets the place layer be used standalone, without
-//! creating an STF context.
+//! The registry lazily creates and owns stream pools for places used with
+//! stf_exec_place_pick_stream(). Destroying it releases every stream it owns.
 stf_exec_place_resources_handle stf_exec_place_resources_create(void);
 
-//! \brief Destroy a registry previously returned by
-//! stf_exec_place_resources_create(). MUST NOT be called on a borrowed
-//! handle returned by stf_ctx_get_place_resources(). \p h may be NULL.
+//! \brief Destroy a registry returned by stf_exec_place_resources_create().
+//!
+//! For handles returned by stf_ctx_get_place_resources(), this releases only
+//! the C handle wrapper and leaves the context-owned resources untouched.
+//! \p h may be NULL.
 void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
 
-//! \brief Get a CUDA stream from this place's stream pool, drawn from
-//! \p res. \p for_computation is a hint (non-zero == compute pool, zero ==
-//! data-transfer pool); pooled places (`device(N)`, `host()`) honor it,
-//! self-contained places ignore it.
+//! \brief Pick a CUDA stream for \p h from the pools owned by \p res.
 //!
-//! The returned CUstream is owned by \p res; do NOT destroy it. The stream
-//! remains valid until \p res is destroyed (or, for a borrowed handle,
-//! until the owning STF context is finalized). Must be called while the
-//! place (or a parent) is activated via stf_exec_place_scope_enter.
+//! \p for_computation is a hint: non-zero requests a compute stream, zero
+//! requests a data-transfer stream. The returned stream is owned by \p res and
+//! remains valid until \p res is destroyed, or until the owning context is
+//! finalized for a borrowed registry.
 CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation);
 
 //! \brief Get the sub-place at linear index \p idx.
@@ -556,14 +548,12 @@ stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts);
 
 void stf_ctx_finalize(stf_ctx_handle ctx);
 
-//! \brief Borrow the per-place stream-pool registry embedded in \p ctx's
-//! `async_resources_handle`.
+//! \brief Borrow the per-place stream-pool registry embedded in \p ctx.
 //!
-//! The returned handle is owned by \p ctx and remains valid until
-//! stf_ctx_finalize(). It MUST NOT be passed to
-//! stf_exec_place_resources_destroy(). Useful when STF and standalone
-//! place-layer code want to share a single registry (and therefore the same
-//! stream pools) inside one context's lifetime.
+//! The returned handle refers to resources that remain valid until
+//! stf_ctx_finalize(ctx). Release the handle with
+//! stf_exec_place_resources_destroy(); doing so does not destroy the
+//! context-owned resources.
 stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx);
 
 //!
