@@ -141,6 +141,26 @@ private:
     return basic_vec{__operation(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
+  template <typename _Up, typename _AccumT, typename _Operation>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _AccumT __idot_impl(
+    const basic_vec& __lhs,
+    const basic_vec<_Up, _Abi>& __rhs,
+    const _AccumT __acc,
+    const _Operation& __operation) noexcept
+  {
+    return __operation(__lhs.__s_, __rhs.__s_, __acc);
+  }
+
+  template <typename _Up, typename _AccumT, typename _Operation>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr _AccumT __simd_idot_impl(
+    const basic_vec& __lhs,
+    const basic_vec<_Up, _Abi>& __rhs,
+    const _AccumT __acc,
+    const _Operation& __operation) noexcept
+  {
+    return basic_vec::__idot_impl(__lhs, __rhs, __acc, __operation);
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   __simd_min_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {

@@ -122,6 +122,12 @@
   ((_CCCL_HAS_SIMD_SAT_PTX() || _CCCL_HAS_SIMD_SAT_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
    && !_CCCL_TILE_COMPILATION())
 
+#define _CCCL_HAS_SIMD_IDOT_INTRINSICS() (_CCCL_CUDACC_AT_LEAST(12, 2) && _CCCL_HAS_CTK())
+#define _CCCL_HAS_SIMD_IDOT_PTX()        (__cccl_ptx_isa >= 700ULL)
+#define _CCCL_HAS_SIMD_IDOT()                                                                  \
+  ((_CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()) && _CCCL_CUDA_COMPILATION() \
+   && !_CCCL_TILE_COMPILATION())
+
 // Third party libraries
 
 #if (__has_include(<dlpack/dlpack.h>) || __has_include(<dlpack.h>)) && \

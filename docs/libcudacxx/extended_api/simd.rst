@@ -7,6 +7,7 @@ SIMD
    :hidden:
    :maxdepth: 1
 
+   simd/idot
    simd/saturating_add
 
 .. list-table::
@@ -22,3 +23,8 @@ SIMD
      - Performs element-wise saturating addition of two ``basic_vec`` objects
      - CCCL 3.5.0
      - CUDA 13.5
+
+   * - :ref:`cuda::simd::idot <libcudacxx-extended-api-simd-idot>`
+     - Computes the integer dot product of two ``basic_vec`` objects and an accumulator
+     - CCCL 3.6.0
+     - CUDA 13.6
