@@ -36,7 +36,6 @@ Checks:
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-forwarding-reference-overload'
   - '-bugprone-branch-clone'
-  - '-bugprone-use-after-move'
   - '-bugprone-integer-division'
   - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
