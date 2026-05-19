@@ -47,12 +47,17 @@ inline constexpr bool __is_trivially_copyable_v =
 #if _CCCL_HAS_NVFP16()
 
 template <>
+inline constexpr bool __is_trivially_copyable_v<::__half> = true;
+
+template <>
 inline constexpr bool __is_trivially_copyable_v<::__half2> = true;
 
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
 
+template <>
+inline constexpr bool __is_trivially_copyable_v<::__nv_bfloat16> = true;
 template <>
 inline constexpr bool __is_trivially_copyable_v<::__nv_bfloat162> = true;
 
