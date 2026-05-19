@@ -45,7 +45,6 @@ Checks:
   - '-bugprone-unintended-char-ostream-output'
   - '-bugprone-casting-through-void'
   - '-bugprone-integer-division'
-  - '-bugprone-move-forwarding-reference'
   - '-bugprone-pointer-arithmetic-on-polymorphic-object'
   - '-bugprone-argument-comment'
   # This is just noise
