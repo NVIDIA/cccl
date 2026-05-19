@@ -64,8 +64,10 @@ public:
     return true;
   }
 
-  stream_pool& get_stream_pool(bool) const override
+  stream_pool& get_stream_pool(bool, exec_place_resources&, const exec_place&) const override
   {
+    // User-stream places carry their own single-stream pool and intentionally
+    // ignore the registry.
     return dummy_pool_;
   }
 
