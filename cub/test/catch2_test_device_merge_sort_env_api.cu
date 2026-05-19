@@ -80,7 +80,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortPairs env-based API", "[merge_sort][en
 C2H_TEST("cub::DeviceMergeSort::StableSortKeys env-based API", "[merge_sort][env]")
 {
   // example-begin stable-sort-keys-env
-  auto d_keys = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto d_keys = thrust::device_vector<int>{8, 6, 7, 5, 5, 3, 0, 9};
 
   auto error =
     cub::DeviceMergeSort::StableSortKeys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{});
@@ -89,7 +89,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortKeys env-based API", "[merge_sort][env
     std::cerr << "cub::DeviceMergeSort::StableSortKeys failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> expected_keys{0, 3, 5, 5, 6, 7, 8, 9};
   // example-end stable-sort-keys-env
 
   REQUIRE(error == cudaSuccess);
@@ -161,8 +161,8 @@ C2H_TEST("cub::DeviceMergeSort::SortKeysCopy env-based API", "[merge_sort][env]"
 C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort][env]")
 {
   // example-begin stable-sort-keys-copy-env
-  auto d_keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = thrust::device_vector<int>(7);
+  auto d_keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 5, 3, 0, 9};
+  auto d_keys_out = thrust::device_vector<int>(8);
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -178,10 +178,30 @@ C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort]
     std::cerr << "cub::DeviceMergeSort::StableSortKeysCopy failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> expected_keys{0, 3, 5, 5, 6, 7, 8, 9};
   // example-end stable-sort-keys-copy-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_keys_out == expected_keys);
+}
+
+C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with greater comparator", "[merge_sort][env]")
+{
+  auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto d_values = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+
+  auto error = cub::DeviceMergeSort::SortPairs(
+    d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::greater<int>{});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMergeSort::SortPairs (greater) failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_keys == expected_keys);
+  REQUIRE(d_values == expected_values);
 }
