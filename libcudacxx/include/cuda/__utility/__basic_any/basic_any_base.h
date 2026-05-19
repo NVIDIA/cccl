@@ -85,6 +85,7 @@ struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable 
     return *this;
   }
 
+  // NOLINTNEXTLINE(bugprone-unhandled-self-assignment): yes it does (__assign_from does)
   _CCCL_HOST_DEVICE_API auto operator=(__basic_any_base const& __other) -> __basic_any_base&
   {
     static_cast<__basic_any<_Interface>*>(this)->__assign_from(static_cast<__basic_any<_Interface> const&>(__other));
