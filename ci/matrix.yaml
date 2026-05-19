@@ -79,6 +79,10 @@ workflows:
     - {jobs: ['test'], project: 'python', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X','13.0', '13.X'], py_version: ['3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {jobs: ['test'], project: 'python', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
+    # py3.13 base wheel is needed by the python_experimental (STF) tests below,
+    # which pull it in alongside the experimental wheel. Linux/gcc13 only, matching
+    # the experimental matrix footprint.
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.13'], gpu: 'l4', cxx: 'gcc13'}
     # Python experimental (STF) -- pinned to gcc13, Linux only
     - {jobs: ['test'], project: 'python_experimental', ctk: ['12.X', '13.X'], py_version: ['3.13'], gpu: 'l4', cxx: 'gcc13'}
     # CCCL packaging:
