@@ -1053,7 +1053,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
       ::cuda::std::move(ins.iterator)...);
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
-  {
+  { // NOLINT(bugprone-branch-clone)
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(

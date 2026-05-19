@@ -33,7 +33,6 @@ Checks:
   - '-bugprone-misplaced-widening-cast'
   - '-bugprone-exception-escape'
   - '-bugprone-crtp-constructor-accessibility'
-  - '-bugprone-branch-clone'
   - '-bugprone-argument-comment'
   # This is just noise
   - '-bugprone-signed-char-misuse'
