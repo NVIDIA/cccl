@@ -20,6 +20,7 @@
 
 #include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
+
 CUB_NAMESPACE_BEGIN
 
 /**

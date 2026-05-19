@@ -9,7 +9,7 @@
 
 #include <c2h/catch2_test_helper.h>
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::HistogramEven non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);
@@ -18,7 +18,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven non-env API", "[histogram][device]
     nullptr, temp_storage_bytes, samples.begin(), thrust::raw_pointer_cast(histogram.data()), 2, 0, 10, 1);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven 2D non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::HistogramEven 2D non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);
@@ -36,7 +36,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven 2D non-env API", "[histogram][devi
     sizeof(int));
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramEven non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::MultiHistogramEven non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);
@@ -49,7 +49,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven non-env API", "[histogram][de
     nullptr, temp_storage_bytes, samples.begin(), d_histogram, num_levels, lower_level, upper_level, 1);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramEven 2D non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::MultiHistogramEven 2D non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);
@@ -62,7 +62,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven 2D non-env API", "[histogram]
     nullptr, temp_storage_bytes, samples.begin(), d_histogram, num_levels, lower_level, upper_level, 1, 1, sizeof(int));
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramRange non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::HistogramRange non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);
@@ -78,7 +78,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange non-env API", "[histogram][device
     1);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramRange 2D non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::HistogramRange 2D non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);
@@ -96,7 +96,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange 2D non-env API", "[histogram][dev
     sizeof(int));
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramRange non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::MultiHistogramRange non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);
@@ -109,7 +109,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange non-env API", "[histogram][d
     nullptr, temp_storage_bytes, samples.begin(), d_histogram, num_levels, d_levels, 1);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramRange 2D non-env API", "[histogram][device]")
+C2H_TEST("cub::DeviceHistogram::MultiHistogramRange 2D non-env overload is not ambiguous", "[histogram][device]")
 {
   thrust::device_vector<int> samples(1);
   thrust::device_vector<int> histogram(1);

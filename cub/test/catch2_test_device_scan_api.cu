@@ -39,7 +39,7 @@ C2H_TEST("Device inclusive scan works", "[scan][device]")
   REQUIRE(expected == out);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveSum non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveSum non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
@@ -47,14 +47,14 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum non-env API", "[scan][device]")
   cub::DeviceScan::ExclusiveSum(nullptr, temp_storage_bytes, input.begin(), out.begin(), 1);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveSum non-env in-place API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveSum non-env in-place overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> data(1);
   size_t temp_storage_bytes = 0;
   cub::DeviceScan::ExclusiveSum(nullptr, temp_storage_bytes, data.begin(), 1);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveScan non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
@@ -62,14 +62,14 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan non-env API", "[scan][device]")
   cub::DeviceScan::ExclusiveScan(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan non-env in-place API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveScan non-env in-place overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> data(1);
   size_t temp_storage_bytes = 0;
   cub::DeviceScan::ExclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, 5, 1);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
@@ -80,7 +80,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env API", "[scan][devic
     nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, future_init, 1);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env in-place API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env in-place overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> data(1);
   thrust::device_vector<int> init_storage(1, 5);
@@ -89,7 +89,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan FutureValue non-env in-place API", "[sc
   cub::DeviceScan::ExclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, future_init, 1);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSum non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::InclusiveSum non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
@@ -97,14 +97,14 @@ C2H_TEST("cub::DeviceScan::InclusiveSum non-env API", "[scan][device]")
   cub::DeviceScan::InclusiveSum(nullptr, temp_storage_bytes, input.begin(), out.begin(), 1);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSum non-env in-place API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::InclusiveSum non-env in-place overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> data(1);
   size_t temp_storage_bytes = 0;
   cub::DeviceScan::InclusiveSum(nullptr, temp_storage_bytes, data.begin(), 1);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScan non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::InclusiveScan non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
@@ -112,14 +112,14 @@ C2H_TEST("cub::DeviceScan::InclusiveScan non-env API", "[scan][device]")
   cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 1);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScan non-env in-place API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::InclusiveScan non-env in-place overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> data(1);
   size_t temp_storage_bytes = 0;
   cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, 1);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanInit non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::InclusiveScanInit non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
@@ -127,7 +127,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit non-env API", "[scan][device]")
   cub::DeviceScan::InclusiveScanInit(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveSumByKey non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values_in(1);
@@ -137,7 +137,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSumByKey non-env API", "[scan][device]")
     nullptr, temp_storage_bytes, keys.begin(), values_in.begin(), values_out.begin(), 1);
 }
 
-C2H_TEST("cub::DeviceScan::ExclusiveScanByKey non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::ExclusiveScanByKey non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values_in(1);
@@ -147,7 +147,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScanByKey non-env API", "[scan][device]")
     nullptr, temp_storage_bytes, keys.begin(), values_in.begin(), values_out.begin(), cuda::std::plus<>{}, 5, 1);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSumByKey non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::InclusiveSumByKey non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values_in(1);
@@ -157,7 +157,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSumByKey non-env API", "[scan][device]")
     nullptr, temp_storage_bytes, keys.begin(), values_in.begin(), values_out.begin(), 1);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveScanByKey non-env API", "[scan][device]")
+C2H_TEST("cub::DeviceScan::InclusiveScanByKey non-env overload is not ambiguous", "[scan][device]")
 {
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values_in(1);

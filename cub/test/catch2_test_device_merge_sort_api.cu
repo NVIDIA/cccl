@@ -7,7 +7,7 @@
 
 #include <c2h/catch2_test_helper.h>
 
-C2H_TEST("cub::DeviceMergeSort::SortPairs non-env API", "[merge_sort][device]")
+C2H_TEST("cub::DeviceMergeSort::SortPairs non-env overload is not ambiguous", "[merge_sort][device]")
 {
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values(1);
@@ -15,7 +15,7 @@ C2H_TEST("cub::DeviceMergeSort::SortPairs non-env API", "[merge_sort][device]")
   cub::DeviceMergeSort::SortPairs(nullptr, temp_storage_bytes, keys.begin(), values.begin(), 1, cuda::std::less<>{});
 }
 
-C2H_TEST("cub::DeviceMergeSort::SortPairsCopy non-env API", "[merge_sort][device]")
+C2H_TEST("cub::DeviceMergeSort::SortPairsCopy non-env overload is not ambiguous", "[merge_sort][device]")
 {
   thrust::device_vector<int> keys_in(1);
   thrust::device_vector<int> values_in(1);
@@ -33,14 +33,14 @@ C2H_TEST("cub::DeviceMergeSort::SortPairsCopy non-env API", "[merge_sort][device
     cuda::std::less<>{});
 }
 
-C2H_TEST("cub::DeviceMergeSort::SortKeys non-env API", "[merge_sort][device]")
+C2H_TEST("cub::DeviceMergeSort::SortKeys non-env overload is not ambiguous", "[merge_sort][device]")
 {
   thrust::device_vector<int> keys(1);
   size_t temp_storage_bytes = 0;
   cub::DeviceMergeSort::SortKeys(nullptr, temp_storage_bytes, keys.begin(), 1, cuda::std::less<>{});
 }
 
-C2H_TEST("cub::DeviceMergeSort::SortKeysCopy non-env API", "[merge_sort][device]")
+C2H_TEST("cub::DeviceMergeSort::SortKeysCopy non-env overload is not ambiguous", "[merge_sort][device]")
 {
   thrust::device_vector<int> keys_in(1);
   thrust::device_vector<int> keys_out(1);
@@ -49,7 +49,7 @@ C2H_TEST("cub::DeviceMergeSort::SortKeysCopy non-env API", "[merge_sort][device]
     nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), 1, cuda::std::less<>{});
 }
 
-C2H_TEST("cub::DeviceMergeSort::StableSortPairs non-env API", "[merge_sort][device]")
+C2H_TEST("cub::DeviceMergeSort::StableSortPairs non-env overload is not ambiguous", "[merge_sort][device]")
 {
   thrust::device_vector<int> keys(1);
   thrust::device_vector<int> values(1);
@@ -58,14 +58,14 @@ C2H_TEST("cub::DeviceMergeSort::StableSortPairs non-env API", "[merge_sort][devi
     nullptr, temp_storage_bytes, keys.begin(), values.begin(), 1, cuda::std::less<>{});
 }
 
-C2H_TEST("cub::DeviceMergeSort::StableSortKeys non-env API", "[merge_sort][device]")
+C2H_TEST("cub::DeviceMergeSort::StableSortKeys non-env overload is not ambiguous", "[merge_sort][device]")
 {
   thrust::device_vector<int> keys(1);
   size_t temp_storage_bytes = 0;
   cub::DeviceMergeSort::StableSortKeys(nullptr, temp_storage_bytes, keys.begin(), 1, cuda::std::less<>{});
 }
 
-C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy non-env API", "[merge_sort][device]")
+C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy non-env overload is not ambiguous", "[merge_sort][device]")
 {
   thrust::device_vector<int> keys_in(1);
   thrust::device_vector<int> keys_out(1);
