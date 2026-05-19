@@ -26,17 +26,37 @@ find_program(bash "bash" REQUIRED)
 
 set(libcudacxx_simd_codegen_tests)
 if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  file(GLOB libcudacxx_simd_codegen_tests "*.cu")
+  file(
+    GLOB_RECURSE libcudacxx_simd_codegen_tests
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cu"
+  )
+  list(SORT libcudacxx_simd_codegen_tests)
 endif()
 
 set(simd_codegen_cuda_archs 80 90)
 if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
-  list(APPEND simd_codegen_cuda_archs 100 120)
+  list(APPEND simd_codegen_cuda_archs 100)
+endif()
+if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9)
+  list(APPEND simd_codegen_cuda_archs 103)
+endif()
+if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
+  list(APPEND simd_codegen_cuda_archs 120)
 endif()
 
 function(simd_codegen_add_tests test_path)
-  cmake_path(GET test_path FILENAME test_file)
-  cmake_path(REMOVE_EXTENSION test_file LAST_ONLY OUTPUT_VARIABLE test_name)
+  cmake_path(
+    RELATIVE_PATH test_path
+    BASE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE test_relative_path
+  )
+  cmake_path(
+    REMOVE_EXTENSION test_relative_path
+    LAST_ONLY
+    OUTPUT_VARIABLE test_name
+  )
+  string(REPLACE "/" "_" test_name "${test_name}")
 
   file(READ "${test_path}" test_contents)
   string(

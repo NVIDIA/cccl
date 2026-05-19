@@ -33,5 +33,7 @@ extern "C" __global__ void test_operator_increment_f32_4(const float* in, float*
 ; SMXX-LABEL: {{[[:space:]]*}}Function : test_operator_increment_f32_4
 ; SM100: {{.*FADD2.*}}
 ; SM100: {{.*FADD2.*}}
+; SM103: {{.*FADD2.*}}
+; SM103: {{.*FADD2.*}}
 
 */
