@@ -131,7 +131,7 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
 template <int BlockThreads>
 struct scan_by_key_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::scan_by_key::scan_by_key_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::scan_by_key::scan_by_key_policy
   {
     return {BlockThreads,
             1,
