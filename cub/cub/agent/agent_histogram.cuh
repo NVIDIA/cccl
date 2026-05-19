@@ -307,9 +307,15 @@ struct AgentHistogram
         {
           if (bins[pixel] >= 0)
           {
+            // nvc++ has a bug that it does not treat atomicAdd_block as a builtin and ptxas fails due to unresolved
+            // symbol.
+#if _CCCL_CUDA_COMPILER(NVHPC)
+            atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
             NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
                               (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
                               (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
           }
 
           accumulator = 0;
@@ -320,9 +326,14 @@ struct AgentHistogram
       // Last pixel
       if (bins[pixels_per_thread - 1] >= 0)
       {
+        // nvc++ has a bug that it does not treat atomicAdd_block as a builtin and ptxas fails due to unresolved symbol.
+#if _CCCL_CUDA_COMPILER(NVHPC)
+        atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
         NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
                           (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
                           (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
       }
     }
   }
@@ -345,9 +356,15 @@ struct AgentHistogram
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0)
         {
+          // nvc++ has a bug that it does not treat atomicAdd_block as a builtin and ptxas fails due to unresolved
+          // symbol.
+#if _CCCL_CUDA_COMPILER(NVHPC)
+          atomicAdd(privatized_histograms[ch] + bin, 1);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
           NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
                             (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
                             (atomicAdd(privatized_histograms[ch] + bin, 1);));
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
         }
       }
     }

@@ -79,7 +79,7 @@ static __device__ void test_floating_point(Operation op, T valueA, T valueB)
   auto int_valueB = cub::detail::floating_point_to_comparable_int(op, valueB);
   static_assert(sizeof(int_valueA) == sizeof(T));
   static_assert(sizeof(int_valueB) == sizeof(T));
-  assert(op(valueA, valueB) == op(int_valueA, int_valueB));
+  assert(op(valueA, valueB) == static_cast<T>(op(int_valueA, int_valueB)));
   auto result_valueA = cub::detail::comparable_int_to_floating_point<T>(int_valueA);
   auto result_valueB = cub::detail::comparable_int_to_floating_point<T>(int_valueB);
   static_assert(cuda::std::is_same_v<T, decltype(result_valueA)>);

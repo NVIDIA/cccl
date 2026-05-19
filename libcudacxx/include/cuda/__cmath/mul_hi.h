@@ -100,7 +100,16 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
       {
         [[maybe_unused]] const auto __lhs1 = static_cast<unsigned long long>(__lhs);
         [[maybe_unused]] const auto __rhs1 = static_cast<unsigned long long>(__rhs);
+        // nvc++ doesn't implement __umul64hi and crashes, so we replace it with inline PTX
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+        NV_IF_TARGET(NV_IS_DEVICE, ({
+                       unsigned long long __ret;
+                       asm("mul.hi.u64 %0, %1, %2;" : "=l"(__ret) : "l"(__lhs1), "l"(__rhs1));
+                       return __ret;
+                     }));
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
         NV_IF_TARGET(NV_IS_DEVICE, (return ::__umul64hi(__lhs1, __rhs1);));
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 #  if _CCCL_COMPILER(MSVC)
         NV_IF_TARGET(NV_IS_HOST, (return ::__umulh(__lhs1, __rhs1);));
 #  endif // _CCCL_COMPILER(MSVC)

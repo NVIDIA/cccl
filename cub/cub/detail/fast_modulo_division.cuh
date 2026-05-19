@@ -106,7 +106,16 @@ multiply_extract_higher_bits(T value, R multiplier)
     NV_IS_HOST,
       (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);),
       ({return (sizeof(T) == 8)
+        // nvc++ doesn't implement __umul64hi and crashes, so we replace it with inline PTX
+#if _CCCL_CUDA_COMPILER(NVHPC)
+        ? [value, multiplier](){
+          unsigned long long result;
+          asm("mul.hi.u64 %0, %1, %2;" : "=l"(result) : "l"(value), "l"(multiplier));
+          return static_cast<unsigned_t>(result);
+        }()
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
         ? static_cast<unsigned_t>(__umul64hi(value, multiplier))
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
         : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);}));
   // clang-format on
 }

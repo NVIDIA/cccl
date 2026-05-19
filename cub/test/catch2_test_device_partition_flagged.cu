@@ -351,7 +351,7 @@ struct convertible_from_T
     return a == b.val_;
   }
 
-  __host__ __device__ friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
+  friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
   {
     return os << value.val_;
   }

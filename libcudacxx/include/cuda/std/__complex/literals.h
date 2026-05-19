@@ -43,16 +43,32 @@ inline namespace literals
 {
 inline namespace complex_literals
 {
-_CCCL_API constexpr complex<long double> operator""il(long double __im)
+// nvc++ emits a hard error when long double is used in device code. So, during nvc++ compilation in CUDA mode we need
+// to omit __device__ in the literals signature. Those literals can still be used in device code without any
+// limitations.
+#  if !_CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_API
+#  endif // !_CCCL_CUDA_COMPILER(NVHPC)
+constexpr complex<long double>
+operator""il(long double __im)
 {
   return {0.0l, __im};
 }
-_CCCL_API constexpr complex<long double> operator""il(unsigned long long __im)
+
+#  if !_CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_API
+#  endif // !_CCCL_CUDA_COMPILER(NVHPC)
+constexpr complex<long double>
+operator""il(unsigned long long __im)
 {
   return {0.0l, static_cast<long double>(__im)};
 }
 
-_CCCL_API constexpr complex<double> operator""i(long double __im)
+#  if !_CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_API
+#  endif // !_CCCL_CUDA_COMPILER(NVHPC)
+constexpr complex<double>
+operator""i(long double __im)
 {
   return {0.0, static_cast<double>(__im)};
 }
@@ -62,7 +78,11 @@ _CCCL_API constexpr complex<double> operator""i(unsigned long long __im)
   return {0.0, static_cast<double>(__im)};
 }
 
-_CCCL_API constexpr complex<float> operator""if(long double __im)
+#  if !_CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_API
+#  endif // !_CCCL_CUDA_COMPILER(NVHPC)
+constexpr complex<float>
+operator""if(long double __im)
 {
   return {0.0f, static_cast<float>(__im)};
 }

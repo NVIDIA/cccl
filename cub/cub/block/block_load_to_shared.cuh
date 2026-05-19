@@ -229,6 +229,7 @@ private:
       NV_ANY_TARGET,
       (__syncthreads(); //
        return true;));
+    _CCCL_UNREACHABLE();
   }
 
   // token is only constructible by BlockLoadToShared

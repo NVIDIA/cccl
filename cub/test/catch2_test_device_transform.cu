@@ -726,8 +726,12 @@ __global__ void unrelated_kernel()
 {
   __shared__ int ssmem; // 4 bytes
   extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
-  asm("" : "+r"(ssmem));
-  asm("" : "+r"(dsmem[0]));
+  if (threadIdx.x == 0)
+  {
+    ssmem = 0;
+  }
+  asm("" : : "r"(ssmem));
+  asm("" : : "l"(dsmem));
 }
 
 C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static SMEM consumption", "[device][transform]")
