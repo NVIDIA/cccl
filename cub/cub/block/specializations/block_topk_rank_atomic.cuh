@@ -96,9 +96,20 @@ public:
       if (is_selected || is_candidate)
       {
         const auto selected_offset = static_cast<int>(atomicAdd(&storage.selected_offset[item_class], counter_t{1}));
-        scatter_ranks[i]           = selected_offset < states.k() ? selected_offset : -1;
+        if (selected_offset < states.k())
+        {
+          scatter_ranks[i] = selected_offset;
+          states.set_selected(i);
+        }
+        else
+        {
+          scatter_ranks[i] = -1;
+          states.set_rejected(i);
+        }
       }
     }
+    states.set_num_selected(states.k());
+    states.set_num_candidates(0);
   }
 };
 } // namespace detail

@@ -87,20 +87,20 @@ private:
   template <bool IsFullTile, int BlockDimX, bool IsBlockedInput = true>
   static _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_key_states build(int k, int valid_items) noexcept
   {
-    if constexpr (IsFullTile)
+    [[maybe_unused]] constexpr int tile_items = BlockDimX * ItemsPerThread;
+    // Preconditions
+    _CCCL_ASSERT(k > 0 && k <= tile_items, "k must be in (0, tile_items]");
+    if constexpr (!IsFullTile)
     {
-      // Makes below code easier to read.
-      valid_items = BlockDimX * ItemsPerThread;
+      _CCCL_ASSERT(valid_items >= 0 && valid_items <= tile_items,
+                   "valid_items must be in [0, BlockDimX * ItemsPerThread]");
+      _CCCL_ASSERT(k <= valid_items, "k must be <= valid_items");
     }
-    const auto valid_initial_state =
-      k < valid_items ? (k > 0 ? class_value::candidate : class_value::rejected) : class_value::selected;
     block_topk_key_states states{};
-    states.k_ = ::cuda::std::max(k, 0);
-    // TODO (elstehle): Short-circuit if k is constrained to be positive
-    // TODO (elstehle): Short-circuit if k is greater than the number of items in the tile
-    states.num_candidates_                = (k < valid_items && k > 0) ? valid_items : 0;
-    states.num_selected_                  = k < valid_items ? 0 : valid_items;
-    states.num_valid_                     = valid_items;
+    states.k_                             = k;
+    states.num_candidates_                = IsFullTile ? tile_items : valid_items;
+    states.num_selected_                  = 0;
+    states.num_valid_                     = IsFullTile ? tile_items : valid_items;
     [[maybe_unused]] const int linear_tid = RowMajorTid(BlockDimX, 1, 1);
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
@@ -108,11 +108,11 @@ private:
       [[maybe_unused]] const int idx = IsBlockedInput ? linear_tid * ItemsPerThread + i : i * BlockDimX + linear_tid;
       if constexpr (IsFullTile)
       {
-        states.values_[i] = valid_initial_state;
+        states.values_[i] = class_value::candidate;
       }
       else
       {
-        states.values_[i] = idx < valid_items ? valid_initial_state : class_value::invalid;
+        states.values_[i] = idx < valid_items ? class_value::candidate : class_value::invalid;
       }
     }
     return states;
@@ -168,12 +168,14 @@ private:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void set_selected(int i) noexcept
   {
-    _CCCL_ASSERT(values_[i] == class_value::candidate, "set_selected requires the item to be a candidate");
+    _CCCL_ASSERT(values_[i] == class_value::candidate || values_[i] == class_value::selected,
+                 "set_selected requires the item to be a candidate or already selected");
     values_[i] = class_value::selected;
   }
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void set_rejected(int i) noexcept
   {
-    _CCCL_ASSERT(values_[i] == class_value::candidate, "set_rejected requires the item to be a candidate");
+    _CCCL_ASSERT(values_[i] == class_value::candidate || values_[i] == class_value::rejected,
+                 "set_rejected requires the item to be a candidate or already rejected");
     values_[i] = class_value::rejected;
   }
 
@@ -185,10 +187,6 @@ private:
   friend class block_topk_rank;
   template <int>
   friend class block_topk_rank_atomic;
-  template <typename, int, int, typename>
-  friend class block_topk;
-  template <typename, int, int, typename, int>
-  friend class block_topk_air;
 
 public:
   //! `true` iff at least one item is still `candidate` and the candidate
@@ -228,35 +226,29 @@ template <typename KeyT, int BlockDimX>
 class block_topk_sieve
 {
 private:
-  using algorithm_t = block_topk_sieve_air<KeyT, BlockDimX>;
+  static constexpr int threads_per_block = BlockDimX;
+
+  using algorithm_t  = block_topk_sieve_air<KeyT, BlockDimX>;
+  using TempStorage_ = typename algorithm_t::TempStorage;
 
 public:
-  struct TempStorage
-  {
-    typename algorithm_t::TempStorage sieve_storage;
-  };
+  struct TempStorage : Uninitialized<TempStorage_>
+  {};
 
 private:
-  TempStorage& storage_;
+  TempStorage_& storage_;
 
 public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit block_topk_sieve(TempStorage& storage)
-      : storage_(storage)
+      : storage_(storage.Alias())
   {}
 
 private:
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void fix_bit_range(int& begin_bit, int& end_bit) const noexcept
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void check_preconditions(int begin_bit, int end_bit) const noexcept
   {
-    // TODO (elstehle): Short-circuit if begin_bit is constrained to be non-negative
-    begin_bit = (::cuda::std::max) (begin_bit, 0);
-
-    // TODO (elstehle): Short-circuit if end_bit is constrained to be less than the maximum number of bits in the key
-    // type
-    const int max_bit = int(sizeof(KeyT) * 8);
-    if (end_bit > max_bit)
-    {
-      end_bit = max_bit;
-    }
+    [[maybe_unused]] constexpr int max_bit = int(sizeof(KeyT) * 8);
+    _CCCL_ASSERT(begin_bit >= 0 && begin_bit < max_bit, "begin_bit must be in [0, max_bit)");
+    _CCCL_ASSERT(end_bit > begin_bit && end_bit <= max_bit, "end_bit must be in (begin_bit, max_bit]");
   }
 
 public:
@@ -302,18 +294,13 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_key_states<ItemsPerThread>
   select_max(KeyT (&keys)[ItemsPerThread], int k, int valid_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    if constexpr (!IsFullTile)
-    {
-      _CCCL_ASSERT(valid_items > 0 && valid_items <= BlockDimX * ItemsPerThread,
-                   "valid_items must be in [1, BlockDimX * ItemsPerThread]");
-    }
-    fix_bit_range(begin_bit, end_bit);
+    check_preconditions(begin_bit, end_bit);
     auto states =
       block_topk_key_states<ItemsPerThread>::template build<IsFullTile, BlockDimX, BlockedInput>(k, valid_items);
     if (states.has_ties())
     {
-      algorithm_t(storage_.sieve_storage)
-        .template refine_keys<detail::topk::select::max, IsFullTile>(keys, states, begin_bit, end_bit);
+      algorithm_t(storage_).template refine_keys<detail::topk::select::max, IsFullTile>(
+        keys, states, begin_bit, end_bit);
     }
     return states;
   }
@@ -323,18 +310,13 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_key_states<ItemsPerThread>
   select_min(KeyT (&keys)[ItemsPerThread], int k, int valid_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    if constexpr (!IsFullTile)
-    {
-      _CCCL_ASSERT(valid_items > 0 && valid_items <= BlockDimX * ItemsPerThread,
-                   "valid_items must be in [1, BlockDimX * ItemsPerThread]");
-    }
-    fix_bit_range(begin_bit, end_bit);
+    check_preconditions(begin_bit, end_bit);
     auto states =
       block_topk_key_states<ItemsPerThread>::template build<IsFullTile, BlockDimX, BlockedInput>(k, valid_items);
     if (states.has_ties())
     {
-      algorithm_t(storage_.sieve_storage)
-        .template refine_keys<detail::topk::select::min, IsFullTile, ItemsPerThread>(keys, states, begin_bit, end_bit);
+      algorithm_t(storage_).template refine_keys<detail::topk::select::min, IsFullTile, ItemsPerThread>(
+        keys, states, begin_bit, end_bit);
     }
     return states;
   }
@@ -370,11 +352,10 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    fix_bit_range(begin_bit, end_bit);
+    check_preconditions(begin_bit, end_bit);
     if (states.has_ties())
     {
-      algorithm_t(storage_.sieve_storage)
-        .template refine_keys<detail::topk::select::max, false>(keys, states, begin_bit, end_bit);
+      algorithm_t(storage_).template refine_keys<detail::topk::select::max, false>(keys, states, begin_bit, end_bit);
     }
   }
 
@@ -386,11 +367,10 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    fix_bit_range(begin_bit, end_bit);
+    check_preconditions(begin_bit, end_bit);
     if (states.has_ties())
     {
-      algorithm_t(storage_.sieve_storage)
-        .template refine_keys<detail::topk::select::min, false>(keys, states, begin_bit, end_bit);
+      algorithm_t(storage_).template refine_keys<detail::topk::select::min, false>(keys, states, begin_bit, end_bit);
     }
   }
 };
@@ -509,20 +489,19 @@ template <int BlockDimX>
 class block_topk_rank
 {
 private:
-  using algorithm_t = block_topk_rank_atomic<BlockDimX>;
+  using algorithm_t  = block_topk_rank_atomic<BlockDimX>;
+  using TempStorage_ = typename algorithm_t::TempStorage;
 
 public:
-  struct TempStorage
-  {
-    typename algorithm_t::TempStorage rank_storage;
-  };
+  struct TempStorage : Uninitialized<TempStorage_>
+  {};
 
 private:
-  TempStorage& storage_;
+  TempStorage_& storage_;
 
 public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit block_topk_rank(TempStorage& storage)
-      : storage_(storage)
+      : storage_(storage.Alias())
   {}
 
   //! Final tie-break + scatter-rank emission.
@@ -549,7 +528,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   rank_key_states(block_topk_key_states<ItemsPerThread>& states, int (&scatter_ranks)[ItemsPerThread])
   {
-    algorithm_t(storage_.rank_storage).rank_key_states(states, scatter_ranks);
+    algorithm_t(storage_).rank_key_states(states, scatter_ranks);
   }
 };
 } // namespace detail

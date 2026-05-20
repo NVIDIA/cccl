@@ -41,7 +41,7 @@ namespace detail
 //! the histogram in shared memory is updated. (2) Partitioning scatters the top-k items (key
 //! prefix <= k-th prefix) into shared memory via atomic counters, then each thread reads back
 //! its portion. Supports key-only and key-value selection.
-template <typename KeyT, int ThreadsPerBlock, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 8>
+template <typename KeyT, int ThreadsPerBlock, int ItemsPerThread, typename ValueT = NullType>
 class block_topk_air
 {
 private:
@@ -52,24 +52,32 @@ private:
   static constexpr int threads_per_block = ThreadsPerBlock;
   static constexpr int items_per_thread  = ItemsPerThread;
   static constexpr int tile_items        = threads_per_block * items_per_thread;
-  static constexpr int num_buckets       = int{1u << RadixBits};
 
   // Calculate number of buckets processed per thread
-  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, threads_per_block);
-  static constexpr bool keys_only         = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  using block_sieve_t = block_topk_sieve_air<KeyT, threads_per_block>;
-  using block_rank_t  = block_topk_rank_atomic<threads_per_block>;
+  using block_sieve_t         = block_topk_sieve<KeyT, threads_per_block>;
+  using block_sieve_storage_t = typename block_sieve_t::TempStorage;
+  using block_rank_t          = block_topk_rank<threads_per_block>;
+  using block_rank_storage_t  = typename block_rank_t::TempStorage;
+
+  static_assert(
+    ::cuda::std::is_base_of_v<Uninitialized<typename block_topk_sieve_air<KeyT, threads_per_block>::TempStorage>,
+                              block_sieve_storage_t>,
+    "Wrong sieve specialization");
+  static_assert(::cuda::std::is_base_of_v<Uninitialized<typename block_topk_rank_atomic<threads_per_block>::TempStorage>,
+                                          block_rank_storage_t>,
+                "Wrong rank specialization");
 
   struct TempStorage_
   {
     union
     {
-      typename block_sieve_t::TempStorage sieve_storage;
+      block_sieve_storage_t sieve_storage;
 
       struct
       {
-        typename block_rank_t::TempStorage rank_storage;
+        block_rank_storage_t rank_storage;
         union
         {
           KeyT keys[tile_items];
@@ -110,14 +118,21 @@ private:
       end_bit = max_bit;
     }
 
-    auto states = block_topk_key_states<ItemsPerThread>::template build<IsFullTile, threads_per_block>(k, valid_items);
-    if (!states.has_ties())
-    {
-      // Short-circuit if k is <= 0 or k bigger than the number of (valid) items in the tile
-      return;
-    }
-    block_sieve_t(storage.stage.sieve_storage)
-      .template refine_keys<SelectDirection, IsFullTile>(keys, states, begin_bit, end_bit);
+    auto states = [&] {
+      if constexpr (SelectDirection == detail::topk::select::max)
+      {
+        return block_sieve_t(storage.stage.sieve_storage)
+          .template select_max<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
+      }
+      else
+      {
+        return block_sieve_t(storage.stage.sieve_storage)
+          .template select_min<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
+      }
+    }();
+    // Make sure smem can be reused by the rank stage
+    __syncthreads();
+
     int scatter_indices[items_per_thread];
     block_rank_t(storage.stage.select.rank_storage).rank_key_states(states, scatter_indices);
 

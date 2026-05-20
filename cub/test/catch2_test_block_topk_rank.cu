@@ -83,6 +83,11 @@ __global__ void single_key_kernel(
   }();
   __syncthreads();
 
+  if (threadIdx.x == 0)
+  {
+    g_has_ties[0] = states.has_ties();
+  }
+
   int ranks[ItemsPerThread];
   rank_t(smem.rank).rank_key_states(states, ranks);
 
@@ -92,11 +97,6 @@ __global__ void single_key_kernel(
     {
       g_top[ranks[i]] = keys[i];
     }
-  }
-
-  if (threadIdx.x == 0)
-  {
-    g_has_ties[0] = states.has_ties();
   }
 
   // Round-trip the keys: bit-identical to the input. Bounded store skips OOB.
@@ -409,8 +409,7 @@ C2H_TEST("block_topk_sieve preserves keys bit-faithfully across FP edge cases",
 
   CAPTURE(c2h::type_name<key_t>(), select_max);
 
-  // Partial-tile sections use a `num_valid` prefix; each section also
-  // exercises `k > valid_items`. All-distinct bit patterns ->
+  // Partial-tile sections use a `num_valid` prefix. All-distinct bit patterns ->
   // `has_ties()` must end false.
   const int num_valid = tile_size / 2 + 7;
   c2h::host_vector<key_t> h_in_partial(h_in.begin(), h_in.begin() + num_valid);
@@ -419,7 +418,7 @@ C2H_TEST("block_topk_sieve preserves keys bit-faithfully across FP edge cases",
   {
     static constexpr bool is_full_tile  = true;
     static constexpr bool blocked_input = true;
-    const int k                         = GENERATE_COPY(values<int>({1, tile_size / 4, tile_size - 1, tile_size + 5}));
+    const int k                         = GENERATE_COPY(values<int>({1, tile_size / 4, tile_size - 1}));
     CAPTURE(k);
     const auto h_ref = sorted_top_k<select_max>(h_in, k);
     const bool has_ties =
@@ -432,7 +431,7 @@ C2H_TEST("block_topk_sieve preserves keys bit-faithfully across FP edge cases",
   {
     static constexpr bool is_full_tile  = false;
     static constexpr bool blocked_input = true;
-    const int k                         = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1, num_valid + 5}));
+    const int k                         = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1}));
     CAPTURE(num_valid, k);
     const auto h_ref = sorted_top_k<select_max>(h_in_partial, k);
     const bool has_ties =
@@ -445,7 +444,7 @@ C2H_TEST("block_topk_sieve preserves keys bit-faithfully across FP edge cases",
   {
     static constexpr bool is_full_tile  = false;
     static constexpr bool blocked_input = false;
-    const int k                         = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1, num_valid + 5}));
+    const int k                         = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1}));
     CAPTURE(num_valid, k);
     const auto h_ref = sorted_top_k<select_max>(h_in_partial, k);
     const bool has_ties =
@@ -474,8 +473,7 @@ C2H_TEST("block_topk_sieve::select_* selects the right top-k on a full tile",
   static constexpr bool is_full_tile     = true;
   static constexpr bool blocked_input    = true;
 
-  const int k =
-    GENERATE_COPY(values<int>({1, 13, items_per_thread, threads_per_block, tile_size - 1, tile_size, tile_size + 1}));
+  const int k = GENERATE_COPY(values<int>({1, 13, items_per_thread, threads_per_block, tile_size - 1, tile_size}));
   // 0 (order only) -> `tile_size - k` (every boundary copy overflows);
   // trailing entries go negative when `k > tile_size` but get narrowed off.
   const int overhang = GENERATE_COPY(overhang_generator(k >= tile_size, {0, 1, (tile_size - k) / 2, tile_size - k}));
@@ -518,15 +516,10 @@ C2H_TEST("block_topk_sieve handles partial tiles correctly", "[block][topk][rank
   static constexpr int items_per_thread  = 2;
   static constexpr int tile_size         = threads_per_block * items_per_thread;
 
-  const int num_valid =
-    GENERATE_COPY(values<int>({threads_per_block - 1, threads_per_block, tile_size - items_per_thread, tile_size}));
-  const int k = GENERATE_COPY(
-    values<int>({1, 5, items_per_thread, threads_per_block, num_valid / 2, num_valid - 1, num_valid, num_valid + 1}));
+  const int num_valid = GENERATE_COPY(values<int>({threads_per_block, tile_size - items_per_thread, tile_size}));
+  const int k =
+    GENERATE_COPY(values<int>({1, 5, items_per_thread, threads_per_block, num_valid / 2, num_valid - 1, num_valid}));
   const int overhang = GENERATE_COPY(overhang_generator(k >= num_valid, {0, 1, (num_valid - k) / 2, num_valid - k}));
-  // GENERATE_COPY (not nested SECTIONs) so the boundary_key SECTIONs below
-  // aren't reached through multiple paths -- Catch2's tracker can't handle
-  // that. Variadic form wraps each arg in a SingleValueGenerator (avoiding
-  // the `std::vector<bool>`-backed FixedValuesGenerator).
   const bool blocked_input = GENERATE_COPY(true, false);
 
   // Same shape assertion as test 3: `has_ties == (overhang > 0)`.
@@ -611,13 +604,6 @@ C2H_TEST("block_topk_sieve resolves primary ties via a secondary refine", "[bloc
     REQUIRE(h_has_ties[0] == (overhang > 0));
     REQUIRE_FALSE(h_has_ties[1]);
 
-    // Reference: zip-sort the full input by lex desc so the first k pairs
-    // are the winners; same canonical sort on the kernel output. Unique
-    // secondaries pin both lex sorts, and FP `==` already excuses the
-    // sieve's `+/-0.0` ambiguity on the primary. `thrust::make_zip_iterator`
-    // (not `cuda::`): proxy-ref iterators only sort correctly via thrust's
-    // host backend; `std::sort` and `cuda::zip_iterator` don't compose
-    // until C++20 `std::ranges::sort` (not yet ported to `cuda::std`).
     auto zip_ref = thrust::make_zip_iterator(h_primary.begin(), h_secondary.begin());
     thrust::sort(zip_ref, zip_ref + tile_size, comparator_t<select_max>{});
     h_primary.resize(k);
@@ -736,41 +722,4 @@ C2H_TEST("block_topk_sieve produces the same selection across bit-window splits"
     constexpr int expected_last_hi = key_bits - 2 * window_bits;
     run_compare(h_in, k, expected_last_hi);
   }
-}
-
-// ---------------------------------------------------------------------------
-// 7) `k == 0`: nothing selected, no writes to the output span.
-// ---------------------------------------------------------------------------
-
-C2H_TEST("block_topk_sieve handles k == 0", "[block][topk][rank][edge]")
-{
-  using key_t                            = int;
-  static constexpr int threads_per_block = 32;
-  static constexpr int items_per_thread  = 16;
-  static constexpr int tile_size         = threads_per_block * items_per_thread;
-  static constexpr bool is_full_tile     = true;
-  static constexpr bool blocked_input    = true;
-  static constexpr bool select_max       = true;
-
-  rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
-  c2h::host_vector<key_t> h_in = distinct_keys<key_t>(tile_size, rng);
-  c2h::device_vector<key_t> d_in(h_in);
-  c2h::device_vector<key_t> d_keys_out(tile_size, key_t{});
-  // Real (size-1) backing for the zero-length output span -- gives the kernel
-  // a valid `data()` to consume even though it must never dereference.
-  c2h::device_vector<key_t> d_top(1, cuda::std::numeric_limits<key_t>::min());
-  c2h::device_vector<bool> d_has_ties(1, false);
-
-  single_key_kernel<key_t, threads_per_block, items_per_thread, is_full_tile, blocked_input, select_max>
-    <<<1, threads_per_block>>>(
-      to_span(d_in),
-      to_span(d_keys_out),
-      cuda::std::span<key_t>{cuda::std::to_address(d_top.data()), 0},
-      cuda::std::span<bool, 1>{cuda::std::to_address(d_has_ties.data()), 1});
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  const bool has_ties = c2h::host_vector<bool>(d_has_ties)[0];
-  REQUIRE_FALSE(has_ties);
-  c2h::host_vector<key_t> h_keys_out(d_keys_out);
-  REQUIRE(bit_repr(h_in) == bit_repr(h_keys_out));
 }
