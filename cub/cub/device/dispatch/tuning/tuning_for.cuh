@@ -27,12 +27,12 @@ struct for_policy
   int threads_per_block;
   int items_per_thread;
 
-  _CCCL_API constexpr friend bool operator==(const for_policy& lhs, const for_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const for_policy& lhs, const for_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const for_policy& lhs, const for_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const for_policy& lhs, const for_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -53,7 +53,7 @@ concept for_policy_selector = policy_selector<T, for_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> for_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> for_policy
   {
     return for_policy{256, 2};
   }

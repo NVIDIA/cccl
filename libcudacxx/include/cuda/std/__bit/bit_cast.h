@@ -51,10 +51,10 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 template <class _To, class _From>
 [[nodiscard]] _CCCL_API inline _To __bit_cast_memcpy(const _From& __from) noexcept
 {
-#if !_CCCL_COMPILER(GCC, <=, 7)
+#if !_CCCL_COMPILER(GCC, <=, 8)
   static_assert(::cuda::std::default_initializable<_To>,
-                "bit_cast memcpy fallback requires the destination type to be default initializable");
-#endif // !_CCCL_COMPILER(GCC, <=, 7)
+                "bit_cast memcpy fallback requires the destination type to be default constructible");
+#endif // !_CCCL_COMPILER(GCC, <=, 8)
   _To __temp;
   ::cuda::std::memcpy(&__temp, &__from, sizeof(_To));
   return __temp;

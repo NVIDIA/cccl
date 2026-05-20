@@ -73,14 +73,16 @@ __cccl_search_substring(const _CharT* __first1, const _CharT* __last1, const _Ch
     // Check whether __first1 still has at least __len2 bytes.
     if (__len1 < __len2)
     {
-      return __last1;
+      // return __last1;
+      break;
     }
 
     // Find __f2 the first byte matching in __first1.
     __first1 = _Traits::find(__first1, __len1 - __len2 + 1, __f2);
     if (__first1 == 0)
     {
-      return __last1;
+      // return __last1;
+      break;
     }
 
     // It is faster to compare from the first byte of __first1 even if we
@@ -90,11 +92,14 @@ __cccl_search_substring(const _CharT* __first1, const _CharT* __last1, const _Ch
     // the string.
     if (_Traits::compare(__first1, __first2, __len2) == 0)
     {
-      return __first1;
+      // return __first1;
+      __last1 = __first1;
+      break;
     }
 
     ++__first1;
   }
+  return __last1;
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
@@ -135,14 +140,16 @@ _CCCL_API constexpr _SizeT __cccl_str_rfind(const _CharT* __p, _SizeT __sz, _Cha
   {
     __pos = __sz;
   }
+  _SizeT __result = __npos;
   for (const _CharT* __ps = __p + __pos; __ps != __p;)
   {
     if (_Traits::eq(*--__ps, __c))
     {
-      return static_cast<_SizeT>(__ps - __p);
+      __result = static_cast<_SizeT>(__ps - __p);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
@@ -199,14 +206,16 @@ __cccl_str_find_last_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Size
   {
     __pos = __sz;
   }
+  _SizeT __result = __npos;
   for (const _CharT* __ps = __p + __pos; __ps != __p;)
   {
     if (_Traits::find(__s, __n, *--__ps) != nullptr)
     {
-      return static_cast<_SizeT>(__ps - __p);
+      __result = static_cast<_SizeT>(__ps - __p);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
@@ -218,20 +227,23 @@ __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, 
     return __npos;
   }
   const _CharT* __pe = __p + __sz;
+  _SizeT __result    = __npos;
   for (const _CharT* __ps = __p + __pos; __ps != __pe; ++__ps)
   {
     if (_Traits::find(__s, __n, *__ps) == nullptr)
     {
-      return static_cast<_SizeT>(__ps - __p);
+      __result = static_cast<_SizeT>(__ps - __p);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _CCCL_API constexpr _SizeT
 __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
 {
+  _SizeT __result = __npos;
   if (__pos < __sz)
   {
     const _CharT* __pe = __p + __sz;
@@ -239,11 +251,12 @@ __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT 
     {
       if (!_Traits::eq(*__ps, __c))
       {
-        return static_cast<_SizeT>(__ps - __p);
+        __result = static_cast<_SizeT>(__ps - __p);
+        break;
       }
     }
   }
-  return __npos;
+  return __result;
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
@@ -258,14 +271,17 @@ __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _
   {
     __pos = __sz;
   }
+
+  _SizeT __result = __npos;
   for (const _CharT* __ps = __p + __pos; __ps != __p;)
   {
     if (_Traits::find(__s, __n, *--__ps) == nullptr)
     {
-      return static_cast<_SizeT>(__ps - __p);
+      __result = static_cast<_SizeT>(__ps - __p);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
@@ -279,14 +295,16 @@ _CCCL_API constexpr _SizeT __cccl_str_find_last_not_of(const _CharT* __p, _SizeT
   {
     __pos = __sz;
   }
+  _SizeT __result = __npos;
   for (const _CharT* __ps = __p + __pos; __ps != __p;)
   {
     if (!_Traits::eq(*--__ps, __c))
     {
-      return static_cast<_SizeT>(__ps - __p);
+      __result = static_cast<_SizeT>(__ps - __p);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

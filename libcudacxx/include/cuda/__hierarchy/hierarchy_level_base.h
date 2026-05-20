@@ -66,9 +66,9 @@ struct hierarchy_level_base
   using level_type = _Level;
 
   template <class _InLevel>
-  using __default_md_query_type = unsigned;
+  using __default_md_query_type = ::cuda::std::uint32_t;
   template <class _InLevel>
-  using __default_1d_query_type = ::cuda::std::size_t;
+  using __default_1d_query_type = typename _InLevel::__product_type;
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
@@ -102,8 +102,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
-  count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
     return _Level::template count_as<__default_1d_query_type<_InLevel>>(
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));
@@ -120,8 +119,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t
-  rank(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto rank(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
     return _Level::template rank_as<__default_1d_query_type<_InLevel>>(
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));

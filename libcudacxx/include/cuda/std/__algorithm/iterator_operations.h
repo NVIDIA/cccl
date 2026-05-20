@@ -58,13 +58,13 @@ struct _IterOps<_RangeAlgPolicy>
   template <class _Iter>
   using __difference_type = iter_difference_t<_Iter>;
 
-  static constexpr auto advance      = ::cuda::std::ranges::advance;
-  static constexpr auto distance     = ::cuda::std::ranges::distance;
-  static constexpr auto __iter_move  = ::cuda::std::ranges::iter_move;
-  static constexpr auto iter_swap    = ::cuda::std::ranges::iter_swap;
-  static constexpr auto next         = ::cuda::std::ranges::next;
-  static constexpr auto prev         = ::cuda::std::ranges::prev;
-  static constexpr auto __advance_to = ::cuda::std::ranges::advance;
+  static constexpr auto advance      = ::cuda::std::ranges::__advance_cpo{};
+  static constexpr auto distance     = ::cuda::std::ranges::__distance_cpo{};
+  static constexpr auto __iter_move  = ::cuda::std::ranges::__iter_move_cpo{};
+  static constexpr auto iter_swap    = ::cuda::std::ranges::__iter_swap_cpo{};
+  static constexpr auto next         = ::cuda::std::ranges::__next_cpo{};
+  static constexpr auto prev         = ::cuda::std::ranges::__prev_cpo{};
+  static constexpr auto __advance_to = ::cuda::std::ranges::__advance_cpo{};
 };
 
 struct _ClassicAlgPolicy
@@ -141,7 +141,7 @@ struct _IterOps<_ClassicAlgPolicy>
   template <class _Iter1, class _Iter2>
   _CCCL_API constexpr static void iter_swap(_Iter1&& __a, _Iter2&& __b)
   {
-    ::cuda::std::iter_swap(::cuda::std::forward<_Iter1>(__a), ::cuda::std::forward<_Iter2>(__b));
+    ::cuda::std::__iter_swap_cpo{}(::cuda::std::forward<_Iter1>(__a), ::cuda::std::forward<_Iter2>(__b));
   }
 
   // next

@@ -27,7 +27,7 @@ namespace detail
 template <typename PolicySelector, int CC>
 struct policy_getter : PolicySelector
 {
-  _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
   {
     return PolicySelector::operator()(::cuda::compute_capability{CC});
   }
@@ -63,7 +63,7 @@ struct lowest_cc_resolver<::cuda::std::integer_sequence<int, CudaCcs...>, Policy
   static constexpr policy_t all_policies[sizeof...(Is)]{PolicySelector{}(all_ccs[Is])...};
 #    endif // _CCCL_COMPILER(GCC, <, 8)
 
-  _CCCL_API static constexpr auto find_lowest(size_t i) -> ::cuda::compute_capability
+  _CCCL_HOST_DEVICE_API static constexpr auto find_lowest(size_t i) -> ::cuda::compute_capability
   {
 #    if _CCCL_COMPILER(GCC, >=, 8)
     const auto& policy = all_policies[i];
@@ -136,7 +136,7 @@ dispatch_compute_cap(PolicySelector policy_selector, ::cuda::compute_capability 
 // if we are compiling CCCL.C with runtime policies, we cannot query the policy hub at compile time
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, typename F>
-_CCCL_API _CCCL_FORCEINLINE cudaError_t
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
 dispatch_compute_cap(PolicySelector policy_selector, ::cuda::compute_capability device_cc, F&& f)
 {
   return f([&] {

@@ -65,7 +65,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
-    ::cuda::std::ranges::advance(__x, __n);
+    ::cuda::std::ranges::__advance_cpo{}(__x, __n);
     return __x;
   }
 
@@ -74,7 +74,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
   {
-    ::cuda::std::ranges::advance(__x, __bound_sentinel);
+    ::cuda::std::ranges::__advance_cpo{}(__x, __bound_sentinel);
     return __x;
   }
 
@@ -83,7 +83,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
-    ::cuda::std::ranges::advance(__x, __n, __bound_sentinel);
+    ::cuda::std::ranges::__advance_cpo{}(__x, __n, __bound_sentinel);
     return __x;
   }
 };
@@ -92,6 +92,9 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto next = __next::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __next_cpo = __next::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

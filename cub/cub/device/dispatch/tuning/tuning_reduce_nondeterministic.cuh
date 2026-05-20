@@ -24,13 +24,13 @@ struct reduce_nondeterministic_policy
 {
   reduce::agent_reduce_policy reduce;
 
-  _CCCL_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const reduce_nondeterministic_policy& lhs, const reduce_nondeterministic_policy& rhs)
   {
     return lhs.reduce == rhs.reduce;
   }
 
-  _CCCL_API constexpr friend bool
+  _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const reduce_nondeterministic_policy& lhs, const reduce_nondeterministic_policy& rhs)
   {
     return !(lhs == rhs);
@@ -56,7 +56,7 @@ struct policy_selector
   int offset_size;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> reduce_nondeterministic_policy
   {
     auto policy            = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(cc).reduce;
@@ -73,7 +73,7 @@ static_assert(reduce_nondeterministic_policy_selector<policy_selector>);
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> reduce_nondeterministic_policy
   {
     constexpr auto policies =

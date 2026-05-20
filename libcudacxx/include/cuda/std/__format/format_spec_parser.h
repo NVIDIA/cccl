@@ -55,7 +55,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _IdSize, size_t _OptSize>
-[[noreturn]] _CCCL_API inline void
+[[noreturn]] _CCCL_HOST_DEVICE_API inline void
 __throw_invalid_option_format_error(const char (&__id)[_IdSize], const char (&__option)[_OptSize])
 {
   constexpr string_view __msg_pt1 = "The format specifier for ";
@@ -80,7 +80,7 @@ __throw_invalid_option_format_error(const char (&__id)[_IdSize], const char (&__
 }
 
 template <size_t _IdSize>
-[[noreturn]] _CCCL_API inline void __throw_invalid_type_format_error(const char (&__id)[_IdSize])
+[[noreturn]] _CCCL_HOST_DEVICE_API inline void __throw_invalid_type_format_error(const char (&__id)[_IdSize])
 {
   constexpr string_view __msg_pt1 = "The type option contains an invalid value for ";
   constexpr string_view __msg_pt2 = " formatting argument";
@@ -102,7 +102,7 @@ template <size_t _IdSize>
 struct __fmt_substitute_arg_id_visitor
 {
   template <class _Tp>
-  [[nodiscard]] _CCCL_API constexpr uint32_t operator()([[maybe_unused]] _Tp __arg)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t operator()([[maybe_unused]] _Tp __arg)
   {
     if constexpr (is_same_v<_Tp, monostate>)
     {
@@ -146,7 +146,7 @@ struct __fmt_substitute_arg_id_visitor
 };
 
 template <class _Context>
-[[nodiscard]] _CCCL_API constexpr uint32_t __fmt_substitute_arg_id(basic_format_arg<_Context> __format_arg)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t __fmt_substitute_arg_id(basic_format_arg<_Context> __format_arg)
 {
   // [format.string.std]/8
   //   If the corresponding formatting argument is not of integral type...
@@ -181,7 +181,7 @@ struct __fmt_spec_fields
 
 // By not placing this constant in the formatter class it's not duplicated for
 // char and wchar_t.
-[[nodiscard]] _CCCL_API constexpr __fmt_spec_fields __fmt_spec_fields_bool() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_fields __fmt_spec_fields_bool() noexcept
 {
   __fmt_spec_fields __ret{};
   __ret.__locale_specific_form_ = true;
@@ -189,18 +189,7 @@ struct __fmt_spec_fields
   __ret.__consume_all_          = true;
   return __ret;
 }
-[[nodiscard]] _CCCL_API constexpr __fmt_spec_fields __fmt_spec_fields_int() noexcept
-{
-  __fmt_spec_fields __ret{};
-  __ret.__sign_                 = true;
-  __ret.__alternate_form_       = true;
-  __ret.__zero_padding_         = true;
-  __ret.__locale_specific_form_ = true;
-  __ret.__type_                 = true;
-  __ret.__consume_all_          = true;
-  return __ret;
-}
-[[nodiscard]] _CCCL_API constexpr __fmt_spec_fields __fmt_spec_fields_fp() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_fields __fmt_spec_fields_int() noexcept
 {
   __fmt_spec_fields __ret{};
   __ret.__sign_                 = true;
@@ -211,7 +200,18 @@ struct __fmt_spec_fields
   __ret.__consume_all_          = true;
   return __ret;
 }
-[[nodiscard]] _CCCL_API constexpr __fmt_spec_fields __fmt_spec_fields_str() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_fields __fmt_spec_fields_fp() noexcept
+{
+  __fmt_spec_fields __ret{};
+  __ret.__sign_                 = true;
+  __ret.__alternate_form_       = true;
+  __ret.__zero_padding_         = true;
+  __ret.__locale_specific_form_ = true;
+  __ret.__type_                 = true;
+  __ret.__consume_all_          = true;
+  return __ret;
+}
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_fields __fmt_spec_fields_str() noexcept
 {
   __fmt_spec_fields __ret{};
   __ret.__precision_   = true;
@@ -219,7 +219,7 @@ struct __fmt_spec_fields
   __ret.__consume_all_ = true;
   return __ret;
 }
-[[nodiscard]] _CCCL_API constexpr __fmt_spec_fields __fmt_spec_fields_ptr() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_spec_fields __fmt_spec_fields_ptr() noexcept
 {
   __fmt_spec_fields __ret{};
   __ret.__zero_padding_ = true;
@@ -274,7 +274,7 @@ enum class __fmt_spec_type : uint8_t
   __general_upper_case,
 };
 
-[[nodiscard]] _CCCL_API constexpr uint32_t __fmt_spec_make_type_mask(__fmt_spec_type __t)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t __fmt_spec_make_type_mask(__fmt_spec_type __t)
 {
   const auto __shift = static_cast<uint32_t>(__t);
   if (__shift > 31)
@@ -376,12 +376,12 @@ struct __fmt_parsed_spec
 
   __fmt_spec_code_point<_CharT> __fill_;
 
-  [[nodiscard]] _CCCL_API constexpr bool __has_width() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __has_width() const
   {
     return __width_ > 0;
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool __has_precision() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __has_precision() const
   {
     return __precision_ >= 0;
   }
@@ -422,7 +422,8 @@ public:
   //! functions are used. In that case the error will be detected during
   //! compilation and there is no need to pay for the run-time overhead.
   template <class _ParseContext>
-  _CCCL_API constexpr typename _ParseContext::iterator __parse(_ParseContext& __ctx, __fmt_spec_fields __fields)
+  _CCCL_HOST_DEVICE_API constexpr typename _ParseContext::iterator
+  __parse(_ParseContext& __ctx, __fmt_spec_fields __fields)
   {
     auto __begin = __ctx.begin();
     auto __end   = __ctx.end();
@@ -598,7 +599,7 @@ public:
   //! Note future versions of C++ may allow better compile-time error
   //! reporting.
   template <size_t _IdSize>
-  _CCCL_API constexpr void
+  _CCCL_HOST_DEVICE_API constexpr void
   __validate(__fmt_spec_fields __fields, const char (&__id)[_IdSize], uint32_t __type_mask = ~uint32_t{0}) const
   {
     if (!__fields.__sign_ && __fmt_spec_sign{__sign_} != __fmt_spec_sign::__default)
@@ -676,7 +677,7 @@ public:
 
   //! Returns the `__fmt_parsed_spec` with the resolved dynamic sizes.
   template <class _Ctx>
-  [[nodiscard]] _CCCL_API __fmt_parsed_spec<_CharT> __get_parsed_std_spec(_Ctx& __ctx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __fmt_parsed_spec<_CharT> __get_parsed_std_spec(_Ctx& __ctx) const
   {
     __fmt_parsed_spec<_CharT> __ret{};
     __ret.__std_.__alignment_            = __alignment_;
@@ -692,7 +693,7 @@ public:
 
   //! Returns the `__fmt_parsed_spec` with the resolved dynamic sizes.
   template <class _Ctx>
-  [[nodiscard]] _CCCL_API __fmt_parsed_spec<_CharT> __get_parsed_chrono_spec(_Ctx& __ctx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API __fmt_parsed_spec<_CharT> __get_parsed_chrono_spec(_Ctx& __ctx) const
   {
     __fmt_parsed_spec<_CharT> __ret{};
     __ret.__chrono_.__alignment_            = __alignment_;
@@ -709,7 +710,7 @@ public:
     return __ret;
   }
 
-  _CCCL_API constexpr __fmt_spec_parser() noexcept
+  _CCCL_HOST_DEVICE_API constexpr __fmt_spec_parser() noexcept
       : __alignment_{::cuda::std::to_underlying(__fmt_spec_alignment::__default)}
       , __sign_{::cuda::std::to_underlying(__fmt_spec_sign::__default)}
       , __alternate_form_{false}
@@ -767,7 +768,7 @@ public:
 
 private:
   template <class _It, class _ParseCtx>
-  [[nodiscard]] _CCCL_API static constexpr __fmt_parse_number_result<_It>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr __fmt_parse_number_result<_It>
   __parse_arg_id(_It __begin, _It __end, _ParseCtx& __ctx)
   {
     // This function is a wrapper to call the real parser. But it does the
@@ -788,7 +789,7 @@ private:
     return __r;
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool __parse_alignment(_CharT __c)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_alignment(_CharT __c)
   {
     switch (__c)
     {
@@ -807,7 +808,7 @@ private:
     return false;
   }
 
-  _CCCL_API constexpr void __validate_fill_character(_CharT __fill)
+  _CCCL_HOST_DEVICE_API constexpr void __validate_fill_character(_CharT __fill)
   {
     // The forbidden fill characters all code points formed from a single code unit, thus the
     // check can be omitted when more code units are used.
@@ -819,7 +820,7 @@ private:
 
   // range-fill and tuple-fill are identical
   template <class _It>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_fill_align(_It& __begin, _It __end)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_fill_align(_It& __begin, _It __end)
   {
     _CCCL_ASSERT(__begin != __end,
                  "when called with an empty input the function will cause "
@@ -846,7 +847,7 @@ private:
   }
 
   template <class _It>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_sign(_It& __begin)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_sign(_It& __begin)
   {
     switch (*__begin)
     {
@@ -867,7 +868,7 @@ private:
   }
 
   template <class _It>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_alternate_form(_It& __begin)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_alternate_form(_It& __begin)
   {
     if (*__begin != _CharT{'#'})
     {
@@ -879,7 +880,7 @@ private:
   }
 
   template <class _It>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_zero_padding(_It& __begin)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_zero_padding(_It& __begin)
   {
     if (*__begin != _CharT{'0'})
     {
@@ -894,7 +895,7 @@ private:
   }
 
   template <class _It, class _Ctx>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_width(_It& __begin, _It __end, _Ctx& __ctx)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_width(_It& __begin, _It __end, _Ctx& __ctx)
   {
     if (*__begin == _CharT{'0'})
     {
@@ -924,7 +925,7 @@ private:
   }
 
   template <class _It, class _Ctx>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_precision(_It& __begin, _It __end, _Ctx& __ctx)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_precision(_It& __begin, _It __end, _Ctx& __ctx)
   {
     if (*__begin != _CharT{'.'})
     {
@@ -959,7 +960,7 @@ private:
   }
 
   template <class _It>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_locale_specific_form(_It& __begin)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_locale_specific_form(_It& __begin)
   {
     if (*__begin != _CharT{'L'})
     {
@@ -971,7 +972,7 @@ private:
   }
 
   template <class _It>
-  [[nodiscard]] _CCCL_API constexpr bool __parse_clear_brackets(_It& __begin)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __parse_clear_brackets(_It& __begin)
   {
     if (*__begin != _CharT{'n'})
     {
@@ -983,7 +984,7 @@ private:
   }
 
   template <class _It>
-  _CCCL_API constexpr void __parse_type(_It& __begin)
+  _CCCL_HOST_DEVICE_API constexpr void __parse_type(_It& __begin)
   {
     // Determines the type. It does not validate whether the selected type is
     // valid. Most formatters have optional fields that are only allowed for
@@ -1053,7 +1054,7 @@ private:
   }
 
   template <class _Ctx>
-  [[nodiscard]] _CCCL_API uint32_t __get_width(_Ctx& __ctx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API uint32_t __get_width(_Ctx& __ctx) const
   {
     if (!__width_as_arg_)
     {
@@ -1063,7 +1064,7 @@ private:
   }
 
   template <class _Ctx>
-  [[nodiscard]] _CCCL_API int32_t __get_precision(_Ctx& __ctx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API int32_t __get_precision(_Ctx& __ctx) const
   {
     if (!__precision_as_arg_)
     {
@@ -1079,7 +1080,7 @@ static_assert(sizeof(__fmt_spec_parser<char>) == 16);
 static_assert(sizeof(__fmt_spec_parser<wchar_t>) == 16);
 #endif // _CCCL_HAS_WCHAR_T()
 
-_CCCL_API constexpr void __fmt_process_display_type_str(__fmt_spec_type __type)
+_CCCL_HOST_DEVICE_API constexpr void __fmt_process_display_type_str(__fmt_spec_type __type)
 {
   switch (__type)
   {
@@ -1092,7 +1093,7 @@ _CCCL_API constexpr void __fmt_process_display_type_str(__fmt_spec_type __type)
 }
 
 template <class _CharT, size_t _IdSize>
-_CCCL_API constexpr void
+_CCCL_HOST_DEVICE_API constexpr void
 __fmt_process_display_type_bool_str(__fmt_spec_parser<_CharT>& __parser, const char (&__id)[_IdSize])
 {
   __parser.__validate(::cuda::std::__fmt_spec_fields_bool(), __id);
@@ -1103,14 +1104,14 @@ __fmt_process_display_type_bool_str(__fmt_spec_parser<_CharT>& __parser, const c
 }
 
 template <class _CharT, size_t _IdSize>
-_CCCL_API constexpr void
+_CCCL_HOST_DEVICE_API constexpr void
 __fmt_process_display_type_char(__fmt_spec_parser<_CharT>& __parser, const char (&__id)[_IdSize])
 {
   ::cuda::std::__fmt_process_display_type_bool_str(__parser, __id);
 }
 
 template <class _CharT>
-_CCCL_API constexpr void __fmt_process_parsed_bool(__fmt_spec_parser<_CharT>& __parser)
+_CCCL_HOST_DEVICE_API constexpr void __fmt_process_parsed_bool(__fmt_spec_parser<_CharT>& __parser)
 {
   constexpr auto& __id = "a bool";
 
@@ -1133,7 +1134,7 @@ _CCCL_API constexpr void __fmt_process_parsed_bool(__fmt_spec_parser<_CharT>& __
 }
 
 template <class _CharT>
-_CCCL_API constexpr void __fmt_process_parsed_char(__fmt_spec_parser<_CharT>& __parser)
+_CCCL_HOST_DEVICE_API constexpr void __fmt_process_parsed_char(__fmt_spec_parser<_CharT>& __parser)
 {
   constexpr auto& __id = "a character";
 
@@ -1156,7 +1157,7 @@ _CCCL_API constexpr void __fmt_process_parsed_char(__fmt_spec_parser<_CharT>& __
 }
 
 template <class _CharT>
-_CCCL_API constexpr void __fmt_process_parsed_int(__fmt_spec_parser<_CharT>& __parser)
+_CCCL_HOST_DEVICE_API constexpr void __fmt_process_parsed_int(__fmt_spec_parser<_CharT>& __parser)
 {
   constexpr auto& __id = "an integer";
 
@@ -1179,7 +1180,7 @@ _CCCL_API constexpr void __fmt_process_parsed_int(__fmt_spec_parser<_CharT>& __p
 }
 
 template <class _CharT>
-_CCCL_API constexpr void __fmt_process_parsed_fp(__fmt_spec_parser<_CharT>& __parser)
+_CCCL_HOST_DEVICE_API constexpr void __fmt_process_parsed_fp(__fmt_spec_parser<_CharT>& __parser)
 {
   switch (__parser.__type_)
   {
@@ -1205,7 +1206,7 @@ _CCCL_API constexpr void __fmt_process_parsed_fp(__fmt_spec_parser<_CharT>& __pa
   }
 }
 
-_CCCL_API constexpr void __fmt_process_display_type_ptr(__fmt_spec_type __type)
+_CCCL_HOST_DEVICE_API constexpr void __fmt_process_display_type_ptr(__fmt_spec_type __type)
 {
   switch (__type)
   {
@@ -1248,7 +1249,8 @@ enum class __fmt_column_width_rounding
 };
 
 template <class _CharT>
-[[nodiscard]] _CCCL_API constexpr __fmt_column_width_result<typename basic_string_view<_CharT>::const_iterator>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fmt_column_width_result<
+  typename basic_string_view<_CharT>::const_iterator>
 __fmt_estimate_column_width(basic_string_view<_CharT> __str, size_t __maximum, __fmt_column_width_rounding) noexcept
 {
   // When Unicode isn't supported assume ASCII and every code unit is one code

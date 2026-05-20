@@ -27,7 +27,7 @@ reviews:
   enable_prompt_for_ai_agents: false
 
   auto_review:
-    enabled: false
+    enabled: true
     drafts: false
     base_branches:
       - "^main$"

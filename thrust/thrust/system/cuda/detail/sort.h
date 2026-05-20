@@ -271,45 +271,26 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
 
 namespace __smart_sort
 {
-template <class Key, class CompareOp>
-using can_use_primitive_sort = ::cuda::std::integral_constant<
-  bool,
-  (::cuda::std::is_arithmetic_v<Key>
-#  if _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-   || ::cuda::std::is_same_v<Key, __half>
-#  endif // _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-#  if _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
-   || ::cuda::std::is_same_v<Key, __nv_bfloat16>
-#  endif // _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
-         // !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
-   )
-    && (::cuda::std::is_same_v<CompareOp, ::cuda::std::less<Key>>
-        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::less<void>>
-        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<Key>>
-        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<void>>)>;
-
-template <
-  class SORT_ITEMS,
-  class STABLE,
-  class Policy,
-  class KeysIt,
-  class ItemsIt,
-  class CompareOp,
-  ::cuda::std::enable_if_t<!can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
+template <class SORT_ITEMS,
+          class STABLE,
+          class Policy,
+          class KeysIt,
+          class ItemsIt,
+          class CompareOp,
+          ::cuda::std::enable_if_t<!CUB_NS_QUALIFIER::__can_use_radix_sort<KeysIt, CompareOp>, int> = 0>
 THRUST_RUNTIME_FUNCTION void
 smart_sort(Policy& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
   __merge_sort::merge_sort<SORT_ITEMS, STABLE>(policy, keys_first, keys_last, items_first, compare_op);
 }
 
-template <
-  class SORT_ITEMS,
-  class /*STABLE*/,
-  class Policy,
-  class KeysIt,
-  class ItemsIt,
-  class CompareOp,
-  ::cuda::std::enable_if_t<can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
+template <class SORT_ITEMS,
+          class /*STABLE*/,
+          class Policy,
+          class KeysIt,
+          class ItemsIt,
+          class CompareOp,
+          ::cuda::std::enable_if_t<CUB_NS_QUALIFIER::__can_use_radix_sort<KeysIt, CompareOp>, int> = 0>
 THRUST_RUNTIME_FUNCTION void smart_sort(
   execution_policy<Policy>& policy,
   KeysIt keys_first,

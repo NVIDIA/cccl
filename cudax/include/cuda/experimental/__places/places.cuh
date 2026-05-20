@@ -31,6 +31,7 @@
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
 #include <typeinfo>
@@ -45,6 +46,13 @@
 
 // Sync only will not move data....
 // Data place none?
+
+// Forward-declare so places.cuh can take async_resources_handle& as a
+// convenience overload parameter without depending on STF headers.
+namespace cuda::experimental::stf
+{
+class async_resources_handle;
+} // namespace cuda::experimental::stf
 
 namespace cuda::experimental::places
 {
@@ -320,7 +328,7 @@ public:
     return pimpl_->hash();
   }
 
-  decorated_stream getDataStream() const;
+  decorated_stream getDataStream(exec_place_resources& res) const;
 
   /**
    * @brief Get the underlying interface pointer
@@ -493,19 +501,41 @@ public:
 
     // ===== Stream management =====
 
-    virtual stream_pool& get_stream_pool(bool for_computation) const
+    /**
+     * @brief Return the stream pool to draw streams from for this place.
+     *
+     * Pooled implementations (device, host) use the default body, which
+     * looks up / lazily creates a per-place pool inside the supplied
+     * registry, keyed by `this` (a stable singleton pointer for those
+     * impls).
+     *
+     * Self-contained implementations (`exec_place_cuda_stream_impl`,
+     * `exec_place_green_ctx_impl`) override this method and ignore the
+     * registry, returning their embedded pool instead.
+     *
+     * The grid implementation forwards `res` to its first sub-place.
+     *
+     * @param for_computation If true, return the computation pool slot;
+     *                        otherwise return the data-transfer slot.
+     * @param res             Registry of per-place stream pools (typically
+     *                        owned by an `async_resources_handle`).
+     * @param self            The `exec_place` wrapping `*this` (kept for
+     *                        derived overrides that need access to the
+     *                        public-facing place).
+     */
+    [[nodiscard]] virtual stream_pool&
+    get_stream_pool(bool for_computation, exec_place_resources& res, [[maybe_unused]] const exec_place& self) const
     {
-      return for_computation ? pool_compute : pool_data;
+      auto& slot = res.get(this);
+      return for_computation ? slot.compute : slot.data;
     }
 
-    static constexpr size_t pool_size      = 4;
-    static constexpr size_t data_pool_size = 4;
+    static constexpr size_t pool_size      = exec_place_default_pool_size;
+    static constexpr size_t data_pool_size = exec_place_default_data_pool_size;
 
   protected:
     friend class exec_place;
     data_place affine = data_place::invalid();
-    mutable stream_pool pool_compute;
-    mutable stream_pool pool_data;
   };
 
   template <typename T>
@@ -624,17 +654,52 @@ public:
     pimpl->set_affine_data_place(mv(place));
   }
 
-  stream_pool& get_stream_pool(bool for_computation) const
+  /**
+   * @brief Get the stream pool associated with this place from the supplied
+   * registry. Pooled places (device, host) lazily create their entry in
+   * `res`; self-contained places (cuda_stream, green-context) ignore `res`
+   * and return their embedded pool.
+   */
+  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res) const
   {
-    return pimpl->get_stream_pool(for_computation);
+    return pimpl->get_stream_pool(for_computation, res, *this);
   }
 
-  decorated_stream getStream(bool for_computation) const;
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline stream_pool& get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const;
 
-  cudaStream_t pick_stream(bool for_computation = true) const
+  decorated_stream getStream(exec_place_resources& res, bool for_computation = true) const;
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline decorated_stream getStream(::cuda::experimental::stf::async_resources_handle& h,
+                                    bool for_computation = true) const;
+
+  cudaStream_t pick_stream(exec_place_resources& res, bool for_computation = true) const
   {
-    return getStream(for_computation).stream;
+    return getStream(res, for_computation).stream;
   }
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline cudaStream_t pick_stream(::cuda::experimental::stf::async_resources_handle& h,
+                                  bool for_computation = true) const;
+
+  /// @brief Number of streams in this place's pool (slots, not initialized).
+  inline size_t stream_pool_size(exec_place_resources& res) const;
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  inline size_t stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const;
+
+  /// @brief Materialize all streams in the pool as a vector. Triggers lazy
+  /// creation of every empty slot.
+  ::std::vector<cudaStream_t> pick_all_streams(exec_place_resources& res) const;
+
+  /// @brief Convenience overload taking an `async_resources_handle`. Defined
+  /// inline in `__stf/internal/async_resources_handle.cuh`.
+  ::std::vector<cudaStream_t> pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const;
 
   const ::std::shared_ptr<impl>& get_impl() const
   {
@@ -777,7 +842,7 @@ private:
  * for (size_t i = 0; i < grid.size(); i++) {
  *   auto active = grid.activate(i);
  *   // grid[i] is now active
- *   kernel<<<..., active.place().getStream()>>>(...);
+ *   kernel<<<..., active.place().getStream(resources)>>>(...);
  * }
  * @endcode
  */
@@ -923,6 +988,26 @@ inline decorated_stream stream_pool::next(const exec_place& place)
 
   auto& result = pimpl->payload.at(pimpl->index);
 
+  if (result.stream != nullptr)
+  {
+    CUcontext ctx       = nullptr;
+    CUresult stream_err = cuStreamGetCtx(CUstream(result.stream), &ctx);
+
+    // External runtime users (Numba / PyTorch / raw CUDA) may call
+    // cudaDeviceReset(), which destroys the primary context and all streams
+    // associated with it. The pool itself is process-global, so a non-null
+    // cached handle is not sufficient to prove the stream is still usable.
+    if (stream_err == CUDA_ERROR_CONTEXT_IS_DESTROYED || stream_err == CUDA_ERROR_INVALID_CONTEXT
+        || stream_err == CUDA_ERROR_INVALID_HANDLE || ctx == nullptr)
+    {
+      result = decorated_stream(nullptr, k_no_stream_id, -1);
+    }
+    else
+    {
+      cuda_try(stream_err);
+    }
+  }
+
   if (!result.stream)
   {
     auto active   = place.activate();
@@ -941,9 +1026,26 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(bool for_computation) const
+inline decorated_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
 {
-  return get_stream_pool(for_computation).next(*this);
+  return get_stream_pool(for_computation, res).next(*this);
+}
+
+inline size_t exec_place::stream_pool_size(exec_place_resources& res) const
+{
+  return get_stream_pool(true, res).size();
+}
+
+inline ::std::vector<cudaStream_t> exec_place::pick_all_streams(exec_place_resources& res) const
+{
+  auto& pool = get_stream_pool(true, res);
+  ::std::vector<cudaStream_t> result;
+  result.reserve(pool.size());
+  for (size_t i = 0; i < pool.size(); ++i)
+  {
+    result.push_back(pool.next(*this).stream);
+  }
+  return result;
 }
 
 /**
@@ -989,9 +1091,12 @@ public:
     return data_place::host();
   }
 
-  stream_pool& get_stream_pool(bool for_computation) const override
+  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
   {
-    return exec_place::current_device().get_stream_pool(for_computation);
+    // Forward to the current device place: host work that needs a CUDA stream
+    // borrows the current device's pool entry from the same registry.
+    auto cur = exec_place::current_device();
+    return cur.get_stream_pool(for_computation, res);
   }
 
   ::std::string to_string() const override
@@ -1070,8 +1175,10 @@ public:
         : exec_place::impl(data_place::device(devid))
         , devid_(devid)
     {
-      pool_compute = stream_pool(pool_size);
-      pool_data    = stream_pool(data_pool_size);
+      // Stream pools for this place live in an `exec_place_resources`
+      // registry (typically embedded in an `async_resources_handle`) and are
+      // looked up on demand by the default `exec_place::impl::get_stream_pool`
+      // override; nothing extra needs to be initialized here.
     }
 
     // Grid interface - device is a 1-element grid
@@ -1301,11 +1408,14 @@ public:
 
   // ===== Stream management =====
 
-  stream_pool& get_stream_pool(bool for_computation) const override
+  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
   {
     _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
     _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
-    return places_[0].get_stream_pool(for_computation);
+    // Pure delegator: forward the registry to the first sub-place. The
+    // sub-place looks itself up in `res` (so the same sub-place referenced
+    // outside the grid shares the entry).
+    return places_[0].get_stream_pool(for_computation, res);
   }
 
 private:
@@ -1633,9 +1743,9 @@ data_place data_place::composite(partitioner_t, const exec_place& g)
   return data_place::composite(&partitioner_t::get_executor, g);
 }
 
-inline decorated_stream data_place::getDataStream() const
+inline decorated_stream data_place::getDataStream(exec_place_resources& res) const
 {
-  return affine_exec_place().getStream(false);
+  return affine_exec_place().getStream(res, false);
 }
 
 #ifdef UNITTESTED_FILE

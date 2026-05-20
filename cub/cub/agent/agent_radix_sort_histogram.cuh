@@ -44,7 +44,7 @@ struct AgentRadixSortHistogramPolicy
 
   // need to discard sizeof(ComputeType) in case it's void
   template <typename ComputeType = ComputeT>
-  _CCCL_API static constexpr int num_parts_helper()
+  _CCCL_HOST_DEVICE_API static constexpr int num_parts_helper()
   {
     if constexpr (::cuda::std::is_void_v<ComputeT>)
     {

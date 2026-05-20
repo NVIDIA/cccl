@@ -88,8 +88,8 @@ template <>
 struct __partitioned_fold_fn<set_value_t>
 {
   template <class... _ValueTuples, class _Errors, class _Stopped, class _Values>
-  _CCCL_API auto operator()(__partitioned_completions<__type_list<_ValueTuples...>, _Errors, _Stopped>&,
-                            ::cuda::std::__undefined<_Values>&) const
+  _CCCL_HOST_DEVICE_API auto operator()(__partitioned_completions<__type_list<_ValueTuples...>, _Errors, _Stopped>&,
+                                        ::cuda::std::__undefined<_Values>&) const
     -> ::cuda::std::__undefined<__partitioned_completions<__type_list<_ValueTuples..., _Values>, _Errors, _Stopped>>&;
 };
 
@@ -97,8 +97,8 @@ template <>
 struct __partitioned_fold_fn<set_error_t>
 {
   template <class _Values, class... _Errors, class _Stopped, class _Error>
-  _CCCL_API auto operator()(__partitioned_completions<_Values, __type_list<_Errors...>, _Stopped>&,
-                            ::cuda::std::__undefined<__type_list<_Error>>&) const
+  _CCCL_HOST_DEVICE_API auto operator()(__partitioned_completions<_Values, __type_list<_Errors...>, _Stopped>&,
+                                        ::cuda::std::__undefined<__type_list<_Error>>&) const
     -> ::cuda::std::__undefined<__partitioned_completions<_Values, __type_list<_Errors..., _Error>, _Stopped>>&;
 };
 
@@ -106,7 +106,8 @@ template <>
 struct __partitioned_fold_fn<set_stopped_t>
 {
   template <class _Values, class _Errors, class _Stopped>
-  _CCCL_API auto operator()(__partitioned_completions<_Values, _Errors, _Stopped>&, ::cuda::std::__ignore_t) const
+  _CCCL_HOST_DEVICE_API auto
+  operator()(__partitioned_completions<_Values, _Errors, _Stopped>&, ::cuda::std::__ignore_t) const
     -> ::cuda::std::__undefined<__partitioned_completions<_Values, _Errors, __type_list<set_stopped_t()>>>&;
 };
 
@@ -115,12 +116,12 @@ struct __partitioned_fold_fn<set_stopped_t>
 // cache. `__undefined` is used here to prevent the instantiation of the intermediate
 // types.
 template <class _Partitioned, class _Tag, class... _Args>
-_CCCL_API auto operator*(::cuda::std::__undefined<_Partitioned>&, _Tag (*)(_Args...)) -> ::cuda::std::
+_CCCL_HOST_DEVICE_API auto operator*(::cuda::std::__undefined<_Partitioned>&, _Tag (*)(_Args...)) -> ::cuda::std::
   __call_result_t<__partitioned_fold_fn<_Tag>, _Partitioned&, ::cuda::std::__undefined<__type_list<_Args...>>&>;
 
 // This function declaration is used to extract the cache from the `__undefined` type.
 template <class _Partitioned>
-_CCCL_API auto __unpack_partitioned_completions(::cuda::std::__undefined<_Partitioned>&) -> _Partitioned;
+_CCCL_HOST_DEVICE_API auto __unpack_partitioned_completions(::cuda::std::__undefined<_Partitioned>&) -> _Partitioned;
 
 template <class... _Sigs>
 using __partition_completion_signatures_t _CCCL_NODEBUG_ALIAS = //
@@ -169,19 +170,20 @@ _CCCL_CONCEPT __valid_completion_signatures =
   ::cuda::__is_specialization_of_v<::cuda::std::remove_const_t<_Ty>, completion_signatures>;
 
 template <class... _Sigs>
-_CCCL_API _CCCL_CONSTEVAL void __assert_valid_completion_signatures(const completion_signatures<_Sigs...>&)
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL void __assert_valid_completion_signatures(const completion_signatures<_Sigs...>&)
 {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // make_completion_signatures
 template <class _Tag, class... _As>
-_CCCL_API auto __normalize_impl(_As&&...) -> _Tag (*)(_As...);
+_CCCL_HOST_DEVICE_API auto __normalize_impl(_As&&...) -> _Tag (*)(_As...);
 
 template <class _Tag, class... _As>
-_CCCL_API auto __normalize(_Tag (*)(_As...)) -> decltype(execution::__normalize_impl<_Tag>(declval<_As>()...));
+_CCCL_HOST_DEVICE_API auto __normalize(_Tag (*)(_As...))
+  -> decltype(execution::__normalize_impl<_Tag>(declval<_As>()...));
 
 template <class... _Sigs>
-_CCCL_API auto __make_unique(_Sigs*...)
+_CCCL_HOST_DEVICE_API auto __make_unique(_Sigs*...)
   -> ::cuda::std::__type_apply<::cuda::std::__type_quote<completion_signatures>, ::cuda::std::__make_type_set<_Sigs...>>;
 
 template <class... _Sigs>
@@ -189,7 +191,7 @@ using __make_completion_signatures_t _CCCL_NODEBUG_ALIAS =
   decltype(execution::__make_unique(execution::__normalize(static_cast<_Sigs*>(nullptr))...));
 
 template <class... _ExplicitSigs, class... _DeducedSigs>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
   -> __make_completion_signatures_t<_ExplicitSigs..., _DeducedSigs...>
 {
   return {};
@@ -206,7 +208,7 @@ using __concat_completion_signatures_t _CCCL_NODEBUG_ALIAS =
 struct __concat_completion_signatures_fn
 {
   template <class... _Sigs>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
     -> __concat_completion_signatures_t<_Sigs...>
   {
     return {};
@@ -217,13 +219,13 @@ extern const completion_signatures<>& __empty_completion_signatures;
 
 struct __concat_completion_signatures_impl
 {
-  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
   {
     return nullptr;
   }
 
   template <class... _Sigs>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
     -> __make_completion_signatures_t<_Sigs...> (*)()
   {
     return nullptr;
@@ -235,7 +237,7 @@ struct __concat_completion_signatures_impl
             class... _Cs,
             class... _Ds,
             class... _Rest>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()(
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()(
     const completion_signatures<_As...>&,
     const completion_signatures<_Bs...>&,
     const completion_signatures<_Cs...>& = __empty_completion_signatures,
@@ -252,7 +254,7 @@ struct __concat_completion_signatures_impl
             class _Cp = ::cuda::std::__ignore_t,
             class _Dp = ::cuda::std::__ignore_t,
             class... _Rest>
-  _CCCL_API _CCCL_CONSTEVAL auto
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto
   operator()(const _Ap&, const _Bp& = {}, const _Cp& = {}, const _Dp& = {}, const _Rest&...) const noexcept
   {
     if constexpr (!__valid_completion_signatures<_Ap>)
@@ -287,14 +289,14 @@ template <class... _Sigs>
 struct __remove_sigs
 {
   template <class _Sig>
-  _CCCL_API constexpr auto operator()(_Sig*) const noexcept -> bool
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sig*) const noexcept -> bool
   {
     return !::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_Sigs...>, _Sig>;
   }
 };
 
 template <class _Fn, class _Sig>
-_CCCL_API _CCCL_CONSTEVAL auto __filer_one() noexcept
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __filer_one() noexcept
   -> ::cuda::std::_If<_Fn{}(static_cast<_Sig*>(nullptr)), completion_signatures<_Sig>, completion_signatures<>>
 {
   return {};
@@ -371,7 +373,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @brief Returns the number of completion signatures in the set.
   //! @return The number of signatures.
   [[nodiscard]]
-  _CCCL_API static _CCCL_CONSTEVAL auto size() noexcept -> size_t
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto size() noexcept -> size_t
   {
     return sizeof...(_Sigs);
   }
@@ -381,7 +383,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @return The number of signatures with the given tag.
   template <class _Tag>
   [[nodiscard]]
-  _CCCL_API static _CCCL_CONSTEVAL auto count(_Tag) noexcept -> size_t
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto count(_Tag) noexcept -> size_t
   {
     if constexpr (_Tag{} == set_value)
     {
@@ -402,7 +404,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @return true if the signature is present, false otherwise.
   template <class _Sig>
   [[nodiscard]]
-  _CCCL_API static _CCCL_CONSTEVAL auto contains(_Sig* = nullptr) noexcept -> bool
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto contains(_Sig* = nullptr) noexcept -> bool
   {
     return ::cuda::std::__type_set_contains_v<typename __type_set::type, _Sig>;
   }
@@ -413,7 +415,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @return The result of calling __fn with all signatures as arguments.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
-  _CCCL_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> __call_result_t<_Fn, _Sigs*...>
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> __call_result_t<_Fn, _Sigs*...>
   {
     return __fn(static_cast<_Sigs*>(nullptr)...);
   }
@@ -427,7 +429,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   [[nodiscard]]
-  _CCCL_API static _CCCL_CONSTEVAL auto filter(_Fn)
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto filter(_Fn)
   {
     static_assert(::cuda::std::is_empty_v<_Fn> && ::cuda::std::is_trivially_constructible_v<_Fn>,
                   "The filter function must be empty and trivially constructible.");
@@ -440,7 +442,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! tag.
   template <class _Tag>
   [[nodiscard]]
-  _CCCL_API static _CCCL_CONSTEVAL auto select(_Tag) noexcept
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto select(_Tag) noexcept
   {
     if constexpr (_Tag{} == set_value)
     {
@@ -466,7 +468,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Transform, class _Reduce>
   [[nodiscard]]
-  _CCCL_API static _CCCL_CONSTEVAL auto transform_reduce(_Transform __transform, _Reduce __reduce)
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto transform_reduce(_Transform __transform, _Reduce __reduce)
     -> __call_result_t<_Reduce, __call_result_t<_Transform, _Sigs*>...>
   {
     return __reduce(__transform(static_cast<_Sigs*>(nullptr))...);
@@ -490,7 +492,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES completion_signatures() -> completion_signature
 //! @return The union of the two sets.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL_OPERATOR auto
 operator+([[maybe_unused]] completion_signatures<_SelfSigs...> __self,
           [[maybe_unused]] completion_signatures<_OtherSigs...> __other) noexcept
 {
@@ -514,7 +516,7 @@ operator+([[maybe_unused]] completion_signatures<_SelfSigs...> __self,
 //! @return A new set with all signatures from the other set removed.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL_OPERATOR auto
 operator-(completion_signatures<_SelfSigs...> __self, completion_signatures<_OtherSigs...>) noexcept
 {
   if constexpr (sizeof...(_OtherSigs) == 0 || sizeof...(_SelfSigs) == 0) // short-circuit some common cases
@@ -533,7 +535,7 @@ operator-(completion_signatures<_SelfSigs...> __self, completion_signatures<_Oth
 //! @return `true` if the sets are equal, `false` otherwise.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL_OPERATOR auto
 operator==(completion_signatures<_SelfSigs...>, completion_signatures<_OtherSigs...>) noexcept -> bool
 {
   if constexpr (sizeof...(_OtherSigs) != sizeof...(_SelfSigs))
@@ -555,7 +557,7 @@ operator==(completion_signatures<_SelfSigs...>, completion_signatures<_OtherSigs
 //! @return `true` if the sets are not equal, `false` otherwise.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL_OPERATOR auto
 operator!=(completion_signatures<_SelfSigs...> __self, completion_signatures<_OtherSigs...> __other) noexcept -> bool
 {
   return !(__self == __other);
@@ -596,19 +598,19 @@ using __gather_completion_signatures _CCCL_NODEBUG_ALIAS =
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // __eptr_completion and __eptr_completion_if
 #if _CCCL_HAS_EXCEPTIONS()
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept
 {
   return completion_signatures<set_error_t(exception_ptr)>{};
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept
 {
   return completion_signatures{};
 }
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 template <bool _PotentiallyThrowing>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __eptr_completion_if() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __eptr_completion_if() noexcept
 {
   if constexpr (_PotentiallyThrowing)
   {
@@ -630,7 +632,7 @@ using __eptr_completion_if_t _CCCL_NODEBUG_ALIAS = decltype(execution::__eptr_co
 #if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 
 template <class... _What, class... _Values>
-[[noreturn, nodiscard]] _CCCL_API consteval auto invalid_completion_signature(_Values... __values)
+[[noreturn, nodiscard]] _CCCL_HOST_DEVICE_API consteval auto invalid_completion_signature(_Values... __values)
   -> completion_signatures<>
 {
   if constexpr (sizeof...(_Values) == 1)
@@ -646,7 +648,7 @@ template <class... _What, class... _Values>
 #else // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() vvv
 
 template <class... _What, class... _Values>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
 {
   return _ERROR<_What...>{};
 }

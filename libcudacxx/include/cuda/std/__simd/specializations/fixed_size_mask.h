@@ -44,13 +44,13 @@ struct __mask_storage<_Bytes, __fixed_size<_Np>>
   _CCCL_HIDE_FROM_ABI constexpr __mask_storage(const __mask_storage&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI constexpr __mask_storage& operator=(const __mask_storage&) noexcept = default;
 
-  [[nodiscard]] _CCCL_API constexpr bool __get(const __simd_size_type __idx) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __get(const __simd_size_type __idx) const noexcept
   {
     _CCCL_ASSERT(::cuda::in_range(__idx, __simd_size_type{0}, _Np), "Index is out of bounds");
     return __data[__idx];
   }
 
-  _CCCL_API constexpr void __set(const __simd_size_type __idx, const bool __v) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void __set(const __simd_size_type __idx, const bool __v) noexcept
   {
     _CCCL_ASSERT(::cuda::in_range(__idx, __simd_size_type{0}, _Np), "Index is out of bounds");
     __data[__idx] = __v;
@@ -63,7 +63,7 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
 {
   using _MaskStorage = __mask_storage<_Bytes, __fixed_size<_Np>>;
 
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __broadcast(const bool __v) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage __broadcast(const bool __v) noexcept
   {
     _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -75,7 +75,7 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
   }
 
   template <typename _Generator, __simd_size_type... _Is>
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage
   __generate_init(_Generator&& __g, integer_sequence<__simd_size_type, _Is...>)
   {
 #if _CCCL_STD_VER >= 2020
@@ -88,14 +88,14 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
   }
 
   template <typename _Generator>
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __generate(_Generator&& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage __generate(_Generator&& __g)
   {
     return __generate_init(__g, make_integer_sequence<__simd_size_type, _Np>());
   }
 
   // Logical operators (for operator&& and operator||)
 
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage
   __logic_and(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
     _MaskStorage __result;
@@ -107,7 +107,7 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage
   __logic_or(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
     _MaskStorage __result;
@@ -121,7 +121,7 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
 
   // Bitwise operators (for operator&, operator|, operator^)
 
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage
   __bitwise_and(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
     _MaskStorage __result;
@@ -133,7 +133,7 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage
   __bitwise_or(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
     _MaskStorage __result;
@@ -145,7 +145,7 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage
   __bitwise_xor(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
     _MaskStorage __result;
@@ -157,7 +157,7 @@ struct __mask_operations<_Bytes, __fixed_size<_Np>>
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __bitwise_not(const _MaskStorage& __s) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _MaskStorage __bitwise_not(const _MaskStorage& __s) noexcept
   {
     _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()

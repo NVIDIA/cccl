@@ -12,7 +12,10 @@
 #else // _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 
 #  if __CUDA_ARCH_LIST__ < 1000
-#    warning "Warpspeed scan requires at least sm_100. Disabling it."
+// We don't care if clang-tidy can't parse this
+#    ifndef _CCCL_CLANG_TIDY_INVOKED
+#      warning "Warpspeed scan requires at least sm_100. Disabling it."
+#    endif // !defined _CCCL_CLANG_TIDY_INVOKED
 #  else // __CUDA_ARCH_LIST__ < 1000
 
 #    if __cccl_ptx_isa < 860

@@ -88,7 +88,7 @@ using itp_list =
 template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock>
 struct policy_selector_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
     -> cub::detail::segmented_scan::segmented_scan_policy
   {
     return cub::detail::segmented_scan::segmented_scan_policy{cub::detail::segmented_scan::block_segmented_scan_policy{

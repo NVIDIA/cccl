@@ -1019,7 +1019,7 @@ public:
   {
     struct policy_getter
     {
-      _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
         return detail::radix_sort::convert_policy<ActivePolicyT>();
       }
@@ -1212,7 +1212,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;
                  ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
+                 _CubLog("Dispatching DeviceRadixSort to compute capability %d.%d with tuning: %s\n",
                          cc.major_cap(),
                          cc.minor_cap(),
                          ss.str().c_str());

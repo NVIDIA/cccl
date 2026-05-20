@@ -41,6 +41,17 @@ struct rfa_policy
 {
   reduce_policy reduce;
   single_tile_policy single_tile;
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const rfa_policy& policy)
+  {
+    return os
+        << "rfa_policy { .reduce = { .threads_per_block = " << policy.reduce.threads_per_block
+        << ", .items_per_thread = " << policy.reduce.items_per_thread
+        << " }, .single_tile = { .threads_per_block = " << policy.single_tile.threads_per_block
+        << ", .items_per_thread = " << policy.single_tile.items_per_thread << " } }";
+  }
+#endif // _CCCL_HOSTED()
 };
 
 struct policy_selector
@@ -48,7 +59,7 @@ struct policy_selector
   type_t accum_t;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
   {
     if (cc >= ::cuda::compute_capability{9, 0})
     {
@@ -98,7 +109,7 @@ struct policy_selector
 template <typename AccumT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> rfa_policy
   {
     return policy_selector{classify_type<AccumT>, int{sizeof(AccumT)}}(cc);
   }

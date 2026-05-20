@@ -85,7 +85,7 @@ enum class gen_data_t : int
 struct abs_less_t
 {
   template <typename T>
-  _CCCL_API auto operator()(const T& a, const T& b) const -> bool
+  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
   {
     // need to use `uabs` to avoid integer overflow in case of abs(INT_MIN)
     return cuda::uabs(a) < cuda::uabs(b);
@@ -343,7 +343,7 @@ struct non_copy_assignable_plus
   non_copy_assignable_plus& operator=(const non_copy_assignable_plus&) = delete;
 
   template <typename T>
-  _CCCL_API auto operator()(const T& a, const T& b) const -> T
+  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> T
   {
     return a + b;
   }
@@ -356,7 +356,7 @@ struct non_copy_assignable_less
   non_copy_assignable_less& operator=(const non_copy_assignable_less&) = delete;
 
   template <typename T>
-  _CCCL_API auto operator()(const T& a, const T& b) const -> bool
+  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
   {
     return a < b;
   }

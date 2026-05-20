@@ -39,8 +39,16 @@ If C++20 is not available, the function can instead be constrained via SFINAE
 
 For now, libcu++ provides various commonly used properties:
 
--  ``cuda::mr::device_accessible`` and ``cuda::mr::host_accessible`` indicate whether memory allocated using a
-   memory resource is accessible from host or device respectively.
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Property
+     - Meaning
+   * - ``cuda::mr::device_accessible``
+     - Memory allocated using the resource is accessible from device.
+   * - ``cuda::mr::host_accessible``
+     - Memory allocated using the resource is accessible from host.
 
 More properties may be added as the library and the hardware capabilities evolve. However, a user library is free to
 define custom properties.
