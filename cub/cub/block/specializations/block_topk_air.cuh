@@ -22,8 +22,10 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
 
@@ -118,23 +120,22 @@ private:
       end_bit = max_bit;
     }
 
-    auto states = [&] {
-      if constexpr (SelectDirection == detail::topk::select::max)
-      {
-        return block_sieve_t(storage.stage.sieve_storage)
-          .template select_max<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
-      }
-      else
-      {
-        return block_sieve_t(storage.stage.sieve_storage)
-          .template select_min<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
-      }
-    }();
+    ::cuda::std::optional<block_topk_key_states<items_per_thread>> states;
+    if constexpr (SelectDirection == detail::topk::select::max)
+    {
+      states = block_sieve_t(storage.stage.sieve_storage)
+                 .template select_max<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
+    }
+    else
+    {
+      states = block_sieve_t(storage.stage.sieve_storage)
+                 .template select_min<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
+    }
     // Make sure smem can be reused by the rank stage
     __syncthreads();
 
     int scatter_indices[items_per_thread];
-    block_rank_t(storage.stage.select.rank_storage).rank_key_states(states, scatter_indices);
+    block_rank_t(storage.stage.select.rank_storage).rank_key_states(states.value(), scatter_indices);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)

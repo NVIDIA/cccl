@@ -16,6 +16,7 @@
 #include <cub/block/block_topk_rank.cuh>
 
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
 #include <cuda/std/__memory/pointer_traits.h>
@@ -182,11 +183,11 @@ __global__ void multi_key_kernel(
     secondary_sieve_t secondary_sieve(smem.secondary_sieve);
     if constexpr (SelectMax)
     {
-      secondary_sieve.refine_max(secondary_keys, states, 0, int(sizeof(SecondaryT) * 8));
+      secondary_sieve.refine_max(secondary_keys, states);
     }
     else
     {
-      secondary_sieve.refine_min(secondary_keys, states, 0, int(sizeof(SecondaryT) * 8));
+      secondary_sieve.refine_min(secondary_keys, states);
     }
     __syncthreads();
   }
@@ -727,19 +728,22 @@ C2H_TEST("block_topk_sieve produces the same selection across bit-window splits"
 
   SECTION("early exit before last window")
   {
-    // Distinct keys with non-zero bits only in window [16, 24): the top
-    // byte still ties after the first `select_max`, but the next refine
-    // over [16, 24) fully orders them, firing the iter-2 `!has_ties()`
-    // break and skipping windows [8, 16) and [0, 8).
+    // Distinct values `i in [0, tile_size)` shifted left by `2 * window_bits`,
+    // confining entropy to bits [16, 25). `select_max` over [24, 32) at most
+    // partitions candidates on bit 24; within each partition, `[16, 24)`
+    // bits are still distinct, so the iter-1 refine over [16, 24) fully
+    // orders the top-k. The iter-2 `!has_ties()` break then fires before
+    // visiting windows [8, 16) and [0, 8).
     const int k = GENERATE_COPY(values<int>({1, 11, tile_size / 4, tile_size - 1}));
     rng_t rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
     CAPTURE(k);
 
-    c2h::host_vector<key_t> h_in = distinct_keys<key_t>(tile_size, rng);
-    for (auto& x : h_in)
+    c2h::host_vector<key_t> h_in(tile_size);
+    for (int i = 0; i < tile_size; ++i)
     {
-      x = static_cast<key_t>(x << (2 * window_bits));
+      h_in[i] = static_cast<key_t>(i << (2 * window_bits));
     }
+    thrust::shuffle(h_in.begin(), h_in.end(), rng);
     constexpr int expected_last_hi = key_bits - 2 * window_bits;
     run_compare(h_in, k, expected_last_hi);
   }

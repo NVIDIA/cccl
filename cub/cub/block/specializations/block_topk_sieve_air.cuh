@@ -20,6 +20,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
