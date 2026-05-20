@@ -486,16 +486,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 // Implementation for indexing into a list of types:
 #  if _CCCL_HAS_PACK_INDEXING()
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
-
 template <size_t _Ip, class... _Ts>
 using __type_index_c = _Ts...[_Ip];
 
 template <class _Ip, class... _Ts>
 using __type_index = _Ts...[_Ip::value];
-
-_CCCL_DIAG_POP
 
 // Versions of nvcc prior to 12.0 have trouble with pack expansion into
 // __type_pack_element in an alias template, so we use the fall-back

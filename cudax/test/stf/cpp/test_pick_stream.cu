@@ -180,7 +180,7 @@ int main()
 
   // Test that host exec_place activate works (no-op in practice)
   {
-    exec_place host_place = exec_place::host;
+    exec_place host_place = exec_place::host();
     auto active           = host_place.activate();
   }
 
@@ -239,7 +239,7 @@ int main()
     context ctx;
 
     exec_place dev1_place = exec_place::device(1);
-    ctx.set_affinity({::std::make_shared<exec_place>(dev1_place)});
+    ctx.push_affinity(::std::make_shared<exec_place>(dev1_place));
 
     // Stream should now come from device 1's pool
     cudaStream_t affinity_stream = ctx.pick_stream();
