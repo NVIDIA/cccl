@@ -7,14 +7,6 @@
 
 #include <c2h/catch2_test_helper.h>
 
-struct always_true_t
-{
-  __host__ __device__ bool operator()(int) const
-  {
-    return true;
-  }
-};
-
 // Guard: the legacy memory-size query call with all defaults (no explicit stream)
 // must resolve unambiguously to the legacy temp-storage overload when the env
 // passthrough overload is also visible. If the env overload's SFINAE is too loose,
@@ -40,7 +32,8 @@ C2H_TEST("DevicePartition::If legacy size-query is unambiguous", "[partition][de
   size_t bytes        = 0;
   int n               = 0;
 
-  REQUIRE(cudaSuccess == cub::DevicePartition::If(nullptr, bytes, d_in, d_out, d_num_selected, n, always_true_t{}));
+  REQUIRE(
+    cudaSuccess == cub::DevicePartition::If(nullptr, bytes, d_in, d_out, d_num_selected, n, ::cuda::always_true{}));
 }
 
 C2H_TEST("DevicePartition::If three-way legacy size-query is unambiguous", "[partition][device]")
@@ -64,8 +57,8 @@ C2H_TEST("DevicePartition::If three-way legacy size-query is unambiguous", "[par
       d_unselected,
       d_num_selected,
       n,
-      always_true_t{},
-      always_true_t{}));
+      ::cuda::always_true{},
+      ::cuda::always_true{}));
 }
 
 // todo(giannis): extract examples from the docs to literalinclude extracts here
