@@ -23,6 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": true,
         "CCCL_SKIP_BUILD_CHECKS": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
@@ -35,6 +36,7 @@
       "displayName": "Installation / Packaging (only stable libraries)",
       "inherits": "base",
       "cacheVariables": {
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": false,
         "cudax_ENABLE_INSTALL_RULES": false,
         "CCCL_SKIP_BUILD_CHECKS": true
       }
@@ -523,8 +525,7 @@
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.nvtarget",
         "libcudacxx.test.atomics.ptx",
-        "libcudacxx.test.c2h_all",
-        "cccl.test.cuda_runtime_smoke"
+        "libcudacxx.test.c2h_all"
       ]
     },
     {
@@ -555,8 +556,7 @@
       "name": "libcudacxx-nvrtc",
       "configurePreset": "libcudacxx-nvrtc",
       "targets": [
-        "libcudacxx.nvrtcc",
-        "cccl.test.cuda_runtime_smoke"
+        "libcudacxx.nvrtcc"
       ]
     },
     {
@@ -901,7 +901,7 @@
       "inherits": "thrust",
       "filter": {
         "exclude": {
-          "name": "^(thrust.*\\.cuda\\..*|cccl\\.test\\.cuda_runtime_smoke)$"
+          "name": "^thrust.*\\.cuda\\..*$"
         }
       }
     },

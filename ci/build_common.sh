@@ -413,6 +413,10 @@ function test_preset()
 
     if $GPU_REQUIRED; then
         fail_if_no_gpu
+        local smoke_bin="${BUILD_DIR}/${PRESET}/bin/cccl.test.cuda_runtime_smoke"
+        if [[ -x "$smoke_bin" ]]; then
+            run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "$smoke_bin" || return $?
+        fi
     fi
 
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
