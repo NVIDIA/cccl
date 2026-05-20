@@ -275,11 +275,11 @@ using max_segment_size_list = nvbench::enum_type_list< //
   1024,
   2048,
   4096,
-  8192
+  8192,
+  16384,
+  32768
 #if 0 // need these, waiting for implementation to catch up
   ,
-  16384,
-  32768,
   65536,
   131072,
   262144,
