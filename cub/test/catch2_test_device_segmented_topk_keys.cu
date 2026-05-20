@@ -352,10 +352,14 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys cluster prototype works with small fi
   // Cover both partially-padded clusters (small sizes; some cluster blocks
   // are entirely sentinel keys) and the fully-utilized path (sizes large
   // enough to put real keys on every block of the cluster). With the default
-  // cluster tile of 8192 and a 4-block cluster, 7000 reaches into block 3's
-  // tile so all four blocks see real work.
+  // 8-block cluster (per-block tile = 1024), sizes >= 7169 reach block 7;
+  // 8192 fills every block exactly.
   const segment_size_t segment_size = GENERATE_COPY(
-    values({min_segment_size, segment_size_t{3}, segment_size_t{7000}, max_segment_size}),
+    values({min_segment_size,
+            segment_size_t{3},
+            segment_size_t{4097}, // straddles the block-2 / block-3 boundary in 4-block cfgs
+            segment_size_t{7500}, // exercises every block in the default 8-block cluster
+            max_segment_size}),
     take(2, random(min_segment_size, max_segment_size)));
   const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
 

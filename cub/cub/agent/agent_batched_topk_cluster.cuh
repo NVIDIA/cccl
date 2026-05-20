@@ -128,6 +128,16 @@ struct agent_batched_topk_cluster
   using decomposer_t = detail::identity_decomposer_t;
 
   // ---------------------------------------------------------------------------
+  // Block-scan used by the leader block to prefix-sum its merged histogram
+  // ---------------------------------------------------------------------------
+  // Constraint: every leader thread owns at most one bucket. Threads beyond
+  // num_buckets contribute zero to the scan, which keeps the prefix-sum loop
+  // body trivial (1 item per thread, no inner loops).
+  static_assert(num_buckets <= threads_per_block,
+                "Cluster top-k requires num_buckets <= threads_per_block (1 bin per leader thread or fewer)");
+  using block_scan_t = BlockScan<offset_t, threads_per_block, BLOCK_SCAN_WARP_SCANS>;
+
+  // ---------------------------------------------------------------------------
   // Shared memory storage
   // ---------------------------------------------------------------------------
   // The same layout is allocated by every block of the cluster so that any
@@ -144,6 +154,7 @@ struct agent_batched_topk_cluster
     state_t state;
     key_prefix_t broadcast_kth;
     ::cuda::std::uint32_t broadcast_early_stop;
+    typename block_scan_t::TempStorage scan_storage;
   };
 
   struct TempStorage : Uninitialized<_TempStorage>
@@ -196,43 +207,41 @@ private:
     }
   }
 
-  // Sequential prefix sum on the leader's histogram + locate the bucket
-  // containing the k-th item. Runs on thread 0 of the leader block.
-  // num_buckets is small (256 for 8 bits/pass) so this serial pass is fine
-  // for the prototype.
+  // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
+  // plus identification of the bucket holding the k-th item. Every thread of
+  // the leader block participates with one bucket; threads with rank beyond
+  // num_buckets contribute zero. The single thread that owns the k-th bucket
+  // writes the per-pass state. The caller must guarantee the leader block
+  // has finished its DSMEM merge before invoking this.
   _CCCL_DEVICE _CCCL_FORCEINLINE void leader_identify_kth_bucket(int pass)
   {
-    if (threadIdx.x == 0)
+    // Capture `state.k` before the scan: this is the only legal window where
+    // every thread is guaranteed to read the previous pass's value. The
+    // owning thread overwrites `state.k` in the if-block below, so any read
+    // after that point would race with that write.
+    const out_offset_t target_k = temp_storage.state.k;
+
+    const int bucket        = static_cast<int>(threadIdx.x);
+    const bool owns_bucket  = bucket < num_buckets;
+    const offset_t hist_val = owns_bucket ? temp_storage.hist[bucket] : offset_t{0};
+    offset_t prefix         = 0;
+
+    block_scan_t(temp_storage.scan_storage).ExclusiveSum(hist_val, prefix);
+
+    // Exactly one thread satisfies `prefix < target_k <= prefix + hist_val`.
+    if (owns_bucket && prefix < target_k && prefix + hist_val >= target_k)
     {
-      const out_offset_t target_k = temp_storage.state.k;
-      offset_t cumulative         = 0;
-      out_offset_t selected_prev  = 0;
-      offset_t selected_cur       = 0;
-      int selected_bucket         = num_buckets - 1;
-      bool found                  = false;
-      for (int b = 0; b < num_buckets; ++b)
-      {
-        const offset_t cur = temp_storage.hist[b];
-        if (!found && cumulative + cur >= target_k)
-        {
-          selected_bucket = b;
-          selected_prev   = static_cast<out_offset_t>(cumulative);
-          selected_cur    = cur;
-          found           = true;
-        }
-        cumulative += cur;
-      }
-      const out_offset_t new_k        = target_k - selected_prev;
-      const offset_t new_len           = selected_cur;
-      temp_storage.state.len           = new_len;
-      temp_storage.state.k             = new_k;
+      const out_offset_t new_k = target_k - static_cast<out_offset_t>(prefix);
+      const offset_t new_len   = hist_val;
+      temp_storage.state.len   = new_len;
+      temp_storage.state.k     = new_k;
       // Early-stop opportunity: the bucket holding the k-th key contains
-      // exactly the remaining `k` items. Every candidate is therefore part of
-      // the top-k, so subsequent radix passes only redistribute the same
+      // exactly the remaining `k` items. Every candidate is therefore part
+      // of the top-k, so subsequent radix passes only redistribute the same
       // items across finer buckets without changing the final result.
       temp_storage.state.early_stop =
         (static_cast<out_offset_t>(new_len) == new_k) ? ::cuda::std::uint32_t{1} : ::cuda::std::uint32_t{0};
-      detail::topk::set_kth_key_bits<key_t, bits_per_pass>(temp_storage.state.kth_key_bits, pass, selected_bucket);
+      detail::topk::set_kth_key_bits<key_t, bits_per_pass>(temp_storage.state.kth_key_bits, pass, bucket);
     }
   }
 

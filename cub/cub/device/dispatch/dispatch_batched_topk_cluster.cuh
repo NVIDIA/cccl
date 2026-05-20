@@ -43,10 +43,14 @@ namespace detail::batched_topk_cluster
 // Default tuning
 // -----------------------------------------------------------------------------
 // Defaults chosen so a single cluster tile holds the largest segment we expect
-// in the existing test and benchmark coverage (8 KiB items @ 4 bytes each).
-inline constexpr int default_cluster_size      = 4;
-inline constexpr int default_threads_per_block = 128;
-inline constexpr int default_items_per_thread  = 16;
+// in the existing test and benchmark coverage (8 KiB items). The leader
+// block's BlockScan uses 1 bin per thread, so threads_per_block (256) must be
+// >= num_buckets (1 << bits_per_pass = 256). Cluster size is 8 — the largest
+// portable cluster size — so all eight blocks of the cluster participate in
+// the histogram merge.
+inline constexpr int default_cluster_size      = 8;
+inline constexpr int default_threads_per_block = 256;
+inline constexpr int default_items_per_thread  = 4;
 inline constexpr int default_bits_per_pass     = 8;
 
 // -----------------------------------------------------------------------------
