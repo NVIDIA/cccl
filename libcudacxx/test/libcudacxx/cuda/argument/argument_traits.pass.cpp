@@ -10,6 +10,8 @@
 
 #include <cuda/argument>
 #include <cuda/std/array>
+#include <cuda/std/limits>
+#include <cuda/std/mdspan>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
@@ -22,6 +24,24 @@ enum class color
   blue
 };
 
+template <class _Tp>
+struct element_type_like
+{
+  using element_type = _Tp;
+};
+
+template <class _Tp>
+struct range_like
+{
+  using iterator = _Tp*;
+};
+
+template <class _Tp>
+struct value_type_like
+{
+  using value_type = _Tp;
+};
+
 TEST_FUNC void test()
 {
   // --- __is_single_value_v ---
@@ -32,10 +52,23 @@ TEST_FUNC void test()
   static_assert(cuda::argument::__is_single_value_v<const int>);
   static_assert(cuda::argument::__is_single_value_v<color>);
   static_assert(cuda::argument::__is_single_value_v<cuda::std::span<int, 1>>);
+  static_assert(cuda::argument::__is_single_value_v<const cuda::std::span<int, 1>&>);
   static_assert(!cuda::argument::__is_single_value_v<int*>);
   static_assert(!cuda::argument::__is_single_value_v<cuda::std::span<int>>);
   static_assert(!cuda::argument::__is_single_value_v<cuda::std::span<int, 4>>);
   static_assert(!cuda::argument::__is_single_value_v<cuda::std::array<int, 3>>);
+
+  // --- __element_type_of_t ---
+
+  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<const cuda::std::span<int, 1>&>, int>);
+  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<int*>, int>);
+  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<cuda::std::array<int, 3>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<range_like<int>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<element_type_like<int>>, int>);
+  static_assert(
+    cuda::std::is_same_v<cuda::argument::__element_type_of_t<cuda::std::mdspan<const int, cuda::std::extents<int, 1>>>,
+                         int>);
+  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<value_type_like<int>>, int>);
 
   // --- argument_traits: is_deferred ---
 
@@ -50,6 +83,7 @@ TEST_FUNC void test()
   static_assert(cuda::argument::__traits<int>::is_single_value);
   static_assert(!cuda::argument::__traits<int*>::is_single_value);
   static_assert(cuda::argument::__traits<cuda::argument::__immediate<int>>::is_single_value);
+  static_assert(cuda::argument::__traits<cuda::argument::__immediate<const cuda::std::span<int, 1>>>::is_single_value);
   static_assert(!cuda::argument::__traits<cuda::argument::__immediate<cuda::std::span<int>>>::is_single_value);
   static_assert(cuda::argument::__traits<cuda::argument::__constant<42>>::is_single_value);
   static_assert(cuda::argument::__traits<cuda::argument::__deferred_value<int*>>::is_single_value);

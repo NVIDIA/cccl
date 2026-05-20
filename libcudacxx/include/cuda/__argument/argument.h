@@ -25,7 +25,7 @@
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__cccl/assert.h>
-#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -50,41 +50,37 @@ _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT
 // __element_type_of
 // =====================================================================
 
+template <class _Tp, class = void>
+struct __element_type_from_member_iterator
+{
+  using type = _Tp;
+};
+
+template <class _Tp>
+struct __element_type_from_member_iterator<_Tp, ::cuda::std::void_t<::cuda::std::iter_value_t<typename _Tp::iterator>>>
+{
+  using type = ::cuda::std::iter_value_t<typename _Tp::iterator>;
+};
+
 // Primary: scalars, enums — element type is the type itself
 template <class _Tp, class = void>
-struct __element_type_of
-{
-  using type = _Tp;
-};
+struct __element_type_of : __element_type_from_member_iterator<_Tp>
+{};
 
-// Pointers
 template <class _Tp>
-struct __element_type_of<_Tp*>
+struct __element_type_of<_Tp, ::cuda::std::void_t<::cuda::std::iter_value_t<_Tp>>>
 {
-  using type = _Tp;
-};
-
-// Types with element_type member typedef (e.g., span)
-template <class _Tp>
-struct __element_type_of<_Tp, ::cuda::std::void_t<typename _Tp::element_type>>
-{
-  using type = typename _Tp::element_type;
-};
-
-// Arrays (std::array has value_type, not element_type)
-template <class _Tp, size_t _Size>
-struct __element_type_of<::cuda::std::array<_Tp, _Size>>
-{
-  using type = _Tp;
+  using type = ::cuda::std::iter_value_t<_Tp>;
 };
 
 template <class _Tp>
-using __element_type_of_t = typename __element_type_of<_Tp>::type;
+using __element_type_of_t = typename __element_type_of<::cuda::std::remove_cvref_t<_Tp>>::type;
 
 // =====================================================================
 // __is_single_value_v
 // =====================================================================
 
+// TODO(pciolkosz): Improve this for more single value cases like optional etc.
 template <class _Tp>
 inline constexpr bool __is_value_ref_v = false;
 template <class _Tp>
@@ -92,8 +88,8 @@ inline constexpr bool __is_value_ref_v<::cuda::std::span<_Tp, 1>> = true;
 
 template <class _Tp>
 inline constexpr bool __is_single_value_v =
-  ::cuda::std::is_arithmetic_v<::cuda::std::remove_cv_t<_Tp>> || ::cuda::std::is_enum_v<::cuda::std::remove_cv_t<_Tp>>
-  || __is_value_ref_v<_Tp>;
+  ::cuda::std::is_arithmetic_v<::cuda::std::remove_cvref_t<_Tp>>
+  || ::cuda::std::is_enum_v<::cuda::std::remove_cvref_t<_Tp>> || __is_value_ref_v<::cuda::std::remove_cvref_t<_Tp>>;
 
 // =====================================================================
 // __constant
@@ -307,15 +303,9 @@ public:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED
-template <class _Arg>
-_CCCL_HOST_DEVICE __immediate(_Arg) -> __immediate<_Arg>;
-
 template <class _Arg, auto _Lowest, auto _Max>
 _CCCL_HOST_DEVICE __immediate(_Arg, __static_bounds<_Lowest, _Max>)
   -> __immediate<_Arg, __static_bounds<_Lowest, _Max>>;
-
-template <class _Arg, class _Tp>
-_CCCL_HOST_DEVICE __immediate(_Arg, __runtime_bounds<_Tp>) -> __immediate<_Arg>;
 
 template <class _Arg, auto _Lowest, auto _Max, class _Tp>
 _CCCL_HOST_DEVICE __immediate(_Arg, __static_bounds<_Lowest, _Max>, __runtime_bounds<_Tp>)
