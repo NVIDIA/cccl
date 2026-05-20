@@ -25,7 +25,6 @@
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
 
@@ -95,6 +94,25 @@ private:
   /// Linear thread index
   int linear_tid;
 
+  template <detail::topk::select Dir, bool Full>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static block_topk_key_states<items_per_thread> sieve_select(
+    block_sieve_storage_t& sieve_storage,
+    KeyT (&keys)[items_per_thread],
+    int k,
+    int valid_items,
+    int begin_bit,
+    int end_bit)
+  {
+    if constexpr (Dir == detail::topk::select::max)
+    {
+      return block_sieve_t(sieve_storage).template select_max<Full>(keys, k, valid_items, begin_bit, end_bit);
+    }
+    else
+    {
+      return block_sieve_t(sieve_storage).template select_min<Full>(keys, k, valid_items, begin_bit, end_bit);
+    }
+  }
+
   template <detail::topk::select SelectDirection, bool IsFullTile>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void select_topk(
     KeyT (&keys)[items_per_thread],
@@ -120,22 +138,13 @@ private:
       end_bit = max_bit;
     }
 
-    ::cuda::std::optional<block_topk_key_states<items_per_thread>> states;
-    if constexpr (SelectDirection == detail::topk::select::max)
-    {
-      states = block_sieve_t(storage.stage.sieve_storage)
-                 .template select_max<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
-    }
-    else
-    {
-      states = block_sieve_t(storage.stage.sieve_storage)
-                 .template select_min<IsFullTile>(keys, k, valid_items, begin_bit, end_bit);
-    }
+    auto states =
+      sieve_select<SelectDirection, IsFullTile>(storage.stage.sieve_storage, keys, k, valid_items, begin_bit, end_bit);
     // Make sure smem can be reused by the rank stage
     __syncthreads();
 
     int scatter_indices[items_per_thread];
-    block_rank_t(storage.stage.select.rank_storage).rank_key_states(states.value(), scatter_indices);
+    block_rank_t(storage.stage.select.rank_storage).rank_key_states(states, scatter_indices);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)

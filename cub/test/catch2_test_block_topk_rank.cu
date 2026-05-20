@@ -221,7 +221,7 @@ bit_window_kernel(cuda::std::span<const KeyT> g_in, cuda::std::span<KeyT> g_top,
   using sieve_t = cub::detail::block_topk_sieve<KeyT, BlockDim>;
   using rank_t  = cub::detail::block_topk_rank<BlockDim>;
 
-  static_assert(int(sizeof(KeyT) * 8) % WindowBits == 0, "test currently requires window-aligned key width");
+  static_assert(int{sizeof(KeyT) * 8} % WindowBits == 0, "test currently requires window-aligned key width");
 
   constexpr int tile_size = BlockDim * ItemsPerThread;
   const int k             = static_cast<int>(g_top.size());
@@ -238,7 +238,7 @@ bit_window_kernel(cuda::std::span<const KeyT> g_in, cuda::std::span<KeyT> g_top,
   sieve_t sieve(smem.sieve);
 
   constexpr bool is_full_tile = true;
-  int hi                      = int(sizeof(KeyT) * 8);
+  int hi                      = int{sizeof(KeyT) * 8};
   auto states                 = sieve.template select_max<is_full_tile>(keys, k, tile_size, hi - WindowBits, hi);
   hi -= WindowBits;
 
