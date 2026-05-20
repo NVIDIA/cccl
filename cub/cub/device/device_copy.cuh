@@ -177,8 +177,6 @@ struct DeviceCopy
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - This operation provides ``gpu_to_gpu`` determinism: results are identical across different GPU architectures.
-  //!
   //! .. note::
   //!
   //!    If any input range aliases any output range the behavior is undefined.
@@ -360,16 +358,14 @@ struct DeviceCopy
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
+  //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
+  //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
+  //! transformations.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
-  //!
-  //! - This operation provides ``gpu_to_gpu`` determinism: results are identical across different GPU architectures.
-  //!
-  //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
-  //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
-  //! transformations.
   //!
   //! Preconditions
   //! +++++++++++++
