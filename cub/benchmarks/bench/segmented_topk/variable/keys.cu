@@ -3,6 +3,14 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
+
+// Compile-time switch: define BENCH_CLUSTER_TOPK=1 to drive the prototype
+// cluster-based dispatch instead of the small-segment baseline. We default to
+// the baseline so existing benchmark scripts keep their behavior.
+#ifndef BENCH_CLUSTER_TOPK
+#  define BENCH_CLUSTER_TOPK 0
+#endif
 
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
@@ -198,6 +206,19 @@ void variable_seg_size_topk_keys(nvbench::state& state,
   state.add_global_memory_writes<KeyT>(output_elements, "OutputKeys");
 
   size_t temp_size{};
+#if BENCH_CLUSTER_TOPK
+  cub::detail::batched_topk_cluster::dispatch(
+    nullptr,
+    temp_size,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes_param,
+    k_param,
+    select_directions,
+    num_segments_uniform_param,
+    total_num_items,
+    nullptr);
+#else
   cub::detail::batched_topk::dispatch(
     nullptr,
     temp_size,
@@ -211,11 +232,25 @@ void variable_seg_size_topk_keys(nvbench::state& state,
     num_segments_uniform_param,
     total_num_items,
     nullptr);
+#endif
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+#if BENCH_CLUSTER_TOPK
+    cub::detail::batched_topk_cluster::dispatch(
+      temp_storage,
+      temp_size,
+      d_keys_in,
+      d_keys_out,
+      segment_sizes_param,
+      k_param,
+      select_directions,
+      num_segments_uniform_param,
+      total_num_items,
+      launch.get_stream());
+#else
     cub::detail::batched_topk::dispatch(
       temp_storage,
       temp_size,
@@ -229,6 +264,7 @@ void variable_seg_size_topk_keys(nvbench::state& state,
       num_segments_uniform_param,
       total_num_items,
       launch.get_stream());
+#endif
   });
 }
 
