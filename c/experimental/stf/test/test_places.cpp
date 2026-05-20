@@ -253,13 +253,9 @@ C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[t
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  float* X = static_cast<float*>(malloc(4 * sizeof(float)));
-  for (size_t i = 0; i < 4; ++i)
-  {
-    X[i] = 0.0f;
-  }
+  std::vector<float> X(4, 0.0f);
 
-  stf_logical_data_handle lX = stf_logical_data(ctx, X, 4 * sizeof(float));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X.data(), X.size() * sizeof(float));
   REQUIRE(lX != nullptr);
 
   stf_task_handle t = stf_task_create(ctx);
@@ -289,8 +285,6 @@ C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[t
   stf_exec_place_grid_destroy(grid);
   stf_logical_data_destroy(lX);
   stf_ctx_finalize(ctx);
-
-  free(X);
 }
 
 C2H_TEST("task get_grid_dims returns error for non-grid exec_place", "[task][places][grid]")
