@@ -38,8 +38,8 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     static_assert(cuda::std::is_same_v<cudax::barrier_synchronizer<Barrier, nbarriers>, decltype(synchronizer)>);
     static_assert(cuda::std::is_nothrow_constructible_v<decltype(synchronizer), decltype(barriers_span)>);
 
-    CUDAX_CHECK(synchronizer.barriers().data() == barriers);
-    CUDAX_CHECK(synchronizer.barriers().size() == nbarriers);
+    CHECK(synchronizer.barriers().data() == barriers);
+    CHECK(synchronizer.barriers().size() == nbarriers);
   }
 
   // Test constructor from dynamic span of barriers.
@@ -54,8 +54,8 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
       cuda::std::is_same_v<cudax::barrier_synchronizer<Barrier, cuda::std::dynamic_extent>, decltype(synchronizer)>);
     static_assert(cuda::std::is_nothrow_constructible_v<decltype(synchronizer), decltype(barriers_span)>);
 
-    CUDAX_CHECK(synchronizer.barriers().data() == barriers);
-    CUDAX_CHECK(synchronizer.barriers().size() == nbarriers);
+    CHECK(synchronizer.barriers().data() == barriers);
+    CHECK(synchronizer.barriers().size() == nbarriers);
   }
 
   // Test constructor from array of barriers.
@@ -68,8 +68,8 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     static_assert(cuda::std::is_same_v<cudax::barrier_synchronizer<Barrier, nbarriers>, decltype(synchronizer)>);
     static_assert(cuda::std::is_nothrow_constructible_v<decltype(synchronizer), decltype(barriers)>);
 
-    CUDAX_CHECK(synchronizer.barriers().data() == barriers);
-    CUDAX_CHECK(synchronizer.barriers().size() == nbarriers);
+    CHECK(synchronizer.barriers().data() == barriers);
+    CHECK(synchronizer.barriers().size() == nbarriers);
   }
 
   // Test barriers().
@@ -82,8 +82,8 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     static_assert(cuda::std::is_same_v<cuda::std::span<Barrier, nbarriers>, decltype(synchronizer.barriers())>);
     static_assert(noexcept(synchronizer.barriers()));
 
-    CUDAX_CHECK(synchronizer.barriers().data() == barriers);
-    CUDAX_CHECK(synchronizer.barriers().size() == nbarriers);
+    CHECK(synchronizer.barriers().data() == barriers);
+    CHECK(synchronizer.barriers().size() == nbarriers);
   }
 
   // Test make_instance(...).

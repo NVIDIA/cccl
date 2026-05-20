@@ -99,8 +99,8 @@ C2H_TEST("1d Copy", "[data_manipulation]")
     cuda::copy_bytes(_stream, host_buffer, vec);
     _stream.sync();
 
-    CUDAX_REQUIRE(vec[0] == get_expected_value(fill_byte));
-    CUDAX_REQUIRE(vec[1] == 0xbeef);
+    REQUIRE(vec[0] == get_expected_value(fill_byte));
+    REQUIRE(vec[1] == 0xbeef);
   }
 }
 
@@ -127,7 +127,7 @@ void test_mdspan_copy_bytes(
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
   {
-    CUDAX_CHECK(dst(0, i) == i);
+    CHECK(dst(0, i) == i);
   }
 }
 
@@ -165,7 +165,7 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
 
     cuda::copy_bytes(stream, mdspan, buffer);
     stream.sync();
-    CUDAX_REQUIRE(!memcmp(mdspan_buffer.data(), buffer.data, mdspan_buffer.size()));
+    REQUIRE(!memcmp(mdspan_buffer.data(), buffer.data, mdspan_buffer.size()));
   }
 }
 
