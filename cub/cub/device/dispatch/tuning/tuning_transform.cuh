@@ -48,10 +48,12 @@ struct always_true_predicate
 } // namespace detail::transform
 CUB_NAMESPACE_END
 
+namespace cuda
+{
 template <>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
-    : ::cuda::std::true_type
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
 {};
+} // namespace cuda
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform

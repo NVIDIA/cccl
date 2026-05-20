@@ -21,21 +21,21 @@
 #include "types.h"
 
 #if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+using property_test_types =
+  c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
+                 cuda::buffer<int, cuda::mr::device_accessible>,
+                 cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
+using property_test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cuda::buffer properties", "[container][buffer]", test_types)
+C2H_CCCLRT_TEST("cuda::buffer properties", "[container][buffer]", property_test_types)
 {
-  using TestT                  = c2h::get<0, TestType>;
-  using Buffer                 = typename extract_properties<TestT>::buffer;
-  using iterator               = typename extract_properties<TestT>::iterator;
-  using const_iterator         = typename extract_properties<TestT>::const_iterator;
-  using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
-  using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
+  using Buffer                 = c2h::get<0, TestType>;
+  using iterator               = typename Buffer::iterator;
+  using const_iterator         = typename Buffer::const_iterator;
+  using reverse_iterator       = typename Buffer::reverse_iterator;
+  using const_reverse_iterator = typename Buffer::const_reverse_iterator;
 
   // Check the type aliases
   static_assert(cuda::std::is_same_v<int, typename Buffer::value_type>, "");
