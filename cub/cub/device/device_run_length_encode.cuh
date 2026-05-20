@@ -29,8 +29,6 @@
 
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -131,6 +129,9 @@ struct DeviceRunLengthEncode
   //! @tparam NumRunsOutputIteratorT
   //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -151,7 +152,7 @@ struct DeviceRunLengthEncode
   //!   Pointer to total number of runs
   //!
   //! @param[in] num_items
-  //!   Total number of associated key+value pairs (i.e., the length of `d_in_keys` and `d_in_values`)
+  //!   Total number of input items (i.e., the length of `d_in`)
   //!
   //! @param[in] stream
   //!   @rst
@@ -283,8 +284,7 @@ struct DeviceRunLengthEncode
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
     InputIteratorT d_in,
     UniqueOutputIteratorT d_unique_out,
@@ -394,6 +394,9 @@ struct DeviceRunLengthEncode
   //! @tparam NumRunsOutputIteratorT
   //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -415,7 +418,7 @@ struct DeviceRunLengthEncode
   //!   Pointer to total number of runs (i.e., length of `d_offsets_out`)
   //!
   //! @param[in] num_items
-  //!   Total number of associated key+value pairs (i.e., the length of `d_in_keys` and `d_in_values`)
+  //!   Total number of input items (i.e., the length of `d_in`)
   //!
   //! @param[in] stream
   //!   @rst
@@ -530,8 +533,7 @@ struct DeviceRunLengthEncode
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t NonTrivialRuns(
     InputIteratorT d_in,
     OffsetsOutputIteratorT d_offsets_out,
