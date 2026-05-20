@@ -153,8 +153,7 @@ TEST_FUNC constexpr bool unused(T&&...)
 
 // Class-type and floating-point NTTPs require C++20 and are broken on nvcc < 13.1
 #if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L \
-  && (!TEST_CUDA_COMPILER(NVCC)                                                    \
-      || (__CUDACC_VER_MAJOR__ > 13 || (__CUDACC_VER_MAJOR__ == 13 && __CUDACC_VER_MINOR__ >= 1)))
+  && !TEST_CUDA_COMPILER(NVCC, <, 13, 1)
 #  define TEST_HAS_CLASS_NTTP 1
 #else
 #  define TEST_HAS_CLASS_NTTP 0
