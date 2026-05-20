@@ -37,7 +37,7 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-if-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
 }
@@ -65,7 +65,7 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flagged-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
 }
@@ -94,7 +94,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flaggedif-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
 }
@@ -120,7 +120,7 @@ C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flagged-inplace-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
   REQUIRE(data == expected_output);
@@ -147,7 +147,7 @@ C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-if-inplace-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
   REQUIRE(data == expected_output);
@@ -176,7 +176,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[sele
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flaggedif-inplace-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
   REQUIRE(data == expected_output);
@@ -203,7 +203,7 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
   thrust::device_vector<int> expected_num_selected{5};
   // example-end select-unique-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
 }
@@ -235,7 +235,7 @@ C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with str
   // example-end select-unique-eqop-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(num_selected == expected_num_selected);
   output.resize(num_selected[0]);
   REQUIRE(output == expected_output);
@@ -262,7 +262,7 @@ C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select]
   // example-end select-unique-inplace-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
   REQUIRE(data == expected_output);
@@ -293,7 +293,7 @@ C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env
   // example-end select-unique-inplace-eqop-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
   REQUIRE(data == expected_output);
@@ -331,7 +331,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
   thrust::device_vector<int> expected_num_selected{5};
   // example-end select-uniquebykey-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
   REQUIRE(num_selected == expected_num_selected);
@@ -364,7 +364,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equalit
   thrust::device_vector<int> expected_num_selected{5};
   // example-end select-uniquebykey-default-eq-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
   REQUIRE(num_selected == expected_num_selected);
@@ -391,7 +391,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts default env without equality_op
   thrust::device_vector<int> expected_values{1, 2, 4, 5, 8};
   thrust::device_vector<int> expected_num_selected{5};
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
   REQUIRE(num_selected == expected_num_selected);

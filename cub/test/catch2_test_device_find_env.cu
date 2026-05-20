@@ -44,7 +44,7 @@ TEST_CASE("Device FindIf works with default environment", "[find][device]")
   is_greater_than_t predicate{4};
 
   auto error = cub::DeviceFind::FindIf(d_in.begin(), d_out.begin(), predicate, num_items);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out[0] == 5);
 }
 
@@ -56,7 +56,7 @@ TEST_CASE("Device FindIf no match returns num_items with default environment", "
   is_greater_than_t predicate{100};
 
   auto error = cub::DeviceFind::FindIf(d_in.begin(), d_out.begin(), predicate, num_items);
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_out[0] == num_items);
 }
 
@@ -66,14 +66,13 @@ TEST_CASE("Device LowerBound works with default environment", "[find][device]")
   auto d_values = c2h::device_vector<int>{1, 3, 5, 7};
   auto d_output = c2h::device_vector<int>(4);
 
-  auto error = cub::DeviceFind::LowerBound(
+  REQUIRE_CUDART(cub::DeviceFind::LowerBound(
     d_range.begin(),
     static_cast<int>(d_range.size()),
     d_values.begin(),
     static_cast<int>(d_values.size()),
     d_output.begin(),
-    cuda::std::less{});
-  REQUIRE(error == cudaSuccess);
+    cuda::std::less{}));
 
   c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
@@ -85,14 +84,13 @@ TEST_CASE("Device UpperBound works with default environment", "[find][device]")
   auto d_values = c2h::device_vector<int>{1, 3, 5, 7};
   auto d_output = c2h::device_vector<int>(4);
 
-  auto error = cub::DeviceFind::UpperBound(
+  REQUIRE_CUDART(cub::DeviceFind::UpperBound(
     d_range.begin(),
     static_cast<int>(d_range.size()),
     d_values.begin(),
     static_cast<int>(d_values.size()),
     d_output.begin(),
-    cuda::std::less{});
-  REQUIRE(error == cudaSuccess);
+    cuda::std::less{}));
 
   c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
@@ -108,9 +106,8 @@ C2H_TEST("Device FindIf uses environment", "[find][device]")
   is_greater_than_t predicate{4};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceFind::FindIf(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), predicate, num_items));
+  REQUIRE_CUDART(
+    cub::DeviceFind::FindIf(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), predicate, num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -126,17 +123,15 @@ C2H_TEST("Device LowerBound uses environment", "[find][device]")
   auto d_output = c2h::device_vector<int>(4);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceFind::LowerBound(
-      nullptr,
-      expected_bytes_allocated,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      cuda::std::less{}));
+  REQUIRE_CUDART(cub::DeviceFind::LowerBound(
+    nullptr,
+    expected_bytes_allocated,
+    d_range.begin(),
+    static_cast<int>(d_range.size()),
+    d_values.begin(),
+    static_cast<int>(d_values.size()),
+    d_output.begin(),
+    cuda::std::less{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -160,17 +155,15 @@ C2H_TEST("Device UpperBound uses environment", "[find][device]")
   auto d_output = c2h::device_vector<int>(4);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceFind::UpperBound(
-      nullptr,
-      expected_bytes_allocated,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      cuda::std::less{}));
+  REQUIRE_CUDART(cub::DeviceFind::UpperBound(
+    nullptr,
+    expected_bytes_allocated,
+    d_range.begin(),
+    static_cast<int>(d_range.size()),
+    d_values.begin(),
+    static_cast<int>(d_values.size()),
+    d_output.begin(),
+    cuda::std::less{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 

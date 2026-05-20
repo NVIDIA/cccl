@@ -733,7 +733,7 @@ __global__ void unrelated_kernel()
 C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static SMEM consumption", "[device][transform]")
 {
   cudaFuncAttributes attrs;
-  REQUIRE(cudaFuncGetAttributes(&attrs, unrelated_kernel) == cudaSuccess);
+  REQUIRE_CUDART(cudaFuncGetAttributes(&attrs, unrelated_kernel));
   REQUIRE(attrs.sharedSizeBytes == 4 + 12);
 }
 

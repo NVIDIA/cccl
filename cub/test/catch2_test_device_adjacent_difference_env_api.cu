@@ -33,7 +33,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adj
   thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   // example-end subtract-left-copy-env-stream
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -55,7 +55,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
   // example-end subtract-left-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(data == expected);
 }
 
@@ -79,7 +79,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[ad
   // example-end subtract-right-copy-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -101,6 +101,6 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjace
   // example-end subtract-right-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(data == expected);
 }

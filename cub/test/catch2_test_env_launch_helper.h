@@ -302,7 +302,7 @@ void launch(ActionT action, Args... args)
   else
   {
     // Create new stream one otherwise
-    REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
+    REQUIRE_CUDART(cudaStreamCreate(&stream));
   }
 
   // cuda graphs do not support default stream
@@ -321,36 +321,36 @@ void launch(ActionT action, Args... args)
   auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
 
   cudaGraph_t graph{};
-  REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
+  REQUIRE_CUDART(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
 
   cuda::std::apply(
     [stream, action](auto... args) {
       // Make sure specified stream is used
       stream_scope scope(stream);
       cudaError_t error = action(args...);
-      REQUIRE(cudaSuccess == error);
+      REQUIRE_CUDART(error);
     },
     fixed_args);
 
-  REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
+  REQUIRE_CUDART(cudaStreamEndCapture(stream, &graph));
 
   cudaGraphExec_t exec{};
-  REQUIRE(cudaSuccess == cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+  REQUIRE_CUDART(cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
 
-  REQUIRE(cudaSuccess == cudaGraphLaunch(exec, stream));
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
+  REQUIRE_CUDART(cudaGraphLaunch(exec, stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream));
 
   // Make sure there are no memory leaks
   REQUIRE(bytes_deallocated == bytes_allocated);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
-  REQUIRE(cudaSuccess == cudaGraphExecDestroy(exec));
-  REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
+  REQUIRE_CUDART(cudaGraphExecDestroy(exec));
+  REQUIRE_CUDART(cudaGraphDestroy(graph));
 
   if constexpr (!cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
   {
-    REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
+    REQUIRE_CUDART(cudaStreamDestroy(stream));
   }
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>)
@@ -422,14 +422,14 @@ void launch(ActionT action, Args... args)
   cuda::std::apply(
     [&](auto... args) {
       device_side_api_launch_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_error.data()), action, args...);
-      REQUIRE(cudaSuccess == d_error[0]);
+      REQUIRE_CUDART(d_error[0]);
     },
     fixed_args);
 
   REQUIRE(d_allocated[0] == expected_bytes_allocated);
   REQUIRE(d_allocated[0] == d_deallocated[0]);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 #else // TEST_LAUNCH == 0
@@ -457,7 +457,7 @@ void launch(ActionT action, Args... args)
   else
   {
     // Create new stream one otherwise
-    REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
+    REQUIRE_CUDART(cudaStreamCreate(&stream));
   }
 
   size_t bytes_allocated{};
@@ -493,18 +493,18 @@ void launch(ActionT action, Args... args)
       stream_scope allowed_stream(stream);
       kernel_scope allowed_kernels(kernels);
       cudaError_t error = action(args...);
-      REQUIRE(cudaSuccess == error);
+      REQUIRE_CUDART(error);
     },
     fixed_args);
 
   // Make sure there are no memory leaks
   REQUIRE(bytes_deallocated == bytes_allocated);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   if constexpr (!cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
   {
-    REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
+    REQUIRE_CUDART(cudaStreamDestroy(stream));
   }
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>)

@@ -48,7 +48,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
   // example-end segmented-radix-sort-pairs-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -87,7 +87,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
   // example-end segmented-radix-sort-pairs-descending-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -121,7 +121,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
   // example-end segmented-radix-sort-keys-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
 }
 
@@ -154,7 +154,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
   // example-end segmented-radix-sort-keys-descending-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected_keys);
 }
 
@@ -181,7 +181,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys DoubleBuffer env with stream",
   // example-end segmented-radix-sort-keys-db-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -213,7 +213,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer env wit
   // example-end segmented-radix-sort-keys-descending-db-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -256,7 +256,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs DoubleBuffer env with stream"
   // example-end segmented-radix-sort-pairs-db-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
@@ -304,7 +304,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer env wi
   // example-end segmented-radix-sort-pairs-descending-db-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
 
   thrust::device_vector<int> result_keys(
     thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);

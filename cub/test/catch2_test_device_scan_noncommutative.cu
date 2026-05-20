@@ -62,7 +62,7 @@ C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][de
 
   size_t tmp_size{};
   cudaError_t status1 = cub::DeviceScan::InclusiveScan(nullptr, tmp_size, d_input, d_output, op_t{}, input.size());
-  REQUIRE(cudaSuccess == status1);
+  REQUIRE_CUDART(status1);
   REQUIRE(tmp_size > 0);
 
   using cuda::std::byte;
@@ -73,7 +73,7 @@ C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][de
   REQUIRE(d_tmp != nullptr);
 
   cudaError_t status2 = cub::DeviceScan::InclusiveScan(d_tmp, tmp_size, d_input, d_output, op_t{}, input.size());
-  REQUIRE(cudaSuccess == status2);
+  REQUIRE_CUDART(status2);
 
   // transfer to host_vector is synchronizing
   c2h::host_vector<pair_t> h_output(output);

@@ -37,7 +37,7 @@ TEST_CASE("Device scan exclusive-sum-by-key works with default environment", "[s
   auto d_in      = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSumByKey(d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceScan::ExclusiveSumByKey(d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
 
   thrust::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
   REQUIRE(d_out == expected);
@@ -53,10 +53,10 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
   int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  REQUIRE_CUDART(cudaGetDevice(&current_device));
 
   cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
+  REQUIRE_CUDART(cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
     selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).threads_per_block;
@@ -69,9 +69,8 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
   auto d_out = thrust::device_vector<value_t>(1);
   auto init  = value_t{0};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceScan::ExclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, init, num_items));
+  REQUIRE_CUDART(
+    cub::DeviceScan::ExclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, init, num_items));
 
   REQUIRE(d_out[0] == init);
   REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
@@ -84,7 +83,7 @@ TEST_CASE("Device scan inclusive-sum-by-key works with default environment", "[s
   auto d_in      = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSumByKey(d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceScan::InclusiveSumByKey(d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
 
   thrust::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
   REQUIRE(d_out == expected);
@@ -100,10 +99,10 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
   int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  REQUIRE_CUDART(cudaGetDevice(&current_device));
 
   cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
+  REQUIRE_CUDART(cudaGetDeviceProperties(&device_props, current_device));
 
   const auto target_block_size =
     selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).threads_per_block;
@@ -115,8 +114,7 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceScan::InclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, num_items));
+  REQUIRE_CUDART(cub::DeviceScan::InclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, num_items));
 
   REQUIRE(d_out[0] == value_t{1});
   REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
@@ -134,16 +132,8 @@ C2H_TEST("Device scan exclusive-sum-by-key uses environment", "[scan][by_key][de
   auto d_out            = thrust::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceScan::ExclusiveSumByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys.begin(),
-      d_in.begin(),
-      d_out.begin(),
-      num_items,
-      cuda::std::equal_to<>{}));
+  REQUIRE_CUDART(cub::DeviceScan::ExclusiveSumByKey(
+    nullptr, expected_bytes_allocated, d_keys.begin(), d_in.begin(), d_out.begin(), num_items, cuda::std::equal_to<>{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -165,18 +155,16 @@ C2H_TEST("Device scan exclusive-scan-by-key uses environment", "[scan][by_key][d
   auto init             = 0.0f;
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceScan::ExclusiveScanByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys.begin(),
-      d_in.begin(),
-      d_out.begin(),
-      scan_op_t{},
-      init,
-      num_items,
-      cuda::std::equal_to<>{}));
+  REQUIRE_CUDART(cub::DeviceScan::ExclusiveScanByKey(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys.begin(),
+    d_in.begin(),
+    d_out.begin(),
+    scan_op_t{},
+    init,
+    num_items,
+    cuda::std::equal_to<>{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -197,16 +185,8 @@ C2H_TEST("Device scan inclusive-sum-by-key uses environment", "[scan][by_key][de
   auto d_out            = thrust::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceScan::InclusiveSumByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys.begin(),
-      d_in.begin(),
-      d_out.begin(),
-      num_items,
-      cuda::std::equal_to<>{}));
+  REQUIRE_CUDART(cub::DeviceScan::InclusiveSumByKey(
+    nullptr, expected_bytes_allocated, d_keys.begin(), d_in.begin(), d_out.begin(), num_items, cuda::std::equal_to<>{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -227,17 +207,15 @@ C2H_TEST("Device scan inclusive-scan-by-key uses environment", "[scan][by_key][d
   auto d_out            = thrust::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceScan::InclusiveScanByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys.begin(),
-      d_in.begin(),
-      d_out.begin(),
-      scan_op_t{},
-      num_items,
-      cuda::std::equal_to<>{}));
+  REQUIRE_CUDART(cub::DeviceScan::InclusiveScanByKey(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys.begin(),
+    d_in.begin(),
+    d_out.begin(),
+    scan_op_t{},
+    num_items,
+    cuda::std::equal_to<>{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 

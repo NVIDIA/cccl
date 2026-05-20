@@ -105,8 +105,8 @@ void warp_scatter_strided(c2h::device_vector<InputT>& in, c2h::device_vector<Out
   scatter_kernel<LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, Alg, InputT, OutputT>
     <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
       thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 template <int LOGICAL_WARP_THREADS,
@@ -162,8 +162,8 @@ void warp_exchange(c2h::device_vector<InputT>& in, c2h::device_vector<OutputT>& 
   kernel<LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, Alg, InputT, OutputT, ActionT>
     <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
       thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 struct blocked_to_striped

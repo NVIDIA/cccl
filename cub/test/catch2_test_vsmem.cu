@@ -418,7 +418,7 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
 
   // Setup vsmem test
   launch_config_test_info_t* launch_config_info = nullptr;
-  cudaMallocHost(&launch_config_info, sizeof(launch_config_test_info_t));
+  REQUIRE_CUDART(cudaMallocHost(&launch_config_info, sizeof(launch_config_test_info_t)));
   c2h::device_vector<kernel_test_info_t> device_kernel_test_info(1);
   dummy_algorithm(
     in_ptr, out_ptr, num_items, thrust::raw_pointer_cast(device_kernel_test_info.data()), launch_config_info);
@@ -445,5 +445,5 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
     REQUIRE(launch_config_info->config_vsmem_per_block >= expected_vsmem_per_block);
   }
 
-  cudaFreeHost(launch_config_info);
+  REQUIRE_CUDART(cudaFreeHost(launch_config_info));
 }

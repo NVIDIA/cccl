@@ -95,8 +95,8 @@ void block_store(InputIteratorT input, OutputIteratorT output, int num_items)
   kernel<InputIteratorT, OutputIteratorT, ItemsPerThread, ThreadsInBlock, StoreAlgorithm>
     <<<1, ThreadsInBlock>>>(std::integral_constant<bool, sufficient_resources>{}, input, output, num_items);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 // %PARAM% IPT it 1:11

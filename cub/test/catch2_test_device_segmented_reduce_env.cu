@@ -41,9 +41,8 @@ TEST_CASE("Device segmented reduce works with default environment", "[segmented_
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(3);
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedReduce::Reduce(
-            d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Reduce(
+    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0));
 
   thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
@@ -57,9 +56,8 @@ TEST_CASE("Device segmented sum works with default environment", "[segmented_red
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(3);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(
+    cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
@@ -73,9 +71,8 @@ TEST_CASE("Device segmented min works with default environment", "[segmented_red
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(3);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(
+    cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   thrust::device_vector<int> expected{5, 0, 1};
   REQUIRE(d_out == expected);
@@ -89,9 +86,8 @@ TEST_CASE("Device segmented max works with default environment", "[segmented_red
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(3);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(
+    cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   thrust::device_vector<int> expected{8, 9, 2};
   REQUIRE(d_out == expected);
@@ -105,9 +101,8 @@ TEST_CASE("Device segmented argmin works with default environment", "[segmented_
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(
+    cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
   REQUIRE(h_out[0].key == 3);
@@ -126,9 +121,8 @@ TEST_CASE("Device segmented argmax works with default environment", "[segmented_
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(
+    cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
   REQUIRE(h_out[0].key == 0);
@@ -146,9 +140,8 @@ TEST_CASE("Device fixed-size segmented reduce works with default environment", "
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSegmentedReduce::Reduce(
-            d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Reduce(
+    d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0));
 
   thrust::device_vector<int> expected{21, 8};
   REQUIRE(d_out == expected);
@@ -161,7 +154,7 @@ TEST_CASE("Device fixed-size segmented sum works with default environment", "[se
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
   thrust::device_vector<int> expected{21, 8};
   REQUIRE(d_out == expected);
@@ -174,7 +167,7 @@ TEST_CASE("Device fixed-size segmented min works with default environment", "[se
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
   thrust::device_vector<int> expected{6, 0};
   REQUIRE(d_out == expected);
@@ -187,7 +180,7 @@ TEST_CASE("Device fixed-size segmented max works with default environment", "[se
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
   thrust::device_vector<int> expected{8, 5};
   REQUIRE(d_out == expected);
@@ -200,7 +193,7 @@ TEST_CASE("Device fixed-size segmented argmin works with default environment", "
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
 
-  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
   thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
   REQUIRE(d_out == expected);
@@ -213,7 +206,7 @@ TEST_CASE("Device fixed-size segmented argmax works with default environment", "
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
 
-  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
   thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
   REQUIRE(d_out == expected);
@@ -230,18 +223,16 @@ C2H_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]
   thrust::device_vector<int> d_out(3);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Reduce(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_out.begin(),
-      num_segments,
-      d_offsets_it,
-      d_offsets_it + 1,
-      ::cuda::std::plus<>{},
-      0));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Reduce(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_out.begin(),
+    num_segments,
+    d_offsets_it,
+    d_offsets_it + 1,
+    ::cuda::std::plus<>{},
+    0));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -261,10 +252,8 @@ C2H_TEST("Device segmented sum uses environment", "[segmented_reduce][device]")
   thrust::device_vector<int> d_out(3);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Sum(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Sum(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -283,10 +272,8 @@ C2H_TEST("Device segmented min uses environment", "[segmented_reduce][device]")
   thrust::device_vector<int> d_out(3);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Min(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Min(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -305,10 +292,8 @@ C2H_TEST("Device segmented max uses environment", "[segmented_reduce][device]")
   thrust::device_vector<int> d_out(3);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::Max(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::Max(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -327,10 +312,8 @@ C2H_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMin(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::ArgMin(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -349,10 +332,8 @@ C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMax(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+  REQUIRE_CUDART(cub::DeviceSegmentedReduce::ArgMax(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 

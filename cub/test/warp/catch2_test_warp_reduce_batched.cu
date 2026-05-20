@@ -278,11 +278,8 @@ void test_warp_reduce_batched(ReductionOp reduction_op = ReductionOp{})
     }
   }
 
-  cudaError_t err = cudaPeekAtLastError();
-  REQUIRE(err == cudaSuccess);
-
-  err = cudaDeviceSynchronize();
-  REQUIRE(err == cudaSuccess);
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   // Host-side: construct mdspans once; pass to reference and verify
   c2h::host_vector<T> h_input  = d_input;

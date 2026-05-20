@@ -137,8 +137,8 @@ void warp_reduce_launch(c2h::device_vector<T>& input, c2h::device_vector<T>& out
   warp_reduce_kernel<LogicalWarpThreads, EnableNumItems><<<1, total_warps * warp_size>>>(
     thrust::raw_pointer_cast(input.data()), thrust::raw_pointer_cast(output.data()), args...);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 template <int LogicalWarpThreads, typename T, typename... TArgs>
@@ -147,8 +147,8 @@ void warp_reduce_multiple_items_launch(c2h::device_vector<T>& input, c2h::device
   warp_reduce_multiple_items_kernel<LogicalWarpThreads><<<1, total_warps * warp_size>>>(
     thrust::raw_pointer_cast(input.data()), thrust::raw_pointer_cast(output.data()), args...);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 /***********************************************************************************************************************

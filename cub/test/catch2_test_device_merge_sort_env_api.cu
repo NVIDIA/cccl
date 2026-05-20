@@ -31,7 +31,7 @@ C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API", "[merge_sort][env]")
   thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   // example-end sort-pairs-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
 }
@@ -51,7 +51,7 @@ C2H_TEST("cub::DeviceMergeSort::SortKeys env-based API", "[merge_sort][env]")
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   // example-end sort-keys-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_keys == expected_keys);
 }
 
@@ -72,7 +72,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortPairs env-based API", "[merge_sort][en
   thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   // example-end stable-sort-pairs-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
 }
@@ -92,7 +92,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortKeys env-based API", "[merge_sort][env
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   // example-end stable-sort-keys-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_keys == expected_keys);
 }
 
@@ -124,7 +124,7 @@ C2H_TEST("cub::DeviceMergeSort::SortPairsCopy env-based API", "[merge_sort][env]
   thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   // example-end sort-pairs-copy-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_keys_out == expected_keys);
   REQUIRE(d_values_out == expected_values);
 }
@@ -152,7 +152,7 @@ C2H_TEST("cub::DeviceMergeSort::SortKeysCopy env-based API", "[merge_sort][env]"
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   // example-end sort-keys-copy-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_keys_out == expected_keys);
 }
 
@@ -179,6 +179,6 @@ C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort]
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   // example-end stable-sort-keys-copy-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(d_keys_out == expected_keys);
 }

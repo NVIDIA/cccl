@@ -147,8 +147,8 @@ void block_merge_sort(c2h::device_vector<KeyT>& keys, ActionT action)
     cuda::std::numeric_limits<KeyT>::max(),
     action);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 template <int ItemsPerThread, int ThreadsInBlock, class KeyT, class ValueT, class ActionT>
@@ -161,8 +161,8 @@ void block_merge_sort(c2h::device_vector<KeyT>& keys, c2h::device_vector<ValueT>
     cuda::std::numeric_limits<KeyT>::max(),
     action);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 // %PARAM% THREADS_IN_BLOCK bs 64:256

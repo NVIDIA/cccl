@@ -66,8 +66,8 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
 {
   // create stream and begin capture
   cuda::stream stream{cuda::devices[0]};
-  // REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
-  REQUIRE(cudaStreamBeginCapture(stream.get(), cudaStreamCaptureModeGlobal) == cudaSuccess);
+  // REQUIRE_CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamBeginCapture(stream.get(), cudaStreamCaptureModeGlobal));
 
   // test various streams
   SECTION("cudaStream_t")
@@ -113,20 +113,20 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
 
   // end capture and check that we captured 1 node
   cudaGraph_t graph;
-  REQUIRE(cudaGraphCreate(&graph, 0) == cudaSuccess);
-  REQUIRE(cudaStreamEndCapture(stream.get(), &graph) == cudaSuccess);
+  REQUIRE_CUDART(cudaGraphCreate(&graph, 0));
+  REQUIRE_CUDART(cudaStreamEndCapture(stream.get(), &graph));
   size_t num_nodes = 0;
-  REQUIRE(cudaGraphGetNodes(graph, nullptr, &num_nodes) == cudaSuccess);
+  REQUIRE_CUDART(cudaGraphGetNodes(graph, nullptr, &num_nodes));
   CHECK(num_nodes == 1);
 
   // run the graph so we can check the results later
   cudaGraphExec_t exec{};
-  REQUIRE(cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0) == cudaSuccess);
-  REQUIRE(cudaGraphLaunch(exec, stream.get()) == cudaSuccess);
-  REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  REQUIRE_CUDART(cudaGraphInstantiate(&exec, graph, nullptr, nullptr, 0));
+  REQUIRE_CUDART(cudaGraphLaunch(exec, stream.get()));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream.get()));
 
   // tear down
-  REQUIRE(cudaGraphDestroy(graph) == cudaSuccess);
+  REQUIRE_CUDART(cudaGraphDestroy(graph));
 }
 
 C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
@@ -166,7 +166,7 @@ C2H_TEST("DeviceTransform::Generate custom stream", "[device][transform]")
   c2h::device_vector<type> result(num_items, thrust::no_init);
 
   cudaStream_t stream;
-  REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
 
   check_graph_nodes_with_different_streams([&](auto streamish) {
     cub::DeviceTransform::Generate(result.begin(), num_items, generator, streamish);
@@ -271,9 +271,9 @@ C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
   auto env = cuda::execution::tune(my_policy_selector{});
-  REQUIRE(cudaSuccess
-          == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(
+    cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
   REQUIRE(result == expected);
@@ -285,8 +285,8 @@ C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
 
   cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(my_policy_selector{})};
-  REQUIRE(cudaSuccess
-          == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
+  REQUIRE_CUDART(
+    cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   stream.sync();
 
   c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};

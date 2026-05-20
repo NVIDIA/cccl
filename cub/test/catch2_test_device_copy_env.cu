@@ -63,7 +63,7 @@ TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][device]"
     iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto sizes = thrust::make_transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
 
-  REQUIRE(cudaSuccess == cub::DeviceCopy::Batched(input_it, output_it, sizes, num_ranges));
+  REQUIRE_CUDART(cub::DeviceCopy::Batched(input_it, output_it, sizes, num_ranges));
 
   REQUIRE(d_dst == d_src);
 }
@@ -87,8 +87,7 @@ C2H_TEST("DeviceCopy::Batched uses environment", "[copy][device]")
   auto sizes = thrust::make_transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess == cub::DeviceCopy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_ranges));
+  REQUIRE_CUDART(cub::DeviceCopy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_ranges));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -114,18 +113,17 @@ TEST_CASE("DeviceCopy::Batched uses custom stream", "[copy][device]")
   auto sizes = thrust::make_transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess == cub::DeviceCopy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_ranges));
+  REQUIRE_CUDART(cub::DeviceCopy::Batched(nullptr, expected_bytes_allocated, input_it, output_it, sizes, num_ranges));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   device_copy_batched(input_it, output_it, sizes, num_ranges, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
   REQUIRE(d_dst == d_src);
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }

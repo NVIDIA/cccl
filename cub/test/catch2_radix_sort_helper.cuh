@@ -56,12 +56,12 @@ public:
 
   void initialize()
   {
-    REQUIRE(cudaSuccess == cudaMallocHost(&m_selector, sizeof(int)));
+    REQUIRE_CUDART(cudaMallocHost(&m_selector, sizeof(int)));
   }
 
   void finalize()
   {
-    REQUIRE(cudaSuccess == cudaFreeHost(m_selector));
+    REQUIRE_CUDART(cudaFreeHost(m_selector));
     m_selector = nullptr;
   }
 
@@ -113,12 +113,12 @@ public:
 
   void initialize()
   {
-    REQUIRE(cudaSuccess == cudaMallocHost(&m_selector, sizeof(int)));
+    REQUIRE_CUDART(cudaMallocHost(&m_selector, sizeof(int)));
   }
 
   void finalize()
   {
-    REQUIRE(cudaSuccess == cudaFreeHost(m_selector));
+    REQUIRE_CUDART(cudaFreeHost(m_selector));
     m_selector = nullptr;
   }
 

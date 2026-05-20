@@ -71,7 +71,7 @@ C2H_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]")
   thrust::device_vector<int> expected{1, 4, 9, 16};
   // example-end bulk-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(vec == expected);
 }
 
@@ -94,7 +94,7 @@ C2H_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]")
   thrust::device_vector<int> expected{1, 4, 9, 16};
   // example-end for-each-n-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(vec == expected);
 }
 
@@ -117,7 +117,7 @@ C2H_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]")
   thrust::device_vector<int> expected{1, 4, 9, 16};
   // example-end for-each-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(vec == expected);
 }
 
@@ -141,7 +141,7 @@ C2H_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]")
   thrust::device_vector<int> expected_count{2};
   // example-end for-each-copy-n-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(count == expected_count);
 }
 
@@ -165,6 +165,6 @@ C2H_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]")
   thrust::device_vector<int> expected_count{2};
   // example-end for-each-copy-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(count == expected_count);
 }

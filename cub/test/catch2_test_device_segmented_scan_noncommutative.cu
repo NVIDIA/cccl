@@ -93,7 +93,7 @@ C2H_TEST("Device inclusive segmented scan works with non-commutative operator", 
   size_t tmp_size{};
   cudaError_t status1 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     nullptr, tmp_size, d_input, d_output, d_offsets, d_offsets + 1, num_segments, op_t{});
-  REQUIRE(cudaSuccess == status1);
+  REQUIRE_CUDART(status1);
   REQUIRE(tmp_size > 0);
 
   using cuda::std::byte;
@@ -105,7 +105,7 @@ C2H_TEST("Device inclusive segmented scan works with non-commutative operator", 
 
   cudaError_t status2 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_tmp, tmp_size, d_input, d_output, d_offsets, d_offsets + 1, num_segments, op_t{});
-  REQUIRE(cudaSuccess == status2);
+  REQUIRE_CUDART(status2);
 
   // transfer to host_vector is synchronizing
   c2h::host_vector<pair_t> h_output(output);

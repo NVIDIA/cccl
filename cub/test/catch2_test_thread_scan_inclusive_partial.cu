@@ -196,8 +196,8 @@ C2H_TEST("ThreadScanInclusive Integral Type Tests",
     prefix,
     apply_prefix,
     filler);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 }
 
@@ -256,8 +256,8 @@ C2H_TEST("ThreadScanInclusive Floating-Point Type Tests",
     prefix,
     apply_prefix,
     filler);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 }
 
@@ -312,8 +312,8 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
     *unwrap_it(&prefix),
     apply_prefix,
     *unwrap_it(&filler));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 }
 
@@ -342,8 +342,8 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
     valid_items,
     0,
     true);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 
   thrust::fill(d_out.begin(), d_out.end(), 0);
@@ -354,8 +354,8 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
     valid_items,
     0,
     true);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 
   thrust::fill(d_out.begin(), d_out.end(), 0);
@@ -366,8 +366,8 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
     valid_items,
     0,
     true);
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 }
 
@@ -408,8 +408,8 @@ C2H_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]")
     prefix,
     apply_prefix,
     segment{});
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
   REQUIRE(error_flag.front() == false);
   REQUIRE(reference_result == d_out);
 }

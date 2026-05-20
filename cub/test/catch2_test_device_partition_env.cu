@@ -53,8 +53,7 @@ TEST_CASE("Device partition works with default environment", "[partition][device
   less_than_t<value_t> select_op{5};
 
   // launch wrapper always assumes the last argument is the environment
-  REQUIRE(
-    cudaSuccess == cub::DevicePartition::If(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DevicePartition::If(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4, 8, 7, 6, 5};
   c2h::device_vector<int> expected_num_selected{4};
@@ -75,9 +74,8 @@ TEST_CASE("Device partition flagged works with default environment", "[partition
   auto d_num_selected   = c2h::device_vector<int>(1);
 
   // launch wrapper always assumes the last argument is the environment
-  REQUIRE(
-    cudaSuccess
-    == cub::DevicePartition::Flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(
+    cub::DevicePartition::Flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   c2h::device_vector<value_t> expected_output{1, 4, 6, 7, 8, 5, 3, 2};
   c2h::device_vector<int> expected_num_selected{4};
@@ -97,7 +95,7 @@ TEST_CASE("Device partition three-way works with default environment", "[partiti
   less_than_t<int> small_selector{7};
   greater_than_t<int> large_selector{50};
 
-  auto error = cub::DevicePartition::If(
+  REQUIRE_CUDART(cub::DevicePartition::If(
     d_in.begin(),
     d_small_out.begin(),
     d_large_out.begin(),
@@ -105,8 +103,7 @@ TEST_CASE("Device partition three-way works with default environment", "[partiti
     d_num_selected.begin(),
     static_cast<int>(d_in.size()),
     small_selector,
-    large_selector);
-  REQUIRE(error == cudaSuccess);
+    large_selector));
 
   REQUIRE(d_num_selected[0] == 5);
   REQUIRE(d_num_selected[1] == 1);
@@ -134,10 +131,8 @@ C2H_TEST("Device partition uses environment", "[partition][device]")
 
   size_t expected_bytes_allocated{};
   // calculate expected_bytes_allocated - call CUB API directly, not through wrapper
-  REQUIRE(
-    cudaSuccess
-    == cub::DevicePartition::If(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DevicePartition::If(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
@@ -163,16 +158,8 @@ C2H_TEST("Device partition flagged uses environment", "[partition][device]")
   auto d_num_selected   = c2h::device_vector<int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DevicePartition::Flagged(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_flags.begin(),
-      d_out.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DevicePartition::Flagged(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
@@ -198,19 +185,17 @@ C2H_TEST("Device partition three-way uses environment", "[partition][device]")
   greater_than_t<int> large_selector{50};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DevicePartition::If(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_small_out.begin(),
-      d_large_out.begin(),
-      d_unselected_out.begin(),
-      d_num_selected.begin(),
-      static_cast<int>(d_in.size()),
-      small_selector,
-      large_selector));
+  REQUIRE_CUDART(cub::DevicePartition::If(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_small_out.begin(),
+    d_large_out.begin(),
+    d_unselected_out.begin(),
+    d_num_selected.begin(),
+    static_cast<int>(d_in.size()),
+    small_selector,
+    large_selector));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -248,20 +233,18 @@ TEST_CASE("Device partition uses custom stream", "[partition][device]")
   less_than_t<value_t> select_op{5};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DevicePartition::If(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DevicePartition::If(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   device_partition_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4, 8, 7, 6, 5};
   c2h::device_vector<int> expected_num_selected{4};
@@ -269,7 +252,7 @@ TEST_CASE("Device partition uses custom stream", "[partition][device]")
   REQUIRE(d_num_selected == expected_num_selected);
   REQUIRE(d_out == expected_output);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 #if TEST_LAUNCH != 1

@@ -41,7 +41,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
   // example-end sort-keys-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected);
 }
 
@@ -72,7 +72,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
   // example-end sort-keys-descending-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected);
 }
 
@@ -104,7 +104,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
   // example-end sort-keys-db-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
@@ -137,7 +137,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
   // example-end sort-keys-descending-db-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
@@ -169,7 +169,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
   // example-end stable-sort-keys-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected);
 }
 
@@ -200,7 +200,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
   // example-end stable-sort-keys-descending-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(keys_out == expected);
 }
 
@@ -232,7 +232,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
   // example-end stable-sort-keys-db-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
@@ -266,7 +266,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
   // example-end stable-sort-keys-descending-db-env
 
   stream.sync();
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }

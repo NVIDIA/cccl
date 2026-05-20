@@ -59,8 +59,8 @@ void block_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT
   block_reduce_kernel<Algorithm, ItemsPerThread, BlockDimX, BlockDimY, BlockDimZ, T, ActionT><<<1, block_dims>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), static_cast<int>(in.size()), action);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 struct sum_partial_tile_op_t

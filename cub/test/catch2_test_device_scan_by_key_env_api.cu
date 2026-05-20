@@ -35,7 +35,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan
   thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
   // example-end exclusive-sum-by-key-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -62,7 +62,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[sca
   thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
   // example-end exclusive-scan-by-key-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -87,7 +87,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan
   thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
   // example-end inclusive-sum-by-key-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -113,6 +113,6 @@ C2H_TEST("cub::DeviceScan::InclusiveScanByKey accepts stream environment", "[sca
   thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
   // example-end inclusive-scan-by-key-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }

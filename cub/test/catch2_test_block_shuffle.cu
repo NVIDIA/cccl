@@ -147,8 +147,8 @@ void block_shuffle(c2h::device_vector<T>& data, ActionT action)
   block_shuffle_kernel<BlockDimX, BlockDimY, BlockDimZ, ItemsPerThread>
     <<<1, block>>>(thrust::raw_pointer_cast(data.data()), action);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaPeekAtLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 
 // %PARAM% MULTI_DIM mdim 0:1

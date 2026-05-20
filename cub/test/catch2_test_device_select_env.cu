@@ -51,8 +51,7 @@ TEST_CASE("Device select works with default environment", "[select][device]")
   less_than_t<value_t> select_op{5};
 
   // launch wrapper always assumes the last argument is the environment
-  REQUIRE(
-    cudaSuccess == cub::DeviceSelect::If(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::If(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4};
   c2h::device_vector<int> expected_num_selected{4};
@@ -74,9 +73,8 @@ TEST_CASE("Device select flagged works with default environment", "[select][devi
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   // launch wrapper always assumes the last argument is the environment
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(
+    cub::DeviceSelect::Flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   c2h::device_vector<value_t> expected_output{1, 4, 6, 7};
   c2h::device_vector<int> expected_num_selected{4};
@@ -99,9 +97,8 @@ TEST_CASE("Device select flagged_if works with default environment", "[select][d
 
   mod_n<int> select_op{2};
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::FlaggedIf(
-            d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::FlaggedIf(
+    d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
   c2h::device_vector<value_t> expected_output{1, 4, 6, 7};
   c2h::device_vector<int> expected_num_selected{4};
@@ -121,8 +118,7 @@ TEST_CASE("Device select flagged in-place works with default environment", "[sel
   auto d_flags          = c2h::device_vector<char>{1, 0, 0, 1, 0, 1, 1, 0};
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
-  REQUIRE(
-    cudaSuccess == cub::DeviceSelect::Flagged(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Flagged(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items));
 
   c2h::device_vector<value_t> expected_output{1, 4, 6, 7};
   c2h::device_vector<int> expected_num_selected{4};
@@ -143,7 +139,7 @@ TEST_CASE("Device select if in-place works with default environment", "[select][
 
   less_than_t<value_t> select_op{5};
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::If(d_data.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::If(d_data.begin(), d_num_selected.begin(), num_items, select_op));
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4};
   c2h::device_vector<int> expected_num_selected{4};
@@ -165,9 +161,8 @@ TEST_CASE("Device select flagged_if in-place works with default environment", "[
 
   mod_n<int> select_op{2};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::FlaggedIf(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(
+    cub::DeviceSelect::FlaggedIf(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items, select_op));
 
   c2h::device_vector<value_t> expected_output{1, 4, 6, 7};
   c2h::device_vector<int> expected_num_selected{4};
@@ -187,7 +182,7 @@ TEST_CASE("Device select unique works with default environment", "[select][devic
   auto d_out            = c2h::device_vector<value_t>(num_items);
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   c2h::device_vector<value_t> expected_output{0, 2, 9, 5, 8};
   c2h::device_vector<int> expected_num_selected{5};
@@ -209,8 +204,7 @@ TEST_CASE("Device select unique with custom equality_op works with default envir
 
   eq_mod3_t<value_t> eq_mod3{};
 
-  REQUIRE(
-    cudaSuccess == cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   c2h::device_vector<value_t> expected_output{0, 1, 2};
   c2h::device_vector<int> expected_num_selected{3};
@@ -229,7 +223,7 @@ TEST_CASE("Device select unique in-place works with default environment", "[sele
   auto d_data           = c2h::device_vector<value_t>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items));
 
   c2h::device_vector<value_t> expected_output{0, 2, 9, 5, 8};
   c2h::device_vector<int> expected_num_selected{5};
@@ -250,7 +244,7 @@ TEST_CASE("Device select unique in-place with custom equality_op works with defa
 
   eq_mod3_t<value_t> eq_mod3{};
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   c2h::device_vector<value_t> expected_output{0, 1, 2};
   c2h::device_vector<int> expected_num_selected{3};
@@ -272,15 +266,8 @@ TEST_CASE("Device select unique_by_key works with default environment", "[select
   auto d_values_out     = c2h::device_vector<value_t>(num_items);
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::UniqueByKey(
-      d_keys_in.begin(),
-      d_values_in.begin(),
-      d_keys_out.begin(),
-      d_values_out.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::UniqueByKey(
+    d_keys_in.begin(), d_values_in.begin(), d_keys_out.begin(), d_values_out.begin(), d_num_selected.begin(), num_items));
 
   c2h::device_vector<value_t> expected_keys{0, 2, 9, 5, 8};
   c2h::device_vector<value_t> expected_values{1, 2, 4, 5, 8};
@@ -307,16 +294,14 @@ TEST_CASE("Device select unique_by_key works with default environment and explic
 
   auto env = stdexec::env{};
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::UniqueByKey(
-      d_keys_in.begin(),
-      d_values_in.begin(),
-      d_keys_out.begin(),
-      d_values_out.begin(),
-      d_num_selected.begin(),
-      num_items,
-      env));
+  REQUIRE_CUDART(cub::DeviceSelect::UniqueByKey(
+    d_keys_in.begin(),
+    d_values_in.begin(),
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    num_items,
+    env));
 
   c2h::device_vector<value_t> expected_keys{0, 2, 9, 5, 8};
   c2h::device_vector<value_t> expected_values{1, 2, 4, 5, 8};
@@ -338,10 +323,10 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
   using selector_t = cub::detail::unique_by_key::policy_selector_from_types<key_t, value_t>;
 
   int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+  REQUIRE_CUDART(cudaGetDevice(&current_device));
 
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  REQUIRE_CUDART(cub::detail::ptx_compute_cap(cc, current_device));
 
   const auto target_block_size = selector_t{}(cc).threads_per_block;
 
@@ -354,16 +339,14 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
   block_size_check_t equality_op{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_values_in = cuda::constant_iterator(value_t{1});
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::UniqueByKey(
-      d_keys_in.begin(),
-      d_values_in,
-      d_keys_out.begin(),
-      d_values_out.begin(),
-      d_num_selected.begin(),
-      num_items,
-      equality_op));
+  REQUIRE_CUDART(cub::DeviceSelect::UniqueByKey(
+    d_keys_in.begin(),
+    d_values_in,
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    num_items,
+    equality_op));
 
   REQUIRE(d_num_selected[0] == 1);
   REQUIRE(d_keys_out[0] == key_t{0});
@@ -387,10 +370,8 @@ C2H_TEST("Device select uses environment", "[select][device]")
 
   size_t expected_bytes_allocated{};
   // calculate expected_bytes_allocated - call CUB API directly, not through wrapper
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::If(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::If(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
@@ -416,16 +397,8 @@ C2H_TEST("Device select flagged uses environment", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Flagged(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_flags.begin(),
-      d_out.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Flagged(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
@@ -453,17 +426,15 @@ C2H_TEST("Device select flagged_if uses environment", "[select][device]")
   mod_n<int> select_op{2};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::FlaggedIf(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_flags.begin(),
-      d_out.begin(),
-      d_num_selected.begin(),
-      num_items,
-      select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::FlaggedIf(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_flags.begin(),
+    d_out.begin(),
+    d_num_selected.begin(),
+    num_items,
+    select_op));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -489,21 +460,18 @@ C2H_TEST("Device select flagged in-place uses environment", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Flagged(
-      nullptr,
-      expected_bytes_allocated,
-      d_data.begin(),
-      d_flags.begin(),
-      d_data.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Flagged(
+    nullptr,
+    expected_bytes_allocated,
+    d_data.begin(),
+    d_flags.begin(),
+    d_data.begin(),
+    d_num_selected.begin(),
+    num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
-  REQUIRE(
-    cudaSuccess == cub::DeviceSelect::Flagged(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items, env));
+  REQUIRE_CUDART(cub::DeviceSelect::Flagged(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items, env));
 
   c2h::device_vector<value_t> expected_output{1, 3, 5, 7, 9};
   c2h::device_vector<int> expected_num_selected{5};
@@ -525,14 +493,12 @@ C2H_TEST("Device select if in-place uses environment", "[select][device]")
   less_than_t<value_t> select_op{6};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::If(
-      nullptr, expected_bytes_allocated, d_data.begin(), d_data.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::If(
+    nullptr, expected_bytes_allocated, d_data.begin(), d_data.begin(), d_num_selected.begin(), num_items, select_op));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::If(d_data.begin(), d_num_selected.begin(), num_items, select_op, env));
+  REQUIRE_CUDART(cub::DeviceSelect::If(d_data.begin(), d_num_selected.begin(), num_items, select_op, env));
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4, 5};
   c2h::device_vector<int> expected_num_selected{5};
@@ -555,23 +521,20 @@ C2H_TEST("Device select flagged_if in-place uses environment", "[select][device]
   mod_n<int> select_op{2};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::FlaggedIf(
-      nullptr,
-      expected_bytes_allocated,
-      d_data.begin(),
-      d_flags.begin(),
-      d_data.begin(),
-      d_num_selected.begin(),
-      num_items,
-      select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::FlaggedIf(
+    nullptr,
+    expected_bytes_allocated,
+    d_data.begin(),
+    d_flags.begin(),
+    d_data.begin(),
+    d_num_selected.begin(),
+    num_items,
+    select_op));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::FlaggedIf(
-            d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items, select_op, env));
+  REQUIRE_CUDART(
+    cub::DeviceSelect::FlaggedIf(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items, select_op, env));
 
   c2h::device_vector<value_t> expected_output{1, 3, 5, 7, 9};
   c2h::device_vector<int> expected_num_selected{5};
@@ -592,9 +555,8 @@ C2H_TEST("Device select unique uses environment", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::Unique(
-            nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -621,10 +583,8 @@ C2H_TEST("Device select unique with custom equality_op uses environment", "[sele
   eq_mod3_t<value_t> eq_mod3{};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Unique(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -648,13 +608,12 @@ C2H_TEST("Device select unique in-place uses environment", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(
+    cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, env));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, env));
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4, 5};
   c2h::device_vector<int> expected_num_selected{5};
@@ -676,13 +635,12 @@ C2H_TEST("Device select unique in-place with custom equality_op uses environment
   eq_mod3_t<value_t> eq_mod3{};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::Unique(
-            nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(
+    nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3, env));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3, env));
 
   c2h::device_vector<value_t> expected_output{0, 1, 2};
   c2h::device_vector<int> expected_num_selected{3};
@@ -705,17 +663,15 @@ C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::UniqueByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys_in.begin(),
-      d_values_in.begin(),
-      d_keys_out.begin(),
-      d_values_out.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::UniqueByKey(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys_in.begin(),
+    d_values_in.begin(),
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -753,17 +709,15 @@ C2H_TEST("Device select unique_by_key uses environment without equality_op", "[s
   auto d_num_selected   = c2h::device_vector<int>(1);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::UniqueByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys_in.begin(),
-      d_values_in.begin(),
-      d_keys_out.begin(),
-      d_values_out.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::UniqueByKey(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys_in.begin(),
+    d_values_in.begin(),
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -800,20 +754,18 @@ TEST_CASE("Device select uses custom stream", "[select][device]")
   less_than_t<value_t> select_op{5};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::If(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::If(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   device_select_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4};
   c2h::device_vector<int> expected_num_selected{4};
@@ -822,7 +774,7 @@ TEST_CASE("Device select uses custom stream", "[select][device]")
   d_out.resize(d_num_selected[0]);
   REQUIRE(d_out == expected_output);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("Device select flagged uses custom stream", "[select][device]")
@@ -837,26 +789,18 @@ TEST_CASE("Device select flagged uses custom stream", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Flagged(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_flags.begin(),
-      d_out.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Flagged(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   device_select_flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_output{1, 4, 6, 7};
   c2h::device_vector<int> expected_num_selected{4};
@@ -865,7 +809,7 @@ TEST_CASE("Device select flagged uses custom stream", "[select][device]")
   d_out.resize(d_num_selected[0]);
   REQUIRE(d_out == expected_output);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("Device select flagged_if uses custom stream", "[select][device]")
@@ -882,20 +826,18 @@ TEST_CASE("Device select flagged_if uses custom stream", "[select][device]")
   mod_n<int> select_op{2};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::FlaggedIf(
-      nullptr,
-      expected_bytes_allocated,
-      d_in.begin(),
-      d_flags.begin(),
-      d_out.begin(),
-      d_num_selected.begin(),
-      num_items,
-      select_op));
+  REQUIRE_CUDART(cub::DeviceSelect::FlaggedIf(
+    nullptr,
+    expected_bytes_allocated,
+    d_in.begin(),
+    d_flags.begin(),
+    d_out.begin(),
+    d_num_selected.begin(),
+    num_items,
+    select_op));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -903,7 +845,7 @@ TEST_CASE("Device select flagged_if uses custom stream", "[select][device]")
   device_select_flagged_if(
     d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_output{1, 4, 6, 7};
   c2h::device_vector<int> expected_num_selected{4};
@@ -912,7 +854,7 @@ TEST_CASE("Device select flagged_if uses custom stream", "[select][device]")
   d_out.resize(d_num_selected[0]);
   REQUIRE(d_out == expected_output);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("Device select unique uses custom stream", "[select][device]")
@@ -926,19 +868,18 @@ TEST_CASE("Device select unique uses custom stream", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::Unique(
-            nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(
+    nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   device_select_unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_output{0, 2, 9, 5, 8};
   c2h::device_vector<int> expected_num_selected{5};
@@ -947,7 +888,7 @@ TEST_CASE("Device select unique uses custom stream", "[select][device]")
   d_out.resize(d_num_selected[0]);
   REQUIRE(d_out == expected_output);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("Device select unique in-place uses custom stream", "[select][device]")
@@ -960,19 +901,18 @@ TEST_CASE("Device select unique in-place uses custom stream", "[select][device]"
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
+  REQUIRE_CUDART(
+    cub::DeviceSelect::Unique(nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, env));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, env));
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_output{0, 2, 9, 5, 8};
   c2h::device_vector<int> expected_num_selected{5};
@@ -981,7 +921,7 @@ TEST_CASE("Device select unique in-place uses custom stream", "[select][device]"
   d_data.resize(d_num_selected[0]);
   REQUIRE(d_data == expected_output);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("Device select unique in-place with custom equality_op uses custom stream", "[select][device]")
@@ -996,19 +936,18 @@ TEST_CASE("Device select unique in-place with custom equality_op uses custom str
   eq_mod3_t<value_t> eq_mod3{};
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::Unique(
-            nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(
+    nullptr, expected_bytes_allocated, d_data.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
-  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3, env));
+  REQUIRE_CUDART(cub::DeviceSelect::Unique(d_data.begin(), d_num_selected.begin(), num_items, eq_mod3, env));
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_output{0, 1, 2};
   c2h::device_vector<int> expected_num_selected{3};
@@ -1017,7 +956,7 @@ TEST_CASE("Device select unique in-place with custom equality_op uses custom str
   d_data.resize(d_num_selected[0]);
   REQUIRE(d_data == expected_output);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]")
@@ -1033,20 +972,18 @@ TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]")
   auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  REQUIRE_CUDART(cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::UniqueByKey(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys_in.begin(),
-      d_values_in.begin(),
-      d_keys_out.begin(),
-      d_values_out.begin(),
-      d_num_selected.begin(),
-      num_items));
+  REQUIRE_CUDART(cub::DeviceSelect::UniqueByKey(
+    nullptr,
+    expected_bytes_allocated,
+    d_keys_in.begin(),
+    d_values_in.begin(),
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    num_items));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -1061,7 +998,7 @@ TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]")
     ::cuda::std::equal_to<>{},
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(custom_stream));
 
   c2h::device_vector<value_t> expected_keys{0, 2, 9, 5, 8};
   c2h::device_vector<value_t> expected_values{1, 2, 4, 5, 8};
@@ -1073,7 +1010,7 @@ TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]")
   REQUIRE(d_keys_out == expected_keys);
   REQUIRE(d_values_out == expected_values);
 
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+  REQUIRE_CUDART(cudaStreamDestroy(custom_stream));
 }
 
 #if TEST_LAUNCH != 1

@@ -35,7 +35,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirem
   thrust::device_vector<int> expected{0, 0, 1, 3};
   // example-end exclusive-scan-env-determinism
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -62,7 +62,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed deter
   // example-end exclusive-scan-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -83,7 +83,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts run_to_run determinism requireme
   thrust::device_vector<int> expected{0, 0, 1, 3};
   // example-end exclusive-sum-env-determinism
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -108,7 +108,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
   // example-end exclusive-sum-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -129,7 +129,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum accepts run_to_run determinism requireme
   thrust::device_vector<int> expected{1, 3, 6, 10};
   // example-end inclusive-sum-env-determinism
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -154,7 +154,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determ
   // example-end inclusive-sum-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -179,7 +179,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", 
   thrust::device_vector<int> expected{5, 13, 19, 26, 31, 34, 34};
   // example-end exclusive-scan-future-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -207,7 +207,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environ
   // example-end exclusive-scan-future-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -227,7 +227,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]")
   thrust::device_vector<int> expected{1, 3, 6, 10};
   // example-end inclusive-scan-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -252,7 +252,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   // example-end inclusive-scan-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -273,7 +273,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
   thrust::device_vector<int> expected{11, 13, 16, 20};
   // example-end inclusive-scan-init-env
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -299,7 +299,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   // example-end inclusive-scan-init-env-stream
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(output == expected);
 }
 
@@ -321,7 +321,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum in-place accepts stream", "[scan][env]")
   // example-end exclusive-sum-inplace-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(data == expected);
 }
 
@@ -344,7 +344,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan in-place accepts stream", "[scan][env]"
   // example-end exclusive-scan-inplace-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(data == expected);
 }
 
@@ -370,7 +370,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue in-place accepts strea
   // example-end exclusive-scan-future-inplace-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(data == expected);
 }
 
@@ -392,7 +392,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum in-place accepts stream", "[scan][env]")
   // example-end inclusive-sum-inplace-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(data == expected);
 }
 
@@ -415,6 +415,6 @@ C2H_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]"
   // example-end inclusive-scan-inplace-env
   stream.sync();
 
-  REQUIRE(error == cudaSuccess);
+  REQUIRE_CUDART(error);
   REQUIRE(data == expected);
 }

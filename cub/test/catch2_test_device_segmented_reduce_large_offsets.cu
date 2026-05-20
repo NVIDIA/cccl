@@ -204,12 +204,10 @@ struct dispatch_helper
   {
     // Get PTX version
     int ptx_version = 0;
-    cudaError error = cub::PtxVersion(ptx_version);
-    REQUIRE(error == cudaSuccess);
+    REQUIRE_CUDART(cub::PtxVersion(ptx_version));
 
     dispatch_helper dispatch{};
-    error = PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-    REQUIRE(error == cudaSuccess);
+    REQUIRE_CUDART(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
     return dispatch.thresholds;
   }
 };

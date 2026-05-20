@@ -943,66 +943,66 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
 TEST_CASE("Block radix sort works in some corner cases", "[radix][sort][block]")
 {
   sort_keys<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_keys_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_keys_descending<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_keys_descending_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs_descending<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs_descending_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_keys_blocked_to_striped<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_keys_blocked_to_striped_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs_blocked_to_striped<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs_blocked_to_striped_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_keys_descending_blocked_to_striped<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_keys_descending_blocked_to_striped_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs_descending_blocked_to_striped<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 
   sort_pairs_descending_blocked_to_striped_bits<<<1, 2>>>();
-  REQUIRE(cudaSuccess == cudaGetLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
