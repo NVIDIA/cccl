@@ -86,4 +86,5 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   add_subdirectory(utils/nvidia/nvrtc)
 endif()
 
+add_subdirectory(nvtarget)
 add_subdirectory(atomic_codegen)
