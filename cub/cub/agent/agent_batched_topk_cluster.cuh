@@ -80,6 +80,12 @@ struct alignas(16) cluster_topk_state
   key_prefix_t kth_key_bits;
   OutOffsetT out_cnt;
   OutOffsetT out_back_cnt;
+  // Set by the leader after `leader_identify_kth_bucket` whenever the
+  // identified bucket holds exactly `k` items (every candidate is part of
+  // the top-k). Read by every block of the cluster at the top of the next
+  // radix pass through DSMEM. Carried in the cluster-shared state so the
+  // value survives the cluster sync that ends the current pass.
+  ::cuda::std::uint32_t early_stop;
 };
 
 // -----------------------------------------------------------------------------
@@ -130,12 +136,14 @@ struct agent_batched_topk_cluster
   // sync the non-leader blocks fold their bucket counts into the leader's
   // `hist` through DSMEM atomics. `state` is meaningful only in the leader
   // block; the other blocks reach it exclusively through the DSMEM mapping.
-  // `broadcast_kth` is a per-block fan-out slot for `kth_key_bits`.
+  // `broadcast_kth` / `broadcast_early_stop` are per-block fan-out slots used
+  // to share the leader-computed values across threads of each block.
   struct _TempStorage
   {
     offset_t hist[num_buckets];
     state_t state;
     key_prefix_t broadcast_kth;
+    ::cuda::std::uint32_t broadcast_early_stop;
   };
 
   struct TempStorage : Uninitialized<_TempStorage>
@@ -214,8 +222,16 @@ private:
         }
         cumulative += cur;
       }
-      temp_storage.state.len = selected_cur;
-      temp_storage.state.k   = target_k - selected_prev;
+      const out_offset_t new_k        = target_k - selected_prev;
+      const offset_t new_len           = selected_cur;
+      temp_storage.state.len           = new_len;
+      temp_storage.state.k             = new_k;
+      // Early-stop opportunity: the bucket holding the k-th key contains
+      // exactly the remaining `k` items. Every candidate is therefore part of
+      // the top-k, so subsequent radix passes only redistribute the same
+      // items across finer buckets without changing the final result.
+      temp_storage.state.early_stop =
+        (static_cast<out_offset_t>(new_len) == new_k) ? ::cuda::std::uint32_t{1} : ::cuda::std::uint32_t{0};
       detail::topk::set_kth_key_bits<key_t, bits_per_pass>(temp_storage.state.kth_key_bits, pass, selected_bucket);
     }
   }
@@ -267,20 +283,38 @@ private:
     // block's own SMEM rather than DSMEM during the histogram loop.
     key_prefix_t kth_key_bits_local = {};
 
+    // Tracks the highest pass count that actually executed. Without early
+    // stop this stays at `num_passes`; with early stop it captures the pass
+    // at which we broke out so the final filter can construct its identify
+    // operator at the matching radix level.
+    int last_pass = num_passes;
+
     for (int pass = 0; pass < num_passes; ++pass)
     {
       const bool is_first_pass = (pass == 0);
 
       // Refresh per-block local kth_key_bits from the leader's state. For
       // pass 0 the bits are all zero (no filtering yet) so we skip the read.
+      // We also pull the leader's `early_stop` flag here so every block has
+      // an opportunity to bail out before doing any more histogram work.
       if (!is_first_pass)
       {
         if (threadIdx.x == 0)
         {
           temp_storage.broadcast_kth = leader_state->kth_key_bits;
+#ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
+          temp_storage.broadcast_early_stop = leader_state->early_stop;
+#endif
         }
         __syncthreads();
         kth_key_bits_local = temp_storage.broadcast_kth;
+#ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
+        if (temp_storage.broadcast_early_stop != ::cuda::std::uint32_t{0})
+        {
+          last_pass = pass;
+          break;
+        }
+#endif
       }
 
       // Every block (including the leader) starts each pass with a fresh,
@@ -353,7 +387,13 @@ private:
     auto block_keys_out        = d_key_segments_out_it[segment_id];
     const out_offset_t num_kth = leader_state->k; // remaining k after the radix passes
 
-    identify_candidates_op_t identify_op(&kth_key_bits_local, num_passes, total_bits, decomposer_t{});
+    // The pass argument controls how many radix levels of `kth_key_bits` are
+    // considered significant. After an early-stop break at the start of pass
+    // `last_pass`, only the first `last_pass` digits of the splitter have
+    // been set; comparing all bits would treat the (still-zero) trailing
+    // digits as smaller and erroneously reject candidates that share the
+    // identified prefix.
+    identify_candidates_op_t identify_op(&kth_key_bits_local, last_pass, total_bits, decomposer_t{});
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < items_per_thread; ++j)
@@ -421,6 +461,7 @@ private:
       temp_storage.state.kth_key_bits = {};
       temp_storage.state.out_cnt      = 0;
       temp_storage.state.out_back_cnt = 0;
+      temp_storage.state.early_stop   = 0;
     }
     cluster.sync();
 
