@@ -45,11 +45,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(mapping.get()));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CUDAX_CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CUDAX_CHECK(mapping2_ref.count(0) == 1);
-    CUDAX_CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.count(0) == 1);
+    CHECK(mapping2_ref.count(1) == 3);
   }
 
   // Test map(...).
@@ -74,14 +74,14 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     {
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
     }
-    CUDAX_CHECK(result.group_count() == 16);
-    CUDAX_CHECK(result.group_rank() == (rank_in_warp / 4 * 2 + (rank_in_warp % 4 > 0)));
+    CHECK(result.group_count() == 16);
+    CHECK(result.group_rank() == (rank_in_warp / 4 * 2 + (rank_in_warp % 4 > 0)));
 
     static_assert(Result::static_count() == cuda::std::dynamic_extent);
-    CUDAX_CHECK(result.count() == ((rank_in_warp % 4 > 0) ? 3 : 1));
-    CUDAX_CHECK(result.rank() == ((rank_in_warp % 4 > 0) ? (rank_in_warp % 4 - 1) : 0));
+    CHECK(result.count() == ((rank_in_warp % 4 > 0) ? 3 : 1));
+    CHECK(result.rank() == ((rank_in_warp % 4 > 0) ? (rank_in_warp % 4 - 1) : 0));
 
-    CUDAX_CHECK(result.is_valid());
+    CHECK(result.is_valid());
     static_assert(Result::is_always_exhaustive());
     static_assert(Result::is_always_contiguous());
   }
@@ -94,11 +94,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(mapping1 | mapping2));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CUDAX_CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CUDAX_CHECK(mapping2_ref.count(0) == 1);
-    CUDAX_CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.count(0) == 1);
+    CHECK(mapping2_ref.count(1) == 3);
   }
   {
     auto mapping = cudax::composite_mapping{mapping1} | mapping2;
@@ -107,11 +107,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(cudax::composite_mapping{mapping1} | mapping2));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CUDAX_CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CUDAX_CHECK(mapping2_ref.count(0) == 1);
-    CUDAX_CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.count(0) == 1);
+    CHECK(mapping2_ref.count(1) == 3);
   }
   {
     auto mapping = mapping1 | cudax::composite_mapping{mapping2};
@@ -120,11 +120,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(mapping1 | cudax::composite_mapping{mapping2}));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CUDAX_CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CUDAX_CHECK(mapping2_ref.count(0) == 1);
-    CUDAX_CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.count(0) == 1);
+    CHECK(mapping2_ref.count(1) == 3);
   }
   {
     auto mapping = cudax::composite_mapping{mapping1} | cudax::composite_mapping{mapping2};
@@ -133,11 +133,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(cudax::composite_mapping{mapping1} | cudax::composite_mapping{mapping2}));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CUDAX_CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CUDAX_CHECK(mapping2_ref.count(0) == 1);
-    CUDAX_CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.count(0) == 1);
+    CHECK(mapping2_ref.count(1) == 3);
   }
 }
 

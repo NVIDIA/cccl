@@ -8,6 +8,8 @@ set(
   cpp/redundant_data_different_modes.cu
   cpp/scoped_graph_task.cu
   cpp/task_get_stream.cu
+  cpp/test_pick_stream.cu
+  cpp/test_pick_stream_green_context.cu
   cpp/user_streams.cu
   cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
@@ -230,7 +232,6 @@ set(
   cuda/experimental/__stf/utility/scope_guard.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
-  cuda/experimental/__stf/utility/unstable_unique.cuh
 )
 
 cccl_get_cudatoolkit()
