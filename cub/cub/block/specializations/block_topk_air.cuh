@@ -138,6 +138,12 @@ private:
       end_bit = max_bit;
     }
 
+    // TODO (elstehle): Short-circuit if k is greater than the number of items in the tile
+    if ((!IsFullTile && k >= valid_items) || k >= tile_items)
+    {
+      return;
+    }
+
     auto states =
       sieve_select<SelectDirection, IsFullTile>(storage.stage.sieve_storage, keys, k, valid_items, begin_bit, end_bit);
     // Make sure smem can be reused by the rank stage
