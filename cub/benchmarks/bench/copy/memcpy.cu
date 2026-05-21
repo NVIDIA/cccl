@@ -148,8 +148,6 @@ void copy(nvbench::state& state,
   using input_buffer_it_t  = it_t*;
   using output_buffer_it_t = it_t*;
   using buffer_size_it_t   = offset_t*;
-  using buffer_offset_t    = std::uint32_t;
-  using block_offset_t     = std::uint32_t;
 
   thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);
@@ -187,40 +185,25 @@ void copy(nvbench::state& state,
   state.add_global_memory_reads<it_t>(buffers);
   state.add_global_memory_reads<offset_t>(buffers);
 
-  std::size_t temp_storage_bytes{};
-  std::uint8_t* d_temp_storage{};
-  cub::detail::batch_memcpy::dispatch<cub::CopyAlg::Memcpy, block_offset_t>(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_input_buffers,
-    d_output_buffers,
-    d_buffer_sizes,
-    buffers,
-    nullptr
-#if !TUNE_BASE
-    ,
-    policy_selector_t{}
-#endif
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cub::detail::batch_memcpy::dispatch<cub::CopyAlg::Memcpy, block_offset_t>(
-                 d_temp_storage,
-                 temp_storage_bytes,
+               auto env = cub_bench_env(
+                 alloc,
+                 launch
+#if !TUNE_BASE
+                 ,
+                 cuda::execution::tune(policy_selector_t{})
+#endif
+               );
+               _CCCL_TRY_CUDA_API(
+                 cub::DeviceMemcpy::Batched,
+                 "Batched failed",
                  d_input_buffers,
                  d_output_buffers,
                  d_buffer_sizes,
-                 buffers,
-                 launch.get_stream()
-#if !TUNE_BASE
-                   ,
-                 policy_selector_t{}
-#endif
-               );
+                 static_cast<cuda::std::int64_t>(buffers),
+                 env);
              });
 }
 

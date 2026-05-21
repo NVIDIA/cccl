@@ -82,14 +82,11 @@ inline int get_device_from_stream(cudaStream_t stream)
   }
 
 #if _CCCL_CTK_AT_LEAST(12, 8)
-  int device = 0;
-  cuda_try(cudaStreamGetDevice(stream, &device));
-  return device;
+  return cuda_try<cudaStreamGetDevice>(stream);
 #else
   auto stream_driver = CUstream(stream);
 
-  CUcontext ctx;
-  cuda_try(cuStreamGetCtx(stream_driver, &ctx));
+  CUcontext ctx = cuda_try<cuStreamGetCtx>(stream_driver);
 
   cuda_try(cuCtxPushCurrent(ctx));
   CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
@@ -132,9 +129,7 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
     // return static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(stream));
     return k_no_stream_id;
   }
-
-  unsigned long long id = 0;
-  cuda_try(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
+  unsigned long long id = cuda_try<cuStreamGetId>(reinterpret_cast<CUstream>(stream));
   _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
   return id;
 }

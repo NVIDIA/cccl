@@ -243,7 +243,7 @@ public:
         int set_access = 1;
         if (item_dev != d)
         {
-          cuda_try(cudaDeviceCanAccessPeer(&set_access, d, item_dev));
+          set_access = cuda_try<cudaDeviceCanAccessPeer>(d, item_dev);
 
           if (!set_access)
           {
