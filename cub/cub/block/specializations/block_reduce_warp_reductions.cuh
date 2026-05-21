@@ -21,13 +21,15 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -97,46 +99,8 @@ struct BlockReduceWarpReductions
   {}
 
   //! @rst
-  //! Returns block-wide aggregate in *thread*\ :sub:`0`.
-  //! @endrst
-  //!
-  //! @tparam ReductionOp
-  //!   **[inferred]** Binary reduction operator type
-  //!
-  //! @param[in] reduction_op
-  //!   Binary reduction operator
-  //!
-  //! @param[in] warp_aggregate
-  //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
-  template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp reduction_op, T warp_aggregate)
-  {
-    if (linear_tid == 0)
-    {
-      detail::uninitialized_copy_single(temp_storage.warp_aggregates, warp_aggregate);
-    }
+  //! Cooperatively reduces warp aggregates using warp 0.
 
-    __syncthreads();
-
-    // Warp 0 already contributed its aggregate above since its also linear_tid == 0
-    if (lane_id == 0 && warp_id != 0)
-    {
-      // TODO: replace this with other atomic operations when specified
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_60,
-        ({
-          ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
-          atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);
-        }),
-        (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
-    }
-
-    __syncthreads();
-    return temp_storage.warp_aggregates[0];
-  }
-
-  //! @rst
-  //! Recursively applies warp aggregates using template unrolling for deterministic reduction.
   //! @endrst
   //!
   //! @tparam FullTile
@@ -155,18 +119,35 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    // Update total aggregate in warp 0, lane 0
-    if (linear_tid == 0)
+    // Warp 0 cooperatively reduces all warp aggregates
+    if (warp_id == 0)
     {
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+      const int num_warps = FullTile ? int(warps) : static_cast<int>(::cuda::ceil_div(num_valid, logical_warp_size));
+
+      T val{};
+      if (lane_id < num_warps)
       {
-        if (FullTile || (warp_idx * logical_warp_size < num_valid))
-        {
-          T addend       = temp_storage.warp_aggregates[warp_idx];
-          warp_aggregate = reduction_op(warp_aggregate, addend);
-        }
+        val = temp_storage.warp_aggregates[lane_id];
       }
+
+      // Fast path: redux intrinsic for eligible types/ops on SM80+ (full tile only)
+      if constexpr (FullTile && is_redux_enabled_cuda_operator<ReductionOp, T>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, ({
+                       constexpr unsigned mask = (warps == warp_threads) ? 0xFFFFFFFFu : ((1u << warps) - 1u);
+                       if (lane_id < warps)
+                       {
+                         warp_aggregate = reduce_op_sync(val, mask, reduction_op);
+                       }
+                       return warp_aggregate;
+                     }))
+      }
+
+      // Shuffle-based warp reduction fallback
+      constexpr bool all_warps_valid = (FullTile && (warps == warp_threads));
+      NullType dummy_storage;
+      warp_aggregate =
+        WarpReduceShfl<T, warp_threads>(dummy_storage).template Reduce<all_warps_valid>(val, num_warps, reduction_op);
     }
 
     return warp_aggregate;
@@ -201,14 +182,7 @@ struct BlockReduceWarpReductions
                          .template Reduce<(FullTile && even_warp_multiple)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    if constexpr (IsDeterministic)
-    {
-      return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
-    }
-    else
-    {
-      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
-    }
+    return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
   }
 
   //! @rst
@@ -245,14 +219,7 @@ struct BlockReduceWarpReductions
                                .template Reduce<(FullTile && even_warp_multiple)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    if constexpr (IsDeterministic)
-    {
-      return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
-    }
-    else
-    {
-      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
-    }
+    return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
   }
 };
 } // namespace detail
