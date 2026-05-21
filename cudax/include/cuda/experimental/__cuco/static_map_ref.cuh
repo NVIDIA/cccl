@@ -24,10 +24,12 @@
 #include <cuda/atomic>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/iterator>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
+#include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/types.cuh>
@@ -51,9 +53,11 @@ namespace cuda::experimental::cuco
 //! invoking the key comparison predicate, i.e., `__pred(__query_key, __slot_key)`.
 //! @note `_ProbingScheme::cg_size` indicates how many threads are used to handle one independent
 //! device operation. `cg_size == 1` uses the scalar (or non-CG) code paths.
-//! @note `_Capacity` is a span-style `size_t` non-type parameter. Pass `cuda::std::dynamic_extent`
-//! (the default) for runtime-sized maps; any concrete value encodes the slot count at compile
-//! time and is exposed as `capacity_v` (e.g., for static-sized device `__shared__` buffers).
+//! @note `_Capacity` is a span-style `size_t` non-type parameter encoding the *requested* slot
+//! count. Pass `cuda::std::dynamic_extent` (the default) for runtime-sized maps; any concrete
+//! value encodes the requested slot count at compile time. The actual slot count is the
+//! prime/stride-adjusted value exposed as `capacity_v` and matches the owning map's
+//! `static_map::capacity_v` for the same parameters.
 //!
 //! @tparam _Key Type used for keys
 //! @tparam _Tp Type used for mapped values
@@ -61,7 +65,7 @@ namespace cuda::experimental::cuco
 //! @tparam _KeyEqual Binary callable type used to compare two keys for equality
 //! @tparam _ProbingScheme Probing scheme type
 //! @tparam _BucketSize Number of slots per bucket
-//! @tparam _Capacity Total slot count, or `cuda::std::dynamic_extent` for runtime sizing
+//! @tparam _Capacity Requested slot count, or `cuda::std::dynamic_extent` for runtime sizing
 template <class _Key,
           class _Tp,
           ::cuda::thread_scope _Scope,
@@ -71,21 +75,13 @@ template <class _Key,
           ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent>
 class static_map_ref
 {
-  static constexpr bool __allows_duplicates = false;
-
-  using storage_ref_type =
-    ::cuda::experimental::cuco::__open_addressing::__slot_storage_ref<::cuda::std::pair<_Key, _Tp>, _BucketSize>;
-
-  using __impl_type = ::cuda::experimental::cuco::__open_addressing::
-    __open_addressing_ref_impl<_Key, _Scope, _KeyEqual, _ProbingScheme, storage_ref_type, __allows_duplicates>;
-
-  __impl_type __impl;
-
   static_assert(sizeof(_Key) <= 8, "Container does not support key types larger than 8 bytes.");
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "sizeof(mapped_type) must be either 4 bytes or 8 bytes.");
   static_assert(::cuda::experimental::cuco::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
                 "bitwise comparison via specialization of cuco::is_bitwise_comparable_v<Key>.");
+
+  static constexpr bool __allows_duplicates = false;
 
 public:
   using key_type            = _Key; ///< Key type
@@ -93,10 +89,10 @@ public:
   using value_type          = ::cuda::std::pair<_Key, _Tp>; ///< Key-payload pair type
   using probing_scheme_type = _ProbingScheme; ///< Probing scheme type
   using hasher              = typename probing_scheme_type::hasher; ///< Hash function type
-  using size_type           = typename storage_ref_type::__size_type; ///< Size type
+  using size_type           = ::cuda::std::size_t; ///< Size type
   using key_equal           = _KeyEqual; ///< Key equality comparator type
-  using iterator            = typename storage_ref_type::__iterator; ///< Slot iterator
-  using const_iterator      = typename storage_ref_type::__const_iterator; ///< Const slot iterator
+  using iterator            = value_type*; ///< Slot iterator
+  using const_iterator      = value_type const*; ///< Const slot iterator
 
   using empty_key   = ::cuda::experimental::cuco::__open_addressing::__empty_key<_Key>; ///< Empty-key sentinel tag
   using empty_value = ::cuda::experimental::cuco::__open_addressing::__empty_value<_Tp>; ///< Empty-payload sentinel tag
@@ -106,26 +102,45 @@ public:
   static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope for atomic operations
 
-  //! @brief Compile-time slot count; `cuda::std::dynamic_extent` when `_Capacity` is dynamic.
-  static constexpr size_type capacity_v = _Capacity;
+  //! @brief Compile-time adjusted slot count; `cuda::std::dynamic_extent` when `_Capacity` is dynamic.
+  static constexpr size_type capacity_v =
+    ::cuda::experimental::cuco::__detail::__valid_capacity_v<_ProbingScheme, _BucketSize, _Capacity>;
 
+  //! @brief Slot-storage span type. For static `_Capacity`, the span carries the adjusted
+  //! `capacity_v` extent at compile time; for dynamic `_Capacity`, the extent is dynamic.
+  using storage_span_type = ::cuda::std::span<value_type, capacity_v>;
+
+private:
+  // Internal adapter to the open-addressing impl. The storage's `_Extent` template arg
+  // receives the adjusted `capacity_v`, so when `_Capacity` is static the bucket count
+  // travels through the storage's `__extent_type` at compile time and the probing
+  // iterator's modular reduction folds to a constant.
+  using __storage_ref_type =
+    ::cuda::experimental::cuco::__open_addressing::__slot_storage_ref<value_type, _BucketSize, capacity_v>;
+
+  using __impl_type = ::cuda::experimental::cuco::__open_addressing::
+    __open_addressing_ref_impl<_Key, _Scope, _KeyEqual, _ProbingScheme, __storage_ref_type, __allows_duplicates>;
+
+  __impl_type __impl;
+
+public:
   //! @brief Constructs a ref without erasure support.
   //!
   //! @param __empty_key_sentinel Sentinel indicating an empty key slot
   //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __storage_ref Non-owning reference to the slot storage
+  //! @param __slots Span over the slot storage; must contain `capacity()` slots
   _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
     empty_key __empty_key_sentinel,
     empty_value __empty_value_sentinel,
     _KeyEqual const& __predicate,
     _ProbingScheme const& __probing_scheme,
-    storage_ref_type __storage_ref) noexcept
+    storage_span_type __slots) noexcept
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                __predicate,
                __probing_scheme,
-               __storage_ref}
+               __storage_ref_type{__slots.data(), __slots.size() / _BucketSize}}
   {}
 
   //! @brief Constructs a ref with erasure support.
@@ -135,19 +150,19 @@ public:
   //! @param __erased_key_sentinel Sentinel indicating an erased key slot
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __storage_ref Non-owning reference to the slot storage
+  //! @param __slots Span over the slot storage; must contain `capacity()` slots
   _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
     empty_key __empty_key_sentinel,
     empty_value __empty_value_sentinel,
     erased_key __erased_key_sentinel,
     _KeyEqual const& __predicate,
     _ProbingScheme const& __probing_scheme,
-    storage_ref_type __storage_ref) noexcept
+    storage_span_type __slots) noexcept
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                key_type(__erased_key_sentinel),
                __predicate,
                __probing_scheme,
-               __storage_ref}
+               __storage_ref_type{__slots.data(), __slots.size() / _BucketSize}}
   {}
 
   // ===== Accessors =====
@@ -224,12 +239,12 @@ public:
     return __impl.end();
   }
 
-  //! @brief Returns the non-owning storage reference backing this ref.
+  //! @brief Returns a span over the slot storage backing this ref.
   //!
-  //! @return Non-owning reference to slot storage
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr storage_ref_type storage_ref() const noexcept
+  //! @return Span of `capacity()` slots
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr storage_span_type storage_span() const noexcept
   {
-    return __impl.storage_ref();
+    return storage_span_type{__impl.storage_ref().data(), __impl.capacity()};
   }
 
   // ===== Insert operations =====
@@ -575,15 +590,14 @@ public:
   _CCCL_DEVICE constexpr auto make_copy(_CG __tile, value_type* const __memory_to_use) const noexcept
   {
     __impl.make_copy(__tile, __memory_to_use);
-    auto __new_storage_ref =
-      typename static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>::storage_ref_type{
-        __memory_to_use, __impl.storage_ref().num_buckets()};
-    return static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>{
-      empty_key{this->empty_key_sentinel()},
-      empty_value{this->empty_value_sentinel()},
-      this->key_eq(),
+    using __new_ref_type    = static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
+    auto __new_storage_span = typename __new_ref_type::storage_span_type{__memory_to_use, capacity()};
+    return __new_ref_type{
+      empty_key{empty_key_sentinel()},
+      empty_value{empty_value_sentinel()},
+      key_eq(),
       __impl.probing_scheme(),
-      __new_storage_ref};
+      __new_storage_span};
   }
 
   //! @brief Initializes the map storage using `__tile`. Synchronizes the tile.
@@ -597,11 +611,11 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto rebind_key_eq(_NewKeyEqual const& __key_equal) const noexcept
   {
     return static_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>{
-      empty_key{this->empty_key_sentinel()},
-      empty_value{this->empty_value_sentinel()},
+      empty_key{empty_key_sentinel()},
+      empty_value{empty_value_sentinel()},
       __key_equal,
       __impl.probing_scheme(),
-      __impl.storage_ref()};
+      storage_span()};
   }
 
   template <class _NewHash>
@@ -609,11 +623,7 @@ public:
   {
     auto __new_probing = _ProbingScheme{__hash};
     return static_map_ref<_Key, _Tp, _Scope, _KeyEqual, decltype(__new_probing), _BucketSize, _Capacity>{
-      empty_key{this->empty_key_sentinel()},
-      empty_value{this->empty_value_sentinel()},
-      this->key_eq(),
-      __new_probing,
-      __impl.storage_ref()};
+      empty_key{empty_key_sentinel()}, empty_value{empty_value_sentinel()}, key_eq(), __new_probing, storage_span()};
   }
 };
 } // namespace cuda::experimental::cuco

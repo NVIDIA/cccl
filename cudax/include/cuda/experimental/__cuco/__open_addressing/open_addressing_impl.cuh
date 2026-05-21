@@ -111,13 +111,10 @@ private:
   __size_type __num_buckets;
   ::cuda::device_buffer<__value_type> __slots;
 
-  //! @brief Computes the number of buckets for a given capacity.
-  [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __capacity)
+  //! @brief Computes the actual number of buckets given a requested capacity.
+  [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __requested_capacity)
   {
-    return static_cast<__size_type>(
-      ::cuda::experimental::cuco::__detail::__make_valid_extent<_ProbingScheme, _BucketSize>(
-        ::cuda::experimental::cuco::extent<__size_type>{__capacity})
-        .extent(0));
+    return ::cuda::experimental::cuco::__detail::__valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity);
   }
 
   //! @brief Computes the number of buckets for a given number of keys and load factor.

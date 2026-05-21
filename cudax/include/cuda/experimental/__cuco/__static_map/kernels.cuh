@@ -143,9 +143,9 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_or_apply_shmem(
   constexpr int __num_slots = _NumBuckets * _SharedMapRefType::bucket_size;
   __shared__ typename _SharedMapRefType::value_type __slots[__num_slots];
 
-  // Create the storage ref for the shared memory slots
-  using __storage_ref_type = typename _SharedMapRefType::storage_ref_type;
-  auto __storage           = __storage_ref_type{__slots, _NumBuckets};
+  // Build a span over the shared-memory slots for the shared-map ref constructor
+  using __storage_span_type = typename _SharedMapRefType::storage_span_type;
+  auto __storage            = __storage_span_type{__slots, __num_slots};
 
   using __atomic_type = ::cuda::atomic<::cuda::std::int32_t, ::cuda::thread_scope_block>;
   __shared__ __atomic_type __block_cardinality;

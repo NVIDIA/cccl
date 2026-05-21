@@ -34,14 +34,29 @@ namespace cuda::experimental::cuco::__open_addressing
 //! Provides indexing into the slot array organized as buckets. The probing scheme produces
 //! bucket indices; within each bucket there are `_BucketSize` value-typed slots.
 //!
+//! `_Extent` is the *actual* (prime/stride-adjusted) total slot count, mirroring
+//! `cuda::std::span<T, _Extent>` semantics. Public-facing `static_map`/`static_map_ref`
+//! types take a *requested* `_Capacity` template argument and pass the adjusted
+//! `capacity_v` here. When `_Extent` is static, the bucket count is encoded in the
+//! storage's `__extent_type` at compile time, so the probing iterator's modular reduction
+//! by `num_buckets` folds to a constant. Owning containers that allocate at runtime use
+//! the default (dynamic) `_Extent`.
+//!
 //! @tparam _Value The slot value type (e.g. `::cuda::std::pair<Key, T>`)
 //! @tparam _BucketSize Number of slots per bucket (compile-time constant)
-template <class _Value, int _BucketSize>
+//! @tparam _Extent Actual total slot count, or `cuda::std::dynamic_extent` for runtime
+//! sizing. Must be divisible by `_BucketSize` when static.
+template <class _Value, int _BucketSize, ::cuda::std::size_t _Extent = ::cuda::std::dynamic_extent>
 struct __slot_storage_ref
 {
+  using __size_type = ::cuda::std::size_t;
+
+  // Bucket count: static when `_Extent` is, dynamic otherwise.
+  static constexpr __size_type __num_buckets_v =
+    (_Extent == ::cuda::std::dynamic_extent) ? ::cuda::std::dynamic_extent : (_Extent / _BucketSize);
+
   using __value_type     = _Value;
-  using __size_type      = ::cuda::std::size_t;
-  using __extent_type    = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
+  using __extent_type    = ::cuda::std::extents<__size_type, __num_buckets_v>;
   using __iterator       = _Value*;
   using __const_iterator = const _Value*;
   using __bucket_type    = ::cuda::std::span<_Value, _BucketSize>;
@@ -54,7 +69,8 @@ struct __slot_storage_ref
   //! @brief Constructs a slot storage ref.
   //!
   //! @param __data Pointer to the first slot
-  //! @param __num_buckets Number of buckets (total slots = __num_buckets * _BucketSize)
+  //! @param __num_buckets Number of buckets (total slots = __num_buckets * _BucketSize). Must
+  //! equal the static bucket count when `_Extent` is static.
   _CCCL_HOST_DEVICE constexpr __slot_storage_ref(_Value* __data, __size_type __num_buckets) noexcept
       : __data_{__data}
       , __num_buckets_{__num_buckets}

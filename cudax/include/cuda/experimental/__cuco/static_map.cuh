@@ -105,21 +105,16 @@ public:
   //! @brief Runtime-adjusted capacity for a requested slot count.
   [[nodiscard]] _CCCL_HOST static size_type compute_capacity(size_type __n)
   {
-    return static_cast<size_type>(
-      ::cuda::experimental::cuco::__detail::__make_valid_extent<_ProbingScheme, _BucketSize>(
-        ::cuda::experimental::cuco::extent<size_type>{__n})
-        .extent(0));
+    return ::cuda::experimental::cuco::__detail::__valid_capacity<_ProbingScheme, _BucketSize>(__n);
   }
 
   //! @brief Compile-time adjusted capacity; `cuda::std::dynamic_extent` for dynamic maps.
   static constexpr size_type capacity_v =
-    (_Capacity == ::cuda::std::dynamic_extent)
-      ? ::cuda::std::dynamic_extent
-      : ::cuda::experimental::cuco::__detail::__valid_extent_v<_ProbingScheme, _BucketSize, _Capacity>;
+    ::cuda::experimental::cuco::__detail::__valid_capacity_v<_ProbingScheme, _BucketSize, _Capacity>;
 
-  using ref_type = static_map_ref<_Key, _Tp, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, capacity_v>; ///< Device
-                                                                                                          ///< non-owning
-                                                                                                          ///< ref type
+  using ref_type = static_map_ref<_Key, _Tp, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>; ///< Device
+                                                                                                         ///< non-owning
+                                                                                                         ///< ref type
 
 private:
   using __impl_type = ::cuda::experimental::cuco::__open_addressing::
@@ -161,7 +156,17 @@ private:
         ::cuda::experimental::cuco::extent<int32_t>{__shared_map_size});
       constexpr int32_t __shmem_num_buckets = static_cast<int32_t>(__shmem_extent.extent(0));
 
-      using __shared_map_ref_type = static_map_ref<_Key, _Tp, ::cuda::thread_scope_block, _KeyEqual, _ProbingScheme, 1>;
+      // Encode the shared-map capacity at compile time so the probing iterator's modular
+      // reduction folds to a constant in the hot loop. With `_BucketSize = 1`, the static
+      // `_Capacity` template argument equals the number of buckets.
+      using __shared_map_ref_type =
+        static_map_ref<_Key,
+                       _Tp,
+                       ::cuda::thread_scope_block,
+                       _KeyEqual,
+                       _ProbingScheme,
+                       1,
+                       static_cast<::cuda::std::size_t>(__shmem_num_buckets)>;
 
       const auto __insert_or_apply_shmem_fn_ptr = ::cuda::experimental::cuco::__static_map::__insert_or_apply_shmem<
         _HasInit,
@@ -1280,19 +1285,20 @@ public:
   //! @return A `ref_type` referring to this map
   [[nodiscard]] auto ref() const noexcept -> ref_type
   {
+    auto __slots = typename ref_type::storage_span_type{__impl->storage_ref().data(), __impl->capacity()};
     return ::cuda::experimental::cuco::__detail::__bitwise_compare(
              this->empty_key_sentinel(), this->erased_key_sentinel())
            ? ref_type{empty_key{this->empty_key_sentinel()},
                       empty_value{this->empty_value_sentinel()},
                       __impl->key_eq(),
                       __impl->probing_scheme(),
-                      __impl->storage_ref()}
+                      __slots}
            : ref_type{empty_key{this->empty_key_sentinel()},
                       empty_value{this->empty_value_sentinel()},
                       erased_key{this->erased_key_sentinel()},
                       __impl->key_eq(),
                       __impl->probing_scheme(),
-                      __impl->storage_ref()};
+                      __slots};
   }
 };
 } // namespace cuda::experimental::cuco

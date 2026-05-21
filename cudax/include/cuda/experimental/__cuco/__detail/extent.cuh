@@ -130,6 +130,32 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 template <class _ProbingScheme, int _BucketSize, ::cuda::std::size_t _N>
 _CCCL_HIDE_FROM_ABI constexpr ::cuda::std::size_t __valid_extent_v = static_cast<::cuda::std::size_t>(
   __make_valid_extent<_ProbingScheme, _BucketSize>(extent<::cuda::std::size_t, _N>{}).extent(0));
+
+//! @brief Compile-time adjusted slot count, with `dynamic_extent` passthrough.
+//!
+//! Companion to `__valid_extent_v` that accepts `cuda::std::dynamic_extent`:
+//! - Static `_Capacity`  → prime/stride-adjusted value (same as `__valid_extent_v`).
+//! - `dynamic_extent`    → `dynamic_extent` (actual size known only at runtime).
+//!
+//! Shared by all open-addressing containers (`static_map`, `static_map_ref`,
+//! and any future `static_set`/`static_multimap`/...) so the requested→actual
+//! mapping is computed in one place.
+template <class _ProbingScheme, int _BucketSize, ::cuda::std::size_t _Capacity>
+_CCCL_HIDE_FROM_ABI constexpr ::cuda::std::size_t __valid_capacity_v =
+  (_Capacity == ::cuda::std::dynamic_extent)
+    ? ::cuda::std::dynamic_extent
+    : __valid_extent_v<_ProbingScheme, _BucketSize, _Capacity>;
+
+//! @brief Runtime adjusted slot count for an open-addressing container.
+//!
+//! Convenience wrapper over `__make_valid_extent` returning the adjusted size
+//! as a raw `_SizeType` rather than an `extent`.
+template <class _ProbingScheme, int _BucketSize, class _SizeType>
+[[nodiscard]] _CCCL_API constexpr _SizeType __valid_capacity(_SizeType __requested)
+{
+  return static_cast<_SizeType>(
+    __make_valid_extent<_ProbingScheme, _BucketSize>(extent<_SizeType>{__requested}).extent(0));
+}
 } // namespace cuda::experimental::cuco::__detail
 
 #include <cuda/std/__cccl/epilogue.h>
