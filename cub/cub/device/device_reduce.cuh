@@ -111,57 +111,54 @@ private:
     using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_env_t = decltype(tuning);
-
-      if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
-      {
-        // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
-        (void) reduction_op;
-        using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
-        using policy_selector =
-          ::cuda::std::execution::__query_result_or_t<tuning_env_t, detail::rfa::rfa_policy, default_policy_selector>;
-        return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
-          storage, bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op, policy_selector{});
-      }
-      else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
-      {
-        using default_policy_selector =
-          detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-        using policy_selector =
-          ::cuda::std::execution::__query_result_or_t<tuning_env_t,
-                                                      detail::reduce_nondeterministic::reduce_nondeterministic_policy,
-                                                      default_policy_selector>;
-        return detail::reduce_nondeterministic::dispatch<accum_t>(
-          storage,
-          bytes,
-          d_in,
-          THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
-          static_cast<offset_t>(num_items),
-          reduction_op,
-          init,
-          stream,
-          transform_op,
-          policy_selector{});
-      }
-      else
-      {
-        using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
-        using policy_selector         = ::cuda::std::execution::
-          __query_result_or_t<tuning_env_t, detail::reduce::reduce_policy, default_policy_selector>;
-        return detail::reduce::dispatch<accum_t>(
-          storage,
-          bytes,
-          d_in,
-          d_out,
-          static_cast<offset_t>(num_items),
-          reduction_op,
-          init,
-          stream,
-          transform_op,
-          policy_selector{});
-      }
-    });
+    if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
+    {
+      // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
+      (void) reduction_op;
+      using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
+      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+          return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
+            storage, bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op, policy_selector);
+        });
+    }
+    else if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__not_guaranteed)
+    {
+      using default_policy_selector =
+        detail::reduce_nondeterministic::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+          return detail::reduce_nondeterministic::dispatch<accum_t>(
+            storage,
+            bytes,
+            d_in,
+            THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+            static_cast<offset_t>(num_items),
+            reduction_op,
+            init,
+            stream,
+            transform_op,
+            policy_selector);
+        });
+    }
+    else
+    {
+      using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+        env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+          return detail::reduce::dispatch<accum_t>(
+            storage,
+            bytes,
+            d_in,
+            d_out,
+            static_cast<offset_t>(num_items),
+            reduction_op,
+            init,
+            stream,
+            transform_op,
+            policy_selector);
+        });
+    }
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
@@ -187,11 +184,9 @@ private:
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using default_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
                                                   ::cuda::execution::determinism::run_to_run_t>;
-
-    using accum_t = AccumT;
 
     constexpr auto gpu_gpu_determinism =
       ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
@@ -199,15 +194,15 @@ private:
     // integral types are always gpu-to-gpu deterministic if reduction operator is a simple cuda binary
     // operator, so fallback to run-to-run determinism
     constexpr auto integral_fallback =
-      gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t> && (detail::is_cuda_binary_operator<ReductionOpT>);
+      gpu_gpu_determinism && ::cuda::std::is_integral_v<AccumT> && (detail::is_cuda_binary_operator<ReductionOpT>);
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
     constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
+      gpu_gpu_determinism && detail::is_one_of_v<AccumT, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
 
     constexpr auto float_double_min_max_fallback =
       gpu_gpu_determinism
-      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+      && detail::is_one_of_v<AccumT, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
 
     constexpr auto supported =
       integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
@@ -232,7 +227,7 @@ private:
       constexpr auto is_contiguous_fallback =
         !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
       constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
-      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
+      constexpr auto is_4b_or_greater = !no_determinism || sizeof(AccumT) >= 4;
 
       // If the conditions for gpu-to-gpu determinism or non-deterministic
       // reduction are not met, we fall back to run-to-run determinism.
