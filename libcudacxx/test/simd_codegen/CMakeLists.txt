@@ -21,12 +21,33 @@ else()
   return()
 endif()
 
+if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
+  message("-- clang-cuda does not support the -dc simd codegen tests")
+  return()
+endif()
+
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
 set(libcudacxx_simd_codegen_tests)
 if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  file(GLOB libcudacxx_simd_codegen_tests "*.cu")
+  file(
+    GLOB libcudacxx_simd_codegen_tests
+    "floating_point/*.cu"
+    "idot/*.cu"
+    "integer/*.cu"
+    "vabsdiff/*.cu"
+  )
+  if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 13.2)
+    file(
+      GLOB libcudacxx_simd_codegen_saturation_add_tests
+      "saturation_add/*.cu"
+    )
+    list(
+      APPEND libcudacxx_simd_codegen_tests
+      ${libcudacxx_simd_codegen_saturation_add_tests}
+    )
+  endif()
 endif()
 
 set(simd_codegen_cuda_archs 80 90)
@@ -34,47 +55,75 @@ if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
   list(APPEND simd_codegen_cuda_archs 100 120)
 endif()
 
+set(simd_codegen_arch_specific_cuda_archs ${simd_codegen_cuda_archs})
+if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.9)
+  list(APPEND simd_codegen_arch_specific_cuda_archs 120f)
+endif()
+
+function(simd_codegen_get_check_prefixes out_var test_contents arch)
+  set(check_prefixes "SMXX")
+  set(arch_prefix "SM${arch}")
+
+  string(
+    REGEX MATCH
+    ";[ \t]*${arch_prefix}(:|-)"
+    has_arch_prefix
+    "${test_contents}"
+  )
+  if (has_arch_prefix)
+    string(APPEND check_prefixes ",${arch_prefix}")
+  endif()
+
+  if (arch MATCHES "^1[0-9][0-9][af]?$")
+    string(REGEX MATCH ";[ \t]*SM1XX(:|-)" has_sm1xx_prefix "${test_contents}")
+    if (has_sm1xx_prefix)
+      string(APPEND check_prefixes ",SM1XX")
+    endif()
+  endif()
+
+  set(${out_var} "${check_prefixes}" PARENT_SCOPE)
+endfunction()
+
+function(simd_codegen_set_cuda_arch target_name arch)
+  if (arch MATCHES "[af]$")
+    set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES OFF)
+    target_compile_options(
+      ${target_name}
+      PRIVATE "--generate-code=arch=compute_${arch},code=sm_${arch}"
+    )
+  else()
+    set_target_properties(
+      ${target_name}
+      PROPERTIES CUDA_ARCHITECTURES "${arch}"
+    )
+  endif()
+endfunction()
+
 function(simd_codegen_add_tests test_path)
   cmake_path(GET test_path FILENAME test_file)
   cmake_path(REMOVE_EXTENSION test_file LAST_ONLY OUTPUT_VARIABLE test_name)
 
   file(READ "${test_path}" test_contents)
-  string(
-    REGEX MATCH
-    "SM[0-9][0-9]*"
-    has_arch_specific_prefix
-    "${test_contents}"
-  )
 
-  # search for SMXX prefixes in the test contents
   set(test_archs)
-  if (has_arch_specific_prefix)
-    foreach (arch IN LISTS simd_codegen_cuda_archs)
-      string(FIND "${test_contents}" "SM${arch}" arch_specific_prefix)
-      if (NOT arch_specific_prefix EQUAL -1)
-        list(APPEND test_archs "${arch}")
-      endif()
-    endforeach()
-  else()
+  foreach (arch IN LISTS simd_codegen_arch_specific_cuda_archs)
+    simd_codegen_get_check_prefixes(check_prefixes "${test_contents}" "${arch}")
+    if (NOT "${check_prefixes}" STREQUAL "SMXX")
+      list(APPEND test_archs "${arch}")
+    endif()
+  endforeach()
+  if (NOT test_archs)
     set(test_archs ${simd_codegen_cuda_archs})
   endif()
 
   # Run tests for each architecture specified in the test file
   foreach (arch IN LISTS test_archs)
     set(target_name "simd_codegen_sm${arch}_${test_name}")
-    set(check_prefixes "SMXX")
-    if (has_arch_specific_prefix)
-      string(APPEND check_prefixes ",SM${arch}")
-    endif()
+    simd_codegen_get_check_prefixes(check_prefixes "${test_contents}" "${arch}")
 
     add_library(${target_name} STATIC "${test_path}")
-
-    set_target_properties(
-      ${target_name}
-      PROPERTIES CUDA_ARCHITECTURES "${arch}"
-    )
-
-    target_compile_options(${target_name} PRIVATE "-Wno-comment")
+    simd_codegen_set_cuda_arch(${target_name} "${arch}")
+    target_compile_options(${target_name} PRIVATE "-Wno-comment" "-dc")
 
     target_include_directories(
       ${target_name}
