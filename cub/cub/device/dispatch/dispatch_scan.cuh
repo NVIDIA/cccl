@@ -65,7 +65,8 @@ template <typename PolicySelector,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          ForceInclusive EnforceInclusive>
+          ForceInclusive EnforceInclusive,
+          bool RunToRunDeterministic = false>
 struct DeviceScanKernelSource
 {
   using ScanTileStateT = ScanTileState<AccumT>;
@@ -84,7 +85,8 @@ struct DeviceScanKernelSource
                      InitValueT,
                      OffsetT,
                      AccumT,
-                     EnforceInclusive == ForceInclusive::Yes>)
+                     EnforceInclusive == ForceInclusive::Yes,
+                     RunToRunDeterministic>)
 
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t InputSize()
   {
@@ -221,15 +223,17 @@ template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename PolicyHub              = detail::scan::
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource = detail::scan::DeviceScanKernelSource<
-    detail::scan::policy_selector_from_hub<PolicyHub>,
-    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-    ScanOpT,
-    InitValueT,
-    OffsetT,
-    AccumT,
-    EnforceInclusive>,
+  bool RunToRunDeterministic = false,
+  typename KernelSource      = detail::scan::DeviceScanKernelSource<
+         detail::scan::policy_selector_from_hub<PolicyHub>,
+         THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+         THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+         ScanOpT,
+         InitValueT,
+         OffsetT,
+         AccumT,
+         EnforceInclusive,
+         RunToRunDeterministic>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchScan
 {
@@ -442,6 +446,7 @@ struct DispatchScan
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
                     kernel_source.make_tile_state_kernel_arg(tile_state),
+                    /* atomic_counter, unused on lookback path */ static_cast<::cuda::std::uint32_t*>(nullptr),
                     start_tile,
                     scan_op,
                     init_value,
@@ -486,13 +491,27 @@ struct DispatchScan
     }
 
     CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_warpspeed_policy warpspeed_policy = policy_getter().warpspeed;
+    CUB_DETAIL_CONSTEXPR_ISH const bool is_sm90_atomic_warpspeed =
+      policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed_deterministic_atomic;
 
-    const int grid_dim =
+    const int num_tiles =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
+
+    // Atomic counter is only used by the sm_90 atomic-scheduling path; skip the allocation otherwise.
+    const bool needs_atomic_counter = is_sm90_atomic_warpspeed;
+    size_t allocation_sizes[2];
+    allocation_sizes[0] = static_cast<size_t>(num_tiles) * kernel_source.look_ahead_tile_state_size();
+    allocation_sizes[1] = needs_atomic_counter ? sizeof(::cuda::std::uint32_t) : 0;
+
+    void* allocations[2] = {};
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
 
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size();
       return cudaSuccess;
     }
 
@@ -506,6 +525,15 @@ struct DispatchScan
     {
       return error;
     }
+
+    // Atomic-scheduling caps the launch at one wave (extra CTAs just atomicAdd, get an out-of-range
+    // index, and early-exit). SM 100+ HW cluster scheduling needs gridDim == num_tiles.
+    const int scan_grid_dim = is_sm90_atomic_warpspeed ? ::cuda::std::min(sm_count, num_tiles) : num_tiles;
+    const int grid_dim      = num_tiles;
+
+    auto* d_atomic_counter = needs_atomic_counter ? static_cast<::cuda::std::uint32_t*>(allocations[1]) : nullptr;
+    void* d_tile_state     = allocations[0];
+
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
     if (const auto error =
@@ -586,10 +614,19 @@ struct DispatchScan
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
               .doit(kernel_source.InitKernel(),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_tile_state),
                     grid_dim)))
       {
         return error;
+      }
+
+      // Counter starts at 0; every CTA (including its first tile) claims via atomicAdd and bounds-checks.
+      if (needs_atomic_counter)
+      {
+        if (const auto error = CubDebug(cudaMemsetAsync(d_atomic_counter, 0, sizeof(::cuda::std::uint32_t), stream)))
+        {
+          return error;
+        }
       }
 
       // Check for failure to launch
@@ -610,15 +647,17 @@ struct DispatchScan
       const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
 
 #  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
+      _CubLog(
+        "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
 #  endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
-            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+            launcher_factory(scan_grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_tile_state),
+                    d_atomic_counter,
                     /* start_tile, unused */ 0,
                     ::cuda::std::move(scan_op),
                     init_value,
@@ -755,6 +794,7 @@ struct DispatchScan
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
                     kernel_source.make_tile_state_kernel_arg(tile_state),
+                    /* atomic_counter, unused on lookback path */ static_cast<::cuda::std::uint32_t*>(nullptr),
                     start_tile,
                     scan_op,
                     init_value,
@@ -783,7 +823,7 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
   {
-    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
+    if CUB_DETAIL_CONSTEXPR_ISH (detail::scan::is_warpspeed_algorithm(policy_getter().algorithm))
     {
       return __invoke_warpspeed_algorithm(policy_getter);
     }
@@ -892,26 +932,29 @@ namespace detail::scan
 {
 template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
+  bool RunToRunDeterministic      = false,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT         = ::cuda::std::__accumulator_t<ScanOpT,
-                                                         cub::detail::it_value_t<InputIteratorT>,
-                                                         ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                          cub::detail::it_value_t<InputIteratorT>,
-                                                                          typename InitValueT::value_type>>,
-  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource   = DeviceScanKernelSource<
-      PolicySelector,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      AccumT,
-      EnforceInclusive>,
+  typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
+                                                 cub::detail::it_value_t<InputIteratorT>,
+                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                  cub::detail::it_value_t<InputIteratorT>,
+                                                                  typename InitValueT::value_type>>,
+  typename PolicySelector =
+    policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, RunToRunDeterministic>,
+  typename KernelSource = DeviceScanKernelSource<
+    PolicySelector,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive,
+    RunToRunDeterministic>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires scan_policy_selector<PolicySelector>
@@ -963,6 +1006,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                         AccumT,
                         EnforceInclusive,
                         fake_policy,
+                        RunToRunDeterministic,
                         KernelSource,
                         KernelLauncherFactory>{
       d_temp_storage,
@@ -983,21 +1027,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 template <
   typename AccumT,
   ForceInclusive EnforceInclusive = ForceInclusive::No,
+  bool RunToRunDeterministic      = false,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource   = DeviceScanKernelSource<
-      PolicySelector,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      AccumT,
-      EnforceInclusive>,
+  typename PolicySelector =
+    policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, RunToRunDeterministic>,
+  typename KernelSource = DeviceScanKernelSource<
+    PolicySelector,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive,
+    RunToRunDeterministic>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
@@ -1012,7 +1059,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
-  return dispatch<EnforceInclusive, InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, OffsetT, AccumT>(
+  return dispatch<EnforceInclusive,
+                  RunToRunDeterministic,
+                  InputIteratorT,
+                  OutputIteratorT,
+                  ScanOpT,
+                  InitValueT,
+                  OffsetT,
+                  AccumT>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,

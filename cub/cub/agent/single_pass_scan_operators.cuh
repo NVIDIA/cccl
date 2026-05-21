@@ -1177,7 +1177,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
-          typename DelayConstructorT = detail::default_delay_constructor_t<T>>
+          typename DelayConstructorT = detail::default_delay_constructor_t<T>,
+          bool RunToRunDeterministic = false>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
@@ -1265,29 +1266,61 @@ struct TilePrefixCallbackOp
     int predecessor_idx = tile_idx - threadIdx.x - 1;
     StatusWord predecessor_status;
     T window_aggregate;
-
-    // Wait for the warp-wide window of predecessor tiles to become valid
     DelayConstructorT construct_delay(tile_idx);
-    ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
 
-    // The exclusive tile prefix starts out as the current window aggregate
-    exclusive_prefix = window_aggregate;
-
-    // Keep sliding the window back until we come across a tile whose inclusive prefix is known
-    while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
+    if constexpr (RunToRunDeterministic)
     {
-      predecessor_idx -= detail::warp_threads;
-
-      // Update exclusive tile prefix with the window prefix
+      // 32-tile batched lookback, wait until the batch-base lane has flipped to INCLUSIVE
+      const int batch_base      = ((tile_idx - 1) >> 5) << 5;
+      const int batch_last_lane = tile_idx - 1 - batch_base;
+      T value;
+      while (true)
+      {
+        tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
+        const int my_is_inclusive   = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+        const int base_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, batch_last_lane);
+        if (base_is_inclusive)
+        {
+          break;
+        }
+      }
+      const int tail_flag = (static_cast<int>(threadIdx.x) == batch_last_lane);
+      window_aggregate =
+        WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
+      exclusive_prefix = window_aggregate;
+    }
+    else
+    {
+      // Keep sliding the window back until we come across a tile whose inclusive prefix is known
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
-      exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      exclusive_prefix = window_aggregate;
+      while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
+      {
+        predecessor_idx -= detail::warp_threads;
+
+        // Update exclusive tile prefix with the window prefix
+        ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
+        exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      }
     }
 
     // Compute the inclusive tile prefix and update the status for this tile
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
-      tile_status.SetInclusive(tile_idx, inclusive_prefix);
+
+      // for deterministic only batch-base tiles publish INCLUSIVE
+      if constexpr (RunToRunDeterministic)
+      {
+        if ((tile_idx & 31) == 0)
+        {
+          tile_status.SetInclusive(tile_idx, inclusive_prefix);
+        }
+      }
+      else
+      {
+        tile_status.SetInclusive(tile_idx, inclusive_prefix);
+      }
 
       detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
 

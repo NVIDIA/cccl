@@ -63,6 +63,7 @@ struct scanKernelParams
   const InputT* ptrIn;
   OutputT* ptrOut;
   warpspeed::tile_state_t<AccumT>* ptrTileStates;
+  ::cuda::std::uint32_t* atomicCounter; // atomic counter for sm_90 workstealing deterministic path
   ::cuda::std::size_t numElem;
   int numStages;
 };
@@ -133,6 +134,15 @@ _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const warpspeed::Squad& squad,
     ::cuda::ptx::clusterlaunchcontrol_try_cancel(&refDestSmem.data(), refDestSmem.ptrCurBarrierRelease());
   }
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
+}
+
+_CCCL_DEVICE_API inline void squadGetNextBlockIdxAtomic(
+  const warpspeed::Squad& squad, warpspeed::SmemRef<uint4>& refDestSmem, ::cuda::std::uint32_t* atomicCounter)
+{
+  if (squad.isLeaderThread())
+  {
+    refDestSmem.data().x = ::atomicAdd(atomicCounter, 1u);
+  }
 }
 
 template <typename Tp, typename ScanOpT>
@@ -272,7 +282,8 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename RealInitValueT,
-          bool ForceInclusive>
+          bool ForceInclusive,
+          bool RunToRunDeterministic = false>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   warpspeed::Squad squad,
   warpspeed::SpecialRegisters specialRegisters,
@@ -303,8 +314,30 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   // Pre-loop
   ////////////////////////////////////////////////////////////////////////////////
 
-  // Start with the tile indicated by blockIdx.x
-  int idxTile = specialRegisters.blockIdxX;
+  // Total number of tiles in the problem; used as the loop-exit bound on the sm_90 atomic path.
+  const int numTiles = static_cast<int>(::cuda::ceil_div(params.numElem, ::cuda::std::size_t(tile_size)));
+
+  // SM 90 broadcasts the initial atomicAdd result to all threads via this slot. Unused on SM>=100.
+  __shared__ int sInitialIdxTile;
+
+  // First tile this CTA processes. SM>=100 uses blockIdx.x, while
+  // SM 90 claims via atomicAdd
+  int idxTile;
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100, (idxTile = specialRegisters.blockIdxX;), ({
+                      if (specialRegisters.threadIdxX == 0)
+                      {
+                        sInitialIdxTile = static_cast<int>(::atomicAdd(params.atomicCounter, 1u));
+                      }
+                      __syncthreads();
+                      idxTile = sInitialIdxTile;
+                    }))
+
+  // CTAs that lost the race for a valid tile (e.g., extra CTAs queued by the runtime) exit cleanly.
+  if (idxTile >= numTiles)
+  {
+    return;
+  }
+
   // Lookback-specific variables:
   int idxTilePrev = 0;
   AccumT sumExclusiveCtaPrev; // only valid in squadLookback lane_0
@@ -341,7 +374,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       // Load next tile index
       ////////////////////////////////////////////////////////////////////////////////
       warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
-      squadGetNextBlockIdx(squad, refNextBlockIdxW);
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                        (squadGetNextBlockIdx(squad, refNextBlockIdxW);),
+                        (squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);))
     }
 
     const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
@@ -370,7 +405,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       regNextBlockIdx                     = refNextBlockIdxR.data();
       refNextBlockIdxR.setFenceLdsToAsyncProxy();
     }
-    bool nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);
+    bool nextIdxTileValid = false;
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                      (nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
+                      (nextIdxTileValid = static_cast<int>(regNextBlockIdx.x) < numTiles;))
 
     if (squad == squadReduce)
     {
@@ -486,14 +524,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 
       if (!is_first_tile)
       {
-        AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
-          specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
+        AccumT regSumExclusiveCta =
+          warpspeed::warpIncrementalLookback<RunToRunDeterministic, look_ahead_items_per_thread>(
+            specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
         if (squad.isLeaderThread())
         {
           refSumExclusiveCtaW.data() = regSumExclusiveCta;
         }
-        sumExclusiveCtaPrev = regSumExclusiveCta;
-        idxTilePrev         = idxTile;
       }
     }
 
@@ -776,7 +813,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       break;
     }
     // Update idxTile
-    idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_100,
+      (idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);),
+      (idxTile = static_cast<int>(regNextBlockIdx.x);))
   }
 
   if (squad == squadLoad)
@@ -790,6 +830,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT,
+          bool RunToRunDeterministic,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -823,7 +864,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
 
   // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
   warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
-    kernelBody<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
+    kernelBody<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive, RunToRunDeterministic>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res);
   });
 #endif // __cccl_ptx_isa >= 860

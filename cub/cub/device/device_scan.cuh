@@ -107,9 +107,11 @@ struct DeviceScan
     cudaStream_t stream,
     PolicySelectorT policy_selector)
   {
+    constexpr bool RunToRunDeterministic =
+      !::cuda::std::is_same_v<Determinism, ::cuda::execution::determinism::not_guaranteed_t>;
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::scan::dispatch<EnforceInclusive>(
+    return detail::scan::dispatch<EnforceInclusive, RunToRunDeterministic>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -149,17 +151,28 @@ struct DeviceScan
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector_t =
-      detail::scan::policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT>;
 
     constexpr bool is_determinism_required =
       !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+    constexpr bool is_gpu_to_gpu_required =
+      ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
+
+    using default_policy_selector_t = detail::scan::
+      policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT, is_determinism_required>;
     constexpr bool is_safe_integral_op =
       ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
+    constexpr bool is_fp_plus_op =
+      ::cuda::std::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ScanOpT, accum_t>;
 
-    // Logic: If determinism is required, we must have a safe integral operator.
-    static_assert(!is_determinism_required || is_safe_integral_op,
-                  "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
+    // run_to_run determinism is supported only with integral types with known operators, or floating-point types with
+    // plus operator
+    static_assert(!is_determinism_required || is_safe_integral_op || is_fp_plus_op,
+                  "run_to_run deterministic scan requires either integral types with known operators, "
+                  "or floating-point types with plus operator");
+
+    // gpu_to_gpu determinism is only supported with integral types with known operators
+    static_assert(!is_gpu_to_gpu_required || is_safe_integral_op,
+                  "gpu_to_gpu deterministic scan requires integral types with known operators");
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {

@@ -622,8 +622,17 @@ struct scan_warpspeed_policy
 enum class scan_algorithm
 {
   lookback,
-  warpspeed
+  warpspeed,
+  lookback_deterministic,
+  warpspeed_deterministic,
+  warpspeed_deterministic_atomic
 };
+
+_CCCL_API constexpr bool is_warpspeed_algorithm(scan_algorithm algorithm)
+{
+  return algorithm == scan_algorithm::warpspeed || algorithm == scan_algorithm::warpspeed_deterministic
+      || algorithm == scan_algorithm::warpspeed_deterministic_atomic;
+}
 
 #if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
@@ -634,6 +643,12 @@ inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
       return os << "scan_algorithm::lookback";
     case scan_algorithm::warpspeed:
       return os << "scan_algorithm::warpspeed";
+    case scan_algorithm::lookback_deterministic:
+      return os << "scan_algorithm::lookback_deterministic";
+    case scan_algorithm::warpspeed_deterministic:
+      return os << "scan_algorithm::warpspeed_deterministic";
+    case scan_algorithm::warpspeed_deterministic_atomic:
+      return os << "scan_algorithm::warpspeed_deterministic_atomic";
     default:
       return os << "scan_algorithm::<unknown>";
   }
@@ -874,6 +889,9 @@ struct policy_selector
   bool accum_is_primitive_or_trivially_copy_constructible;
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
+  // Routes per-arch: atomic-scheduled warpspeed on sm_90, default warpspeed on sm_100+, lookback_deterministic
+  // elsewhere.
+  bool require_run_to_run_determinism = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_warpspeed_policy() const -> scan_warpspeed_policy
   {
@@ -982,6 +1000,12 @@ struct policy_selector
 
       return get_sm100_fallback_warpspeed_policy();
     }
+    // sm_90 run-to-run-deterministic path: warpspeed without HW cluster scheduling. fp+plus only.
+    if (require_run_to_run_determinism && cc >= ::cuda::compute_capability{9, 0} && operation_t == op_kind_t::plus
+        && (accum_type == type_t::float32 || accum_type == type_t::float64))
+    {
+      return get_sm100_fallback_warpspeed_policy();
+    }
     return {};
   }
 
@@ -1029,14 +1053,26 @@ struct policy_selector
 #endif
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  select_unconstrained(::cuda::compute_capability cc) const -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
       const auto warpspeed_policy_opt = get_warpspeed_policy(cc);
       if (warpspeed_policy_opt && can_use_warpspeed(cc, *warpspeed_policy_opt))
       {
-        return {scan_algorithm::warpspeed, scan_lookback_policy{}, *warpspeed_policy_opt};
+        // arch < sm_100 reaches warpspeed only via the deterministic sm_90 atomic path; sm_100+ uses
+        // HW cluster scheduling (deterministic if requested, otherwise the default non-det path).
+        scan_algorithm algorithm = scan_algorithm::warpspeed;
+        if (cc < ::cuda::compute_capability{10, 0})
+        {
+          algorithm = scan_algorithm::warpspeed_deterministic_atomic;
+        }
+        else if (require_run_to_run_determinism)
+        {
+          algorithm = scan_algorithm::warpspeed_deterministic;
+        }
+        return {algorithm, scan_lookback_policy{}, *warpspeed_policy_opt};
       }
     }
 
@@ -1414,6 +1450,22 @@ struct policy_selector
       BLOCK_SCAN_RAKING,
       default_delay);
   }
+
+  _CCCL_API constexpr bool accum_op_is_non_associative() const
+  {
+    return operation_t == op_kind_t::plus && (accum_type == type_t::float32 || accum_type == type_t::float64);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
+  {
+    auto policy = select_unconstrained(cc);
+    // Upgrade classic lookback to the 32-tile batched variant only for non-associative (accum, op).
+    if (require_run_to_run_determinism && policy.algorithm == scan_algorithm::lookback && accum_op_is_non_associative())
+    {
+      policy.algorithm = scan_algorithm::lookback_deterministic;
+    }
+    return policy;
+  }
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -1440,7 +1492,12 @@ struct benchmark_match_for_policy_selector<
 };
 
 // stateless version which can be passed to kernels
-template <typename InputIteratorT, typename OutputIteratorT, typename AccumT, typename OffsetT, typename ScanOpT>
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename AccumT,
+          typename OffsetT,
+          typename ScanOpT,
+          bool RunToRunDeterministic = false>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
@@ -1471,7 +1528,8 @@ struct policy_selector_from_types
       ::cuda::is_trivially_copyable_v<OutputValueT>,
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
-      benchmark_match};
+      benchmark_match,
+      RunToRunDeterministic};
     return policies(cc);
   }
 };
