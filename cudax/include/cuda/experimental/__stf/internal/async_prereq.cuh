@@ -392,6 +392,12 @@ public:
     return payload.size();
   }
 
+  /// Check whether the list has no events
+  bool empty() const
+  {
+    return payload.empty();
+  }
+
   // Display the content of the event list as a string
   ::std::string to_string() const
   {
