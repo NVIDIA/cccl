@@ -31,13 +31,10 @@ description: Write, update, and validate libcudacxx tests under libcudacxx/test.
 ## Test structure
 
 - All tests must have the correct license banner.
-  
 - Always include top level headers, never internal ones with `__` prefix.
 - Include support headers `"test_macros.h"`, `"test_iterators.h"`, `"test_comparisons.h"`, when needed.
-
 - Use `static_assert(...)` for compile-time guarantees and constexpr coverage.
 - Use `<cuda/std/cassert>` and `assert(...)` for runtime checks.
-
 - The `main` function must be present, dispatch runtime and static-evaluation tests, and return 0.
   
 ## Style
@@ -52,9 +49,7 @@ description: Write, update, and validate libcudacxx tests under libcudacxx/test.
 ## Portability
 
 - Guard host-only or device-only behavior with `NV_IF_TARGET(NV_IS_HOST, (...))` and `NV_IF_TARGET(NV_IS_DEVICE, (...))` respectively.
-
 - Use `TEST_STD_VER`, `TEST_COMPILER`, `TEST_CUDA_COMPILER`, `TEST_HAS_EXCEPTIONS`, and `TEST_THROW` from `"test_macros.h"` instead of spelling compiler or dialect probes directly.
-
 - Unsupported platforms can be disabled with `UNSUPPORTED: <feature-name>` or `XFAIL: <feature-name>` lit directives. Some common feature names are `nvrtc`, `enable-tile`, `pre-sm-70`, `c++17`, `c++20`, `msvc`, `gcc-<version>`, or `clang-<version>`.
 
   - Always motivate unsupported features with a comment.
