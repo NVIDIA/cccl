@@ -238,7 +238,7 @@ public:
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES((!same_as<_Tp2, repeat_view>) _CCCL_AND copy_constructible<_Tp2>)
   _CCCL_API constexpr explicit repeat_view(const _Tp2& __value, _Bound __bound_sentinel = _Bound())
-      : __value_(in_place, __value)
+      : __value_(in_place_t{}, __value)
       , __bound_(__bound_sentinel)
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
@@ -248,7 +248,7 @@ public:
   }
 
   _CCCL_API constexpr explicit repeat_view(_Tp&& __value, _Bound __bound_sentinel = _Bound())
-      : __value_(in_place, ::cuda::std::move(__value))
+      : __value_(in_place_t{}, ::cuda::std::move(__value))
       , __bound_(__bound_sentinel)
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
@@ -261,7 +261,7 @@ public:
   _CCCL_REQUIRES(constructible_from<_Tp, _TpArgs...> _CCCL_AND constructible_from<_Bound, _BoundArgs...>)
   _CCCL_API constexpr explicit repeat_view(
     piecewise_construct_t, tuple<_TpArgs...> __value_args, tuple<_BoundArgs...> __bound_args = tuple<>{})
-      : __value_(in_place, ::cuda::std::make_from_tuple<_Tp>(::cuda::std::move(__value_args)))
+      : __value_(in_place_t{}, ::cuda::std::make_from_tuple<_Tp>(::cuda::std::move(__value_args)))
       , __bound_(::cuda::std::make_from_tuple<_Bound>(::cuda::std::move(__bound_args)))
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
