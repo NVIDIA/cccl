@@ -12,10 +12,9 @@ struct stream_registry_factory_t;
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/__execution/tune.h>
+#include <cuda/iterator>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -163,8 +162,8 @@ C2H_TEST("DeviceCopy::Batched can be tuned", "[copy][device]", block_sizes)
   int num_ranges                = 3;
   constexpr int items_per_range = 2;
 
-  thrust::counting_iterator<int> iota(0);
-  auto input_it = thrust::make_transform_iterator(
+  cuda::counting_iterator<int> iota(0);
+  auto input_it = cuda::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
     iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
