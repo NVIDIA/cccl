@@ -22,10 +22,13 @@
 
 #if _CCCL_STD_VER >= 2020
 
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
+#  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/__utility/declval.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/integer_sequence.h>
