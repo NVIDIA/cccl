@@ -53,49 +53,33 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> acos(const complex<_Tp>& __x)
 {
-  constexpr _Tp __pi = __numbers<_Tp>::__pi();
-  if (::cuda::std::isinf(__x.real()))
+  // Get both real and imag parts >= +0.0
+  bool __real_neg = ::cuda::std::signbit(__x.real());
+  bool __imag_neg = ::cuda::std::signbit(__x.imag());
+
+  const complex<_Tp> __x_first_quadrant{::cuda::std::fabs(__x.real()), ::cuda::std::fabs(__x.imag())};
+
+  const complex<_Tp> __acosh_out = ::cuda::std::acosh(__x_first_quadrant);
+
+  complex<_Tp> __ans_first_quadrant{__acosh_out.imag(), -__acosh_out.real()};
+
+  _Tp __ans_real = __acosh_out.imag();
+  _Tp __ans_imag = -__acosh_out.real();
+
+  if (__real_neg)
   {
-    if (::cuda::std::isnan(__x.imag()))
-    {
-      return complex<_Tp>(__x.imag(), __x.real());
-    }
-    if (::cuda::std::isinf(__x.imag()))
-    {
-      if (__x.real() < _Tp(0))
-      {
-        return complex<_Tp>(_Tp(0.75) * __pi, -__x.imag());
-      }
-      return complex<_Tp>(_Tp(0.25) * __pi, -__x.imag());
-    }
-    if (__x.real() < _Tp(0))
-    {
-      return complex<_Tp>(__pi, ::cuda::std::signbit(__x.imag()) ? -__x.real() : __x.real());
-    }
-    return complex<_Tp>(_Tp(0), ::cuda::std::signbit(__x.imag()) ? __x.real() : -__x.real());
+    // Values that multiply to an extra-accurate value of pi.
+    constexpr _Tp __pi_hi = is_same_v<_Tp, float> ? 1.866378903f : static_cast<_Tp>(1.56226695361364598113596002804);
+    constexpr _Tp __pi_lo = is_same_v<_Tp, float> ? 1.683255553f : static_cast<_Tp>(2.01091922627118435684678843245);
+    __ans_real            = ::cuda::std::fma(__pi_hi, __pi_lo, -__ans_real);
   }
-  if (::cuda::std::isnan(__x.real()))
+
+  if (__imag_neg)
   {
-    if (::cuda::std::isinf(__x.imag()))
-    {
-      return complex<_Tp>(__x.real(), -__x.imag());
-    }
-    return complex<_Tp>(__x.real(), __x.real());
+    __ans_imag = -__ans_imag;
   }
-  if (::cuda::std::isinf(__x.imag()))
-  {
-    return complex<_Tp>(__pi / _Tp(2), -__x.imag());
-  }
-  if (__x.real() == _Tp(0) && (__x.imag() == _Tp(0) || ::cuda::std::isnan(__x.imag())))
-  {
-    return complex<_Tp>(__pi / _Tp(2), -__x.imag());
-  }
-  complex<_Tp> __z = ::cuda::std::log(__x + ::cuda::std::sqrt(::cuda::std::__sqr(__x) - _Tp(1)));
-  if (::cuda::std::signbit(__x.imag()))
-  {
-    return complex<_Tp>(::cuda::std::abs(__z.imag()), ::cuda::std::abs(__z.real()));
-  }
-  return complex<_Tp>(::cuda::std::abs(__z.imag()), -::cuda::std::abs(__z.real()));
+
+  return complex<_Tp>(__ans_real, __ans_imag);
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
