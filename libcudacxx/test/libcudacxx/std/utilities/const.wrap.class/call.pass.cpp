@@ -9,8 +9,9 @@
 
 // todo: Remove once constant_wrapper is exposed.
 
-// gcc 10 segfaults with any use of constant_wrapper
-// UNSUPPORTED: gcc-10
+// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
+//   typename decltype(__cw_fixed_value(_Xp))::__type
+// UNSUPPORTED: gcc-10 || gcc-11
 
 // REQUIRES: !c++17
 
@@ -91,9 +92,7 @@ struct S
   }
 };
 
-#if !_CCCL_CUDA_COMPILER(NVCC)
-constexpr S s;
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
+constexpr S s_value;
 
 // Let call-expr be constant_wrapper<INVOKE (value, remove_cvref_t<Args>::value...)>{} if all types
 // in remove_cvref_t<Args>... satisfy constexpr-param and constant_wrapper<INVOKE (value, remove_-
@@ -111,13 +110,7 @@ static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<5>>);
 static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int>);
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int, int>);
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, int>);
-
-// nvcc < 13.2 fails this test with error:
-//   call to consteval function "cuda::std::__4::operator+(_Lp, _Rp) noexcept [with _Lp=..., _Rp=...]" did not
-//   produce a valid constant expression
-#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, cuda::std::__constant_wrapper<42>>);
-#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
 
 // gcc < 13 fails this test with error:
 //   ‘nothrow_call’/'throwing_call' is not a valid template argument of type ‘int (*)(int) noexcept’ because it is not
@@ -128,9 +121,8 @@ static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<no
 
 static_assert(cuda::std::is_invocable_v<cuda::std::__constant_wrapper<throwing_call>, int>);
 static_assert(!cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<throwing_call>, int>);
-// todo: fix this one
-// static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<throwing_call>, cuda::std::__constant_wrapper<42>>,
-//               "the call expression is still nothrow because the constexpr path is taken");
+static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<throwing_call>, cuda::std::__constant_wrapper<42>>,
+              "the call expression is still nothrow because the constexpr path is taken");
 #endif // !_CCCL_COMPILER(GCC, <, 13)
 // clang-format on
 
@@ -172,28 +164,20 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-//   nvcc < 13.2 fails this test with error:
-//     call to consteval function "cuda::std::__4::operator+(_Lp, _Rp) noexcept [with _Lp=..., _Rp=...]" did not
-//     produce a valid constant expression
-#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
     // with only constexpr param
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<1>, cuda::std::__cw<2>);
     static_assert(result == 3);
-#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
   }
 
   {
-    // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
     // nullary
     using T                                                                     = cuda::std::__constant_wrapper<[] {
       return 42;
                                                                         }>;
     cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result = TEST_CALL(T, );
     static_assert(result == 42);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
 
   {
@@ -237,13 +221,14 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
+    // gcc < 13 fails this test with error:
+    //   ‘fun_ptr’ is not a valid template argument of type ‘bool (*)(int)’ because ‘fun_ptr’ is not a variable
+#if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer with constexpr param
     using T = cuda::std::__constant_wrapper<fun_ptr>;
     cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) result = TEST_CALL(T, cuda::std::__cw<5>);
     static_assert(result);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
+#endif // !_CCCL_COMPILER(GCC, <, 13)
   }
   {
     // member ptr with runtime param
@@ -255,12 +240,11 @@ TEST_FUNC constexpr bool test()
   }
   {
     // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
     // member ptr with constexpr param
     using T = cuda::std::__constant_wrapper<&S::member>;
-    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result = TEST_CALL(T, cuda::std::__cw<&s>);
+    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result =
+      TEST_CALL(T, cuda::std::__cw<&s_value>);
     static_assert(result == 42);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
   {
     // member function ptr with runtime param
@@ -270,18 +254,15 @@ TEST_FUNC constexpr bool test()
     assert(result == 50);
   }
   {
-    // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
     // member function ptr with constexpr param
     using T = cuda::std::__constant_wrapper<&S::mem_fun>;
     cuda::std::same_as<cuda::std::__constant_wrapper<50>> decltype(auto) result =
-      TEST_CALL(T, cuda::std::__cw<&s>, cuda::std::__cw<8>);
+      TEST_CALL(T, cuda::std::__cw<&s_value>, cuda::std::__cw<8>);
     static_assert(result == 50);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
   {
-    // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
+    // nvcc < 13.2 fails to compile this test
+#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
     // overload set
     // will always unwrap the constexpr params and call the non-constexpr overload
     using T                                        = cuda::std::__constant_wrapper<OverloadSet{}>;
@@ -289,7 +270,7 @@ TEST_FUNC constexpr bool test()
     assert(result1 == 1);
     cuda::std::same_as<cuda::std::__constant_wrapper<1>> decltype(auto) result2 = TEST_CALL(T, cuda::std::__cw<42>);
     static_assert(result2 == 1);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
+#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
   }
 
   {
@@ -315,8 +296,6 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
     // just use the call operator
     assert(cuda::std::__cw<[](int i) {
              return i + 1;
@@ -326,28 +305,21 @@ TEST_FUNC constexpr bool test()
              return i + 1;
            }>(cuda::std::__cw<42>)
            == 43);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
 
   {
-    // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
     // with integral_constant, will still call the constexpr path
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::integral_constant<int, 1> ic1;
     cuda::std::integral_constant<int, 2> ic2;
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result = TEST_CALL(T, ic1, ic2);
     static_assert(result == 3);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
 
   {
-    // todo: Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
     using T = cuda::std::__constant_wrapper<Poison{}>;
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<5>);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
 
   return true;

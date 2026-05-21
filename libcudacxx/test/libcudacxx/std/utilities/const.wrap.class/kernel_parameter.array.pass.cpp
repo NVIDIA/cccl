@@ -9,8 +9,9 @@
 
 // todo: Remove once constant_wrapper is exposed.
 
-// gcc 10 segfaults with any use of constant_wrapper
-// UNSUPPORTED: gcc-10
+// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
+//   typename decltype(__cw_fixed_value(_Xp))::__type
+// UNSUPPORTED: gcc-10 || gcc-11
 
 // REQUIRES: !c++17
 
@@ -40,7 +41,7 @@ int main(int, char**)
                  //  constexpr int lhs[]{1, 2, 3, 4, 5, 6, 7, 8};
                  //  constexpr int rhs[]{8, 7, 6, 5, 4, 3, 2, 1};
 
-                 // todo: this call crashes with error: invalid device function
+                 // todo(dabayer): this call crashes with error: invalid device function
                  //  test_kernel<<<1, 1>>>(cuda::std::__cw<lhs>, cuda::std::__cw<rhs>);
                  assert(cudaDeviceSynchronize() == cudaSuccess);
                }))

@@ -9,8 +9,9 @@
 
 // todo: Remove once constant_wrapper is exposed.
 
-// gcc 10 segfaults with any use of constant_wrapper
-// UNSUPPORTED: gcc-10
+// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
+//   typename decltype(__cw_fixed_value(_Xp))::__type
+// UNSUPPORTED: gcc-10 || gcc-11
 
 // REQUIRES: !c++17
 
@@ -34,7 +35,7 @@ __global__ void test_kernel(Lhs lhs, Rhs rhs)
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, ({
-                 // todo: this call crashes with error: invalid device function
+                 // todo(dabayer): this call crashes with error: invalid device function
                  //  test_kernel<<<1, 1>>>(cuda::std::__cw<1>, cuda::std::__cw<8>);
                  assert(cudaDeviceSynchronize() == cudaSuccess);
                }))

@@ -9,8 +9,12 @@
 
 // todo: Remove once constant_wrapper is exposed.
 
-// gcc 10 segfaults with any use of constant_wrapper
-// UNSUPPORTED: gcc-10
+// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
+//   typename decltype(__cw_fixed_value(_Xp))::__type
+// UNSUPPORTED: gcc-10 || gcc-11
+
+// nvcc < 13.0 fails to match the operator overloads.
+// UNSUPPORTED: nvcc-12
 
 // REQUIRES: !c++17
 

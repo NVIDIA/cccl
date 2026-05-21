@@ -9,8 +9,9 @@
 
 // todo: Remove once constant_wrapper is exposed.
 
-// gcc 10 segfaults with any use of constant_wrapper
-// UNSUPPORTED: gcc-10
+// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
+//   typename decltype(__cw_fixed_value(_Xp))::__type
+// UNSUPPORTED: gcc-10 || gcc-11
 
 // REQUIRES: !c++17
 
@@ -32,7 +33,7 @@ struct S
   int member = 42;
 };
 
-constexpr S s{};
+constexpr S s_value{};
 
 template <class L, class R>
 concept HasPtrToMem = requires(L l, R r) {
@@ -73,27 +74,27 @@ struct OpsReturnNonStructural
 struct NoOps
 {};
 
-static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s>, cuda::std::__constant_wrapper<&S::member>>);
-static_assert(HasNoexceptPtrToMem<cuda::std::__constant_wrapper<&s>, cuda::std::__constant_wrapper<&S::member>>);
+static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, cuda::std::__constant_wrapper<&S::member>>);
+static_assert(HasNoexceptPtrToMem<cuda::std::__constant_wrapper<&s_value>, cuda::std::__constant_wrapper<&S::member>>);
 
-static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s>, int S::*>);
-static_assert(!HasPtrToMem<cuda::std::__constant_wrapper<&s>, int>);
+static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, int S::*>);
+static_assert(!HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, int>);
 
 TEST_FUNC constexpr bool test()
 {
   {
     // use builtin operator->*
-    cuda::std::__constant_wrapper<(&s)> cwS;
+    cuda::std::__constant_wrapper<(&s_value)> cwS;
     cuda::std::__constant_wrapper<&S::member> cwPM;
     cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result1 = cwS->*cwPM;
     static_assert(result1 == 42);
   }
 
   {
-    // todo: Try to make this work with nvcc
+    // todo(dabayer): Try to make this work with nvcc
 #if !_CCCL_CUDA_COMPILER(NVCC)
     // mix runtime and constant_wrapper parameters, will use built-in operator
-    cuda::std::__constant_wrapper<(&s)> cwS;
+    cuda::std::__constant_wrapper<(&s_value)> cwS;
     int S::* pm                                           = &S::member;
     cuda::std::same_as<const int&> decltype(auto) result1 = cwS->*pm;
     assert(result1 == 42);
@@ -119,7 +120,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // integral_constant
-    cuda::std::__constant_wrapper<(&s)> cwS;
+    cuda::std::__constant_wrapper<(&s_value)> cwS;
     cuda::std::integral_constant<int S::*, &S::member> icPM;
     cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result1 = cwS->*icPM;
     static_assert(result1 == 42);
