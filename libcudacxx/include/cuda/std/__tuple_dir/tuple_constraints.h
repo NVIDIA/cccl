@@ -24,7 +24,7 @@
 #include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_like_ext.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/conditional.h>
