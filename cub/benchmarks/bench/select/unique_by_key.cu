@@ -76,7 +76,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     d_num_runs_out,
     num_items,
     equality_op_t{});
-  cudaDeviceSynchronize();
+  _CCCL_TRY_CUDA_API(cudaDeviceSynchronize, "Sync failed");
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
