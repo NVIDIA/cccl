@@ -45,13 +45,8 @@ struct bench_unique_by_key_policy_selector
 template <class KeyT, class ValueT, class OffsetT>
 static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using keys_input_it_t            = const KeyT*;
-  using keys_output_it_t           = KeyT*;
-  using vals_input_it_t            = const ValueT*;
-  using vals_output_it_t           = ValueT*;
-  using num_runs_output_iterator_t = OffsetT*;
-  using equality_op_t              = ::cuda::std::equal_to<>;
-  using offset_t                   = OffsetT;
+  using equality_op_t = ::cuda::std::equal_to<>;
+  using offset_t      = ::cub::detail::choose_offset_t<OffsetT>;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
