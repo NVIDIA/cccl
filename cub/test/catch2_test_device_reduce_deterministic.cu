@@ -241,11 +241,11 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   using transform_t = square_t<type>;
 
-  auto input = cuda::counting_iterator<int>(1);
+  const auto input = cuda::counting_iterator<int>(1);
   c2h::device_vector<type> d_output(1);
 
-  const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
-  auto error     = cub::DeviceReduce::TransformReduce(
+  const auto env   = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+  const auto error = cub::DeviceReduce::TransformReduce(
     input, d_output.begin(), num_items, cuda::std::plus<type>{}, transform_t{}, type{}, env);
   REQUIRE(error == cudaSuccess);
 
