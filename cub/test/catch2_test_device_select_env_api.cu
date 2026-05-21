@@ -25,9 +25,8 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
+  auto error = cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::If failed with status: " << error << '\n';
@@ -37,6 +36,7 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-if-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
@@ -52,10 +52,9 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error =
-    cub::DeviceSelect::Flagged(input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), env);
+  auto error = cub::DeviceSelect::Flagged(
+    input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Flagged failed with status: " << error << '\n';
@@ -65,6 +64,7 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flagged-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
@@ -81,10 +81,9 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSelect::FlaggedIf(
-    input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), select_op, env);
+    input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), select_op, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::FlaggedIf failed with status: " << error << '\n';
@@ -94,6 +93,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flaggedif-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
@@ -108,9 +108,8 @@ C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSelect::Flagged(data.begin(), flags.begin(), num_selected.begin(), data.size(), env);
+  auto error = cub::DeviceSelect::Flagged(data.begin(), flags.begin(), num_selected.begin(), data.size(), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Flagged in-place failed with status: " << error << '\n';
@@ -120,6 +119,7 @@ C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flagged-inplace-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
@@ -135,9 +135,8 @@ C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSelect::If(data.begin(), num_selected.begin(), data.size(), le, env);
+  auto error = cub::DeviceSelect::If(data.begin(), num_selected.begin(), data.size(), le, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::If in-place failed with status: " << error << '\n';
@@ -147,6 +146,7 @@ C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-if-inplace-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
@@ -163,10 +163,9 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[sele
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error =
-    cub::DeviceSelect::FlaggedIf(data.begin(), flags.begin(), num_selected.begin(), data.size(), select_op, env);
+    cub::DeviceSelect::FlaggedIf(data.begin(), flags.begin(), num_selected.begin(), data.size(), select_op, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::FlaggedIf in-place failed with status: " << error << '\n';
@@ -176,6 +175,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[sele
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flaggedif-inplace-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_selected == expected_num_selected);
   data.resize(num_selected[0]);
@@ -191,9 +191,8 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSelect::Unique(input.begin(), output.begin(), num_selected.begin(), input.size(), env);
+  auto error = cub::DeviceSelect::Unique(input.begin(), output.begin(), num_selected.begin(), input.size(), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Unique failed with status: " << error << '\n';
@@ -203,6 +202,7 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
   thrust::device_vector<int> expected_num_selected{5};
   // example-end select-unique-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected_output);
   REQUIRE(num_selected == expected_num_selected);
@@ -249,9 +249,8 @@ C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select]
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceSelect::Unique(data.begin(), num_selected.begin(), data.size(), env);
+  auto error = cub::DeviceSelect::Unique(data.begin(), num_selected.begin(), data.size(), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::Unique in-place failed with status: " << error << '\n';
@@ -310,7 +309,6 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSelect::UniqueByKey(
     keys_in.begin(),
@@ -320,7 +318,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
     num_selected.begin(),
     keys_in.size(),
     cuda::std::equal_to<>{},
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSelect::UniqueByKey failed with status: " << error << '\n';
@@ -331,6 +329,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
   thrust::device_vector<int> expected_num_selected{5};
   // example-end select-uniquebykey-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
@@ -349,10 +348,15 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equalit
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSelect::UniqueByKey(
-    keys_in.begin(), values_in.begin(), keys_out.begin(), values_out.begin(), num_selected.begin(), keys_in.size(), env);
+    keys_in.begin(),
+    values_in.begin(),
+    keys_out.begin(),
+    values_out.begin(),
+    num_selected.begin(),
+    keys_in.size(),
+    stream_ref);
 
   if (error != cudaSuccess)
   {
@@ -364,6 +368,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equalit
   thrust::device_vector<int> expected_num_selected{5};
   // example-end select-uniquebykey-default-eq-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
