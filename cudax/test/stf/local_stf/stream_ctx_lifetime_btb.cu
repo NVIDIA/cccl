@@ -46,7 +46,7 @@ __global__ void slow_set_kernel(int* slice, int n, int value, long long ns)
   {
     return;
   }
-  long long start = clock64();
+  const long long start = clock64();
   while (clock64() - start < ns)
   {
     // busy wait
