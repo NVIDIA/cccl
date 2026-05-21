@@ -66,13 +66,13 @@ C2H_TEST("starts_on with impulse scheduler", "[adaptors][starts_on]")
   ex::start(op);
 
   // At this point, the scheduler should have been started but the sender not yet executed
-  CUDAX_REQUIRE(!sender_executed);
+  REQUIRE(!sender_executed);
 
   // Tell the scheduler to start executing one task
   sched.start_next();
 
   // Now the sender should be executed
-  CUDAX_REQUIRE(sender_executed);
+  REQUIRE(sender_executed);
 }
 
 C2H_TEST("starts_on execution order", "[adaptors][starts_on]")
@@ -88,13 +88,13 @@ C2H_TEST("starts_on execution order", "[adaptors][starts_on]")
   ex::start(op);
 
   // Counter should still be 0 since scheduler hasn't executed yet
-  CUDAX_CHECK(counter == 0);
+  CHECK(counter == 0);
 
   // Tell the scheduler to start executing
   sched.start_next();
 
   // Now the sender should have executed and incremented counter
-  CUDAX_CHECK(counter == 1);
+  CHECK(counter == 1);
 }
 
 C2H_TEST("starts_on with thread context", "[adaptors][starts_on]")
@@ -113,7 +113,7 @@ C2H_TEST("starts_on with thread context", "[adaptors][starts_on]")
   thread.join();
 
   // The work should have been executed on the thread
-  CUDAX_REQUIRE(executed);
+  REQUIRE(executed);
 }
 
 #endif

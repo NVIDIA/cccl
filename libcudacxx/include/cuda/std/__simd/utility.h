@@ -65,7 +65,7 @@ inline constexpr bool
 
 template <typename _Tp, typename _Generator, __simd_size_type... _Indices>
 [[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL bool __can_generate(integer_sequence<__simd_size_type, _Indices...>) noexcept
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL bool __can_generate(integer_sequence<__simd_size_type, _Indices...>) noexcept
 {
   return (true && ... && __is_well_formed<_Tp, _Generator, _Indices>);
 }
@@ -95,7 +95,7 @@ template <typename _Range>
 _CCCL_CONCEPT __has_static_size = __has_tuple_size_v<_Range> || __has_static_extent_v<_Range>;
 
 template <typename _Range>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __simd_size_type __get_static_range_size() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __simd_size_type __get_static_range_size() noexcept
 {
   using __range_t = remove_cvref_t<_Range>;
   if constexpr (__has_tuple_size_v<_Range>)
@@ -136,7 +136,7 @@ inline constexpr bool __is_compatible_range_v<_Tp, _Size, _Range, true> =
 // [simd.flags] alignment assertion for load/store pointers
 
 template <typename _Vec, typename _Up, typename... _Flags>
-_CCCL_API constexpr void __assert_load_store_alignment([[maybe_unused]] const _Up* __data) noexcept
+_CCCL_HOST_DEVICE_API constexpr void __assert_load_store_alignment([[maybe_unused]] const _Up* __data) noexcept
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {

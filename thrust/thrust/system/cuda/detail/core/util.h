@@ -121,7 +121,7 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
 {};
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
-#  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
+#  if (NV_TARGET_MINIMUM_SM_INTEGER >= 60)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
 #    define _THRUST_TUNING_ARCH sm52

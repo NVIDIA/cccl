@@ -22,6 +22,35 @@
 // Only a subset of the Catch2's macro are provided. If needed, feel free to extend the support. Host-only macros can
 // be determined by missing NV_IF_ELSE_TARGET wrapper and immediate dispatch to CATCH_-prefixed variant.
 
+// workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
+#if _CCCL_COMPILER(NVHPC)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
+#endif
+// The nv_diagnostic pragmas in Catch2 macros cause cicc to hang indefinitely in CTK 13.0.
+// See NVBugs 5475335.
+#if _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, ==, 13, 0)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#endif
+// workaround for error
+// * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
+// * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
+//              (pragma.c, line 526 in alloc_copy_of_pending_pragma)
+// see also upstream Catch2 issue: https://github.com/catchorg/Catch2/issues/2636
+#if _CCCL_COMPILER(MSVC)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
+#endif
+
 // We must pass the COND as a cstring parameter, because it might contain the '%' character that would break the printf
 // formatting.
 #define C2H_INTERNAL_DEVICE_TEST_PRINT(KIND, COND)                                                               \

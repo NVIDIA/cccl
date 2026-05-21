@@ -980,10 +980,10 @@ public:
       {
         InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
       }
-      // FIXME(bgruber): we should test for contiguous iterator here
-      else if constexpr (::cuda::std::is_pointer_v<RandomAccessIterator>)
+      else if constexpr (::cuda::std::contiguous_iterator<RandomAccessIterator>
+                         && ::cuda::std::__can_to_address<RandomAccessIterator>)
       {
-        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_it, dst_items);
+        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
       else
       {

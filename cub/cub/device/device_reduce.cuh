@@ -116,6 +116,8 @@ private:
 
       if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
       {
+        // Only instantiated with `plus<float|double>`; RFA hardcodes `deterministic_sum_t<accum_t>`.
+        (void) reduction_op;
         using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
         using policy_selector =
           ::cuda::std::execution::__query_result_or_t<tuning_env_t, detail::rfa::rfa_policy, default_policy_selector>;
@@ -2232,14 +2234,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ReduceByKey");
 
-    using OffsetT    = detail::choose_offset_t<NumItemsT>;
-    using EqualityOp = ::cuda::std::equal_to<>;
-
-    using AccumT = ::cuda::std::
-      __accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>, detail::it_value_t<ValuesInputIteratorT>>;
-    using KeyT = detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>;
-    using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<ReductionOpT, AccumT, KeyT>;
-
+    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
+    using EqualityOp              = ::cuda::std::equal_to<>;
+    using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<
+      ReductionOpT,
+      ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>,
+      detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::reduce_by_key::dispatch(

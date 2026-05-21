@@ -78,7 +78,7 @@ struct verify_iota
   {
     for (int i = 0; i < static_cast<int>(buf.size()); ++i)
     {
-      CUDAX_REQUIRE(buf[i] == i);
+      REQUIRE(buf[i] == i);
     }
   }
 };
@@ -89,7 +89,7 @@ struct verify_all_zero
   {
     for (const auto& val : buf)
     {
-      CUDAX_REQUIRE(val == 0);
+      REQUIRE(val == 0);
     }
   }
 };
@@ -119,8 +119,8 @@ C2H_TEST("graph_buffer with no_init allocates and can be written/read", "[graph]
   cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, N, cuda::no_init);
 
-  CUDAX_REQUIRE(buf.size() == N);
-  CUDAX_REQUIRE(buf.data() != nullptr);
+  REQUIRE(buf.size() == N);
+  REQUIRE(buf.data() != nullptr);
   STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
 
   // Write iota pattern to buffer
@@ -174,7 +174,7 @@ C2H_TEST("graph_buffer from span", "[graph][graph_buffer]")
   cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, cuda::std::span<const int>{host_data.get(), 6});
 
-  CUDAX_REQUIRE(buf.size() == 6);
+  REQUIRE(buf.size() == 6);
 
   test::pinned_array<int> result{6};
   cudax::copy_bytes(pb, buf, cuda::std::span<int>{result.get(), 6});
@@ -187,7 +187,7 @@ C2H_TEST("graph_buffer from span", "[graph][graph_buffer]")
 
   for (int i = 0; i < 6; ++i)
   {
-    CUDAX_REQUIRE(result[i] == i + 1);
+    REQUIRE(result[i] == i + 1);
   }
 }
 
@@ -201,7 +201,7 @@ C2H_TEST("graph_buffer from initializer_list", "[graph][graph_buffer]")
   cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, {10, 20, 30, 40});
 
-  CUDAX_REQUIRE(buf.size() == 4);
+  REQUIRE(buf.size() == 4);
 
   test::pinned_array<int> result{4};
   cudax::copy_bytes(pb, buf, cuda::std::span<int>{result.get(), 4});
@@ -212,10 +212,10 @@ C2H_TEST("graph_buffer from initializer_list", "[graph][graph_buffer]")
   exec.launch(s);
   s.sync();
 
-  CUDAX_REQUIRE(result[0] == 10);
-  CUDAX_REQUIRE(result[1] == 20);
-  CUDAX_REQUIRE(result[2] == 30);
-  CUDAX_REQUIRE(result[3] == 40);
+  REQUIRE(result[0] == 10);
+  REQUIRE(result[1] == 20);
+  REQUIRE(result[2] == 30);
+  REQUIRE(result[3] == 40);
 }
 
 C2H_TEST("make_buffer factory with no_init", "[graph][graph_buffer]")
@@ -229,7 +229,7 @@ C2H_TEST("make_buffer factory with no_init", "[graph][graph_buffer]")
   cudax::graph_memory_resource mr{cuda::device_ref{0}};
   auto buf = cudax::make_buffer<int>(pb, mr, N, cuda::no_init);
 
-  CUDAX_REQUIRE(buf.size() == N);
+  REQUIRE(buf.size() == N);
 
   cudax::launch(pb, test::one_thread_dims, write_iota{}, buf);
   cudax::launch(pb, test::one_thread_dims, verify_iota{}, buf);
@@ -271,7 +271,7 @@ C2H_TEST("graph_buffer on forked paths", "[graph][graph_buffer]")
   s.sync();
 
   // sum of 0..9 = 45
-  CUDAX_REQUIRE(*result == 45);
+  REQUIRE(*result == 45);
 }
 
 C2H_TEST("graph_buffer move semantics", "[graph][graph_buffer]")
@@ -288,17 +288,17 @@ C2H_TEST("graph_buffer move semantics", "[graph][graph_buffer]")
 
   // Move construct
   cudax::graph_buffer<int> buf2(::cuda::std::move(buf1));
-  CUDAX_REQUIRE(buf2.data() == original_data);
-  CUDAX_REQUIRE(buf2.size() == original_size);
-  CUDAX_REQUIRE(buf1.data() == nullptr);
-  CUDAX_REQUIRE(buf1.size() == 0);
+  REQUIRE(buf2.data() == original_data);
+  REQUIRE(buf2.size() == original_size);
+  REQUIRE(buf1.data() == nullptr);
+  REQUIRE(buf1.size() == 0);
 
   // Move assign — create a second buffer and move-assign over it
   cudax::graph_buffer<int> buf3(pb, mr, 1, cuda::no_init);
   buf3.destroy(pb); // free the dummy allocation before overwriting
   buf3 = ::cuda::std::move(buf2);
-  CUDAX_REQUIRE(buf3.data() == original_data);
-  CUDAX_REQUIRE(buf3.size() == original_size);
+  REQUIRE(buf3.data() == original_data);
+  REQUIRE(buf3.size() == original_size);
 
   buf3.destroy(pb);
 
@@ -316,9 +316,9 @@ C2H_TEST("graph_buffer empty buffer", "[graph][graph_buffer]")
   cudax::graph_memory_resource mr{cuda::device_ref{0}};
   cudax::graph_buffer<int> buf(pb, mr, 0, cuda::no_init);
 
-  CUDAX_REQUIRE(buf.data() == nullptr);
-  CUDAX_REQUIRE(buf.size() == 0);
-  CUDAX_REQUIRE(buf.empty());
+  REQUIRE(buf.data() == nullptr);
+  REQUIRE(buf.size() == 0);
+  REQUIRE(buf.empty());
 
   // destroy on empty buffer should be a no-op
   buf.destroy(pb);
