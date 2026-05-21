@@ -3,9 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/detail/rfa.cuh>
-#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
-#include <cub/util_type.cuh>
+#include <cub/device/device_reduce.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
@@ -241,25 +239,14 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   const int num_items = 1 << 10;
 
-  using input_it_t = cuda::counting_iterator<int>;
-  auto input       = input_it_t(1);
-  c2h::device_vector<type> d_output(1);
-
-  using output_it_t = decltype(d_output.begin());
-  using init_t      = type;
-  using accum_t     = type;
   using transform_t = square_t<type>;
 
-  std::size_t temp_storage_bytes{};
+  auto input = cuda::counting_iterator<int>(1);
+  c2h::device_vector<type> d_output(1);
 
-  auto error = cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t>(
-    nullptr, temp_storage_bytes, input, d_output.begin(), num_items);
-  REQUIRE(error == cudaSuccess);
-
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-
-  error = cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t>(
-    thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, input, d_output.begin(), num_items);
+  const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+  auto error     = cub::DeviceReduce::TransformReduce(
+    input, d_output.begin(), num_items, cuda::std::plus<type>{}, transform_t{}, type{}, env);
   REQUIRE(error == cudaSuccess);
 
   auto h_input = cuda::transform_iterator(input, transform_t{});
