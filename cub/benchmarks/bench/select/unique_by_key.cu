@@ -45,7 +45,7 @@ struct bench_unique_by_key_policy_selector
 template <class KeyT, class ValueT, class OffsetT>
 static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using equality_op_t = ::cuda::std::equal_to<>;
+  using equality_op_t = cuda::std::equal_to<>;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
