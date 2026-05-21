@@ -102,8 +102,8 @@ public:
       }
     }
 
-    auto __tmp = ::cuda::std::make_reverse_iterator(
-      ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), ::cuda::std::ranges::end(__base_)));
+    auto __tmp = ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__next_cpo{}(
+      ::cuda::std::ranges::__begin_cpo{}(__base_), ::cuda::std::ranges::__end_cpo{}(__base_)));
     if constexpr (_UseCache)
     {
       __cached_begin_.__emplace(__tmp);
@@ -115,40 +115,40 @@ public:
   _CCCL_REQUIRES(common_range<_View2>)
   _CCCL_API constexpr reverse_iterator<iterator_t<_View2>> begin()
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__end_cpo{}(__base_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(common_range<const _View2>)
   _CCCL_API constexpr auto begin() const
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__end_cpo{}(__base_));
   }
 
   _CCCL_API constexpr reverse_iterator<iterator_t<_View>> end()
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__begin_cpo{}(__base_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(common_range<const _View2>)
   _CCCL_API constexpr auto end() const
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::__begin_cpo{}(__base_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<_View2>)
   _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
 };
 

@@ -58,6 +58,7 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
   _ForwardIterator2 __last2 = ::cuda::std::next(__first2, __l1);
   // For each element in [f1, l1) see if there are the same number of
   //    equal elements in [f2, l2)
+  bool __result = true;
   for (_ForwardIterator1 __i = __first1; __i != __last1; ++__i)
   {
     //  Have we already counted the number of *__i in [f1, l1)?
@@ -82,7 +83,8 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
       }
       if (__c2 == 0)
       {
-        return false;
+        __result = false;
+        break;
       }
       // Count number of *__i in [__i, l1) (we can start with 1)
       _Diff1 __c1 = 1;
@@ -95,11 +97,12 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
       }
       if (__c1 != __c2)
       {
-        return false;
+        __result = false;
+        break;
       }
     }
   }
-  return true;
+  return __result;
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
@@ -149,6 +152,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
 
   // For each element in [f1, l1) see if there are the same number of
   //    equal elements in [f2, l2)
+  bool __result = true;
   for (_ForwardIterator1 __i = __first1; __i != __last1; ++__i)
   {
     //  Have we already counted the number of *__i in [f1, l1)?
@@ -173,7 +177,8 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
       }
       if (__c2 == 0)
       {
-        return false;
+        __result = false;
+        break;
       }
       // Count number of *__i in [__i, l1) (we can start with 1)
       _Diff1 __c1 = 1;
@@ -186,11 +191,12 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
       }
       if (__c1 != __c2)
       {
-        return false;
+        __result = false;
+        break;
       }
     }
   }
-  return true;
+  return __result;
 }
 
 _CCCL_EXEC_CHECK_DISABLE

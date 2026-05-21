@@ -127,9 +127,10 @@ _CCCL_API constexpr _RandomAccessIterator __floyd_sift_down(
     // if __hole is now a leaf, we're done
     if (__child > (__len - 2) / 2)
     {
-      return __hole;
+      break;
     }
   }
+  return __hole;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

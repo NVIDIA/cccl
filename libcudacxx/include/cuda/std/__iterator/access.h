@@ -54,6 +54,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto begin = __begin::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __begin_cpo = __begin::__fn;
 } // namespace __cpo
 
 namespace __end
@@ -83,6 +86,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __end_cpo = __end::__fn;
 } // namespace __cpo
 
 namespace __cbegin
@@ -90,10 +96,10 @@ namespace __cbegin
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::begin(__c)))
-    -> decltype(::cuda::std::begin(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::__begin_cpo{}(__c)))
+    -> decltype(::cuda::std::__begin_cpo{}(__c))
   {
-    return ::cuda::std::begin(__c);
+    return ::cuda::std::__begin_cpo{}(__c);
   }
 };
 } // namespace __cbegin
@@ -101,6 +107,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cbegin = __cbegin::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __cbegin_cpo = __cbegin::__fn;
 } // namespace __cpo
 
 namespace __cend
@@ -108,10 +117,10 @@ namespace __cend
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::end(__c)))
-    -> decltype(::cuda::std::end(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::__end_cpo{}(__c)))
+    -> decltype(::cuda::std::__end_cpo{}(__c))
   {
-    return ::cuda::std::end(__c);
+    return ::cuda::std::__end_cpo{}(__c);
   }
 };
 } // namespace __cend
@@ -119,6 +128,9 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
+
+// We want to avoid using the CPO internally because of __tile__ access
+using __cend_cpo = __cend::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD

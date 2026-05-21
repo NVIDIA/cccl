@@ -320,7 +320,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::Flagged");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
+    using offset_t      = typename ChooseOffsetT::type;
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    if (const cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items))
+    {
+      return error;
+    }
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -564,7 +571,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::If");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
+    using offset_t      = typename ChooseOffsetT::type;
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    if (const cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items))
+    {
+      return error;
+    }
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
