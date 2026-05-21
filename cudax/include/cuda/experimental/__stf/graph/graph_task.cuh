@@ -110,7 +110,7 @@ public:
       // stay held across the start()/end_uncleared() boundary; transfer ownership
       // into the task-owned capture_lock_ member here.
       begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
-      capture_lock_ = ::std::move(lock);
+      capture_lock_ = mv(lock);
 #else // _CCCL_CTK_AT_LEAST(12, 3)
       // Legacy path (CTK 12.0-12.2): capture into a fresh per-task graph and
       // embed it as a child-graph node in ctx_graph from end_uncleared(). The
@@ -142,15 +142,7 @@ public:
     // capture_lock_. Move it into a local unique_lock so RAII releases it at
     // the end of this function. On the non-capture path, acquire a fresh lock
     // here just like the legacy code did.
-    ::std::unique_lock<::std::mutex> lock;
-    if (is_capture_enabled())
-    {
-      lock = ::std::move(capture_lock_);
-    }
-    else
-    {
-      lock = lock_ctx_graph();
-    }
+    ::std::unique_lock<::std::mutex> lock = is_capture_enabled() ? mv(capture_lock_) : lock_ctx_graph();
 #else // _CCCL_CTK_AT_LEAST(12, 3)
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
@@ -170,8 +162,6 @@ public:
       set_child_graph(childGraph);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
     }
-
-    cudaGraphNode_t n;
 
     auto done_prereqs = event_list();
 
@@ -259,6 +249,7 @@ public:
         const cudaGraphNode_t* deps = ready_dependencies.data();
 
         assert(ctx_graph);
+        cudaGraphNode_t n;
 #if _CCCL_CTK_AT_LEAST(13, 0)
         // Move ownership so child graphs with memory alloc/free nodes
         // (e.g. from cudaMallocAsync during stream capture) are accepted.
@@ -570,7 +561,7 @@ private:
   // and avoids fragile empty/single-tail detection (cudaStreamGetCaptureInfo_v2
   // can return inherited input deps as the frontier when no work was actually
   // captured, so we can't safely treat its output as "captured tails" only).
-  static cudaGraphNode_t end_capture_into_ctx_graph_and_emit_done(cudaStream_t s, cudaGraph_t ctx_graph)
+  [[nodiscard]] static cudaGraphNode_t end_capture_into_ctx_graph_and_emit_done(cudaStream_t s, cudaGraph_t ctx_graph)
   {
     // Snapshot the frontier first: the deps_out pointer is invalidated by
     // any subsequent stream-capture call, so we copy before EndCapture.
@@ -589,9 +580,8 @@ private:
 
     // Ignore the returned graph handle: with BeginCaptureToGraph it is the
     // caller-supplied ctx_graph; do not make correctness depend on identity.
-    cudaGraph_t captured = nullptr;
+    [[maybe_unused]] cudaGraph_t captured = nullptr;
     cuda_safe_call(cudaStreamEndCapture(s, &captured));
-    (void) captured;
 
     cudaGraphNode_t done_node = nullptr;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
