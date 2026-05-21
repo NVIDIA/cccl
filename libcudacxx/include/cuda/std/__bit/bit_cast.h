@@ -23,7 +23,7 @@
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/cstring>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -52,7 +52,7 @@ template <class _To, class _From>
 [[nodiscard]] _CCCL_API inline _To __bit_cast_memcpy(const _From& __from) noexcept
 {
 #if !_CCCL_COMPILER(GCC, <=, 8)
-  static_assert(::cuda::std::default_initializable<_To>,
+  static_assert(::cuda::std::is_default_constructible_v<_To>,
                 "bit_cast memcpy fallback requires the destination type to be default constructible");
 #endif // !_CCCL_COMPILER(GCC, <=, 8)
   _To __temp;

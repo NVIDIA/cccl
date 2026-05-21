@@ -285,6 +285,18 @@ TEST_FUNC bool tests()
     test_roundtrip_through<long long>(i);
   }
 
+#if _CCCL_HAS_FLOAT128()
+  {
+    constexpr __uint128_t one_bits = __uint128_t{0x3fff'0000'0000'0000} << 64;
+    __float128 one                 = cuda::std::bit_cast<__float128>(one_bits);
+    __float128 fallback_one        = cuda::std::__bit_cast_memcpy<__float128>(one_bits);
+    assert(one == fallback_one);
+    test_roundtrip_through_nested_T(one);
+    test_roundtrip_through_buffer(one);
+    test_roundtrip_through<__uint128_t>(one);
+  }
+#endif // _CCCL_HAS_FLOAT128()
+
 #if _LIBCUDACXX_HAS_NVFP16()
   // Extended floating point type __half
   for (__half i :
