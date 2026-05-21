@@ -200,6 +200,7 @@ void variable_seg_size_topk_keys(nvbench::state& state,
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = cub_bench_env(alloc, launch);
+    // TODO(bgruber): call the public API once available
     _CCCL_TRY_CUDA_API(
       cub::detail::batched_topk::dispatch_with_env,
       "batched topk failed",

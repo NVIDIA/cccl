@@ -107,6 +107,7 @@ void fixed_seg_size_topk_keys(
       cuda::execution::tune(tuned_policy_selector{})
 #endif // !TUNE_BASE
     );
+    // TODO(bgruber): call the public API once available
     _CCCL_TRY_CUDA_API(
       cub::detail::batched_topk::dispatch_with_env,
       "batched topk failed",
