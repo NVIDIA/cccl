@@ -385,9 +385,9 @@ struct __constant_wrapper : __cw_operators
   _CCCL_REQUIRES(!(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...>
                    && __cw_is_constexpr_indexable_v<__constant_wrapper, remove_cvref_t<_Args>...>) )
 #    if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
-  [[nodiscard]] _CCCL_API static constexpr decltype(auto) operator[](_Args&&... __args)
+  _CCCL_API static constexpr decltype(auto) operator[](_Args&&... __args)
 #    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](_Args&&... __args) const
+  _CCCL_API constexpr decltype(auto) operator[](_Args&&... __args) const
 #    endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
     noexcept(noexcept(value[::cuda::std::forward<_Args>(__args)...]))
   {
@@ -412,9 +412,9 @@ struct __constant_wrapper : __cw_operators
   _CCCL_REQUIRES((!(__is_constexpr_param_v<remove_cvref_t<_Arg>>
                     && __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Arg>>) ))
 #    if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
-  [[nodiscard]] _CCCL_API static constexpr decltype(auto) operator[](_Arg&& __arg)
+  _CCCL_API static constexpr decltype(auto) operator[](_Arg&& __arg)
 #    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](_Arg&& __arg) const
+  _CCCL_API constexpr decltype(auto) operator[](_Arg&& __arg) const
 #    endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
     noexcept(noexcept(value[::cuda::std::forward<_Arg>(__arg)]))
   {
