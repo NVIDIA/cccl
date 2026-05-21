@@ -13,6 +13,9 @@
 //   typename decltype(__cw_fixed_value(_Xp))::__type
 // UNSUPPORTED: gcc-10 || gcc-11
 
+// clang-14 + nvcc 12.0 any use of constant_wrapper leads to cudafe++ segfaulting.
+// UNSUPPORTED: clang-14 && nvcc-12.0
+
 // REQUIRES: !c++17
 
 // constant_wrapper
