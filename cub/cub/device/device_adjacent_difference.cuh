@@ -22,6 +22,8 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -155,19 +157,10 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam InputIteratorT
-  //!   @rst
-  //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
-  //!   and ``x`` and ``y`` are objects of ``InputIteratorT``'s ``value_type``, then
-  //!   ``x - y`` is defined, and ``InputIteratorT``'s ``value_type`` is convertible to
-  //!   a type in ``OutputIteratorT``'s set of ``value_types``, and the return type
-  //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
-  //!   ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
   //!
   //! @tparam OutputIteratorT
-  //!   @rst
-  //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
-  //!   @endrst
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s set of `value_types`.
@@ -277,13 +270,7 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
-  //!   @rst
-  //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
-  //!   ``RandomAccessIteratorT`` is mutable. If ``x`` and ``y`` are objects of
-  //!   ``RandomAccessIteratorT``'s ``value_type``, and ``x - y`` is defined, then the
-  //!   return type of ``x - y`` should be convertible to a type in
-  //!   ``RandomAccessIteratorT``'s set of ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access iterator type for reading and writing elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
@@ -394,22 +381,13 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam InputIteratorT
-  //!   @rst
-  //!   is a model of `Input Iterator <https://en.cppreference.com/w/cpp/iterator/input_iterator>`_,
-  //!   and ``x`` and ``y`` are objects of ``InputIteratorT``'s ``value_type``, then
-  //!   ``x - y`` is defined, and ``InputIteratorT``'s ``value_type`` is convertible to
-  //!   a type in ``OutputIteratorT``'s set of ``value_types``, and the return type
-  //!   of ``x - y`` is convertible to a type in ``OutputIteratorT``'s set of
-  //!   ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
   //!
   //! @tparam OutputIteratorT
-  //!   @rst
-  //!   is a model of `Output Iterator <https://en.cppreference.com/w/cpp/iterator/output_iterator>`_.
-  //!   @endrst
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
   //!
   //! @tparam DifferenceOpT
-  //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
+  //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s
   //!   set of `value_types`.
   //!
   //! @tparam NumItemsT
@@ -507,13 +485,7 @@ struct DeviceAdjacentDifference
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
-  //!   @rst
-  //!   is a model of `Random Access Iterator <https://en.cppreference.com/w/cpp/iterator/random_access_iterator>`_,
-  //!   ``RandomAccessIteratorT`` is mutable. If ``x`` and ``y`` are objects of
-  //!   ``RandomAccessIteratorT``'s `value_type`, and ``x - y`` is defined, then the
-  //!   return type of ``x - y`` should be convertible to a type in
-  //!   ``RandomAccessIteratorT``'s set of ``value_types``.
-  //!   @endrst
+  //!   **[inferred]** Random-access iterator type for reading and writing elements @iterator
   //!
   //! @tparam DifferenceOpT
   //!   Its `result_type` is convertible to a type in `RandomAccessIteratorT`'s
@@ -567,6 +539,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -626,12 +599,16 @@ struct DeviceAdjacentDifference
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename DifferenceOpT                                               = ::cuda::std::minus<>,
+            typename NumItemsT                                                   = uint32_t,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractLeftCopy(
-    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+    InputIteratorT d_input,
+    OutputIteratorT d_output,
+    NumItemsT num_items,
+    DifferenceOpT difference_op = {},
+    EnvT env                    = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
@@ -661,6 +638,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -711,12 +689,12 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  SubtractLeft(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+  SubtractLeft(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeft");
 
@@ -747,6 +725,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -808,12 +787,16 @@ struct DeviceAdjacentDifference
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+            typename DifferenceOpT                                               = ::cuda::std::minus<>,
+            typename NumItemsT                                                   = uint32_t,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractRightCopy(
-    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+    InputIteratorT d_input,
+    OutputIteratorT d_output,
+    NumItemsT num_items,
+    DifferenceOpT difference_op = {},
+    EnvT env                    = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRightCopy");
 
@@ -843,6 +826,7 @@ struct DeviceAdjacentDifference
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -893,12 +877,12 @@ struct DeviceAdjacentDifference
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename RandomAccessIteratorT,
-            typename DifferenceOpT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = uint32_t,
+            typename EnvT          = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  SubtractRight(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+  SubtractRight(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op = {}, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRight");
 
