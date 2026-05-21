@@ -230,12 +230,14 @@ struct DeviceCopy
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceCopy::Batched");
 
-    using BlockOffsetT = uint32_t;
+    using BlockOffsetT            = uint32_t;
+    using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
-        storage, bytes, input_it, output_it, sizes, num_ranges, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
+          storage, bytes, input_it, output_it, sizes, num_ranges, stream, policy_selector);
+      });
   }
 
   //! @rst
