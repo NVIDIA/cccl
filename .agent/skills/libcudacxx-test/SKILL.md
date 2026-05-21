@@ -36,7 +36,7 @@ description: Write, update, and validate libcudacxx tests under libcudacxx/test.
 - Use `static_assert(...)` for compile-time guarantees and constexpr coverage.
 - Use `<cuda/std/cassert>` and `assert(...)` for runtime checks.
 - The `main` function must be present, dispatch runtime and static-evaluation tests, and return 0.
-  
+
 ## Style
 
 - Use `cuda::std` names, not `std::` names, unless the test is intentionally checking interoperability with host standard library types.
