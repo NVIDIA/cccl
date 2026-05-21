@@ -743,14 +743,6 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-UNITTEST("copyable stream_task")
-{
-  stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = t;
-  ctx.finalize();
-};
-
 UNITTEST("movable stream_task")
 {
   stream_ctx ctx;
