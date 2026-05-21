@@ -32,6 +32,7 @@
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/iterator.h>
 #include <cuda/std/__simd/specializations/fixed_size_float_vec.h>
+#include <cuda/std/__simd/specializations/fixed_size_integral_vec.h>
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -69,7 +70,6 @@ public:
   using value_type = _Tp;
   using mask_type  = basic_mask<sizeof(value_type), _Abi>;
 
-private:
   template <size_t, typename, typename>
   friend class basic_mask;
 
@@ -99,7 +99,6 @@ private:
     __s_.__set(__i, __v);
   }
 
-public:
   using abi_type = _Abi;
 
   using iterator       = __simd_iterator<basic_vec>;
