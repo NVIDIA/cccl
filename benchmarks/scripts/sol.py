@@ -171,7 +171,11 @@ def parse_args():
 
 def sol():
     args = parse_args()
-    medians = alg_bws(alg_dfs(args.files, args.R), args.v)
+    dfs = alg_dfs(args.files, args.R)
+    if not dfs:
+        print("ERROR: No benchmark data to process (all benchmarks were skipped).")
+        return
+    medians = alg_bws(dfs, args.v)
     print_speedup(medians)
     plot_sol(medians, args.box)
 
