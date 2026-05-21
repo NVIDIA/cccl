@@ -92,7 +92,7 @@ struct S
   }
 };
 
-constexpr S s_value;
+constexpr S s_value{};
 
 // Let call-expr be constant_wrapper<INVOKE (value, remove_cvref_t<Args>::value...)>{} if all types
 // in remove_cvref_t<Args>... satisfy constexpr-param and constant_wrapper<INVOKE (value, remove_-
