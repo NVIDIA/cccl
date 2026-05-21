@@ -59,8 +59,6 @@ template <class _Tp>
 
   const complex<_Tp> __acosh_out = ::cuda::std::acosh(__x_first_quadrant);
 
-  complex<_Tp> __ans_first_quadrant{__acosh_out.imag(), -__acosh_out.real()};
-
   _Tp __ans_real = __acosh_out.imag();
   _Tp __ans_imag = -__acosh_out.real();
 
