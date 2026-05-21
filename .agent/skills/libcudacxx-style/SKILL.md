@@ -38,11 +38,11 @@ Declaration/Definition:
 
 Function call:
 
-- All calls to free functions must be fully qualified starting from the global namespace, e.g. `::cuda::ceil_div`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes.
+- All calls to free functions must be fully qualified starting from the global namespace, e.g. `::cuda::ceil_div`, except in unit test files. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes.
 
 ## Types
 
-- Type names must be fully qualified, except when they are already declared in the current namespace.
+- Type names must be fully qualified, except when they are already declared in the current namespace or in unit test files.
 - This includes standard integer type aliases (`::cuda::std::size_t`, `::cuda::std::uintptr_t`, `::cuda::std::int32_t`, etc.) and any other `cuda::std` or standard library types. A local `using` declaration (e.g. `using ::cuda::std::size_t;`) is acceptable to avoid repetition within a function body.
 
 ## Headers
