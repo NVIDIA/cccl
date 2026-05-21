@@ -385,8 +385,8 @@ struct __constant_wrapper : __cw_operators
     return {};
   }
   _CCCL_TEMPLATE(class... _Args, class = decltype(value[::cuda::std::declval<_Args>()...]))
-  _CCCL_REQUIRES(!(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...>
-                   && __cw_is_constexpr_indexable_v<__constant_wrapper, remove_cvref_t<_Args>...>) )
+  _CCCL_REQUIRES((!(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...>)
+                  && __cw_is_constexpr_indexable_v<__constant_wrapper, remove_cvref_t<_Args>...>) )
 #    if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
   _CCCL_API static constexpr decltype(auto) operator[](_Args&&... __args)
 #    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
