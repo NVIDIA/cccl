@@ -66,8 +66,16 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   const auto num_items = static_cast<OffsetT>(elements);
 
   // Pre-computation to get num_runs for statistics
-  cub::DeviceSelect::UniqueByKey(
-    d_in_keys, d_in_vals, d_out_keys, d_out_vals, d_num_runs_out, num_items, equality_op_t{});
+  _CCCL_TRY_CUDA_API(
+    cub::DeviceSelect::UniqueByKey,
+    "UniqueByKey failed",
+    d_in_keys,
+    d_in_vals,
+    d_out_keys,
+    d_out_vals,
+    d_num_runs_out,
+    num_items,
+    equality_op_t{});
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 
