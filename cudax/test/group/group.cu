@@ -86,10 +86,10 @@ test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by
   const auto count_ref = group.__mapping_result().count();
   const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
 
-  CUDAX_REQUIRE(cuda::gpu_thread.count(group) == count_ref);
-  CUDAX_REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
-  CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
-  CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(group));
+  REQUIRE(cuda::gpu_thread.count(group) == count_ref);
+  REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
+  REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
+  REQUIRE(cuda::gpu_thread.is_part_of(group));
 
   auto group_count_ref = group.__mapping_result().group_count();
   auto group_rank_ref  = group.__mapping_result().group_rank();
@@ -100,8 +100,8 @@ test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by
     group_rank_ref += group.__mapping_result().group_count() * Level{}.rank(cuda::grid, group.hierarchy());
   }
 
-  CUDAX_REQUIRE(group.count(cuda::grid) == group_count_ref);
-  CUDAX_REQUIRE(group.rank(cuda::grid) == group_rank_ref);
+  REQUIRE(group.count(cuda::grid) == group_count_ref);
+  REQUIRE(group.rank(cuda::grid) == group_rank_ref);
 }
 
 template <cuda::std::size_t N, class Unit, class Level, class Config>

@@ -546,7 +546,9 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //!
-  //! - The return value of ``op``, if any, is ignored.
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -642,7 +644,9 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //!
-  //! - The return value of ``op``, if any, is ignored.
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -739,7 +743,9 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //!
-  //! - The return value of ``op``, if any, is ignored.
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1220,7 +1226,9 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //!
-  //! - The return value of ``op``, if any, is ignored.
+  //! .. note::
+  //!
+  //!    The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
