@@ -27,7 +27,11 @@ def filter_by_problem_size(df):
 
 def filter_by_offset_type(df):
     if "OffsetT{ct}" in df.columns:
-        df = df[(df["OffsetT{ct}"] == "I32") | (df["OffsetT{ct}"] == "U32")]
+        filtered = df[
+            (df["OffsetT{ct}"] == "I32") | (df["OffsetT{ct}"] == "U32")
+        ]  # only use 32-bit offset types
+        if not filtered.empty:  # some benchmarks only use a 64-bit offset type
+            df = filtered
     return df
 
 
@@ -56,9 +60,20 @@ def alg_dfs(files, alg_regex):
                         filter_by_offset_type(filter_by_problem_size(df))
                     )
                     df = df.filter(items=["ctk", "cccl", "gpu", "variant", "bw"])
+                    fused_algname = algname.replace("bench.", "") + "." + subbench
+                    if df.empty:
+                        print(
+                            f"WARNING: Skipped {fused_algname} because no data is present"
+                        )
+                        print(df)
+                        continue
+                    if df["bw"].dropna().empty:
+                        print(
+                            f"WARNING: Skipped {fused_algname} because it does not report bandwidth"
+                        )
+                        continue
                     df["variant"] = df["variant"].astype(str)
                     df["bw"] = df["bw"] * 100
-                    fused_algname = algname.replace("bench.", "") + "." + subbench
                     if fused_algname in result:
                         result[fused_algname] = pd.concat([result[fused_algname], df])
                     else:
