@@ -97,35 +97,19 @@ void fixed_seg_size_topk_keys(
   state.add_global_memory_reads<KeyT>(elements, "InputKeys");
   state.add_global_memory_writes<KeyT>(selected_elements * num_segments, "OutputKeys");
 
-  // allocate temporary storage
-  size_t temp_size;
-  cub::detail::batched_topk::dispatch(
-    nullptr,
-    temp_size,
-    d_keys_in,
-    d_keys_out,
-    static_cast<cub::NullType**>(nullptr),
-    static_cast<cub::NullType**>(nullptr),
-    segment_sizes,
-    k,
-    select_directions,
-    num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
-    total_num_items,
-    nullptr
-#if !TUNE_BASE
-    ,
-    tuned_policy_selector{}
-#endif // !TUNE_BASE
-  );
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-  // run the algorithm
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::batched_topk::dispatch(
-      temp_storage,
-      temp_size,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(tuned_policy_selector{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::detail::batched_topk::dispatch_with_env,
+      "batched topk failed",
       d_keys_in,
       d_keys_out,
       static_cast<cub::NullType**>(nullptr),
@@ -135,12 +119,7 @@ void fixed_seg_size_topk_keys(
       select_directions,
       num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
       total_num_items,
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      tuned_policy_selector{}
-#endif // !TUNE_BASE
-    );
+      env);
   });
 }
 
