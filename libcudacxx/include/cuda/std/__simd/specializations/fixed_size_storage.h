@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__utility/in_range.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__fwd/simd.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -36,9 +37,16 @@ struct __fixed_size
   static constexpr __simd_size_type __simd_size = _Np;
 };
 
+// SIMD storage never directly interacts with memory. Users must use load/store API for that purpose.
+// However, SIMD storage could spill from register to cache/memory. This could break the alignment of the data for
+// vectorized instructions. For this reason, we align the SIMD storage to at least 8 bytes (max SIMD instruction size).
+// 8 bytes is a negligible constraint in case of spilling.
+template <typename _Tp, __simd_size_type _Np, size_t _TotalAlignment = alignof(_Tp) * _Np>
+inline constexpr size_t __simd_storage_alignment_v = ::cuda::std::max(alignof(_Tp), size_t{8});
+
 // Element-per-slot simd storage for fixed_size ABI
 template <typename _Tp, __simd_size_type _Np>
-struct __simd_storage<_Tp, __fixed_size<_Np>>
+struct alignas(__simd_storage_alignment_v<_Tp, _Np>) __simd_storage<_Tp, __fixed_size<_Np>>
 {
   using value_type = _Tp;
 
