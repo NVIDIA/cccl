@@ -13,6 +13,9 @@
 // [simd.complex.math] trigonometric and hyperbolic functions:
 // sin, asin, cos, acos, tan, atan, sinh, asinh, cosh, acosh, tanh, atanh
 
+// The execution gets stuck in nvcc 12.0 with msvc.
+// UNSUPPORTED: msvc && nvcc-12.0
+
 #include <cuda/std/__simd_>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
