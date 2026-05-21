@@ -22,16 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/exponential_functions.h>
 #include <cuda/std/__complex/inverse_hyperbolic_functions.h>
-#include <cuda/std/__complex/logarithms.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
-#include <cuda/std/__complex/roots.h>
 #include <cuda/std/limits>
 #include <cuda/std/numbers>
 
@@ -54,8 +52,8 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> acos(const complex<_Tp>& __x)
 {
   // Get both real and imag parts >= +0.0
-  bool __real_neg = ::cuda::std::signbit(__x.real());
-  bool __imag_neg = ::cuda::std::signbit(__x.imag());
+  const bool __real_neg = ::cuda::std::signbit(__x.real());
+  const bool __imag_neg = ::cuda::std::signbit(__x.imag());
 
   const complex<_Tp> __x_first_quadrant{::cuda::std::fabs(__x.real()), ::cuda::std::fabs(__x.imag())};
 
@@ -79,7 +77,7 @@ template <class _Tp>
     __ans_imag = -__ans_imag;
   }
 
-  return complex<_Tp>(__ans_real, __ans_imag);
+  return complex<_Tp>{__ans_real, __ans_imag};
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
