@@ -202,7 +202,7 @@ void copy(nvbench::state& state,
                  d_input_buffers,
                  d_output_buffers,
                  d_buffer_sizes,
-                 static_cast<::cuda::std::int64_t>(buffers),
+                 static_cast<cuda::std::int64_t>(buffers),
                  env);
              });
 }
