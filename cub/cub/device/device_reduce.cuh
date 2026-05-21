@@ -241,6 +241,34 @@ private:
     }
   }
 
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename InitT,
+            typename NumItemsT,
+            typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __minmax_reduce(
+    InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, ReductionOpT reduction_op, InitT init, EnvT env)
+  {
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
+    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+
+    return reduce_impl(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, env);
+  }
+
 public:
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
@@ -517,37 +545,10 @@ public:
   Sum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Sum");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using default_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
-
-    // The output iterator must be a contiguous iterator or we fall back to run-to-run determinism.
-    constexpr auto is_contiguous_fallback =
-      !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
-
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-
-    // Since atomics for types of size < 4B are emulated, they perform poorly, so we fall back to run-to-run
-    // determinism.
-    constexpr auto is_4b_or_greater = !no_determinism || sizeof(OutputT) >= 4;
-
-    using determinism_t =
-      ::cuda::std::conditional_t<no_determinism && !(is_contiguous_fallback && is_4b_or_greater),
-                                 ::cuda::execution::determinism::run_to_run_t,
-                                 default_determinism_t>;
-
-    using InitT = OutputT;
-
-    return reduce_impl(
-      d_in, d_out, num_items, ::cuda::std::plus<>{}, ::cuda::std::identity{}, InitT{}, determinism_t{}, env);
+    using accum_t = ::cuda::std::__accumulator_t<::cuda::std::plus<>, cub::detail::it_value_t<InputIteratorT>, OutputT>;
+    return __transform_reduce<accum_t>(
+      d_in, d_out, num_items, ::cuda::std::plus<>{}, ::cuda::std::identity{}, OutputT{}, env);
   }
 
   //! @rst
@@ -830,30 +831,9 @@ public:
   Min(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Min");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-
-    using InitT    = OutputT;
-    using limits_t = ::cuda::std::numeric_limits<InitT>;
-
-    return reduce_impl(
-      d_in, d_out, num_items, ::cuda::minimum<>{}, ::cuda::std::identity{}, limits_t::max(), determinism_t{}, env);
+    using OutputT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+    using limits_t = ::cuda::std::numeric_limits<OutputT>;
+    return __minmax_reduce(d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), env);
   }
 
 private:
@@ -1477,29 +1457,9 @@ public:
   Max(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Max");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
     using OutputT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using InitT    = OutputT;
-    using limits_t = ::cuda::std::numeric_limits<InitT>;
-
-    return reduce_impl(
-      d_in, d_out, num_items, ::cuda::maximum<>{}, ::cuda::std::identity{}, limits_t::lowest(), determinism_t{}, env);
+    using limits_t = ::cuda::std::numeric_limits<OutputT>;
+    return __minmax_reduce(d_in, d_out, num_items, ::cuda::maximum<>{}, limits_t::lowest(), env);
   }
 
   //! @rst
