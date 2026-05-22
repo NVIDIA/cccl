@@ -159,8 +159,8 @@ struct DeviceTransform
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be a tuple where each tuple element is assignable to the corresponding dereferenced output
   //! iterators.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename... RandomAccessIteratorsIn,
             typename... RandomAccessIteratorsOut,
             typename NumItemsT,
@@ -262,8 +262,8 @@ struct DeviceTransform
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
             typename NumItemsT,
@@ -331,6 +331,7 @@ struct DeviceTransform
   //! Transforms one input sequence into one output sequence, by applying a transformation operation on each input
   //! element and writing the result to the corresponding output element. No guarantee is given on the identity (i.e.
   //! address) of the objects passed to the call operator of the transformation operation.
+  //! This is effectively calling Transform with a single-input tuple.
   //!
   //! .. versionadded:: 2.8.0
   //!    First appears in CUDA Toolkit 12.9.
@@ -344,8 +345,8 @@ struct DeviceTransform
   //! @param transform_op A unary function object. The input iterator's value type must be convertible to the parameter
   //! of the function object's call operator. The return type of the call operator must be assignable to the
   //! dereferenced output iterator.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorIn,
             typename RandomAccessIteratorOut,
             typename NumItemsT,
@@ -425,8 +426,8 @@ struct DeviceTransform
   //! @param num_items The number of elements to write to the output sequence.
   //! @param generator A nullary function object. The return type of the call operator must be assignable to the
   //! dereferenced output iterator.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename Generator,
@@ -493,8 +494,8 @@ struct DeviceTransform
   //! @param output An iterator to the output sequence where num_items results are written to.
   //! @param num_items The number of elements to write to the output sequence.
   //! @param value The value to write. Must be assignable to the dereferenced output iterator.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename Value,
@@ -579,8 +580,8 @@ struct DeviceTransform
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator. Will only be invoked if \p predicate returns
   //! true.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
             typename NumItemsT,
@@ -679,8 +680,8 @@ struct DeviceTransform
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_transform_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin transform-if
-  //!     :end-before: example-end transform-if
+  //!     :start-after: example-begin transform-if-single
+  //!     :end-before: example-end transform-if-single
   //!
   //! @endrst
   //!
@@ -694,8 +695,8 @@ struct DeviceTransform
   //! @param transform_op A unary function object. The input iterator's value type must be convertible to the
   //! parameter of the function object's call operator. The return type of the call operator must be assignable to the
   //! dereferenced output iterator. Will only be invoked if \p predicate returns true.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorIn,
             typename RandomAccessIteratorOut,
             typename NumItemsT,
@@ -805,8 +806,8 @@ struct DeviceTransform
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
             typename NumItemsT,
@@ -873,6 +874,7 @@ struct DeviceTransform
   //! Transforms one input sequence into one output sequence, by applying a transformation operation on corresponding
   //! input elements and writing the result to the corresponding output element. The objects passed to the call operator
   //! of the transformation operation are guaranteed to reside in the input sequences and are never copied.
+  //! This is effectively calling TransformStableArgumentAddresses with a single-input tuple.
   //!
   //! .. versionadded:: 2.8.0
   //!    First appears in CUDA Toolkit 12.9.
@@ -886,8 +888,8 @@ struct DeviceTransform
   //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
-  //! @param env Execution environment, or cudaStream_t. Default is ``cuda::std::execution::env{}``, which will run on
-  //! stream\ :sub:`0`
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename RandomAccessIteratorIn,
             typename RandomAccessIteratorOut,
             typename NumItemsT,
