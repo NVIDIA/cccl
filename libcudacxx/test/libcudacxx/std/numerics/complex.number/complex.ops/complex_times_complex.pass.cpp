@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
-
 // <cuda/std/complex>
 
 // template<class T>
@@ -175,13 +172,15 @@ int main(int, char**)
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
+#if !_CCCL_TILE_COMPILATION()
   test_edges<double>();
-#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#  if _LIBCUDACXX_HAS_NVFP16()
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
-#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVBF16()
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }
