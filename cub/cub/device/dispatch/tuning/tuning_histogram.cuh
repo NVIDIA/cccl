@@ -239,7 +239,7 @@ struct histogram_policy
   BlockHistogramMemoryPreference mem_preference;
   bool work_stealing;
   int vec_size;
-  int pdl_trigger_next_launch_in_init_kernel_max_bin_count;
+  int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const histogram_policy& lhs, const histogram_policy& rhs)
