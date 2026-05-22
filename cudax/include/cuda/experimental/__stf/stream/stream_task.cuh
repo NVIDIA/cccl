@@ -63,11 +63,16 @@ public:
     ctx.increment_task_count();
   }
 
-  stream_task(const stream_task<>&)              = default;
-  stream_task<>& operator=(const stream_task<>&) = default;
-  ~stream_task()                                 = default;
-
-  // movable ??
+  // Tasks are move-only: a task wrapper owns per-instance in-flight state
+  // (capture stream, frontier, done nodes, held mutex during stream capture)
+  // on top of the pimpl `task` base, so copying it has no meaningful semantics.
+  // Contexts (`stream_ctx`, `graph_ctx`, `context`) are pimpl handles and
+  // remain copyable.
+  stream_task(const stream_task&)              = delete;
+  stream_task<>& operator=(const stream_task&) = delete;
+  stream_task(stream_task&&)                   = default;
+  stream_task<>& operator=(stream_task&&)      = default;
+  ~stream_task()                               = default;
 
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
@@ -462,8 +467,8 @@ protected:
  * execution place can be set in the constructor and also dynamically. An invocation of `->*` takes place on the last
  * set execution place.
  *
- * It is possible to copy or move this task into a `stream_task<>` by implicit conversion. Subsequently, the
- * obtained object can be used with dynamic dependencies.
+ * It is possible to move this task into a `stream_task<>` by implicit conversion (copying is disabled because
+ * `stream_task<>` is move-only). Subsequently, the obtained object can be used with dynamic dependencies.
  */
 template <typename... Data>
 class stream_task
