@@ -23,8 +23,12 @@
 
 #if _CCCL_HAS_SIMD_F32X2()
 
+#  include <cuda/std/__fwd/simd.h>
+#  include <cuda/std/__simd/abi.h>
 #  include <cuda/std/__simd/specializations/fixed_size_vec.h>
-#  include <cuda/std/__simd/specializations/fp32x2_intrinsics.h>
+#  include <cuda/std/__simd/specializations/fp32x2_intrinsics_array.h>
+
+#  include <nv/target>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -44,11 +48,11 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
 
   _CCCL_HOST_DEVICE_API static constexpr void __increment(_SimdStorage& __s) noexcept
   {
+    [[maybe_unused]] constexpr _SimdStorage __one = __base::__broadcast(1.0f);
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, ({
-                     constexpr _SimdStorage __one = __base::__broadcast(1.0f);
-                     __s                          = ::cuda::std::simd::__plus_f32x2(__s, __one);
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, ({
+                     __s = ::cuda::std::simd::__plus_f32x2(__s, __one);
                      return;
                    }));
     }
@@ -57,11 +61,11 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
 
   _CCCL_HOST_DEVICE_API static constexpr void __decrement(_SimdStorage& __s) noexcept
   {
+    [[maybe_unused]] constexpr _SimdStorage __one = __base::__broadcast(1.0f);
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, ({
-                     constexpr _SimdStorage __one = __base::__broadcast(1.0f);
-                     __s                          = ::cuda::std::simd::__minus_f32x2(__s, __one);
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, ({
+                     __s = ::cuda::std::simd::__minus_f32x2(__s, __one);
                      return;
                    }));
     }
@@ -70,12 +74,10 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage __unary_minus(const _SimdStorage& __s) noexcept
   {
+    [[maybe_unused]] constexpr _SimdStorage __zero = __base::__broadcast(0.0f);
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, ({
-                     constexpr _SimdStorage __zero = __base::__broadcast(0.0f);
-                     return ::cuda::std::simd::__minus_f32x2(__zero, __s);
-                   }))
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return ::cuda::std::simd::__minus_f32x2(__zero, __s);))
     }
     return __base::__unary_minus(__s);
   }
@@ -85,7 +87,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, (return ::cuda::std::simd::__plus_f32x2(__lhs, __rhs);))
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return ::cuda::std::simd::__plus_f32x2(__lhs, __rhs);))
     }
     return __base::__plus(__lhs, __rhs);
   }
@@ -95,7 +97,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, (return ::cuda::std::simd::__minus_f32x2(__lhs, __rhs);))
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return ::cuda::std::simd::__minus_f32x2(__lhs, __rhs);))
     }
     return __base::__minus(__lhs, __rhs);
   }
@@ -105,7 +107,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_EXACTLY_SM_100, (return ::cuda::std::simd::__multiplies_f32x2(__lhs, __rhs);))
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return ::cuda::std::simd::__multiplies_f32x2(__lhs, __rhs);))
     }
     return __base::__multiplies(__lhs, __rhs);
   }

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/specializations/fixed_size_mask.h>
 #include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__type_traits/integral_constant.h>
