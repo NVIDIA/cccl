@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <vector>
 
 #include <cuda_runtime.h>
