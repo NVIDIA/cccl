@@ -90,6 +90,7 @@ public:
   {}
 
   template <class _Constraints = decltype(__tuple_constraints<_Tp...>::__check_default_constructible()),
+            enable_if_t<sizeof...(_Tp) != 0, int> = 0, // clang has issues with CTAD for empty tuple otherwise
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API explicit constexpr tuple() noexcept(_Constraints::__nothrow_constructible)
   {}
