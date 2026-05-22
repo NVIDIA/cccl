@@ -173,11 +173,14 @@ TEST_FUNC constexpr bool test()
   }
 
   {
+    // nvcc 12.9 + msvc believe this is not a constant expression.
+#if !(_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 0))
     // with only constexpr param
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<1>, cuda::std::__cw<2>);
     static_assert(result == 3);
+#endif // !(_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 0))
   }
 
   {
