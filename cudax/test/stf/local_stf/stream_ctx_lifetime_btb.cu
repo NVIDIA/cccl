@@ -40,7 +40,7 @@ constexpr int CHAIN_LEN         = 40;
 constexpr int OUTER             = 5;
 constexpr long long BUSY_CYCLES = 5'000'000;
 
-__global__ void slow_set_kernel(int* slice, int n, int value, long long ns)
+__global__ void slow_set_kernel(int* slice, int n, int value, long long cycles)
 {
   const int tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= n)
@@ -48,7 +48,7 @@ __global__ void slow_set_kernel(int* slice, int n, int value, long long ns)
     return;
   }
   const long long start = clock64();
-  while (clock64() - start < ns)
+  while (clock64() - start < cycles)
   {
     // busy wait
   }
