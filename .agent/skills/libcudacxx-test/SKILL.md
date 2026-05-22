@@ -80,7 +80,7 @@ ci/util/build_and_test_targets.sh \
 If running lit directly, use the configured site file:
 
 ```bash
-LIBCUDACXX_SITE_CONFIG=/home/fbusato/git_repo/cccl/build/<preset>/libcudacxx/test/libcudacxx/lit.site.cfg \
+LIBCUDACXX_SITE_CONFIG=<path-to-cccl>/build/<preset>/libcudacxx/test/libcudacxx/lit.site.cfg \
   lit -v libcudacxx/test/libcudacxx/<relative-test-path>
 ```
 
