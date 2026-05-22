@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class Mapping>
-TEST_FUNC void test([[maybe_unused]] Mapping map, size_t expected_size)
+TEST_FUNC void test([[maybe_unused]] Mapping map, [[maybe_unused]] size_t expected_size)
 {
   using extents = typename Mapping::extents_type;
   if constexpr (extents::rank() > 0)
@@ -28,7 +28,9 @@ TEST_FUNC void test([[maybe_unused]] Mapping map, size_t expected_size)
     assert(map.strides()[1] == map.extents().extent(0) * map.strides()[0]);
     assert(map.strides()[2] == map.extents().extent(1) * map.strides()[1]);
   }
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
   assert(sizeof(Mapping) == expected_size);
+#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 }
 
 template <class Mapping>
