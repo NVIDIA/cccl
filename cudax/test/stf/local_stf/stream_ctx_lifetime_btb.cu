@@ -81,7 +81,9 @@ void submit_token_chains(stream_ctx& ctx, int* d_arr, int value)
 
 bool has_mismatch(const std::vector<int>& values, int expected)
 {
-  return ::std::any_of(values.begin(), values.end(), [=](int x) { return x != expected; });
+  return ::std::any_of(values.begin(), values.end(), [=](int x) {
+    return x != expected;
+  });
 }
 
 void validate_buffer(int* d_arr)
