@@ -40,11 +40,12 @@ C++ mathematical operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We rely heavily on compiler builtins or cuda runtime functions to implement C++ standard math functions such
-as ``cuda::std::exp``. Those compiler builtins are not currently supported in tile mode, so the following headers
-are mostly unsupported in a tile kernel:
+as ``cuda::std::exp``. Those compiler builtins are not currently supported in tile mode, so the following header
+is mostly unsupported in a tile kernel:
 
     - <cuda/std/cmath>
-    - <cuda/std/complex>
+
+``cuda::std::complex`` is supported except for the various math function overloads that are specialized for complex.
 
 
 C++ customization point objects
@@ -94,7 +95,8 @@ CUDA extended floating point types
 
 Tile programs treat the CUDA extended floating point types as compiler builtin types.
 This disallows accessing their internals which we require internally.
-Support for extended floating point types such as ``__half``, ``__nv_bfloat16`` is disabled in tile mode.
+Support for extended floating point types such as ``__half``, ``__nv_bfloat16`` is only partial in libcu++.
+Support for extended floating point types of size 8, 6 and 4-bit is disabled.
 
 
 Taking the address of a function
