@@ -36,27 +36,25 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 #  endif // TUNE_LOAD_ALGORITHM_ID
 
 template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
-struct policy_hub_t
+struct bench_policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
+  _CCCL_API constexpr auto operator()(::cuda::compute_capability) const -> cub::detail::histogram::histogram_policy
   {
-    static constexpr cub::BlockLoadAlgorithm load_algorithm =
+    constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    using AgentHistogramPolicyT = cub::AgentHistogramPolicy<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      load_algorithm,
-      TUNE_LOAD_MODIFIER,
-      TUNE_RLE_COMPRESS,
-      MEM_PREFERENCE,
-      TUNE_WORK_STEALING,
-      TUNE_VEC_SIZE>;
-  };
-
-  using MaxPolicy = policy_t;
+    return {TUNE_THREADS,
+            TUNE_ITEMS,
+            load_algorithm,
+            TUNE_LOAD_MODIFIER,
+            TUNE_RLE_COMPRESS,
+            MEM_PREFERENCE,
+            TUNE_WORK_STEALING,
+            TUNE_VEC_SIZE,
+            2048}; // TODO(bgruber): make tunable
+  }
 };
 #endif // !TUNE_BASE
 
