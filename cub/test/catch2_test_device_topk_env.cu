@@ -20,6 +20,9 @@ struct stream_registry_factory_t;
 #include <cuda/iterator>
 #include <cuda/std/functional>
 
+#include <algorithm>
+#include <numeric>
+
 #include "catch2_test_env_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:2
@@ -182,6 +185,144 @@ C2H_TEST("DeviceTopK::MinPairs can be tuned", "[topk][device]", block_sizes)
       3,
       env));
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+namespace
+{
+c2h::host_vector<int> sorted_top_k(const c2h::host_vector<int>& h_in, int k, bool largest)
+{
+  auto sorted = h_in;
+  if (largest)
+  {
+    std::partial_sort(sorted.begin(), sorted.begin() + k, sorted.end(), cuda::std::greater<int>{});
+  }
+  else
+  {
+    std::partial_sort(sorted.begin(), sorted.begin() + k, sorted.end());
+  }
+  sorted.resize(static_cast<size_t>(k));
+  return sorted;
+}
+} // namespace
+
+C2H_TEST("DeviceTopK::MaxKeys env-alloc returns correct top K", "[topk][env]")
+{
+  const int num_items = 256;
+  c2h::device_vector<int> d_in(num_items);
+  c2h::gen(C2H_SEED(1), d_in);
+  c2h::host_vector<int> h_in      = d_in;
+  c2h::device_vector<int> d_out_k = c2h::device_vector<int>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess == cub::DeviceTopK::MaxKeys(d_in.begin(), d_out_k.begin(), num_items, 8, env));
+
+  c2h::host_vector<int> h_out = d_out_k;
+  std::sort(h_out.begin(), h_out.end(), cuda::std::greater<int>{});
+
+  auto expected = sorted_top_k(h_in, 8, /*largest*/ true);
+  REQUIRE(h_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MinKeys env-alloc returns correct bottom K", "[topk][env]")
+{
+  const int num_items = 256;
+  c2h::device_vector<int> d_in(num_items);
+  c2h::gen(C2H_SEED(1), d_in);
+  c2h::host_vector<int> h_in      = d_in;
+  c2h::device_vector<int> d_out_k = c2h::device_vector<int>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess == cub::DeviceTopK::MinKeys(d_in.begin(), d_out_k.begin(), num_items, 8, env));
+
+  c2h::host_vector<int> h_out = d_out_k;
+  std::sort(h_out.begin(), h_out.end());
+
+  auto expected = sorted_top_k(h_in, 8, /*largest*/ false);
+  REQUIRE(h_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MaxPairs env-alloc returns correct top K", "[topk][env]")
+{
+  const int num_items = 256;
+  c2h::device_vector<int> d_keys_in(num_items);
+  c2h::gen(C2H_SEED(1), d_keys_in);
+  c2h::host_vector<int> h_keys_in = d_keys_in;
+  c2h::host_vector<int> h_values_in(num_items);
+  std::iota(h_values_in.begin(), h_values_in.end(), 0);
+  c2h::device_vector<int> d_values_in  = h_values_in;
+  c2h::device_vector<int> d_keys_out   = c2h::device_vector<int>(8);
+  c2h::device_vector<int> d_values_out = c2h::device_vector<int>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MaxPairs(
+            d_keys_in.begin(), d_keys_out.begin(), d_values_in.begin(), d_values_out.begin(), num_items, 8, env));
+
+  c2h::host_vector<int> h_keys_out   = d_keys_out;
+  c2h::host_vector<int> h_values_out = d_values_out;
+
+  // Verify pair association: each returned value indexes back to the corresponding key
+  // (recall h_values_in[i] = i, so value-out is the original input position of the key-out)
+  for (size_t i = 0; i < h_keys_out.size(); ++i)
+  {
+    REQUIRE(h_values_out[i] >= 0);
+    REQUIRE(h_values_out[i] < num_items);
+    REQUIRE(h_keys_out[i] == h_keys_in[h_values_out[i]]);
+  }
+
+  std::sort(h_keys_out.begin(), h_keys_out.end(), cuda::std::greater<int>{});
+
+  auto expected = sorted_top_k(h_keys_in, 8, /*largest*/ true);
+  REQUIRE(h_keys_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MinPairs env-alloc returns correct bottom K", "[topk][env]")
+{
+  const int num_items = 256;
+  c2h::device_vector<int> d_keys_in(num_items);
+  c2h::gen(C2H_SEED(1), d_keys_in);
+  c2h::host_vector<int> h_keys_in = d_keys_in;
+  c2h::host_vector<int> h_values_in(num_items);
+  std::iota(h_values_in.begin(), h_values_in.end(), 0);
+  c2h::device_vector<int> d_values_in  = h_values_in;
+  c2h::device_vector<int> d_keys_out   = c2h::device_vector<int>(8);
+  c2h::device_vector<int> d_values_out = c2h::device_vector<int>(8);
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess
+          == cub::DeviceTopK::MinPairs(
+            d_keys_in.begin(), d_keys_out.begin(), d_values_in.begin(), d_values_out.begin(), num_items, 8, env));
+
+  c2h::host_vector<int> h_keys_out   = d_keys_out;
+  c2h::host_vector<int> h_values_out = d_values_out;
+
+  // Verify pair association: each returned value indexes back to the corresponding key
+  // (recall h_values_in[i] = i, so value-out is the original input position of the key-out)
+  for (size_t i = 0; i < h_keys_out.size(); ++i)
+  {
+    REQUIRE(h_values_out[i] >= 0);
+    REQUIRE(h_values_out[i] < num_items);
+    REQUIRE(h_keys_out[i] == h_keys_in[h_values_out[i]]);
+  }
+
+  std::sort(h_keys_out.begin(), h_keys_out.end());
+
+  auto expected = sorted_top_k(h_keys_in, 8, /*largest*/ false);
+  REQUIRE(h_keys_out == expected);
+}
+
+C2H_TEST("DeviceTopK::MaxKeys env-alloc handles K equal to num_items", "[topk][env]")
+{
+  c2h::device_vector<int> d_in{5, 2, 9, 1, 7};
+  c2h::device_vector<int> d_out(d_in.size());
+
+  auto env = topk_requirements();
+  REQUIRE(cudaSuccess == cub::DeviceTopK::MaxKeys(d_in.begin(), d_out.begin(), 5, 5, env));
+
+  c2h::host_vector<int> h_out = d_out;
+  std::sort(h_out.begin(), h_out.end(), cuda::std::greater<int>{});
+  c2h::host_vector<int> expected{9, 7, 5, 2, 1};
+  REQUIRE(h_out == expected);
 }
 
 #endif // TEST_LAUNCH != 1

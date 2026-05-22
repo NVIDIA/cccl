@@ -8,7 +8,36 @@
 ##
 ##===----------------------------------------------------------------------===##
 
+add_custom_target(libcudacxx.test.simd.ptx)
 add_custom_target(libcudacxx.test.simd.sass)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# SETUP: skip unsupported compilers, find tools, set up CUDA architectures
+
+# GCC7 and NVCC 12.0 do not vectorize load/store.
+if (
+  CMAKE_CXX_COMPILER_ID STREQUAL GNU
+  AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7
+  AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8
+)
+  message("-- Skipping simd codegen tests with GCC 7 host compiler")
+  return()
+endif()
+
+if (
+  CMAKE_CUDA_COMPILER_ID STREQUAL NVIDIA
+  AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0
+  AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.1
+)
+  message("-- Skipping simd codegen tests with NVCC 12.0")
+  return()
+endif()
+
+# skip nvc++
+if (CMAKE_CXX_COMPILER_ID STREQUAL NVHPC)
+  message("-- Skipping simd codegen tests with NVHPC host compiler")
+  return()
+endif()
 
 find_program(
   filecheck
@@ -24,80 +53,162 @@ endif()
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
-set(libcudacxx_simd_codegen_tests)
-if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  file(GLOB libcudacxx_simd_codegen_tests "*.cu")
+set(
+  dump_and_check_script
+  "${CMAKE_CURRENT_SOURCE_DIR}/../atomic_codegen/dump_and_check.bash"
+)
+
+set(simd_codegen_sass_cuda_archs 80 90)
+if (
+  CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8
+  AND NOT CMAKE_CUDA_COMPILER_ID STREQUAL Clang
+)
+  list(APPEND simd_codegen_sass_cuda_archs 100 120)
 endif()
 
-set(simd_codegen_cuda_archs 80 90)
-if (CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
-  list(APPEND simd_codegen_cuda_archs 100 120)
-endif()
+#-----------------------------------------------------------------------------------------------------------------------
+# HELPER FUNCTIONS
 
-function(simd_codegen_add_tests test_path)
+function(simd_codegen_set_cuda_arch target_name arch)
+  set_target_properties(${target_name} PROPERTIES CUDA_ARCHITECTURES "${arch}")
+endfunction()
+
+# Given the test file content, extract the SM archs that are checked for.
+# SMXX:       any arch
+# SM100-PLUS: SM100 and newer
+function(simd_codegen_get_sass_check_prefixes out_var test_contents arch)
+  set(check_prefixes SMXX)
+  set(arch_prefix "SM${arch}")
+
+  string(
+    REGEX MATCH
+    "; ${arch_prefix}(:|-LABEL:|-NOT:|-NEXT:|-SAME:|-DAG:|-COUNT:|-EMPTY:)"
+    has_arch_prefix
+    "${test_contents}"
+  )
+  if (has_arch_prefix)
+    list(APPEND check_prefixes "${arch_prefix}")
+  endif()
+
+  string(
+    REGEX MATCHALL
+    "; SM[0-9]+-PLUS(:|-[A-Z]+:)"
+    plus_prefixes
+    "${test_contents}"
+  )
+  foreach (plus_prefix IN LISTS plus_prefixes)
+    string(REGEX REPLACE ".*SM([0-9]+)-PLUS.*" "\\1" plus_arch "${plus_prefix}")
+    if (arch GREATER_EQUAL plus_arch)
+      list(APPEND check_prefixes "SM${plus_arch}-PLUS")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES check_prefixes)
+  list(JOIN check_prefixes "," check_prefixes)
+
+  set(${out_var} "${check_prefixes}" PARENT_SCOPE)
+endfunction()
+
+# configure the library target for the test
+function(simd_codegen_add_library_target out_var kind arch test_path)
   cmake_path(GET test_path FILENAME test_file)
   cmake_path(REMOVE_EXTENSION test_file LAST_ONLY OUTPUT_VARIABLE test_name)
 
-  file(READ "${test_path}" test_contents)
-  string(
-    REGEX MATCH
-    "SM[0-9][0-9]*"
-    has_arch_specific_prefix
-    "${test_contents}"
+  set(target_name "simd_codegen_${kind}_sm${arch}_${test_name}")
+
+  add_library(${target_name} STATIC "${test_path}")
+
+  simd_codegen_set_cuda_arch(${target_name} "${arch}")
+  target_compile_options(${target_name} PRIVATE "-Wno-comment")
+
+  target_include_directories(
+    ${target_name}
+    PRIVATE "${libcudacxx_SOURCE_DIR}/include"
   )
+  set(${out_var} "${target_name}" PARENT_SCOPE)
+endfunction()
 
-  # search for SMXX prefixes in the test contents
-  set(test_archs)
-  if (has_arch_specific_prefix)
-    foreach (arch IN LISTS simd_codegen_cuda_archs)
-      string(FIND "${test_contents}" "SM${arch}" arch_specific_prefix)
-      if (NOT arch_specific_prefix EQUAL -1)
-        list(APPEND test_archs "${arch}")
-      endif()
-    endforeach()
-  else()
-    set(test_archs ${simd_codegen_cuda_archs})
-  endif()
+# generate the check target for the test (FILECHECK)
+function(
+  simd_codegen_add_check_target
+  aggregate_target
+  target_name
+  test_path
+  check_prefixes
+)
+  string(REGEX REPLACE "[^A-Za-z0-9_]" "_" check_suffix "${check_prefixes}")
+  set(check_target_name "${target_name}_${check_suffix}_check")
 
-  # Run tests for each architecture specified in the test file
-  foreach (arch IN LISTS test_archs)
-    set(target_name "simd_codegen_sm${arch}_${test_name}")
-    set(check_prefixes "SMXX")
-    if (has_arch_specific_prefix)
-      string(APPEND check_prefixes ",SM${arch}")
+  add_custom_target(
+    ${check_target_name}
+    DEPENDS ${target_name}
+    # gersemi: off
+    COMMAND
+      ${CMAKE_COMMAND} -E env "FILECHECK=${filecheck}"
+        "${dump_and_check_script}"
+        $<TARGET_FILE:${target_name}>
+        "${test_path}"
+        "${check_prefixes}"
+        ${ARGN}
+    # gersemi: on
+  )
+  add_dependencies(${aggregate_target} ${check_target_name})
+endfunction()
+
+# generate the command to run the PTX tests
+function(simd_codegen_add_ptx_tests arch prefix_list test_list)
+  foreach (test_path IN LISTS ${test_list})
+    simd_codegen_add_library_target(target_name ptx "${arch}" "${test_path}")
+
+    # Clang stopped emitting PTX in clang20. Add flags to re-enable it.
+    if (
+      CMAKE_CUDA_COMPILER_ID STREQUAL Clang
+      AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 20
+    )
+      target_compile_options(
+        ${target_name}
+        PRIVATE "--cuda-include-ptx=sm_${arch}"
+      )
     endif()
 
-    add_library(${target_name} STATIC "${test_path}")
-
-    set_target_properties(
-      ${target_name}
-      PROPERTIES CUDA_ARCHITECTURES "${arch}"
-    )
-
-    target_compile_options(${target_name} PRIVATE "-Wno-comment")
-
-    target_include_directories(
-      ${target_name}
-      PRIVATE "${libcudacxx_SOURCE_DIR}/include"
-    )
-    add_dependencies(libcudacxx.test.simd.sass ${target_name})
-
-    add_custom_command(
-      TARGET libcudacxx.test.simd.sass
-      POST_BUILD
-      # gersemi: off
-      COMMAND
-        ${CMAKE_COMMAND} -E env "FILECHECK=${filecheck}"
-          "${CMAKE_CURRENT_SOURCE_DIR}/../atomic_codegen/dump_and_check.bash"
-          $<TARGET_FILE:${target_name}>
-          "${test_path}"
-          "${check_prefixes}"
-          --dump-sass
-      # gersemi: on
-    )
+    foreach (prefix IN LISTS ${prefix_list})
+      simd_codegen_add_check_target(libcudacxx.test.simd.ptx ${target_name} "${test_path}" "${prefix}")
+    endforeach()
   endforeach()
 endfunction()
 
-foreach (test_path IN LISTS libcudacxx_simd_codegen_tests)
-  simd_codegen_add_tests("${test_path}")
+# generate the command to run the SASS tests
+function(simd_codegen_add_sass_test test_path)
+  file(READ "${test_path}" test_contents)
+
+  set(test_archs)
+  foreach (arch IN LISTS simd_codegen_sass_cuda_archs)
+    simd_codegen_get_sass_check_prefixes(check_prefixes "${test_contents}" "${arch}")
+    if (NOT "${check_prefixes}" STREQUAL "SMXX")
+      list(APPEND test_archs "${arch}")
+    endif()
+  endforeach()
+  if (NOT test_archs)
+    set(test_archs ${simd_codegen_sass_cuda_archs})
+  endif()
+
+  foreach (arch IN LISTS test_archs)
+    simd_codegen_add_library_target(target_name sass "${arch}" "${test_path}")
+    simd_codegen_get_sass_check_prefixes(check_prefixes "${test_contents}" "${arch}")
+
+    string(FIND "${test_contents}" "__device__" has_device_function)
+    if (NOT has_device_function EQUAL -1)
+      target_compile_options(${target_name} PRIVATE "-dc")
+    endif()
+
+    simd_codegen_add_check_target(libcudacxx.test.simd.sass ${target_name} "${test_path}" "${check_prefixes}" --dump-sass)
+  endforeach()
+endfunction()
+
+set(simd_codegen_sass_tests)
+file(GLOB simd_codegen_sass_tests "*.cu")
+
+add_subdirectory(load_store)
+
+foreach (test_path IN LISTS simd_codegen_sass_tests)
+  simd_codegen_add_sass_test("${test_path}")
 endforeach()
