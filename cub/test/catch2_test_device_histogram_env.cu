@@ -31,6 +31,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramRange,
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -1142,3 +1143,126 @@ TEST_CASE("DeviceHistogram::MultiHistogramRange 2D uses custom stream", "[histog
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+#if TEST_LAUNCH != 1
+
+template <int BlockThreads>
+struct histogram_tuning
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::histogram::histogram_policy
+  {
+    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 1, 0};
+  }
+};
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+C2H_TEST("DeviceHistogram::HistogramEven can be tuned", "[histogram][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  int num_samples  = 256;
+  int num_levels   = 257;
+  int lower_level  = 0;
+  int upper_level  = 256;
+  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  histogram_even(
+    d_samples, thrust::raw_pointer_cast(d_histogram.data()), num_levels, lower_level, upper_level, num_samples, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceHistogram::HistogramRange can be tuned", "[histogram][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  int num_samples  = 256;
+  auto d_levels    = c2h::device_vector<int>{0, 128, 256};
+  int num_levels   = static_cast<int>(d_levels.size());
+  auto d_histogram = c2h::device_vector<int>(num_levels - 1, 0);
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  histogram_range(
+    d_samples,
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    thrust::raw_pointer_cast(d_levels.data()),
+    num_samples,
+    env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceHistogram::MultiHistogramEven can be tuned", "[histogram][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int NUM_CHANNELS               = 4;
+  constexpr int NUM_ACTIVE_CHANNELS        = 3;
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  int num_pixels = 64;
+
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels  = {5, 5, 5};
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
+
+  auto d_histogram_r = c2h::device_vector<int>(4, 0);
+  auto d_histogram_g = c2h::device_vector<int>(4, 0);
+  auto d_histogram_b = c2h::device_vector<int>(4, 0);
+
+  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  multi_histogram_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    d_samples, d_histogram, num_levels, lower_level, upper_level, num_pixels, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int NUM_CHANNELS               = 4;
+  constexpr int NUM_ACTIVE_CHANNELS        = 3;
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
+  int num_pixels = 64;
+
+  auto d_levels_r = c2h::device_vector<int>{0, 2, 4};
+  auto d_levels_g = c2h::device_vector<int>{0, 2, 4};
+  auto d_levels_b = c2h::device_vector<int>{0, 2, 4};
+
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 3};
+
+  cuda::std::array<const int*, NUM_ACTIVE_CHANNELS> d_levels = {
+    thrust::raw_pointer_cast(d_levels_r.data()),
+    thrust::raw_pointer_cast(d_levels_g.data()),
+    thrust::raw_pointer_cast(d_levels_b.data())};
+
+  auto d_histogram_r = c2h::device_vector<int>(2, 0);
+  auto d_histogram_g = c2h::device_vector<int>(2, 0);
+  auto d_histogram_b = c2h::device_vector<int>(2, 0);
+
+  cuda::std::array<int*, NUM_ACTIVE_CHANNELS> d_histogram = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  auto env = cuda::execution::tune(histogram_tuning<target_block_size>{});
+
+  multi_histogram_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    d_samples, d_histogram, num_levels, d_levels, num_pixels, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1

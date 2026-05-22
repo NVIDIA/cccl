@@ -20,3 +20,5 @@ __pycache__
 wheelhouse/
 bench-artifacts/
 CLAUDE.local.md
+.codegraph/*
+.cursor/rules/codegraph.mdc

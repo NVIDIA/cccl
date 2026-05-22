@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // asin
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> asin(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> asin(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = ::cuda::std::asinh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
@@ -49,7 +49,7 @@ template <class _Tp>
 // acos
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> acos(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> acos(const complex<_Tp>& __x)
 {
   // Get both real and imag parts >= +0.0
   const bool __real_neg = ::cuda::std::signbit(__x.real());
@@ -81,7 +81,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> acos(const complex<__half>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__half> acos(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::acos(complex<float>{__x})};
 }
@@ -89,7 +89,7 @@ _CCCL_API inline complex<__half> acos(const complex<__half>& __x)
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::acos(complex<float>{__x})};
 }
@@ -98,7 +98,7 @@ _CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 // atan
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> atan(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> atan(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = ::cuda::std::atanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
