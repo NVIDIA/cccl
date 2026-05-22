@@ -27,7 +27,8 @@
     "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"
   ],
   "containerEnv": {
-    "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
+    "AWS_IDP_URL": "https://token.rapids.nvidia.com",
+    "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/rapids-token-sccache-devs",
     "CI": "${localEnv:CI}",
     "NVCC_APPEND_FLAGS": "-t=100",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
