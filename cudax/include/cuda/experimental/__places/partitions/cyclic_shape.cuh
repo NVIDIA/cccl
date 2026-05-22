@@ -247,10 +247,10 @@ public:
     return cyclic_shape<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
+  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
   {
     abort();
-    return pos4(0);
+    *result = pos4(0);
   }
 };
 

@@ -478,7 +478,7 @@ over the different places of a grid.
        template <typename S_out, typename S_in>
        static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
 
-       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
+       void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims);
    };
 
 A partitioning class must implement an ``apply`` method which takes:
@@ -504,8 +504,8 @@ method which allows localized data allocators. This
 method indicates, for each entry of a shape, on which place this entry
 should *preferably* be allocated.
 
-``get_executor`` returns a ``pos4`` coordinate in the execution place
-grid, and its arguments are:
+``get_executor`` writes a ``pos4`` coordinate in the execution place
+grid into ``*result``, and its input arguments are:
 
 - a coordinate within the shape described as a ``pos4`` object
 - the dimension of the shape expressed as a ``dim4`` object
