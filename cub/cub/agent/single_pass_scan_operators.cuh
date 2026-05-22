@@ -601,13 +601,16 @@ struct ScanTileState<T, true>
   using StatusValueT = T;
 
   // Status word type
-  using StatusWord = ::cuda::std::_If<
+  using StatusWord = ::cuda::std::conditional_t<
     sizeof(T) == 8,
     unsigned long long,
-    ::cuda::std::_If<sizeof(T) == 4, unsigned int, ::cuda::std::_If<sizeof(T) == 2, unsigned short, unsigned char>>>;
+    ::cuda::std::conditional_t<sizeof(T) == 4,
+                               unsigned int,
+                               ::cuda::std::conditional_t<sizeof(T) == 2, unsigned short, unsigned char>>>;
 
   // Unit word type
-  using TxnWord = ::cuda::std::_If<sizeof(T) == 8, ulonglong2, ::cuda::std::_If<sizeof(T) == 4, uint2, unsigned int>>;
+  using TxnWord = ::cuda::std::
+    conditional_t<sizeof(T) == 8, ulonglong2, ::cuda::std::conditional_t<sizeof(T) == 4, uint2, unsigned int>>;
   static_assert(sizeof(TxnWord) <= detail::largest_atomic_message_size);
 
   // Device word type
@@ -994,15 +997,18 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Status word type
-  using StatusWord = ::cuda::std::_If<
+  using StatusWord = ::cuda::std::conditional_t<
     STATUS_WORD_SIZE == 8,
     unsigned long long,
-    ::cuda::std::
-      _If<STATUS_WORD_SIZE == 4, unsigned int, ::cuda::std::_If<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
+    ::cuda::std::conditional_t<STATUS_WORD_SIZE == 4,
+                               unsigned int,
+                               ::cuda::std::conditional_t<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
 
   // Status word type
-  using TxnWord = ::cuda::std::
-    _If<TXN_WORD_SIZE == 16, ulonglong2, ::cuda::std::_If<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
+  using TxnWord =
+    ::cuda::std::conditional_t<TXN_WORD_SIZE == 16,
+                               ulonglong2,
+                               ::cuda::std::conditional_t<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
 
   // Device word type (for when sizeof(ValueT) == sizeof(KeyT))
   struct TileDescriptorBigStatus
@@ -1022,7 +1028,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 
   // Device word type
   using TileDescriptor =
-    ::cuda::std::_If<sizeof(ValueT) == sizeof(KeyT), TileDescriptorBigStatus, TileDescriptorLittleStatus>;
+    ::cuda::std::conditional_t<sizeof(ValueT) == sizeof(KeyT), TileDescriptorBigStatus, TileDescriptorLittleStatus>;
 
   // Device storage
   TxnWord* d_tile_descriptors;

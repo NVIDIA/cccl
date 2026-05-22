@@ -96,10 +96,11 @@ struct non_void_value_impl<It, FallbackT, false>
 {
   // we consider thrust::discard_iterator's value_type (`any_assign`) as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
-  using type = ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
-                                  || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
-                                FallbackT,
-                                it_value_t<It>>;
+  using type =
+    ::cuda::std::conditional_t<::cuda::std::is_void_v<it_value_t<It>>
+                                 || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
+                               FallbackT,
+                               it_value_t<It>>;
 };
 
 /**
@@ -404,36 +405,40 @@ struct UnitWord
 
   /// Largest shuffle word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using ShuffleWord =
-    ::cuda::std::_If<__is_multiple<int>::value,
-                     unsigned int,
-                     ::cuda::std::_If<__is_multiple<short>::value, unsigned short, unsigned char>>;
+    ::cuda::std::conditional_t<__is_multiple<int>::value,
+                               unsigned int,
+                               ::cuda::std::conditional_t<__is_multiple<short>::value, unsigned short, unsigned char>>;
 
   /// Largest volatile word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
-  using VolatileWord = ::cuda::std::_If<__is_multiple<long long>::value, unsigned long long, ShuffleWord>;
+  using VolatileWord = ::cuda::std::conditional_t<__is_multiple<long long>::value, unsigned long long, ShuffleWord>;
 
   /// Largest memory-access word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
-  using DeviceWord = ::cuda::std::_If<__is_multiple<longlong2>::value, ulonglong2, VolatileWord>;
+  using DeviceWord = ::cuda::std::conditional_t<__is_multiple<longlong2>::value, ulonglong2, VolatileWord>;
 
   /// Biggest texture reference word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using TextureWord =
-    ::cuda::std::_If<__is_multiple<int4>::value, uint4, ::cuda::std::_If<__is_multiple<int2>::value, uint2, ShuffleWord>>;
+    ::cuda::std::conditional_t<__is_multiple<int4>::value,
+                               uint4,
+                               ::cuda::std::conditional_t<__is_multiple<int2>::value, uint2, ShuffleWord>>;
 #  else // _CCCL_COMPILER(MSVC, <, 19, 39)
   template <typename Unit>
   static constexpr bool __is_multiple = (sizeof(T) % sizeof(Unit) == 0) && (alignof(T) % alignof(Unit) == 0);
 
   /// Largest shuffle word evenly dividing T and not increasing the alignment
-  using ShuffleWord = ::cuda::std::
-    _If<__is_multiple<int>, unsigned int, ::cuda::std::_If<__is_multiple<short>, unsigned short, unsigned char>>;
+  using ShuffleWord =
+    ::cuda::std::conditional_t<__is_multiple<int>,
+                               unsigned int,
+                               ::cuda::std::conditional_t<__is_multiple<short>, unsigned short, unsigned char>>;
 
   /// Largest volatile word evenly dividing T and not increasing the alignment
-  using VolatileWord = ::cuda::std::_If<__is_multiple<long long>, unsigned long long, ShuffleWord>;
+  using VolatileWord = ::cuda::std::conditional_t<__is_multiple<long long>, unsigned long long, ShuffleWord>;
 
   /// Largest memory-access word evenly dividing T and not increasing the alignment
-  using DeviceWord = ::cuda::std::_If<__is_multiple<longlong2>, ulonglong2, VolatileWord>;
+  using DeviceWord = ::cuda::std::conditional_t<__is_multiple<longlong2>, ulonglong2, VolatileWord>;
 
   /// Biggest texture reference word evenly dividing T and not increasing the alignment
-  using TextureWord =
-    ::cuda::std::_If<__is_multiple<int4>, uint4, ::cuda::std::_If<__is_multiple<int2>, uint2, ShuffleWord>>;
+  using TextureWord = ::cuda::std::
+    conditional_t<__is_multiple<int4>, uint4, ::cuda::std::conditional_t<__is_multiple<int2>, uint2, ShuffleWord>>;
 #  endif // _CCCL_COMPILER(MSVC, <, 19, 39)
 };
 

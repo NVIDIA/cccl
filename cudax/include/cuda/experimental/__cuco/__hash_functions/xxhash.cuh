@@ -129,11 +129,8 @@ private:
     // process data in 16-byte chunks
     if constexpr (_Holder::__num_chunks > 0)
     {
-      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v = {
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (::cuda::std::uint32_t __i = 0; __i < _Holder::__num_chunks; ++__i)
       {
@@ -193,13 +190,9 @@ private:
     // data can be processed in 16-byte chunks
     if (__size >= 16)
     {
-      const auto __limit = __size - 16;
-      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
-
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      const auto __limit                               = __size - 16;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v = {
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (; __offset <= __limit; __offset += 16)
       {
@@ -330,13 +323,9 @@ private:
     // process data in 32-byte chunks
     if (__size >= 32)
     {
-      const auto __limit = __size - 32;
-      ::cuda::std::array<::cuda::std::uint64_t, 4> __v;
-
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      const auto __limit                               = __size - 32;
+      ::cuda::std::array<::cuda::std::uint64_t, 4> __v = {
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (; __offset <= __limit; __offset += 32)
       {

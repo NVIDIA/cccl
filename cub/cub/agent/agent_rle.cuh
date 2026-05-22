@@ -214,9 +214,9 @@ struct AgentRle
   // Wrap the native input pointer with CacheModifiedVLengthnputIterator
   // Directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
-                     InputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
+                               InputIteratorT>;
 
   // Parameterized BlockLoad type for data
   using BlockLoadT =
@@ -240,7 +240,7 @@ struct AgentRle
   using WarpExchangePairs = WarpExchange<LengthOffsetPair, ITEMS_PER_THREAD>;
 
   using WarpExchangePairsStorage =
-    ::cuda::std::_If<STORE_WARP_TIME_SLICING, typename WarpExchangePairs::TempStorage, NullType>;
+    ::cuda::std::conditional_t<STORE_WARP_TIME_SLICING, typename WarpExchangePairs::TempStorage, NullType>;
 
   using WarpExchangeOffsets = WarpExchange<OffsetT, ITEMS_PER_THREAD>;
   using WarpExchangeLengths = WarpExchange<LengthT, ITEMS_PER_THREAD>;

@@ -262,11 +262,12 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT = ::cuda::std::__accumulator_t<
-    ScanOpT,
-    cub::detail::it_value_t<ValuesInputIteratorT>,
-    ::cuda::std::
-      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
+  typename AccumT =
+    ::cuda::std::__accumulator_t<ScanOpT,
+                                 cub::detail::it_value_t<ValuesInputIteratorT>,
+                                 ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                            InitValueT>>,
   typename PolicyHub =
     detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>,
   typename PolicySelector = detail::scan_by_key::policy_selector_from_hub<PolicyHub>,
@@ -698,11 +699,11 @@ template <
   typename AccumT = ::cuda::std::conditional_t<
     !::cuda::std::is_same_v<OverrideAccumT, use_default>,
     OverrideAccumT,
-    ::cuda::std::__accumulator_t<
-      ScanOpT,
-      cub::detail::it_value_t<ValuesInputIteratorT>,
-      ::cuda::std::
-        _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>>,
+    ::cuda::std::__accumulator_t<ScanOpT,
+                                 cub::detail::it_value_t<ValuesInputIteratorT>,
+                                 ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                            InitValueT>>>,
   typename PolicySelector = policy_selector_from_types<cub::detail::it_value_t<KeysInputIteratorT>,
                                                        AccumT,
                                                        cub::detail::it_value_t<ValuesInputIteratorT>,

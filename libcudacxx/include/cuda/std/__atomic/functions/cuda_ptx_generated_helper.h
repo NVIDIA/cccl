@@ -121,42 +121,44 @@ using __atomic_cuda_deduce_bitwise =
                 __type_default<__atomic_cuda_operand_deduction<__atomic_longlong2, __atomic_cuda_operand_b128>>>;
 
 template <class _Type>
-using __atomic_cuda_deduce_arithmetic = _If<
+using __atomic_cuda_deduce_arithmetic = conditional_t<
   is_floating_point_v<_Type>,
-  _If<sizeof(_Type) == 4,
-      __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
-      __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
-  _If<is_signed_v<_Type>,
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>>,
-                    __type_default<__atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_u64>>>, // There is no
-                                                                                                          // atom.add.s64
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>>,
-                    __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
+  conditional_t<sizeof(_Type) == 4,
+                __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
+                __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
+  conditional_t<
+    is_signed_v<_Type>,
+    __type_switch<sizeof(_Type),
+                  __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
+                  __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
+                  __type_case<4, __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>>,
+                  __type_default<__atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_u64>>>, // There is no
+                                                                                                        // atom.add.s64
+    __type_switch<sizeof(_Type),
+                  __type_case<1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>>,
+                  __type_case<2, __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>>,
+                  __type_case<4, __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>>,
+                  __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
 
 template <class _Type>
-using __atomic_cuda_deduce_minmax = _If<
+using __atomic_cuda_deduce_minmax = conditional_t<
   is_floating_point_v<_Type>,
-  _If<sizeof(_Type) == 4,
-      __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
-      __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
-  _If<is_signed_v<_Type>,
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>>,
-                    __type_default<__atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>>, // atom.min|max.s64
-                                                                                                          // supported
-      __type_switch<sizeof(_Type),
-                    __type_case<1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>>,
-                    __type_case<2, __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>>,
-                    __type_case<4, __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>>,
-                    __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
+  conditional_t<sizeof(_Type) == 4,
+                __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
+                __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
+  conditional_t<
+    is_signed_v<_Type>,
+    __type_switch<sizeof(_Type),
+                  __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
+                  __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
+                  __type_case<4, __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>>,
+                  __type_default<__atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>>, // atom.min|max.s64
+                                                                                                        // supported
+    __type_switch<sizeof(_Type),
+                  __type_case<1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>>,
+                  __type_case<2, __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>>,
+                  __type_case<4, __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>>,
+                  __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
 
 template <class _Type>
 using __atomic_enable_if_native_bitwise = enable_if_t<(sizeof(_Type) < 16), bool>;

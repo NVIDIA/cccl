@@ -381,7 +381,7 @@ struct __mb_base : __mb_move_assign<_Tp>
 };
 
 template <class _Tp>
-using __movable_box_base = _If<__doesnt_need_empty_state<_Tp>(), __mb_base<_Tp>, __mb_optional_base<_Tp>>;
+using __movable_box_base = conditional_t<__doesnt_need_empty_state<_Tp>(), __mb_base<_Tp>, __mb_optional_base<_Tp>>;
 
 // Primary template - uses ::cuda::std::optional and introduces an empty state in case assignment fails.
 template <class _Tp, bool = __movable_box_object<_Tp>>

@@ -54,7 +54,7 @@ struct conjunction<_Arg> : _Arg
 {};
 
 template <class _Arg, class... _Args>
-struct conjunction<_Arg, _Args...> : _If<!bool(_Arg::value), _Arg, conjunction<_Args...>>
+struct conjunction<_Arg, _Args...> : conditional_t<!bool(_Arg::value), _Arg, conjunction<_Args...>>
 {};
 
 template <class... _Args>

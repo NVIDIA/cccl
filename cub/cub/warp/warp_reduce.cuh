@@ -141,8 +141,10 @@ public:
 
   /// Internal specialization.
   /// Use SHFL-based reduction if LogicalWarpThreads is a power-of-two
-  using InternalWarpReduce = ::cuda::std::
-    _If<is_power_of_two, detail::WarpReduceShfl<T, LogicalWarpThreads>, detail::WarpReduceSmem<T, LogicalWarpThreads>>;
+  using InternalWarpReduce =
+    ::cuda::std::conditional_t<is_power_of_two,
+                               detail::WarpReduceShfl<T, LogicalWarpThreads>,
+                               detail::WarpReduceSmem<T, LogicalWarpThreads>>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

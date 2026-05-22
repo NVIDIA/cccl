@@ -145,9 +145,9 @@ struct DeviceScan
     using accum_t =
       ::cuda::std::__accumulator_t<ScanOpT,
                                    cub::detail::it_value_t<InputIteratorT>,
-                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                    cub::detail::it_value_t<InputIteratorT>,
-                                                    typename InitValueT::value_type>>;
+                                   ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                              cub::detail::it_value_t<InputIteratorT>,
+                                                              typename InitValueT::value_type>>;
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using default_policy_selector_t =
       detail::scan::policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT>;
@@ -189,11 +189,12 @@ struct DeviceScan
     cudaStream_t stream)
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = ::cuda::std::__accumulator_t<
-       ScanOpT,
-       cub::detail::it_value_t<ValuesInputIteratorT>,
-       ::cuda::std::
-         _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>;
+    using accum_t =
+      ::cuda::std::__accumulator_t<ScanOpT,
+                                   cub::detail::it_value_t<ValuesInputIteratorT>,
+                                   ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                              cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                              InitValueT>>;
 
     using default_policy_selector_t =
       detail::scan_by_key::policy_selector_from_types<detail::it_value_t<KeysInputIteratorT>,
