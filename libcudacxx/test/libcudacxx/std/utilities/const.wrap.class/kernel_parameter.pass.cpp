@@ -7,15 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: Remove once constant_wrapper is exposed.
-
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::__type
-// UNSUPPORTED: gcc-10 || gcc-11
-
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvcc + nvrtc fails to create stubs for kernels kernels that take constant_wrapper as an argument.
+// UNSUPPORTED: !clang || nvcc
 
 // REQUIRES: !c++17
 
@@ -36,12 +29,14 @@ __global__ void test_kernel(Lhs lhs, Rhs rhs)
   assert(result == 9);
 }
 
+void test_host()
+{
+  test_kernel<<<1, 1>>>(cuda::std::__cw<1>, cuda::std::__cw<8>);
+  assert(cudaDeviceSynchronize() == cudaSuccess);
+}
+
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 // todo(dabayer): this call crashes with error: invalid device function
-                 //  test_kernel<<<1, 1>>>(cuda::std::__cw<1>, cuda::std::__cw<8>);
-                 assert(cudaDeviceSynchronize() == cudaSuccess);
-               }))
+  NV_IF_TARGET(NV_IS_HOST, (test_host();))
   return 0;
 }

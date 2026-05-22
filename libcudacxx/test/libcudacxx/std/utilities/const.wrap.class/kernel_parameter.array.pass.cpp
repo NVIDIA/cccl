@@ -7,15 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: Remove once constant_wrapper is exposed.
-
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::__type
-// UNSUPPORTED: gcc-10 || gcc-11
-
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvcc + nvrtc fails to create stubs for kernels kernels that take constant_wrapper as an argument.
+// UNSUPPORTED: !clang || nvcc
 
 // REQUIRES: !c++17
 
@@ -31,7 +24,7 @@
 template <class Lhs, class Rhs>
 __global__ void test_kernel(Lhs lhs, Rhs rhs)
 {
-  for (int i = 0; i < 9; ++i)
+  for (int i = 0; i < 8; ++i)
   {
     int result;
     asm("add.s32 %0, %1, %2;" : "=r"(result) : "r"(lhs[i]), "r"(rhs[i]));
@@ -39,15 +32,17 @@ __global__ void test_kernel(Lhs lhs, Rhs rhs)
   }
 }
 
+void test_host()
+{
+  constexpr int lhs[]{1, 2, 3, 4, 5, 6, 7, 8};
+  constexpr int rhs[]{8, 7, 6, 5, 4, 3, 2, 1};
+
+  test_kernel<<<1, 1>>>(cuda::std::__cw<lhs>, cuda::std::__cw<rhs>);
+  assert(cudaDeviceSynchronize() == cudaSuccess);
+}
+
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 //  constexpr int lhs[]{1, 2, 3, 4, 5, 6, 7, 8};
-                 //  constexpr int rhs[]{8, 7, 6, 5, 4, 3, 2, 1};
-
-                 // todo(dabayer): this call crashes with error: invalid device function
-                 //  test_kernel<<<1, 1>>>(cuda::std::__cw<lhs>, cuda::std::__cw<rhs>);
-                 assert(cudaDeviceSynchronize() == cudaSuccess);
-               }))
+  NV_IF_TARGET(NV_IS_HOST, (test_host();))
   return 0;
 }
