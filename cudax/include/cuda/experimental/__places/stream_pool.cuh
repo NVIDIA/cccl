@@ -175,6 +175,8 @@ class stream_pool
       {
         if (ds.stream != nullptr)
         {
+          // Stream destruction can fail during CUDA runtime teardown; the
+          // destructor has no useful way to report or recover from that.
           (void) cudaStreamDestroy(ds.stream);
           ds.stream = nullptr;
         }
