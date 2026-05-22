@@ -22,16 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/exponential_functions.h>
 #include <cuda/std/__complex/inverse_hyperbolic_functions.h>
-#include <cuda/std/__complex/logarithms.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
-#include <cuda/std/__complex/roots.h>
 #include <cuda/std/limits>
 #include <cuda/std/numbers>
 
@@ -42,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // asin
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> asin(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> asin(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = ::cuda::std::asinh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
@@ -51,57 +49,39 @@ template <class _Tp>
 // acos
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> acos(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> acos(const complex<_Tp>& __x)
 {
-  constexpr _Tp __pi = __numbers<_Tp>::__pi();
-  if (::cuda::std::isinf(__x.real()))
+  // Get both real and imag parts >= +0.0
+  const bool __real_neg = ::cuda::std::signbit(__x.real());
+  const bool __imag_neg = ::cuda::std::signbit(__x.imag());
+
+  const complex<_Tp> __x_first_quadrant{::cuda::std::fabs(__x.real()), ::cuda::std::fabs(__x.imag())};
+
+  const complex<_Tp> __acosh_out = ::cuda::std::acosh(__x_first_quadrant);
+
+  _Tp __ans_real = __acosh_out.imag();
+  _Tp __ans_imag = -__acosh_out.real();
+
+  if (__real_neg)
   {
-    if (::cuda::std::isnan(__x.imag()))
-    {
-      return complex<_Tp>(__x.imag(), __x.real());
-    }
-    if (::cuda::std::isinf(__x.imag()))
-    {
-      if (__x.real() < _Tp(0))
-      {
-        return complex<_Tp>(_Tp(0.75) * __pi, -__x.imag());
-      }
-      return complex<_Tp>(_Tp(0.25) * __pi, -__x.imag());
-    }
-    if (__x.real() < _Tp(0))
-    {
-      return complex<_Tp>(__pi, ::cuda::std::signbit(__x.imag()) ? -__x.real() : __x.real());
-    }
-    return complex<_Tp>(_Tp(0), ::cuda::std::signbit(__x.imag()) ? __x.real() : -__x.real());
+    // Values that multiply to an extra-accurate value of pi.
+    constexpr _Tp __pi_hi = is_same_v<_Tp, float> ? 1.866378903f : static_cast<_Tp>(1.56226695361364598113596002804);
+    constexpr _Tp __pi_lo = is_same_v<_Tp, float> ? 1.683255553f : static_cast<_Tp>(2.01091922627118435684678843245);
+    __ans_real            = ::cuda::std::fma(__pi_hi, __pi_lo, -__ans_real);
   }
-  if (::cuda::std::isnan(__x.real()))
+
+  if (__imag_neg)
   {
-    if (::cuda::std::isinf(__x.imag()))
-    {
-      return complex<_Tp>(__x.real(), -__x.imag());
-    }
-    return complex<_Tp>(__x.real(), __x.real());
+    __ans_imag = -__ans_imag;
   }
-  if (::cuda::std::isinf(__x.imag()))
-  {
-    return complex<_Tp>(__pi / _Tp(2), -__x.imag());
-  }
-  if (__x.real() == _Tp(0) && (__x.imag() == _Tp(0) || ::cuda::std::isnan(__x.imag())))
-  {
-    return complex<_Tp>(__pi / _Tp(2), -__x.imag());
-  }
-  complex<_Tp> __z = ::cuda::std::log(__x + ::cuda::std::sqrt(::cuda::std::__sqr(__x) - _Tp(1)));
-  if (::cuda::std::signbit(__x.imag()))
-  {
-    return complex<_Tp>(::cuda::std::abs(__z.imag()), ::cuda::std::abs(__z.real()));
-  }
-  return complex<_Tp>(::cuda::std::abs(__z.imag()), -::cuda::std::abs(__z.real()));
+
+  return complex<_Tp>{__ans_real, __ans_imag};
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> acos(const complex<__half>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__half> acos(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::acos(complex<float>{__x})};
 }
@@ -109,7 +89,7 @@ _CCCL_API inline complex<__half> acos(const complex<__half>& __x)
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::acos(complex<float>{__x})};
 }
@@ -118,7 +98,7 @@ _CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 // atan
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> atan(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> atan(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = ::cuda::std::atanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());

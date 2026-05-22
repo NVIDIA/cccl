@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#undef NDEBUG
 #include <algorithm>
-#include <cassert>
 #include <type_traits>
 #include <utility>
 
@@ -25,7 +23,7 @@ struct custom_t
   {}
 };
 
-static __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
+__device__ static bool operator==(const custom_t& lhs, const custom_t& rhs)
 {
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }
@@ -82,9 +80,9 @@ __global__ void sort_keys()
      }};
   // example-end keys
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
 __global__ void sort_keys_bits()
@@ -134,7 +132,7 @@ __global__ void sort_keys_bits()
      }};
   // example-end keys-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
 }
 
 __global__ void sort_keys_descending()
@@ -179,9 +177,9 @@ __global__ void sort_keys_descending()
      }};
   // example-end keys-descending
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
 __global__ void sort_keys_descending_bits()
@@ -231,7 +229,7 @@ __global__ void sort_keys_descending_bits()
      }};
   // example-end keys-descending-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
 }
 
 __global__ void sort_pairs()
@@ -284,13 +282,13 @@ __global__ void sort_pairs()
      {3, 4, 5}}; // thread 1 expected values
   // example-end pairs
 
-  assert(thread_keys[threadIdx.x][0] == expected_keys[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_keys[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_keys[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_keys[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_keys[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_keys[threadIdx.x][2]);
 
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
-  assert(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
 __global__ void sort_pairs_bits()
@@ -349,8 +347,8 @@ __global__ void sort_pairs_bits()
      {1}}; // thread 1 values
   // example-end pairs-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_keys[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_keys[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
 }
 
 __global__ void sort_pairs_descending()
@@ -403,13 +401,13 @@ __global__ void sort_pairs_descending()
      {4, 3, 5}}; // thread 1 expected values
   // example-end pairs-descending
 
-  assert(thread_keys[threadIdx.x][0] == expected_keys[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_keys[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_keys[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_keys[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_keys[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_keys[threadIdx.x][2]);
 
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
-  assert(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
 __global__ void sort_pairs_descending_bits()
@@ -468,8 +466,8 @@ __global__ void sort_pairs_descending_bits()
      {1}}; // thread 1 expected values
   // example-end pairs-descending-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
 }
 
 __global__ void sort_keys_blocked_to_striped()
@@ -514,9 +512,9 @@ __global__ void sort_keys_blocked_to_striped()
      }};
   // example-end keys-striped
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
 __global__ void sort_keys_blocked_to_striped_bits()
@@ -570,8 +568,8 @@ __global__ void sort_keys_blocked_to_striped_bits()
       {24.2, 1ll << 62}}};
   // example-end keys-striped-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
 }
 
 __global__ void sort_pairs_blocked_to_striped()
@@ -625,13 +623,13 @@ __global__ void sort_pairs_blocked_to_striped()
      {1, 3, 5}}; // thread 1 values
   // example-end pairs-striped
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
-  assert(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
 __global__ void sort_pairs_blocked_to_striped_bits()
@@ -694,11 +692,11 @@ __global__ void sort_pairs_blocked_to_striped_bits()
      {1, 3}}; // thread 1 values
   // example-end pairs-striped-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
 
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
 }
 
 __global__ void sort_keys_descending_blocked_to_striped()
@@ -743,9 +741,9 @@ __global__ void sort_keys_descending_blocked_to_striped()
      }};
   // example-end keys-striped-descending
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
 __global__ void sort_keys_descending_blocked_to_striped_bits()
@@ -804,8 +802,8 @@ __global__ void sort_keys_descending_blocked_to_striped_bits()
      }};
   // example-end keys-striped-descending-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
 }
 
 __global__ void sort_pairs_descending_blocked_to_striped()
@@ -859,13 +857,13 @@ __global__ void sort_pairs_descending_blocked_to_striped()
      {1, 4, 5}}; // thread 1 values
   // example-end pairs-striped-descending
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
-  assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
-  assert(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
 __global__ void sort_pairs_descending_blocked_to_striped_bits()
@@ -933,11 +931,11 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
      {2, 0}}; // thread 1 values
   // example-end pairs-striped-descending-bits
 
-  assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
-  assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
 
-  assert(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
-  assert(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
+  REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
 }
 
 TEST_CASE("Block radix sort works in some corner cases", "[radix][sort][block]")

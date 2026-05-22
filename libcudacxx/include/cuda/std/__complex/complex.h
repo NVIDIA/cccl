@@ -226,7 +226,7 @@ _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, 
   return __lhs;
 }
 template <class _Tp, class _Up>
-_CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
@@ -410,7 +410,8 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp> operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>
+operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   int __ilogbw = 0;
   _Tp __a      = __z.real();
@@ -514,7 +515,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
   __t /= __y;
