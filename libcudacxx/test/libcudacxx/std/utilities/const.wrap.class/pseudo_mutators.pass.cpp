@@ -16,6 +16,10 @@
 // nvcc < 13.0 fails to match the operator overloads.
 // UNSUPPORTED: nvcc-12
 
+// todo(dabayer): Find a way to make this work for nvrtc.
+// nvrtc doesn't allow accessing the static constexpr const auto& value member.
+// UNSUPPORTED: nvrtc
+
 // REQUIRES: !c++17
 
 // constant_wrapper pseudo-mutators
@@ -493,6 +497,9 @@ TEST_FUNC constexpr bool test()
     static_assert(result4.value.value == 4);
   }
 
+// nvcc == 13.0 produces invalid source file for the host compilers. It replaces contexpr variables with their values
+// which doesn't work for op=.
+#if !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0)
   {
     // WithOps compound assignments
     cuda::std::__constant_wrapper<WithOps{10}> cwWithOps10;
@@ -584,6 +591,7 @@ TEST_FUNC constexpr bool test()
       cwWithOps10 >>= icWithOps3;
     static_assert(result10.value.value == 1);
   }
+#endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0)
 
   lwg4383();
 

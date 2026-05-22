@@ -17,6 +17,10 @@
 //   lvalue required as left operand of assignment
 // UNSUPPORTED: nvcc-12
 
+// todo(dabayer): Find a way to make this work for nvrtc.
+// nvrtc doesn't allow accessing the static constexpr const auto& value member.
+// UNSUPPORTED: nvrtc
+
 // REQUIRES: !c++17
 
 // constant_wrapper
@@ -82,6 +86,9 @@ static_assert(!HasAssign<cuda::std::__constant_wrapper<OpsReturnNonStructural{5}
 
 TEST_FUNC constexpr bool test()
 {
+// nvcc == 13.0 produces invalid source file for the host compilers. It replaces contexpr variables with their values
+// which doesn't work for assignment.
+#if !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0)
   {
     // WithOps assignment
     const cuda::std::__constant_wrapper<WithOps{5}> cwOps5;
@@ -99,6 +106,7 @@ TEST_FUNC constexpr bool test()
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = ic3;
     static_assert(result.value.value == 8);
   }
+#endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0)
 
   return true;
 }

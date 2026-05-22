@@ -13,8 +13,16 @@
 //   typename decltype(__cw_fixed_value(_Xp))::__type
 // UNSUPPORTED: gcc-10 || gcc-11
 
-// clang-14 + nvcc 12.0 any use of constant_wrapper leads to cudafe++ segfaulting.
-// UNSUPPORTED: clang-14 && nvcc-12.0
+// nvcc 12.0 segfaults.
+// UNSUPPORTED: nvcc-12.0
+
+// todo(dabayer): Find a way to make this work for nvrtc.
+// nvrtc doesn't allow accessing the static constexpr const auto& value member.
+// UNSUPPORTED: nvrtc
+
+// This test crashes msvc with message:
+//   Internal compiler error. Try simplifying or changing the program near the locations listed above.
+// UNSUPPORTED: msvc
 
 // REQUIRES: !c++17
 
