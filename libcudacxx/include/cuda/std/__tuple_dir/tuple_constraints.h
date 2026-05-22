@@ -65,70 +65,12 @@ template <class... _Types>
 inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Types> && ...);
 
 // Traits forwarding to `__tuple_types`
-template <class>
-inline constexpr bool __tuple_types_all_default_constructible_v = false;
-
-template <class... _Types>
-inline constexpr bool __tuple_types_all_default_constructible_v<__tuple_types<_Types...>> =
-  (is_default_constructible_v<_Types> && ...);
-
 template <class, class>
 inline constexpr bool __tuple_types_same_size = false;
 
 template <class... _Types, class... _UTypes>
 inline constexpr bool __tuple_types_same_size<__tuple_types<_Types...>, __tuple_types<_UTypes...>> =
   sizeof...(_Types) == sizeof...(_UTypes);
-
-// __tuple_constructible
-template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
-inline constexpr bool __tuple_types_constructible = false;
-
-template <class... _From, class... _To>
-inline constexpr bool __tuple_types_constructible<__tuple_types<_From...>, __tuple_types<_To...>, true> =
-  (is_constructible_v<_To, _From> && ...);
-
-template <class _From, class _To, bool = __tuple_like_ext<remove_reference_t<_From>>, bool = __tuple_like_ext<_To>>
-inline constexpr bool __tuple_constructible = false;
-
-template <class _From, class _To>
-inline constexpr bool __tuple_constructible<_From, _To, true, true> =
-  __tuple_types_constructible<__make_tuple_types_t<_From>, __make_tuple_types_t<_To>>;
-
-template <class _Types, class _UTypes>
-struct __tuple_constructible_struct
-{
-  static constexpr bool value = __tuple_constructible<_Types, _UTypes>;
-};
-
-// __tuple_nothrow_constructible
-template <class _From, class _To, bool = __tuple_types_constructible<_From, _To>>
-inline constexpr bool __tuple_types_nothrow_constructible = false;
-
-template <class... _From, class... _To>
-inline constexpr bool __tuple_types_nothrow_constructible<__tuple_types<_From...>, __tuple_types<_To...>, true> =
-  (is_nothrow_constructible_v<_To, _From> && ...);
-
-template <class _From, class _To, bool = __tuple_constructible<_From, _To>>
-inline constexpr bool __tuple_nothrow_constructible = false;
-
-template <class _From, class _To>
-inline constexpr bool __tuple_nothrow_constructible<_From, _To, true> =
-  __tuple_types_nothrow_constructible<__make_tuple_types_t<_From>, __make_tuple_types_t<_To>>;
-
-// __tuple_convertible
-template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
-inline constexpr bool __tuple_types_convertible = false;
-
-template <class... _From, class... _To>
-inline constexpr bool __tuple_types_convertible<__tuple_types<_From...>, __tuple_types<_To...>, true> =
-  (is_convertible_v<_From, _To> && ...);
-
-template <class _From, class _To, bool = __tuple_like_ext<remove_reference_t<_From>>, bool = __tuple_like_ext<_To>>
-inline constexpr bool __tuple_convertible = false;
-
-template <class _From, class _To>
-inline constexpr bool __tuple_convertible<_From, _To, true, true> =
-  __tuple_types_convertible<__make_tuple_types_t<_From>, __make_tuple_types_t<_To>>;
 
 // __tuple_assignable
 template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>

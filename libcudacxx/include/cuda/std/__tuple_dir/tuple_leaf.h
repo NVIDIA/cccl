@@ -383,17 +383,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 {
   using _Constraints = __tuple_constraints<_Tp...>;
 
-  template <class _Constraints = decltype(__tuple_constraints<_Tp...>::__check_default_constructible()),
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API constexpr __tuple_impl() noexcept(_Constraints::__nothrow_constructible)
-      : __tuple_leaf<_Indx, _Tp>()...
-  {}
-
-  template <class _Constraints = decltype(__tuple_constraints<_Tp...>::__check_default_constructible()),
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _CCCL_API explicit constexpr __tuple_impl() noexcept(_Constraints::__nothrow_constructible)
-      : __tuple_leaf<_Indx, _Tp>()...
-  {}
+  _CCCL_HIDE_FROM_ABI constexpr __tuple_impl() = default;
 
   // Handle non-allocator, full initialization
   // Old MSVC cannot handle the noexept specifier outside of template arguments
