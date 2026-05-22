@@ -47,7 +47,7 @@ template <class _Domain, class _OpTag>
 struct __transform_sender_t
 {
   template <class _Sndr, class _Env>
-  using __domain_for_t = ::cuda::std::_If< //
+  using __domain_for_t = ::cuda::std::conditional_t< //
     __has_transform_sender<_Domain, _OpTag, _Sndr, _Env>,
     _Domain,
     default_domain>;

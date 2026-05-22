@@ -132,7 +132,7 @@ public:
   static constexpr bool selected_policy_fits_smem = max_default_size <= max_smem_per_block;
 
   using selected_agent_t = default_agent_t;
-  using agent_t          = ::cuda::std::_If<uses_fallback_policy, fallback_agent_t, default_agent_t>;
+  using agent_t          = ::cuda::std::conditional_t<uses_fallback_policy, fallback_agent_t, default_agent_t>;
 };
 
 template <typename PolicyGetter,

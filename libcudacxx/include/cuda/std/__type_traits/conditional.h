@@ -24,6 +24,21 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+template <bool _Bp, class _If, class _Then>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
+{
+  using type = _If;
+};
+template <class _If, class _Then>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
+{
+  using type = _Then;
+};
+
+#if _CCCL_COMPILER(MSVC)
+template <bool _Bp, class _If, class _Then>
+using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <bool>
 struct _IfImpl;
 
@@ -42,21 +57,8 @@ struct _IfImpl<false>
 };
 
 template <bool _Cond, class _IfRes, class _ElseRes>
-using _If _CCCL_NODEBUG_ALIAS = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
-
-template <bool _Bp, class _If, class _Then>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
-{
-  using type = _If;
-};
-template <class _If, class _Then>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
-{
-  using type = _Then;
-};
-
-template <bool _Bp, class _If, class _Then>
-using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
+using conditional_t _CCCL_NODEBUG_ALIAS = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
+#endif // !_CCCL_COMPILER(MSVC)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

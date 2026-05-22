@@ -238,9 +238,9 @@ private:
     using sender_concept = sender_t;
     template <class _Env>
     using __completions_in_t =
-      ::cuda::std::_If<unstoppable_token<stop_token_of_t<_Env>>,
-                       completion_signatures<set_value_t()>,
-                       completion_signatures<set_value_t(), set_stopped_t()>>;
+      ::cuda::std::conditional_t<unstoppable_token<stop_token_of_t<_Env>>,
+                                 completion_signatures<set_value_t()>,
+                                 completion_signatures<set_value_t(), set_stopped_t()>>;
 
     _CCCL_HOST_API explicit __schedule_sender(size_t __max_size, size_t __max_depth) noexcept
         : __max_recursion_size_(__max_size)

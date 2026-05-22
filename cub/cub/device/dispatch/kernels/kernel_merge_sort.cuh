@@ -77,8 +77,8 @@ class merge_sort_vsmem_helper_impl
 public:
   static constexpr merge_sort_policy policy = uses_fallback_policy ? FallbackPolicyGetter{}() : DefaultPolicyGetter{}();
   using block_sort_agent_t =
-    ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
-  using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
+    ::cuda::std::conditional_t<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
+  using merge_agent_t = ::cuda::std::conditional_t<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
 
 template <typename PolicyGetter,

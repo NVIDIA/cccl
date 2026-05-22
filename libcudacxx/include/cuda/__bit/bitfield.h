@@ -83,7 +83,7 @@ _CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, in
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
         NV_PROVIDES_SM_70, (;),
-        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::conditional_t<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                             return ::cuda::__bfi(static_cast<_Up>(__dest), static_cast<_Up>(__source),
                                                  __start, __width);))
       // clang-format on
@@ -111,7 +111,7 @@ template <typename _Tp>
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
         NV_PROVIDES_SM_70, (;),
-        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::conditional_t<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                             return ::cuda::__bfe(static_cast<_Up>(__value), __start, __width);))
       // clang-format on
     }
