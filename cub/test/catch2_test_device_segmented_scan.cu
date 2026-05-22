@@ -133,7 +133,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   const offset_t medium_size = num_items / 128;
   const offset_t large_size  = num_items / 16;
 
-  assert(small_size > 0);
+  REQUIRE(small_size > 0);
 
   // Range of segment sizes to generate
   // Note that the segment range [0, 1] may also include one last segment with more than 1 items

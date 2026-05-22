@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/machine.cuh>
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
@@ -43,6 +44,7 @@ using ::cuda::experimental::places::cyclic_partition;
 using ::cuda::experimental::places::green_context_helper;
 using ::cuda::experimental::places::green_ctx_view;
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
+using ::cuda::experimental::places::exec_place_resources;
 using ::cuda::experimental::places::get_device_from_stream;
 using ::cuda::experimental::places::k_no_stream_id;
 using ::cuda::experimental::places::localized_array;

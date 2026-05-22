@@ -124,9 +124,6 @@ inline constexpr int structured_binding_size<_Sndr const&> = structured_binding_
 // implementation.
 #if defined(_CCCL_STRUCTURED_BINDING_CAN_INTRODUCE_A_PACK)
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wc++2c-extensions")
-
 // C++26, structured binding can introduce a pack.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
@@ -140,8 +137,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
     return __visitor(__context, __tag, _CCCL_FWD_LIKE(_CvSndr, __data), _CCCL_FWD_LIKE(_CvSndr, __children)...);
   }
 };
-
-_CCCL_DIAG_POP
 
 #else // ^^^ __cpp_structured_bindings >= 202411L / !__cpp_structured_bindings >= 202411L vvv
 

@@ -1690,6 +1690,7 @@ public:
   //!
   //! @param[in] num_levels
   //!   The number of boundaries (levels) for delineating histogram samples.
+  //!   Implies that the number of bins is `num_levels - 1`.
   //!
   //! @param[in] lower_level
   //!   The lower sample value bound (inclusive) for the lowest histogram bin.
@@ -1932,25 +1933,36 @@ public:
   //!   **[inferred]** Type for specifying boundaries (levels)
   //!
   //! @tparam OffsetT
-  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths,
+  //!   pointer differences, etc. @offset_size1
   //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
   //! @param[in] d_samples
-  //!   The pointer to the multi-channel input sequence of data samples.
+  //!   The pointer to the multi-channel input sequence of data samples. The
+  //!   samples from different channels are assumed to be interleaved (e.g.,
+  //!   an array of 32-bit pixels where each pixel consists of four
+  //!   *RGBA* 8-bit samples).
   //!
   //! @param[out] d_histogram
-  //!   Array of active channel histogram counter output arrays, each of length `num_levels[channel] - 1`.
+  //!   @rst
+  //!   The pointers to the histogram counter output arrays, one for each
+  //!   active channel. For channel\ :sub:`i`, the allocation length
+  //!   of ``d_histogram[i]`` should be ``num_levels[i] - 1``.
+  //!   @endrst
   //!
   //! @param[in] num_levels
-  //!   Array of the number of boundaries (levels) for each active channel.
+  //!   @rst
+  //!   The number of boundaries (levels) for delineating histogram samples in each active channel.
+  //!   Implies that the number of bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //!   @endrst
   //!
   //! @param[in] lower_level
-  //!   Array of the lower sample value bound (inclusive) for the lowest bin of each active channel.
+  //!   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
   //!
   //! @param[in] upper_level
-  //!   Array of the upper sample value bound (exclusive) for the highest bin of each active channel.
+  //!   The upper sample value bound (exclusive) for the highest histogram bin in each active channel.
   //!
   //! @param[in] num_row_pixels
   //!   The number of multi-channel pixels per row in the region of interest
@@ -1959,7 +1971,8 @@ public:
   //!   The number of rows in the region of interest
   //!
   //! @param[in] row_stride_bytes
-  //!   The number of bytes between starts of consecutive rows in the region of interest
+  //!   The number of bytes between starts of consecutive rows in the region of
+  //!   interest
   //!
   //! @param[in] env
   //!   @rst
@@ -2088,7 +2101,9 @@ public:
   //!   Implies that the number of bins is `num_levels - 1`.
   //!
   //! @param[in] d_levels
-  //!   The pointer to the array of boundaries (levels). Bins are defined by consecutive pairs.
+  //!   The pointer to the array of boundaries (levels). Bin ranges are defined
+  //!   by consecutive boundary pairings: lower sample value boundaries are
+  //!   inclusive and upper sample value boundaries are exclusive.
   //!
   //! @param[in] num_samples
   //!   The number of input samples (i.e., the length of `d_samples`)
@@ -2181,9 +2196,12 @@ public:
   //!
   //! @param[in] num_levels
   //!   The number of boundaries (levels) for delineating histogram samples.
+  //!   Implies that the number of bins is `num_levels - 1`.
   //!
   //! @param[in] d_levels
-  //!   The pointer to the array of boundaries (levels). Bins are defined by consecutive pairs.
+  //!   The pointer to the array of boundaries (levels). Bin ranges are defined
+  //!   by consecutive boundary pairings: lower sample value boundaries are
+  //!   inclusive and upper sample value boundaries are exclusive.
   //!
   //! @param[in] num_row_samples
   //!   The number of data samples per row in the region of interest

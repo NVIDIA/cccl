@@ -62,7 +62,7 @@ public:
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
-    auto dstream = memory_node.getDataStream();
+    auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
 
     if (!memory_node.allocation_is_stream_ordered())
     {
@@ -84,7 +84,7 @@ public:
   void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
-    auto dstream = memory_node.getDataStream();
+    auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
 
     if (!memory_node.allocation_is_stream_ordered())
     {
@@ -242,7 +242,8 @@ public:
     decorated_stream dstream =
       (user_dstream.has_value())
         ? user_dstream.value()
-        : exec_place::current_device().getStream(true /* stream for computation */);
+        : exec_place::current_device().getStream(
+            async_resources().get_place_resources(), true /* stream for computation */);
 
     auto prereqs = get_state().insert_fence(*get_dot());
 
@@ -742,14 +743,6 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-UNITTEST("copyable stream_task")
-{
-  stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = t;
-  ctx.finalize();
-};
-
 UNITTEST("movable stream_task")
 {
   stream_ctx ctx;

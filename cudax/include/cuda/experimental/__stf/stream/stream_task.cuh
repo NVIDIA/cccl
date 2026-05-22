@@ -63,11 +63,16 @@ public:
     ctx.increment_task_count();
   }
 
-  stream_task(const stream_task<>&)              = default;
-  stream_task<>& operator=(const stream_task<>&) = default;
-  ~stream_task()                                 = default;
-
-  // movable ??
+  // Tasks are move-only: a task wrapper owns per-instance in-flight state
+  // (capture stream, frontier, done nodes, held mutex during stream capture)
+  // on top of the pimpl `task` base, so copying it has no meaningful semantics.
+  // Contexts (`stream_ctx`, `graph_ctx`, `context`) are pimpl handles and
+  // remain copyable.
+  stream_task(const stream_task&)              = delete;
+  stream_task<>& operator=(const stream_task&) = delete;
+  stream_task(stream_task&&)                   = default;
+  stream_task<>& operator=(stream_task&&)      = default;
+  ~stream_task()                               = default;
 
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
@@ -119,9 +124,10 @@ public:
       _CCCL_ASSERT(automatic_stream, "automatic stream is not enabled");
 
       // Get stream for each place in the grid
+      auto& place_res = ctx.async_resources().get_place_resources();
       for (size_t i = 0; i < e_place.size(); ++i)
       {
-        stream_grid.push_back(e_place.get_place(i).getStream(true));
+        stream_grid.push_back(e_place.get_place(i).getStream(place_res, true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -130,8 +136,9 @@ public:
     {
       if (automatic_stream)
       {
-        bool found = false;
-        auto& pool = e_place.get_stream_pool(true);
+        bool found      = false;
+        auto& place_res = ctx.async_resources().get_place_resources();
+        auto& pool      = e_place.get_stream_pool(true, place_res);
 
         // To avoid creating inter stream dependencies when this is not
         // necessary, we try to reuse streams which belong to the pool,
@@ -173,7 +180,7 @@ public:
 
         if (!found)
         {
-          dstream = e_place.getStream(true);
+          dstream = e_place.getStream(place_res, true);
           //    fprintf(stderr, "COULD NOT REUSE ... selected stream ID %ld\n", dstream.id);
         }
       }
@@ -460,8 +467,8 @@ protected:
  * execution place can be set in the constructor and also dynamically. An invocation of `->*` takes place on the last
  * set execution place.
  *
- * It is possible to copy or move this task into a `stream_task<>` by implicit conversion. Subsequently, the
- * obtained object can be used with dynamic dependencies.
+ * It is possible to move this task into a `stream_task<>` by implicit conversion (copying is disabled because
+ * `stream_task<>` is move-only). Subsequently, the obtained object can be used with dynamic dependencies.
  */
 template <typename... Data>
 class stream_task
