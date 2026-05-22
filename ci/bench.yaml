@@ -32,6 +32,8 @@ benchmarks:
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
+      - '^cub\.bench\.reduce\.block_reduce_warp_reductions_sum\.'
+      - '^cub\.bench\.reduce\.warp_reduce_(sum|min)\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:
@@ -44,11 +46,11 @@ benchmarks:
   gpus:
     # - "t4"         # sm_75, 16 GB
     # - "rtx2080"    # sm_75,  8 GB
-    # - "rtxa6000"   # sm_86, 48 GB
+    - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
-    # - "h100"       # sm_90, 80 GB
-    # - "rtxpro6000" # sm_120
+    - "h100"       # sm_90, 80 GB
+    - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.2 --host gcc14"
