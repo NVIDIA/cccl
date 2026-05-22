@@ -344,7 +344,7 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
                    __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
   _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
@@ -358,7 +358,7 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
     !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>))
   _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
