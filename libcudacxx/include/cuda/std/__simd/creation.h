@@ -83,7 +83,7 @@ template <typename _Tp,
           typename _Abi,
           typename _ValueType = typename _Tp::value_type,
           size_t _Rem         = (basic_vec<_ValueType, _Abi>::__size % _Tp::__size)>
-inline constexpr bool __chunk_vec_tail_ok_v = _Rem == 0 || __is_enabled_abi_v<__deduce_abi_t<_ValueType, _Rem>>;
+inline constexpr bool __chunk_vec_tail_valid_v = _Rem == 0 || __is_enabled_abi_v<__deduce_abi_t<_ValueType, _Rem>>;
 
 template <typename _Tp,
           typename _Abi,
@@ -155,7 +155,7 @@ template <typename _SubVec, typename _Tail, typename _Src, __simd_size_type... _
 // split a SIMD vector of size N into a sequence of N/M sub-vectors of size M
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
-_CCCL_REQUIRES(__is_enabled_basic_vec_v<_Tp> _CCCL_AND(__chunk_vec_tail_ok_v<_Tp, _Abi>))
+_CCCL_REQUIRES(__is_enabled_basic_vec_v<_Tp> _CCCL_AND(__chunk_vec_tail_valid_v<_Tp, _Abi>))
 [[nodiscard]] _CCCL_API constexpr auto chunk(const basic_vec<typename _Tp::value_type, _Abi>& __src) noexcept
 {
   using __src_t                      = basic_vec<typename _Tp::value_type, _Abi>;
