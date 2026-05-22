@@ -7,32 +7,26 @@ directly to ``cuda.compute`` algorithms, and provides ``copy_to_host`` /
 
 from __future__ import annotations
 
-import ctypes
-import functools
 import weakref
 from typing import TYPE_CHECKING
 
 import numpy as np
+from cuda.bindings import runtime as cudart
 
 if TYPE_CHECKING:
     from cuda.stf._stf_bindings_impl import data_place
 
 
-@functools.cache
-def _cudart():
-    return ctypes.CDLL("libcudart.so")
-
-
 def _memcpy(dst: int, src: int, nbytes: int, kind: int):
     """cudaMemcpy wrapper.  *kind*: 1=H2D, 2=D2H, 3=D2D."""
-    err = _cudart().cudaMemcpy(
-        ctypes.c_void_p(dst),
-        ctypes.c_void_p(src),
-        ctypes.c_size_t(nbytes),
-        ctypes.c_int(kind),
+    err = cudart.cudaMemcpy(
+        dst,
+        src,
+        nbytes,
+        cudart.cudaMemcpyKind(kind),
     )
-    if err != 0:
-        raise RuntimeError(f"cudaMemcpy failed with error code {err}")
+    if err != cudart.cudaError_t.cudaSuccess:
+        raise RuntimeError(f"cudaMemcpy failed with error code {int(err)}")
 
 
 def _finalizer(dplace, ptr: int, nbytes: int, stream_int: int):

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import pytest
+from cuda.bindings import runtime as cudart
 
 import cuda.stf as stf
 
@@ -288,9 +289,9 @@ def test_device_array_with_cuda_compute():
             stream=stream,
         )
 
-        import ctypes
-
-        ctypes.CDLL("libcudart.so").cudaStreamSynchronize(ctypes.c_void_p(int(stream)))
+        err = cudart.cudaStreamSynchronize(cudart.cudaStream_t(int(stream)))
+        if err != cudart.cudaError_t.cudaSuccess:
+            raise RuntimeError(f"cudaStreamSynchronize failed with error code {int(err)}")
 
         result = d_out.copy_to_host()
         expected = h_in.sum()

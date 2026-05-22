@@ -22,11 +22,11 @@ Generate the CUDA graph DOT:
 from __future__ import annotations
 
 import argparse
-import ctypes
 import os
 
 import numpy as np
 import warp as wp
+from cuda.bindings import runtime as cudart
 from warp import stf_experimental as wp_stf
 
 import cuda.stf as stf
@@ -38,10 +38,6 @@ BRANCHES = (
     ("middle", 2.0),
     ("right", 3.0),
 )
-
-CUDA_GRAPH_DEBUG_DOT_FLAGS_VERBOSE = 1 << 0
-CUDA_GRAPH_DEBUG_DOT_FLAGS_CONDITIONAL_NODE_PARAMS = 1 << 15
-
 
 @wp.kernel
 def seed_branch(
@@ -148,25 +144,17 @@ def build_picture_graph():
 
 
 def dump_cuda_graph_dot(cuda_graph, path, verbose=False):
-    cudart = ctypes.CDLL("libcudart.so")
-    cudart.cudaGraphDebugDotPrint.argtypes = [
-        ctypes.c_void_p,
-        ctypes.c_char_p,
-        ctypes.c_uint,
-    ]
-    cudart.cudaGraphDebugDotPrint.restype = ctypes.c_int
-
-    flags = CUDA_GRAPH_DEBUG_DOT_FLAGS_CONDITIONAL_NODE_PARAMS
+    flags = cudart.cudaGraphDebugDotFlags.cudaGraphDebugDotFlagsConditionalNodeParams
     if verbose:
-        flags |= CUDA_GRAPH_DEBUG_DOT_FLAGS_VERBOSE
+        flags |= cudart.cudaGraphDebugDotFlags.cudaGraphDebugDotFlagsVerbose
 
     err = cudart.cudaGraphDebugDotPrint(
-        ctypes.c_void_p(int(cuda_graph)),
+        cudart.cudaGraph_t(int(cuda_graph)),
         os.fsencode(path),
-        ctypes.c_uint(flags),
+        int(flags),
     )
-    if err != 0:
-        raise RuntimeError(f"cudaGraphDebugDotPrint failed with cudaError_t={err}")
+    if err != cudart.cudaError_t.cudaSuccess:
+        raise RuntimeError(f"cudaGraphDebugDotPrint failed with cudaError_t={int(err)}")
 
 
 def main():
