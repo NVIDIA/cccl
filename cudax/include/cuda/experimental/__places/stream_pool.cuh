@@ -164,7 +164,7 @@ class stream_pool
 
     // Release every stream the pool has lazily created. Externally-owned
     // single-stream pools wrap user streams and must leave them alone.
-    ~impl()
+    ~impl() noexcept
     {
       if (externally_owned)
       {
@@ -175,8 +175,8 @@ class stream_pool
       {
         if (ds.stream != nullptr)
         {
-          [[maybe_unused]] cudaError_t err = cudaStreamDestroy(ds.stream);
-          ds.stream                        = nullptr;
+          (void) cudaStreamDestroy(ds.stream);
+          ds.stream = nullptr;
         }
       }
     }
