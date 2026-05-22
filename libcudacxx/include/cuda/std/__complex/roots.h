@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // code than rsqrt(x) for fp64. While rqsrtf is better for fp32.
 // So only specialize for fp32.
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _Tp __internal_rsqrt(_Tp __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _Tp __internal_rsqrt(_Tp __x) noexcept
 {
   if constexpr (is_same_v<_Tp, float>)
   {
@@ -52,7 +52,7 @@ template <class _Tp>
 // sqrt
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> sqrt(const complex<_Tp>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> sqrt(const complex<_Tp>& __x) noexcept
 {
   using __uint_t = __fp_storage_of_t<_Tp>;
 
@@ -196,7 +196,7 @@ template <class _Tp>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
 {
   return complex<__half>{::cuda::std::sqrt(complex<float>{__x})};
 }
@@ -204,7 +204,7 @@ _CCCL_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x) noexcept
 {
   return complex<__nv_bfloat16>{::cuda::std::sqrt(complex<float>{__x})};
 }
