@@ -52,7 +52,8 @@ struct bench_policy_selector
             TUNE_RLE_COMPRESS,
             MEM_PREFERENCE,
             TUNE_WORK_STEALING,
-            TUNE_VEC_SIZE};
+            TUNE_VEC_SIZE,
+            2048}; // TODO(bgruber): make tunable
   }
 };
 #endif // !TUNE_BASE
