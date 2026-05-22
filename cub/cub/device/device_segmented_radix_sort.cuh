@@ -434,7 +434,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -578,7 +579,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -1086,7 +1088,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -1230,7 +1233,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -1714,7 +1718,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
@@ -1847,7 +1852,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -2316,7 +2322,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -2447,7 +2454,8 @@ public:
   //!
   //! This is an environment-based API that allows customization of:
   //!
-  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
