@@ -63,10 +63,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '13.2', libs: 'rmm kvikio cudf cudf_kafka' }
+          - { cuda: '13.2', libs: 'rmm kvikio cudf cudf_kafka rapidsmpf' }
           # TODO: remove the PYTHON_VERSION override when all of cuml's dependencies have Python 3.14 support
-          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs cuml', python_version: '3.13' }
-          - { cuda: '13.2', libs: 'rmm ucxx raft cugraph'      }
+          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs nvforest cuml cuopt', python_version: '3.13' }
+          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs cugraph cugraph-gnn' }
     permissions:
       id-token: write
       contents: read
