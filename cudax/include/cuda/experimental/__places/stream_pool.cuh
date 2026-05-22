@@ -200,7 +200,7 @@ class stream_pool
     // down at the end of an STF context without blocking on a caller stream
     // synchronize, as long as the outbound event chain has already been
     // recorded back onto the user stream.
-    ~impl()
+    ~impl() noexcept
     {
       if (externally_owned)
       {
@@ -210,11 +210,10 @@ class stream_pool
       {
         if (ds.stream != nullptr)
         {
-          // Best-effort: never throw from a destructor, and never crash a
-          // process that has already torn down its CUDA primary context
-          // (e.g. after `cudaDeviceReset()`).
-          [[maybe_unused]] cudaError_t err = cudaStreamDestroy(ds.stream);
-          ds.stream                        = nullptr;
+          // Stream destruction can fail during CUDA runtime teardown; the
+          // destructor has no useful way to report or recover from that.
+          (void) cudaStreamDestroy(ds.stream);
+          ds.stream = nullptr;
         }
       }
     }
