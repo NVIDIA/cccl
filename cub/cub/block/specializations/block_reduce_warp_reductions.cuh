@@ -26,8 +26,11 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__bit/integral.h>
 
 #include <nv/target>
 
@@ -99,8 +102,10 @@ struct BlockReduceWarpReductions
   {}
 
   //! @rst
-  //! Cooperatively reduces warp aggregates using warp 0.
-
+  //! Cooperatively reduces warp aggregates.
+  //!
+  //! For small blocks (few warps) the reduction is performed sequentially by ``linear_tid == 0``.
+  //! For larger blocks, warp 0 reduces the warp aggregates in parallel:
   //! @endrst
   //!
   //! @tparam FullTile
@@ -119,38 +124,69 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    // Warp 0 cooperatively reduces all warp aggregates
-    if (warp_id == 0)
+    // Below this number of warps the parallel warp-0 reduction is not worthwhile compared to a
+    // single-thread sequential loop over the warp aggregates.
+    constexpr int small_block_warp_threshold = 8;
+
+    if constexpr (warps < small_block_warp_threshold)
     {
-      const int num_warps = FullTile ? int(warps) : static_cast<int>(::cuda::ceil_div(num_valid, logical_warp_size));
-
-      T val{};
-      if (lane_id < num_warps)
+      // Sequential reduction in linear_tid == 0 (legacy path for small blocks).
+      if (linear_tid == 0)
       {
-        val = temp_storage.warp_aggregates[lane_id];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+        {
+          if (FullTile || (warp_idx * logical_warp_size < num_valid))
+          {
+            warp_aggregate = reduction_op(warp_aggregate, temp_storage.warp_aggregates[warp_idx]);
+          }
+        }
       }
-
-      // Fast path: redux intrinsic for eligible types/ops on SM80+ (full tile only)
-      if constexpr (FullTile && is_redux_enabled_cuda_operator<ReductionOp, T>)
-      {
-        NV_IF_TARGET(NV_PROVIDES_SM_80, ({
-                       constexpr unsigned mask = (warps == warp_threads) ? 0xFFFFFFFFu : ((1u << warps) - 1u);
-                       if (lane_id < warps)
-                       {
-                         warp_aggregate = reduce_op_sync(val, mask, reduction_op);
-                       }
-                       return warp_aggregate;
-                     }))
-      }
-
-      // Shuffle-based warp reduction fallback
-      constexpr bool all_warps_valid = (FullTile && (warps == warp_threads));
-      NullType dummy_storage;
-      warp_aggregate =
-        WarpReduceShfl<T, warp_threads>(dummy_storage).template Reduce<all_warps_valid>(val, num_warps, reduction_op);
+      return warp_aggregate;
     }
+    else
+    {
+      // Parallel reduction in warp 0.
+      if (warp_id == 0)
+      {
+        const int num_warps = FullTile ? int(warps) : static_cast<int>(::cuda::ceil_div(num_valid, logical_warp_size));
 
-    return warp_aggregate;
+        if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T>)
+        {
+          static_assert(::cuda::has_identity_element_v<ReductionOp, T>,
+                        "REDUX-eligible operators must have an identity element");
+          NV_IF_TARGET(NV_PROVIDES_SM_80, ({
+                         const T id  = ::cuda::identity_element<ReductionOp, T>();
+                         const T val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : id;
+                         return reduce_op_sync(val, 0xFFFFFFFFu, reduction_op);
+                       }))
+        }
+
+        // Shuffle-based tree over bit_ceil(warps) lanes.
+        constexpr int logical_lanes = static_cast<int>(::cuda::std::bit_ceil(static_cast<unsigned>(warps)));
+
+        T val;
+        constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
+        if constexpr (has_identity)
+        {
+          const T id = ::cuda::identity_element<ReductionOp, T>();
+          val        = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : id;
+        }
+        else
+        {
+          val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : T{};
+        }
+
+        // When we have an identity element, every lane in the logical warp holds a valid value
+        // (real or identity), so we can take the all-lanes-valid fast path. Otherwise, fall back
+        // to the partial-valid form which uses num_warps as the last lane.
+        constexpr bool all_lanes_valid = has_identity || (FullTile && (warps == logical_lanes));
+        NullType dummy_storage;
+        warp_aggregate =
+          WarpReduceShfl<T, logical_lanes>(dummy_storage).template Reduce<all_lanes_valid>(val, num_warps, reduction_op);
+      }
+      return warp_aggregate;
+    }
   }
 
   //! @rst
