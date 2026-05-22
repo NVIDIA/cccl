@@ -69,7 +69,6 @@
     "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind",
     "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind",
     "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind",
-    "source=${localWorkspaceFolder}/.local/state,target=/home/coder/.local/state,type=bind",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/rmm,target=/home/coder/rmm,type=bind",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/kvikio,target=/home/coder/kvikio,type=bind",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/ucxx,target=/home/coder/ucxx,type=bind",
@@ -83,7 +82,7 @@
     "source=${localWorkspaceFolder}/ci/rapids/.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind"
   ],
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.4": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.8": {}
   },
   "overrideFeatureInstallOrder": [
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
