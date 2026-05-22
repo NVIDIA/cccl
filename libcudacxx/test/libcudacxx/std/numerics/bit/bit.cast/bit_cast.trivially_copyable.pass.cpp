@@ -84,7 +84,7 @@ TEST_FUNC bool tests()
     test_roundtrip_through_buffer(i);
   }
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   // cuda::std::complex<__half>
   for (const cuda::std::complex<__half>& i :
        {cuda::std::complex<__half>{__float2half(0.0f), __float2half(1.0f)},
@@ -95,9 +95,9 @@ TEST_FUNC bool tests()
     test_roundtrip_through_nested_T(i);
     test_roundtrip_through_buffer(i);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   // cuda::std::complex<__nv_bfloat16>
   for (const cuda::std::complex<__nv_bfloat16>& i :
        {cuda::std::complex<__nv_bfloat16>{__float2bfloat16(0.0f), __float2bfloat16(1.0f)},
@@ -108,10 +108,10 @@ TEST_FUNC bool tests()
     test_roundtrip_through_nested_T(i);
     test_roundtrip_through_buffer(i);
   }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   // Extended floating point vector types
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   for (const __half2& i :
        {__half2{__float2half(0.0f), __float2half(1.0f)},
         __half2{__float2half(-1.0f), __float2half(2.0f)},
@@ -121,9 +121,9 @@ TEST_FUNC bool tests()
     test_roundtrip_through_nested_T(i);
     test_roundtrip_through_buffer(i);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   for (const __nv_bfloat162& i :
        {__nv_bfloat162{__float2bfloat16(0.0f), __float2bfloat16(1.0f)},
         __nv_bfloat162{__float2bfloat16(-1.0f), __float2bfloat16(2.0f)},
@@ -133,10 +133,10 @@ TEST_FUNC bool tests()
     test_roundtrip_through_nested_T(i);
     test_roundtrip_through_buffer(i);
   }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   // Padding-free compositions of extended floating point scalar types
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   {
     const auto arr =
       cuda::std::array<__half, 4>{__float2half(1.0f), __float2half(2.0f), __float2half(3.0f), __float2half(4.0f)};
@@ -160,9 +160,9 @@ TEST_FUNC bool tests()
     test_roundtrip_through_nested_T(nested);
     test_roundtrip_through_buffer(nested);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   {
     const auto arr = cuda::std::array<__nv_bfloat16, 2>{__float2bfloat16(1.0f), __float2bfloat16(2.0f)};
     test_roundtrip_through_nested_T(arr);
@@ -173,15 +173,15 @@ TEST_FUNC bool tests()
     test_roundtrip_through_nested_T(p);
     test_roundtrip_through_buffer(p);
   }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   {
     const auto t = cuda::std::tuple<__half, __nv_bfloat16>{__float2half(1.0f), __float2bfloat16(2.0f)};
     test_roundtrip_through_nested_T(t);
     test_roundtrip_through_buffer(t);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   // Padded compositions
 #if _LIBCUDACXX_HAS_NVFP16()
@@ -195,15 +195,15 @@ TEST_FUNC bool tests()
     test_roundtrip_through_nested_T<false>(p2);
     test_roundtrip_through_buffer<false>(p2);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   {
     const auto p = cuda::std::pair<__nv_bfloat16, int>{__float2bfloat16(1.0f), 42};
     test_roundtrip_through_nested_T<false>(p);
     test_roundtrip_through_buffer<false>(p);
   }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   return true;
 }

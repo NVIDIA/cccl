@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // sinh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> sinh(const complex<_Tp>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> sinh(const complex<_Tp>& __x) noexcept
 {
   // Need to distinguish +-0.0, use signbit rather than >
   const bool __x_neg = ::cuda::std::signbit(__x.real());
@@ -164,7 +164,7 @@ template <class _Tp>
 // We have performance issues with extended floating point types
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> sinh(const complex<__half>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__half> sinh(const complex<__half>& __x) noexcept
 {
   return complex<__half>{::cuda::std::sinh(complex<float>{__x})};
 }
@@ -172,7 +172,7 @@ _CCCL_API inline complex<__half> sinh(const complex<__half>& __x) noexcept
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) noexcept
 {
   return complex<__nv_bfloat16>{::cuda::std::sinh(complex<float>{__x})};
 }
@@ -181,7 +181,7 @@ _CCCL_API inline complex<__nv_bfloat16> sinh(const complex<__nv_bfloat16>& __x) 
 // cosh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> cosh(const complex<_Tp>& __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> cosh(const complex<_Tp>& __x) noexcept
 {
   // Need to distinguish +-0.0, use signbit rather than >
   const bool __x_neg = ::cuda::std::signbit(__x.real());
@@ -314,7 +314,7 @@ template <class _Tp>
 // We have performance issues with extended floating point types
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> cosh(const complex<__half>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__half> cosh(const complex<__half>& __x) noexcept
 {
   return complex<__half>{::cuda::std::cosh(complex<float>{__x})};
 }
@@ -322,7 +322,7 @@ _CCCL_API inline complex<__half> cosh(const complex<__half>& __x) noexcept
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> cosh(const complex<__nv_bfloat16>& __x) noexcept
+_CCCL_HOST_DEVICE_API inline complex<__nv_bfloat16> cosh(const complex<__nv_bfloat16>& __x) noexcept
 {
   return complex<__nv_bfloat16>{::cuda::std::cosh(complex<float>{__x})};
 }
@@ -331,7 +331,7 @@ _CCCL_API inline complex<__nv_bfloat16> cosh(const complex<__nv_bfloat16>& __x) 
 // tanh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> tanh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> tanh(const complex<_Tp>& __x) noexcept
 {
   if (::cuda::std::isinf(__x.real()))
   {
