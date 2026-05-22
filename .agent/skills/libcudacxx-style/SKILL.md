@@ -24,6 +24,12 @@ All non-public symbols must be C++ reserved identifiers:
 - All variables that can be evaluated at compile-time must use `constexpr`.
 - All `constexpr` variables at namespace/global scope must use `inline`, including `template` variables.
 - Consider using plural names for array, span, list, e.g. `int values[4]` instead of `int value[4]`.
+- Use uniform initialization for class constructors (not enforced to builtin types) and compile-time conversions, e.g. `constexpr auto x = int{sizeof(float)};`.
+
+## Class / Struct
+
+- Data member names have postfix `_`, e.g. `class MyClass { int __data_; };`.
+- Constructor parameters names should match class/struct data member names without the postfix `_`, e.g. `class MyClass { MyClass(int __data) : __data_(__data) {} };`.
 
 ## Function
 
@@ -34,16 +40,19 @@ Declaration/Definition:
 - Most functions with a non-void return type shall use `[[nodiscard]]`. Exceptions are functions with known side effects, e.g. `cuda::std::copy`
 - All functions that don't throw exception must use `noexcept`
 - `constexpr` must be used for all functions that don't depend on run-time features, e.g. pointers.
-- If the return type is not explicit (`auto`), then a trailing return type is strongly preferred, e.g. `auto abs(float) -> float`
+- If the return type is not explicit (`auto`), then a trailing return type is strongly preferred, e.g. `auto abs(float) -> float`.
+- Use `_CCCL_CONSTEVAL` when the function can only be evaluated at compile-time.
+- Use C++20 concept macros instead of SFINAE, e.g. `_CCCL_TEMPLATE(...)` and `_CCCL_REQUIRES(...)`.
 
 Function call:
 
 - All calls to free functions must be fully qualified starting from the global namespace, e.g. `::cuda::ceil_div`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes.
 
-## Types
+## Type Qualifiers
 
-- Type names must be fully qualified, except when they are already declared in the current namespace.
-- This includes standard integer type aliases (`::cuda::std::size_t`, `::cuda::std::uintptr_t`, `::cuda::std::int32_t`, etc.) and any other `cuda::std` or standard library types. A local `using` declaration (e.g. `using ::cuda::std::size_t;`) is acceptable to avoid repetition within a function body.
+- Type names must be fully qualified, **except** when they are already declared in the current namespace or an enclosing one.
+- Outside those namespaces, qualify them fully. This includes standard integer type aliases (`::cuda::std::size_t`, `::cuda::std::uintptr_t`, `::cuda::std::int32_t`, etc.) and any other `cuda::std` or standard library types. A local `using` declaration (e.g. `using ::cuda::std::size_t;`) is acceptable to avoid repetition within a function body.
+- Static member functions of a class template (e.g. `numeric_limits<_Tp>::max()`) inherit the class's namespace.
 
 ## Headers
 
@@ -51,6 +60,7 @@ Function call:
 - Files must include all headers related to the symbols that they are using.
 - No transitive header inclusion are allowed.
 - Unneeded headers must be removed.
+- Use forward declaration, namely `__fwd/header.h` or direct type declaration, when possible instead of including the implementation header.
 - The headers must be the most precise one, e.g. `#include <cuda/std/__type_traits/is_array.h>`.
 - Headers in `cuda/std/__cccl/` must not be included directly (they are provided by `__config` or the prologue/epilogue mechanism).
 
@@ -89,6 +99,7 @@ Function call:
 ## Prevent compiler errors and improve compatibility
 
 - Never allow lambda expressions in device-only or host-device code.
+- Do not rely on deduction guides for initialization, use explicit template arguments instead.
 - Protect host-only code with `#if !_CCCL_COMPILER(NVRTC)`.
 - Remove unused code, variables, functions, types, template parameters, headers, etc.
 - Variables that are unsigned, or that can become unsigned after template instantiation, must not check for negative values directly. Use `cuda::std::is_unsigned_v<T> ? false : (var < 0)` instead.
