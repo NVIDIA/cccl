@@ -110,7 +110,7 @@ struct Transforms
     template <typename T>
     using is_integral_excl_int128 =
 #if _CCCL_HAS_INT128()
-      ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t>&& ::cuda::std::is_same_v<T, __uint128_t>,
+      ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t>|| ::cuda::std::is_same_v<T, __uint128_t>,
                        ::cuda::std::false_type,
                        ::cuda::std::is_integral<T>>;
 #else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
