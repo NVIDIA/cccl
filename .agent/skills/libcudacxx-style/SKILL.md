@@ -28,8 +28,8 @@ All non-public symbols must be C++ reserved identifiers:
 
 ## Class / Struct
 
-- Data member names have postfix `_`, e.g. `class MyClass { int __data_; };`.
-- Constructor parameters names should match class/struct data member names without the postfix `_`, e.g. `class MyClass { MyClass(int __data) : __data_(__data) {} };`.
+- Data member names have postfix `_`, e.g. `class __myclass { int __data_; };`.
+- Constructor parameters names should match class/struct data member names without the postfix `_`, e.g. `class __myclass { __myclass(int __data) : __data_(__data) {} };`.
 
 ## Function
 
