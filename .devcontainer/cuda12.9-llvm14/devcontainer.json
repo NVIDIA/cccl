@@ -19,7 +19,7 @@
   "postCreateCommand": [
     "/bin/bash",
     "-c",
-    "if test -z \"${DISABLE_SCCACHE:+x}\"; then echo \"export SCCACHE_DIST_URL='https://$(dpkg --print-architecture).$(uname -s | tr '[:upper:]' '[:lower:]').sccache.rapids.nvidia.com'\" >> /home/coder/.bashrc; fi"
+    "if test -z \"${DISABLE_SCCACHE:+x}\"; then echo \"export SCCACHE_DIST_URL='https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com'\" >> /home/coder/.bashrc; fi"
   ],
   "postAttachCommand": [
     "/bin/bash",
