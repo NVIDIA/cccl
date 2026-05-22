@@ -43,6 +43,11 @@ void block_reduce_warp_reductions(nvbench::state& state, nvbench::type_list<T>)
   int max_blocks_per_SM       = 0;
   NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
   const int grid_size = max_blocks_per_SM * num_SMs;
+  if (grid_size == 0)
+  {
+    state.skip("Kernel occupancy is zero for this type/configuration.");
+    return;
+  }
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
     kernel<<<grid_size, block_size>>>(action_t{});
   });
