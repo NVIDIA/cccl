@@ -51,19 +51,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 // [simd.loadstore] helper: resolves default V template parameter for load functions
 // When _Vp = void (default), resolves to basic_vec<_Up>; otherwise uses the explicit _Vp
 template <typename _Vp, typename _Up>
-struct __load_vec_type
-{
-  using type = _Vp;
-};
-
-template <typename _Up>
-struct __load_vec_type<void, _Up>
-{
-  using type = basic_vec<_Up>;
-};
-
-template <typename _Vp, typename _Up>
-using __load_vec_t = typename __load_vec_type<_Vp, _Up>::type;
+using __load_vec_t = conditional_t<is_void_v<_Vp>, basic_vec<_Up>, _Vp>;
 
 template <typename _Result, typename _Up, typename... _Flags>
 _CCCL_HOST_DEVICE_API constexpr void
