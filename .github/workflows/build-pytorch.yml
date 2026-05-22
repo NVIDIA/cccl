@@ -92,6 +92,7 @@ jobs:
             --cuda-ext \
             --env "PARALLEL_LEVEL=$(ulimit -Hn)" \
             --env "CCCL_TAG=${CCCL_TAG}" \
+            --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
