@@ -2,7 +2,30 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Toy Fully Homomorphic Encryption (FHE) example with addition encryption
+"""Toy encrypted arithmetic example demonstrating STF composability.
+
+The user-facing API is ordinary Python arithmetic over ``Ciphertext`` objects:
+
+    encrypted_out = circuit(eA, eB)
+
+The circuit computes ``(A + B) + (B - A)``. The two inner operations, ``A + B``
+and ``B - A``, are independent and may run concurrently; the final add depends
+on both temporary results.
+
+In a manual stream/event implementation, the caller would need to express that
+scheduling explicitly, for example:
+
+    tmp1 = add(A, B) on stream_add
+    tmp2 = sub(B, A) on stream_sub
+    record events for tmp1/tmp2
+    final stream waits on both events
+    out = add(tmp1, tmp2)
+
+With STF, each ``Ciphertext`` operation instead creates a task over logical data.
+Each task declares its reads and writes, and STF derives the task dependencies
+from those declarations. The high-level circuit composes ordinary arithmetic
+operations without exposing CUDA streams or events to the user.
+"""
 
 import numba
 from numba import cuda
@@ -53,6 +76,8 @@ def sub_scalar_kernel(a, out, v):
 
 
 class Ciphertext:
+    """Encrypted byte array whose arithmetic records STF tasks."""
+
     def __init__(self, ctx, values=None, ld=None, key=0x42, name=None):
         self.ctx = ctx
         self.key = key
@@ -66,6 +91,8 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
         result = self.empty_like()
+        # The explicit task API makes the dataflow visible: read both inputs,
+        # write the result, and let STF schedule the resulting dependency graph.
         with self.ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da, db, dresult = numba_arguments(t)
@@ -76,6 +103,8 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
         result = self.empty_like()
+        # This task is independent from a sibling add that reads the same inputs
+        # and writes a different result, so STF may execute them concurrently.
         with self.ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da, db, dresult = numba_arguments(t)
@@ -102,7 +131,7 @@ def circuit(a, b):
 
 
 def test_fhe():
-    """Test FHE using manual task creation with addition encryption."""
+    """Exercise the explicit STF task API used by the composability example."""
     ctx = stf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]

@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Toy Fully Homomorphic Encryption (FHE) example with addition encryption
+"""Decorator-based variant of the STF FHE composability smoke test.
+
+``test_fhe.py`` is the primary teaching example because its explicit
+``ctx.task(...)`` calls show how logical-data dependencies build the task graph.
+This file keeps the same toy encrypted arithmetic API, but uses the STF-aware
+``@jit`` decorator to cover the ergonomic integration path.
+"""
 
 import numba
 from numba import cuda
@@ -93,7 +99,7 @@ def circuit(a, b):
 
 
 def test_fhe_decorator():
-    """Test FHE using @jit (numba_decorator) with addition encryption."""
+    """Exercise the decorator integration variant of the FHE example."""
     ctx = stf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]
