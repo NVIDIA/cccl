@@ -30,8 +30,11 @@ Requires CUDA 12.4+ (conditional graph nodes) and numba-cuda.
 import os
 import time
 
-import numba
 import numpy as np
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_helpers import get_arg_numba
 

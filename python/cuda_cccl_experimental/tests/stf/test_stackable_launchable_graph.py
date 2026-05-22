@@ -8,8 +8,11 @@ context manager. Mirrors the C unit tests in
 ``c/experimental/stf/test/test_stackable.cu``.
 """
 
-import numba
 import numpy as np
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_helpers import numba_arguments
 

@@ -27,7 +27,10 @@ from those declarations. The high-level circuit composes ordinary arithmetic
 operations without exposing CUDA streams or events to the user.
 """
 
-import numba
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_helpers import numba_arguments
 

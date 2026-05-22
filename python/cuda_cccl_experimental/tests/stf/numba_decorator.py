@@ -7,6 +7,10 @@ Numba-based @jit decorator for STF. Not shipped in the wheel.
 Requires numba-cuda. Import from tests.stf when running from source.
 """
 
+import pytest
+
+pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 
 from cuda.stf import context, dep, exec_place

@@ -7,8 +7,11 @@ Test basic stackable context operations: graph_scope, repeat, read_only.
 These tests exercise the stackable context without while_loop (no CUDA 12.4+ conditional nodes).
 """
 
-import numba
 import numpy as np
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_helpers import numba_arguments
 

@@ -9,8 +9,11 @@ Python equivalent of cudax/examples/stf/jacobi_stackable_raii.cu
 Requires CUDA 12.4+ for conditional graph nodes.
 """
 
-import numba
 import numpy as np
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_helpers import get_arg_numba, numba_arguments
 

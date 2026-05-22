@@ -2,8 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import numba
 import numpy as np
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_decorator import jit
 

@@ -10,7 +10,10 @@ This file keeps the same toy encrypted arithmetic API, but uses the STF-aware
 ``@jit`` decorator to cover the ergonomic integration path.
 """
 
-import numba
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_decorator import jit
 

@@ -11,8 +11,11 @@ positional arguments to the callback.  Extra user data can be supplied
 via ``args`` (evaluated eagerly at submission time).
 """
 
-import numba
 import numpy as np
+import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 from numba_helpers import numba_arguments
 

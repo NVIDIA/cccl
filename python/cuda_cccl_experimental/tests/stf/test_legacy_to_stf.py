@@ -55,9 +55,11 @@ from __future__ import annotations
 
 import time
 
-import numba
 import numpy as np
 import pytest
+
+numba = pytest.importorskip("numba")
+pytest.importorskip("numba.cuda")
 from numba import cuda
 
 import cuda.stf as stf
