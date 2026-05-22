@@ -34,6 +34,7 @@
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/iterator.h>
 #include <cuda/std/__simd/specializations/fixed_size_float_vec.h>
+#include <cuda/std/__simd/specializations/fixed_size_integral_vec.h>
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>

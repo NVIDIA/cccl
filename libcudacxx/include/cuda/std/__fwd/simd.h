@@ -50,6 +50,7 @@ enum class __simd_operations_kind
 {
   __default,
   __fixed_size_float,
+  __fixed_size_integral,
 };
 
 template <typename _Tp, typename _Abi>
