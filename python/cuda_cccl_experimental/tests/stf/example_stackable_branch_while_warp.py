@@ -26,10 +26,10 @@ import os
 
 import numpy as np
 import warp as wp
-from cuda.bindings import runtime as cudart
 from warp import stf_experimental as wp_stf
 
 import cuda.stf as stf
+from cuda.bindings import runtime as cudart
 
 N = 64
 WHILE_ITERS = 2
@@ -38,6 +38,7 @@ BRANCHES = (
     ("middle", 2.0),
     ("right", 3.0),
 )
+
 
 @wp.kernel
 def seed_branch(

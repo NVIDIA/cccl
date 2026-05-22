@@ -11,6 +11,7 @@ import weakref
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from cuda.bindings import runtime as cudart
 
 if TYPE_CHECKING:

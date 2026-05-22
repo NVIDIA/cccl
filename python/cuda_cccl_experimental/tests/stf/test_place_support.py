@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import pytest
-from cuda.bindings import runtime as cudart
 
 import cuda.stf as stf
+from cuda.bindings import runtime as cudart
 
 
 def _require_green_context_helper(sm_count=1, dev_id=0):
@@ -291,7 +291,9 @@ def test_device_array_with_cuda_compute():
 
         err = cudart.cudaStreamSynchronize(cudart.cudaStream_t(int(stream)))
         if err != cudart.cudaError_t.cudaSuccess:
-            raise RuntimeError(f"cudaStreamSynchronize failed with error code {int(err)}")
+            raise RuntimeError(
+                f"cudaStreamSynchronize failed with error code {int(err)}"
+            )
 
         result = d_out.copy_to_host()
         expected = h_in.sum()
