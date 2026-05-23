@@ -213,7 +213,7 @@ TEST_FUNC constexpr void test_sfinae()
   // generator: rejects non-callable types
   static_assert(!cuda::std::is_constructible_v<Mask, wrong_generator>);
   // generator: must be explicit
-  static_assert(!cuda::std::is_convertible_v<c2h::is_even, Mask>);
+  static_assert(!cuda::std::is_convertible_v<decltype(c2h::is_even), Mask>);
 
   // bitset: requires matching size
   static_assert(!cuda::std::is_constructible_v<Mask, cuda::std::bitset<N + 1>>);
