@@ -3,9 +3,8 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/partition.h>
 
-#include <c2h/operator.cuh>
-
 #include "thrust/detail/raw_pointer_cast.h"
+#include <c2h/operator.cuh>
 #include <unittest/unittest.h>
 
 template <typename T>

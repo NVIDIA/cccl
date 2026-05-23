@@ -8,7 +8,6 @@
 #include <stdexcept>
 
 #include <c2h/operator.cuh>
-
 #include <unittest/unittest.h>
 
 template <typename T>

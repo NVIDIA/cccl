@@ -104,8 +104,8 @@ inline const c2h::custom_type_t<Policies...> identity_v<cuda::minimum<>, c2h::cu
 struct custom_plus : cuda::std::plus<>
 {};
 
-namespace c2h {
-
+namespace c2h
+{
 /***********************************************************************************************************************
  * Operator is_even check
  **********************************************************************************************************************/
@@ -133,5 +133,4 @@ struct is_even_fn
 };
 
 inline constexpr is_even_fn is_even{};
-
 } // namespace c2h

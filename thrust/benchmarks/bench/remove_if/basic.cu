@@ -8,9 +8,8 @@
 #include <cuda/std/complex>
 #include <cuda/stream>
 
-#include <c2h/operator.cuh>
-
 #include "nvbench_helper.cuh"
+#include <c2h/operator.cuh>
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)

@@ -6,7 +6,6 @@
 #include <thrust/sort.h>
 
 #include <c2h/operator.cuh>
-
 #include <unittest/unittest.h>
 
 #if _CCCL_COMPILER(GCC, >=, 11) && _CCCL_COMPILER(GCC, <, 12)

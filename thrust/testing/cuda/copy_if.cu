@@ -2,9 +2,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
-#include <c2h/operator.cuh>
-
 #include "thrust/iterator/transform_iterator.h"
+#include <c2h/operator.cuh>
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -63,8 +62,7 @@ void TestCopyIfDevice(ExecutionPolicy exec)
 
     h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), c2h::is_even);
 
-    copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), c2h::is_even, d_new_end_vec.begin());
+    copy_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin(), c2h::is_even, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
 
@@ -191,8 +189,7 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
 
     h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), c2h::is_even);
 
-    copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), c2h::is_even, d_new_end_vec.begin());
+    copy_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin(), c2h::is_even, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
 

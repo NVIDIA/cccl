@@ -27,14 +27,13 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include <c2h/operator.cuh>
-
 #include <testing.cuh>
 #include <utility.cuh>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "test_pstl.h"
+#include <c2h/operator.cuh>
 
 inline constexpr int size = 1000;
 
