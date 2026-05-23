@@ -213,6 +213,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
+  validate_stream_device(stream);
   using large_segment_tile_offset_t = typename TotalNumItemsGuaranteeT::value_type;
   // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
   // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use

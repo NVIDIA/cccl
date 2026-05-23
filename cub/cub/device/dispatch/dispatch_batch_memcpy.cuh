@@ -305,6 +305,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelectorT policy_selector = {})
 {
+  validate_stream_device(stream);
   using per_invocation_buffer_offset_t = detail::batch_memcpy::per_invocation_buffer_offset_t;
   using BufferSizeT                    = cub::detail::it_value_t<BufferSizeIteratorT>;
   using BLevBufferOffsetTileState      = cub::ScanTileState<per_invocation_buffer_offset_t>;

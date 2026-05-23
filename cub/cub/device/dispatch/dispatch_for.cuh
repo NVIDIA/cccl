@@ -115,6 +115,7 @@ template <class OffsetT, class OpT, class PolicySelector = policy_selector>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_selector = {})
 {
+  validate_stream_device(stream);
   if (num_items == 0)
   {
     return cudaSuccess;

@@ -97,6 +97,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
+  validate_stream_device(stream);
   using output_t = it_value_t<OutputIteratorT>;
 
   // if the output iterator can be turned into a pointer, the value type is integral, and has the same size as OffsetT

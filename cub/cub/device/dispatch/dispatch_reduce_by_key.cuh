@@ -606,6 +606,7 @@ struct DispatchReduceByKey
     OffsetT num_items,
     cudaStream_t stream)
   {
+    validate_stream_device(stream);
     cudaError error = cudaSuccess;
 
     do
@@ -694,6 +695,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
+  validate_stream_device(stream);
   using streaming_context_t = NullType; // streaming context not used for ReduceByKey yet
   using ScanTileStateT      = ReduceByKeyScanTileState<AccumT, OffsetT>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;

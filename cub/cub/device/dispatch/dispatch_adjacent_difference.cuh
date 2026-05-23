@@ -285,6 +285,7 @@ struct DispatchAdjacentDifference
     DifferenceOpT difference_op,
     cudaStream_t stream)
   {
+    validate_stream_device(stream);
     cudaError error = cudaSuccess;
     do
     {
@@ -336,6 +337,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  validate_stream_device(stream);
   using InputT = detail::it_value_t<InputIteratorT>;
 
   ::cuda::compute_capability cc{};

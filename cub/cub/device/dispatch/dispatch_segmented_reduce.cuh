@@ -421,6 +421,7 @@ struct DispatchSegmentedReduce
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
+    validate_stream_device(stream);
     if (num_segments <= 0)
     {
       return cudaSuccess;
@@ -527,6 +528,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  validate_stream_device(stream);
   if (num_segments <= 0)
   {
     return cudaSuccess;
