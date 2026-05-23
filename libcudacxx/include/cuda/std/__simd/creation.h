@@ -102,7 +102,7 @@ struct __chunk_generator
   const _Src& __src;
 
   template <typename _Idx>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Idx) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Idx) const noexcept
   {
     return __src[_Offset + _Idx::value];
   }
@@ -110,14 +110,15 @@ struct __chunk_generator
 
 // wrapper for __chunk_generator
 template <typename _SubVec, __simd_size_type _Offset, typename _Src>
-[[nodiscard]] _CCCL_API constexpr _SubVec __make_chunk(const _Src& __src) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SubVec __make_chunk(const _Src& __src) noexcept
 {
   return _SubVec{__chunk_generator<_Src, _Offset>{__src}};
 }
 
 // Exact divisor case: return array<_SubVec, N>
 template <typename _SubVec, typename _Src, __simd_size_type... _Js>
-[[nodiscard]] _CCCL_API constexpr auto __make_chunk_array(const _Src& __src, __simd_size_seq<_Js...>) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+__make_chunk_array(const _Src& __src, __simd_size_seq<_Js...>) noexcept
 {
   using __result_t = ::cuda::std::array<_SubVec, sizeof...(_Js)>;
   return __result_t{::cuda::std::simd::__make_chunk<_SubVec, _Js * _SubVec::__size>(__src)...};
@@ -127,7 +128,7 @@ template <typename _SubVec, typename _Tail, __simd_size_type _NHead, __simd_size
 using __select_head_or_tail_t = ::cuda::std::conditional_t<(_Ip < _NHead), _SubVec, _Tail>;
 
 template <typename _SubVec, typename _Tail, __simd_size_type _NHead, __simd_size_type _Ip, typename _Src>
-[[nodiscard]] _CCCL_API constexpr __select_head_or_tail_t<_SubVec, _Tail, _NHead, _Ip>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __select_head_or_tail_t<_SubVec, _Tail, _NHead, _Ip>
 __make_chunk_tuple_element(const _Src& __src) noexcept
 {
   if constexpr (_Ip < _NHead) // use _SubVec
@@ -143,7 +144,8 @@ __make_chunk_tuple_element(const _Src& __src) noexcept
 // Remainder case: return tuple<_SubVec, ..., _SubVec, _Tail>
 // where _Tail is resize_t<src.size() % _SubVec​::​size(), _SubVec​>
 template <typename _SubVec, typename _Tail, typename _Src, __simd_size_type... _Js>
-[[nodiscard]] _CCCL_API constexpr auto __make_chunk_tuple(const _Src& __src, __simd_size_seq<_Js...>) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+__make_chunk_tuple(const _Src& __src, __simd_size_seq<_Js...>) noexcept
 {
   constexpr __simd_size_type __nhead = sizeof...(_Js) - 1; // all elements except the last one (_Tail)
   using __result_t                   = ::cuda::std::tuple<__select_head_or_tail_t<_SubVec, _Tail, __nhead, _Js>...>;
@@ -156,7 +158,7 @@ template <typename _SubVec, typename _Tail, typename _Src, __simd_size_type... _
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_enabled_basic_vec_v<_Tp> _CCCL_AND(__chunk_vec_tail_valid_v<_Tp, _Abi>))
-[[nodiscard]] _CCCL_API constexpr auto chunk(const basic_vec<typename _Tp::value_type, _Abi>& __src) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto chunk(const basic_vec<typename _Tp::value_type, _Abi>& __src) noexcept
 {
   using __src_t                      = basic_vec<typename _Tp::value_type, _Abi>;
   constexpr __simd_size_type __nhead = __src_t::__size / _Tp::__size;
@@ -174,7 +176,8 @@ _CCCL_REQUIRES(__is_enabled_basic_vec_v<_Tp> _CCCL_AND(__chunk_vec_tail_valid_v<
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_enabled_basic_mask_v<_Tp> _CCCL_AND(__chunk_mask_tail_ok_v<_Tp, _Abi>))
-[[nodiscard]] _CCCL_API constexpr auto chunk(const basic_mask<__mask_element_size_v<_Tp>, _Abi>& __src) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+chunk(const basic_mask<__mask_element_size_v<_Tp>, _Abi>& __src) noexcept
 {
   using __src_t                      = basic_mask<__mask_element_size_v<_Tp>, _Abi>;
   constexpr __simd_size_type __nhead = __src_t::__size / _Tp::__size;
@@ -194,7 +197,7 @@ _CCCL_REQUIRES(__is_enabled_basic_mask_v<_Tp> _CCCL_AND(__chunk_mask_tail_ok_v<_
 // [simd.creation], chunk<M>, with the size of the sub-vector M is user-specified
 
 template <__simd_size_type _Mp, typename _Up, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr auto chunk(const basic_vec<_Up, _Abi>& __src) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto chunk(const basic_vec<_Up, _Abi>& __src) noexcept
 {
   static_assert(_Mp > 0, "_Mp must be greater than 0"); // avoid division by zero
   using __sub_vec_t = resize_t<_Mp, basic_vec<_Up, _Abi>>;
@@ -202,7 +205,7 @@ template <__simd_size_type _Mp, typename _Up, typename _Abi>
 }
 
 template <__simd_size_type _Mp, size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr auto chunk(const basic_mask<_Bytes, _Abi>& __src) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto chunk(const basic_mask<_Bytes, _Abi>& __src) noexcept
 {
   static_assert(_Mp > 0, "_Mp must be greater than 0"); // avoid division by zero
   using __sub_vec_t = resize_t<_Mp, basic_mask<_Bytes, _Abi>>;
@@ -215,7 +218,7 @@ template <__simd_size_type _Mp, size_t _Bytes, typename _Abi>
 
 // given the index _Ip, return the index of the corresponding SIMD vector/mask in the range [0, N)
 template <__simd_size_type _Ip, __simd_size_type... _Sizes>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL size_t __cat_arg_index(__simd_size_seq<_Sizes...>) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL size_t __cat_arg_index(__simd_size_seq<_Sizes...>) noexcept
 {
   const __simd_size_type __sizes[] = {_Sizes...};
   __simd_size_type __prefix        = 0;
@@ -233,7 +236,8 @@ template <__simd_size_type _Ip, __simd_size_type... _Sizes>
 
 // Compute the local prefix sum (number of elements before arg _Kp) for a given target arg index _Kp.
 template <size_t _Kp, __simd_size_type... _Sizes>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __simd_size_type __cat_local_prefix(__simd_size_seq<_Sizes...>) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __simd_size_type
+__cat_local_prefix(__simd_size_seq<_Sizes...>) noexcept
 {
   __simd_size_type __prefix        = 0;
   const __simd_size_type __sizes[] = {_Sizes...};
@@ -257,7 +261,7 @@ struct __cat_generator
   const ::cuda::std::tuple<const _Vs&...> __args_;
 
   template <typename _Ic>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Ic) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Ic) const noexcept
   {
     constexpr __simd_size_seq<_Vs::__size...> __seq_sizes{};
     constexpr __simd_size_type __i      = _Ic::value;
@@ -268,14 +272,14 @@ struct __cat_generator
 };
 
 template <typename... _Vs>
-[[nodiscard]] _CCCL_API constexpr __cat_generator<_Vs...> __make_cat_generator(const _Vs&... __xs) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __cat_generator<_Vs...> __make_cat_generator(const _Vs&... __xs) noexcept
 {
   return __cat_generator<_Vs...>{::cuda::std::tuple<const _Vs&...>{__xs...}};
 }
 
 // c++ specification has no explicit constraints for cat()
 template <typename _Tp, typename _Abi0, typename... _Abis>
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 cat(const basic_vec<_Tp, _Abi0>& __x0, const basic_vec<_Tp, _Abis>&... __xs) noexcept
 {
   constexpr __simd_size_type __total = (basic_vec<_Tp, _Abi0>::__size + ... + basic_vec<_Tp, _Abis>::__size);
@@ -284,7 +288,7 @@ cat(const basic_vec<_Tp, _Abi0>& __x0, const basic_vec<_Tp, _Abis>&... __xs) noe
 }
 
 template <size_t _Bytes, typename _Abi0, typename... _Abis>
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 cat(const basic_mask<_Bytes, _Abi0>& __x0, const basic_mask<_Bytes, _Abis>&... __xs) noexcept
 {
   constexpr __simd_size_type __total = (basic_mask<_Bytes, _Abi0>::__size + ... + basic_mask<_Bytes, _Abis>::__size);
