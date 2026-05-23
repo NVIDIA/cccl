@@ -556,7 +556,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  validate_stream_device(stream);
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   static_assert(
     ::cuda::std::is_same_v<Offset, ::cuda::std::int32_t> || ::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
     "cub::DeviceTransform is only tested and tuned for 32-bit or 64-bit signed offset types");

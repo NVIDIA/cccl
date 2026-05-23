@@ -403,7 +403,11 @@ public:
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    validate_stream_device(stream);
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     // Get PTX version
     int ptx_version = 0;
     if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
@@ -474,7 +478,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KeyT*                                  = nullptr /* for CCCL.C */,
   ValueT*                                = nullptr /* for CCCL.C */) -> cudaError_t
 {
-  validate_stream_device(stream);
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   [[maybe_unused]] constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
   if (num_items == 0)

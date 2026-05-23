@@ -364,7 +364,11 @@ struct DispatchThreeWayPartitionIf
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    validate_stream_device(stream);
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     // Get PTX version
     int ptx_version = 0;
     if (cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version)); cudaSuccess != error)
@@ -435,7 +439,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  validate_stream_device(stream);
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {

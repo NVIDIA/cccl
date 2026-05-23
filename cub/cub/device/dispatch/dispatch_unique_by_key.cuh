@@ -437,7 +437,11 @@ struct DispatchUniqueByKey
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    validate_stream_device(stream);
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     int ptx_version = 0;
     if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
     {
@@ -503,7 +507,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KeyT*                                  = nullptr /* for CCCL.C */,
   ValueT*                                = nullptr /* for CCCL.C */) -> cudaError_t
 {
-  validate_stream_device(stream);
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {

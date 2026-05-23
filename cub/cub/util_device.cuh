@@ -456,6 +456,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
 
+namespace detail
+{
+// Validates stream's device is current device, when CTK >= 12.8, otherwise does nothing.
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaStream_t stream)
 {
   cudaError_t error = cudaSuccess;
@@ -472,10 +475,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaSt
   {
     return error;
   }
-  static_assert(currentDevice == streamDevice);
+  _CCCL_ASSERT(currentDevice == streamDevice, "current device must match CUB stream device");
+  if (currentDevice != streamDevice)
+  {
+    return cudaErrorInvalidDevice;
+  }
 #  endif // _CCCL_CTK_AT_LEAST(12,8)
   return error;
 }
+} // namespace detail
 
 //! @brief Computes the maximum potential dynamic shared memory size per block for kernel @p kernel_ptr taking into
 //!        account the amount of kernel's static and CUDA Driver's reserved shared memory.

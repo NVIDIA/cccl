@@ -605,7 +605,11 @@ struct DeviceRleDispatch
     OffsetT num_items,
     cudaStream_t stream)
   {
-    validate_stream_device(stream);
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     cudaError error = cudaSuccess;
 
     // Get PTX version
@@ -663,7 +667,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
-  validate_stream_device(stream);
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
   static constexpr bool use_streaming_invocation =
