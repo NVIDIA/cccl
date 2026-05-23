@@ -140,7 +140,7 @@ private:
     for (unsigned i = threadIdx.x; i < segment_size; i += threads_per_block)
     {
       auto bit_ordered_key = twiddle_t::In(reinterpret_cast<const bit_ordered_t&>(block_keys_in[i]));
-      min                  = top_k<cuda::thread_scope_block>(bit_ordered_key, temp_storage.top_k, k);
+      min                  = block_top_k(bit_ordered_key, temp_storage.top_k, k);
     }
     __syncthreads();
   }
@@ -161,13 +161,11 @@ private:
     }
   }
 
-  template <cuda::thread_scope Scope>
-  __device__ bit_ordered_t top_k(bit_ordered_t key, bit_ordered_t* top, unsigned k)
+  __device__ bit_ordered_t block_top_k(bit_ordered_t key, bit_ordered_t* top, unsigned k)
   {
     for (unsigned j = 0; j < k; ++j)
     {
-      cuda::atomic_ref<bit_ordered_t, Scope> shared_top_ref(top[j]);
-      const bit_ordered_t old_max_j = shared_top_ref.fetch_max(key, cuda::memory_order_relaxed);
+      const bit_ordered_t old_max_j = atomicMax_block(top + j, key);
       if (old_max_j < key)
       {
         key = old_max_j;
