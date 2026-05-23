@@ -3,7 +3,6 @@
 #include <thrust/partition.h>
 
 #include <c2h/operator.cuh>
-
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
