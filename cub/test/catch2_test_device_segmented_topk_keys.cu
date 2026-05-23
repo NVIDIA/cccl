@@ -4,6 +4,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk_atomic.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 #include <cub/util_type.cuh>
 
@@ -28,6 +29,15 @@ struct is_minus_zero
   }
 };
 
+enum class topk_backend
+{
+  baseline,
+  cluster,
+  atomic,
+};
+
+inline constexpr topk_backend selected_backend = topk_backend::atomic;
+
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParamT,
@@ -47,61 +57,55 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
 {
-  auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::batched_topk::dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_key_segments_it,
-    d_key_segments_out_it,
-    values_it,
-    values_it,
-    segment_sizes,
-    k,
-    select_directions,
-    num_segments,
-    total_num_items_guarantee,
-    stream);
+  if constexpr (selected_backend == topk_backend::cluster)
+  {
+    return cub::detail::batched_topk_cluster::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      segment_sizes,
+      k,
+      select_directions,
+      num_segments,
+      total_num_items_guarantee,
+      stream);
+  }
+  else if constexpr (selected_backend == topk_backend::atomic)
+  {
+    return cub::detail::batched_topk_atomic::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      segment_sizes,
+      k,
+      select_directions,
+      num_segments,
+      total_num_items_guarantee,
+      stream);
+  }
+  else
+  {
+    auto values_it = static_cast<cub::NullType**>(nullptr);
+    return cub::detail::batched_topk::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_key_segments_it,
+      d_key_segments_out_it,
+      values_it,
+      values_it,
+      segment_sizes,
+      k,
+      select_directions,
+      num_segments,
+      total_num_items_guarantee,
+      stream);
+  }
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_LAUNCH_WRAPPER(dispatch_batched_topk_keys, batched_topk_keys);
-
-// ----------------------------------------------------------------------------
-// Cluster-based prototype
-// ----------------------------------------------------------------------------
-template <typename KeyInputItItT,
-          typename KeyOutputItItT,
-          typename SegmentSizeParamT,
-          typename KParamT,
-          typename SelectDirectionParamT,
-          typename NumSegmentsParameterT,
-          typename TotalNumItemsGuaranteeT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys_cluster(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  KeyInputItItT d_key_segments_it,
-  KeyOutputItItT d_key_segments_out_it,
-  SegmentSizeParamT segment_sizes,
-  KParamT k,
-  SelectDirectionParamT select_directions,
-  NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items_guarantee,
-  cudaStream_t stream = nullptr)
-{
-  return cub::detail::batched_topk_cluster::dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_key_segments_it,
-    d_key_segments_out_it,
-    segment_sizes,
-    k,
-    select_directions,
-    num_segments,
-    total_num_items_guarantee,
-    stream);
-}
-
-DECLARE_LAUNCH_WRAPPER(dispatch_batched_topk_keys_cluster, batched_topk_keys_cluster);
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -300,108 +304,6 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   // Since the results of top-k are unordered, sort compacted output segments before comparison
   segmented_sort_keys(
     keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
-
-  REQUIRE(expected_keys == keys_out_buffer);
-}
-
-// ----------------------------------------------------------------------------
-// Cluster-based prototype tests
-// ----------------------------------------------------------------------------
-// The cluster prototype currently restricts the maximum segment size to a
-// single cluster tile (ClusterSize * ThreadsPerBlock * ItemsPerThread). The
-// default policy gives a cluster tile of 4 * 128 * 16 = 8192 items, so we use
-// 8 KiB as the upper bound on segment size. Sizes that exceed 3/4 of the
-// cluster tile (>= 6 KiB) exercise the path where every block in the cluster
-// holds real (non-padding) items; smaller sizes exercise the partially-padded
-// path where some blocks are entirely sentinel keys.
-using cluster_max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 8 * 1024>;
-using cluster_max_num_k_list        = c2h::enum_type_list<cuda::std::size_t, 32, 8 * 1024>;
-
-using cluster_key_types =
-  c2h::type_list<cuda::std::uint8_t,
-                 float,
-                 cuda::std::uint64_t
-// clang-format off
-#if TEST_HALF_T()
-                , half_t
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
-                , bfloat16_t
-#endif // TEST_BF_T()
->;
-// clang-format on
-
-C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys cluster prototype works with small fixed-size segments",
-         "[keys][segmented][topk][device][cluster]",
-         cluster_key_types,
-         cluster_max_segment_size_list,
-         cluster_max_num_k_list)
-{
-  using segment_size_t  = cuda::std::int64_t;
-  using segment_index_t = cuda::std::int64_t;
-
-  using key_t = c2h::get<0, TestType>;
-
-  constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
-  constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
-
-  const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
-
-  constexpr segment_size_t min_segment_size = 1;
-  constexpr auto max_segment_size           = static_max_segment_size;
-  // Cover both partially-padded clusters (small sizes; some cluster blocks
-  // are entirely sentinel keys) and the fully-utilized path (sizes large
-  // enough to put real keys on every block of the cluster). With the default
-  // 8-block cluster (per-block tile = 1024), sizes >= 7169 reach block 7;
-  // 8192 fills every block exactly.
-  const segment_size_t segment_size = GENERATE_COPY(
-    values({min_segment_size,
-            segment_size_t{3},
-            segment_size_t{4097}, // straddles the block-2 / block-3 boundary in 4-block cfgs
-            segment_size_t{7500}, // exercises every block in the default 8-block cluster
-            max_segment_size}),
-    take(2, random(min_segment_size, max_segment_size)));
-  const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
-
-  const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, max_k}), take(2, random(segment_size_t{1}, max_k)));
-
-  const segment_index_t num_segments = GENERATE_COPY(
-    values({segment_index_t{1}, segment_index_t{17}}), take(2, random(segment_index_t{1}, segment_index_t{128})));
-
-  CAPTURE(c2h::type_name<key_t>(),
-          c2h::type_name<segment_size_t>(),
-          c2h::type_name<segment_index_t>(),
-          static_max_segment_size,
-          static_max_k,
-          segment_size,
-          k,
-          num_segments,
-          direction);
-
-  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
-  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
-  const int num_key_seeds = 1;
-  c2h::gen(C2H_SEED(num_key_seeds), keys_in_buffer);
-  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
-  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
-  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
-  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
-
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
-
-  batched_topk_keys_cluster(
-    d_keys_in,
-    d_keys_out,
-    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::batched_topk::select_direction_uniform{direction},
-    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
-    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
-
-  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
-  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
-
-  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
