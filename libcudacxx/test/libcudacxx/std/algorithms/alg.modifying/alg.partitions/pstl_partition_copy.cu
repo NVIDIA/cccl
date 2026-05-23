@@ -27,6 +27,8 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
+#include <c2h/operator.cuh>
+
 #include <testing.cuh>
 #include <utility.cuh>
 
@@ -35,15 +37,6 @@
 #include "test_pstl.h"
 
 inline constexpr int size = 1000;
-
-template <class T>
-struct is_even
-{
-  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T value) const noexcept
-  {
-    return value % 2 == 0;
-  }
-};
 
 template <class Policy, class T>
 void test_partition_copy(const Policy& policy,
@@ -58,7 +51,7 @@ void test_partition_copy(const Policy& policy,
       static_cast<T*>(nullptr),
       static_cast<T*>(nullptr),
       static_cast<T*>(nullptr),
-      is_even<T>{});
+      c2h::is_even);
     CHECK(res.first == nullptr);
     CHECK(res.second == nullptr);
   }
@@ -70,7 +63,7 @@ void test_partition_copy(const Policy& policy,
   cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
   { // contiguous iterators
     auto res = cuda::std::partition_copy(
-      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), is_even<T>{});
+      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), c2h::is_even);
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -86,7 +79,7 @@ void test_partition_copy(const Policy& policy,
       random_access_iterator{raw_in + size},
       output_true.begin(),
       output_false.begin(),
-      is_even<T>{});
+      c2h::is_even);
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -103,7 +96,7 @@ void test_partition_copy(const Policy& policy,
       input.end(),
       random_access_iterator{raw_true},
       random_access_iterator{raw_false},
-      is_even<T>{});
+      c2h::is_even);
     CHECK(
       res
       == cuda::std::pair{random_access_iterator{raw_true + size / 2}, random_access_iterator{raw_false + size / 2}});
@@ -120,7 +113,7 @@ void test_partition_copy(const Policy& policy,
       cuda::counting_iterator<T>{static_cast<T>(size)},
       output_true.begin(),
       output_false.begin(),
-      is_even<T>{});
+      c2h::is_even);
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -135,7 +128,7 @@ void test_partition_copy(const Policy& policy,
       cuda::counting_iterator<short>{static_cast<short>(size)},
       output_true.begin(),
       output_false.begin(),
-      is_even<short>{});
+      c2h::is_even);
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -145,7 +138,7 @@ void test_partition_copy(const Policy& policy,
   cuda::std::fill(policy, output_false.begin(), output_false.end(), static_cast<T>(-1));
   { // contiguous input, converting predicate
     auto res = cuda::std::partition_copy(
-      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), is_even<long>{});
+      policy, input.begin(), input.end(), output_true.begin(), output_false.begin(), c2h::is_even);
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));
@@ -160,7 +153,7 @@ void test_partition_copy(const Policy& policy,
       cuda::counting_iterator<short>{static_cast<short>(size)},
       output_true.begin(),
       output_false.begin(),
-      is_even<long>{});
+      c2h::is_even);
     CHECK(res == cuda::std::pair{output_true.end(), output_false.end()});
     CHECK(cuda::std::equal(policy, output_true.begin(), output_true.end(), expected_true));
     CHECK(cuda::std::equal(policy, output_false.begin(), output_false.end(), expected_false));

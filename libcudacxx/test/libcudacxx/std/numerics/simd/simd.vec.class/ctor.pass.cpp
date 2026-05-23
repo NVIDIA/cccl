@@ -194,7 +194,7 @@ TEST_FUNC constexpr void test_masked_range()
   using Mask = typename Vec::mask_type;
   auto arr   = make_iota_array<T, N>();
 
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   static_assert(!noexcept(Vec(arr, even_mask)));
   static_assert(!noexcept(Vec(arr, even_mask, simd::flag_default)));
 
@@ -240,7 +240,7 @@ TEST_FUNC constexpr void test_masked_range_convert_lossy()
   using Mask = typename Vec::mask_type;
   auto arr   = make_iota_array<U, N>();
 
-  Mask even_mask(is_even{});
+  Mask even_mask(c2h::is_even);
   static_assert(!noexcept(Vec(arr, even_mask, simd::flag_convert)));
 
   Vec vec(arr, even_mask, simd::flag_convert);

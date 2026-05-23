@@ -39,7 +39,7 @@ TEST_FUNC constexpr void test_reduce_count()
 
   if constexpr (N > 1)
   {
-    Mask even(is_even{});
+    Mask even(c2h::is_even);
     int expected = N / 2;
     assert(simd::reduce_count(even) == expected);
   }

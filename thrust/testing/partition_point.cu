@@ -2,16 +2,9 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
-#include <unittest/unittest.h>
+#include <c2h/operator.cuh>
 
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
+#include <unittest/unittest.h>
 
 template <typename Vector>
 void TestPartitionPointSimple()
@@ -42,9 +35,9 @@ void TestPartitionPoint()
 
   Vector v = unittest::random_integers<T>(n);
 
-  Iterator ref = thrust::stable_partition(v.begin(), v.end(), is_even<T>());
+  Iterator ref = thrust::stable_partition(v.begin(), v.end(), c2h::is_even);
 
-  ASSERT_EQUAL(ref - v.begin(), thrust::partition_point(v.begin(), v.end(), is_even<T>()) - v.begin());
+  ASSERT_EQUAL(ref - v.begin(), thrust::partition_point(v.begin(), v.end(), c2h::is_even) - v.begin());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionPoint);
 

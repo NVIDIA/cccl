@@ -38,7 +38,7 @@ TEST_FUNC constexpr void test_reduce_max_index()
     Mask first_only(is_index<0>{});
     assert(simd::reduce_max_index(first_only) == 0);
 
-    Mask even(is_even{});
+    Mask even(c2h::is_even);
     assert(simd::reduce_max_index(even) == (N - 1) / 2 * 2);
   }
 

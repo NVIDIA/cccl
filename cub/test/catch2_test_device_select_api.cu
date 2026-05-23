@@ -12,16 +12,7 @@
 #include <cstddef>
 
 #include <c2h/catch2_test_helper.h>
-
-// example-begin segmented-select-iseven
-struct is_even_t
-{
-  __host__ __device__ bool operator()(int flag) const
-  {
-    return !(flag % 2);
-  }
-};
-// example-end segmented-select-iseven
+#include <c2h/operator.cuh>
 
 C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]")
 {
@@ -31,7 +22,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_out(num_items);
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  c2h::is_even;
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -43,7 +34,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     d_out.begin(),
     d_num_selected_out.data(),
     num_items,
-    is_even);
+    c2h::is_even);
 
   // Allocate temporary storage
   c2h::device_vector<char> temp_storage(temp_storage_bytes);
@@ -57,7 +48,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     d_out.begin(),
     d_num_selected_out.data(),
     num_items,
-    is_even);
+    c2h::is_even);
 
   c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif
@@ -74,12 +65,12 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   c2h::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  c2h::is_even;
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
   cub::DeviceSelect::FlaggedIf(
-    nullptr, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, is_even);
+    nullptr, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, c2h::is_even);
 
   // Allocate temporary storage
   c2h::device_vector<char> temp_storage(temp_storage_bytes);
@@ -92,7 +83,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
     d_flags.begin(),
     d_num_selected_out.data(),
     num_items,
-    is_even);
+    c2h::is_even);
 
   c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif-inplace

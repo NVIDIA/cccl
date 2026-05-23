@@ -40,7 +40,7 @@ TEST_FUNC constexpr void test_all_of()
 
   if constexpr (N > 1)
   {
-    Mask even(is_even{});
+    Mask even(c2h::is_even);
     assert(simd::all_of(even) == false);
   }
 }

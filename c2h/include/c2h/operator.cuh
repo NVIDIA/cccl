@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cuda/functional>
+#include <cuda/std/complex>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/type_traits>
@@ -102,3 +103,35 @@ inline const c2h::custom_type_t<Policies...> identity_v<cuda::minimum<>, c2h::cu
 
 struct custom_plus : cuda::std::plus<>
 {};
+
+namespace c2h {
+
+/***********************************************************************************************************************
+ * Operator is_even check
+ **********************************************************************************************************************/
+
+using complex32 = cuda::std::complex<float>;
+using complex64 = cuda::std::complex<double>;
+
+struct is_even_fn
+{
+  template <typename T>
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& value) const noexcept
+  {
+    return (static_cast<int>(value) & 1) == 0;
+  }
+
+  _CCCL_HOST_DEVICE constexpr bool operator()(const complex32& value) const noexcept
+  {
+    return (static_cast<int>(value.real()) & 1) == 0;
+  }
+
+  _CCCL_HOST_DEVICE constexpr bool operator()(const complex64& value) const noexcept
+  {
+    return (static_cast<int>(value.real()) & 1) == 0;
+  }
+};
+
+inline constexpr is_even_fn is_even{};
+
+} // namespace c2h

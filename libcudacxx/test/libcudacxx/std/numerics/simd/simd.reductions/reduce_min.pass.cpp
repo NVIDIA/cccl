@@ -115,7 +115,7 @@ TEST_FUNC constexpr void test_reduce_min_masked_even()
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
   Vec vec    = make_iota_vec<T, N>();
-  Mask even(is_even{});
+  Mask even(c2h::is_even);
 
   T result = simd::reduce_min(vec, even);
   assert(result == T{0});

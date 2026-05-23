@@ -12,15 +12,6 @@ partition_point_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, Pr
   *result = thrust::partition_point(exec, first, last, pred);
 }
 
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
-
 template <typename ExecutionPolicy>
 void TestPartitionPointDevice(ExecutionPolicy exec)
 {
@@ -28,10 +19,10 @@ void TestPartitionPointDevice(ExecutionPolicy exec)
   thrust::device_vector<int> v = unittest::random_integers<int>(n);
   using iterator               = typename thrust::device_vector<int>::iterator;
 
-  iterator ref = thrust::stable_partition(v.begin(), v.end(), is_even<int>());
+  iterator ref = thrust::stable_partition(v.begin(), v.end(), c2h::is_even);
 
   thrust::device_vector<iterator> result(1);
-  partition_point_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
+  partition_point_kernel<<<1, 1>>>(exec, v.begin(), v.end(), c2h::is_even, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 

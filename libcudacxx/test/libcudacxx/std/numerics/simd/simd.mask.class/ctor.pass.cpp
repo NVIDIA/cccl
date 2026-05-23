@@ -67,7 +67,7 @@ template <int Bytes, int N>
 TEST_FUNC constexpr void test_copy()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
-  Mask original(is_even{});
+  Mask original(c2h::is_even);
 
   Mask copied(original);
   for (int i = 0; i < N; ++i)
@@ -109,7 +109,7 @@ TEST_FUNC constexpr void test_converting()
 {
   using Src = simd::basic_mask<UBytes, simd::fixed_size<N>>;
   using Dst = simd::basic_mask<Bytes, simd::fixed_size<N>>;
-  Src src(is_even{});
+  Src src(c2h::is_even);
   static_assert(noexcept(Dst(src)));
 
   Dst dst(src);
@@ -127,10 +127,10 @@ TEST_FUNC constexpr void test_generator()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
 #if _CCCL_COMPILER(GCC, >=, 9)
-  static_assert(!noexcept(Mask(is_even{})));
+  static_assert(!noexcept(Mask(c2h::is_even)));
 #endif
 
-  Mask mask(is_even{});
+  Mask mask(c2h::is_even);
   for (int i = 0; i < N; ++i)
   {
     assert(mask[i] == (i % 2 == 0));
@@ -213,7 +213,7 @@ TEST_FUNC constexpr void test_sfinae()
   // generator: rejects non-callable types
   static_assert(!cuda::std::is_constructible_v<Mask, wrong_generator>);
   // generator: must be explicit
-  static_assert(!cuda::std::is_convertible_v<is_even, Mask>);
+  static_assert(!cuda::std::is_convertible_v<c2h::is_even, Mask>);
 
   // bitset: requires matching size
   static_assert(!cuda::std::is_constructible_v<Mask, cuda::std::bitset<N + 1>>);

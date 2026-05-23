@@ -2,17 +2,10 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
+#include <c2h/operator.cuh>
+
 #include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (static_cast<unsigned int>(x) & 1) == 0;
-  }
-};
 
 template <typename T>
 struct mod_3
@@ -68,10 +61,10 @@ void TestCopyIfDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), c2h::is_even);
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), c2h::is_even, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
 
@@ -133,7 +126,7 @@ void TestCopyIfCudaStreams(ExecutionPolicy policy)
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), is_even<int>());
+  Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), c2h::is_even);
 
   ASSERT_EQUAL(end - result.begin(), 2);
   result.resize(end - result.begin());
@@ -196,10 +189,10 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), c2h::is_even);
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), c2h::is_even, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
 

@@ -17,6 +17,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
+#include <c2h/operator.cuh>
+
 #include "fp_compare.h"
 #include "test_macros.h"
 
@@ -45,15 +47,6 @@ constexpr bool is_const_member_function_v = is_const_member_function<T>::value;
 
 //----------------------------------------------------------------------------------------------------------------------
 // mask utilities
-
-struct is_even
-{
-  template <typename I>
-  TEST_FUNC constexpr bool operator()(I i) const noexcept
-  {
-    return i % 2 == 0;
-  }
-};
 
 struct is_first_half
 {

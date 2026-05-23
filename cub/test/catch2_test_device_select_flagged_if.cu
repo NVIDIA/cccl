@@ -15,6 +15,7 @@
 
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/operator.cuh>
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
