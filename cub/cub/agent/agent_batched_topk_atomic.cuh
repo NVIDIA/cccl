@@ -18,6 +18,7 @@
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_topk.cuh>
+#include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -167,7 +168,27 @@ private:
 
   __device__ bit_ordered_t block_top_k(bit_ordered_t key, bit_ordered_t* top, unsigned k)
   {
-    for (unsigned j = 0; j < k; ++j)
+    // late entry: binary-search the descending-sorted prefix to skip slots already >= key.
+    // Static iteration count (compile-time unrolled via max_k) mirrors cub::StaticUpperBound.
+    unsigned lo = 0;
+    unsigned hi = k;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i <= Log2<max_k>::VALUE; i++)
+    {
+      unsigned mid             = cub::MidPoint<unsigned>(lo, hi);
+      mid                      = (::cuda::std::min) (mid, k - 1);
+      const bit_ordered_t v_at = *static_cast<volatile bit_ordered_t*>(top + mid);
+      if (v_at >= key)
+      {
+        lo = mid + 1;
+      }
+      else
+      {
+        hi = mid;
+      }
+    }
+
+    for (unsigned j = lo; j < k; ++j)
     {
       const bit_ordered_t old_max_j = atomicMax_block(top + j, key);
       if (old_max_j < key)
