@@ -15,9 +15,8 @@
 #include <cuda/std/execution>
 #include <cuda/stream>
 
-#include <c2h/operator.cuh>
-
 #include "nvbench_helper.cuh"
+#include <c2h/operator.cuh>
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
@@ -33,11 +32,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               do_not_optimize(
-                 cuda::std::remove_copy_if(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), c2h::is_even));
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(
+        cuda::std::remove_copy_if(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), c2h::is_even));
+    });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

@@ -17,7 +17,6 @@
 #include <list>
 
 #include <c2h/operator.cuh>
-
 #include <unittest/unittest.h>
 
 #if _CCCL_COMPILER(GCC, >=, 11)

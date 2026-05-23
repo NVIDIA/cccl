@@ -17,10 +17,9 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
-#include <c2h/operator.cuh>
-
 #include "fp_compare.h"
 #include "test_macros.h"
+#include <c2h/operator.cuh>
 
 namespace simd = cuda::std::simd;
 
