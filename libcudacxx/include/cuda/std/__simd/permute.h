@@ -76,7 +76,7 @@ inline constexpr bool __idxmap_invocable_two_args_v<
   void_t<decltype(_IdxMap{}(__simd_size_constant<_Idx>{}, __simd_size_constant<_Size>{}))>> = true;
 
 template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __simd_size_type __permute_gen_fn() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __simd_size_type __permute_gen_fn() noexcept
 {
   if constexpr (__idxmap_invocable_two_args_v<_IdxMap, _Idx, _Size>)
   {
@@ -99,7 +99,7 @@ struct __permute_generator
   const _Vp& __v_;
 
   template <__simd_size_type _Idx>
-  [[nodiscard]] _CCCL_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
   {
     using __map_t                     = remove_cvref_t<_IdxMap>;
     constexpr __simd_size_type __size = _Vp::__size;
@@ -119,7 +119,8 @@ struct __permute_generator
 };
 
 template <typename _IdxMap, typename _Vp>
-[[nodiscard]] _CCCL_API constexpr __permute_generator<_IdxMap, _Vp> __make_permute_generator(const _Vp& __v) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __permute_generator<_IdxMap, _Vp>
+__make_permute_generator(const _Vp& __v) noexcept
 {
   return __permute_generator<_IdxMap, _Vp>{__v};
 }
@@ -145,7 +146,7 @@ using __permute_result_mask_t = resize_t<__permute_mask_size_v<_Bytes, _Abi, _Np
 
 _CCCL_TEMPLATE(__simd_size_type _Np = __permute_default_n, typename _Tp, typename _Abi, typename _IdxMap)
 _CCCL_REQUIRES(__idxmap_result_is_integral_v<_IdxMap>)
-[[nodiscard]] _CCCL_API constexpr __permute_result_vec_t<_Tp, _Abi, _Np>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __permute_result_vec_t<_Tp, _Abi, _Np>
 permute(const basic_vec<_Tp, _Abi>& __v, _IdxMap&&)
 {
   static_assert(_Np == __permute_default_n || _Np >= 0, "cuda::std::simd::permute: N must be non-negative");
@@ -155,7 +156,7 @@ permute(const basic_vec<_Tp, _Abi>& __v, _IdxMap&&)
 
 _CCCL_TEMPLATE(__simd_size_type _Np = __permute_default_n, size_t _Bytes, typename _Abi, typename _IdxMap)
 _CCCL_REQUIRES(__idxmap_result_is_integral_v<_IdxMap>)
-[[nodiscard]] _CCCL_API constexpr __permute_result_mask_t<_Bytes, _Abi, _Np>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __permute_result_mask_t<_Bytes, _Abi, _Np>
 permute(const basic_mask<_Bytes, _Abi>& __v, _IdxMap&&)
 {
   static_assert(_Np == __permute_default_n || _Np >= 0, "cuda::std::simd::permute: N must be non-negative");
@@ -175,7 +176,7 @@ struct __permute_dynamic_generator
   const _Ip& __indices_;
 
   template <__simd_size_type _Idx>
-  [[nodiscard]] _CCCL_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
   {
     const auto __src = static_cast<__simd_size_type>(__indices_[_Idx]);
     _CCCL_ASSERT(::cuda::in_range(__src, __simd_size_type{0}, _Vp::size()),
@@ -185,7 +186,7 @@ struct __permute_dynamic_generator
 };
 
 template <typename _Vp, typename _Ip>
-[[nodiscard]] _CCCL_API constexpr __permute_dynamic_generator<_Vp, _Ip>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __permute_dynamic_generator<_Vp, _Ip>
 __make_permute_dynamic_generator(const _Vp& __v, const _Ip& __indices) noexcept
 {
   return __permute_dynamic_generator<_Vp, _Ip>{__v, __indices};
@@ -193,7 +194,7 @@ __make_permute_dynamic_generator(const _Vp& __v, const _Ip& __indices) noexcept
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Up, typename _UAbi)
 _CCCL_REQUIRES(is_integral_v<_Up>)
-[[nodiscard]] _CCCL_API constexpr resize_t<__simd_size_v<_Up, _UAbi>, basic_vec<_Tp, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<__simd_size_v<_Up, _UAbi>, basic_vec<_Tp, _Abi>>
 permute(const basic_vec<_Tp, _Abi>& __v, const basic_vec<_Up, _UAbi>& __indices)
 {
   using __result_t = resize_t<__simd_size_v<_Up, _UAbi>, basic_vec<_Tp, _Abi>>;
@@ -202,7 +203,7 @@ permute(const basic_vec<_Tp, _Abi>& __v, const basic_vec<_Up, _UAbi>& __indices)
 
 _CCCL_TEMPLATE(size_t _Bytes, typename _Abi, typename _Up, typename _UAbi)
 _CCCL_REQUIRES(is_integral_v<_Up>)
-[[nodiscard]] _CCCL_API constexpr resize_t<__simd_size_v<_Up, _UAbi>, basic_mask<_Bytes, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<__simd_size_v<_Up, _UAbi>, basic_mask<_Bytes, _Abi>>
 permute(const basic_mask<_Bytes, _Abi>& __v, const basic_vec<_Up, _UAbi>& __indices)
 {
   using __result_t = resize_t<__simd_size_v<_Up, _UAbi>, basic_mask<_Bytes, _Abi>>;
@@ -225,7 +226,7 @@ struct __compress_generator
   const __value_type __fill_;
 
   template <__simd_size_type _Idx>
-  [[nodiscard]] _CCCL_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
   {
     __simd_size_type __count = 0;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -245,7 +246,7 @@ struct __compress_generator
 };
 
 template <typename _Vp, typename _Mp>
-[[nodiscard]] _CCCL_API constexpr __compress_generator<_Vp, _Mp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __compress_generator<_Vp, _Mp>
 __make_compress_generator(const _Vp& __v, const _Mp& __sel, typename _Vp::value_type __fill) noexcept
 {
   return __compress_generator<_Vp, _Mp>{__v, __sel, __fill};
@@ -279,7 +280,7 @@ struct __expand_generator
   //
   // result = [10, 2, 20, 4, 30]
   template <__simd_size_type _Idx>
-  [[nodiscard]] _CCCL_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
   {
     if (!__sel_[_Idx])
     {
@@ -299,7 +300,7 @@ struct __expand_generator
 };
 
 template <typename _Vp, typename _Mp>
-[[nodiscard]] _CCCL_API constexpr __expand_generator<_Vp, _Mp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __expand_generator<_Vp, _Mp>
 __make_expand_generator(const _Vp& __v, const _Mp& __sel, const _Vp& __orig) noexcept
 {
   return __expand_generator<_Vp, _Mp>{__v, __sel, __orig};
@@ -308,7 +309,7 @@ __make_expand_generator(const _Vp& __v, const _Mp& __sel, const _Vp& __orig) noe
 // compress: basic_vec
 
 template <typename _Tp, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi>
 compress(const basic_vec<_Tp, _Abi>& __v, const typename basic_vec<_Tp, _Abi>::mask_type& __selector)
 {
   return basic_vec<_Tp, _Abi>{::cuda::std::simd::__make_compress_generator(__v, __selector, _Tp{})};
@@ -317,7 +318,7 @@ compress(const basic_vec<_Tp, _Abi>& __v, const typename basic_vec<_Tp, _Abi>::m
 // compress: basic_vec with fill_value
 
 template <typename _Tp, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> compress(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> compress(
   const basic_vec<_Tp, _Abi>& __v, const typename basic_vec<_Tp, _Abi>::mask_type& __selector, const _Tp& __fill_value)
 {
   return basic_vec<_Tp, _Abi>{::cuda::std::simd::__make_compress_generator(__v, __selector, __fill_value)};
@@ -326,7 +327,7 @@ template <typename _Tp, typename _Abi>
 // compress: basic_mask
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr basic_mask<_Bytes, _Abi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_mask<_Bytes, _Abi>
 compress(const basic_mask<_Bytes, _Abi>& __v, const type_identity_t<basic_mask<_Bytes, _Abi>>& __selector)
 {
   return basic_mask<_Bytes, _Abi>{::cuda::std::simd::__make_compress_generator(__v, __selector, false)};
@@ -335,7 +336,7 @@ compress(const basic_mask<_Bytes, _Abi>& __v, const type_identity_t<basic_mask<_
 // compress: basic_mask with fill_value
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr basic_mask<_Bytes, _Abi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_mask<_Bytes, _Abi>
 compress(const basic_mask<_Bytes, _Abi>& __v,
          const type_identity_t<basic_mask<_Bytes, _Abi>>& __selector,
          const bool& __fill_value)
@@ -346,7 +347,7 @@ compress(const basic_mask<_Bytes, _Abi>& __v,
 // expand: basic_vec
 
 template <typename _Tp, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi>
 expand(const basic_vec<_Tp, _Abi>& __v,
        const typename basic_vec<_Tp, _Abi>::mask_type& __selector,
        const basic_vec<_Tp, _Abi>& __original = {})
@@ -357,7 +358,7 @@ expand(const basic_vec<_Tp, _Abi>& __v,
 // expand: basic_mask
 
 template <size_t _Bytes, typename _Abi>
-[[nodiscard]] _CCCL_API constexpr basic_mask<_Bytes, _Abi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_mask<_Bytes, _Abi>
 expand(const basic_mask<_Bytes, _Abi>& __v,
        const type_identity_t<basic_mask<_Bytes, _Abi>>& __selector,
        const basic_mask<_Bytes, _Abi>& __original = {})
