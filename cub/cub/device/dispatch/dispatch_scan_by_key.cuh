@@ -641,6 +641,11 @@ struct DispatchScanByKey
     KernelSourceT kernel_source            = {},
     KernelLauncherFactory launcher_factory = {})
   {
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     ::cuda::compute_capability cc{};
     if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {

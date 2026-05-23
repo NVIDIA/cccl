@@ -735,6 +735,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   if (num_segments <= 0)
   {
     if (d_temp_storage == nullptr)
