@@ -173,7 +173,7 @@ private:
     unsigned lo = 0;
     unsigned hi = k;
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i <= Log2<max_k>::VALUE; i++)
+    for (int i = 0; i <= (cuda::std::min) (4, Log2<max_k>::VALUE); i++)
     {
       unsigned mid             = cub::MidPoint<unsigned>(lo, hi);
       mid                      = (::cuda::std::min) (mid, k - 1);
