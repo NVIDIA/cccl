@@ -2,15 +2,36 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/device/device_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk_atomic.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
+#include <cuda/__execution/require.h>
 #include <cuda/iterator>
+#include <cuda/std/__execution/env.h>
+#include <cuda/stream>
+
+#include <algorithm>
+#include <vector>
 
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 1:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_BLOCK_LOAD_ALGORITHM ld 0:2:1
+
+enum class topk_backend
+{
+  baseline,
+  cluster,
+  atomic,
+  device,
+};
+
+inline constexpr topk_backend selected_backend = topk_backend::baseline;
 
 #if !TUNE_BASE
 struct tuned_policy_selector
@@ -38,6 +59,124 @@ struct tuned_policy_selector
   }
 };
 #endif // !TUNE_BASE
+
+template <typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename SegmentSizeParamT,
+          typename KParamT,
+          typename SelectDirectionParamT,
+          typename NumSegmentsParameterT,
+          typename TotalNumItemsGuaranteeT,
+          typename HostSegSizeT>
+CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputItItT d_keys_in,
+  KeyOutputItItT d_keys_out,
+  SegmentSizeParamT segment_sizes,
+  KParamT k,
+  SelectDirectionParamT select_directions,
+  NumSegmentsParameterT num_segments,
+  TotalNumItemsGuaranteeT total_num_items,
+  const HostSegSizeT* h_segment_sizes,
+  cudaStream_t stream = nullptr)
+{
+  if constexpr (selected_backend == topk_backend::cluster)
+  {
+    (void) h_segment_sizes;
+    return cub::detail::batched_topk_cluster::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      segment_sizes,
+      k,
+      select_directions,
+      num_segments,
+      total_num_items,
+      stream);
+  }
+  else if constexpr (selected_backend == topk_backend::atomic)
+  {
+    (void) h_segment_sizes;
+    return cub::detail::batched_topk_atomic::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      segment_sizes,
+      k,
+      select_directions,
+      num_segments,
+      total_num_items,
+      stream);
+  }
+  else if constexpr (selected_backend == topk_backend::device)
+  {
+    using num_segments_val_t = typename NumSegmentsParameterT::value_type;
+    const auto num_segs      = num_segments.get_param(num_segments_val_t{0});
+
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+    if (d_temp_storage == nullptr)
+    {
+      const auto max_size = *std::max_element(h_segment_sizes, h_segment_sizes + num_segs);
+      const auto k_value  = k.get_param(num_segments_val_t{0});
+      return cub::DeviceTopK::MaxKeys(
+        nullptr,
+        temp_storage_bytes,
+        d_keys_in[num_segments_val_t{0}],
+        d_keys_out[num_segments_val_t{0}],
+        static_cast<cuda::std::int64_t>(max_size),
+        static_cast<cuda::std::int64_t>(k_value),
+        cuda::std::execution::env{requirements});
+    }
+
+    cuda::stream_ref stream_ref{stream};
+    auto env = cuda::std::execution::env{stream_ref, requirements};
+    for (num_segments_val_t i = 0; i < num_segs; ++i)
+    {
+      const auto k_value  = k.get_param(i);
+      const auto seg_size = h_segment_sizes[i];
+      if (const auto err = cub::DeviceTopK::MaxKeys(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_keys_in[i],
+            d_keys_out[i],
+            static_cast<cuda::std::int64_t>(seg_size),
+            static_cast<cuda::std::int64_t>(k_value),
+            env);
+          err != cudaSuccess)
+      {
+        return err;
+      }
+    }
+    return cudaSuccess;
+  }
+  else
+  {
+    (void) h_segment_sizes;
+    return cub::detail::batched_topk::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      static_cast<cub::NullType**>(nullptr),
+      static_cast<cub::NullType**>(nullptr),
+      segment_sizes,
+      k,
+      select_directions,
+      num_segments,
+      total_num_items,
+      stream
+#if !TUNE_BASE
+      ,
+      tuned_policy_selector{}
+#endif // !TUNE_BASE
+    );
+  }
+}
 
 template <typename KeyT, int MaxSegmentSize, int MaxNumSelected>
 void fixed_seg_size_topk_keys(
@@ -97,50 +236,41 @@ void fixed_seg_size_topk_keys(
   state.add_global_memory_reads<KeyT>(elements, "InputKeys");
   state.add_global_memory_writes<KeyT>(selected_elements * num_segments, "OutputKeys");
 
+  // Host copy of segment sizes — all entries equal MaxSegmentSize for fixed-size segments.
+  std::vector<cuda::std::int64_t> h_segment_sizes(num_segments, static_cast<cuda::std::int64_t>(MaxSegmentSize));
+
   // allocate temporary storage
   size_t temp_size;
-  cub::detail::batched_topk::dispatch(
+  batched_topk_keys(
     nullptr,
     temp_size,
     d_keys_in,
     d_keys_out,
-    static_cast<cub::NullType**>(nullptr),
-    static_cast<cub::NullType**>(nullptr),
     segment_sizes,
     k,
     select_directions,
     num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
     total_num_items,
-    nullptr
-#if !TUNE_BASE
-    ,
-    tuned_policy_selector{}
-#endif // !TUNE_BASE
-  );
+    h_segment_sizes.data(),
+    nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   // run the algorithm
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::batched_topk::dispatch(
+    batched_topk_keys(
       temp_storage,
       temp_size,
       d_keys_in,
       d_keys_out,
-      static_cast<cub::NullType**>(nullptr),
-      static_cast<cub::NullType**>(nullptr),
       segment_sizes,
       k,
       select_directions,
       num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
       total_num_items,
-      launch.get_stream()
-#if !TUNE_BASE
-        ,
-      tuned_policy_selector{}
-#endif // !TUNE_BASE
-    );
+      h_segment_sizes.data(),
+      launch.get_stream());
   });
 }
 
