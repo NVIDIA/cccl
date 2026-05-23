@@ -17,6 +17,7 @@ print_help() {
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
     echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
     echo "  -e, --env list           Set additional container environment variables."
+    echo "  --ulimit ulimit          Ulimit forwarded to the docker run command."
     echo "  -v, --volume list        Bind mount a volume."
     echo "  -h, --help               Display this help message and exit."
 }
