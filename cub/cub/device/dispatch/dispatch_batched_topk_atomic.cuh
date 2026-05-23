@@ -19,34 +19,27 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_device.cuh>
 
+#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <cuda_runtime.h>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk_atomic
 {
-inline constexpr int default_cluster_size      = 8;
 inline constexpr int default_threads_per_block = 256;
-inline constexpr int default_items_per_thread  = 16;
-inline constexpr int default_bits_per_pass     = 8;
 
-template <int ClusterSize,
-          int ThreadsPerBlock,
-          int ItemsPerThread,
-          int BitsPerPass,
+template <int ThreadsPerBlock,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParameterT,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterSize, 1, 1) _CCCL_KERNEL_ATTRIBUTES void
-  device_segmented_topk_atomic_kernel(
+__launch_bounds__(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_atomic_kernel(
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
   SegmentSizeParameterT segment_sizes,
@@ -55,10 +48,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterSize, 1, 1) _CCCL_KER
   NumSegmentsParameterT num_segments)
 {
   using agent_t = agent_batched_topk_atomic<
-    ClusterSize,
     ThreadsPerBlock,
-    ItemsPerThread,
-    BitsPerPass,
     KeyInputItItT,
     KeyOutputItItT,
     SegmentSizeParameterT,
@@ -68,15 +58,13 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterSize, 1, 1) _CCCL_KER
 
   __shared__ typename agent_t::TempStorage temp_storage;
 
-  agent_t agent(temp_storage, d_key_segments_it, d_key_segments_out_it, segment_sizes, k_param, select_directions, num_segments);
+  agent_t agent(
+    temp_storage, d_key_segments_it, d_key_segments_out_it, segment_sizes, k_param, select_directions, num_segments);
 
   agent.Process();
 }
 
-template <int ClusterSize        = default_cluster_size,
-          int ThreadsPerBlock    = default_threads_per_block,
-          int ItemsPerThread     = default_items_per_thread,
-          int BitsPerPass        = default_bits_per_pass,
+template <int ThreadsPerBlock = default_threads_per_block,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParameterT,
@@ -96,13 +84,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = nullptr)
 {
-  static_assert(ClusterSize >= 1 && ClusterSize <= 8, "ClusterSize must be in [1, 8]");
-
-  constexpr int cluster_tile = ClusterSize * ThreadsPerBlock * ItemsPerThread;
-
-  static_assert(detail::params::static_max_value_v<SegmentSizeParameterT> <= cluster_tile,
-                "Atomic top-k prototype only supports segments that fit in a single cluster tile.");
-
   size_t allocation_sizes[1] = {1};
   void* allocations[1]       = {};
   if (const auto error =
@@ -119,8 +100,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static_assert(!detail::params::is_per_segment_param_v<NumSegmentsParameterT>,
                 "Number of segments must be resolved on the host.");
 
-  using num_segments_val_t  = typename NumSegmentsParameterT::value_type;
-  const auto num_seg_val    = num_segments.get_param(num_segments_val_t{0});
+  using num_segments_val_t    = typename NumSegmentsParameterT::value_type;
+  const auto num_seg_val      = num_segments.get_param(num_segments_val_t{0});
   const auto num_seg_unsigned = static_cast<unsigned long long>(num_seg_val);
   if (num_seg_unsigned == 0)
   {
@@ -137,17 +118,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return cudaErrorNotSupported;
   }
 
-  const auto grid_blocks = static_cast<unsigned long long>(num_seg_unsigned) * static_cast<unsigned long long>(ClusterSize);
-  if (grid_blocks > static_cast<unsigned long long>(::cuda::std::numeric_limits<int>::max()))
-  {
-    return cudaErrorInvalidValue;
-  }
+  const auto grid_blocks = static_cast<unsigned long long>(num_seg_unsigned);
 
   auto kernel = device_segmented_topk_atomic_kernel<
-    ClusterSize,
     ThreadsPerBlock,
-    ItemsPerThread,
-    BitsPerPass,
     KeyInputItItT,
     KeyOutputItItT,
     SegmentSizeParameterT,
@@ -155,20 +129,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     SelectDirectionParameterT,
     NumSegmentsParameterT>;
 
-  if (const auto error =
-        CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                   dim3(static_cast<unsigned int>(grid_blocks), 1, 1),
-                   dim3(static_cast<unsigned int>(ThreadsPerBlock), 1, 1),
-                   0,
-                   stream)
-                   .doit(
-                     kernel,
-                     d_key_segments_it,
-                     d_key_segments_out_it,
-                     segment_sizes,
-                     k_param,
-                     select_directions,
-                     num_segments)))
+  if (const auto error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          static_cast<unsigned int>(grid_blocks), static_cast<unsigned int>(ThreadsPerBlock), 0, stream)
+          .doit(
+            kernel, d_key_segments_it, d_key_segments_out_it, segment_sizes, k_param, select_directions, num_segments)))
   {
     return error;
   }
@@ -180,7 +145,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   return CubDebug(detail::DebugSyncStream(stream));
 }
-
 } // namespace detail::batched_topk_atomic
 
 CUB_NAMESPACE_END

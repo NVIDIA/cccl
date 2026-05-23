@@ -73,6 +73,7 @@ CompileFlags:
   Add:
     - -x
     - cuda
+    - --offload-arch=sm_90
     - -Wno-unknown-cuda-version
     - -Wno-pragma-system-header-outside-header
     - --no-cuda-version-check
