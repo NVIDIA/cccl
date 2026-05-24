@@ -4,6 +4,7 @@ build*/
 .aws
 .config
 _deps/catch2-src/
+.vs/
 .vscode/
 _site/
 .devcontainer/local*
