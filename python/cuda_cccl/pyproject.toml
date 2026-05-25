@@ -104,7 +104,7 @@ minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
 
 [tool.scikit-build.cmake]
-version = ">=3.21"
+version = ">=3.27"
 args = []
 build-type = "Release"
 source-dir = "."
