@@ -144,7 +144,7 @@ public:
     // here just like the legacy code did.
     ::std::unique_lock<::std::mutex> lock = is_capture_enabled() ? mv(capture_lock_) : lock_ctx_graph();
 #else // _CCCL_CTK_AT_LEAST(12, 3)
-    ::std::scoped_lock lock(graph_mutex);
+    ::std::scoped_lock<::std::mutex> lock(graph_mutex);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
 
     if (is_capture_enabled())
