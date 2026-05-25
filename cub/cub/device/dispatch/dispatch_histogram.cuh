@@ -47,6 +47,8 @@
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 
+#include <cstdio>
+
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -379,68 +381,110 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // the device; since `num_thread_blocks <= histogram_sweep_occupancy =
   // sm_count * sm_occupancy` the grid is already sized to fit.
   bool launched_persistent = false;
+#if _CCCL_HOSTED()
   if constexpr (!IsDeviceInit)
   {
     if (blocks_per_row > 0 && blocks_per_col > 0)
     {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        ({
-          int device_ordinal        = 0;
-          int cooperative_supported = 0;
-          if (cudaGetDevice(&device_ordinal) == cudaSuccess
-              && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal)
-                   == cudaSuccess
-              && cooperative_supported != 0)
-          {
-            using output_decode_op_t     = typename FirstLevelArrayT::value_type;
-            using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+      using output_decode_op_t     = typename FirstLevelArrayT::value_type;
+      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
 
-            // Use a 1-D grid for the cooperative launch; the kernel's
-            // `block_id = blockIdx.y * gridDim.x + blockIdx.x` evaluates
-            // identically for the 2-D `(blocks_per_row, blocks_per_col, 1)`
-            // grid and a 1-D `(num_thread_blocks, 1, 1)` grid.
-            dim3 persistent_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
-            auto persistent_kernel_ptr =
-              kernel_source.template HistogramSweepKernelPersistent<PolicySelector,
-                                                                    PRIVATIZED_SMEM_BINS,
-                                                                    privatized_decode_op_t,
-                                                                    output_decode_op_t>();
-            void* kernel_args[] = {
-              const_cast<void*>(static_cast<const void*>(&d_samples)),
-              const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
-              const_cast<void*>(static_cast<const void*>(&num_privatized_bins_wrapper)),
-              const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
-              const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper)),
-              const_cast<void*>(static_cast<const void*>(&first_level_array)),
-              const_cast<void*>(static_cast<const void*>(&second_level_array)),
-              const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
-              const_cast<void*>(static_cast<const void*>(&num_rows)),
-              const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
-              const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
-              const_cast<void*>(static_cast<const void*>(&tile_queue)),
-              const_cast<void*>(static_cast<const void*>(&max_num_output_bins))};
-            const cudaError_t coop_status = cudaLaunchCooperativeKernel(
-              reinterpret_cast<const void*>(persistent_kernel_ptr),
-              persistent_grid_dims,
-              dim3{static_cast<unsigned int>(threads_per_block)},
-              kernel_args,
-              /*sharedMem=*/0,
-              stream);
-            if (coop_status == cudaSuccess)
-            {
-              launched_persistent = true;
-            }
-            else
-            {
-              // Clear the sticky error so the legacy two-kernel fallback below
-              // does not see a stale error from cudaLaunchCooperativeKernel.
-              (void) cudaGetLastError();
-            }
-          }
-        }));
+      // Use a 1-D grid for the cooperative launch; the kernel's
+      // `block_id = blockIdx.y * gridDim.x + blockIdx.x` evaluates
+      // identically for the 2-D `(blocks_per_row, blocks_per_col, 1)`
+      // grid and a 1-D `(num_thread_blocks, 1, 1)` grid.
+      dim3 persistent_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
+
+      // Reference the kernel template by name in a chevron call to ensure
+      // nvcc emits the device-side kernel during device compilation. The
+      // launch itself runs only once via `cudaLaunchCooperativeKernel`
+      // below so `grid.sync()` works.
+      auto persistent_kernel_ptr = &DeviceHistogramSweepPersistentKernel<PolicySelector,
+                                                                         PRIVATIZED_SMEM_BINS,
+                                                                         NUM_CHANNELS,
+                                                                         NUM_ACTIVE_CHANNELS,
+                                                                         SampleIteratorT,
+                                                                         CounterT,
+                                                                         privatized_decode_op_t,
+                                                                         output_decode_op_t,
+                                                                         OffsetT>;
+
+      // Force device-side instantiation of the kernel template by referencing
+      // it via a dead `<<<>>>` syntax. nvcc emits device code for kernels
+      // whose templates are referenced by a chevron call, regardless of
+      // whether the call is reachable at runtime. Without this, just taking
+      // `&kernel` produces only the host shadow function, and the runtime's
+      // kernel-registration table has no device-side entry to match it,
+      // causing `cudaLaunchCooperativeKernel` to fail with
+      // `cudaErrorInvalidResourceHandle`.
+      if (false)
+      {
+        DeviceHistogramSweepPersistentKernel<PolicySelector,
+                                             PRIVATIZED_SMEM_BINS,
+                                             NUM_CHANNELS,
+                                             NUM_ACTIVE_CHANNELS,
+                                             SampleIteratorT,
+                                             CounterT,
+                                             privatized_decode_op_t,
+                                             output_decode_op_t,
+                                             OffsetT>
+          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
+            d_samples,
+            num_output_bins_wrapper,
+            num_privatized_bins_wrapper,
+            d_output_histograms,
+            d_privatized_histograms_wrapper,
+            first_level_array,
+            second_level_array,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            tiles_per_row,
+            tile_queue,
+            max_num_output_bins);
+      }
+
+      int device_ordinal        = 0;
+      int cooperative_supported = 0;
+      if (cudaGetDevice(&device_ordinal) == cudaSuccess
+          && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
+          && cooperative_supported != 0)
+      {
+        void* kernel_args[] = {
+          const_cast<void*>(static_cast<const void*>(&d_samples)),
+          const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
+          const_cast<void*>(static_cast<const void*>(&num_privatized_bins_wrapper)),
+          const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
+          const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper)),
+          const_cast<void*>(static_cast<const void*>(&first_level_array)),
+          const_cast<void*>(static_cast<const void*>(&second_level_array)),
+          const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
+          const_cast<void*>(static_cast<const void*>(&num_rows)),
+          const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
+          const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
+          const_cast<void*>(static_cast<const void*>(&tile_queue)),
+          const_cast<void*>(static_cast<const void*>(&max_num_output_bins))};
+        const cudaError_t coop_status = cudaLaunchCooperativeKernel(
+          reinterpret_cast<const void*>(persistent_kernel_ptr),
+          persistent_grid_dims,
+          dim3{static_cast<unsigned int>(threads_per_block)},
+          kernel_args,
+          /*sharedMem=*/0,
+          stream);
+        if (coop_status == cudaSuccess)
+        {
+          launched_persistent = true;
+        }
+        else
+        {
+          // Clear the sticky error so the legacy two-kernel fallback below
+          // does not see a stale error from cudaLaunchCooperativeKernel.
+          (void) cudaGetLastError();
+        }
+      }
     }
   }
+#endif // _CCCL_HOSTED()
 
   if (!launched_persistent)
   {
