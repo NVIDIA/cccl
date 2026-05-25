@@ -556,4 +556,5 @@ _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #include <cuda/std/__cccl/epilogue.h>
 
+// a comment to trigger CI
 #endif // _CUDA___DEVICE_ARCH_TRAITS_H
