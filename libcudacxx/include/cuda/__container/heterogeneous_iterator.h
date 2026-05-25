@@ -35,7 +35,8 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-//! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
+//! @file
+//! @brief The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 enum class __is_heterogeneous_const_iter

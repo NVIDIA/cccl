@@ -34,6 +34,7 @@
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -70,39 +71,8 @@ struct AgentReducePolicy : ScalingType
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ReduceAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
-  (BLOCK_ALGORITHM, BlockAlgorithm, cub::BlockReduceAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  WarpReduceAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (WARP_THREADS, WarpThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (ITEMS_PER_TILE, ItemsPerTile, int),
-  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int) )
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-
 /**
- * Parameterizable tuning policy type for AgentReduce
+ * Parameterizable tuning policy type for AgentWarpReduce
  * @tparam BlockThreads Threads per thread block
  * @tparam WarpThreads Threads per warp
  * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
@@ -127,9 +97,12 @@ struct AgentWarpReducePolicy
   /// Number of threads per block
   static constexpr int BLOCK_THREADS = BlockThreads;
 
-  /// Number of items per thread
+  /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
+  /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
   static constexpr int ITEMS_PER_THREAD =
-    detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>::ITEMS_PER_THREAD;
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<ComputeT, void>,
+                               detail::NoScaling<0, NominalItemsPerThread4B>,
+                               detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
@@ -215,15 +188,15 @@ struct AgentReduceImpl
                      InputIteratorT>;
 
   /// Constants
-  static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS         = NumThreads * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int ITEMS_PER_THREAD = AgentReducePolicy::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
+  static constexpr int vec_size         = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
   // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
+    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
     && (::cuda::std::is_pointer_v<InputIteratorT>)
     // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
     &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>);
@@ -305,7 +278,7 @@ struct AgentReduceImpl
     if constexpr (CanVectorize)
     {
       // Fabricate a vectorized input iterator
-      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
+      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * vec_size);
       CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
         reinterpret_cast<VectorT*>(d_in_unqualified));
 
@@ -314,7 +287,7 @@ struct AgentReduceImpl
       VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
 
       // Alias items as an array of VectorT and load it in striped fashion
-      static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
+      static constexpr int words = ITEMS_PER_THREAD / vec_size;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < words; ++i)
       {

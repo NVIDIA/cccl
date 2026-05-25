@@ -15,7 +15,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 
-__device__ void test()
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void test()
 {
 #if _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
   __float128 dummy_f128{};

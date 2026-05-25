@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <cuda/std/optional>
 
 // template <class U, class... Args>
@@ -30,20 +33,20 @@ class X
   int j_ = 0;
 
 public:
-  __host__ __device__ X()
+  TEST_FUNC X()
       : i_(0)
   {}
-  __host__ __device__ X(int i)
+  TEST_FUNC X(int i)
       : i_(i)
   {}
-  __host__ __device__ X(int i, int j)
+  TEST_FUNC X(int i, int j)
       : i_(i)
       , j_(j)
   {}
 
-  __host__ __device__ ~X() {}
+  TEST_FUNC ~X() {}
 
-  __host__ __device__ friend bool operator==(const X& x, const X& y)
+  TEST_FUNC friend bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
@@ -55,18 +58,18 @@ class Y
   int j_ = 0;
 
 public:
-  __host__ __device__ constexpr Y()
+  TEST_FUNC constexpr Y()
       : i_(0)
   {}
-  __host__ __device__ constexpr Y(int i)
+  TEST_FUNC constexpr Y(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr Y(cuda::std::initializer_list<int> il)
+  TEST_FUNC constexpr Y(cuda::std::initializer_list<int> il)
       : i_(il.begin()[0])
       , j_(il.begin()[1])
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
+  TEST_FUNC friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
@@ -100,7 +103,7 @@ public:
 
 void test_exceptions()
 {
-  static_assert(cuda::std::is_constructible<optional<Z>, cuda::std::initializer_list<int>&>::value, "");
+  static_assert(cuda::std::is_constructible<optional<Z>, cuda::std::initializer_list<int>&>::value);
   try
   {
     optional<Z> opt(in_place, {3, 1});
@@ -116,8 +119,8 @@ void test_exceptions()
 int main(int, char**)
 {
   {
-    static_assert(!cuda::std::is_constructible<X, cuda::std::initializer_list<int>&>::value, "");
-    static_assert(!cuda::std::is_constructible<optional<X>, cuda::std::initializer_list<int>&>::value, "");
+    static_assert(!cuda::std::is_constructible<X, cuda::std::initializer_list<int>&>::value);
+    static_assert(!cuda::std::is_constructible<optional<X>, cuda::std::initializer_list<int>&>::value);
   }
   {
     optional<cuda::std::inplace_vector<int, 3>> opt(in_place, {3, 1});
@@ -126,7 +129,7 @@ int main(int, char**)
     assert(opt->size() == 2);
   }
   {
-    static_assert(cuda::std::is_constructible<optional<Y>, cuda::std::initializer_list<int>&>::value, "");
+    static_assert(cuda::std::is_constructible<optional<Y>, cuda::std::initializer_list<int>&>::value);
 
     {
       optional<Y> opt(in_place, {3, 1});
@@ -136,13 +139,13 @@ int main(int, char**)
 
     {
       constexpr optional<Y> opt(in_place, {3, 1});
-      static_assert(static_cast<bool>(opt) == true, "");
-      static_assert(*opt == Y{3, 1}, "");
+      static_assert(static_cast<bool>(opt) == true);
+      static_assert(*opt == Y{3, 1});
     }
 
     struct test_constexpr_ctor : public optional<Y>
     {
-      __host__ __device__ constexpr test_constexpr_ctor(in_place_t, cuda::std::initializer_list<int> i)
+      TEST_FUNC constexpr test_constexpr_ctor(in_place_t, cuda::std::initializer_list<int> i)
           : optional<Y>(in_place, i)
       {}
     };

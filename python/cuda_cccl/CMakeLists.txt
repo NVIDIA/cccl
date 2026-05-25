@@ -4,6 +4,16 @@
 
 cmake_minimum_required(VERSION 3.21...3.31 FATAL_ERROR)
 
+# Must be set before project() initializes the CUDA language; otherwise CMake
+# < 3.23 defaults to sm_52, which is below CCCL's minimum supported arch.
+include(../../cmake/CCCLCheckCudaArchitectures.cmake)
+set(
+  CMAKE_CUDA_ARCHITECTURES
+  "${minimum_cccl_arch}"
+  CACHE STRING
+  "CUDA architectures for CCCL"
+)
+
 project(cuda_cccl DESCRIPTION "Python package cuda_cccl" LANGUAGES CUDA CXX C)
 
 find_package(CUDAToolkit)

@@ -237,13 +237,13 @@ private:
     // The total number of selected items
     total_selected = 0;
 
-    const int total_bits = ::max(end_bit - begin_bit, 0);
+    const int total_bits = (::cuda::std::max) (end_bit - begin_bit, 0);
     const int num_passes = ::cuda::ceil_div(total_bits, RadixBits);
     for (int pass = 0; pass < num_passes; ++pass)
     {
       // Bit-range & mask of the current pass
       const int pass_end_bit           = end_bit - pass * RadixBits;
-      const int pass_begin_bit         = ::max(pass_end_bit - RadixBits, begin_bit);
+      const int pass_begin_bit         = (::cuda::std::max) (pass_end_bit - RadixBits, begin_bit);
       const int pass_bits              = pass_end_bit - pass_begin_bit;
       const bit_ordered_type pass_mask = ::cuda::bitmask<bit_ordered_type>(pass_begin_bit, pass_bits);
 
@@ -308,7 +308,7 @@ private:
     }
 
     // TODO (elstehle): Short-circuit if begin_bit is constrained to be non-negative
-    begin_bit = ::max(begin_bit, 0);
+    begin_bit = (::cuda::std::max) (begin_bit, 0);
 
     // TODO (elstehle): Short-circuit if end_bit is constrained to be less than the maximum number of bits in the key
     // type

@@ -152,7 +152,7 @@ _CCCL_API bool __atomic_compare_exchange_strong_dispatch(
 {
   using _Tp        = __atomic_underlying_t<_Sto>;
   auto const __old = *__expected;
-  while (1)
+  while (true)
   {
     if (__atomic_compare_exchange_weak_dispatch(__a, __expected, __value, __success, __failure, _Sco{}))
     {
@@ -214,7 +214,7 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>, "");
+  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
     __atomic_fetch_max_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
@@ -224,7 +224,7 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>, "");
+  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
     __atomic_fetch_min_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));

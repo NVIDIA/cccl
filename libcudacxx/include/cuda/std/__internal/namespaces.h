@@ -77,6 +77,10 @@
 #define _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER              _CCCL_BEGIN_NAMESPACE(cuda::__driver)
 #define _CCCL_END_NAMESPACE_CUDA_DRIVER                _CCCL_END_NAMESPACE(cuda::__driver)
 
+// Namespaces related to <simd>
+#define _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD _CCCL_BEGIN_NAMESPACE(cuda::std::simd)
+#define _CCCL_END_NAMESPACE_CUDA_STD_SIMD   _CCCL_END_NAMESPACE(cuda::std::simd)
+
 // Namespaces related to <ranges>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES _CCCL_BEGIN_NAMESPACE(cuda::std::ranges)
 #define _CCCL_END_NAMESPACE_CUDA_STD_RANGES   _CCCL_END_NAMESPACE(cuda::std::ranges)
@@ -111,8 +115,10 @@
 #define _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION _CCCL_BEGIN_NAMESPACE(cuda::execution)
 #define _CCCL_END_NAMESPACE_CUDA_EXECUTION   _CCCL_END_NAMESPACE(cuda::execution)
 
-// Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
-#if _CCCL_COMPILER(CLANG, <=, 16)
+// Namespace to avoid name collisions with CPOs on clang-16 (see
+// https://godbolt.org/z/9TadonrdM for example). MSVC's ancient parser also gets confused with
+// __cccl_true in the main iter_move template.
+#if _CCCL_COMPILER(CLANG, <=, 16) || _CCCL_COMPILER(MSVC)
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE \
     namespace __hidden                              \
     {

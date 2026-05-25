@@ -13,11 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/alignment.h>
-
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstddef>
 
-#define THRUST_MR_DEFAULT_ALIGNMENT alignof(THRUST_NS_QUALIFIER::detail::max_align_t)
+#define THRUST_MR_DEFAULT_ALIGNMENT alignof(::cuda::std::max_align_t)
 
 #if __has_include(<memory_resource>)
 #  define THRUST_MR_STD_MR_HEADER <memory_resource>

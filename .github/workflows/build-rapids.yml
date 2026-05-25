@@ -64,7 +64,8 @@ jobs:
       matrix:
         include:
           - { cuda: '13.0', libs: 'rmm kvikio cudf cudf_kafka' }
-          - { cuda: '13.0', libs: 'rmm ucxx raft cuvs cuml'    }
+          # TODO: remove the PYTHON_VERSION override when all of cuml's dependencies have Python 3.14 support
+          - { cuda: '13.0', libs: 'rmm ucxx raft cuvs cuml', python_version: '3.13' }
           - { cuda: '13.0', libs: 'rmm ucxx raft cugraph'      }
     permissions:
       id-token: write
@@ -90,6 +91,7 @@ jobs:
           CI: true
           CONDA_ENV_CREATE_QUIET: true
           GH_TOKEN: ${{ github.token }}
+          PYTHON_VERSION: ${{ matrix.python_version }}
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
@@ -172,6 +174,7 @@ jobs:
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
+            --env "PYTHON_VERSION=${PYTHON_VERSION:-}" \
             --env "CONDA_ENV_CREATE_QUIET=true" \
             --env "CCCL_TAG=$CCCL_TAG" \
             --env "CCCL_VERSION=$CCCL_VERSION" \

@@ -9,6 +9,9 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/std/variant>
 
 // template <class ...Types> class variant;
@@ -25,41 +28,41 @@ struct NonTDtor
 {
   STATIC_MEMBER_VAR(count, int)
   NonTDtor() = default;
-  __host__ __device__ ~NonTDtor()
+  TEST_FUNC ~NonTDtor()
   {
     ++count();
   }
 };
-static_assert(!cuda::std::is_trivially_destructible<NonTDtor>::value, "");
+static_assert(!cuda::std::is_trivially_destructible<NonTDtor>::value);
 
 struct NonTDtor1
 {
   STATIC_MEMBER_VAR(count, int)
   NonTDtor1() = default;
-  __host__ __device__ ~NonTDtor1()
+  TEST_FUNC ~NonTDtor1()
   {
     ++count();
   }
 };
-static_assert(!cuda::std::is_trivially_destructible<NonTDtor1>::value, "");
+static_assert(!cuda::std::is_trivially_destructible<NonTDtor1>::value);
 
 struct TDtor
 {
-  __host__ __device__ TDtor(const TDtor&) {} // non-trivial copy
+  TEST_FUNC TDtor(const TDtor&) {} // non-trivial copy
   ~TDtor() = default;
 };
-static_assert(!cuda::std::is_trivially_copy_constructible<TDtor>::value, "");
-static_assert(cuda::std::is_trivially_destructible<TDtor>::value, "");
+static_assert(!cuda::std::is_trivially_copy_constructible<TDtor>::value);
+static_assert(cuda::std::is_trivially_destructible<TDtor>::value);
 
 int main(int, char**)
 {
   {
     using V = cuda::std::variant<int, long, TDtor>;
-    static_assert(cuda::std::is_trivially_destructible<V>::value, "");
+    static_assert(cuda::std::is_trivially_destructible<V>::value);
   }
   {
     using V = cuda::std::variant<NonTDtor, int, NonTDtor1>;
-    static_assert(!cuda::std::is_trivially_destructible<V>::value, "");
+    static_assert(!cuda::std::is_trivially_destructible<V>::value);
     {
       V v(cuda::std::in_place_index<0>);
       assert(NonTDtor::count() == 0);

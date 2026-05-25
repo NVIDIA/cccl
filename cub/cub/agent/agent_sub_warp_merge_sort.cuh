@@ -43,23 +43,6 @@ struct AgentSubWarpMergeSortPolicy
   static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  SubWarpMergeSortAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (WARP_THREADS, WarpThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (ITEMS_PER_TILE, ItemsPerTile, int),
-  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::WarpLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::WarpStoreAlgorithm))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-
 namespace detail::sub_warp_merge_sort
 {
 /**
@@ -114,11 +97,11 @@ class AgentSubWarpSort
       // Need to explicitly cast to float for SM <= 52.
       if constexpr (IS_DESCENDING)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
       }
       else
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
       }
       _CCCL_UNREACHABLE();
     }
@@ -130,12 +113,12 @@ class AgentSubWarpSort
       // Need to explicitly cast to float for SM < 80.
       if constexpr (IS_DESCENDING)
       {
-        NV_IF_TARGET(
+        NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_80, (return __hgt(lhs, rhs);), (return __bfloat162float(lhs) > __bfloat162float(rhs);));
       }
       else
       {
-        NV_IF_TARGET(
+        NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_80, (return __hlt(lhs, rhs);), (return __bfloat162float(lhs) < __bfloat162float(rhs);));
       }
       _CCCL_UNREACHABLE();
@@ -147,7 +130,7 @@ class AgentSubWarpSort
   _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
-    NV_IF_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
   }
 #endif // _CCCL_HAS_NVFP16()
 
@@ -155,7 +138,8 @@ class AgentSubWarpSort
   _CCCL_DEVICE static bool equal(__nv_bfloat16 lhs, __nv_bfloat16 rhs)
   {
     // Need to explicitly cast to float for SM < 80.
-    NV_IF_TARGET(NV_PROVIDES_SM_80, (return __heq(lhs, rhs);), (return __bfloat162float(lhs) == __bfloat162float(rhs);));
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_80, (return __heq(lhs, rhs);), (return __bfloat162float(lhs) == __bfloat162float(rhs);));
   }
 #endif // _CCCL_HAS_NVBF16()
 

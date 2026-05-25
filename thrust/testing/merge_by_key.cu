@@ -1,11 +1,12 @@
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -293,7 +294,7 @@ void TestMergeByKeyFromCuDFDremel()
   auto offset_transformer  = offset_transform{};
   auto transformed_empties = thrust::make_transform_iterator(empties.begin(), offset_transformer);
 
-  auto input_parent_rep_it = thrust::make_constant_iterator(level);
+  auto input_parent_rep_it = cuda::make_constant_iterator(level);
   auto input_parent_def_it = thrust::make_transform_iterator(empties_idx.begin(), def_level_fn{});
   auto input_parent_zip_it = thrust::make_zip_iterator(input_parent_rep_it, input_parent_def_it);
   auto input_child_zip_it  = thrust::make_zip_iterator(temp_rep_vals.begin(), temp_def_vals.begin());

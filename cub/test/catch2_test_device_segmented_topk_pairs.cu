@@ -47,56 +47,8 @@ struct flag_intra_segment_duplicates
 template <typename ItemItT, typename SegIdItT>
 flag_intra_segment_duplicates(ItemItT, SegIdItT) -> flag_intra_segment_duplicates<ItemItT, SegIdItT>;
 
-template <typename KeyInputItItT,
-          typename KeyOutputItItT,
-          typename ValueInputItItT,
-          typename ValueOutputItItT,
-          typename SegmentSizeParamT,
-          typename KParamT,
-          typename SelectDirectionParamT,
-          typename NumSegmentsParameterT,
-          typename TotalNumItemsGuaranteeT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  KeyInputItItT d_key_segments_it,
-  KeyOutputItItT d_key_segments_out_it,
-  ValueInputItItT d_value_segments_it,
-  ValueOutputItItT d_value_segments_out_it,
-  SegmentSizeParamT segment_sizes,
-  KParamT k,
-  SelectDirectionParamT select_directions,
-  NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items_guarantee,
-  cudaStream_t stream = 0)
-{
-  return cub::detail::batched_topk::dispatch_batched_topk<
-    KeyInputItItT,
-    KeyOutputItItT,
-    ValueInputItItT,
-    ValueOutputItItT,
-    SegmentSizeParamT,
-    KParamT,
-    SelectDirectionParamT,
-    NumSegmentsParameterT,
-    TotalNumItemsGuaranteeT>::
-    dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      d_value_segments_it,
-      d_value_segments_out_it,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items_guarantee,
-      stream);
-}
-
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(dispatch_batched_topk_pairs, batched_topk_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::detail::batched_topk::dispatch, batched_topk_pairs);
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -216,7 +168,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
   constexpr auto max_segment_size           = static_max_segment_size;
   const segment_size_t segment_size = GENERATE_COPY(values({min_segment_size, segment_size_t{3}, max_segment_size}),
                                                     take(1, random(min_segment_size, max_segment_size)));
-  const segment_size_t max_k        = cuda::std::min(static_max_k, segment_size);
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
 
   // Skip invalid combinations
   if (segment_size > max_segment_size)
@@ -314,7 +266,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
 
   constexpr segment_size_t min_items = 1;
-  constexpr segment_size_t max_items = 1000000;
+  constexpr segment_size_t max_items = 1'000'000;
 
   // Number of items
   const segment_size_t num_items = GENERATE_COPY(

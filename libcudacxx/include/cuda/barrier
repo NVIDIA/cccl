@@ -46,7 +46,7 @@
 // We need to forward-declare both CUtensorMap_st (the struct) and CUtensorMap
 // (the typedef):
 struct CUtensorMap_st;
-typedef struct CUtensorMap_st CUtensorMap;
+typedef struct CUtensorMap_st CUtensorMap; // NOLINT(modernize-use-using)
 
 #include <cuda/std/__cccl/prologue.h>
 

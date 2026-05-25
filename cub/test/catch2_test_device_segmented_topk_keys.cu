@@ -44,34 +44,22 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   SelectDirectionParamT select_directions,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items_guarantee,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
-  using value_it_t = cub::NullType**;
-
   auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::batched_topk::dispatch_batched_topk<
-    KeyInputItItT,
-    KeyOutputItItT,
-    value_it_t,
-    value_it_t,
-    SegmentSizeParamT,
-    KParamT,
-    SelectDirectionParamT,
-    NumSegmentsParameterT,
-    TotalNumItemsGuaranteeT>::
-    dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      values_it,
-      values_it,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items_guarantee,
-      stream);
+  return cub::detail::batched_topk::dispatch(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_key_segments_it,
+    d_key_segments_out_it,
+    values_it,
+    values_it,
+    segment_sizes,
+    k,
+    select_directions,
+    num_segments,
+    total_num_items_guarantee,
+    stream);
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -120,7 +108,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   constexpr auto max_segment_size           = static_max_segment_size;
   const segment_size_t segment_size = GENERATE_COPY(values({min_segment_size, segment_size_t{3}, max_segment_size}),
                                                     take(4, random(min_segment_size, max_segment_size)));
-  const segment_size_t max_k        = cuda::std::min(static_max_k, segment_size);
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
 
   // Skip invalid combinations
   if (segment_size > max_segment_size)
@@ -197,7 +185,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
 
   constexpr segment_size_t min_items = 1;
-  constexpr segment_size_t max_items = 1000000;
+  constexpr segment_size_t max_items = 1'000'000;
 
   // Number of items
   const segment_size_t num_items = GENERATE_COPY(

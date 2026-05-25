@@ -24,10 +24,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -110,7 +107,7 @@ enum WarpLoadAlgorithm
   WARP_LOAD_TRANSPOSE
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorithm)
 {
   switch (algorithm)
@@ -127,7 +124,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
       return os << "<unknown WarpLoadAlgorithm: " << static_cast<int>(algorithm) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The WarpLoad class provides :ref:`collective <collective-primitives>` data movement methods for

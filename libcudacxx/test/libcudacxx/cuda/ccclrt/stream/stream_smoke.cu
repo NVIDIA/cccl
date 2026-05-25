@@ -180,12 +180,12 @@ C2H_CCCLRT_TEST("Invalid stream", "[stream]")
   STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::invalid_stream_t, cuda::stream_ref>);
   {
     cuda::stream_ref stream{cuda::invalid_stream};
-    CCCLRT_REQUIRE(stream.get() == (cudaStream_t) (~0ull));
+    CCCLRT_REQUIRE(stream.get() == (cudaStream_t) (~0ull)); // NOLINT(performance-no-int-to-ptr)
   }
 
   // 3. Test stream_ref comparisons
   {
-    cuda::stream_ref valid_stream{(cudaStream_t) (123ull)};
+    cuda::stream_ref valid_stream{(cudaStream_t) (123ull)}; // NOLINT(performance-no-int-to-ptr)
     cuda::stream_ref invalid_stream{cuda::invalid_stream};
 
     CCCLRT_REQUIRE(!(valid_stream == cuda::invalid_stream));

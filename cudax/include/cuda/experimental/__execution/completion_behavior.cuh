@@ -50,24 +50,6 @@ enum class _CCCL_TYPE_VISIBILITY_DEFAULT completion_behavior : int
                     ///< `start()`.
 };
 
-#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-[[nodiscard]] _CCCL_API constexpr auto operator<=>(completion_behavior __a, completion_behavior __b) noexcept
-  -> ::cuda::std::strong_ordering
-{
-  return static_cast<int>(__a) <=> static_cast<int>(__b);
-}
-#else
-[[nodiscard]] _CCCL_API constexpr auto operator<(completion_behavior __a, completion_behavior __b) noexcept -> bool
-{
-  return static_cast<int>(__a) < static_cast<int>(__b);
-}
-[[nodiscard]] _CCCL_API constexpr auto operator==(completion_behavior __a, completion_behavior __b) noexcept -> bool
-{
-  return static_cast<int>(__a) == static_cast<int>(__b);
-}
-using namespace ::cuda::std::rel_ops;
-#endif
-
 template <completion_behavior _CB>
 using __constant_t = ::cuda::std::integral_constant<completion_behavior, _CB>;
 

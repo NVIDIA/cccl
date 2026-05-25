@@ -5,17 +5,17 @@ Events
 
 Event is a snapshot of execution state of a stream. It can be used to synchronize work submitted to a stream up to a certain point, establish dependency between streams or measure time passed between two events.
 
-``cuda::event_ref``
+:cpp:class:`cuda::event_ref`
 --------------------------------------------------
 .. _cccl-runtime-event-event-ref:
 
-``cuda::event_ref`` is a non-owning wrapper around a ``cudaEvent_t``. It prevents unsafe implicit constructions from
+:cpp:class:`cuda::event_ref` is a non-owning wrapper around a ``cudaEvent_t``. It prevents unsafe implicit constructions from
 ``nullptr`` or integer literals and provides convenient helpers:
 
 - ``record(cuda::stream_ref)``: record the event on a stream
 - ``sync()``: wait for the recorded work to complete
 - ``is_done()``: non-blocking completion query
-- comparison operators against other ``event_ref`` or ``cudaEvent_t``
+- comparison operators against other :cpp:class:`cuda::event_ref` or ``cudaEvent_t``
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 
@@ -30,13 +30,14 @@ Example:
      e.record(stream);
    }
 
-``cuda::event``
+:cpp:class:`cuda::event`
 --------------------------------------------
 .. _cccl-runtime-event-event:
 
-``cuda::event`` is an owning wrapper around a ``cudaEvent_t`` (with timing disabled). It inherits from ``event_ref`` and provides all of its functionality.
-It also creates and destroys the native event, can be moved (but not copied), and can release ownership via ``release()``. Construction can target a specific
-``cuda::device_ref`` or record immediately on a ``cuda::stream_ref``.
+:cpp:class:`cuda::event` is an owning wrapper around a ``cudaEvent_t`` (with timing disabled). It inherits from
+:cpp:class:`cuda::event_ref` and provides all of its functionality. It also creates and destroys the native event, can be moved (but
+not copied), and can release ownership via ``release()``. Construction can target a specific :cpp:class:`cuda::device_ref`
+or record immediately on a :cpp:class:`cuda::stream_ref`.
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 
@@ -56,11 +57,13 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 .. _cccl-runtime-event-timed-event:
 
-``cuda::timed_event``
+:cpp:class:`cuda::timed_event`
 -----------------------------------------------------
 
-``cuda::timed_event`` is an owning wrapper for a timed ``cudaEvent_t``. It inherits from ``event`` and provides all of its functionality.
-It also supports elapsed-time queries between two events via ``operator-``, returning ``cuda::std::chrono::nanoseconds``.
+:cpp:class:`cuda::timed_event` is an owning wrapper for a timed ``cudaEvent_t``. It inherits from :cpp:class:`cuda::event` and provides
+all of its functionality.
+It also supports elapsed-time queries between two events via ``operator-``, returning
+:cpp:class:`cuda::std::chrono::nanoseconds`.
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 

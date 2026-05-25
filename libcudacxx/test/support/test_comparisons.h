@@ -36,7 +36,7 @@
 
 // Test the consistency of the six basic comparison operators for values that are ordered or unordered.
 template <class T, class U = T>
-[[nodiscard]] __host__ __device__ constexpr bool
+[[nodiscard]] TEST_FUNC constexpr bool
 testComparisonsComplete(const T& t1, const U& t2, bool isEqual, bool isLess, bool isGreater)
 {
   assert(((isEqual ? 1 : 0) + (isLess ? 1 : 0) + (isGreater ? 1 : 0) <= 1)
@@ -251,7 +251,7 @@ testComparisonsComplete(const T& t1, const U& t2, bool isEqual, bool isLess, boo
 
 // Test the six basic comparison operators for ordered values.
 template <class T, class U = T>
-[[nodiscard]] __host__ __device__ constexpr bool testComparisons(const T& t1, const U& t2, bool isEqual, bool isLess)
+[[nodiscard]] TEST_FUNC constexpr bool testComparisons(const T& t1, const U& t2, bool isEqual, bool isLess)
 {
   assert(!(isEqual && isLess) && "isEqual and isLess cannot be both true");
   bool isGreater = !isEqual && !isLess;
@@ -260,7 +260,7 @@ template <class T, class U = T>
 
 //  Easy call when you can init from something already comparable.
 template <class T, class Param>
-[[nodiscard]] __host__ __device__ constexpr bool testComparisonsValues(Param val1, Param val2)
+[[nodiscard]] TEST_FUNC constexpr bool testComparisonsValues(Param val1, Param val2)
 {
   const bool isEqual   = val1 == val2;
   const bool isLess    = val1 < val2;
@@ -270,7 +270,7 @@ template <class T, class Param>
 }
 
 template <class T, class U = T>
-__host__ __device__ constexpr void AssertComparisonsAreNoexcept()
+TEST_FUNC constexpr void AssertComparisonsAreNoexcept()
 {
   static_assert(noexcept(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()));
   static_assert(noexcept(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()));
@@ -281,7 +281,7 @@ __host__ __device__ constexpr void AssertComparisonsAreNoexcept()
 }
 
 template <class T, class U = T>
-__host__ __device__ constexpr void AssertComparisonsReturnBool()
+TEST_FUNC constexpr void AssertComparisonsReturnBool()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>);
@@ -292,7 +292,7 @@ __host__ __device__ constexpr void AssertComparisonsReturnBool()
 }
 
 template <class T, class U = T>
-__host__ __device__ constexpr void AssertComparisonsConvertibleToBool()
+TEST_FUNC constexpr void AssertComparisonsConvertibleToBool()
 {
   static_assert(
     (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value),
@@ -316,14 +316,14 @@ __host__ __device__ constexpr void AssertComparisonsConvertibleToBool()
 
 #if TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 template <class T, class U = T>
-__host__ __device__ constexpr void AssertOrderAreNoexcept()
+TEST_FUNC constexpr void AssertOrderAreNoexcept()
 {
   AssertComparisonsAreNoexcept<T, U>();
   static_assert(noexcept(cuda::std::declval<const T&>() <=> cuda::std::declval<const U&>()));
 }
 
 template <class Order, class T, class U = T>
-__host__ __device__ constexpr void AssertOrderReturn()
+TEST_FUNC constexpr void AssertOrderReturn()
 {
   AssertComparisonsReturnBool<T, U>();
   static_assert(
@@ -331,7 +331,7 @@ __host__ __device__ constexpr void AssertOrderReturn()
 }
 
 template <class Order, class T, class U = T>
-[[nodiscard]] __host__ __device__ constexpr bool testOrder(const T& t1, const U& t2, Order order)
+[[nodiscard]] TEST_FUNC constexpr bool testOrder(const T& t1, const U& t2, Order order)
 {
   bool equal   = order == Order::equivalent;
   bool less    = order == Order::less;
@@ -341,7 +341,7 @@ template <class Order, class T, class U = T>
 }
 
 template <class T, class Param>
-[[nodiscard]] __host__ __device__ constexpr bool testOrderValues(Param val1, Param val2)
+[[nodiscard]] TEST_FUNC constexpr bool testOrderValues(Param val1, Param val2)
 {
   return testOrder(T(val1), T(val2), val1 <=> val2);
 }
@@ -350,7 +350,7 @@ template <class T, class Param>
 
 //  Test all two comparison operations for sanity
 template <class T, class U = T>
-[[nodiscard]] __host__ __device__ constexpr bool testEquality(const T& t1, const U& t2, bool isEqual)
+[[nodiscard]] TEST_FUNC constexpr bool testEquality(const T& t1, const U& t2, bool isEqual)
 {
   if (isEqual)
   {
@@ -396,7 +396,7 @@ template <class T, class U = T>
 
 //  Easy call when you can init from something already comparable.
 template <class T, class Param>
-[[nodiscard]] __host__ __device__ constexpr bool testEqualityValues(Param val1, Param val2)
+[[nodiscard]] TEST_FUNC constexpr bool testEqualityValues(Param val1, Param val2)
 {
   const bool isEqual = val1 == val2;
 
@@ -404,21 +404,21 @@ template <class T, class Param>
 }
 
 template <class T, class U = T>
-__host__ __device__ constexpr void AssertEqualityAreNoexcept()
+TEST_FUNC constexpr void AssertEqualityAreNoexcept()
 {
   static_assert(noexcept(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()));
   static_assert(noexcept(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()));
 }
 
 template <class T, class U = T>
-__host__ __device__ constexpr void AssertEqualityReturnBool()
+TEST_FUNC constexpr void AssertEqualityReturnBool()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>);
 }
 
 template <class T, class U = T>
-__host__ __device__ constexpr void AssertEqualityConvertibleToBool()
+TEST_FUNC constexpr void AssertEqualityConvertibleToBool()
 {
   static_assert(
     (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value),
@@ -432,16 +432,16 @@ struct LessAndEqComp
 {
   int value;
 
-  __host__ __device__ constexpr LessAndEqComp(int v)
+  TEST_FUNC constexpr LessAndEqComp(int v)
       : value(v)
   {}
 
-  __host__ __device__ friend constexpr bool operator<(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
+  TEST_FUNC friend constexpr bool operator<(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
   {
     return lhs.value < rhs.value;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
+  TEST_FUNC friend constexpr bool operator==(const LessAndEqComp& lhs, const LessAndEqComp& rhs)
   {
     return lhs.value == rhs.value;
   }
@@ -451,28 +451,28 @@ struct LessAndEqComp
 struct StrongOrder
 {
   int value;
-  __host__ __device__ constexpr StrongOrder(int v)
+  TEST_FUNC constexpr StrongOrder(int v)
       : value(v)
   {}
-  __host__ __device__ friend cuda::std::strong_ordering operator<=>(StrongOrder, StrongOrder) = default;
+  TEST_FUNC friend cuda::std::strong_ordering operator<=>(StrongOrder, StrongOrder) = default;
 };
 
 struct WeakOrder
 {
   int value;
-  __host__ __device__ constexpr WeakOrder(int v)
+  TEST_FUNC constexpr WeakOrder(int v)
       : value(v)
   {}
-  __host__ __device__ friend cuda::std::weak_ordering operator<=>(WeakOrder, WeakOrder) = default;
+  TEST_FUNC friend cuda::std::weak_ordering operator<=>(WeakOrder, WeakOrder) = default;
 };
 
 struct PartialOrder
 {
   int value;
-  __host__ __device__ constexpr PartialOrder(int v)
+  TEST_FUNC constexpr PartialOrder(int v)
       : value(v)
   {}
-  __host__ __device__ friend constexpr cuda::std::partial_ordering operator<=>(PartialOrder lhs, PartialOrder rhs)
+  TEST_FUNC friend constexpr cuda::std::partial_ordering operator<=>(PartialOrder lhs, PartialOrder rhs)
   {
     if (lhs.value == cuda::std::numeric_limits<int>::min() || rhs.value == cuda::std::numeric_limits<int>::min())
     {
@@ -480,7 +480,7 @@ struct PartialOrder
     }
     return lhs.value <=> rhs.value;
   }
-  __host__ __device__ friend constexpr bool operator==(PartialOrder lhs, PartialOrder rhs)
+  TEST_FUNC friend constexpr bool operator==(PartialOrder lhs, PartialOrder rhs)
   {
     return (lhs <=> rhs) == cuda::std::partial_ordering::equivalent;
   }

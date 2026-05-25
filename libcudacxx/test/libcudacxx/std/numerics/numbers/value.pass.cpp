@@ -15,11 +15,11 @@
 #include <cuda/std/cassert>
 #include <cuda/std/numbers>
 
-#include <test_macros.h>
+#include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(1046) // Suppress "floating-point value cannot be represented exactly"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // default constants
   assert(cuda::std::numbers::e == 2.718281828459045);
@@ -104,10 +104,11 @@ __host__ __device__ constexpr bool test()
 }
 
 // Extended floating point types are not comparable in constexpr context
-__host__ __device__ void test_ext_fp()
+TEST_FUNC void test_ext_fp()
 {
 #if !TEST_COMPILER(MSVC)
-  // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on Windows"
+  // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on
+  // Windows"
 #  if _LIBCUDACXX_HAS_NVFP16()
   // __half constants
   assert(cuda::std::numbers::e_v<__half> == __half{2.7182817f});

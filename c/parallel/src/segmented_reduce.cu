@@ -4,13 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
-#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
@@ -148,41 +147,17 @@ try
   const auto [end_offset_iterator_name, end_offset_iterator_src] =
     get_specialization<segmented_reduce_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
 
-  const auto [op_name, op_src] =
-    get_specialization<segmented_reduce_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
+  const auto [op_name, op_src] = get_specialization<segmented_reduce_operation_tag>(
+    template_id<binary_user_operation_traits>(), op, accum_t, accum_t, accum_t);
 
   // OffsetT is checked to match have 64-bit size
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-  // TODO(bgruber): share this with reduce.cu
   const auto policy_sel = [&] {
     using namespace cub::detail;
 
-    auto accum_type = type_t::other;
-    if (accum_t.type == CCCL_FLOAT32)
-    {
-      accum_type = type_t::float32;
-    }
-    else if (accum_t.type == CCCL_FLOAT64)
-    {
-      accum_type = type_t::float64;
-    }
-
-    auto operation_t = op_kind_t::other;
-    switch (op.type)
-    {
-      case CCCL_PLUS:
-        operation_t = op_kind_t::plus;
-        break;
-      case CCCL_MINIMUM:
-        operation_t = op_kind_t::min;
-        break;
-      case CCCL_MAXIMUM:
-        operation_t = op_kind_t::max;
-        break;
-      default:
-        break;
-    }
+    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
+    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
 
     const int offset_size = int{sizeof(OffsetT)};
     return cub::detail::segmented_reduce::policy_selector{
@@ -191,7 +166,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_sel_expr =
     std::format("cub::detail::segmented_reduce::policy_selector_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
@@ -215,7 +190,7 @@ using namespace cub;
 using namespace cub::detail::reduce;
 using namespace cub::detail::segmented_reduce;
 static_assert(
-  device_segmented_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {9},
+  device_segmented_reduce_policy()(detail::current_tuning_cc()) == {9},
   "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
@@ -319,6 +294,7 @@ CUresult cccl_device_segmented_reduce(
   cccl_iterator_t end_offset,
   cccl_op_t op,
   cccl_value_t init,
+  size_t max_segment_size,
   CUstream stream)
 {
   bool pushed    = false;
@@ -340,7 +316,7 @@ CUresult cccl_device_segmented_reduce(
       indirect_iterator_t{end_offset},
       indirect_arg_t{op},
       indirect_arg_t{init},
-      /* max_segment_size */ size_t{0},
+      max_segment_size,
       stream,
       *static_cast<cub::detail::segmented_reduce::policy_selector*>(build.runtime_policy),
       segmented_reduce::segmented_reduce_kernel_source{build},
@@ -351,7 +327,7 @@ CUresult cccl_device_segmented_reduce(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_segmented_reduce(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }

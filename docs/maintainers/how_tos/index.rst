@@ -1,5 +1,5 @@
 How Tos
-=======
+========
 
 How-to guides for maintainers.
 

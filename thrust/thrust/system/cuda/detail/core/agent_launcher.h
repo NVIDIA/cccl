@@ -37,20 +37,16 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub::core::detail
 {
-#  ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
-#    define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
-#  endif
-
 #  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
 {
   extern __shared__ char shmem[];
   Agent::entry(args..., shmem);
 }
 
 template <class Agent, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
   _kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];
@@ -60,11 +56,11 @@ THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_TH
 
 #  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 template <class, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
 {}
 
 template <class, class... Args>
-THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
 {}
 #  endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 
@@ -140,7 +136,7 @@ struct AgentLauncher : Agent
     assert(plan.grid_size > 0);
   }
 
-  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = 0)
+  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = nullptr)
   {
     return get_agent_plan<Agent>(get_ptx_version());
   }

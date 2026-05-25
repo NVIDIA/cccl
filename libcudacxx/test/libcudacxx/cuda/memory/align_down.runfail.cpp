@@ -8,13 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
 #include "test_macros.h"
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   uintptr_t ptr_int = 10;
   auto ptr          = reinterpret_cast<int*>(ptr_int);

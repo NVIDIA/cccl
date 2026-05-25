@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // bitset<N>& operator<<=(size_t pos); // constexpr since C++23
 
 #include <cuda/std/bitset>
@@ -18,7 +21,7 @@
 TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N, cuda::std::size_t Start = 0, cuda::std::size_t End = static_cast<cuda::std::size_t>(-1)>
-__host__ __device__ constexpr bool test_left_shift()
+TEST_FUNC constexpr bool test_left_shift()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   if (Start >= 9)
@@ -61,23 +64,23 @@ int main(int, char**)
   test_left_shift<64>();
   test_left_shift<65>();
   test_left_shift<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test_left_shift<0>(), "");
-  static_assert(test_left_shift<1>(), "");
-  static_assert(test_left_shift<31>(), "");
-  static_assert(test_left_shift<32>(), "");
-  static_assert(test_left_shift<33>(), "");
-  static_assert(test_left_shift<63, 0, 3>(), "");
-  static_assert(test_left_shift<63, 3, 6>(), "");
-  static_assert(test_left_shift<63, 6, 9>(), "");
-  static_assert(test_left_shift<63, 9>(), "");
-  static_assert(test_left_shift<64, 0, 3>(), "");
-  static_assert(test_left_shift<64, 3, 6>(), "");
-  static_assert(test_left_shift<64, 6, 9>(), "");
-  static_assert(test_left_shift<64, 9>(), "");
-  static_assert(test_left_shift<65, 0, 3>(), "");
-  static_assert(test_left_shift<65, 3, 6>(), "");
-  static_assert(test_left_shift<65, 6, 9>(), "");
-  static_assert(test_left_shift<65, 9>(), "");
+  static_assert(test_left_shift<0>());
+  static_assert(test_left_shift<1>());
+  static_assert(test_left_shift<31>());
+  static_assert(test_left_shift<32>());
+  static_assert(test_left_shift<33>());
+  static_assert(test_left_shift<63, 0, 3>());
+  static_assert(test_left_shift<63, 3, 6>());
+  static_assert(test_left_shift<63, 6, 9>());
+  static_assert(test_left_shift<63, 9>());
+  static_assert(test_left_shift<64, 0, 3>());
+  static_assert(test_left_shift<64, 3, 6>());
+  static_assert(test_left_shift<64, 6, 9>());
+  static_assert(test_left_shift<64, 9>());
+  static_assert(test_left_shift<65, 0, 3>());
+  static_assert(test_left_shift<65, 3, 6>());
+  static_assert(test_left_shift<65, 6, 9>());
+  static_assert(test_left_shift<65, 9>());
 
   return 0;
 }

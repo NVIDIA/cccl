@@ -37,11 +37,13 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, for_po
 {
   int block_threads = 256;
   auto kernel       = detail::for_each::dynamic_kernel<PolicySelector, OffsetT, OpT>;
-  NV_IF_TARGET(NV_IS_HOST,
-               (int _{}; //
-                if (const auto error = CubDebug(cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel))) {
-                  return error;
-                }));
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 int _{};
+                 if (const auto error = CubDebug(cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel)))
+                 {
+                   return error;
+                 }
+               }));
 
   const auto tile_size = static_cast<OffsetT>(block_threads * active_policy.items_per_thread);
   const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
@@ -117,13 +119,13 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
     return cudaSuccess;
   }
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  return CubDebug(dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     constexpr for_policy active_policy = policy_getter();
     if constexpr (active_policy.block_threads > 0)
     {

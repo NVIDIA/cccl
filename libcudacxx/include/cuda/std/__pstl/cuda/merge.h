@@ -35,8 +35,6 @@ _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/merge.h>
@@ -77,41 +75,21 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
     auto __ret                                  = __result + static_cast<iter_difference_t<_OutputIterator>>(__count1)
                + static_cast<iter_difference_t<_OutputIterator>>(__count2);
 
-    // Determine temporary device storage requirements for device_merge
-    size_t __num_bytes = 0;
+    // We pass the policy as an environment to DeviceMerge
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
-      "__pstl_cuda_merge: determination of device storage for cub::DeviceMerge::MergeKeys failed",
-      static_cast<void*>(nullptr),
-      __num_bytes,
-      __first1,
+      "__pstl_cuda_merge: kernel launch of cub::DeviceMerge::MergeKeys failed",
+      ::cuda::std::move(__first1),
       __count1,
-      __first2,
+      ::cuda::std::move(__first2),
       __count2,
-      __result,
-      __comp);
+      ::cuda::std::move(__result),
+      ::cuda::std::move(__comp),
+      __policy);
 
-    // Allocate memory for result
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
-    {
-      __temporary_storage<void, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
-
-      // Run the kernel
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
-        "__pstl_cuda_merge: kernel launch of cub::DeviceMerge::MergeKeys failed",
-        __storage.__get_temp_storage(),
-        __num_bytes,
-        ::cuda::std::move(__first1),
-        __count1,
-        ::cuda::std::move(__first2),
-        __count2,
-        ::cuda::std::move(__result),
-        ::cuda::std::move(__comp),
-        __stream.get());
-    }
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    __stream.sync();
 
     return __ret;
   }
@@ -131,7 +109,7 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
                   && ::cuda::std::__has_random_access_traversal<_InputIterator2>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(
           __policy,
@@ -142,7 +120,7 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
           ::cuda::std::move(__result),
           ::cuda::std::move(__comp));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -150,9 +128,10 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

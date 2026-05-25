@@ -246,10 +246,9 @@ C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
 }
 
 // use a policy selector that prescribes to run with exactly 8 threads per block and 3 items per thread
-// TODO(bgruber): can we get by without the base class?
-struct my_policy_selector : cub::detail::transform::tuning<my_policy_selector>
+struct my_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::transform::transform_policy
   {
     constexpr int min_bytes_in_flight = 64 * 1024;
     constexpr auto algorithm          = cub::detail::transform::Algorithm::prefetch;
@@ -270,7 +269,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
-  auto env = cuda::execution::__tune(my_policy_selector{});
+  auto env = cuda::execution::tune(my_policy_selector{});
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -284,7 +283,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::__tune(my_policy_selector{})};
+  auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(my_policy_selector{})};
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   stream.sync();

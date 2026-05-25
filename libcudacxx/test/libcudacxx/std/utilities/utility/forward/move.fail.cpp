@@ -20,21 +20,21 @@
 
 struct move_only
 {
-  __host__ __device__ move_only() {}
+  TEST_FUNC move_only() {}
   move_only(move_only&&)            = default;
   move_only& operator=(move_only&&) = default;
 };
 
-__host__ __device__ move_only source()
+TEST_FUNC move_only source()
 {
   return move_only();
 }
-__host__ __device__ const move_only csource()
+TEST_FUNC const move_only csource()
 {
   return move_only();
 }
 
-__host__ __device__ void test(move_only) {}
+TEST_FUNC void test(move_only) {}
 
 int main(int, char**)
 {

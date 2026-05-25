@@ -24,10 +24,10 @@ class C
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C>::type, C>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::type, void()>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::type, int*(double*)>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::type, void (*)()>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C>::type, C>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::type, void()>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::type, int*(double*)>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::type, void (*)()>::value));
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (*) (double*)>::type, int* (*) (double*)>::value),
                 "");
   static_assert(

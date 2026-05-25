@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cuda/std/complex>
 
 // template<Arithmetic T>
@@ -23,40 +26,40 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T, int x, class Target>
-__host__ __device__ void test_nonconstexpr()
+TEST_FUNC void test_nonconstexpr()
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), Target>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), Target>::value));
   assert(cuda::std::real(T(x)) == T(x));
 }
 
 template <class T, int x>
-__host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
+TEST_FUNC void test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
   test_nonconstexpr<T, x, double>();
 
-  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), double>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), double>::value));
   assert(cuda::std::real(x) == x);
   constexpr T val{x};
-  static_assert(cuda::std::real(val) == val, "");
+  static_assert(cuda::std::real(val) == val);
   constexpr cuda::std::complex<T> t{val, val};
-  static_assert(t.real() == x, "");
+  static_assert(t.real() == x);
 }
 
 template <class T, int x>
-__host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
+TEST_FUNC void test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
 {
   test_nonconstexpr<T, x, T>();
 
-  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), T>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), T>::value));
   assert(cuda::std::real(x) == x);
   constexpr T val{x};
-  static_assert(cuda::std::real(val) == val, "");
+  static_assert(cuda::std::real(val) == val);
   constexpr cuda::std::complex<T> t{val, val};
-  static_assert(t.real() == x, "");
+  static_assert(t.real() == x);
 }
 
 template <class T>
-__host__ __device__ void test_nonconstexpr()
+TEST_FUNC void test_nonconstexpr()
 {
   test_nonconstexpr<T, 0, T>();
   test_nonconstexpr<T, 1, T>();
@@ -64,7 +67,7 @@ __host__ __device__ void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<T, 0>();
   test<T, 1>();

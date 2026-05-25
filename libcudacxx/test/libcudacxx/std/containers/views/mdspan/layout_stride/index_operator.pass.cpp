@@ -35,7 +35,7 @@ _CCCL_CONCEPT operator_constraints = _CCCL_REQUIRES_EXPR((Mapping, variadic Indi
 
 _CCCL_TEMPLATE(class Mapping, class... Indices)
 _CCCL_REQUIRES(operator_constraints<Mapping, Indices...>)
-__host__ __device__ constexpr bool check_operator_constraints(Mapping m, Indices... idxs)
+TEST_FUNC constexpr bool check_operator_constraints(Mapping m, Indices... idxs)
 {
   (void) m(idxs...);
   return true;
@@ -43,21 +43,20 @@ __host__ __device__ constexpr bool check_operator_constraints(Mapping m, Indices
 
 _CCCL_TEMPLATE(class Mapping, class... Indices)
 _CCCL_REQUIRES((!operator_constraints<Mapping, Indices...>) )
-__host__ __device__ constexpr bool check_operator_constraints(Mapping, Indices...)
+TEST_FUNC constexpr bool check_operator_constraints(Mapping, Indices...)
 {
   return false;
 }
 
 template <class M, class... Args, size_t... Pos>
-__host__ __device__ constexpr size_t get_strides(
+TEST_FUNC constexpr size_t get_strides(
   const cuda::std::array<int, M::extents_type::rank()>& strides, cuda::std::index_sequence<Pos...>, Args... args)
 {
   return (size_t{0} + ... + (args * strides[Pos]));
 }
 
 template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() == sizeof...(Args)), int> = 0>
-__host__ __device__ constexpr void
-iterate_stride(M m, const cuda::std::array<int, M::extents_type::rank()>& strides, Args... args)
+TEST_FUNC constexpr void iterate_stride(M m, const cuda::std::array<int, M::extents_type::rank()>& strides, Args... args)
 {
   static_assert(noexcept(m(args...)));
   const size_t expected_val =
@@ -66,8 +65,7 @@ iterate_stride(M m, const cuda::std::array<int, M::extents_type::rank()>& stride
 }
 
 template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() != sizeof...(Args)), int> = 0>
-__host__ __device__ constexpr void
-iterate_stride(M m, const cuda::std::array<int, M::extents_type::rank()>& strides, Args... args)
+TEST_FUNC constexpr void iterate_stride(M m, const cuda::std::array<int, M::extents_type::rank()>& strides, Args... args)
 {
   constexpr size_t r = sizeof...(Args);
   for (typename M::index_type i = 0; i < m.extents().extent(r); i++)
@@ -77,7 +75,7 @@ iterate_stride(M m, const cuda::std::array<int, M::extents_type::rank()>& stride
 }
 
 template <class E, class... Args>
-__host__ __device__ constexpr void test_iteration(cuda::std::array<int, E::rank()> strides, Args... args)
+TEST_FUNC constexpr void test_iteration(cuda::std::array<int, E::rank()> strides, Args... args)
 {
   using M = cuda::std::layout_stride::mapping<E>;
   M m(E(args...), strides);
@@ -85,7 +83,7 @@ __host__ __device__ constexpr void test_iteration(cuda::std::array<int, E::rank(
   iterate_stride(m, strides);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int>>(cuda::std::array<int, 0>{});
@@ -125,7 +123,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test_large()
+TEST_FUNC constexpr bool test_large()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int64_t, D, 8, D, D>>(cuda::std::array<int, 4>{2000, 2, 20, 200}, 7, 9, 10);
@@ -136,7 +134,7 @@ __host__ __device__ constexpr bool test_large()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   // The large test iterates over ~10k loop indices.
   // With assertions enabled this triggered the maximum default limit

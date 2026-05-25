@@ -28,6 +28,7 @@
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
@@ -37,7 +38,6 @@
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__iterator/data.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/cstdint>
@@ -73,6 +73,7 @@ namespace detail
 //! - Uses special instructions/hardware acceleration when available (cp.async.bulk on Hopper+, copy.async on Ampere).
 //! - By guaranteeing 16 byte alignment and size multiple for the global span, a faster path is taken and less shared
 //!   memory is needed for the destination buffer.
+//! @endrst
 template <int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 struct BlockLoadToShared
 {
@@ -122,21 +123,24 @@ private:
   {
     // Otherwise elect.sync in the last warp with a full mask is UB.
     static_assert(block_threads % cub::detail::warp_threads == 0, "The block size must be a multiple of the warp size");
-    NV_DISPATCH_TARGET(
+    NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
       ( // Use last warp to try to avoid having the elected thread also working on the peeling in the first warp.
         return (linear_tid >= block_threads - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u);),
-      NV_IS_DEVICE,
       (return linear_tid == 0;));
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __init_mbarrier()
   {
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_90,
-                   (if (elected) { ::cuda::ptx::mbarrier_init(&temp_storage.mbarrier_handle, 1); }
-                    // TODO The following sync was added to avoid a racecheck posititive. Is it really needed?
-                    __syncthreads();));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                     if (elected)
+                     {
+                       ::cuda::ptx::mbarrier_init(&temp_storage.mbarrier_handle, 1);
+                     }
+                     // TODO The following sync was added to avoid a racecheck posititive. Is it really needed?
+                     __syncthreads();
+                   }));
     }
   }
 
@@ -145,25 +149,25 @@ private:
     if (elected)
     {
 #if __cccl_ptx_isa >= 860
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_90,
-        (::cuda::ptx::cp_async_bulk(
-           ::cuda::ptx::space_shared,
-           ::cuda::ptx::space_global,
-           smem_dst,
-           gmem_src,
-           num_bytes,
-           &temp_storage.mbarrier_handle);));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                     ::cuda::ptx::cp_async_bulk(
+                       ::cuda::ptx::space_shared,
+                       ::cuda::ptx::space_global,
+                       smem_dst,
+                       gmem_src,
+                       num_bytes,
+                       &temp_storage.mbarrier_handle);
+                   }));
 #else
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_90,
-        (::cuda::ptx::cp_async_bulk(
-           ::cuda::ptx::space_cluster,
-           ::cuda::ptx::space_global,
-           smem_dst,
-           gmem_src,
-           num_bytes,
-           &temp_storage.mbarrier_handle);));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                     ::cuda::ptx::cp_async_bulk(
+                       ::cuda::ptx::space_cluster,
+                       ::cuda::ptx::space_global,
+                       smem_dst,
+                       gmem_src,
+                       num_bytes,
+                       &temp_storage.mbarrier_handle);
+                   }));
 #endif // __cccl_ptx_isa >= 800
       // Needed for arrival on mbarrier in Commit()
       num_bytes_bulk_total += num_bytes;
@@ -178,11 +182,14 @@ private:
       [[maybe_unused]] const auto thread_src = gmem_src + offset;
       [[maybe_unused]] const auto thread_dst = smem_dst + offset;
       // LDGSTS borrowed from cuda::memcpy_async, assumes 16 byte alignment to avoid L1 (.cg)
-      NV_IF_TARGET(NV_PROVIDES_SM_80,
-                   (asm volatile("cp.async.cg.shared.global [%0], [%1], %2, %2;" : : "r"(
-                                   static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(thread_dst))),
-                                 "l"(thread_src),
-                                 "n"(16) : "memory");));
+      NV_IF_TARGET(
+        NV_PROVIDES_SM_80, ({
+          asm volatile(
+            "cp.async.cg.shared.global [%0], [%1], %2, %2;"
+            :
+            : "r"(static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(thread_dst))), "l"(thread_src), "n"(16)
+            : "memory");
+        }));
     }
   }
 
@@ -218,7 +225,7 @@ private:
       (asm volatile("cp.async.wait_group 0;" :: : "memory"); //
        __syncthreads();
        return true;),
-      NV_IS_DEVICE,
+      NV_ANY_TARGET,
       (__syncthreads(); //
        return true;));
   }
@@ -227,10 +234,13 @@ private:
   class token_impl
   {
     friend struct BlockLoadToShared;
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // NOLINT(modernize-use-equals-default) ctor must have a body to
+                                                       // avoid token_impl{} to compile
 
+    // NOLINTBEGIN(modernize-use-equals-delete)
     token_impl(const token_impl&)            = delete;
     token_impl& operator=(const token_impl&) = delete;
+    // NOLINTEND(modernize-use-equals-delete)
   };
 
 public:
@@ -300,14 +310,13 @@ public:
   //!   Note: This range is aliasing the `smem_dst` buffer. So `smem_dst` should not be written to/reused while this
   //!   range is still in use!
   // TODO Allow spans with static sizes?
-  template <typename T, int GmemAlign = alignof(T)>
+  template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<const T> gmem_src)
   {
     static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
-    static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
-    static_assert(GmemAlign >= int{alignof(T)});
-    constexpr bool bulk_aligned = GmemAlign >= detail::bulk_copy_min_align;
+    static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
+    constexpr bool bulk_aligned = GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align);
     // Avoid 64b multiplication in span::size_bytes()
     const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
     const auto dst_ptr  = data(smem_dst);
@@ -363,7 +372,7 @@ public:
 
   // Avoid need to explicitly specify `T` for non-const src.
   //! @brief Convenience overload, see `CopyAsync(span<char>, span<const T>)`.
-  template <typename T, int GmemAlign = alignof(T)>
+  template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<T> gmem_src)
   {

@@ -16,8 +16,9 @@
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
+#include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/atomic>
 
 CUB_NAMESPACE_BEGIN
@@ -129,22 +130,22 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce.block_threads)) void DeviceReduceKernel(
-  InputIteratorT d_in,
-  AccumT* d_out,
-  OffsetT num_items,
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(current_policy<PolicySelector>().reduce.block_threads)) void DeviceReduceKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  _CCCL_GRID_CONSTANT AccumT* const d_out,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
   ReductionOpT reduction_op,
   TransformOpT transform_op)
 {
-  static constexpr agent_reduce_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce;
+  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
                       AccumT,
-                      policy.vector_load_length,
+                      policy.vec_size,
                       policy.block_algorithm,
                       policy.load_modifier,
                       NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
@@ -222,22 +223,22 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads),
-  1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
-                                       OutputIteratorT d_out,
-                                       OffsetT num_items,
-                                       ReductionOpT reduction_op,
-                                       InitT init,
-                                       TransformOpT transform_op)
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(current_policy<PolicySelector>().single_tile.block_threads), 1) void DeviceReduceSingleTileKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  OutputIteratorT d_out,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  ReductionOpT reduction_op,
+  _CCCL_GRID_CONSTANT const InitT init,
+  TransformOpT transform_op)
 {
-  static constexpr agent_reduce_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile;
+  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
                       AccumT,
-                      policy.vector_load_length,
+                      policy.vec_size,
                       policy.block_algorithm,
                       policy.load_modifier,
                       NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
@@ -285,21 +286,23 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  current_policy<PolicySelector>()
     .reduce_nondeterministic
-    .block_threads)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
-                                                                   OutputIteratorT d_out,
-                                                                   OffsetT num_items,
+    .block_threads)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+                                                                   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+                                                                   _CCCL_GRID_CONSTANT const OffsetT num_items,
                                                                    GridEvenShare<OffsetT> even_share,
                                                                    ReductionOpT reduction_op,
-                                                                   InitT init,
+                                                                   _CCCL_GRID_CONSTANT const InitT init,
                                                                    TransformOpT transform_op)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_60,
-               (),
-               (static_assert(!cuda::std::is_same_v<AccumT, double>,
-                              "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
+  // todo: This static_assert fails with nvc++ CUDA compilation.
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_60,
+    (),
+    (static_assert(!cuda::std::is_same_v<AccumT, double>,
+                   "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
 
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
@@ -316,14 +319,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   }
 
   // Thread block type for reducing input tiles
-  static constexpr agent_reduce_policy policy =
-    PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce_nondeterministic;
+  static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().reduce_nondeterministic;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
                       AccumT,
-                      policy.vector_load_length,
+                      policy.vec_size,
                       policy.block_algorithm,
                       policy.load_modifier,
                       NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
@@ -340,11 +342,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   if (threadIdx.x == 0)
   {
     // TODO: replace this with other atomic operations when specified
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_60,
-      (::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]); atomic_target.fetch_add(
-        blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate, ::cuda::memory_order_relaxed);),
-      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                      ({
+                        ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
+                        atomic_target.fetch_add(blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate,
+                                                ::cuda::memory_order_relaxed);
+                      }),
+                      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
   }
 }
 } // namespace detail::reduce

@@ -27,12 +27,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/machine.cuh>
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
-#include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
 #include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
 #include <cuda/experimental/__stf/internal/repeat.cuh>
 #include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
@@ -126,7 +126,7 @@ protected:
       EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
 
       // Enable peer memory accesses (if not done already)
-      reserved::machine::instance().enable_peer_accesses();
+      machine::instance().enable_peer_accesses();
 
       // If CUDASTF_DISPLAY_STATS is set to a non 0 value, record stats
       const char* record_stats_env = getenv("CUDASTF_DISPLAY_STATS");
@@ -183,6 +183,11 @@ protected:
     virtual cudaGraph_t graph() const
     {
       return nullptr;
+    }
+
+    virtual bool is_graph_ctx() const
+    {
+      return false;
     }
 
     void set_graph_cache_policy(::std::function<bool()> fn)
@@ -614,6 +619,18 @@ protected:
     {
       ctx_resources.add(mv(resource));
     }
+
+    // Export all resources by moving them to a new ctx_resource_set
+    ctx_resource_set export_resources()
+    {
+      return ctx_resources.export_resources();
+    }
+
+    // Import all resources from another ctx_resource_set
+    void import_resources(ctx_resource_set&& other)
+    {
+      ctx_resources.import_resources(mv(other));
+    }
   };
 
 public:
@@ -702,6 +719,20 @@ public:
     pimpl->add_resource(mv(resource));
   }
 
+  //! Export all resources by moving them to a new ctx_resource_set
+  //! The current context will have no resources after this operation
+  ctx_resource_set export_resources()
+  {
+    return pimpl->export_resources();
+  }
+
+  //! Import all resources from another ctx_resource_set
+  //! The other set will be left empty after this operation
+  void import_resources(ctx_resource_set&& other)
+  {
+    pimpl->import_resources(mv(other));
+  }
+
   /* Customize the allocator used by all logical data */
   void set_allocator(block_allocator_untyped custom)
   {
@@ -769,6 +800,11 @@ public:
   cudaGraph_t graph() const
   {
     return pimpl->graph();
+  }
+
+  bool is_graph_ctx() const
+  {
+    return pimpl->is_graph_ctx();
   }
 
   void set_graph_cache_policy(::std::function<bool()> policy)
@@ -929,6 +965,9 @@ template <typename Engine>
 class backend_ctx : public backend_ctx_untyped
 {
 public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
   backend_ctx(::std::shared_ptr<impl> impl)
       : backend_ctx_untyped(mv(impl))
   {
@@ -936,6 +975,21 @@ public:
   }
 
   ~backend_ctx() = default;
+
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    return static_cast<backend_ctx_untyped&>(*this);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    return static_cast<const backend_ctx_untyped&>(*this);
+  }
 
   /**
    * @brief Returns a `logical_data` object with the given shape, tied to this graph. Initial data place is invalid.
@@ -1046,13 +1100,6 @@ public:
     return reserved::launch_scope<Engine, thread_hierarchy_spec_t, Deps...>(self(), mv(spec), mv(e_place), mv(deps)...);
   }
 
-  /* Using ctx.launch with a host place */
-  template <typename... Deps>
-  auto launch(exec_place_host, task_dep<Deps>... deps)
-  {
-    return reserved::host_launch_scope<Engine, true, Deps...>(self(), mv(deps)...);
-  }
-
   /* Default execution policy, explicit place */
   // default depth to avoid breaking all codes (XXX temporary)
   template <typename... Deps>
@@ -1116,9 +1163,6 @@ public:
         self(), mv(e_place), mv(shape), mv(deps)...);
     }
   }
-
-  template <typename S, typename... Deps>
-  auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
   template <typename S, typename... Deps>
   auto parallel_for(S shape, Deps... deps)

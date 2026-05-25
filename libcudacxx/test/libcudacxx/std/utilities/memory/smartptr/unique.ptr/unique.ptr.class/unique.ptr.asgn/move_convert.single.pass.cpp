@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr
@@ -23,7 +26,7 @@
 #include "unique_ptr_test_helper.h"
 
 template <class APtr, class BPtr>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void testAssign(APtr& aptr, BPtr& bptr)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void testAssign(APtr& aptr, BPtr& bptr)
 {
   A* p = bptr.get();
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -41,7 +44,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void testAssign(APtr& aptr, BPtr& bptr)
 }
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSState, int RHSState)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSState, int RHSState)
 {
   assert(lhs.get_deleter().state() == LHSState);
   assert(rhs.get_deleter().state() == RHSState);
@@ -55,10 +58,10 @@ struct NCConvertingDeleter
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 template <class T>
@@ -69,10 +72,10 @@ struct NCConvertingDeleter<T[]>
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 struct NCGenericDeleter
@@ -81,10 +84,10 @@ struct NCGenericDeleter
   NCGenericDeleter(NCGenericDeleter const&)                 = delete;
   TEST_CONSTEXPR_CXX23 NCGenericDeleter(NCGenericDeleter&&) = default;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using DA  = NCConvertingDeleter<A>; // non-copyable deleters
   using DB  = NCConvertingDeleter<B>;
@@ -93,42 +96,42 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   using UAD = cuda::std::unique_ptr<A, DA>;
   using UBD = cuda::std::unique_ptr<B, DB>;
   { // cannot move from an lvalue
-    static_assert(cuda::std::is_assignable<UA, UB&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UA, UB&>::value, "");
-    static_assert(!cuda::std::is_assignable<UA, const UB&>::value, "");
+    static_assert(cuda::std::is_assignable<UA, UB&&>::value);
+    static_assert(!cuda::std::is_assignable<UA, UB&>::value);
+    static_assert(!cuda::std::is_assignable<UA, const UB&>::value);
   }
   { // cannot move if the deleter-types cannot convert
-    static_assert(cuda::std::is_assignable<UAD, UBD&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UAD, UB&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UA, UBD&&>::value, "");
+    static_assert(cuda::std::is_assignable<UAD, UBD&&>::value);
+    static_assert(!cuda::std::is_assignable<UAD, UB&&>::value);
+    static_assert(!cuda::std::is_assignable<UA, UBD&&>::value);
   }
   { // cannot move-convert with reference deleters of different types
     using UA1 = cuda::std::unique_ptr<A, DA&>;
     using UB1 = cuda::std::unique_ptr<B, DB&>;
-    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value);
   }
   { // cannot move-convert with reference deleters of different types
     using UA1 = cuda::std::unique_ptr<A, const DA&>;
     using UB1 = cuda::std::unique_ptr<B, const DB&>;
-    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value);
   }
   { // cannot move-convert from unique_ptr<Array[]>
     using UA1 = cuda::std::unique_ptr<A>;
     using UA2 = cuda::std::unique_ptr<A[]>;
     using UB1 = cuda::std::unique_ptr<B[]>;
-    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value);
+    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value);
   }
   { // cannot move-convert from unique_ptr<Array[]>
     using UA1 = cuda::std::unique_ptr<A, NCGenericDeleter>;
     using UA2 = cuda::std::unique_ptr<A[], NCGenericDeleter>;
     using UB1 = cuda::std::unique_ptr<B[], NCGenericDeleter>;
-    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value);
+    static_assert(!cuda::std::is_assignable<UA1, UB1&&>::value);
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_sfinae();
   {

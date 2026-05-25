@@ -145,7 +145,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  [[nodiscard]] _CCCL_API constexpr allocation_result<_Tp*> allocate_at_least(size_t __n)
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20_ALLOCATION allocation_result<_Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
@@ -188,7 +188,7 @@ public:
     return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] CCCL_DEPRECATED _CCCL_API inline _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
@@ -283,7 +283,7 @@ public:
     return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED const _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] CCCL_DEPRECATED _CCCL_API inline const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }

@@ -45,8 +45,8 @@ int main(int, char**)
   {
     using P1        = cuda::std::pair<int, short>;
     constexpr P1 p1 = cuda::std::make_pair(3, static_cast<short>(4));
-    static_assert(p1.first == 3, "");
-    static_assert(p1.second == 4, "");
+    static_assert(p1.first == 3);
+    static_assert(p1.second == 4);
   }
 
   return 0;

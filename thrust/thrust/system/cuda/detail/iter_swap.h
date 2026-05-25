@@ -26,6 +26,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -33,7 +34,7 @@ namespace cuda_cub
 namespace detail
 {
 template <typename Pointer1, typename Pointer2>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
+_CCCL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
 {
   using ::cuda::std::swap;
   swap(*raw_pointer_cast(a), *raw_pointer_cast(b));

@@ -20,9 +20,9 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -60,7 +60,7 @@ namespace random
  *    thrust::discard_block_engine<thrust::minstd_rand, 13, 10> rng;
  *
  *    // print a random number to standard output
- *    std::cout << rng() << std::endl;
+ *    std::cout << rng() << '\n';
  *
  *    return 0;
  *  }
@@ -138,7 +138,7 @@ public:
   /*! This member function produces a new random value and updates this \p discard_block_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p discard_block_engine's state a given number of times
    *  and discards the results.

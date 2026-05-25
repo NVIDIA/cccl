@@ -23,7 +23,9 @@ d_in2 = cp.asarray(input2_data)
 d_out = cp.empty_like(d_in1)
 
 # Perform the binary transform.
-cuda.compute.binary_transform(d_in1, d_in2, d_out, OpKind.PLUS, len(d_in1))
+cuda.compute.binary_transform(
+    d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=OpKind.PLUS, num_items=len(d_in1)
+)
 
 # Verify the result.
 result = d_out.get()

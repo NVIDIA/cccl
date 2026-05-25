@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:26.02-cpp-gcc7-cuda12.0",
+  "image": "rapidsai/devcontainers:26.06-cpp-gcc7-cuda12.0",
   "runArgs": [
     "--init",
     "--name",
@@ -52,7 +52,8 @@
         "llvm-vs-code-extensions.vscode-clangd",
         "seaube.clangformat",
         "nvidia.nsight-vscode-edition",
-        "ms-vscode.cmake-tools"
+        "ms-vscode.cmake-tools",
+        "timonwong.shellcheck"
       ],
       "settings": {
         "editor.defaultFormatter": "seaube.clangformat",
@@ -63,7 +64,8 @@
           "--compile-commands-dir=${workspaceFolder}"
         ],
         "files.eol": "\n",
-        "files.trimTrailingWhitespace": true
+        "files.trimTrailingWhitespace": true,
+        "shellcheck.useWorkspaceRootAsCwd": true
       }
     }
   },

@@ -80,23 +80,23 @@ int main()
   // print the initial data
   std::cout << "data: ";
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   using Iterator = thrust::device_vector<int>::iterator;
 
   // create strided_range with indices [0,2,4,6]
   strided_range<Iterator> evens(data.begin(), data.end(), 2);
-  std::cout << "sum of even indices: " << thrust::reduce(evens.begin(), evens.end()) << std::endl;
+  std::cout << "sum of even indices: " << thrust::reduce(evens.begin(), evens.end()) << '\n';
 
   // create strided_range with indices [1,3,5,7]
   strided_range<Iterator> odds(data.begin() + 1, data.end(), 2);
-  std::cout << "sum of odd indices:  " << thrust::reduce(odds.begin(), odds.end()) << std::endl;
+  std::cout << "sum of odd indices:  " << thrust::reduce(odds.begin(), odds.end()) << '\n';
 
   // set odd elements to 0 with fill()
   std::cout << "setting odd indices to zero: ";
   thrust::fill(odds.begin(), odds.end(), 0);
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   return 0;
 }

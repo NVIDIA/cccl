@@ -1,19 +1,28 @@
 .. _cccl-runtime-buffer:
 
+.. |cuda_make_buffer| replace:: ``cuda::make_buffer``
+.. _cuda_make_buffer: ../api/namespacecuda_1a8d909070d4cf758e776659b91e473a6f.html
+
 Buffer
 ======
 
 The buffer API provides a typed container allocated from memory resources. It handles stream-ordered allocation, initialization, and deallocation of memory.
 
-``cuda::buffer``
-----------------
+:cpp:class:`cuda::buffer`
+---------------------------
 .. _cccl-runtime-buffer-buffer:
 
-``cuda::buffer`` is a container that manages typed storage allocated from a given :ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided :ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require a kernel launch. The stream provided during construction is stored and later used for deallocation of the buffer, either explicitly or when the buffer destructor is called.
+:cpp:class:`cuda::buffer` is a container that manages typed storage allocated from a given
+:ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided
+:ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require
+a kernel launch. The stream provided during construction is stored and later used for deallocation of the buffer,
+either explicitly or when the buffer destructor is called.
 
 Buffer owns a copy of the memory resource, which means it must be copy-constructible. If a resource is not copy-constructible, like memory pool objects, :ref:`shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>` can be used to attach shared ownership to a resource type.
 
-In addition to being typed, ``buffer`` also takes a set of :ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to ensure that memory accessibility and other constraints are checked at compile time.
+In addition to being typed, :cpp:class:`cuda::buffer` also takes a set of
+:ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to ensure that memory accessibility and other
+constraints are checked at compile time.
 
 While the buffer operates in stream order, it can also be constructed with a :ref:`synchronous_resource <libcudacxx-extended-api-memory-resources-synchronous-resource>`, in which case it will automatically use the :ref:`synchronous_resource_adapter <libcudacxx-extended-api-memory-resources-synchronous-adapter>` to wrap the provided resource.
 
@@ -49,8 +58,8 @@ Type Aliases
 
 Convenience type aliases are provided for common buffer types:
 
-- ``cuda::device_buffer<T>`` - Buffer with ``device_accessible`` property
-- ``cuda::host_buffer<T>`` - Buffer with ``host_accessible`` property
+- :cpp:any:`cuda::device_buffer` - Buffer with ``device_accessible`` property
+- :cpp:any:`cuda::host_buffer` - Buffer with ``host_accessible`` property
 
 Example:
 
@@ -150,13 +159,13 @@ Example:
     // Alternative would be to call buf.destroy(stream2)
    }
 
-``cuda::make_buffer``
----------------------
+|cuda_make_buffer|_
+------------------------------------------------------------------------------------------------
 .. _cccl-runtime-buffer-make-buffer:
 
-``cuda::make_buffer()`` is a factory function that creates buffers with automatic property deduction from the memory
-resource. It supports the same construction patterns as the buffer constructors, in addition to an overload that sets
-all elements of the buffer to the same value.
+|cuda_make_buffer|_ is a factory function that
+creates buffers with automatic property deduction from the memory resource. It supports the same construction patterns
+as the buffer constructors, in addition to an overload that sets all elements of the buffer to the same value.
 
 Example:
 

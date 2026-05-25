@@ -16,6 +16,7 @@
 #include <cub/agent/agent_merge.cuh>
 #include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
@@ -23,10 +24,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__algorithm/min.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
+#include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
@@ -88,19 +86,19 @@ template <typename PolicySelector,
           typename ValueIt3,
           typename Offset,
           typename CompareOp>
-CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
-  KeyIt1 keys1,
-  Offset keys1_count,
-  KeyIt2 keys2,
-  Offset keys2_count,
-  Offset num_diagonals,
+_CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
+  _CCCL_GRID_CONSTANT const KeyIt1 keys1,
+  _CCCL_GRID_CONSTANT const Offset keys1_count,
+  _CCCL_GRID_CONSTANT const KeyIt2 keys2,
+  _CCCL_GRID_CONSTANT const Offset keys2_count,
+  _CCCL_GRID_CONSTANT const Offset num_diagonals,
   Offset* key1_beg_offsets,
   CompareOp compare_op)
 {
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
-    choose_merge_agent<policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    choose_merge_agent<policy_getter<PolicySelector, current_tuning_cc().get()>,
                        KeyIt1,
                        ValueIt1,
                        KeyIt2,
@@ -127,7 +125,7 @@ template <typename PolicySelector,
           typename Offset,
           typename CompareOp>
 __launch_bounds__(
-  choose_merge_agent<policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+  choose_merge_agent<policy_getter<PolicySelector, current_tuning_cc().get()>,
                      KeyIt1,
                      ValueIt1,
                      KeyIt2,
@@ -136,15 +134,15 @@ __launch_bounds__(
                      ValueIt3,
                      Offset,
                      CompareOp>::type::block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void device_merge_kernel(
-    KeyIt1 keys1,
-    ValueIt1 items1,
-    Offset num_keys1,
-    KeyIt2 keys2,
-    ValueIt2 items2,
-    Offset num_keys2,
-    KeyIt3 keys_result,
-    ValueIt3 items_result,
+  _CCCL_KERNEL_ATTRIBUTES void device_merge_kernel(
+    _CCCL_GRID_CONSTANT const KeyIt1 keys1,
+    _CCCL_GRID_CONSTANT const ValueIt1 items1,
+    _CCCL_GRID_CONSTANT const Offset num_keys1,
+    _CCCL_GRID_CONSTANT const KeyIt2 keys2,
+    _CCCL_GRID_CONSTANT const ValueIt2 items2,
+    _CCCL_GRID_CONSTANT const Offset num_keys2,
+    _CCCL_GRID_CONSTANT const KeyIt3 keys_result,
+    _CCCL_GRID_CONSTANT const ValueIt3 items_result,
     CompareOp compare_op,
     Offset* key1_beg_offsets,
     vsmem_t global_temp_storage)
@@ -155,7 +153,7 @@ __launch_bounds__(
                 "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
-    policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeyIt1,
     ValueIt1,
     KeyIt2,
@@ -212,19 +210,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (std::stringstream ss; ss << policy_getter();
-       _CubLog("Dispatching DeviceMerge to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << policy_getter();
+                   _CubLog("Dispatching DeviceMerge to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
     using AgentT = typename choose_merge_agent<

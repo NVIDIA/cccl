@@ -7,15 +7,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Level>
-__device__ void test_query_signatures(const Level& level)
+TEST_DEVICE_FUNC void test_query_signatures(const Level& level)
 {
   // 1. Test cuda::cluster_level::dims(x) signature.
   static_assert(
@@ -31,22 +33,26 @@ __device__ void test_query_signatures(const Level& level)
   static_assert(cuda::std::is_same_v<cuda::std::dims<3, unsigned>, decltype(cuda::cluster_level::extents(level))>);
   static_assert(noexcept(cuda::cluster_level::extents(level)));
 
-  // 4. Test cuda::cluster_level::count(x) signature.
+  // 4. Test cuda::cluster_level::static_count(x) signature.
+  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::static_count(level))>);
+  static_assert(noexcept(cuda::cluster_level::static_count(level)));
+
+  // 5. Test cuda::cluster_level::count(x) signature.
   static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::count(level))>);
   static_assert(noexcept(cuda::cluster_level::count(level)));
 
-  // 5. Test cuda::cluster_level::index(x) signature.
+  // 6. Test cuda::cluster_level::index(x) signature.
   static_assert(
     cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::cluster_level::index(level))>);
   static_assert(noexcept(cuda::cluster_level::index(level)));
 
-  // 6. Test cuda::cluster_level::rank(x) signature.
+  // 7. Test cuda::cluster_level::rank(x) signature.
   static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::rank(level))>);
   static_assert(noexcept(cuda::cluster_level::rank(level)));
 }
 
 template <class T, class Level>
-__device__ void test_query_as_signatures(const Level& level)
+TEST_DEVICE_FUNC void test_query_as_signatures(const Level& level)
 {
   // 1. Test cuda::cluster_level::dims(x) signature.
   static_assert(
@@ -72,7 +78,7 @@ __device__ void test_query_as_signatures(const Level& level)
 }
 
 template <class InLevel>
-__device__ void test(const InLevel& in_level)
+TEST_DEVICE_FUNC void test(const InLevel& in_level)
 {
   test_query_signatures(in_level);
   test_query_as_signatures<short>(in_level);
@@ -83,7 +89,7 @@ __device__ void test(const InLevel& in_level)
   test_query_as_signatures<unsigned long long>(in_level);
 }
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   test(cuda::grid);
 }

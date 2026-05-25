@@ -16,29 +16,29 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_fundamental()
+TEST_FUNC void test_is_fundamental()
 {
-  static_assert(cuda::std::is_fundamental<T>::value, "");
-  static_assert(cuda::std::is_fundamental<const T>::value, "");
-  static_assert(cuda::std::is_fundamental<volatile T>::value, "");
-  static_assert(cuda::std::is_fundamental<const volatile T>::value, "");
-  static_assert(cuda::std::is_fundamental_v<T>, "");
-  static_assert(cuda::std::is_fundamental_v<const T>, "");
-  static_assert(cuda::std::is_fundamental_v<volatile T>, "");
-  static_assert(cuda::std::is_fundamental_v<const volatile T>, "");
+  static_assert(cuda::std::is_fundamental<T>::value);
+  static_assert(cuda::std::is_fundamental<const T>::value);
+  static_assert(cuda::std::is_fundamental<volatile T>::value);
+  static_assert(cuda::std::is_fundamental<const volatile T>::value);
+  static_assert(cuda::std::is_fundamental_v<T>);
+  static_assert(cuda::std::is_fundamental_v<const T>);
+  static_assert(cuda::std::is_fundamental_v<volatile T>);
+  static_assert(cuda::std::is_fundamental_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_fundamental()
+TEST_FUNC void test_is_not_fundamental()
 {
-  static_assert(!cuda::std::is_fundamental<T>::value, "");
-  static_assert(!cuda::std::is_fundamental<const T>::value, "");
-  static_assert(!cuda::std::is_fundamental<volatile T>::value, "");
-  static_assert(!cuda::std::is_fundamental<const volatile T>::value, "");
-  static_assert(!cuda::std::is_fundamental_v<T>, "");
-  static_assert(!cuda::std::is_fundamental_v<const T>, "");
-  static_assert(!cuda::std::is_fundamental_v<volatile T>, "");
-  static_assert(!cuda::std::is_fundamental_v<const volatile T>, "");
+  static_assert(!cuda::std::is_fundamental<T>::value);
+  static_assert(!cuda::std::is_fundamental<const T>::value);
+  static_assert(!cuda::std::is_fundamental<volatile T>::value);
+  static_assert(!cuda::std::is_fundamental<const volatile T>::value);
+  static_assert(!cuda::std::is_fundamental_v<T>);
+  static_assert(!cuda::std::is_fundamental_v<const T>);
+  static_assert(!cuda::std::is_fundamental_v<volatile T>);
+  static_assert(!cuda::std::is_fundamental_v<const volatile T>);
 }
 
 class incomplete_type;
@@ -48,7 +48,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -61,7 +61,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file cub::DeviceReduceByKey provides device-wide, parallel operations for
- *       reducing segments of values residing within device-accessible memory.
+ * @file
+ * @brief cub::DeviceReduceByKey provides device-wide, parallel operations for
+ *        reducing segments of values residing within device-accessible memory.
  */
 
 #pragma once
@@ -25,15 +26,14 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -188,22 +188,22 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
-    KeysInputIteratorT d_keys_in,
-    UniqueOutputIteratorT d_unique_out,
-    ValuesInputIteratorT d_values_in,
-    AggregatesOutputIteratorT d_aggregates_out,
-    NumRunsOutputIteratorT d_num_runs_out,
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
+    _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const UniqueOutputIteratorT d_unique_out,
+    _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const AggregatesOutputIteratorT d_aggregates_out,
+    _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_state,
-    int start_tile,
+    _CCCL_GRID_CONSTANT const int start_tile,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    OffsetT num_items,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
-  static constexpr reduce_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr reduce_by_key_policy policy = current_policy<PolicySelector>();
   using AgentReduceByKeyPolicyT                = AgentReduceByKeyPolicy<
                    policy.block_threads,
                    policy.items_per_thread,
@@ -529,7 +529,7 @@ struct DispatchReduceByKey
           break;
         }
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -637,7 +637,7 @@ struct DispatchReduceByKey
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -703,19 +703,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   using ScanTileStateT      = ReduceByKeyScanTileState<AccumT, OffsetT>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (::std::stringstream ss; ss << policy_getter(); _CubLog(
-         "Dispatching DeviceReduceByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
-#endif
+  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << policy_getter();
+                   _CubLog("Dispatching DeviceReduceByKey to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const auto [block_threads, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
       decltype(policy_getter),

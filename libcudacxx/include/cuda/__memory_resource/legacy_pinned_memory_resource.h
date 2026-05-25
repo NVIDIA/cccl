@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
@@ -41,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.9 and above, use
 //! `cuda::pinned_memory_resource` instead, which is the long-term replacement.
-class legacy_pinned_memory_resource
+class legacy_pinned_memory_resource : public memory_resource_base<legacy_pinned_memory_resource>
 {
 public:
   //! @brief Construct a new legacy_pinned_memory_resource.
@@ -125,8 +126,8 @@ private:
   device_ref __device_{0};
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>);
 
 _CCCL_END_NAMESPACE_CUDA_MR
 

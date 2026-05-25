@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <mdspan>
 
 // template<class OtherElementType, class OtherExtents,
@@ -48,7 +51,7 @@
 #include "test_macros.h"
 
 template <class ToMDS, class FromMDS>
-__host__ __device__ constexpr void test_implicit_conversion(ToMDS to_mds, FromMDS from_mds)
+TEST_FUNC constexpr void test_implicit_conversion(ToMDS to_mds, FromMDS from_mds)
 {
   assert(to_mds.extents() == from_mds.extents());
   test_equality_with_handle(to_mds, from_mds);
@@ -67,9 +70,9 @@ template <class ToMDS,
           bool convertible,
           bool passes_mandates,
           cuda::std::enable_if_t<!constructible, int> = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS)
 {
-  static_assert(!cuda::std::is_constructible<ToMDS, FromMDS>::value, "");
+  static_assert(!cuda::std::is_constructible<ToMDS, FromMDS>::value);
 }
 template <class ToMDS,
           class FromMDS,
@@ -78,7 +81,7 @@ template <class ToMDS,
           bool passes_mandates,
           cuda::std::enable_if_t<constructible, int>    = 0,
           cuda::std::enable_if_t<!passes_mandates, int> = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS)
 {}
 template <class ToMDS,
           class FromMDS,
@@ -88,7 +91,7 @@ template <class ToMDS,
           cuda::std::enable_if_t<constructible, int>   = 0,
           cuda::std::enable_if_t<passes_mandates, int> = 0,
           cuda::std::enable_if_t<convertible, int>     = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS from_mds)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS from_mds)
 {
   ToMDS to_mds(from_mds);
   assert(to_mds.extents() == from_mds.extents());
@@ -105,27 +108,27 @@ template <class ToMDS,
           cuda::std::enable_if_t<constructible, int>   = 0,
           cuda::std::enable_if_t<passes_mandates, int> = 0,
           cuda::std::enable_if_t<!convertible, int>    = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS from_mds)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS from_mds)
 {
   ToMDS to_mds(from_mds);
   assert(to_mds.extents() == from_mds.extents());
   test_equality_with_handle(to_mds, from_mds);
   test_equality_with_mapping(to_mds, from_mds);
   test_equality_with_accessor(to_mds, from_mds);
-  static_assert(!cuda::std::is_convertible<FromMDS, ToMDS>::value, "");
+  static_assert(!cuda::std::is_convertible<FromMDS, ToMDS>::value);
 }
 
 template <class ToMDS, class FromMDS>
-__host__ __device__ constexpr void test_conversion(FromMDS from_mds)
+TEST_FUNC constexpr void test_conversion(FromMDS from_mds)
 {
   // check some requirements, to see we didn't screw up our test layouts/accessors
-  static_assert(cuda::std::copyable<typename ToMDS::mapping_type>, "");
-  static_assert(cuda::std::equality_comparable<typename ToMDS::mapping_type>, "");
-  static_assert(cuda::std::is_nothrow_move_constructible<typename ToMDS::mapping_type>::value, "");
-  static_assert(cuda::std::is_nothrow_move_assignable<typename ToMDS::mapping_type>::value, "");
-  static_assert(cuda::std::is_nothrow_swappable<typename ToMDS::mapping_type>::value, "");
-  static_assert(mapping_requirements<typename ToMDS::mapping_type>, "");
-  static_assert(mapping_requirements<typename FromMDS::mapping_type>, "");
+  static_assert(cuda::std::copyable<typename ToMDS::mapping_type>);
+  static_assert(cuda::std::equality_comparable<typename ToMDS::mapping_type>);
+  static_assert(cuda::std::is_nothrow_move_constructible<typename ToMDS::mapping_type>::value);
+  static_assert(cuda::std::is_nothrow_move_assignable<typename ToMDS::mapping_type>::value);
+  static_assert(cuda::std::is_nothrow_swappable<typename ToMDS::mapping_type>::value);
+  static_assert(mapping_requirements<typename ToMDS::mapping_type>);
+  static_assert(mapping_requirements<typename FromMDS::mapping_type>);
 
   constexpr bool constructible =
     cuda::std::is_constructible<typename ToMDS::mapping_type, const typename FromMDS::mapping_type&>::value
@@ -141,7 +144,7 @@ __host__ __device__ constexpr void test_conversion(FromMDS from_mds)
 }
 
 template <class ToL, class ToExt, class ToA, class FromH, class FromL, class FromExt, class FromA>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 construct_from_mds(const FromH& handle, const FromL& layout, const FromExt& exts, const FromA& acc)
 {
   using ToMDS   = cuda::std::mdspan<typename ToA::element_type, ToExt, ToL, ToA>;
@@ -150,7 +153,7 @@ construct_from_mds(const FromH& handle, const FromL& layout, const FromExt& exts
 }
 
 template <class ToL, class ToA, class FromH, class FromL, class FromA>
-__host__ __device__ constexpr void mixin_extents(const FromH& handle, const FromL& layout, const FromA& acc)
+TEST_FUNC constexpr void mixin_extents(const FromH& handle, const FromL& layout, const FromA& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // constructible and convertible
@@ -177,7 +180,7 @@ __host__ __device__ constexpr void mixin_extents(const FromH& handle, const From
 }
 
 template <class ToA, class FromH, class FromA>
-__host__ __device__ constexpr void mixin_layout(const FromH& handle, const FromA& acc)
+TEST_FUNC constexpr void mixin_layout(const FromH& handle, const FromA& acc)
 {
   mixin_extents<cuda::std::layout_left, ToA>(handle, cuda::std::layout_left(), acc);
   mixin_extents<cuda::std::layout_right, ToA>(handle, cuda::std::layout_right(), acc);
@@ -223,7 +226,7 @@ template <class ToA,
           cuda::std::enable_if_t<!cuda::std::is_same<typename FromA::element_type, MinimalElementType>::value
                                    && !cuda::std::is_same<typename ToA::element_type, MinimalElementType>::value,
                                  int> = 0>
-__host__ __device__ constexpr void test_impl(FromA from_acc)
+TEST_FUNC constexpr void test_impl(FromA from_acc)
 {
   cuda::std::array<typename FromA::element_type, 1024> elements = {42};
   mixin_layout<ToA>(typename FromA::data_handle_type(elements.data()), from_acc);
@@ -234,7 +237,7 @@ template <class ToA,
           cuda::std::enable_if_t<cuda::std::is_same<typename FromA::element_type, MinimalElementType>::value
                                    || cuda::std::is_same<typename ToA::element_type, MinimalElementType>::value,
                                  int> = 0>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void test_impl(FromA from_acc)
+TEST_FUNC TEST_CONSTEXPR_CXX20 void test_impl(FromA from_acc)
 {
   ElementPool<typename FromA::element_type, 1024> elements;
   mixin_layout<ToA>(typename FromA::data_handle_type(elements.get_ptr()), from_acc);
@@ -250,12 +253,12 @@ template <bool constructible_constref_acc,
           bool convertible_nonconst_handle,
           class ToA,
           class FromA>
-__host__ __device__ constexpr bool test(FromA from_acc)
+TEST_FUNC constexpr bool test(FromA from_acc)
 {
-  static_assert(cuda::std::copyable<ToA>, "");
-  static_assert(cuda::std::copyable<FromA>, "");
-  static_assert(cuda::std::is_constructible<ToA, const FromA&>::value == constructible_constref_acc, "");
-  static_assert(cuda::std::is_constructible<ToA, FromA>::value == constructible_nonconst_acc, "");
+  static_assert(cuda::std::copyable<ToA>);
+  static_assert(cuda::std::copyable<FromA>);
+  static_assert(cuda::std::is_constructible<ToA, const FromA&>::value == constructible_constref_acc);
+  static_assert(cuda::std::is_constructible<ToA, FromA>::value == constructible_nonconst_acc);
   static_assert(
     cuda::std::is_constructible<typename ToA::data_handle_type, const typename FromA::data_handle_type&>::value
       == constructible_constref_handle,
@@ -263,8 +266,8 @@ __host__ __device__ constexpr bool test(FromA from_acc)
   static_assert(cuda::std::is_constructible<typename ToA::data_handle_type, typename FromA::data_handle_type>::value
                   == constructible_nonconst_handle,
                 "");
-  static_assert(cuda::std::is_convertible<const FromA&, ToA>::value == convertible_constref_acc, "");
-  static_assert(cuda::std::is_convertible<FromA, ToA>::value == convertible_nonconst_acc, "");
+  static_assert(cuda::std::is_convertible<const FromA&, ToA>::value == convertible_constref_acc);
+  static_assert(cuda::std::is_convertible<FromA, ToA>::value == convertible_nonconst_acc);
   static_assert(
     cuda::std::is_convertible<const typename FromA::data_handle_type&, typename ToA::data_handle_type>::value
       == convertible_constref_handle,
@@ -346,11 +349,11 @@ int main(int, char**)
                   cuda::std::default_accessor<MinimalElementType>()),
                 "");
 #  endif // TEST_STD_VER >= 2020
-  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<int>>(checked_accessor<int>(1024)), "");
-  static_assert(test<t, o, t, o, t, t, t, t, checked_accessor<const int>>(checked_accessor<int>(1024)), "");
-  static_assert(test<t, t, t, t, o, o, o, o, checked_accessor<const unsigned>>(checked_accessor<unsigned>(1024)), "");
-  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<float>>(checked_accessor<float>(1024)), "");
-  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<double>>(checked_accessor<double>(1024)), "");
+  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<int>>(checked_accessor<int>(1024)));
+  static_assert(test<t, o, t, o, t, t, t, t, checked_accessor<const int>>(checked_accessor<int>(1024)));
+  static_assert(test<t, t, t, t, o, o, o, o, checked_accessor<const unsigned>>(checked_accessor<unsigned>(1024)));
+  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<float>>(checked_accessor<float>(1024)));
+  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<double>>(checked_accessor<double>(1024)));
 #  if TEST_STD_VER >= 2020
   static_assert(
     test<t, t, t, t, t, t, t, t, checked_accessor<MinimalElementType>>(checked_accessor<MinimalElementType>(1024)), "");
@@ -368,8 +371,8 @@ int main(int, char**)
                 "");
   static_assert(test<o, o, o, o, o, o, o, o, cuda::std::default_accessor<float>>(cuda::std::default_accessor<int>()),
                 "");
-  static_assert(test<o, o, o, o, o, o, o, o, checked_accessor<const double>>(checked_accessor<double>(1024)), "");
-  static_assert(test<o, o, t, t, t, t, t, t, checked_accessor<const float>>(checked_accessor<float>(1024)), "");
+  static_assert(test<o, o, o, o, o, o, o, o, checked_accessor<const double>>(checked_accessor<double>(1024)));
+  static_assert(test<o, o, t, t, t, t, t, t, checked_accessor<const float>>(checked_accessor<float>(1024)));
   static_assert(test<o, o, o, o, t, t, t, t, conv_test_accessor_c<int, o, o, t, t>>(conv_test_accessor_nc<int, o, o>()),
                 "");
   static_assert(test<o, o, t, o, t, t, t, t, conv_test_accessor_c<int, o, t, o, o>>(conv_test_accessor_nc<int, o, t>()),

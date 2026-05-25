@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/iterator>
 #include <cuda/memory>
 #include <cuda/std/cassert>
@@ -17,7 +20,7 @@
 #include "test_iterators.h"
 
 template <typename Pointer>
-__host__ __device__ void test_overlaps(
+TEST_FUNC void test_overlaps(
   [[maybe_unused]] Pointer first_begin,
   [[maybe_unused]] Pointer first_end,
   [[maybe_unused]] Pointer second_begin,
@@ -28,7 +31,7 @@ __host__ __device__ void test_overlaps(
 }
 
 template <typename Pointer>
-__host__ __device__ void test_non_overlaps(
+TEST_FUNC void test_non_overlaps(
   [[maybe_unused]] Pointer first_begin,
   [[maybe_unused]] Pointer first_end,
   [[maybe_unused]] Pointer second_begin,
@@ -39,7 +42,7 @@ __host__ __device__ void test_non_overlaps(
 }
 
 template <typename T>
-__host__ __device__ void test_variants(T a_begin, T a_end, T b_begin, T b_end)
+TEST_FUNC void test_variants(T a_begin, T a_end, T b_begin, T b_end)
 {
   static_assert(noexcept(cuda::ranges_overlap(
     cuda::std::declval<T>(), cuda::std::declval<T>(), cuda::std::declval<T>(), cuda::std::declval<T>())));
@@ -63,7 +66,7 @@ __host__ __device__ void test_variants(T a_begin, T a_end, T b_begin, T b_end)
   test_non_overlaps(a_begin, cuda::std::next(a_begin, 2), cuda::std::next(a_begin, 2), cuda::std::next(a_begin, 4));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   int buffer_a[8] = {};
   int buffer_b[8] = {};
@@ -88,7 +91,7 @@ __host__ __device__ bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   constexpr int array[8] = {0, 1, 2, 3, 4};
   assert(cuda::ranges_overlap(array + 1, array + 3, array, array + 4));

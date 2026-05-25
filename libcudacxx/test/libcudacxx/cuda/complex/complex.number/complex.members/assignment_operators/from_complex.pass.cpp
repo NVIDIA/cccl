@@ -18,8 +18,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class T, class U>
-__host__ __device__ constexpr void test_assignment_from_complex()
+TEST_FUNC constexpr void test_assignment_from_complex()
 {
   // 1. Test that cuda::complex<U> is assignable to cuda::complex<T>
   static_assert(cuda::std::is_assignable_v<cuda::complex<T>&, const cuda::complex<U>&>);
@@ -43,7 +45,7 @@ __host__ __device__ constexpr void test_assignment_from_complex()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_assignment_from_complex<T, float>();
   test_assignment_from_complex<T, double>();
@@ -73,7 +75,7 @@ __host__ __device__ constexpr void test()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<float>();
   test<double>();

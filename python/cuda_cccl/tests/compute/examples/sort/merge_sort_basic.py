@@ -26,12 +26,12 @@ d_in_values = cp.asarray(h_in_values)
 
 # Perform the merge sort.
 cuda.compute.merge_sort(
-    d_in_keys,
-    d_in_values,
-    d_in_keys,
-    d_in_values,
-    OpKind.LESS,
-    d_in_keys.size,
+    d_in_keys=d_in_keys,
+    d_in_values=d_in_values,
+    d_out_keys=d_in_keys,
+    d_out_values=d_in_values,
+    op=OpKind.LESS,
+    num_items=d_in_keys.size,
 )
 
 # Verify the result.

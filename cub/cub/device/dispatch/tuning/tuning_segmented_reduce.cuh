@@ -15,20 +15,18 @@
 
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_reduce
 {
 // for small/medium segments
-struct agent_warp_reduce_policy
+struct warp_reduce_policy
 {
   int block_threads;
   int warp_threads;
   int items_per_thread;
-  int vector_load_length;
+  int vec_size;
   CacheLoadModifier load_modifier;
 
   _CCCL_API constexpr int items_per_tile() const
@@ -41,35 +39,33 @@ struct agent_warp_reduce_policy
     return block_threads / warp_threads;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
-  operator==(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.warp_threads == rhs.warp_threads
-        && lhs.items_per_thread == rhs.items_per_thread && lhs.vector_load_length == rhs.vector_load_length
+        && lhs.items_per_thread == rhs.items_per_thread && lhs.vec_size == rhs.vec_size
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
-  operator!=(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const warp_reduce_policy& lhs, const warp_reduce_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const agent_warp_reduce_policy& p)
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const warp_reduce_policy& p)
   {
-    return os << "agent_warp_reduce_policy { .block_threads = " << p.block_threads
-              << ", .warp_threads = " << p.warp_threads << ", .items_per_thread = " << p.items_per_thread
-              << ", .vector_load_length = " << p.vector_load_length << ", .load_modifier = " << p.load_modifier << " }";
+    return os << "warp_reduce_policy { .block_threads = " << p.block_threads << ", .warp_threads = " << p.warp_threads
+              << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
+              << ", .load_modifier = " << p.load_modifier << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct segmented_reduce_policy
 {
   reduce::agent_reduce_policy large_reduce;
-  agent_warp_reduce_policy small_reduce;
-  agent_warp_reduce_policy medium_reduce;
+  warp_reduce_policy small_reduce;
+  warp_reduce_policy medium_reduce;
 
   _CCCL_API constexpr friend bool operator==(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
   {
@@ -82,13 +78,13 @@ struct segmented_reduce_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_reduce_policy& p)
   {
     return os << "segmented_reduce_policy { .large_reduce = " << p.large_reduce
               << ", .small_reduce = " << p.small_reduce << ", .medium_reduce = " << p.medium_reduce << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -103,19 +99,17 @@ struct policy_selector
   int offset_size;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_reduce_policy
   {
     constexpr int small_threads_per_warp  = 1;
     constexpr int medium_threads_per_warp = 32;
 
-    const auto rp = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(arch).reduce;
+    const auto rp = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(cc).reduce;
 
     return segmented_reduce_policy{
       rp,
-      agent_warp_reduce_policy{
-        rp.block_threads, small_threads_per_warp, rp.items_per_thread, rp.vector_load_length, rp.load_modifier},
-      agent_warp_reduce_policy{
-        rp.block_threads, medium_threads_per_warp, rp.items_per_thread, rp.vector_load_length, rp.load_modifier}};
+      warp_reduce_policy{rp.block_threads, small_threads_per_warp, rp.items_per_thread, rp.vec_size, rp.load_modifier},
+      warp_reduce_policy{rp.block_threads, medium_threads_per_warp, rp.items_per_thread, rp.vec_size, rp.load_modifier}};
   }
 };
 
@@ -127,11 +121,11 @@ static_assert(segmented_reduce_policy_selector<policy_selector>);
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_reduce_policy
   {
     constexpr auto policies =
       policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
-    return policies(arch);
+    return policies(cc);
   }
 };
 

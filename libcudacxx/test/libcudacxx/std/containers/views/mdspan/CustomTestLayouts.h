@@ -41,14 +41,14 @@
 // - does not check dynamic to static extent conversion in converting ctor
 // - check via side-effects that mdspan::swap calls mappings swap via ADL
 
-__host__ __device__ bool mul_overflow(size_t x, size_t y, size_t* res)
+TEST_FUNC bool mul_overflow(size_t x, size_t y, size_t* res)
 {
   *res = x * y;
   return x && ((*res / x) != y);
 }
 
 template <class T>
-__host__ __device__ inline const T& Min(const T& __a, const T& __b)
+TEST_FUNC inline const T& Min(const T& __a, const T& __b)
 {
   return __b < __a ? __b : __a;
 }
@@ -82,13 +82,13 @@ public:
 
 private:
   template <class Extents2 = Extents, cuda::std::enable_if_t<Extents2::rank() == 0, int> = 0>
-  __host__ __device__ static constexpr bool required_span_size_is_representable(const extents_type& ext)
+  TEST_FUNC static constexpr bool required_span_size_is_representable(const extents_type& ext)
   {
     return true;
   }
 
   template <class Extents2 = Extents, cuda::std::enable_if_t<Extents2::rank() != 0, int> = 0>
-  __host__ __device__ static constexpr bool required_span_size_is_representable(const extents_type& ext)
+  TEST_FUNC static constexpr bool required_span_size_is_representable(const extents_type& ext)
   {
     index_type prod = ext.extent(0);
     for (rank_type r = 1; r < extents_type::rank(); r++)
@@ -103,19 +103,19 @@ private:
   }
 
 public:
-  __host__ __device__ constexpr mapping() noexcept = delete;
-  __host__ __device__ constexpr mapping(const mapping& other) noexcept
+  TEST_FUNC constexpr mapping() noexcept = delete;
+  TEST_FUNC constexpr mapping(const mapping& other) noexcept
       : extents_(other.extents()){};
   template <size_t Wrap2 = Wrap, cuda::std::enable_if_t<Wrap2 == 8, int> = 0>
-  __host__ __device__ constexpr mapping(extents_type&& ext) noexcept
+  TEST_FUNC constexpr mapping(extents_type&& ext) noexcept
       : extents_(ext)
   {}
-  __host__ __device__ constexpr mapping(const extents_type& ext, not_extents_constructible_tag) noexcept
+  TEST_FUNC constexpr mapping(const extents_type& ext, not_extents_constructible_tag) noexcept
       : extents_(ext)
   {}
 
   template <class OtherExtents, class Extents2 = Extents, cuda::std::enable_if_t<Extents2::rank() != 0, int> = 0>
-  __host__ __device__ static constexpr cuda::std::array<index_type, extents_type::rank_dynamic()>
+  TEST_FUNC static constexpr cuda::std::array<index_type, extents_type::rank_dynamic()>
   get_dyn_extents(const mapping<OtherExtents>& other) noexcept
   {
     cuda::std::array<index_type, extents_type::rank_dynamic()> dyn_extents{};
@@ -130,7 +130,7 @@ public:
     return dyn_extents;
   }
   template <class OtherExtents, class Extents2 = Extents, cuda::std::enable_if_t<Extents2::rank() == 0, int> = 0>
-  __host__ __device__ static constexpr cuda::std::array<index_type, extents_type::rank_dynamic()>
+  TEST_FUNC static constexpr cuda::std::array<index_type, extents_type::rank_dynamic()>
   get_dyn_extents(const mapping<OtherExtents>& other) noexcept
   {
     return {};
@@ -140,7 +140,7 @@ public:
     class OtherExtents,
     cuda::std::enable_if_t<cuda::std::is_constructible<extents_type, OtherExtents>::value && (Wrap != 8), int> = 0,
     cuda::std::enable_if_t<cuda::std::is_convertible<OtherExtents, extents_type>::value, int>                  = 0>
-  __host__ __device__ constexpr mapping(const mapping<OtherExtents>& other) noexcept
+  TEST_FUNC constexpr mapping(const mapping<OtherExtents>& other) noexcept
   {
     extents_ = extents_type(get_dyn_extents(other));
   }
@@ -149,7 +149,7 @@ public:
     class OtherExtents,
     cuda::std::enable_if_t<cuda::std::is_constructible<extents_type, OtherExtents>::value && (Wrap != 8), int> = 0,
     cuda::std::enable_if_t<!cuda::std::is_convertible<OtherExtents, extents_type>::value, int>                 = 0>
-  __host__ __device__ constexpr explicit mapping(const mapping<OtherExtents>& other) noexcept
+  TEST_FUNC constexpr explicit mapping(const mapping<OtherExtents>& other) noexcept
   {
     extents_ = extents_type(get_dyn_extents(other));
   }
@@ -158,7 +158,7 @@ public:
     class OtherExtents,
     cuda::std::enable_if_t<cuda::std::is_constructible<extents_type, OtherExtents>::value && (Wrap == 8), int> = 0,
     cuda::std::enable_if_t<cuda::std::is_convertible<OtherExtents, extents_type>::value, int>                  = 0>
-  __host__ __device__ constexpr mapping(mapping<OtherExtents>&& other) noexcept
+  TEST_FUNC constexpr mapping(mapping<OtherExtents>&& other) noexcept
   {
     extents_ = extents_type(get_dyn_extents(other));
   }
@@ -167,23 +167,23 @@ public:
     class OtherExtents,
     cuda::std::enable_if_t<cuda::std::is_constructible<extents_type, OtherExtents>::value && (Wrap == 8), int> = 0,
     cuda::std::enable_if_t<!cuda::std::is_convertible<OtherExtents, extents_type>::value, int>                 = 0>
-  __host__ __device__ constexpr explicit mapping(mapping<OtherExtents>&& other) noexcept
+  TEST_FUNC constexpr explicit mapping(mapping<OtherExtents>&& other) noexcept
   {
     extents_ = extents_type(get_dyn_extents(other));
   }
 
-  __host__ __device__ constexpr mapping& operator=(const mapping& other) noexcept
+  TEST_FUNC constexpr mapping& operator=(const mapping& other) noexcept
   {
     extents_ = other.extents_;
     return *this;
   };
 
-  __host__ __device__ constexpr const extents_type& extents() const noexcept
+  TEST_FUNC constexpr const extents_type& extents() const noexcept
   {
     return extents_;
   }
 
-  __host__ __device__ constexpr index_type required_span_size() const noexcept
+  TEST_FUNC constexpr index_type required_span_size() const noexcept
   {
     index_type size = 1;
     for (size_t r = 0; r != extents_type::rank(); r++)
@@ -195,12 +195,12 @@ public:
 
   struct rank_accumulator
   {
-    __host__ __device__ constexpr rank_accumulator(const extents_type& extents) noexcept
+    TEST_FUNC constexpr rank_accumulator(const extents_type& extents) noexcept
         : extents_(extents)
     {}
 
     template <size_t... Pos, class... Indices>
-    __host__ __device__ constexpr index_type operator()(cuda::std::index_sequence<Pos...>, Indices... idx) const noexcept
+    TEST_FUNC constexpr index_type operator()(cuda::std::index_sequence<Pos...>, Indices... idx) const noexcept
     {
       cuda::std::array<index_type, extents_type::rank()> idx_a{
         static_cast<index_type>(static_cast<index_type>(idx) % Wrap)...};
@@ -224,25 +224,25 @@ public:
     cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_convertible_v<Indices, index_type>...>, int> = 0,
     cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_nothrow_constructible_v<index_type, Indices>...>, int> =
       0>
-  __host__ __device__ constexpr index_type operator()(Indices... idx) const noexcept
+  TEST_FUNC constexpr index_type operator()(Indices... idx) const noexcept
   {
     return rank_accumulator{extents_}(cuda::std::make_index_sequence<sizeof...(Indices)>(), idx...);
   }
 
-  __host__ __device__ static constexpr bool is_always_unique() noexcept
+  TEST_FUNC static constexpr bool is_always_unique() noexcept
   {
     return false;
   }
-  __host__ __device__ static constexpr bool is_always_exhaustive() noexcept
+  TEST_FUNC static constexpr bool is_always_exhaustive() noexcept
   {
     return true;
   }
-  __host__ __device__ static constexpr bool is_always_strided() noexcept
+  TEST_FUNC static constexpr bool is_always_strided() noexcept
   {
     return false;
   }
 
-  __host__ __device__ constexpr bool is_unique() const noexcept
+  TEST_FUNC constexpr bool is_unique() const noexcept
   {
     for (rank_type r = 0; r != extents_type::rank(); r++)
     {
@@ -253,11 +253,11 @@ public:
     }
     return true;
   }
-  __host__ __device__ static constexpr bool is_exhaustive() noexcept
+  TEST_FUNC static constexpr bool is_exhaustive() noexcept
   {
     return true;
   }
-  __host__ __device__ constexpr bool is_strided() const noexcept
+  TEST_FUNC constexpr bool is_strided() const noexcept
   {
     for (rank_type r = 0; r != extents_type::rank(); r++)
     {
@@ -270,7 +270,7 @@ public:
   }
 
   template <size_t Rank = extents_type::rank(), cuda::std::enable_if_t<(Rank > 0), int> = 0>
-  __host__ __device__ constexpr index_type stride(rank_type r) const noexcept
+  TEST_FUNC constexpr index_type stride(rank_type r) const noexcept
   {
     index_type s = 1;
     for (rank_type i = extents_type::rank() - 1; i > r; i--)
@@ -281,31 +281,42 @@ public:
   }
 
   template <class OtherExtents, cuda::std::enable_if_t<OtherExtents::rank() == extents_type::rank(), int> = 0>
-  __host__ __device__ friend constexpr bool operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
   {
     return lhs.extents() == rhs.extents();
   }
 
 #if TEST_STD_VER <= 2017
   template <class OtherExtents, cuda::std::enable_if_t<OtherExtents::rank() == extents_type::rank(), int> = 0>
-  __host__ __device__ friend constexpr bool operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
   {
     return lhs.extents() != rhs.extents();
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ friend constexpr void swap(mapping& x, mapping& y) noexcept
+  TEST_FUNC friend constexpr void swap(mapping& x, mapping& y) noexcept
   {
     swap(x.extents_, y.extents_);
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     if (!cuda::std::__cccl_default_is_constant_evaluated())
     {
       layout_wrapping_integral_swap_counter++;
     }
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
-  __host__ __device__ static int& swap_counter()
+  TEST_FUNC static constexpr bool valid()
   {
-    return layout_wrapping_integral_swap_counter;
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      return layout_wrapping_integral_swap_counter > 0;
+    }
+    else
+#endif // !_CCCL_TILE_COMPILATION()
+    {
+      return true;
+    }
   }
 
 private:
@@ -315,33 +326,30 @@ private:
 template <
   class MDS,
   cuda::std::enable_if_t<cuda::std::is_same<typename MDS::layout_type, layout_wrapping_integral<4>>::value, int> = 0>
-__host__ __device__ constexpr void test_swap_counter()
+TEST_FUNC constexpr void test_swap_counter()
 {
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    assert(MDS::mapping_type::swap_counter() > 0);
-  }
+  assert(MDS::mapping_type::valid());
 }
 template <
   class MDS,
   cuda::std::enable_if_t<!cuda::std::is_same<typename MDS::layout_type, layout_wrapping_integral<4>>::value, int> = 0>
-__host__ __device__ constexpr void test_swap_counter()
+TEST_FUNC constexpr void test_swap_counter()
 {}
 
 template <class Extents>
-__host__ __device__ constexpr auto construct_mapping(cuda::std::layout_left, Extents exts)
+TEST_FUNC constexpr auto construct_mapping(cuda::std::layout_left, Extents exts)
 {
   return cuda::std::layout_left::mapping<Extents>(exts);
 }
 
 template <class Extents>
-__host__ __device__ constexpr auto construct_mapping(cuda::std::layout_right, Extents exts)
+TEST_FUNC constexpr auto construct_mapping(cuda::std::layout_right, Extents exts)
 {
   return cuda::std::layout_right::mapping<Extents>(exts);
 }
 
 template <size_t Wraps, class Extents>
-__host__ __device__ constexpr auto construct_mapping(layout_wrapping_integral<Wraps>, Extents exts)
+TEST_FUNC constexpr auto construct_mapping(layout_wrapping_integral<Wraps>, Extents exts)
 {
   return typename layout_wrapping_integral<Wraps>::template mapping<Extents>(exts, not_extents_constructible_tag{});
 }
@@ -368,12 +376,12 @@ public:
 
 private:
   template <class Extents2 = Extents, cuda::std::enable_if_t<(Extents2::rank() == 0), int> = 0>
-  __host__ __device__ static constexpr bool required_span_size_is_representable(const extents_type& ext)
+  TEST_FUNC static constexpr bool required_span_size_is_representable(const extents_type& ext)
   {
     return true;
   }
   template <class Extents2 = Extents, cuda::std::enable_if_t<(Extents2::rank() != 0), int> = 0>
-  __host__ __device__ static constexpr bool required_span_size_is_representable(const extents_type& ext)
+  TEST_FUNC static constexpr bool required_span_size_is_representable(const extents_type& ext)
   {
     index_type prod = ext.extent(0);
     for (rank_type r = 1; r < extents_type::rank(); r++)
@@ -388,27 +396,27 @@ private:
   }
 
 public:
-  __host__ __device__ constexpr mapping() noexcept = delete;
-  __host__ __device__ constexpr mapping(const mapping& other) noexcept
+  TEST_FUNC constexpr mapping() noexcept = delete;
+  TEST_FUNC constexpr mapping(const mapping& other) noexcept
       : extents_(other.extents_)
       , offset_(other.offset_)
       , scaling_(other.scaling_)
   {}
-  __host__ __device__ constexpr mapping(const extents_type& ext) noexcept
+  TEST_FUNC constexpr mapping(const extents_type& ext) noexcept
       : extents_(ext)
       , offset_(0)
       , scaling_(1){};
-  __host__ __device__ constexpr mapping(const extents_type& ext, index_type offset) noexcept
+  TEST_FUNC constexpr mapping(const extents_type& ext, index_type offset) noexcept
       : extents_(ext)
       , offset_(offset)
       , scaling_(1){};
-  __host__ __device__ constexpr mapping(const extents_type& ext, index_type offset, index_type scaling) noexcept
+  TEST_FUNC constexpr mapping(const extents_type& ext, index_type offset, index_type scaling) noexcept
       : extents_(ext)
       , offset_(offset)
       , scaling_(scaling){};
 
   template <class OtherExtents, cuda::std::enable_if_t<(extents_type::rank() == OtherExtents::rank()), int> = 0>
-  __host__ __device__ constexpr mapping(const mapping<OtherExtents>& other) noexcept
+  TEST_FUNC constexpr mapping(const mapping<OtherExtents>& other) noexcept
   {
     cuda::std::array<index_type, extents_type::rank_dynamic()> dyn_extents;
     rank_type count = 0;
@@ -424,14 +432,14 @@ public:
     scaling_ = other.scaling_;
   }
   template <class OtherExtents, cuda::std::enable_if_t<(extents_type::rank() != OtherExtents::rank()), int> = 0>
-  __host__ __device__ constexpr mapping(const mapping<OtherExtents>& other) noexcept
+  TEST_FUNC constexpr mapping(const mapping<OtherExtents>& other) noexcept
   {
     extents_ = extents_type();
     offset_  = other.offset_;
     scaling_ = other.scaling_;
   }
 
-  __host__ __device__ constexpr mapping& operator=(const mapping& other) noexcept
+  TEST_FUNC constexpr mapping& operator=(const mapping& other) noexcept
   {
     extents_ = other.extents_;
     offset_  = other.offset_;
@@ -439,17 +447,17 @@ public:
     return *this;
   };
 
-  __host__ __device__ constexpr const extents_type& extents() const noexcept
+  TEST_FUNC constexpr const extents_type& extents() const noexcept
   {
     return extents_;
   }
 
-  __host__ __device__ static constexpr const index_type& Max(const index_type& __a, const index_type& __b) noexcept
+  TEST_FUNC static constexpr const index_type& Max(const index_type& __a, const index_type& __b) noexcept
   {
     return __a > __b ? __a : __b;
   }
 
-  __host__ __device__ constexpr index_type required_span_size() const noexcept
+  TEST_FUNC constexpr index_type required_span_size() const noexcept
   {
     index_type size = 1;
     for (size_t r = 0; r != extents_type::rank(); r++)
@@ -461,12 +469,12 @@ public:
 
   struct rank_accumulator
   {
-    __host__ __device__ constexpr rank_accumulator(const extents_type& extents) noexcept
+    TEST_FUNC constexpr rank_accumulator(const extents_type& extents) noexcept
         : extents_(extents)
     {}
 
     template <size_t... Pos, class... Indices>
-    __host__ __device__ constexpr index_type operator()(cuda::std::index_sequence<Pos...>, Indices... idx) const noexcept
+    TEST_FUNC constexpr index_type operator()(cuda::std::index_sequence<Pos...>, Indices... idx) const noexcept
     {
       cuda::std::array<index_type, extents_type::rank()> idx_a{
         static_cast<index_type>(static_cast<index_type>(idx))...};
@@ -490,40 +498,40 @@ public:
     cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_convertible_v<Indices, index_type>...>, int> = 0,
     cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_nothrow_constructible_v<index_type, Indices>...>, int> =
       0>
-  __host__ __device__ constexpr index_type operator()(Indices... idx) const noexcept
+  TEST_FUNC constexpr index_type operator()(Indices... idx) const noexcept
   {
     return offset_
          + scaling_ * rank_accumulator{extents_}(cuda::std::make_index_sequence<sizeof...(Indices)>(), idx...);
   }
 
-  __host__ __device__ static constexpr bool is_always_unique() noexcept
+  TEST_FUNC static constexpr bool is_always_unique() noexcept
   {
     return true;
   }
-  __host__ __device__ static constexpr bool is_always_exhaustive() noexcept
+  TEST_FUNC static constexpr bool is_always_exhaustive() noexcept
   {
     return true;
   }
-  __host__ __device__ static constexpr bool is_always_strided() noexcept
+  TEST_FUNC static constexpr bool is_always_strided() noexcept
   {
     return true;
   }
 
-  __host__ __device__ static constexpr bool is_unique() noexcept
+  TEST_FUNC static constexpr bool is_unique() noexcept
   {
     return true;
   }
-  __host__ __device__ static constexpr bool is_exhaustive() noexcept
+  TEST_FUNC static constexpr bool is_exhaustive() noexcept
   {
     return true;
   }
-  __host__ __device__ static constexpr bool is_strided() noexcept
+  TEST_FUNC static constexpr bool is_strided() noexcept
   {
     return true;
   }
 
   template <size_t Rank = extents_type::rank(), cuda::std::enable_if_t<(Rank > 0), int> = 0>
-  __host__ __device__ constexpr index_type stride(rank_type r) const noexcept
+  TEST_FUNC constexpr index_type stride(rank_type r) const noexcept
   {
     index_type s = 1;
     for (rank_type i = 0; i < r; i++)
@@ -534,7 +542,7 @@ public:
   }
 
   template <class OtherExtents>
-  __host__ __device__ friend constexpr auto operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  TEST_FUNC friend constexpr auto operator==(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
     -> cuda::std::enable_if_t<OtherExtents::rank() == extents_type::rank(), bool>
   {
     return lhs.extents() == rhs.extents() && lhs.offset_ == rhs.offset && lhs.scaling_ == rhs.scaling_;
@@ -542,14 +550,14 @@ public:
 
 #if TEST_STD_VER < 2020
   template <class OtherExtents>
-  __host__ __device__ friend constexpr auto operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
+  TEST_FUNC friend constexpr auto operator!=(const mapping& lhs, const mapping<OtherExtents>& rhs) noexcept
     -> cuda::std::enable_if_t<OtherExtents::rank() != extents_type::rank(), bool>
   {
     return !(lhs == rhs);
   }
 #endif // TEST_STD_VER < 2020
 
-  __host__ __device__ friend constexpr void swap(mapping& x, mapping& y) noexcept
+  TEST_FUNC friend constexpr void swap(mapping& x, mapping& y) noexcept
   {
     swap(x.extents_, y.extents_);
     if (!cuda::std::__cccl_default_is_constant_evaluated())

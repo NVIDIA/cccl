@@ -20,7 +20,7 @@
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/limits>
@@ -33,7 +33,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 _CCCL_API constexpr int segmented_radix_sort_kernel_launch_bounds()
 {
-  constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr auto policy = current_policy<PolicySelector>();
   return AltDigitBits ? policy.alt_segmented.block_threads : policy.segmented.block_threads;
 }
 
@@ -110,22 +110,22 @@ template <typename PolicySelector,
   requires radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int current_bit,
-    int pass_bits,
-    DecomposerT decomposer = {})
+  _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
+    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
+    _CCCL_GRID_CONSTANT const int current_bit,
+    _CCCL_GRID_CONSTANT const int pass_bits,
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   //
   // Constants
   //
 
-  static constexpr radix_sort_policy policy                  = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr radix_sort_policy policy                  = current_policy<PolicySelector>();
   static constexpr radix_sort_downsweep_policy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
 
   static constexpr int block_threads = active_policy.block_threads;

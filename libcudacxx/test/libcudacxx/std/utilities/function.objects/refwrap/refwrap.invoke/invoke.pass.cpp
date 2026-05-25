@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable ("count") cannot be used in tile code
+
 // <functional>
 
 // reference_wrapper
@@ -26,29 +29,29 @@ TEST_GLOBAL_VARIABLE int count = 0;
 
 // 1 arg, return void
 
-__host__ __device__ void f_void_1(int i)
+TEST_FUNC void f_void_1(int i)
 {
   count += i;
 }
 
 struct A_void_1
 {
-  __host__ __device__ void operator()(int i)
+  TEST_FUNC void operator()(int i)
   {
     count += i;
   }
 
-  __host__ __device__ void mem1()
+  TEST_FUNC void mem1()
   {
     ++count;
   }
-  __host__ __device__ void mem2() const
+  TEST_FUNC void mem2() const
   {
     ++count;
   }
 };
 
-__host__ __device__ void test_void_1()
+TEST_FUNC void test_void_1()
 {
   int save_count = count;
   // function
@@ -59,6 +62,8 @@ __host__ __device__ void test_void_1()
     assert(count == save_count + 2);
     save_count = count;
   }
+
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     void (*fp)(int) = f_void_1;
@@ -68,6 +73,7 @@ __host__ __device__ void test_void_1()
     assert(count == save_count + 3);
     save_count = count;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_void_1 a0;
@@ -107,33 +113,33 @@ __host__ __device__ void test_void_1()
 
 // 1 arg, return int
 
-__host__ __device__ int f_int_1(int i)
+TEST_FUNC int f_int_1(int i)
 {
   return i + 1;
 }
 
 struct A_int_1
 {
-  __host__ __device__ A_int_1()
+  TEST_FUNC A_int_1()
       : data_(5)
   {}
-  __host__ __device__ int operator()(int i)
+  TEST_FUNC int operator()(int i)
   {
     return i - 1;
   }
 
-  __host__ __device__ int mem1()
+  TEST_FUNC int mem1()
   {
     return 3;
   }
-  __host__ __device__ int mem2() const
+  TEST_FUNC int mem2() const
   {
     return 4;
   }
   int data_;
 };
 
-__host__ __device__ void test_int_1()
+TEST_FUNC void test_int_1()
 {
   // function
   {
@@ -141,6 +147,7 @@ __host__ __device__ void test_int_1()
     int i = 2;
     assert(r1(i) == 3);
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     int (*fp)(int) = f_int_1;
@@ -148,6 +155,7 @@ __host__ __device__ void test_int_1()
     int i = 3;
     assert(r1(i) == 4);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_int_1 a0;
@@ -192,29 +200,29 @@ __host__ __device__ void test_int_1()
 
 // 2 arg, return void
 
-__host__ __device__ void f_void_2(int i, int j)
+TEST_FUNC void f_void_2(int i, int j)
 {
   count += i + j;
 }
 
 struct A_void_2
 {
-  __host__ __device__ void operator()(int i, int j)
+  TEST_FUNC void operator()(int i, int j)
   {
     count += i + j;
   }
 
-  __host__ __device__ void mem1(int i)
+  TEST_FUNC void mem1(int i)
   {
     count += i;
   }
-  __host__ __device__ void mem2(int i) const
+  TEST_FUNC void mem2(int i) const
   {
     count += i;
   }
 };
 
-__host__ __device__ void test_void_2()
+TEST_FUNC void test_void_2()
 {
   int save_count = count;
   // function
@@ -226,6 +234,7 @@ __host__ __device__ void test_void_2()
     assert(count == save_count + 5);
     save_count = count;
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     void (*fp)(int, int) = f_void_2;
@@ -236,6 +245,7 @@ __host__ __device__ void test_void_2()
     assert(count == save_count + 7);
     save_count = count;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_void_2 a0;
@@ -278,29 +288,29 @@ __host__ __device__ void test_void_2()
 
 // 2 arg, return int
 
-__host__ __device__ int f_int_2(int i, int j)
+TEST_FUNC int f_int_2(int i, int j)
 {
   return i + j;
 }
 
 struct A_int_2
 {
-  __host__ __device__ int operator()(int i, int j)
+  TEST_FUNC int operator()(int i, int j)
   {
     return i + j;
   }
 
-  __host__ __device__ int mem1(int i)
+  TEST_FUNC int mem1(int i)
   {
     return i + 1;
   }
-  __host__ __device__ int mem2(int i) const
+  TEST_FUNC int mem2(int i) const
   {
     return i + 2;
   }
 };
 
-__host__ __device__ void testint_2()
+TEST_FUNC void testint_2()
 {
   // function
   {
@@ -309,6 +319,7 @@ __host__ __device__ void testint_2()
     int j = 3;
     assert(r1(i, j) == i + j);
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     int (*fp)(int, int) = f_int_2;
@@ -317,6 +328,7 @@ __host__ __device__ void testint_2()
     int j = 4;
     assert(r1(i, j) == i + j);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_int_2 a0;

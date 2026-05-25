@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -11,8 +11,8 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/complex>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
@@ -25,7 +25,12 @@ struct is_even
     return static_cast<int>(val) % 2 == 0;
   }
 
-  __device__ constexpr bool operator()(const complex& val) const noexcept
+  __device__ constexpr bool operator()(const complex32& val) const noexcept
+  {
+    return static_cast<int>(val.real()) % 2 == 0;
+  }
+
+  __device__ constexpr bool operator()(const complex64& val) const noexcept
   {
     return static_cast<int>(val.real()) % 2 == 0;
   }

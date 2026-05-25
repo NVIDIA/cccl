@@ -21,6 +21,7 @@
 #include <thrust/detail/config/memory_resource.h>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
@@ -98,7 +99,10 @@ struct pool_options
     {
       return false;
     }
-    if (alignment != 0 && !::cuda::is_power_of_two(alignment))
+
+    // Forcing the alignment to be always valid would be a breaking change, because if the user didn't set the
+    // alignment, this method would return false. So, we still accept 0.
+    if (!::cuda::__is_valid_alignment(alignment) && alignment != 0)
     {
       return false;
     }

@@ -18,6 +18,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -26,21 +27,21 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_empty.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::adjacent_difference
 {
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceAdjacentDifferenceInitKernel(InputIteratorT first, InputT* result, OffsetT num_tiles, int items_per_tile)
+_CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT first,
+  _CCCL_GRID_CONSTANT InputT* const result,
+  _CCCL_GRID_CONSTANT const OffsetT num_tiles,
+  _CCCL_GRID_CONSTANT const int items_per_tile)
 {
   const int tile_idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   AgentDifferenceInitT::Process(tile_idx, first, result, num_tiles, items_per_tile);
@@ -54,15 +55,15 @@ template <typename PolicySelector,
           typename InputT,
           bool MayAlias,
           bool ReadLeft>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
-  InputIteratorT input,
-  InputT* first_tile_previous,
-  OutputIteratorT result,
+_CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT input,
+  _CCCL_GRID_CONSTANT InputT* const first_tile_previous,
+  _CCCL_GRID_CONSTANT const OutputIteratorT result,
   DifferenceOpT difference_op,
-  OffsetT num_items)
+  _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
-  static constexpr adjacent_difference_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr adjacent_difference_policy policy = current_policy<PolicySelector>();
   using AdjacentDifferencePolicyT =
     AgentAdjacentDifferencePolicy<policy.block_threads,
                                   policy.items_per_thread,
@@ -98,8 +99,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  // this is only called in device code, so we can ignore the arch parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> adjacent_difference_policy
+  // this is only called in device code, so we can ignore the cc parameter
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> adjacent_difference_policy
   {
     using p = typename PolicyHub::MaxPolicy::ActivePolicy::AdjacentDifferencePolicy;
     return adjacent_difference_policy{
@@ -270,7 +271,7 @@ struct DispatchAdjacentDifference
         break;
       }
 
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -305,7 +306,7 @@ struct DispatchAdjacentDifference
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -337,19 +338,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 {
   using InputT = detail::it_value_t<InputIteratorT>;
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const adjacent_difference_policy active_policy = policy_selector(arch_id);
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (::std::stringstream ss; ss << active_policy;
-     _CubLog("Dispatching DeviceAdjacentDifference to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  const adjacent_difference_policy active_policy = policy_selector(cc);
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceAdjacentDifference to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));

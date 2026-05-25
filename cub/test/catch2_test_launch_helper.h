@@ -126,7 +126,23 @@ template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(
   std::uint8_t* d_temp_storage, std::size_t* temp_storage_bytes, cudaError_t* d_error, ActionT action, Args... args)
 {
+  // The clang-tidy job uses clang-20 but clang does not support CUDA dynamic parallelism until
+  // clang-22. Since we are inside clang-tidy we don't actually care whether the kernel is
+  // invoked so do what we must to silence any compiler errors (though if we ever do use
+  // clang-22+ then invoke the kernel anyways to have clang-tidy check it).
+#  ifdef _CCCL_CLANG_TIDY_INVOKED
+#    if _CCCL_HAS_CDP()
   *d_error = action(d_temp_storage, *temp_storage_bytes, args...);
+#    else // ^^^  _CCCL_HAS_CDP() ^^^ / vvv ! _CCCL_HAS_CDP() vvv
+  static_cast<void>(d_temp_storage);
+  static_cast<void>(temp_storage_bytes);
+  static_cast<void>(action);
+  (static_cast<void>(args), ...);
+  *d_error = cudaSuccess;
+#    endif // ! _CCCL_HAS_CDP()
+#  else // ^^^ _CCCL_CLANG_TIDY_INVOKED ^^^ / vvv !_CCCL_CLANG_TIDY_INVOKED vvv
+  *d_error = action(d_temp_storage, *temp_storage_bytes, args...);
+#  endif // !_CCCL_CLANG_TIDY_INVOKED
 }
 
 // We should assign 0 to stream argument when launching on device side, because host stream is not valid there.

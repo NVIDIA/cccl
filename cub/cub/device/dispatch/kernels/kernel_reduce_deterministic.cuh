@@ -16,10 +16,11 @@
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
+#include <cub/util_arch.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -55,16 +56,16 @@ namespace detail::reduce
  *   Binary reduction functor
  */
 template <typename PolicySelector, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
-    .reduce.block_threads)) void DeterministicDeviceReduceKernel(InputIteratorT d_in,
-                                                                 AccumT* d_out,
-                                                                 int num_items,
-                                                                 ReductionOpT reduction_op,
-                                                                 TransformOpT transform_op,
-                                                                 const int reduce_grid_size)
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(current_policy<PolicySelector>().reduce.block_threads)) void DeterministicDeviceReduceKernel(
+  InputIteratorT d_in,
+  AccumT* d_out,
+  int num_items,
+  ReductionOpT reduction_op,
+  TransformOpT transform_op,
+  const int reduce_grid_size)
 {
-  constexpr rfa::reduce_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce;
+  constexpr rfa::reduce_policy policy = current_policy<PolicySelector>().reduce;
   constexpr int items_per_thread      = policy.items_per_thread;
   constexpr int block_threads         = policy.block_threads;
 
@@ -187,8 +188,8 @@ template <typename PolicySelector,
           typename InitT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads),
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
+  int(current_policy<PolicySelector>().single_tile.block_threads),
   1) void DeterministicDeviceReduceSingleTileKernel(InputIteratorT d_in,
                                                     OutputIteratorT d_out,
                                                     int num_items,
@@ -196,7 +197,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     InitT init,
                                                     TransformOpT transform_op)
 {
-  constexpr rfa::single_tile_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile;
+  constexpr rfa::single_tile_policy policy = current_policy<PolicySelector>().single_tile;
   constexpr int block_threads              = policy.block_threads;
 
   using block_reduce_t = BlockReduce<AccumT, block_threads, policy.block_algorithm>;

@@ -23,6 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__cccl/host_std_lib.h>
 
@@ -37,7 +38,7 @@
 //! * MSVC needs manual handling, has no real way of checking builtins so all is manual
 //! * GCC  needs manual handling, before gcc-10 as that finally supports __has_builtin
 //!
-//! In case compiler support for a builtin is advertised but leads to regressions we explicitly #undef the macro
+//! In case compiler support for a builtin is advertised but leads to regressions we explicitly undef the macro
 //!
 //! Finally, because `_CCCL_CHECK_BUILTIN` may lead to false positives, we move detection of new builtins over towards
 //! just using _CCCL_HAS_BUILTIN
@@ -102,6 +103,11 @@
 #  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_BUILTIN_ASSUME
+#  define _CCCL_BUILTIN_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
+
 #if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
@@ -111,8 +117,15 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_expect)
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)
+#else // ^^^ has __builtin_expect ^^^ / vvv no __builtin_expect vvv
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
+#endif // ^^^ no __builtin_expect ^^^
+
+#if _CCCL_TILE_COMPILATION() // nvbug6100927:  __builtin_expect is unsupported in tile mode
+#  undef _CCCL_BUILTIN_EXPECT
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
+#endif // _CCCL_TILE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
@@ -142,6 +155,10 @@
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
+
+#if _CCCL_TILE_COMPILATION() // nvbug6067464: __builtin_is_constant_evaluated is unsupported in tile mode
+#  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // _CCCL_TILE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_corresponding_member)
 #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) \
@@ -405,6 +422,10 @@
 #if _CCCL_HAS_BUILTIN(__type_pack_element)
 #  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
 #endif // _CCCL_HAS_BUILTIN(__type_pack_element)
+
+#if _CCCL_HAS_BUILTIN(__is_complete_type)
+#  define _CCCL_BUILTIN_IS_COMPLETE_TYPE(...) __is_complete_type(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_complete_type)
 
 // NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
 #if _CCCL_CUDACC_BELOW(12, 2)

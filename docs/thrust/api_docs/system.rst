@@ -1,7 +1,7 @@
 .. _thrust-module-api-system:
 
 System
-=======
+========
 
 .. toctree::
    :glob:

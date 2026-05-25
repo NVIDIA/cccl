@@ -26,13 +26,12 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-// TODO(bgruber): can we get by without the base class?
-struct policy_selector : cub::detail::transform::tuning<policy_selector>
+struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const
+    -> cub::detail::transform::transform_policy
   {
-    const int min_bytes_in_flight =
-      cub::detail::transform::arch_to_min_bytes_in_flight(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10}) + TUNE_BIF_BIAS;
+    const int min_bytes_in_flight = cub::detail::transform::cc_to_min_bytes_in_flight(cc) + TUNE_BIF_BIAS;
 #  if TUNE_ALGORITHM == 0 || TUNE_ALGORITHM == 1
     // setup prefetch, since it's either used directly or the fallback to vectorized
     auto algorithm            = cub::detail::transform::Algorithm::prefetch;
@@ -66,7 +65,7 @@ struct policy_selector : cub::detail::transform::tuning<policy_selector>
     constexpr auto algorithm   = cub::detail::transform::Algorithm::ublkcp;
     auto policy                = cub::detail::transform::async_copy_policy{};
     policy.block_threads       = TUNE_THREADS;
-    policy.bulk_copy_alignment = cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10});
+    policy.bulk_copy_alignment = cub::detail::transform::bulk_copy_alignment(cc);
     policy.unroll_factor       = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else // TUNE_ALGORITHM
@@ -92,7 +91,7 @@ void bench_transform(nvbench::state& state,
       cuda::std::execution::env{::cuda::stream_ref{launch.get_stream().get_stream()}
 #if !TUNE_BASE
                                 ,
-                                cuda::execution::__tune(policy_selector{})
+                                cuda::execution::tune(policy_selector{})
 #endif // !TUNE_BASE
       });
   });

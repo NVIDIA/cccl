@@ -11,14 +11,17 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
+template <typename AccumT>
 struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::reduce::reduce_policy
   {
-    const auto [items, threads] = cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD);
-    const auto policy           = cub::agent_reduce_policy{
+    const auto [items, threads] =
+      cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, int{sizeof(AccumT)});
+    const auto policy = cub::detail::reduce::agent_reduce_policy{
       threads, items, 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {policy, policy, policy, policy};
+    return {policy, policy, policy};
   }
 };
 #endif // !TUNE_BASE
@@ -54,13 +57,10 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = ::cuda::std::execution::env{
       ::cuda::stream_ref{launch.get_stream().get_stream()},
-      ::cuda::std::execution::prop{::cuda::mr::__get_memory_resource, mr}
+      mr
 #  if !TUNE_BASE
       ,
-      ::cuda::std::execution::prop{
-        ::cuda::execution::__get_tuning_t,
-        ::cuda::std::execution::env{
-          ::cuda::std::execution::prop{::cub::detail::reduce::get_tuning_query_t, policy_selector{}}}}
+      ::cuda::execution::tune(policy_selector<T>{})
 #  endif
     };
     static_assert(::cuda::std::execution::__queryable_with<decltype(env), ::cuda::mr::__get_memory_resource_t>);
@@ -80,11 +80,11 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     elements,
     op_t{},
     init_t{},
-    0 /* stream */,
+    nullptr /* stream */,
     transform_op
 #if !TUNE_BASE
     ,
-    policy_selector{}
+    policy_selector<T>{}
 #endif
   );
 
@@ -104,7 +104,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       transform_op
 #if !TUNE_BASE
       ,
-      policy_selector{}
+      policy_selector<T>{}
 #endif
     );
   });

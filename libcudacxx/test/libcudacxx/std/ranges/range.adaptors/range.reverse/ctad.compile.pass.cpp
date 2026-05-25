@@ -20,20 +20,20 @@
 
 struct View : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct Range
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct BorrowedRange
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowedRange> = true;
@@ -46,7 +46,7 @@ using result_reverse_view_owning       = cuda::std::ranges::reverse_view<cuda::s
 using result_reverse_view_owning_borrowed =
   cuda::std::ranges::reverse_view<cuda::std::ranges::owning_view<BorrowedRange>>;
 
-__host__ __device__ void testCTAD()
+TEST_FUNC void testCTAD()
 {
   View v;
   Range r;

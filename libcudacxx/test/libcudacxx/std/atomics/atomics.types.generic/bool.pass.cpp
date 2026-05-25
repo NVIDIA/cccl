@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -66,7 +69,7 @@
 template <template <cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
           template <typename, typename> class Selector>
-__host__ __device__ __noinline__ void do_test()
+TEST_FUNC __noinline__ void do_test()
 {
   {
     Selector<volatile Atomic<Scope>, constructor_initializer> sel;

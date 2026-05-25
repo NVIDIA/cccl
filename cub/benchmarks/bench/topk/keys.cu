@@ -14,7 +14,8 @@
 template <class KeyInT, class OffsetT>
 struct policy_selector_t
 {
-  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id) const -> cub::detail::topk::topk_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::topk::topk_policy
   {
 #  if TUNE_BLOCK_LOAD_ALGORITHM == 0
     constexpr auto load_alg = cub::BLOCK_LOAD_DIRECT;
@@ -79,7 +80,8 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     static_cast<cub::NullType*>(nullptr),
     static_cast<offset_t>(elements),
     static_cast<out_offset_t>(selected_elements),
-    0
+    cub::detail::identity_decomposer_t{},
+    nullptr
 #if !TUNE_BASE
     ,
     policy_selector_t<KeyT, OffsetT>{}
@@ -99,6 +101,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
       static_cast<cub::NullType*>(nullptr),
       static_cast<offset_t>(elements),
       static_cast<out_offset_t>(selected_elements),
+      cub::detail::identity_decomposer_t{},
       launch.get_stream()
 #if !TUNE_BASE
         ,

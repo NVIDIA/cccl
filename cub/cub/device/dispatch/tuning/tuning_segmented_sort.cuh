@@ -18,14 +18,11 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/concepts>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,7 +53,7 @@ struct segmented_radix_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_radix_sort_policy& p)
   {
     return os
@@ -65,7 +62,7 @@ struct segmented_radix_sort_policy
         << ", .load_modifier = " << p.load_modifier << ", .rank_algorithm = " << p.rank_algorithm
         << ", .scan_algorithm = " << p.scan_algorithm << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct sub_warp_merge_sort_policy
@@ -74,8 +71,8 @@ struct sub_warp_merge_sort_policy
   int warp_threads;
   int items_per_thread;
   WarpLoadAlgorithm load_algorithm;
-  WarpStoreAlgorithm store_algorithm;
   CacheLoadModifier load_modifier;
+  WarpStoreAlgorithm store_algorithm;
 
   [[nodiscard]] _CCCL_API constexpr int segments_per_block() const
   {
@@ -92,7 +89,7 @@ struct sub_warp_merge_sort_policy
   {
     return lhs.block_threads == rhs.block_threads && lhs.warp_threads == rhs.warp_threads
         && lhs.items_per_thread == rhs.items_per_thread && lhs.load_algorithm == rhs.load_algorithm
-        && lhs.store_algorithm == rhs.store_algorithm && lhs.load_modifier == rhs.load_modifier;
+        && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool
@@ -101,15 +98,15 @@ struct sub_warp_merge_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const sub_warp_merge_sort_policy& p)
   {
     return os
         << "sub_warp_merge_sort_policy { .block_threads = " << p.block_threads << ", .warp_threads = " << p.warp_threads
         << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .store_algorithm = " << p.store_algorithm << ", .load_modifier = " << p.load_modifier << " }";
+        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct segmented_sort_policy
@@ -132,14 +129,14 @@ struct segmented_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_sort_policy& p)
   {
     return os << "segmented_sort_policy { .large_segment = " << p.large_segment
               << ", .small_segment = " << p.small_segment << ", .medium_segment = " << p.medium_segment
               << ", .partitioning_threshold = " << p.partitioning_threshold << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -178,13 +175,13 @@ struct policy_selector
       radix_bits};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_sort_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_sort_policy
   {
     const auto scale_items = [&](int nominal_4b_items_per_thread) {
       return nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
     };
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       const bool large_items = __dominant_size() > 4;
       const int radix_bits   = key_size > 1 ? 6 : 4;
@@ -194,12 +191,12 @@ struct policy_selector
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
         sub_warp_merge_sort_policy{
-          256, large_items ? 8 : 2, small_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_LDG},
-        sub_warp_merge_sort_policy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_LDG},
+          256, large_items ? 8 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       const int radix_bits = key_size > 1 ? 6 : 4;
       const int small_itp  = scale_items(9);
@@ -208,12 +205,12 @@ struct policy_selector
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
         sub_warp_merge_sort_policy{
-          256, keys_only ? 4 : 2, small_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_DEFAULT},
+          256, keys_only ? 4 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_70)
+    if (cc >= ::cuda::compute_capability{7, 0})
     {
       const int radix_bits = key_size > 1 ? 6 : 4;
       const int small_itp  = scale_items(7);
@@ -221,44 +218,44 @@ struct policy_selector
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, keys_only ? 4 : 8, small_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, keys_only ? 4 : 8, small_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_62)
+    if (cc >= ::cuda::compute_capability{6, 2})
     {
       const int radix_bits       = key_size > 1 ? 5 : 4;
       const int small_medium_itp = scale_items(9);
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 16, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_61)
+    if (cc >= ::cuda::compute_capability{6, 1})
     {
       const int radix_bits       = key_size > 1 ? 6 : 4;
       const int small_medium_itp = scale_items(9);
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{6, 0})
     {
       const int radix_bits       = key_size > 1 ? 6 : 4;
       const int small_medium_itp = scale_items(9);
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MATCH, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -268,8 +265,8 @@ struct policy_selector
     return segmented_sort_policy{
       __make_scaled_segmented_radix_sort_policy(
         256, 16, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-      sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-      sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+      sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+      sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
       300};
   }
 };
@@ -281,9 +278,9 @@ static_assert(segmented_sort_policy_selector<policy_selector>);
 template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_sort_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_sort_policy
   {
-    return policy_selector{int{sizeof(KeyT)}, int{sizeof(ValueT)}, ::cuda::std::is_same_v<ValueT, NullType>}(arch);
+    return policy_selector{int{sizeof(KeyT)}, int{sizeof(ValueT)}, ::cuda::std::is_same_v<ValueT, NullType>}(cc);
   }
 };
 
@@ -307,21 +304,6 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
       : StaticPolicyT(base)
   {}
 
-  _CCCL_HOST_DEVICE static constexpr auto LargeSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto SmallSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto MediumSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
-  }
-
   _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
@@ -330,6 +312,21 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   _CCCL_HOST_DEVICE static constexpr int LargeSegmentRadixBits()
   {
     return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentBlockThreads()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::BLOCK_THREADS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentItemsPerThread()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::ITEMS_PER_THREAD;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int SmallSegmentBlockThreads()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::BLOCK_THREADS;
   }
 
   _CCCL_HOST_DEVICE static constexpr int SegmentsPerSmallBlock()
@@ -381,17 +378,6 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   {
     return StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM;
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"LargeSegmentPolicy">()    = LargeSegment().EncodedPolicy(),
-                  key<"SmallSegmentPolicy">()    = SmallSegment().EncodedPolicy(),
-                  key<"MediumSegmentPolicy">()   = MediumSegment().EncodedPolicy(),
-                  key<"PartitioningThreshold">() = value<StaticPolicyT::PARTITIONING_THRESHOLD>()>();
-  }
-#endif
 };
 
 // TODO(bgruber): remove when we drop the CUB dispatchers in CCCL 4.0

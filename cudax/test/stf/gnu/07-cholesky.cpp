@@ -19,6 +19,8 @@
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
 
+#include <iostream>
+
 #define TILED
 
 using namespace cuda::experimental::stf;
@@ -116,7 +118,7 @@ public:
     assert(grid_p * grid_q == ndevs);
 
     // std::cout << "FOUND " << ndevs << " DEVICES "
-    //          << "p=" << grid_p << " q=" << grid_q << std::endl;
+    //          << "p=" << grid_p << " q=" << grid_q << '\n';
   }
 
   int get_preferred_devid(int row, int col)
@@ -414,7 +416,7 @@ void PDTRSM(cublasSideMode_t side,
 {
   nvtx_range r("PDTRSM");
 
-  //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
+  //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << '\n';
 
   if (side == CUBLAS_SIDE_LEFT)
   {
@@ -481,7 +483,7 @@ void PDTRSM(cublasSideMode_t side,
     abort();
   }
   cuda_safe_call(cudaSetDevice(0));
-  //    std::cout << "[PDTRSM] END" << std::endl;
+  //    std::cout << "[PDTRSM] END" << '\n';
 }
 
 void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
@@ -492,7 +494,7 @@ void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
   reserved::dot::set_current_color("green");
 #endif
 
-  //    std::cout << "[PDPOTRS] START" << std::endl;
+  //    std::cout << "[PDPOTRS] START" << '\n';
   // Call the parallel functions.
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_T : CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
@@ -503,7 +505,7 @@ void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
 
   PDTRSM(
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_N : CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
-  //    std::cout << "[PDPOTRS] END" << std::endl;
+  //    std::cout << "[PDPOTRS] END" << '\n';
 }
 
 /*****************************************************************************
@@ -701,7 +703,7 @@ int main(int argc, char** argv)
 
   double gflops_pdpotrf = 1.0 / 3.0 * ((double) N * (double) N * (double) N) / (1000000000.0);
   std::cout << "[PDPOTRF] ELAPSED: " << milliseconds_pdpotrf
-            << " ms, GFLOPS: " << gflops_pdpotrf / (milliseconds_pdpotrf / 1000.0) << std::endl;
+            << " ms, GFLOPS: " << gflops_pdpotrf / (milliseconds_pdpotrf / 1000.0) << '\n';
 
   if (check_result)
   {

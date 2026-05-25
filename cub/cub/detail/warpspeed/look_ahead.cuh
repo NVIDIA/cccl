@@ -177,7 +177,7 @@ _CCCL_DEVICE_API void warpLoadLookback(
 // warp-uniform.
 //
 template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
-[[nodiscard]] _CCCL_DEVICE_API AccumT warpIncrementalLookback(
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookback(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
   const int idxTilePrev,

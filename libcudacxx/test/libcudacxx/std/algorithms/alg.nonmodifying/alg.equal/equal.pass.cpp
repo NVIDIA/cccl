@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <algorithm>
 
 // template<InputIterator Iter1, InputIterator Iter2>
@@ -33,7 +36,7 @@ template <class UnderlyingType, class Iter1>
 struct Test
 {
   template <class Iter2>
-  __host__ __device__ constexpr void operator()()
+  TEST_FUNC constexpr void operator()()
   {
     UnderlyingType a[]  = {0, 1, 2, 3, 4, 5};
     const unsigned s    = sizeof(a) / sizeof(a[0]);
@@ -58,7 +61,7 @@ struct Test
 struct TestNarrowingEqualTo
 {
   template <class UnderlyingType>
-  __host__ __device__ constexpr void operator()()
+  TEST_FUNC constexpr void operator()()
   {
     UnderlyingType a[] = {
       UnderlyingType(0x1000),
@@ -82,7 +85,7 @@ template <class UnderlyingType, class TypeList>
 struct TestIter2
 {
   template <class Iter1>
-  __host__ __device__ constexpr void operator()()
+  TEST_FUNC constexpr void operator()()
   {
     types::for_each(TypeList(), Test<UnderlyingType, Iter1>());
   }
@@ -91,19 +94,19 @@ struct TestIter2
 struct AddressCompare
 {
   int i = 0;
-  __host__ __device__ constexpr AddressCompare(int) {}
+  TEST_FUNC constexpr AddressCompare(int) {}
 
-  __host__ __device__ operator char()
+  TEST_FUNC operator char()
   {
     return static_cast<char>(i);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
+  TEST_FUNC friend constexpr bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs == &rhs;
   }
 
-  __host__ __device__ friend constexpr bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
+  TEST_FUNC friend constexpr bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs != &rhs;
   }
@@ -112,10 +115,10 @@ struct AddressCompare
 class trivially_equality_comparable
 {
 public:
-  __host__ __device__ constexpr trivially_equality_comparable(int i)
+  TEST_FUNC constexpr trivially_equality_comparable(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr bool operator==(const trivially_equality_comparable& other) const noexcept
+  TEST_FUNC constexpr bool operator==(const trivially_equality_comparable& other) const noexcept
   {
     return i_ == other.i_;
   };
@@ -124,7 +127,7 @@ private:
   int i_;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   types::for_each(types::cpp17_input_iterator_list<int*>(), TestIter2<int, types::cpp17_input_iterator_list<int*>>());
   types::for_each(types::cpp17_input_iterator_list<char*>(),
@@ -149,13 +152,14 @@ struct Derived : virtual Base
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   types::for_each(types::as_pointers<types::cv_qualified_versions<int>>(),
                   TestIter2<int, types::as_pointers<types::cv_qualified_versions<int>>>());
   types::for_each(types::as_pointers<types::cv_qualified_versions<char>>(),
                   TestIter2<char, types::as_pointers<types::cv_qualified_versions<char>>>());
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   {
     Derived d;
     Derived* a[] = {&d, nullptr};
@@ -164,6 +168,7 @@ int main(int, char**)
     assert(cuda::std::equal(a, a + 2, b));
     assert(cuda::std::equal(a, a + 2, b, b + 2));
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

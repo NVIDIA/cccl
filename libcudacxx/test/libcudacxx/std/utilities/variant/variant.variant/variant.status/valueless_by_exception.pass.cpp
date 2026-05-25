@@ -9,6 +9,9 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/std/variant>
 
 // template <class ...Types> class variant;
@@ -42,7 +45,7 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(!v.valueless_by_exception(), "");
+    static_assert(!v.valueless_by_exception());
   }
   {
     using V = cuda::std::variant<int, long>;

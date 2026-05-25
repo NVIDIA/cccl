@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // Test properties of layout_stride_relaxed::mapping:
@@ -29,7 +32,7 @@
 using cuda::std::intptr_t;
 
 template <class E>
-__host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
+TEST_FUNC constexpr void test_layout_mapping_stride_relaxed(
   E ext, [[maybe_unused]] cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, bool expected_is_strided)
 {
   using M            = cuda::layout_stride_relaxed::template mapping<E>;
@@ -90,7 +93,7 @@ __host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
   static_assert(cuda::std::is_trivially_copyable_v<M>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 

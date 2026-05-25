@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -22,10 +25,10 @@ TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possib
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_sqrt(T val)
+TEST_FUNC void test_sqrt(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::sqrt(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::sqrt(T{})), ret>);
 
   assert(eq(cuda::std::sqrt(val), T(8.0)));
   assert(eq(cuda::std::sqrt(T(0.0)), T(0.0)));
@@ -45,10 +48,10 @@ __host__ __device__ void test_sqrt(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_cbrt(T val)
+TEST_FUNC void test_cbrt(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::cbrt(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::cbrt(T{})), ret>);
 
   assert(eq(cuda::std::cbrt(val), T(2)));
   assert(eq(cuda::std::cbrt(T(0.0)), T(0.0)));
@@ -69,13 +72,13 @@ __host__ __device__ void test_cbrt(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_sqrt<T>(val);
   test_cbrt<T>(val / T(8));
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

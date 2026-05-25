@@ -152,7 +152,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
 //! @param __dst Destination to copy into
 //! @param __config Configuration for the copy
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(
+_CCCL_REQUIRES( // NOLINT(modernize-type-traits)
   __spannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __spannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {
@@ -163,25 +163,10 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
     __config);
 }
 
-//! @brief Launches a bytewise memory copy from source to destination into the provided
-//! stream.
-//!
-//! Both source and destination needs to be an instance of `cuda::std::mdspan`.
-//! They can also convert to `cuda::std::mdspan`, but the type needs to contain
-//! `mdspan` template arguments as member aliases named `value_type`, `extents_type`,
-//! `layout_type` and `accessor_type`. The resulting mdspan is required to be
-//! exhaustive. The element types of both the source and destination type are
-//! required to be trivially copyable.
-//!
-//! This call might be synchronous if either source or destination is pagable host memory.
-//! It will be synchronous if both destination and copy is located in host memory.
-//!
-//! @param __stream Stream that the copy should be inserted into
-//! @param __src Source to copy from
-//! @param __dst Destination to copy into
-//! @param __config Configuration for the copy
+//! @overload
+//! @note This overload accepts mdspan-compatible types.
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(
+_CCCL_REQUIRES( // NOLINT(modernize-type-traits)
   __mdspannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __mdspannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 // <cuda/std/string_view>
 
 // constexpr string_view operator""sv(const char* str, size_t len) noexcept;
@@ -24,6 +27,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 _CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
 
 #if _CCCL_HAS_CHAR8_T()
@@ -32,7 +37,7 @@ using u8string_view = cuda::std::u8string_view;
 using u8string_view = cuda::std::string_view;
 #endif // ^^^ !_CCCL_HAS_CHAR8_T() ^^^
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // char
 

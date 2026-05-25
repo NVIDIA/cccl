@@ -25,12 +25,12 @@
 
 struct NonCopyable
 {
-  __host__ __device__ NonCopyable(NonCopyable&) = delete;
+  TEST_FUNC NonCopyable(NonCopyable&) = delete;
 };
 
 struct NonDefaultCtor
 {
-  __host__ __device__ NonDefaultCtor(int) {}
+  TEST_FUNC NonDefaultCtor(int) {}
 };
 
 struct Empty
@@ -38,7 +38,7 @@ struct Empty
 
 struct LessThan3
 {
-  __host__ __device__ constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -46,7 +46,7 @@ struct LessThan3
 
 struct EqualTo33
 {
-  __host__ __device__ constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i == 33;
   }
@@ -54,7 +54,7 @@ struct EqualTo33
 
 struct Add3
 {
-  __host__ __device__ constexpr int operator()(int i) const
+  TEST_FUNC constexpr int operator()(int i) const
   {
     return i + 3;
   }
@@ -76,7 +76,7 @@ static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::repeat), Non
 // Tp is move_constructible
 static_assert(cuda::std::is_invocable_v<decltype(cuda::std::views::repeat), MoveOnly>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   assert(*cuda::std::views::repeat(33).begin() == 33);
   assert(*cuda::std::views::repeat(33, 10).begin() == 33);

@@ -37,9 +37,7 @@
 // TODO(bgruber): included for backward compatibility, remove in CCCL 4.0
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
+#include <cuda/std/__host_stdlib/sstream>
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
@@ -513,7 +511,7 @@ public:
         return error;
       }
 
-      if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy, launcher_factory)))
+      if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory)))
       {
         return error;
       }
@@ -1204,19 +1202,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << policy_selector(arch_id);
-                _CubLog("Dispatching DeviceReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return DispatchRadixSort<Order, KeyT, ValueT, OffsetT, DecomposerT, fake_policy, KernelSource, KernelLauncherFactory>{
       d_temp_storage,
       temp_storage_bytes,

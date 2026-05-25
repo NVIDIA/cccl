@@ -97,54 +97,75 @@ public:
   /// draining in the next kernel instance. To be called by the host or by a kernel prior to the one
   /// which will be draining.
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
-  FillAndResetDrain(OffsetT fill_size, [[maybe_unused]] cudaStream_t stream = 0)
+  FillAndResetDrain(OffsetT fill_size, [[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(
+    NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
-      (d_counters[FILL] = fill_size; d_counters[DRAIN] = 0; result = cudaSuccess;),
-      (OffsetT counters[2]; counters[FILL] = fill_size; counters[DRAIN] = 0;
-       result = CubDebug(cudaMemcpyAsync(d_counters, counters, sizeof(OffsetT) * 2, cudaMemcpyHostToDevice, stream));));
+      ({
+        d_counters[FILL]  = fill_size;
+        d_counters[DRAIN] = 0;
+        result            = cudaSuccess;
+      }),
+      ({
+        OffsetT counters[2];
+        counters[FILL]  = fill_size;
+        counters[DRAIN] = 0;
+        result = CubDebug(cudaMemcpyAsync(d_counters, counters, sizeof(OffsetT) * 2, cudaMemcpyHostToDevice, stream));
+      }));
 
     return result;
   }
 
   /// This operation resets the drain so that it may advance to meet the existing fill-size.
   /// To be called by the host or by a kernel prior to the one which will be draining.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain([[maybe_unused]] cudaStream_t stream = 0)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain([[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (d_counters[DRAIN] = 0; result = cudaSuccess;),
-                 (result = CubDebug(cudaMemsetAsync(d_counters + DRAIN, 0, sizeof(OffsetT), stream));));
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      ({
+                        d_counters[DRAIN] = 0;
+                        result            = cudaSuccess;
+                      }),
+                      ({ result = CubDebug(cudaMemsetAsync(d_counters + DRAIN, 0, sizeof(OffsetT), stream)); }));
 
     return result;
   }
 
   /// This operation resets the fill counter.
   /// To be called by the host or by a kernel prior to the one which will be filling.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill([[maybe_unused]] cudaStream_t stream = 0)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill([[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (d_counters[FILL] = 0; result = cudaSuccess;),
-                 (result = CubDebug(cudaMemsetAsync(d_counters + FILL, 0, sizeof(OffsetT), stream));));
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      ({
+                        d_counters[FILL] = 0;
+                        result           = cudaSuccess;
+                      }),
+                      ({ result = CubDebug(cudaMemsetAsync(d_counters + FILL, 0, sizeof(OffsetT), stream)); }));
 
     return result;
   }
 
   /// Returns the fill-size established by the parent or by the previous kernel.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillSize(OffsetT& fill_size, [[maybe_unused]] cudaStream_t stream = 0)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+  FillSize(OffsetT& fill_size, [[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (fill_size = d_counters[FILL]; result = cudaSuccess;),
-                 (result = CubDebug(
-                    cudaMemcpyAsync(&fill_size, d_counters + FILL, sizeof(OffsetT), cudaMemcpyDeviceToHost, stream));));
+    NV_IF_ELSE_TARGET(
+      NV_IS_DEVICE,
+      ({
+        fill_size = d_counters[FILL];
+        result    = cudaSuccess;
+      }),
+      ({
+        result =
+          CubDebug(cudaMemcpyAsync(&fill_size, d_counters + FILL, sizeof(OffsetT), cudaMemcpyDeviceToHost, stream));
+      }));
 
     return result;
   }

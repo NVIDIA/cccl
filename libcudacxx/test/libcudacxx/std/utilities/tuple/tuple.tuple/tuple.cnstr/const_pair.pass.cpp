@@ -32,10 +32,10 @@ int main(int, char**)
     using T1 = cuda::std::tuple<long long, short>;
     constexpr P0 p0(2, 'a');
     constexpr T1 t1 = p0;
-    static_assert(cuda::std::get<0>(t1) == cuda::std::get<0>(p0), "");
-    static_assert(cuda::std::get<1>(t1) == cuda::std::get<1>(p0), "");
-    static_assert(cuda::std::get<0>(t1) == 2, "");
-    static_assert(cuda::std::get<1>(t1) == short('a'), "");
+    static_assert(cuda::std::get<0>(t1) == cuda::std::get<0>(p0));
+    static_assert(cuda::std::get<1>(t1) == cuda::std::get<1>(p0));
+    static_assert(cuda::std::get<0>(t1) == 2);
+    static_assert(cuda::std::get<1>(t1) == short('a'));
   }
 
   return 0;

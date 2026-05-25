@@ -1,12 +1,5 @@
-//===----------------------------------------------------------------------===//
-//
-// Part of libcu++, the C++ Standard Library for your entire system,
-// under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
-//
-//===----------------------------------------------------------------------===//
 
 #include <thrust/device_vector.h>
 #include <thrust/find.h>
@@ -15,21 +8,6 @@
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
-
-struct equal_to_val
-{
-  size_t val_;
-
-  constexpr equal_to_val(const size_t val) noexcept
-      : val_(val)
-  {}
-
-  template <class T>
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return val == val_;
-  }
-};
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)

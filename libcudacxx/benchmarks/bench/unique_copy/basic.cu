@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -10,11 +10,11 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/sequence.h>
 #include <thrust/transform.h>
+#include <thrust/unique.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/execution>
 #include <cuda/stream_ref>
 
 #include "nvbench_helper.cuh"
@@ -45,7 +45,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
   // unique_copy writes at most elements
-  state.add_global_memory_writes<T>(elements);
+  state.add_global_memory_writes<T>(elements / 2);
 
   caching_allocator_t alloc{};
 
@@ -72,7 +72,7 @@ static void with_comp(nvbench::state& state, nvbench::type_list<T>)
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
   // unique_copy writes at most elements
-  state.add_global_memory_writes<T>(elements);
+  state.add_global_memory_writes<T>(elements / 2);
 
   caching_allocator_t alloc{};
 

@@ -48,7 +48,6 @@ using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
 
 class backend_ctx_untyped;
 class logical_data_untyped;
-class exec_place;
 
 void reclaim_memory(
   backend_ctx_untyped& ctx, const data_place& place, size_t requested_s, size_t& reclaimed_s, event_list& prereqs);
@@ -139,9 +138,10 @@ private:
     // Used to uniquely identify the task for mapping purposes
     reserved::mapping_id_t mapping_id;
 
-    // This is a pointer to a generic data structure used by "unset_place" to
-    // restore previous context
-    exec_place saved_place_ctx;
+    // RAII guard for the task's execution place activation.
+    // Created in acquire_deps, destroyed in release_deps.
+    // Empty (inactive) scope when not in use.
+    exec_place_scope saved_place_ctx;
 
     // Indicate the status of the task
     task::phase phase = task::phase::setup;
@@ -393,6 +393,17 @@ public:
     return pimpl->enable_capture;
   }
 
+  // Get the base task - for consistency with unified_task, stream_task, graph_task
+  ::cuda::experimental::stf::task& get_base_task()
+  {
+    return *this;
+  }
+
+  const ::cuda::experimental::stf::task& get_base_task() const
+  {
+    return *this;
+  }
+
   /**
    * @brief Start a task
    *
@@ -441,6 +452,8 @@ void dep_allocate(
 {
   auto& inst = d.get_data_instance(instance_id);
 
+  _CCCL_ASSERT(dplace.is_resolved(), "dep_allocate requires a resolved data_place");
+
   /*
    * DATA LAZY ALLOCATION
    */
@@ -471,6 +484,7 @@ void dep_allocate(
         inst.allocated_size = s;
         inst.set_allocated(true);
         inst.reclaimable = true;
+        _CCCL_ASSERT(inst.get_dplace().is_resolved(), "instance dplace must be resolved after allocation");
         break;
       }
 

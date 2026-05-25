@@ -79,13 +79,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __cccl_rotr_impl(_Tp __v, int __cnt) noexcept
 {
-  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+#if !_CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__v, __v, __cnt);))
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATERIGHT8)
   if constexpr (sizeof(_Tp) == sizeof(uint8_t))
   {
@@ -118,13 +120,15 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __cccl_rotl_impl(_Tp __v, int __cnt) noexcept
 {
-  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+#if !_CCCL_TILE_COMPILATION() // nvbug6084444: error: "call to non-tile function not supported!"
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__v, __v, __cnt);))
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
 #if defined(_CCCL_BUILTIN_ROTATELEFT8)
   if constexpr (sizeof(_Tp) == sizeof(uint8_t))
   {

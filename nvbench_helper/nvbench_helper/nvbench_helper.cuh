@@ -14,7 +14,7 @@
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #  include <cuda/memory_resource>
-#  include <cuda/std/__pstl_algorithm>
+#  include <cuda/std/execution>
 #  include <cuda/stream>
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
@@ -47,8 +47,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(complex64, "C64", "complex64");
 
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMin, "ArgMin", "cub::ArgMin");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMax, "ArgMax", "cub::ArgMax");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_min, "arg_min", "cub::detail::arg_min");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_max, "arg_max", "cub::detail::arg_max");
 
 template <typename T, T I>
 struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
@@ -509,7 +509,7 @@ struct less_t
 struct max_t
 {
   template <typename DataType>
-  __host__ __device__ DataType operator()(const DataType& lhs, const DataType& rhs)
+  __host__ __device__ DataType operator()(const DataType& lhs, const DataType& rhs) const
   {
     less_t less{};
     return less(lhs, rhs) ? rhs : lhs;
@@ -686,7 +686,7 @@ auto policy(caching_allocator_t& alloc)
 }
 auto cuda_policy(caching_allocator_t& alloc)
 {
-  return cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
+  return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc);
 }
 #else
 auto policy(caching_allocator_t&)
@@ -702,7 +702,8 @@ auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
 }
 auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
-  return cuda::execution::__cub_par_unseq.with_memory_resource(alloc).with_stream(launch.get_stream().get_stream());
+  return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc)
+    .with(cuda::get_stream, launch.get_stream().get_stream());
 }
 #else
 auto policy(caching_allocator_t&, nvbench::launch&)
@@ -710,4 +711,16 @@ auto policy(caching_allocator_t&, nvbench::launch&)
   return thrust::device;
 }
 #endif
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+// Returns an environment for benchmarking using alloc as MR, launch's stream, and any additional envs passed in.
+template <typename... MoreEnvs>
+auto cub_bench_env(caching_allocator_t& alloc, nvbench::launch& launch, MoreEnvs... envs)
+{
+  return cuda::std::execution::env{
+    ::cuda::stream_ref{launch.get_stream().get_stream()},
+    ::cuda::std::execution::prop{cuda::mr::get_memory_resource, ::cuda::mr::resource_ref<>{alloc}},
+    envs...};
+}
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace

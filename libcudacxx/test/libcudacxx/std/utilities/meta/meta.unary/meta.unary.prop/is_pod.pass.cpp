@@ -18,35 +18,35 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_pod()
+TEST_FUNC void test_is_pod()
 {
-  static_assert(cuda::std::is_pod<T>::value, "");
-  static_assert(cuda::std::is_pod<const T>::value, "");
-  static_assert(cuda::std::is_pod<volatile T>::value, "");
-  static_assert(cuda::std::is_pod<const volatile T>::value, "");
-  static_assert(cuda::std::is_pod_v<T>, "");
-  static_assert(cuda::std::is_pod_v<const T>, "");
-  static_assert(cuda::std::is_pod_v<volatile T>, "");
-  static_assert(cuda::std::is_pod_v<const volatile T>, "");
+  static_assert(cuda::std::is_pod<T>::value);
+  static_assert(cuda::std::is_pod<const T>::value);
+  static_assert(cuda::std::is_pod<volatile T>::value);
+  static_assert(cuda::std::is_pod<const volatile T>::value);
+  static_assert(cuda::std::is_pod_v<T>);
+  static_assert(cuda::std::is_pod_v<const T>);
+  static_assert(cuda::std::is_pod_v<volatile T>);
+  static_assert(cuda::std::is_pod_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_pod()
+TEST_FUNC void test_is_not_pod()
 {
-  static_assert(!cuda::std::is_pod<T>::value, "");
-  static_assert(!cuda::std::is_pod<const T>::value, "");
-  static_assert(!cuda::std::is_pod<volatile T>::value, "");
-  static_assert(!cuda::std::is_pod<const volatile T>::value, "");
-  static_assert(!cuda::std::is_pod_v<T>, "");
-  static_assert(!cuda::std::is_pod_v<const T>, "");
-  static_assert(!cuda::std::is_pod_v<volatile T>, "");
-  static_assert(!cuda::std::is_pod_v<const volatile T>, "");
+  static_assert(!cuda::std::is_pod<T>::value);
+  static_assert(!cuda::std::is_pod<const T>::value);
+  static_assert(!cuda::std::is_pod<volatile T>::value);
+  static_assert(!cuda::std::is_pod<const volatile T>::value);
+  static_assert(!cuda::std::is_pod_v<T>);
+  static_assert(!cuda::std::is_pod_v<const T>);
+  static_assert(!cuda::std::is_pod_v<volatile T>);
+  static_assert(!cuda::std::is_pod_v<const volatile T>);
 }
 
 class Class
 {
 public:
-  __host__ __device__ ~Class();
+  TEST_FUNC ~Class();
 };
 
 int main(int, char**)

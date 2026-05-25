@@ -24,12 +24,12 @@ struct ExplicitlyDefaultConstructible1
 
 struct ExplicitlyDefaultConstructible2
 {
-  __host__ __device__ explicit ExplicitlyDefaultConstructible2() {}
+  TEST_FUNC explicit ExplicitlyDefaultConstructible2() {}
 };
 
 struct ImplicitlyDefaultConstructible1
 {
-  __host__ __device__ ImplicitlyDefaultConstructible1() {}
+  TEST_FUNC ImplicitlyDefaultConstructible1() {}
 };
 
 struct ImplicitlyDefaultConstructible2
@@ -49,7 +49,7 @@ struct NonDefaultConstructible2
 
 struct NonDefaultConstructible3
 {
-  __host__ __device__ NonDefaultConstructible3(NonDefaultConstructible3&&) {}
+  TEST_FUNC NonDefaultConstructible3(NonDefaultConstructible3&&) {}
 };
 
 struct ProtectedDefaultConstructible
@@ -79,18 +79,18 @@ private:
   PrivateDefaultConstructibleWithBase() = default;
 };
 
-static_assert(!cuda::std::__is_implicitly_default_constructible<ExplicitlyDefaultConstructible1>::value, "");
-static_assert(!cuda::std::__is_implicitly_default_constructible<ExplicitlyDefaultConstructible2>::value, "");
-static_assert(cuda::std::__is_implicitly_default_constructible<ImplicitlyDefaultConstructible1>::value, "");
-static_assert(cuda::std::__is_implicitly_default_constructible<ImplicitlyDefaultConstructible2>::value, "");
-static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible1>::value, "");
-static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible2>::value, "");
-static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible3>::value, "");
-static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructible>::value, "");
-static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructible>::value, "");
+static_assert(!cuda::std::__is_implicitly_default_constructible<ExplicitlyDefaultConstructible1>::value);
+static_assert(!cuda::std::__is_implicitly_default_constructible<ExplicitlyDefaultConstructible2>::value);
+static_assert(cuda::std::__is_implicitly_default_constructible<ImplicitlyDefaultConstructible1>::value);
+static_assert(cuda::std::__is_implicitly_default_constructible<ImplicitlyDefaultConstructible2>::value);
+static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible1>::value);
+static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible2>::value);
+static_assert(!cuda::std::__is_implicitly_default_constructible<NonDefaultConstructible3>::value);
+static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructible>::value);
+static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructible>::value);
 #if !TEST_COMPILER(GCC, <, 8) // GCC 6 + 7 complain about implicit conversion
-static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructibleWithBase>::value, "");
-static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructibleWithBase>::value, "");
+static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefaultConstructibleWithBase>::value);
+static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructibleWithBase>::value);
 #endif // !TEST_COMPILER(GCC, <, 8)
 
 int main(int, char**)

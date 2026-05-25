@@ -25,6 +25,7 @@
 
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -35,6 +36,10 @@
 //! The \c device_memory_pool class provides an asynchronous memory resource
 //! that allocates device memory in stream order.
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
@@ -56,7 +61,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!    exceeds the lifetime of the ``device_memory_pool_ref``.
 //!
 //! @endrst
-class device_memory_pool_ref : public __memory_pool_base
+class device_memory_pool_ref
+    : public __memory_pool_base
+    , public ::cuda::mr::memory_resource_base<device_memory_pool_ref>
 {
 public:
   //! @brief  Constructs the device_memory_pool_ref from a \c cudaMemPool_t.
@@ -152,9 +159,11 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>);
 
-static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>);
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

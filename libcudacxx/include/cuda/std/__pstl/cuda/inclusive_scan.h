@@ -36,8 +36,6 @@ _CCCL_DIAG_POP
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/tabulate_output_iterator.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -71,45 +69,22 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     _BinaryOp __binary_op,
     _Tp __init)
   {
-    _OutputIterator __ret = __result + iter_difference_t<_OutputIterator>(__count);
-
-    // Determine temporary device storage requirements for reduce
-    size_t __num_bytes = 0;
+    // We pass the policy as an environment to DeviceScan
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
-      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScanInit failed",
-      static_cast<void*>(nullptr),
-      __num_bytes,
-      __first,
+      "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
+      ::cuda::std::move(__first),
       __result,
-      __binary_op,
+      ::cuda::std::move(__binary_op),
       __init,
-      __count);
+      __count,
+      __policy);
 
-    // Allocate memory for result
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
-
-    {
-      __temporary_storage<void, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
-
-      // Run the scan
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
-        "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
-        __storage.__get_temp_storage(),
-        __num_bytes,
-        ::cuda::std::move(__first),
-        ::cuda::std::move(__result),
-        ::cuda::std::move(__binary_op),
-        __init,
-        __count,
-        __stream.get());
-    }
-
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
-    return __ret;
+
+    return __result + iter_difference_t<_OutputIterator>(__count);
   }
 
   template <class _Policy, class _InputIterator, class _OutputIterator, class _BinaryOp>
@@ -122,39 +97,18 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
   {
     _OutputIterator __ret = __result + iter_difference_t<_OutputIterator>(__count);
 
-    // Determine temporary device storage requirements for reduce
-    size_t __num_bytes = 0;
+    // We pass the policy as an environment to DeviceScan
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
-      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScan failed",
-      static_cast<void*>(nullptr),
-      __num_bytes,
-      __first,
+      "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
+      ::cuda::std::move(__first),
       __result,
-      __binary_op,
-      __count);
+      ::cuda::std::move(__binary_op),
+      __count,
+      __policy);
 
-    // Allocate memory for result
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
-
-    {
-      __temporary_storage<void, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
-
-      // Run the scan
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
-        "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
-        __storage.__get_temp_storage(),
-        __num_bytes,
-        ::cuda::std::move(__first),
-        ::cuda::std::move(__result),
-        ::cuda::std::move(__binary_op),
-        __count,
-        __stream.get());
-    }
-
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
     return __ret;
   }
@@ -171,7 +125,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         const auto __count = ::cuda::std::distance(__first, __last);
         return __par_impl(
@@ -182,7 +136,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
           ::cuda::std::move(__binary_op),
           __init);
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -190,9 +144,10 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {
@@ -219,13 +174,13 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         const auto __count = ::cuda::std::distance(__first, __last);
         return __par_impl(
           __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), ::cuda::std::move(__binary_op));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -233,9 +188,10 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

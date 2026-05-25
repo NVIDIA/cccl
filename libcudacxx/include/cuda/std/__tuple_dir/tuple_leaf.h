@@ -105,8 +105,11 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 #endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
 public:
+  // The compiler-generated constructor would not value-initialize trivial types, but the
+  // standard requires that we do.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
+  _CCCL_API constexpr __tuple_leaf() // NOLINT(modernize-use-equals-default)
+    noexcept(is_nothrow_default_constructible_v<_Hp>)
       : __value_()
   {}
 
@@ -227,14 +230,19 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   __tuple_leaf(__tuple_leaf&& __t) = default;
 
+  // Do not use = default here. The value type may be a reference, in which case the defaulted
+  // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept
+  _CCCL_API constexpr __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept // NOLINT(modernize-use-equals-default)
   {
     __value_ = __t.__value_;
     return *this;
   }
+
+  // Do not use = default here. The value type may be a reference, in which case the defaulted
+  // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
+  _CCCL_API constexpr __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept // NOLINT(modernize-use-equals-default)
   {
     __value_ = ::cuda::std::move(__t.__value_);
     return *this;
@@ -267,8 +275,11 @@ template <size_t _Ip, class _Hp>
 class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : private remove_const_t<_Hp>
 {
 public:
+  // The compiler-generated constructor would not value-initialize trivial types, but the
+  // standard requires that we do.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
+  _CCCL_API constexpr __tuple_leaf() // NOLINT(modernize-use-equals-default)
+    noexcept(is_nothrow_default_constructible_v<_Hp>)
       : _Hp()
   {}
 
@@ -440,7 +451,19 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
   // Using a fold exppression here breaks nvrtc
-  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
+  _CCCL_API inline void swap(__tuple_impl& __t)
+  // NVCC 12.0.X has a bug where it instantiates friend functions eagerly. This leads to errors
+  // because the friend swap() in tuple causes this swap() to (transitively) be instantiated
+  // regardless of whether it is called or not.
+  //
+  // When using tuples of incomplete types this causes errors with is_nothrow_swappable (or
+  // rather, any is_swappable trait) as they require the types to be complete. In this case we
+  // need to lazily instantiate these templates so we can short-circuit if _Tp is incomplete.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
+    noexcept(__fold_and_v<__is_complete_and_nothrow_swappable_v<remove_cvref_t<_Tp>>...>)
+#else // ^^^  _CCCL_CUDA_COMPILER(NVCC, <, 12, 1) ^^^ / vvv  _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1) vvv
+    noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
+#endif //  _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
   {
     (__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t)), ...);
   }

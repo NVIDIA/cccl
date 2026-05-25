@@ -32,6 +32,6 @@ int main()
 
   float max_abs_diff = thrust::inner_product(d_a.begin(), d_a.end(), d_b.begin(), init, binary_op1, binary_op2);
 
-  std::cout << "maximum absolute difference: " << max_abs_diff << std::endl;
+  std::cout << "maximum absolute difference: " << max_abs_diff << '\n';
   return 0;
 }

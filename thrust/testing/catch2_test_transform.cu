@@ -11,10 +11,18 @@
 #include "unittest/random.h"
 #include "unittest/special_types.h"
 
-TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
+// There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
+// Adding this attribute suffices that this miscompilation does not appear anymore
+#if _CCCL_COMPILER(GCC, >=, 11)
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
+template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_unary_simple()
 {
-  using Vector = TestType;
-  using T      = typename Vector::value_type;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -26,6 +34,11 @@ TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
 
   CHECK(std::size_t(iter - output.begin()) == input.size());
   CHECK(output == result);
+}
+
+TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
+{
+  test_unary_simple<TestType>();
 }
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
@@ -181,16 +194,13 @@ TEST_CASE("UnaryDispatchImplicit", "[transform_if]")
   CHECK(13 == vec.front());
 }
 
-TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
+template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_binary_simple()
 {
-  using Vector = TestType;
-  using T      = typename Vector::value_type;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
-  // There is a strange gcc bug here where it believes we would write out of bounds.
-  // It seems to go away if we add one more element that we leave untouched. Luckily 0 - 0 = 0 so all is fine.
-  // Note that we still write the element, so it does not hide a functional thrust bug
   Vector input1{1, -2, 3};
   Vector input2{-4, 5, 6};
   Vector output(3);
@@ -200,6 +210,11 @@ TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
 
   CHECK(std::size_t(iter - output.begin()) == input1.size());
   CHECK(output == result);
+}
+
+TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
+{
+  test_binary_simple<TestType>();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename UnaryFunction>

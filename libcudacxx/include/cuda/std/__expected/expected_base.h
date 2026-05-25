@@ -55,10 +55,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 struct __expected_construct_from_invoke_tag
 {
   _CCCL_HIDE_FROM_ABI explicit __expected_construct_from_invoke_tag() = default;
@@ -205,7 +201,6 @@ struct __expected_destruct<_Tp, _Err, false, false>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -225,7 +220,6 @@ struct __expected_destruct<_Tp, _Err, false, false>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -271,7 +265,6 @@ struct __expected_destruct<_Tp, _Err, true, false>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -291,7 +284,6 @@ struct __expected_destruct<_Tp, _Err, true, false>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -333,7 +325,6 @@ struct __expected_destruct<_Tp, _Err, false, true>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -353,7 +344,6 @@ struct __expected_destruct<_Tp, _Err, false, true>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -396,7 +386,6 @@ struct __expected_destruct<_Tp, _Err, true, true>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -416,7 +405,6 @@ struct __expected_destruct<_Tp, _Err, true, true>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -432,8 +420,6 @@ struct __expected_destruct<_Tp, _Err, true, true>
       , __has_val_(false)
   {}
 };
-
-_CCCL_DIAG_POP
 
 template <class _Tp, class _Err>
 struct __expected_storage : __expected_destruct<_Tp, _Err>
@@ -759,9 +745,6 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__deleted> : __expe
 };
 
 // expected<void, E> base classtemplate <class _Tp, class _Err>
-// MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 template <class _Err>
 struct __expected_destruct<void, _Err, false, false>
@@ -880,7 +863,6 @@ struct __expected_destruct<void, _Err, false, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
       : __union_()
-      , __has_val_(true)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -909,8 +891,6 @@ struct __expected_destruct<void, _Err, false, true>
       : __has_val_(__has_val)
   {}
 };
-
-_CCCL_DIAG_POP
 
 template <class _Err>
 struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>

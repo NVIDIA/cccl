@@ -10,8 +10,13 @@ function(cccl_c_experimental_stf_add_test target_name_var source)
   )
   set(target_name_var ${target_name} PARENT_SCOPE)
 
-  add_executable(${target_name} "${source}")
-  cccl_configure_target(${target_name} DIALECT 20)
+  cccl_add_executable(
+    ${target_name}
+    ADD_CTEST
+    NO_METATARGETS
+    DIALECT 20
+    SOURCES "${source}"
+  )
 
   set_target_properties(${target_name} PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
   target_link_libraries(
@@ -24,8 +29,6 @@ function(cccl_c_experimental_stf_add_test target_name_var source)
       cccl.c2h.main
       CUDA::cuda_driver
   )
-
-  add_test(NAME ${target_name} COMMAND ${target_name})
 endfunction()
 
 file(

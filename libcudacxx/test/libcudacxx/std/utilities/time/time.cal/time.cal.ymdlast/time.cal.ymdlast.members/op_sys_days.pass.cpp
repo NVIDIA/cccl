@@ -37,21 +37,21 @@ int main(int, char**)
     constexpr year_month_day_last ymdl{year{1970}, month_day_last{January}};
     constexpr sys_days sd{ymdl};
 
-    static_assert(sd.time_since_epoch() == days{30}, "");
+    static_assert(sd.time_since_epoch() == days{30});
   }
 
   {
     constexpr year_month_day_last ymdl{year{2000}, month_day_last{January}};
     constexpr sys_days sd{ymdl};
 
-    static_assert(sd.time_since_epoch() == days{10957 + 30}, "");
+    static_assert(sd.time_since_epoch() == days{10957 + 30});
   }
 
   {
     constexpr year_month_day_last ymdl{year{1940}, month_day_last{January}};
     constexpr sys_days sd{ymdl};
 
-    static_assert(sd.time_since_epoch() == days{-10957 + 29}, "");
+    static_assert(sd.time_since_epoch() == days{-10957 + 29});
   }
 
   {

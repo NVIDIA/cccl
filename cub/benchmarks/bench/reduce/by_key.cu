@@ -17,7 +17,7 @@
 #if !TUNE_BASE
 struct bench_reduce_by_key_policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
     -> cub::detail::reduce_by_key::reduce_by_key_policy
   {
     return {
@@ -79,12 +79,12 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     );
   };
 
-  dispatch_on_stream(cudaStream_t{0});
+  dispatch_on_stream(cudaStream_t{nullptr});
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  dispatch_on_stream(cudaStream_t{0});
+  dispatch_on_stream(cudaStream_t{nullptr});
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 

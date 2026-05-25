@@ -23,6 +23,9 @@ endif()
 # Enable CXX so CMake can configure install paths
 project(CCCL LANGUAGES CXX)
 
+# Enable CCCL specific platform files
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 include(cmake/CCCLInstallRules.cmake)
 
 # Support adding CCCL to a parent project via add_subdirectory.
@@ -59,6 +62,17 @@ else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
 
+option(CCCL_ENABLE_TILE "Enable tile support" OFF)
+if (CCCL_ENABLE_TILE) # TODO(miscco) sccache currently does not support tile
+  unset(ENV{CMAKE_C_COMPILER_LAUNCHER})
+  unset(ENV{CMAKE_CXX_COMPILER_LAUNCHER})
+  unset(ENV{CMAKE_CUDA_COMPILER_LAUNCHER})
+
+  unset(CMAKE_C_COMPILER_LAUNCHER CACHE)
+  unset(CMAKE_CXX_COMPILER_LAUNCHER CACHE)
+  unset(CMAKE_CUDA_COMPILER_LAUNCHER CACHE)
+endif()
+
 option(
   CCCL_ENABLE_UNSTABLE
   "Enable targets and developer build options for unstable projects."
@@ -75,6 +89,17 @@ else()
   # Note that this doesn't override the cache variable, but rather creates a new
   # directory-scoped variable that shadows it. This is sufficient for our purposes.
   set(CCCL_ENABLE_CUDAX OFF)
+endif()
+
+option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
+
+if (CCCL_TOPLEVEL_PROJECT)
+  include(cmake/CCCLAddTidyTarget.cmake)
+
+  if (CCCL_ENABLE_CLANG_TIDY)
+    cccl_tidy_init()
+  endif()
 endif()
 
 include(CTest)

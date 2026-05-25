@@ -30,7 +30,7 @@ C2H_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_len
     input.begin(), unique_out.begin(), counts_out.begin(), num_runs_out.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRunLengthEncode::Encode failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRunLengthEncode::Encode failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_unique{0, 2, 9, 5, 8};
@@ -62,7 +62,7 @@ C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "
     input.begin(), offsets_out.begin(), lengths_out.begin(), num_runs_out.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRunLengthEncode::NonTrivialRuns failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRunLengthEncode::NonTrivialRuns failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_offsets{1, 4};

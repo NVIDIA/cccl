@@ -124,7 +124,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
 
     _CCCL_API void start() noexcept
     {
-      NV_IF_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
     }
 
   private:

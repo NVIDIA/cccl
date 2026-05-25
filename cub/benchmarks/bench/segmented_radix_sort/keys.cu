@@ -59,7 +59,7 @@ void seg_radix_sort(nvbench::state& state,
     begin_bit,
     end_bit,
     is_overwrite_ok,
-    0);
+    nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());

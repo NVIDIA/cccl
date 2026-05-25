@@ -16,6 +16,7 @@
 #include <cooperative_groups.h>
 
 #include "cuda_space_selector.h"
+#include "test_macros.h"
 
 namespace cg = cooperative_groups;
 
@@ -28,7 +29,7 @@ struct storage
   constexpr static int size = 67;
   static_assert(size >= thread_block_size);
 
-  __host__ __device__ storage(T val = 0)
+  TEST_FUNC storage(T val = 0)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {
@@ -39,7 +40,7 @@ struct storage
   storage(const storage&)            = default;
   storage& operator=(const storage&) = default;
 
-  __host__ __device__ friend bool operator==(const storage& lhs, const storage& rhs)
+  TEST_FUNC friend bool operator==(const storage& lhs, const storage& rhs)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {
@@ -52,7 +53,7 @@ struct storage
     return true;
   }
 
-  __host__ __device__ friend bool operator==(const storage& lhs, const T& rhs)
+  TEST_FUNC friend bool operator==(const storage& lhs, const T& rhs)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {
@@ -69,10 +70,10 @@ struct storage
 };
 
 #if !TEST_COMPILER(NVRTC) && !TEST_COMPILER(CLANG)
-static_assert(cuda::std::is_trivially_copy_constructible_v<storage<int8_t>>, "");
-static_assert(cuda::std::is_trivially_copy_constructible_v<storage<uint16_t>>, "");
-static_assert(cuda::std::is_trivially_copy_constructible_v<storage<int32_t>>, "");
-static_assert(cuda::std::is_trivially_copy_constructible_v<storage<uint64_t>>, "");
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<int8_t>>);
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<uint16_t>>);
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<int32_t>>);
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<uint64_t>>);
 #endif
 
 template <class T,
@@ -81,7 +82,7 @@ template <class T,
           template <typename, typename> class BarrierSelector,
           cuda::thread_scope BarrierScope,
           typename... CompletionF>
-__device__ __noinline__ void test_fully_specialized()
+TEST_DEVICE_FUNC __noinline__ void test_fully_specialized()
 {
   SourceSelector<storage<T>, constructor_initializer> source_sel;
   typename DestSelector<storage<T>, constructor_initializer>::template offsetted<decltype(source_sel)::shared_offset>
@@ -159,14 +160,14 @@ __device__ __noinline__ void test_fully_specialized()
 
 struct completion
 {
-  __device__ void operator()() const {}
+  TEST_DEVICE_FUNC void operator()() const {}
 };
 
 template <class T,
           template <typename, typename> class SourceSelector,
           template <typename, typename> class DestSelector,
           template <typename, typename> class BarrierSelector>
-__device__ __noinline__ void test_select_scope()
+TEST_DEVICE_FUNC __noinline__ void test_select_scope()
 {
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_system>();
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_device>();
@@ -180,21 +181,21 @@ __device__ __noinline__ void test_select_scope()
 }
 
 template <class T, template <typename, typename> class SourceSelector, template <typename, typename> class DestSelector>
-__device__ __noinline__ void test_select_barrier()
+TEST_DEVICE_FUNC __noinline__ void test_select_barrier()
 {
   test_select_scope<T, SourceSelector, DestSelector, shared_memory_selector>();
   test_select_scope<T, SourceSelector, DestSelector, global_memory_selector>();
 }
 
 template <class T, template <typename, typename> class SourceSelector>
-__device__ __noinline__ void test_select_destination()
+TEST_DEVICE_FUNC __noinline__ void test_select_destination()
 {
   test_select_barrier<T, SourceSelector, shared_memory_selector>();
   test_select_barrier<T, SourceSelector, global_memory_selector>();
 }
 
 template <class T>
-__host__ __device__ __noinline__ void test_select_source()
+TEST_FUNC __noinline__ void test_select_source()
 {
   NV_IF_TARGET(
     NV_IS_DEVICE,

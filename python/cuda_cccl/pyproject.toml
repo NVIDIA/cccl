@@ -45,15 +45,33 @@ minimal-cu13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
   "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
 ]
+# sysctk variants: like cu12/cu13 but without cuda-toolkit — the user is
+# responsible for providing a compatible CUDA toolkit
+minimal-sysctk12 = [
+  "cuda-bindings>=12.9.1,<13.0.0",
+]
+minimal-sysctk13 = [
+  "cuda-bindings>=13.0.0,<14.0.0",
+]
 cu12 = [
   "cuda-cccl[minimal-cu12]",
   "numba>=0.60.0",
-  "numba-cuda[cu12]>=0.23.0,<0.27.0",
+  "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
   "numba>=0.60.0",
-  "numba-cuda[cu13]>=0.23.0,<0.27.0",
+  "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
+]
+sysctk12 = [
+  "cuda-cccl[minimal-sysctk12]",
+  "numba>=0.60.0",
+  "numba-cuda[cu12]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0"
+]
+sysctk13 = [
+  "cuda-cccl[minimal-sysctk13]",
+  "numba>=0.60.0",
+  "numba-cuda[cu13]>=0.23.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
 ]
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
@@ -62,17 +80,14 @@ test-cu12 = [
   "pytest",
   "pytest-xdist",
   "cupy-cuda12x",
-  "pytest-benchmark",
 ]
-test-cu13 = [
-  "cuda-cccl[cu13]",
-  "pytest",
-  "pytest-xdist",
-  "cupy-cuda13x",
-  "pytest-benchmark",
-]
-bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]"]
-bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]"]
+test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
+test-sysctk12 = ["cuda-cccl[sysctk12]", "pytest", "pytest-xdist", "cupy-cuda12x"]
+test-sysctk13 = ["cuda-cccl[sysctk13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
+bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]", "cupy-cuda12x"]
+bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]", "cupy-cuda13x"]
+bench-sysctk12 = ["cuda-cccl[sysctk12]", "cuda-bench[cu12]", "cupy-cuda12x"]
+bench-sysctk13 = ["cuda-cccl[sysctk13]", "cuda-bench[cu13]", "cupy-cuda13x"]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -106,6 +121,7 @@ git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
 "cuda" = "cuda"
 
 [tool.mypy]
+cache_dir = "../../.cache/mypy"
 python_version = "3.10"
 
 [[tool.mypy.overrides]]

@@ -91,9 +91,8 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  //  Define an empty destructor to explicitly specify
-  //  its execution space qualifier, as a workaround for nvcc warning
-  _CCCL_HOST ~host_vector() {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST ~host_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p host_vector with the given
    *  size.
@@ -191,7 +190,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector(host_vector&& v)
+  _CCCL_HOST host_vector(host_vector&& v) noexcept
       : Parent(::cuda::std::move(v))
   {}
 
@@ -227,7 +226,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector& operator=(host_vector&& v)
+  _CCCL_HOST host_vector& operator=(host_vector&& v) noexcept
   {
     Parent::operator=(::cuda::std::move(v));
     return *this;

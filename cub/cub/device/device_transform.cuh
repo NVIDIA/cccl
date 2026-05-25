@@ -20,6 +20,7 @@
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
@@ -46,32 +47,10 @@ struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_c
 {};
 
 CUB_NAMESPACE_BEGIN
-namespace detail::transform
-{
-// TODO(bgruber): can we get by without the tuning base class? Since we have transform_policy_selector, could we enrich
-// get_tuning_query_t to just check if the environment has a type that fulfills transform_policy_selector?
-struct get_tuning_query_t
-{};
-
-template <class PolicySelector>
-// TODO(bgruber): we cannot check the concept here because PolicySelector is usually an incomplete type still
-// #if _CCCL_HAS_CONCEPTS()
-//   requires transform_policy_selector<PolicySelector>
-// #endif // _CCCL_HAS_CONCEPTS()
-struct tuning
-{
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> PolicySelector
-  {
-    return static_cast<const PolicySelector&>(*this);
-  }
-};
-} // namespace detail::transform
-
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
 //! sequences into an output sequence.
 struct DeviceTransform
 {
-private:
   template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
             typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
@@ -79,7 +58,7 @@ private:
             typename Predicate,
             typename TransformOp,
             typename Env>
-  CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
     NumItemsT num_items,
@@ -105,8 +84,9 @@ private:
       ::cuda::std::is_same_v<Predicate, detail::transform::always_true_predicate>,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut>;
+
     using policy_selector = ::cuda::std::execution::
-      __query_result_or_t<tuning_env, detail::transform::get_tuning_query_t, default_policy_selector>;
+      __query_result_or_t<tuning_env, detail::transform::transform_policy, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
     static_assert(detail::transform::transform_policy_selector<policy_selector>);
@@ -130,7 +110,7 @@ private:
             typename Predicate,
             typename TransformOp,
             typename Env>
-  CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     ::cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
     NumItemsT num_items,
@@ -138,7 +118,7 @@ private:
     TransformOp transform_op,
     Env env)
   {
-    return TransformInternal<StableAddress>(
+    return __transform_internal<StableAddress>(
       ::cuda::std::move(inputs),
       ::cuda::make_zip_iterator(::cuda::std::move(outputs)),
       num_items,
@@ -147,7 +127,6 @@ private:
       ::cuda::std::move(env));
   }
 
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -192,7 +171,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(outputs),
       num_items,
@@ -295,7 +274,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -459,7 +438,7 @@ public:
       "The return value of the generator's call operator must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Generate");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
@@ -524,7 +503,7 @@ public:
                   "The passed value must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Fill");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
@@ -614,7 +593,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIf");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -838,7 +817,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
-    return TransformInternal<detail::transform::requires_stable_address::yes>(
+    return __transform_internal<detail::transform::requires_stable_address::yes>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -986,7 +965,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIfStableArgumentAddresses");
-    return TransformInternal<detail::transform::requires_stable_address::yes>(
+    return __transform_internal<detail::transform::requires_stable_address::yes>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,

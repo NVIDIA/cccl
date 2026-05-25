@@ -179,6 +179,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
     test_key);
 
   std::vector<std::pair<key_t, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -196,6 +197,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   std::vector<key_t> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_t, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -291,6 +293,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
     test_key);
 
   std::vector<std::pair<key_t, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -308,6 +311,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
   std::vector<key_t> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_t, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -349,6 +353,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_
     test_key);
 
   std::vector<std::pair<key_t, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -366,6 +371,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_
   std::vector<key_t> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_t, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -500,6 +506,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     test_key);
 
   std::vector<std::pair<key_pair, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -518,6 +525,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   std::vector<key_pair> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_pair, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -573,6 +581,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     test_key);
 
   std::vector<std::pair<key_pair, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -591,6 +600,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   std::vector<key_pair> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
   std::vector<std::pair<key_pair, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -650,6 +660,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[m
     test_key);
 
   std::vector<std::pair<T, item_t>> input_pairs;
+  input_pairs.reserve(input_keys.size());
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     // Multiplying by 6 since we multiply by 2 and 3 in the input and output value iterators
@@ -668,6 +679,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[m
   std::vector<T> host_output_keys(output_keys_ptr);
   std::vector<item_t> host_output_values(output_values_ptr);
   std::vector<std::pair<T, item_t>> output_pairs;
+  output_pairs.reserve(num_selected);
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);

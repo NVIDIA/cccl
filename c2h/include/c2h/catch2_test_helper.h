@@ -521,7 +521,19 @@ auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
 }
 
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+template <typename T1,
+          typename T2,
+          // provide this operator only when the pair's content is also streamable
+          ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream>()
+                                       << ::cuda::std::declval<T1>() << ::cuda::std::declval<T2>())>* = nullptr>
+::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
+{
+  return os << "[" << pair.first << ", " << pair.second << "]";
+}
+
 template <size_t N, typename... T>
 enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}

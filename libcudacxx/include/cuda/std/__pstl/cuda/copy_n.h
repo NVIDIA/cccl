@@ -70,8 +70,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
   [[nodiscard]] _CCCL_HOST_API static _OutputIterator __par_impl(
     const _Policy& __policy, _InputIterator __first, _Size __count, _OutputIterator __result, _UnaryPred __pred)
   {
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-
+    // We pass the policy as an environment to DeviceTransform
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
       "__pstl_cuda_copy_n: kernel launch of device_transform failed",
@@ -80,9 +79,12 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
       __count,
       ::cuda::std::move(__pred),
       identity{},
-      __stream.get());
+      __policy);
 
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
+
     return __result + __count;
   }
 
@@ -101,12 +103,12 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(
           __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -114,9 +116,10 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

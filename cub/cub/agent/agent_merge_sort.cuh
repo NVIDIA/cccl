@@ -16,55 +16,17 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
-
-template <int BlockThreads,
-          int ItemsPerThread                      = 1,
-          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
-          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
-struct AgentMergeSortPolicy
-{
-  static constexpr int BLOCK_THREADS    = BlockThreads;
-  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
-
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
-  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
-};
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  MergeSortAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (ITEMS_PER_TILE, ItemsPerTile, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::BlockStoreAlgorithm))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES
-
 namespace detail::merge_sort
 {
-template <typename Policy,
+template <typename PolicyGetter,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -81,18 +43,25 @@ struct AgentBlockSort
 
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
+  static constexpr merge_sort_policy policy = PolicyGetter{}();
+  static constexpr int BLOCK_THREADS        = policy.block_threads;
+  static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
+  static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
 
-  using KeysLoadIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyInputIteratorT>;
-  using ItemsLoadIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueInputIteratorT>;
+  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT>;
 
-  using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
-  using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
+  using KeysLoadIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyInputIteratorT>;
+  using ItemsLoadIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueInputIteratorT>;
 
-  using BlockStoreKeysIt   = typename cub::BlockStoreType<Policy, KeyIteratorT>::type;
-  using BlockStoreItemsIt  = typename cub::BlockStoreType<Policy, ValueIteratorT>::type;
-  using BlockStoreKeysRaw  = typename cub::BlockStoreType<Policy, KeyT*>::type;
-  using BlockStoreItemsRaw = typename cub::BlockStoreType<Policy, ValueT*>::type;
+  using BlockLoadKeys  = BlockLoad<it_value_t<KeysLoadIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.load_algorithm>;
+  using BlockLoadItems = BlockLoad<it_value_t<ItemsLoadIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.load_algorithm>;
+
+  using BlockStoreKeysIt =
+    BlockStore<it_value_t<KeyIteratorT>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+  using BlockStoreItemsIt =
+    BlockStore<it_value_t<ValueIteratorT>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+  using BlockStoreKeysRaw  = BlockStore<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+  using BlockStoreItemsRaw = BlockStore<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
 
   union _TempStorage
   {
@@ -106,12 +75,7 @@ struct AgentBlockSort
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
-
-  static constexpr int BLOCK_THREADS    = Policy::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = Policy::ITEMS_PER_TILE;
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -399,7 +363,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PE
 }
 
 /// \brief The agent is responsible for merging N consecutive sorted arrays into N/2 sorted arrays.
-template <typename Policy,
+template <typename PolicyGetter, // TODO(bgruber): pass policy as NTTP in C++20
           typename KeyIteratorT,
           typename ValueIteratorT,
           typename OffsetT,
@@ -411,20 +375,33 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyIteratorT>;
-  using ItemsLoadPingIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueIteratorT>;
-  using KeysLoadPongIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyT*>;
-  using ItemsLoadPongIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueT*>;
+
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
+
+  static constexpr merge_sort_policy policy = PolicyGetter{}();
+  static constexpr int BLOCK_THREADS        = policy.block_threads;
+  static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
+  static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
+
+  using KeysLoadPingIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyIteratorT>;
+  using ItemsLoadPingIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueIteratorT>;
+  using KeysLoadPongIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyT*>;
+  using ItemsLoadPongIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueT*>;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;
   using KeysOutputPingIt  = KeyT*;
   using ItemsOutputPingIt = ValueT*;
 
-  using BlockStoreKeysPong  = typename BlockStoreType<Policy, KeysOutputPongIt>::type;
-  using BlockStoreItemsPong = typename BlockStoreType<Policy, ItemsOutputPongIt>::type;
-  using BlockStoreKeysPing  = typename BlockStoreType<Policy, KeysOutputPingIt>::type;
-  using BlockStoreItemsPing = typename BlockStoreType<Policy, ItemsOutputPingIt>::type;
+  using BlockStoreKeysPong =
+    BlockStore<it_value_t<KeysOutputPongIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+  using BlockStoreItemsPong =
+    BlockStore<it_value_t<ItemsOutputPongIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+
+  using BlockStoreKeysPing =
+    BlockStore<it_value_t<KeysOutputPingIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+  using BlockStoreItemsPing =
+    BlockStore<it_value_t<ItemsOutputPingIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
 
   /// Parameterized BlockReduce primitive
 
@@ -435,18 +412,12 @@ struct AgentMerge
     typename BlockStoreKeysPong::TempStorage store_keys_pong;
     typename BlockStoreItemsPong::TempStorage store_items_pong;
 
-    KeyT keys_shared[Policy::ITEMS_PER_TILE + 1];
-    ValueT items_shared[Policy::ITEMS_PER_TILE + 1];
+    KeyT keys_shared[policy.items_per_tile() + 1];
+    ValueT items_shared[policy.items_per_tile() + 1];
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
-
-  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
-  static constexpr int BLOCK_THREADS    = Policy::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = Policy::ITEMS_PER_TILE;
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per thread data

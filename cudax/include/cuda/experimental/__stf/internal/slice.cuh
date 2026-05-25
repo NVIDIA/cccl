@@ -399,7 +399,7 @@ public:
   shape_of() = default;
 
   /**
-   * @name Copies a shape.
+   * @brief Copies a shape.
    *
    * All `shape_of` specializations must define this constructor.
    */
@@ -420,11 +420,9 @@ public:
   /**
    * @brief Create a new `shape_of` object from a `coords_t` object.
    *
-   * @tparam Sizes Types (all must convert to `size_t` implicitly)
-   * @param size0 Size for the first dimension (
-   * @param sizes Sizes of data for the other dimensions, one per dimension
+   * @param sizes Sizes for each dimension
    *
-   * Initializes dimensions to `size0`, `sizes...`. This constructor is optional.
+   * This constructor is optional.
    */
   explicit shape_of(const coords_t& sizes)
       : extents(reserved::to_cuda_array(sizes))
@@ -1108,7 +1106,7 @@ void data_dump([[maybe_unused]] mdspan<E, X, L, A> s,
   }
   else
   {
-    ::std::cerr << "Unsupported typed." << ::std::endl;
+    ::std::cerr << "Unsupported typed." << '\n';
   }
 }
 

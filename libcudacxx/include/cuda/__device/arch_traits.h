@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -201,6 +201,46 @@ struct arch_traits_t
 //! @brief Gets the architecture traits for the given architecture id \c _Id.
 template <arch_id _Id>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits() noexcept;
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_50>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_50);
+  __traits.max_resident_grids                   = 32;
+  __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_52>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_52);
+  __traits.max_resident_grids                   = 32;
+  __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_53>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_53);
+  __traits.max_resident_grids                   = 32;
+  __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin    = 48 * 1024;
+  __traits.max_registers_per_block              = 32 * 1024;
+  return __traits;
+};
 
 template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_60>() noexcept
@@ -456,7 +496,7 @@ template <>
 
 //! @brief Gets the architecture traits for the given architecture id \c __id.
 //!
-//! @throws \c cuda::cuda_error if the \c __id is not a known architecture.
+//! @throws cuda::cuda_error if the \c __id is not a known architecture.
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(arch_id __id)
 {
   switch (__id)
@@ -482,7 +522,7 @@ template <>
 
 //! @brief Gets the architecture traits for the given compute capability \c __cc.
 //!
-//! @throws \c cuda::cuda_error if the \c __cc doesn't have a corresponding architecture id.
+//! @throws cuda::cuda_error if the \c __cc doesn't have a corresponding architecture id.
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(compute_capability __cc)
 {
   return ::cuda::arch_traits_for(::cuda::to_arch_id(__cc));

@@ -40,12 +40,21 @@ enum class __pstl_algorithm
   __for_each_n,
   __generate_n,
   __inclusive_scan,
+  __max_element,
   __merge,
+  __min_element,
+  __partition,
+  __partition_copy,
   __reduce,
   __remove_if,
+  __rotate,
+  __rotate_copy,
+  __shift_left,
+  __shift_right,
+  __stable_partition,
   __transform,
   __transform_reduce,
-  __unique_copy,
+  __unique,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially
@@ -75,7 +84,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Top layer dispatcher that returns a concrete dispatch if possible
 template <__pstl_algorithm _Algorithm, class _Policy>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __pstl_select_dispatch() noexcept
+[[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEVAL auto __pstl_select_dispatch() noexcept
 {
   // First extract the desired backend from the policy
   constexpr __execution_backend __backend = _Policy::__get_backend();
