@@ -18,7 +18,9 @@
 
 using namespace hostjit::codegen;
 
-using segmented_reduce_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*, void*);
+// (temp_storage, temp_bytes, d_in, d_out, num_segments, begin_offsets, end_offsets, op, init, stream)
+using segmented_reduce_fn_t =
+  int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*, void*, void*);
 
 CUresult cccl_device_segmented_reduce_build_ex(
   cccl_device_segmented_reduce_build_result_t* build,
@@ -48,7 +50,16 @@ try
     CubCall::from("cub/device/device_segmented_reduce.cuh")
       .run("cub::DeviceSegmentedReduce::Reduce")
       .name("cccl_jit_segmented_reduce")
-      .with(temp_storage, temp_bytes, in(d_in), out(d_out), num_items, in(start_offset_it), in(end_offset_it), op, init)
+      .with(temp_storage,
+            temp_bytes,
+            in(d_in),
+            out(d_out),
+            num_items,
+            in(start_offset_it),
+            in(end_offset_it),
+            op,
+            init,
+            stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build->cc         = cc_major * 10 + cc_minor;
@@ -83,7 +94,7 @@ CUresult cccl_device_segmented_reduce(
   cccl_iterator_t end_offset,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream /*stream*/)
+  CUstream stream)
 {
   try
   {
@@ -95,7 +106,7 @@ CUresult cccl_device_segmented_reduce(
     }
 
     // Parameter order matches CubCall::with() order:
-    // temp_storage, temp_bytes, d_in, d_out, num_items, begin_offsets, end_offsets, op, init
+    // temp_storage, temp_bytes, d_in, d_out, num_items, begin_offsets, end_offsets, op, init, stream
     int status = segmented_reduce_fn(
       d_temp_storage,
       temp_storage_bytes,
@@ -105,7 +116,8 @@ CUresult cccl_device_segmented_reduce(
       start_offset.state,
       end_offset.state,
       op.state,
-      init.state);
+      init.state,
+      reinterpret_cast<void*>(stream));
 
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
   }

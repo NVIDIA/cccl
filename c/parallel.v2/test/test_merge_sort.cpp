@@ -581,13 +581,9 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
   pointer_t<int> output_items_ptr;
 
   // Test _ex version with custom build configuration
-  cccl_build_config config;
-  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
-  config.extra_compile_flags     = extra_flags;
-  config.num_extra_compile_flags = 1;
-  config.extra_include_dirs      = extra_dirs;
-  config.num_extra_include_dirs  = 1;
+  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
+  cccl_build_config config{extra_flags, 1, extra_dirs, 1, 0, 0};
 
   // Build with _ex version
   cccl_device_merge_sort_build_result_t build;

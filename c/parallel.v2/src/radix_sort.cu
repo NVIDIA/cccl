@@ -4,18 +4,14 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #include <cstdio>
-#include <cstring>
-#include <format>
-#include <string>
 
 #include <cccl/c/radix_sort.h>
-#include <hostjit/codegen/types.hpp>
-#include <hostjit/jit_compiler.hpp>
+#include <hostjit/codegen/cub_call.hpp>
 #include <util/build_utils.h>
 
 using namespace hostjit::codegen;
@@ -30,108 +26,24 @@ static bool is_null_op(cccl_op_t op)
   return op.name == nullptr || op.name[0] == '\0';
 }
 
-// ---------------------------------------------------------------------------
-// JIT source generation
-// ---------------------------------------------------------------------------
-// For keys-only sort, the JIT function takes:
-//   (temp, bytes, keys_in, keys_out, num_items, begin_bit, end_bit, selector_out, stream)
-// For pairs sort, the JIT function takes:
-//   (temp, bytes, keys_in, keys_out, values_in, values_out, num_items, begin_bit, end_bit, selector_out, stream)
+// JIT wrappers produced by CubCall:
+//   keys-only: fn(temp, temp_bytes, keys_in, keys_out, num_items,
+//                 &begin_bit, &end_bit, stream)
+//   pairs:     fn(temp, temp_bytes, keys_in, keys_out, values_in, values_out,
+//                 num_items, &begin_bit, &end_bit, stream)
 //
-// The copy-based (non-DoubleBuffer) CUB API is used. The result is always in
-// the *_out buffer (selector=0 from the caller's perspective).
-// is_overwrite_okay is accepted by the C wrapper but ignored on this path.
+// begin_bit/end_bit go through CubCall::typed_scalar (host-pointer + memcpy
+// onto the stack inside the JIT wrapper). The copy variant of CUB's
+// DeviceRadixSort is used: the result is always in *_out, selector=0.
+// is_overwrite_okay is accepted by the run API but ignored on this path.
 //
 // Decomposer: only identity (null decomposer) is supported.
+using radix_sort_keys_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*);
+using radix_sort_pairs_fn_t =
+  int (*)(void*, size_t*, void*, void*, void*, void*, unsigned long long, void*, void*, void*);
 
-static const char* k_export_macro = R"(
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-)";
-
-static std::string make_keys_only_source(const std::string& key_type, bool ascending)
-{
-  return std::format(
-    R"SRC(
-#include <cuda_runtime.h>
-#include <cuda_fp16.h>
-#include <cub/device/device_radix_sort.cuh>
-{0}
-extern "C" EXPORT int cccl_jit_radix_sort(
-    void* d_temp_storage, size_t* temp_storage_bytes,
-    void* d_keys_in_ptr, void* d_keys_out_ptr,
-    unsigned long long num_items,
-    int begin_bit, int end_bit,
-    void* stream)
-{{
-    using key_t = {1};
-    cudaError_t err = cub::DeviceRadixSort::{2}(
-        d_temp_storage, *temp_storage_bytes,
-        static_cast<const key_t*>(d_keys_in_ptr),
-        static_cast<key_t*>(d_keys_out_ptr),
-        static_cast<unsigned long long>(num_items),
-        begin_bit, end_bit,
-        static_cast<cudaStream_t>(stream));
-    return static_cast<int>(err);
-}}
-)SRC",
-    k_export_macro,
-    key_type,
-    ascending ? "SortKeys" : "SortKeysDescending");
-}
-
-static std::string make_pairs_source(const std::string& key_type, const std::string& value_type, bool ascending)
-{
-  return std::format(
-    R"SRC(
-#include <cuda_runtime.h>
-#include <cuda_fp16.h>
-#include <cub/device/device_radix_sort.cuh>
-{0}
-extern "C" EXPORT int cccl_jit_radix_sort(
-    void* d_temp_storage, size_t* temp_storage_bytes,
-    void* d_keys_in_ptr, void* d_keys_out_ptr,
-    void* d_values_in_ptr, void* d_values_out_ptr,
-    unsigned long long num_items,
-    int begin_bit, int end_bit,
-    void* stream)
-{{
-    using key_t   = {1};
-    using value_t = {2};
-    cudaError_t err = cub::DeviceRadixSort::{3}(
-        d_temp_storage, *temp_storage_bytes,
-        static_cast<const key_t*>(d_keys_in_ptr),
-        static_cast<key_t*>(d_keys_out_ptr),
-        static_cast<const value_t*>(d_values_in_ptr),
-        static_cast<value_t*>(d_values_out_ptr),
-        static_cast<unsigned long long>(num_items),
-        begin_bit, end_bit,
-        static_cast<cudaStream_t>(stream));
-    return static_cast<int>(err);
-}}
-)SRC",
-    k_export_macro,
-    key_type,
-    value_type,
-    ascending ? "SortPairs" : "SortPairsDescending");
-}
-
-// ---------------------------------------------------------------------------
-// Runtime function typedefs
-// ---------------------------------------------------------------------------
-
-// Keys-only: (temp, bytes, keys_in, keys_out, num_items, begin_bit, end_bit, stream)
-using radix_sort_keys_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, int, int, void*);
-
-// Pairs: (temp, bytes, keys_in, keys_out, values_in, values_out, num_items, begin_bit, end_bit, stream)
-using radix_sort_pairs_fn_t = int (*)(void*, size_t*, void*, void*, void*, void*, unsigned long long, int, int, void*);
-
-// ---------------------------------------------------------------------------
-// Build
-// ---------------------------------------------------------------------------
+// Type info for the begin_bit/end_bit int scalars passed to CubCall.
+static constexpr cccl_type_info k_int_type{sizeof(int), alignof(int), CCCL_INT32};
 
 CUresult cccl_device_radix_sort_build_ex(
   cccl_device_radix_sort_build_result_t* build_ptr,
@@ -153,7 +65,7 @@ try
   {
     fprintf(stderr,
             "\nERROR in cccl_device_radix_sort_build(): custom radix decomposers are not supported "
-            "in the ClangJIT path. Use standard integer/float key types.\n");
+            "in the HostJIT path. Use standard integer/float key types.\n");
     return CUDA_ERROR_UNKNOWN;
   }
 
@@ -166,40 +78,63 @@ try
   const bool keys_only = is_null_it(input_values_it);
   const bool ascending = (sort_order == CCCL_ASCENDING);
 
-  std::string key_type = get_type_name(input_keys_it.value_type.type);
-  if (key_type.empty())
-  {
-    fprintf(stderr, "\nERROR in cccl_device_radix_sort_build(): unsupported key type\n");
-    return CUDA_ERROR_UNKNOWN;
-  }
+  // CUB writes to caller-provided device pointers at run time. Build needs
+  // an iterator descriptor for the outputs; synthesize raw-pointer ones with
+  // the same value_type as the matching input.
+  cccl_iterator_t output_keys_it = input_keys_it;
+  output_keys_it.type            = CCCL_POINTER;
+  output_keys_it.state           = nullptr;
+  cccl_iterator_t output_values_it{};
+  output_values_it.type       = CCCL_POINTER;
+  output_values_it.state      = nullptr;
+  output_values_it.value_type = input_values_it.value_type;
 
-  std::string source;
+  const char* cub_algo;
   if (keys_only)
   {
-    source = make_keys_only_source(key_type, ascending);
+    cub_algo = ascending ? "cub::DeviceRadixSort::SortKeys" : "cub::DeviceRadixSort::SortKeysDescending";
   }
   else
   {
-    std::string value_type = get_type_name(input_values_it.value_type.type);
-    if (value_type.empty())
-    {
-      fprintf(stderr, "\nERROR in cccl_device_radix_sort_build(): unsupported value type\n");
-      return CUDA_ERROR_UNKNOWN;
-    }
-    source = make_pairs_source(key_type, value_type, ascending);
+    cub_algo = ascending ? "cub::DeviceRadixSort::SortPairs" : "cub::DeviceRadixSort::SortPairsDescending";
   }
 
-  auto jit = cccl::detail::compile_jit_source(
-    source, "cccl_jit_radix_sort", cc_major, cc_minor, ctk_root, cccl_include_path, merged.get());
-  if (!jit.compiler)
-  {
-    return CUDA_ERROR_UNKNOWN;
-  }
+  CubCallResult result = [&] {
+    if (keys_only)
+    {
+      return CubCall::from("cub/device/device_radix_sort.cuh")
+        .run(cub_algo)
+        .name("cccl_jit_radix_sort")
+        .with(temp_storage,
+              temp_bytes,
+              in(input_keys_it),
+              out(output_keys_it),
+              num_items,
+              typed_scalar(k_int_type, "begin_bit"),
+              typed_scalar(k_int_type, "end_bit"),
+              stream)
+        .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+    return CubCall::from("cub/device/device_radix_sort.cuh")
+      .run(cub_algo)
+      .name("cccl_jit_radix_sort")
+      .with(temp_storage,
+            temp_bytes,
+            in(input_keys_it),
+            out(output_keys_it),
+            in(input_values_it),
+            out(output_values_it),
+            num_items,
+            typed_scalar(k_int_type, "begin_bit"),
+            typed_scalar(k_int_type, "end_bit"),
+            stream)
+      .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+  }();
 
   build_ptr->cc           = cc_major * 10 + cc_minor;
-  build_ptr->cubin        = cccl::detail::copy_cubin(jit.cubin, &build_ptr->cubin_size);
-  build_ptr->jit_compiler = jit.compiler.release();
-  build_ptr->sort_fn      = jit.fn_ptr;
+  build_ptr->cubin        = cccl::detail::copy_cubin(result.cubin, &build_ptr->cubin_size);
+  build_ptr->jit_compiler = result.compiler;
+  build_ptr->sort_fn      = result.fn_ptr;
   build_ptr->key_type     = input_keys_it.value_type;
   build_ptr->value_type   = input_values_it.value_type;
   build_ptr->order        = sort_order;
@@ -243,13 +178,6 @@ CUresult cccl_device_radix_sort_build(
     nullptr);
 }
 
-// ---------------------------------------------------------------------------
-// Run
-// The JIT function uses the copy-based CUB API so the result is always in the
-// *_out buffers. selector is always set to 0. is_overwrite_okay is accepted
-// but ignored. decomposer is accepted but must be null (identity).
-// ---------------------------------------------------------------------------
-
 CUresult cccl_device_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
@@ -283,8 +211,8 @@ CUresult cccl_device_radix_sort(
         d_keys_in.state,
         d_keys_out.state,
         static_cast<unsigned long long>(num_items),
-        begin_bit,
-        end_bit,
+        &begin_bit,
+        &end_bit,
         reinterpret_cast<void*>(stream));
     }
     else
@@ -298,16 +226,14 @@ CUresult cccl_device_radix_sort(
         d_values_in.state,
         d_values_out.state,
         static_cast<unsigned long long>(num_items),
-        begin_bit,
-        end_bit,
+        &begin_bit,
+        &end_bit,
         reinterpret_cast<void*>(stream));
     }
 
     if (selector)
     {
       // Copy variant always writes to d_keys_out (= d_buffers[1] in DoubleBuffer mode).
-      // When is_overwrite_okay (DoubleBuffer mode), the caller interprets selector as an
-      // index into d_buffers, so 1 means "result is in the other/output buffer".
       *selector = is_overwrite_okay ? 1 : 0;
     }
 
@@ -319,10 +245,6 @@ CUresult cccl_device_radix_sort(
     return CUDA_ERROR_UNKNOWN;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Cleanup
-// ---------------------------------------------------------------------------
 
 CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* build_ptr)
 try

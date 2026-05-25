@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -178,3 +179,4 @@ typedef enum cccl_binary_search_mode_t
 } cccl_binary_search_mode_t;
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

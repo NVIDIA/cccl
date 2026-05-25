@@ -26,8 +26,8 @@
 using namespace hostjit;
 using namespace hostjit::codegen;
 
-// d_in_0, num_items, op_0_state
-using for_fn_t = int (*)(void*, unsigned long long, void*);
+// d_in_0, num_items, op_0_state, stream
+using for_fn_t = int (*)(void*, unsigned long long, void*, void*);
 
 static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
 {
@@ -148,7 +148,7 @@ void for_kernel(DataIt d_data, OffsetT num_items, OpT user_op)
 
   // Host wrapper
   src += R"(extern "C" EXPORT int cccl_jit_for(
-    void* d_in_0, unsigned long long num_items, void* op_0_state
+    void* d_in_0, unsigned long long num_items, void* op_0_state, void* stream
 ) {
     in_0_it_t in_0 = static_cast<in_0_it_t>(d_in_0);
 )";
@@ -165,7 +165,7 @@ void for_kernel(DataIt d_data, OffsetT num_items, OpT user_op)
     constexpr unsigned long long items_per_block = 512ULL;
     unsigned long long block_sz = (num_items + items_per_block - 1) / items_per_block;
     if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;
-    for_kernel<<<(unsigned int)block_sz, 256>>>(in_0, num_items, op_0);
+    for_kernel<<<(unsigned int)block_sz, 256, 0, (cudaStream_t)stream>>>(in_0, num_items, op_0);
     return (int)cudaPeekAtLastError();
 }
 )";
@@ -311,7 +311,7 @@ catch (const std::exception& exc)
 }
 
 CUresult cccl_device_for(
-  cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream /*stream*/)
+  cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream stream)
 {
   try
   {
@@ -321,7 +321,7 @@ CUresult cccl_device_for(
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    int status = fn(d_data.state, num_items, op.state);
+    int status = fn(d_data.state, num_items, op.state, reinterpret_cast<void*>(stream));
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
   }
   catch (const std::exception& exc)

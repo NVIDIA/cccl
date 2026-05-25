@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -28,7 +29,8 @@ typedef struct cccl_device_reduce_build_result_t
   void* cubin;
   size_t cubin_size;
   void* jit_compiler; // hostjit::JITCompiler*
-  void* reduce_fn; // Function pointer: int(*)(void*, size_t*, void*, void*, unsigned long long, void*)
+  void* reduce_fn; // int(*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*) — trailing void* is
+                   // the CUstream
   uint64_t accumulator_size;
   cccl_determinism_t determinism;
 } cccl_device_reduce_build_result_t;
@@ -89,3 +91,4 @@ CCCL_C_API CUresult cccl_device_reduce_nondeterministic(
 CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

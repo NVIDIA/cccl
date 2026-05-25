@@ -4,129 +4,33 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #include <cstdio>
-#include <cstring>
-#include <format>
-#include <string>
 
 #include <cccl/c/histogram.h>
-#include <hostjit/codegen/bitcode.hpp>
-#include <hostjit/codegen/iterators.hpp>
-#include <hostjit/codegen/types.hpp>
-#include <hostjit/jit_compiler.hpp>
+#include <hostjit/codegen/cub_call.hpp>
 #include <util/build_utils.h>
 
 using namespace hostjit::codegen;
 
-// ---------------------------------------------------------------------------
-// JIT source generation
-// ---------------------------------------------------------------------------
-// The JIT function signature for a single-channel HistogramEven call:
-//
-//   int cccl_jit_histogram_even(
-//       void* d_temp_storage, size_t* temp_storage_bytes,
-//       void* d_samples_ptr,        // raw pointer (CCCL_POINTER) or state bytes (CCCL_ITERATOR)
-//       void* d_histogram_ptr,      // counter_t*
-//       void* num_levels_host_ptr,  // int* (host pointer to num_output_levels)
-//       void* lower_level_host_ptr, // level_t* (host pointer)
-//       void* upper_level_host_ptr, // level_t* (host pointer)
-//       long long num_row_pixels,
-//       long long num_rows,
-//       long long row_stride_samples,  // stride in units of samples
-//       void* stream)
-//
-// row_stride_bytes = row_stride_samples * sizeof(sample_t) is computed inside.
+// JIT wrapper produced by CubCall:
+//   fn(temp, temp_bytes,
+//      d_samples,                  // input iterator state
+//      d_histogram,                // output pointer (counter_t*)
+//      &num_levels,                // int (host pointer)
+//      &lower_level, &upper_level, // level_t (host pointer)
+//      &num_row_pixels,            // long long (host pointer)
+//      &num_rows,                  // long long (host pointer)
+//      &row_stride_bytes,          // size_t (host-precomputed: row_stride_samples * sizeof(sample_t))
+//      stream)
+using histogram_fn_t = int (*)(void*, size_t*, void*, void*, void*, void*, void*, void*, void*, void*, void*);
 
-static const char* k_export_macro = R"(
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-)";
-
-static std::string make_histogram_even_source(
-  cccl_iterator_t d_samples,
-  const std::string& sample_type,
-  const std::string& counter_type,
-  const std::string& level_type)
-{
-  // Generate iterator setup for the samples input (handles pointer and custom iterators).
-  auto it_code =
-    make_input_iterator(d_samples, sample_type, sample_type, "samples_it_t", "samples_it", "d_samples_ptr");
-
-  return std::format(
-    R"SRC(
-#include <cuda_runtime.h>
-#include <cuda_fp16.h>
-#include <cuda/std/iterator>
-#include <cub/device/device_histogram.cuh>
-{0}
-{1}
-extern "C" EXPORT int cccl_jit_histogram_even(
-    void* d_temp_storage, size_t* temp_storage_bytes,
-    void* d_samples_ptr,
-    void* d_histogram_ptr,
-    void* num_levels_host_ptr,
-    void* lower_level_host_ptr,
-    void* upper_level_host_ptr,
-    long long num_row_pixels,
-    long long num_rows,
-    long long row_stride_samples,
-    void* stream)
-{{
-    using sample_t  = {2};
-    using counter_t = {3};
-    using level_t   = {4};
-
-    {5}
-
-    int num_levels = 0;
-    __builtin_memcpy(&num_levels, num_levels_host_ptr, sizeof(int));
-
-    level_t lower_level, upper_level;
-    __builtin_memcpy(&lower_level, lower_level_host_ptr, sizeof(level_t));
-    __builtin_memcpy(&upper_level, upper_level_host_ptr, sizeof(level_t));
-
-    // row_stride_bytes: stride in bytes (CUB expects bytes, not elements)
-    size_t row_stride_bytes = static_cast<size_t>(row_stride_samples) * sizeof(sample_t);
-
-    cudaError_t err = cub::DeviceHistogram::HistogramEven(
-        d_temp_storage, *temp_storage_bytes,
-        samples_it,
-        static_cast<counter_t*>(d_histogram_ptr),
-        num_levels, lower_level, upper_level,
-        static_cast<long long>(num_row_pixels),
-        static_cast<long long>(num_rows),
-        row_stride_bytes,
-        static_cast<cudaStream_t>(stream));
-    return static_cast<int>(err);
-}}
-)SRC",
-    k_export_macro,
-    it_code.preamble,
-    sample_type,
-    counter_type,
-    level_type,
-    it_code.setup_code);
-}
-
-// ---------------------------------------------------------------------------
-// Runtime function typedef
-// ---------------------------------------------------------------------------
-
-// (temp, bytes, samples, histogram, num_levels_host_ptr, lower_host_ptr, upper_host_ptr,
-//  num_row_pixels, num_rows, row_stride_samples, stream)
-using histogram_fn_t =
-  int (*)(void*, size_t*, void*, void*, void*, void*, void*, long long, long long, long long, void*);
-
-// ---------------------------------------------------------------------------
-// Build
-// ---------------------------------------------------------------------------
+static constexpr cccl_type_info k_int_type{sizeof(int), alignof(int), CCCL_INT32};
+static constexpr cccl_type_info k_int64_type{sizeof(long long), alignof(long long), CCCL_INT64};
+static constexpr cccl_type_info k_size_type{sizeof(unsigned long long), alignof(unsigned long long), CCCL_UINT64};
 
 CUresult cccl_device_histogram_build_ex(
   cccl_device_histogram_build_result_t* build_ptr,
@@ -152,7 +56,7 @@ try
   {
     fprintf(stderr,
             "\nERROR in cccl_device_histogram_build(): only num_channels=1, num_active_channels=1 is "
-            "supported in the ClangJIT path.\n");
+            "supported in the HostJIT path.\n");
     return CUDA_ERROR_UNKNOWN;
   }
 
@@ -162,68 +66,38 @@ try
   const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
 
-  std::string sample_type = get_type_name(d_samples.value_type.type);
-  if (sample_type.empty())
-  {
-    fprintf(stderr, "\nERROR in cccl_device_histogram_build(): unsupported sample type\n");
-    return CUDA_ERROR_UNKNOWN;
-  }
+  // level_t comes from the lower_level value's type at build time. CUB infers
+  // sample_t / counter_t from the iterator and output pointer respectively.
+  cccl_type_info level_type = lower_level.type;
 
-  std::string counter_type = get_type_name(d_output_histograms.value_type.type);
-  if (counter_type.empty())
-  {
-    fprintf(stderr, "\nERROR in cccl_device_histogram_build(): unsupported counter type\n");
-    return CUDA_ERROR_UNKNOWN;
-  }
+  CubCallResult result =
+    CubCall::from("cub/device/device_histogram.cuh")
+      .run("cub::DeviceHistogram::HistogramEven")
+      .name("cccl_jit_histogram_even")
+      .with(temp_storage,
+            temp_bytes,
+            in(d_samples),
+            out(d_output_histograms),
+            typed_scalar(k_int_type, "num_levels"),
+            typed_scalar(level_type, "lower_level"),
+            typed_scalar(level_type, "upper_level"),
+            typed_scalar(k_int64_type, "num_row_pixels"),
+            typed_scalar(k_int64_type, "num_rows"),
+            typed_scalar(k_size_type, "row_stride_bytes"),
+            stream)
+      .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  // The level type comes from the lower_level value's type
-  std::string level_type = get_type_name(lower_level.type.type);
-  if (level_type.empty())
-  {
-    // Fall back to sample type if level type is unknown
-    level_type = sample_type;
-  }
+  build_ptr->cc                  = cc_major * 10 + cc_minor;
+  build_ptr->cubin               = cccl::detail::copy_cubin(result.cubin, &build_ptr->cubin_size);
+  build_ptr->jit_compiler        = result.compiler;
+  build_ptr->histogram_fn        = result.fn_ptr;
+  build_ptr->counter_type        = d_output_histograms.value_type;
+  build_ptr->level_type          = lower_level.type;
+  build_ptr->sample_type         = d_samples.value_type;
+  build_ptr->num_channels        = num_channels;
+  build_ptr->num_active_channels = num_active_channels;
 
-  std::string source = make_histogram_even_source(d_samples, sample_type, counter_type, level_type);
-
-  // Build compiler config and link any iterator bitcode (e.g. for ConstantIterator).
-  auto jit_config = cccl::detail::make_jit_config(
-    cc_major, cc_minor, ctk_root, cccl_include_path, merged.get(), "cccl_jit_histogram_even");
-  {
-    BitcodeCollector bitcode(jit_config, reinterpret_cast<uintptr_t>(build_ptr));
-    bitcode.add_iterator(d_samples, "samples");
-    // bitcode files are written to jit_config.device_bitcode_files; cleanup temp files after compile
-    // unique_ptr owns the JITCompiler so any early return frees it; we
-    // .release() into build_ptr->jit_compiler (raw void*) on success.
-    auto compiler = std::make_unique<hostjit::JITCompiler>(jit_config);
-    if (!compiler->compile(source))
-    {
-      fprintf(stderr, "\nJIT compilation failed: %s\n", compiler->getLastError().c_str());
-      bitcode.cleanup();
-      return CUDA_ERROR_UNKNOWN;
-    }
-    bitcode.cleanup();
-
-    void* fn_ptr = compiler->getFunction<void*>("cccl_jit_histogram_even");
-    if (!fn_ptr)
-    {
-      fprintf(
-        stderr, "\nJIT symbol lookup failed for 'cccl_jit_histogram_even': %s\n", compiler->getLastError().c_str());
-      return CUDA_ERROR_UNKNOWN;
-    }
-
-    build_ptr->cc                  = cc_major * 10 + cc_minor;
-    build_ptr->cubin               = cccl::detail::copy_cubin(compiler->getCubin(), &build_ptr->cubin_size);
-    build_ptr->jit_compiler        = compiler.release();
-    build_ptr->histogram_fn        = fn_ptr;
-    build_ptr->counter_type        = d_output_histograms.value_type;
-    build_ptr->level_type          = lower_level.type;
-    build_ptr->sample_type         = d_samples.value_type;
-    build_ptr->num_channels        = num_channels;
-    build_ptr->num_active_channels = num_active_channels;
-
-    return CUDA_SUCCESS;
-  }
+  return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
@@ -269,10 +143,6 @@ CUresult cccl_device_histogram_build(
     nullptr);
 }
 
-// ---------------------------------------------------------------------------
-// Run
-// ---------------------------------------------------------------------------
-
 CUresult cccl_device_histogram_even(
   cccl_device_histogram_build_result_t build,
   void* d_temp_storage,
@@ -294,6 +164,12 @@ CUresult cccl_device_histogram_even(
       return CUDA_ERROR_INVALID_VALUE;
     }
 
+    // CUB takes row_stride_bytes (not samples). Pre-compute on the host so the
+    // JIT wrapper doesn't need a sizeof(sample_t) computation.
+    long long num_row_pixels_ll = static_cast<long long>(num_row_pixels);
+    long long num_rows_ll       = static_cast<long long>(num_rows);
+    size_t row_stride_bytes     = static_cast<size_t>(row_stride_samples) * build.sample_type.size;
+
     auto fn    = reinterpret_cast<histogram_fn_t>(build.histogram_fn);
     int status = fn(
       d_temp_storage,
@@ -303,9 +179,9 @@ CUresult cccl_device_histogram_even(
       num_output_levels.state,
       lower_level.state,
       upper_level.state,
-      static_cast<long long>(num_row_pixels),
-      static_cast<long long>(num_rows),
-      static_cast<long long>(row_stride_samples),
+      &num_row_pixels_ll,
+      &num_rows_ll,
+      &row_stride_bytes,
       reinterpret_cast<void*>(stream));
 
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
@@ -316,10 +192,6 @@ CUresult cccl_device_histogram_even(
     return CUDA_ERROR_UNKNOWN;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Cleanup
-// ---------------------------------------------------------------------------
 
 CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* build_ptr)
 try

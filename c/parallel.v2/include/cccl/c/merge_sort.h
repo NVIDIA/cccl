@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -29,6 +30,10 @@ typedef struct cccl_device_merge_sort_build_result_t
   size_t cubin_size;
   void* jit_compiler;
   void* sort_fn;
+  // 1 if the build compiled SortKeysCopy (no items), 0 if SortPairsCopy. The
+  // run function dispatches on this so the value-vs-pairs decision doesn't
+  // have to be re-derived from the iterator arguments.
+  int keys_only;
   cccl_type_info key_type;
   cccl_type_info item_type;
 } cccl_device_merge_sort_build_result_t;
@@ -78,3 +83,4 @@ CCCL_C_API CUresult cccl_device_merge_sort(
 CCCL_C_API CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

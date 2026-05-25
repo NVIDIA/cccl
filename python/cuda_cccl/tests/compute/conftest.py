@@ -132,10 +132,9 @@ def _backend_uses_v2() -> bool:
     return bool(USING_V2)
 
 
-# Individual tests known to crash on the v2 backend that don't match the
-# stateful/fp16 substring rules below. Match is on `item.name` (parametrized
-# id, e.g. "test_foo[int32]") OR on the bare function name. Add a one-line
-# reason for each so it's clear why it's deferred rather than fixed.
+# Individual tests known to crash on the v2 backend. Match is on `item.name`
+# (parametrized id, e.g. "test_foo[int32]") OR on the bare function name. Add
+# a one-line reason for each so it's clear why it's deferred rather than fixed.
 _V2_BROKEN_TESTS = {
     "test_segmented_sort_op_kind": "cudaErrorMisalignedAddress at runtime; v2 segmented_sort path",
 }

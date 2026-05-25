@@ -75,7 +75,6 @@ target_link_libraries(
   PRIVATE
     cccl.compiler_interface
     CUDA::cudart_static
-    CUDA::nvrtc # for nvrtcGetTypeName in src/util/types.h
     CUDA::cuda_driver
     CUB::CUB
     Thrust::Thrust

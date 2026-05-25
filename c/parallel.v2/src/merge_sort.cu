@@ -100,6 +100,7 @@ try
   }
   build_ptr->jit_compiler = result.compiler;
   build_ptr->sort_fn      = result.fn_ptr;
+  build_ptr->keys_only    = has_items ? 0 : 1;
   build_ptr->key_type     = d_in_keys.value_type;
   build_ptr->item_type    = d_in_items.value_type;
 
@@ -165,12 +166,11 @@ CUresult cccl_device_merge_sort(
     }
 
     int status;
-    // Dispatch to the correct function arity based on whether the current call
-    // has items.  The build function compiles either SortKeysCopy (7-arg) or
-    // SortPairsCopy (9-arg); both the build and the run must agree on which
-    // variant is being used (null items → keys, non-null → pairs).
-    const bool has_items = !(d_in_items.type == CCCL_POINTER && d_in_items.state == nullptr);
-    if (has_items)
+    // Dispatch to the correct function arity. build.keys_only was set at
+    // build time, so we don't have to re-derive the pairs-vs-keys decision
+    // from the iterator arguments here (and they must match the build for
+    // the function-pointer types to be valid).
+    if (!build.keys_only)
     {
       // Pairs build: (temp, temp_bytes, in_keys, in_items, out_keys, out_items, num_items, cmp_state, stream)
       auto fn = reinterpret_cast<pairs_fn_t>(build.sort_fn);

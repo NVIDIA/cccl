@@ -149,6 +149,8 @@ workflows:
     - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
     # c.parallel v2 (HostJIT-based)
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    # Python against c.parallel v2 (HostJIT-based)
+    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
 
   nightly:
     # CTK 12.0 full matrix build: default projects

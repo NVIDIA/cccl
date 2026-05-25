@@ -108,20 +108,37 @@ inline unary_op_t pred(cccl_op_t op, cccl_type_info item_t)
   return {op, item_t, cccl_type_info{sizeof(bool), alignof(bool), CCCL_BOOLEAN}};
 }
 
+// typed_scalar_t: a by-value scalar of any cccl-known type, passed into the
+// JIT wrapper as a host pointer and memcpy'd onto the stack before the CUB
+// call. Use when the CUB API takes a small POD by value (e.g. radix_sort's
+// `int begin_bit`, histogram's `int num_levels` / `level_t lower_level`).
+// The caller supplies a void* host pointer to the value at the corresponding
+// run-time arg position.
+struct typed_scalar_t
+{
+  cccl_type_info type;
+  const char* name;
+};
+inline typed_scalar_t typed_scalar(cccl_type_info t, const char* name)
+{
+  return {t, name};
+}
+
 // Argument variant: everything that can appear in .with()
-using Arg =
-  std::variant<temp_storage_t,
-               temp_bytes_t,
-               num_items_t,
-               stream_t,
-               input_t,
-               output_t,
-               cccl_op_t,
-               cmp_t,
-               unary_op_t,
-               future_val_t,
-               cccl_value_t,
-               force_accum_type_t>;
+using Arg = std::variant<
+  temp_storage_t,
+  temp_bytes_t,
+  num_items_t,
+  stream_t,
+  input_t,
+  output_t,
+  cccl_op_t,
+  cmp_t,
+  unary_op_t,
+  future_val_t,
+  cccl_value_t,
+  force_accum_type_t,
+  typed_scalar_t>;
 
 // Result of a successful compilation.
 struct CubCallResult

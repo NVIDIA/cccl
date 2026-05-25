@@ -310,6 +310,19 @@ std::string CubCall::source() const
             "accum_t {};\n    __builtin_memcpy(&{}, {}, sizeof(accum_t));", var_name, var_name, param_name));
           cub_args.push_back(var_name);
         }
+        else if constexpr (std::is_same_v<T, typed_scalar_t>)
+        {
+          // Caller passes a host pointer; we memcpy onto the stack as the
+          // requested C++ type before calling CUB. The C++ type comes from
+          // a.type (cccl_type_info), the wrapper parameter is named
+          // `<a.name>_ptr`, and the local that CUB sees is `<a.name>`.
+          const std::string cpp_type = resolve_type(a.type, a.name, preamble);
+          const auto param_name      = std::string(a.name) + "_ptr";
+          params.push_back(std::format("void* {}", param_name));
+          setup_lines.push_back(
+            std::format("{0} {1};\n    __builtin_memcpy(&{1}, {2}, sizeof({0}));", cpp_type, a.name, param_name));
+          cub_args.push_back(a.name);
+        }
       },
       arg);
   }

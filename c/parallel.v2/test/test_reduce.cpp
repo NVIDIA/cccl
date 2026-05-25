@@ -462,7 +462,7 @@ C2H_TEST("Reduce works with C++ source operations", "[reduce]")
 
 struct Reduce_FloatingPointTypes_Fixture_Tag;
 using floating_point_types = c2h::type_list<
-#if _CCCL_HAS_NVFP16() && 0 // Disable for now
+#if _CCCL_HAS_NVFP16()
   __half,
 #endif
   float,

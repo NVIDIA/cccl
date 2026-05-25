@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,40 +12,14 @@
 
 #include <cstring>
 #include <filesystem>
-#include <memory>
 #include <string>
 #include <vector>
 
 #include <cccl/c/types.h>
 #include <hostjit/config.hpp>
-#include <hostjit/jit_compiler.hpp>
 
 namespace cccl::detail
 {
-/**
- * @brief Extends a vector of compilation arguments with extra flags and include directories from a build config
- *
- * @param args The vector of arguments to extend
- * @param config The build configuration containing extra flags and include directories (can be nullptr)
- */
-inline void extend_args_with_build_config(std::vector<const char*>& args, const cccl_build_config* config)
-{
-  if (config)
-  {
-    // Add extra compile flags
-    for (size_t i = 0; i < config->num_extra_compile_flags; ++i)
-    {
-      args.push_back(config->extra_compile_flags[i]);
-    }
-    // Add include directories
-    for (size_t i = 0; i < config->num_extra_include_dirs; ++i)
-    {
-      args.push_back("-I");
-      args.push_back(config->extra_include_dirs[i]);
-    }
-  }
-}
-
 // Parse path arguments from the Python layer for use with hostjit.
 // Returns the bare CCCL include path (strips "-I" prefix if present).
 inline std::string parse_cccl_include_path(const char* libcudacxx_path)
@@ -173,126 +147,6 @@ private:
   std::vector<std::string> owned_strs_;
   std::vector<const char*> ptrs_;
 };
-
-// Build a CompilerConfig from the standard set of path parameters.
-// Mirrors the configuration logic in CubCall::compile().
-inline hostjit::CompilerConfig make_jit_config(
-  int cc_major,
-  int cc_minor,
-  const char* ctk_root, // already parsed (bare CTK root)
-  const char* cccl_include_path, // already parsed (bare CCCL include path)
-  cccl_build_config* config,
-  const char* entry_point_name = nullptr)
-{
-  auto jit_config       = hostjit::detectDefaultConfig();
-  jit_config.sm_version = cc_major * 10 + cc_minor;
-  jit_config.verbose    = false;
-  if (entry_point_name)
-  {
-    jit_config.entry_point_name = entry_point_name;
-  }
-  if (ctk_root && ctk_root[0] != '\0')
-  {
-    jit_config.cuda_toolkit_path = ctk_root;
-    jit_config.library_paths.clear();
-    for (const char* subdir : {"lib64", "lib"})
-    {
-      auto candidate = std::filesystem::path(ctk_root) / subdir;
-      if (std::filesystem::exists(candidate))
-      {
-        jit_config.library_paths.push_back(candidate.string());
-      }
-    }
-  }
-  if (cccl_include_path && cccl_include_path[0] != '\0')
-  {
-    jit_config.cccl_include_path = cccl_include_path;
-    if (jit_config.hostjit_include_path.empty()
-        || !std::filesystem::exists(jit_config.hostjit_include_path + "/hostjit/cuda_minimal"))
-    {
-      auto parent = std::filesystem::path(cccl_include_path).parent_path().string();
-      if (std::filesystem::exists(parent + "/hostjit/cuda_minimal"))
-      {
-        jit_config.hostjit_include_path = parent;
-      }
-    }
-  }
-  if (config)
-  {
-    for (size_t i = 0; i < config->num_extra_include_dirs; ++i)
-    {
-      jit_config.include_paths.push_back(config->extra_include_dirs[i]);
-    }
-    for (size_t i = 0; i < config->num_extra_compile_flags; ++i)
-    {
-      std::string flag = config->extra_compile_flags[i];
-      if (flag.size() >= 2 && flag.substr(0, 2) == "-D")
-      {
-        auto eq = flag.find('=', 2);
-        if (eq != std::string::npos)
-        {
-          jit_config.macro_definitions[flag.substr(2, eq - 2)] = flag.substr(eq + 1);
-        }
-        else
-        {
-          jit_config.macro_definitions[flag.substr(2)] = "";
-        }
-      }
-    }
-  }
-  return jit_config;
-}
-
-// Build a JITCompiler from the standard set of path parameters.
-inline std::unique_ptr<hostjit::JITCompiler> make_jit_compiler(
-  int cc_major,
-  int cc_minor,
-  const char* ctk_root,
-  const char* cccl_include_path,
-  cccl_build_config* config,
-  const char* entry_point_name = nullptr)
-{
-  return std::make_unique<hostjit::JITCompiler>(
-    make_jit_config(cc_major, cc_minor, ctk_root, cccl_include_path, config, entry_point_name));
-}
-
-// Compile a CUDA source string and return (compiler, fn_ptr, cubin).
-// The compiler is owned by the returned JITResult; transfer ownership to a
-// raw `void*` build-result slot with `result.compiler.release()`.
-struct JITResult
-{
-  std::unique_ptr<hostjit::JITCompiler> compiler;
-  void* fn_ptr = nullptr;
-  std::vector<char> cubin;
-};
-
-inline JITResult compile_jit_source(
-  const std::string& source,
-  const char* fn_name,
-  int cc_major,
-  int cc_minor,
-  const char* ctk_root,
-  const char* cccl_include_path,
-  cccl_build_config* config)
-{
-  auto compiler = make_jit_compiler(cc_major, cc_minor, ctk_root, cccl_include_path, config, fn_name);
-  if (!compiler->compile(source))
-  {
-    fprintf(stderr, "\nJIT compilation failed: %s\n", compiler->getLastError().c_str());
-    return {};
-  }
-  void* fn_ptr = compiler->getFunction<void*>(fn_name);
-  if (!fn_ptr)
-  {
-    fprintf(stderr, "\nJIT symbol lookup failed for '%s': %s\n", fn_name, compiler->getLastError().c_str());
-    return {};
-  }
-  JITResult result;
-  result.fn_ptr   = fn_ptr;
-  result.cubin    = compiler->getCubin();
-  result.compiler = std::move(compiler);
-  return result;
-}
 
 // Copy cubin data into a heap-allocated buffer and store size; returns pointer (caller frees with delete[]).
 inline void* copy_cubin(const std::vector<char>& cubin, size_t* out_size)

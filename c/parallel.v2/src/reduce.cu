@@ -18,7 +18,8 @@
 
 using namespace hostjit::codegen;
 
-using reduce_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*);
+// (temp_storage, temp_bytes, d_in, d_out, num_items, op_state, init_state, stream)
+using reduce_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*);
 
 CUresult cccl_device_reduce_build_ex(
   cccl_device_reduce_build_result_t* build,
@@ -125,7 +126,7 @@ try
     CubCall::from("cub/device/device_reduce.cuh")
       .run("cub::DeviceReduce::Reduce")
       .name("cccl_jit_reduce")
-      .with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init)
+      .with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init, stream)
       .compile(cc_major, cc_minor, &merged_config, ctk_root, cccl_include_path);
 
   build->cc         = cc_major * 10 + cc_minor;
@@ -160,7 +161,7 @@ CUresult cccl_device_reduce(
   uint64_t num_items,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream /*stream*/)
+  CUstream stream)
 {
   try
   {
@@ -171,9 +172,16 @@ CUresult cccl_device_reduce(
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    // Parameter order matches CubCall::with() order: ..., num_items, op.state, init.state
-    int status =
-      reduce_fn(d_temp_storage, temp_storage_bytes, d_in.state, d_out.state, num_items, op.state, init.state);
+    // Parameter order matches CubCall::with() order: ..., num_items, op.state, init.state, stream
+    int status = reduce_fn(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in.state,
+      d_out.state,
+      num_items,
+      op.state,
+      init.state,
+      reinterpret_cast<void*>(stream));
 
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
   }

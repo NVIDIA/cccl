@@ -27,7 +27,8 @@ using namespace hostjit;
 using namespace hostjit::codegen;
 
 // d_data_state, num_items, d_values_state, num_values, d_out_state, op_state
-using binary_search_fn_t = int (*)(void*, unsigned long long, void*, unsigned long long, void*, void*);
+// (d_in_0, num_items, d_in_1, num_values, d_out_0, op_0_state, stream)
+using binary_search_fn_t = int (*)(void*, unsigned long long, void*, unsigned long long, void*, void*, void*);
 
 static std::string make_binary_search_source(
   cccl_iterator_t d_data, cccl_iterator_t d_values, cccl_iterator_t d_out, cccl_op_t op, cccl_binary_search_mode_t mode)
@@ -108,7 +109,8 @@ void binary_search_kernel(DataIt d_data, OffsetT num_data, ValuesIt d_values, Of
   src += R"(extern "C" EXPORT int cccl_jit_binary_search(
     void* d_in_0, unsigned long long num_items,
     void* d_in_1, unsigned long long num_values,
-    void* d_out_0, void* op_0_state
+    void* d_out_0, void* op_0_state,
+    void* stream
 ) {
 )";
   src += "    " + data_code.setup_code + "\n";
@@ -119,7 +121,7 @@ void binary_search_kernel(DataIt d_data, OffsetT num_data, ValuesIt d_values, Of
     constexpr unsigned long long items_per_block = 512ULL;
     unsigned long long block_sz = (num_values + items_per_block - 1) / items_per_block;
     if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;
-    binary_search_kernel<<<(unsigned int)block_sz, 256>>>(in_0, num_items, in_1, num_values, out_0, op_0);
+    binary_search_kernel<<<(unsigned int)block_sz, 256, 0, (cudaStream_t)stream>>>(in_0, num_items, in_1, num_values, out_0, op_0);
     return (int)cudaPeekAtLastError();
 }
 )";
@@ -273,7 +275,7 @@ CUresult cccl_device_binary_search(
   uint64_t num_values,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  CUstream /*stream*/)
+  CUstream stream)
 {
   try
   {
@@ -283,7 +285,8 @@ CUresult cccl_device_binary_search(
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    int status = fn(d_data.state, num_items, d_values.state, num_values, d_out.state, op.state);
+    int status =
+      fn(d_data.state, num_items, d_values.state, num_values, d_out.state, op.state, reinterpret_cast<void*>(stream));
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
   }
   catch (const std::exception& exc)
