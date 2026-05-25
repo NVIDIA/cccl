@@ -460,7 +460,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t
 namespace detail
 {
 // Validates stream's device is current device
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaStream_t stream)
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaStream_t stream) noexcept
 {
 #  if CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
 
@@ -482,14 +482,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaSt
   }
 
   ::CUdevice stream_device;
-  if (const auto error = ::cuda::__driver::__ctxGetDeviceNoThrow(stream_device); error != cudaSuccess)
+  const auto get_device_error = ::cuda::__driver::__ctxGetDeviceNoThrow(stream_device);
+
+  // Popping from ctx stack first even if get device failed
+  if (const auto error = ::cuda::__driver::__ctxPopNoThrow(stream_ctx); error != cudaSuccess)
   {
     return error;
   }
 
-  if (const auto error = ::cuda::__driver::__ctxPopNoThrow(stream_ctx); error != cudaSuccess)
+  if (get_device_error != cudaSuccess)
   {
-    return error;
+    return get_device_error;
   }
 
   _CCCL_ASSERT(current_device == stream_device, "current device must match CUB stream device");

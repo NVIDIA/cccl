@@ -442,8 +442,10 @@ C2H_TEST("Device for each n fails when using stream from another device", "[for_
 
   auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op, stream_on_device_1);
   REQUIRE(result == cudaErrorInvalidDevice);
-
   // example-end for-each-n-wo-temp-storage
+
+  REQUIRE(cudaStreamDestroy(stream_on_device_1) == cudaSuccess);
+
 }
 
 // todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up

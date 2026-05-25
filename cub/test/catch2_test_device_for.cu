@@ -276,9 +276,12 @@ C2H_TEST("Device for each n with stream from another device works when using CCC
   const auto it = cuda::counting_iterator<int>{0};
   c2h::device_vector<int> counts(num_items);
 
-  cub::DeviceFor::ForEach(
-    it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())}, stream_on_device_1);
+  auto result = cub::DeviceFor::ForEach(it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())}, stream_on_device_1);
+  REQUIRE(result == cudaSuccess);
 
   const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
+
+  REQUIRE(cudaStreamDestroy(stream_on_device_1) == cudaSuccess);
+
 }
