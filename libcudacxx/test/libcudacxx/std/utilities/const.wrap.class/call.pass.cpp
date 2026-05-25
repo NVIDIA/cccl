@@ -177,7 +177,7 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // nvcc 12.9 + msvc believe this is not a constant expression.
+    // msvc believe this is not a constant expression.
 #if !_CCCL_COMPILER(MSVC)
     // with only constexpr param
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
