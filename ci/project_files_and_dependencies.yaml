@@ -124,7 +124,6 @@ projects:
     full_dependencies: []
     include_regexes:
       - "c/parallel\\.v2/"
-      - "ci/test_cccl_c_parallel_v2\\.sh"
 
   python_v2:
     name: "Python (cuda.compute on v2/HostJIT)"
@@ -137,8 +136,6 @@ projects:
     include_regexes:
       - "python/cuda_cccl/"
       - "pyproject\\.toml"
-      - "ci/build_cuda_cccl_python_v2\\.sh"
-      - "ci/test_cuda_compute_python_v2\\.sh"
 
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
