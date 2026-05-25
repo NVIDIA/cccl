@@ -543,7 +543,7 @@ template <::cuda::std::size_t _Ip, class _Tp, ::cuda::std::size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::cuda::std::array<_Tp, _Np>>
 {
   static_assert(_Ip < _Np, "Index out of bounds in std::tuple_element<> (cuda::std::array)");
-  using type _CCCL_NODEBUG_ALIAS = Tp;
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
 };
 
 _CCCL_END_NAMESPACE_STD
