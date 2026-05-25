@@ -8,15 +8,13 @@ run_ctadvisor=0
 mode="public"
 declare -A output_time_map=()
 declare -A loc_by_pp=()
-declare -A include_occurrence_count_map=()
-declare -A process_time_us_map=()
 
 usage() {
   cat <<'EOF'
 Usage: ci/profile_headers.sh --output-csv <path> [--mode public|all]
   --output-csv <path>        Required
   --mode <public|all>        public: compile_time+LOC per public header (default)
-                             all: occurrence+processing-time for all headers in traces
+                             all: public-TU-weighted exclusive processing time for all headers in traces
   --ctadvisor                Print ctadvisor report
 EOF
 }
@@ -36,7 +34,7 @@ done
 [[ -n "$output_csv" ]] || { echo "error: --output-csv is required" >&2; exit 1; }
 [[ "$mode" == "public" || "$mode" == "all" ]] || { echo "error: --mode must be 'public' or 'all'" >&2; exit 1; }
 command -v cmake >/dev/null || { echo "error: cmake not found" >&2; exit 1; }
-command -v jq >/dev/null || { echo "error: jq not found" >&2; exit 1; }
+command -v python3 >/dev/null || { echo "error: python3 not found" >&2; exit 1; }
 if [[ "$mode" == "public" ]]; then
   command -v cloc >/dev/null || { echo "error: cloc not found" >&2; exit 1; }
 fi
@@ -81,47 +79,18 @@ done
 status "Found ${#selected_tus[@]} header TUs."
 
 ctadvisor_trace_dir="${build_dir}/header_testing/device_time_trace"
-if [[ "$mode" == "all" || "$run_ctadvisor" -eq 1 ]]; then
-  status "Counting TU presence and processing time from device-time-trace..."
-  trace_paths=("${ctadvisor_trace_dir}"/**/*.json)
-  (( ${#trace_paths[@]} > 0 )) || { echo "error: no device-time-trace JSON files found under ${ctadvisor_trace_dir}" >&2; exit 1; }
-  while IFS=$'\t' read -r header include_tu_count total_dur_us; do
-    [[ -n "${header}" ]] || continue
-    include_occurrence_count_map["${header}"]="${include_tu_count}"
-    process_time_us_map["${header}"]="${total_dur_us}"
-  done < <(
-    jq -r '
-      .otherData.inputFiles[0] as $root_tu
-      | .traceEvents[]?
-      | select(.name == "Processing Header File")
-      | [ $root_tu, (.args.detail // empty), (.dur // 0) ]
-      | @tsv
-    ' "${trace_paths[@]}" \
-    | awk -F'\t' -v repo="${repo_root}" '
-        BEGIN { OFS = "\t" }
-        {
-          root_tu = $1
-          hdr = $2
-          dur = $3 + 0
-          if (root_tu == "" || hdr == "") next
+trace_paths=("${ctadvisor_trace_dir}"/**/*.json)
+(( ${#trace_paths[@]} > 0 )) || { echo "error: no device-time-trace JSON files found under ${ctadvisor_trace_dir}" >&2; exit 1; }
 
-          if (index(hdr, repo "/") != 1) next
-          sub("^" repo "/", "", hdr)
-          sub(/^lib\/cmake\/[^/]+\/\.\.\/\.\.\/\.\.\//, "", hdr)
-          sub(/^(libcudacxx|cudax|c\/parallel)\/include\//, "", hdr)
-          if (hdr ~ /^build\//) next
-          if (hdr !~ /^(cub|thrust|cuda|cccl)\//) next
-
-          pair = root_tu OFS hdr
-          if (!seen[pair]++) tu_count[hdr]++
-          sum_dur[hdr] += dur
-        }
-        END {
-          for (h in tu_count) print h, tu_count[h], sum_dur[h]
-        }
-      '
-  )
-fi
+perfetto_trace_dir="${build_dir}/header_testing/device_time_trace_for_perfetto"
+status "Preparing Perfetto trace copies..."
+rm -rf "${perfetto_trace_dir}"
+"${repo_root}/ci/profile_headers_prepare_trace.py" \
+  --input "${ctadvisor_trace_dir}" \
+  --output "${perfetto_trace_dir}" \
+  --repo-root "${repo_root}" \
+  --max-detail-len 180
+status "Perfetto traces: ${perfetto_trace_dir}"
 
 mkdir -p "$(dirname "$output_csv")"
 if [[ "$mode" == "public" ]]; then
@@ -145,7 +114,7 @@ if [[ "$mode" == "public" ]]; then
     transitive_loc="${loc_by_pp["${pp}"]:-0}"
 
     compile_time_ms=""
-    tu_after_build="${tu_abs#${build_dir}/}"
+    tu_after_build="${tu_abs#"${build_dir}"/}"
     build_subdir="${tu_after_build%%/headers/*}"
     rel_after_headers="${tu_after_build#*/headers/}"
     target_name="${rel_after_headers%%/*}"
@@ -160,28 +129,16 @@ if [[ "$mode" == "public" ]]; then
   done
   status "Done. Public-header CSV: $output_csv"
 else
-  echo "header_path,include_tu_count,avg_process_time_s,total_process_time_s" > "$output_csv"
-  status "Writing all-header CSV rows..."
-  for header in "${!include_occurrence_count_map[@]}"; do
-    include_tu_count="${include_occurrence_count_map["${header}"]:-0}"
-    process_time_us="${process_time_us_map["${header}"]:-0}"
-    read -r avg_process_time_s total_process_time_s < <(
-      awk -v us="${process_time_us}" -v n="${include_tu_count}" '
-        BEGIN {
-          total_s = us / 1000000.0
-          avg_s = (n > 0) ? (total_s / n) : 0.0
-          printf "%.6f %.6f\n", avg_s, total_s
-        }'
-    )
-    echo "${header},${include_tu_count},${avg_process_time_s},${total_process_time_s}" >> "$output_csv"
-  done
+  status "Writing exclusive header-processing CSV rows..."
+  "${repo_root}/ci/profile_headers_exclusive_phf.py" \
+    --trace-dir "${ctadvisor_trace_dir}" \
+    --repo-root "${repo_root}" \
+    --output-csv "$output_csv"
   status "Done. All-header CSV: $output_csv"
 fi
 
 if (( run_ctadvisor )); then
-  json_traces=("${ctadvisor_trace_dir}"/**/*.json)
-  (( ${#json_traces[@]} > 0 )) || { echo "error: no ctadvisor traces found under ${ctadvisor_trace_dir}" >&2; exit 1; }
-  status "Running ctadvisor over ${#json_traces[@]} traces..."
+  status "Running ctadvisor over ${#trace_paths[@]} traces..."
   ctadvisor --trace-file-path "${ctadvisor_trace_dir}" --header-advisor-entries 20 --thread-number "$(nproc --all --ignore=2)"
 fi
 
