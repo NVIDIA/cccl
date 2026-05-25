@@ -380,9 +380,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // overhead. Cooperative launch requires all blocks to be co-resident on
   // the device; since `num_thread_blocks <= histogram_sweep_occupancy =
   // sm_count * sm_occupancy` the grid is already sized to fit.
+  // The persistent kernel is only worth using for the GMEM-privatized path
+  // (`PRIVATIZED_SMEM_BINS == 0`), which corresponds to high bin counts
+  // (`max_num_output_bins > 256`). For that path we replace the
+  // O(num_blocks * num_bins) atomic merge in `StoreOutput` with an
+  // atomic-free gather merge after a `grid.sync()`. For the SMEM-privatized
+  // path the persistent kernel only adds cooperative-launch overhead with
+  // no benefit, so we keep the legacy two-kernel sequence there.
   bool launched_persistent = false;
 #if _CCCL_HOSTED()
-  if constexpr (!IsDeviceInit)
+  if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
   {
     if (blocks_per_row > 0 && blocks_per_col > 0)
     {

@@ -864,8 +864,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   grid.sync();
 
   // ---------------------------------------------------------------------
-  // Phase 3: standard AgentHistogram sweep + store, identical to the
-  // `DeviceHistogramSweepKernel` body.
+  // Phase 3: standard AgentHistogram sweep — InitBinCounters (zero
+  // privatized counters) and ConsumeTiles (atomic-add into privatized
+  // counters). For the GMEM-privatized path (PrivatizedSmemBins == 0)
+  // each block's privatized histogram lives in global memory at
+  // `d_privatized_histograms[ch] + block_id * num_privatized_bins[ch]`.
   // ---------------------------------------------------------------------
   using AgentHistogramPolicyT =
     AgentHistogramPolicy<hp.threads_per_block,
@@ -889,24 +892,81 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
 
-  AgentHistogramT agent(
-    temp_storage,
-    d_samples,
-    num_output_bins_wrapper.data(),
-    num_privatized_bins_wrapper.data(),
-    d_output_histograms_wrapper.data(),
-    d_privatized_histograms_wrapper.data(),
-    output_decode_op_wrapper.data(),
-    privatized_decode_op_wrapper.data());
+  // The agent stores the per-channel base pointer of this block's privatized
+  // histogram in `d_privatized_histograms`, which it sets in its constructor
+  // by adding `block_id * num_privatized_bins[ch]`. We need the per-channel
+  // base of the *all-blocks* privatized array later for the gather merge,
+  // so save it here before constructing the agent.
+  CounterT* d_privatized_base[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    d_privatized_base[ch] = d_privatized_histograms_wrapper[ch];
+  }
 
-  // Initialize per-block privatized counters
-  agent.InitBinCounters();
+  {
+    AgentHistogramT agent(
+      temp_storage,
+      d_samples,
+      num_output_bins_wrapper.data(),
+      num_privatized_bins_wrapper.data(),
+      d_output_histograms_wrapper.data(),
+      d_privatized_histograms_wrapper.data(),
+      output_decode_op_wrapper.data(),
+      privatized_decode_op_wrapper.data());
 
-  // Consume input tiles
-  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+    // Initialize per-block privatized counters
+    agent.InitBinCounters();
 
-  // Atomically merge privatized counters into output histograms
-  agent.StoreOutput();
+    // Consume input tiles
+    agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+    if constexpr (PrivatizedSmemBins != 0)
+    {
+      // Block-private SMEM path: privatized counters are in shared memory
+      // and are lost when the block exits, so the merge into the output
+      // histograms must happen here using the agent's standard
+      // atomic-add `StoreOutput`.
+      agent.StoreOutput();
+    }
+  }
+
+  if constexpr (PrivatizedSmemBins == 0)
+  {
+    // GMEM-privatized merge: every block's privatized histogram is now in
+    // global memory at `d_privatized_base[ch] + block_id * num_privatized_bins[ch]`.
+    // We need a grid-wide barrier so every block's `ConsumeTiles` writes are
+    // visible to every other block before the gather merge below.
+    grid.sync();
+
+    // Phase 4: gather-merge. Each thread takes a slice of OUTPUT bins and
+    // sums the corresponding privatized counters across all blocks, writing
+    // the total to the output histogram. This converts the original
+    // `num_blocks * num_output_bins` atomicAdds into plain reads + writes,
+    // eliminating cross-block atomic contention on the output histogram.
+    //
+    // This optimization assumes that `num_privatized_bins == num_output_bins`
+    // and that `output_decode_op` is the identity (PassThruTransform), which
+    // is the case for the host-init non-byte-sample dispatch path that
+    // selects `PRIVATIZED_SMEM_BINS = 0` for `max_num_output_bins > 256`.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      const int num_bins             = num_privatized_bins_wrapper[ch];
+      const CounterT* base           = d_privatized_base[ch];
+      CounterT* d_out                = d_output_histograms_wrapper[ch];
+      const unsigned int num_bins_u  = static_cast<unsigned int>(num_bins);
+      for (unsigned int bin = tid_global; bin < num_bins_u; bin += total_threads)
+      {
+        CounterT total = 0;
+        for (unsigned int b = 0; b < blocks_per_grid; ++b)
+        {
+          total += base[b * num_bins_u + bin];
+        }
+        d_out[bin] = total;
+      }
+    }
+  }
 }
 } // namespace detail::histogram
 CUB_NAMESPACE_END
