@@ -119,15 +119,8 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 
 TEST_CASE("Device Sum works with default environment", "[reduce][device]")
 {
-  using num_items_t = int;
-  using value_t     = int;
-
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
-  int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
-
+  using num_items_t     = int;
+  using value_t         = int;
   num_items_t num_items = 1;
 
   auto d_in  = cuda::constant_iterator(value_t{1});
