@@ -21,6 +21,10 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cooperative_groups.h>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
@@ -758,6 +762,150 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
 
   // Store output to global (if necessary)
+  agent.StoreOutput();
+}
+
+//! Persistent grid-resident histogram sweep kernel that fuses output-histogram
+//! initialization, drain-counter reset, and the sweep+store phase into a single
+//! cooperative kernel launch. It uses `cooperative_groups::this_grid()` and
+//! `grid.sync()` to synchronize the initialization phase with the sweep phase,
+//! eliminating the separate `DeviceHistogramInitKernel` launch and its
+//! associated launch overhead.
+//!
+//! This is the host-init variant: it mirrors `DeviceHistogramSweepKernel`'s
+//! interface and accepts pre-initialized decode operators, plus the
+//! `max_num_output_bins` argument used to bound the output-histogram
+//! initialization stride loop.
+//!
+//! The kernel must be launched cooperatively via `cudaLaunchCooperativeKernel`
+//! so that all blocks are guaranteed to be co-resident on the device, which is
+//! a precondition of `grid_group::sync()`. The dispatch layer is responsible
+//! for verifying that the requested grid fits on the device before selecting
+//! this kernel.
+//!
+//! Phase 1 (no synchronization): every thread cooperatively zeroes the output
+//! histograms across all active channels via a grid-wide stride loop. Thread 0
+//! of block 0 also zeroes the work-stealing drain counter inside the
+//! `tile_queue` so that the subsequent sweep can use it as a shared
+//! work-stealing counter.
+//!
+//! Phase 2 (`grid.sync()`): all blocks synchronize so that the zeroed output
+//! histograms and the reset drain counter are visible to every block before
+//! the sweep+store phase begins.
+//!
+//! Phase 3 (block-local): each block runs the standard `AgentHistogram`
+//! pipeline (`InitBinCounters`, `ConsumeTiles`, `StoreOutput`).
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepPersistentKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    GridQueue<int> tile_queue,
+    _CCCL_GRID_CONSTANT const int max_num_output_bins)
+{
+  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+
+  namespace cg = ::cooperative_groups;
+
+  cg::grid_group grid = cg::this_grid();
+
+  // ---------------------------------------------------------------------
+  // Phase 1: zero the output histograms via a grid-wide stride loop, and
+  // reset the work-stealing drain counter on a single thread.
+  // ---------------------------------------------------------------------
+  const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
+  const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
+  const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
+  const unsigned int total_threads   = blocks_per_grid * blockDim.x;
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    const int channel_bins = num_output_bins_wrapper[ch];
+    for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
+    {
+      d_output_histograms_wrapper[ch][bin] = 0;
+    }
+  }
+
+  if (tid_global == 0)
+  {
+    // Reset the drain counter so that the sweep phase below can use the
+    // queue as a shared work-stealing counter when work-stealing is enabled.
+    GridQueue<int> queue = tile_queue;
+    queue.ResetDrain();
+  }
+
+  // ---------------------------------------------------------------------
+  // Phase 2: grid-wide synchronization so that all output-histogram zeros
+  // and the drain-counter reset are visible to every block before the
+  // sweep+store phase begins.
+  // ---------------------------------------------------------------------
+  grid.sync();
+
+  // ---------------------------------------------------------------------
+  // Phase 3: standard AgentHistogram sweep + store, identical to the
+  // `DeviceHistogramSweepKernel` body.
+  // ---------------------------------------------------------------------
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.threads_per_block,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT>;
+
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+  AgentHistogramT agent(
+    temp_storage,
+    d_samples,
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op_wrapper.data(),
+    privatized_decode_op_wrapper.data());
+
+  // Initialize per-block privatized counters
+  agent.InitBinCounters();
+
+  // Consume input tiles
+  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+  // Atomically merge privatized counters into output histograms
   agent.StoreOutput();
 }
 } // namespace detail::histogram

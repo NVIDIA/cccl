@@ -130,6 +130,28 @@ struct DeviceHistogramKernelSource
       IsEven>;
   }
 
+  /// Returns the persistent grid-resident histogram sweep kernel that fuses
+  /// output-histogram initialization with the sweep+store phase via a
+  /// `cooperative_groups::this_grid().sync()` between them. The returned
+  /// kernel must be launched cooperatively (`cudaLaunchCooperativeKernel`)
+  /// so that all blocks are co-resident, which is a precondition of the
+  /// grid sync. This is the host-init variant: it accepts pre-initialized
+  /// decode operators, mirroring `HistogramSweepKernel`.
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernelPersistent()
+  {
+    return &DeviceHistogramSweepPersistentKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT>;
+  }
+
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
   {
     return sizeof(CounterT);
@@ -349,67 +371,144 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  constexpr int histogram_init_threads_per_block = 256;
-  int histogram_init_grid_dims =
-    (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
+  // For the host-init path we can fuse the init and sweep kernels into a
+  // single persistent grid-resident kernel that uses
+  // `cooperative_groups::this_grid().sync()` between the two phases. This
+  // eliminates the separate init-kernel launch and the associated launch
+  // overhead. Cooperative launch requires all blocks to be co-resident on
+  // the device; since `num_thread_blocks <= histogram_sweep_occupancy =
+  // sm_count * sm_occupancy` the grid is already sized to fit.
+  bool launched_persistent = false;
+  if constexpr (!IsDeviceInit)
+  {
+    if (blocks_per_row > 0 && blocks_per_col > 0)
+    {
+      NV_IF_TARGET(
+        NV_IS_HOST,
+        ({
+          int device_ordinal        = 0;
+          int cooperative_supported = 0;
+          if (cudaGetDevice(&device_ordinal) == cudaSuccess
+              && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal)
+                   == cudaSuccess
+              && cooperative_supported != 0)
+          {
+            using output_decode_op_t     = typename FirstLevelArrayT::value_type;
+            using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+
+            // Use a 1-D grid for the cooperative launch; the kernel's
+            // `block_id = blockIdx.y * gridDim.x + blockIdx.x` evaluates
+            // identically for the 2-D `(blocks_per_row, blocks_per_col, 1)`
+            // grid and a 1-D `(num_thread_blocks, 1, 1)` grid.
+            dim3 persistent_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
+            auto persistent_kernel_ptr =
+              kernel_source.template HistogramSweepKernelPersistent<PolicySelector,
+                                                                    PRIVATIZED_SMEM_BINS,
+                                                                    privatized_decode_op_t,
+                                                                    output_decode_op_t>();
+            void* kernel_args[] = {
+              const_cast<void*>(static_cast<const void*>(&d_samples)),
+              const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
+              const_cast<void*>(static_cast<const void*>(&num_privatized_bins_wrapper)),
+              const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
+              const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper)),
+              const_cast<void*>(static_cast<const void*>(&first_level_array)),
+              const_cast<void*>(static_cast<const void*>(&second_level_array)),
+              const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
+              const_cast<void*>(static_cast<const void*>(&num_rows)),
+              const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
+              const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
+              const_cast<void*>(static_cast<const void*>(&tile_queue)),
+              const_cast<void*>(static_cast<const void*>(&max_num_output_bins))};
+            const cudaError_t coop_status = cudaLaunchCooperativeKernel(
+              reinterpret_cast<const void*>(persistent_kernel_ptr),
+              persistent_grid_dims,
+              dim3{static_cast<unsigned int>(threads_per_block)},
+              kernel_args,
+              /*sharedMem=*/0,
+              stream);
+            if (coop_status == cudaSuccess)
+            {
+              launched_persistent = true;
+            }
+            else
+            {
+              // Clear the sticky error so the legacy two-kernel fallback below
+              // does not see a stale error from cudaLaunchCooperativeKernel.
+              (void) cudaGetLastError();
+            }
+          }
+        }));
+    }
+  }
+
+  if (!launched_persistent)
+  {
+    constexpr int histogram_init_threads_per_block = 256;
+    int histogram_init_grid_dims =
+      (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
 // Log DeviceHistogramInitKernel configuration
 #ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
-          histogram_init_grid_dims,
-          histogram_init_threads_per_block,
-          (long long) stream);
+    _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
+            histogram_init_grid_dims,
+            histogram_init_threads_per_block,
+            (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-  // Invoke histogram_init_kernel
-  if (const auto error = CubDebug(
-        launcher_factory(histogram_init_grid_dims,
-                         histogram_init_threads_per_block,
-                         0,
-                         stream,
-                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-          .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
-  {
-    return error;
-  }
+    // Invoke histogram_init_kernel
+    if (const auto error = CubDebug(
+          launcher_factory(histogram_init_grid_dims,
+                           histogram_init_threads_per_block,
+                           0,
+                           stream,
+                           /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+            .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
+    {
+      return error;
+    }
 
-  // Return if empty problem
-  if (blocks_per_row == 0 || blocks_per_col == 0)
-  {
-    return cudaSuccess;
-  }
+    // Return if empty problem
+    if (blocks_per_row == 0 || blocks_per_col == 0)
+    {
+      return cudaSuccess;
+    }
 
 // Log histogram_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
-          "per thread, %d SM occupancy\n",
-          sweep_grid_dims.x,
-          sweep_grid_dims.y,
-          sweep_grid_dims.z,
-          threads_per_block,
-          (long long) stream,
-          pixels_per_thread,
-          histogram_sweep_sm_occupancy);
+    _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
+            "per thread, %d SM occupancy\n",
+            sweep_grid_dims.x,
+            sweep_grid_dims.y,
+            sweep_grid_dims.z,
+            threads_per_block,
+            (long long) stream,
+            pixels_per_thread,
+            histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-  if (const auto error = CubDebug(
-        launcher_factory(
-          sweep_grid_dims, threads_per_block, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-          .doit(sweep_kernel,
-                d_samples,
-                num_output_bins_wrapper,
-                num_privatized_bins_wrapper,
-                d_output_histograms,
-                d_privatized_histograms_wrapper,
-                first_level_array,
-                second_level_array,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                tiles_per_row,
-                tile_queue)))
-  {
-    return error;
+    if (const auto error = CubDebug(
+          launcher_factory(sweep_grid_dims,
+                           threads_per_block,
+                           0,
+                           stream,
+                           /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+            .doit(sweep_kernel,
+                  d_samples,
+                  num_output_bins_wrapper,
+                  num_privatized_bins_wrapper,
+                  d_output_histograms,
+                  d_privatized_histograms_wrapper,
+                  first_level_array,
+                  second_level_array,
+                  num_row_pixels,
+                  num_rows,
+                  row_stride_samples,
+                  tiles_per_row,
+                  tile_queue)))
+    {
+      return error;
+    }
   }
 
   // Check for failure to launch
