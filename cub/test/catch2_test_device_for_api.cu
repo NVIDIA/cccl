@@ -421,4 +421,29 @@ C2H_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][devic
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, d_first, d_last, noop_t{}));
 }
 
+C2H_TEST("Device for each n fails when using stream from another device", "[for_each][device]")
+{
+  int num_devices = 0;
+  REQUIRE(cudaGetDeviceCount(&num_devices) == cudaSuccess);
+
+  if (num_devices < 2)
+  {
+    SKIP("Test requires at least 2 CUDA devices");
+  }
+
+  REQUIRE(cudaSetDevice(1) == cudaSuccess);
+  cudaStream_t stream_on_device_1;
+  REQUIRE(cudaStreamCreate(&stream_on_device_1) == cudaSuccess);
+  REQUIRE(cudaSetDevice(0) == cudaSuccess);
+
+  // example-begin for-each-n-wo-temp-storage
+  c2h::device_vector<int> vec = {1, 2, 3, 4};
+  square_ref_t op{};
+
+  auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op, stream_on_device_1);
+  REQUIRE(result == cudaErrorInvalidDevice);
+
+  // example-end for-each-n-wo-temp-storage
+}
+
 // todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up

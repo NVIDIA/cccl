@@ -15,6 +15,8 @@
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
+#define CCCL_DISABLE_STREAM_DEVICE_CHECK
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEach, device_for_each);
@@ -239,6 +241,43 @@ C2H_TEST("Device for each works with counting iterator", "[for][device]")
   const auto it = cuda::counting_iterator<int>{0};
   c2h::device_vector<int> counts(num_items);
   device_for_each(it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())});
+
+  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(counts.begin(), counts.end(), 1));
+  REQUIRE(num_of_once_marked_items == num_items);
+}
+
+C2H_TEST("Device for each n with stream from another device works when using CCCL_DISABLE_STREAM_DEVICE_CHECK",
+         "[for][device]")
+{
+  int num_devices = 0;
+  REQUIRE(cudaGetDeviceCount(&num_devices) == cudaSuccess);
+
+  if (num_devices < 2)
+  {
+    SKIP("Test requires at least 2 CUDA devices");
+  }
+
+  REQUIRE(cudaSetDevice(1) == cudaSuccess);
+  cudaStream_t stream_on_device_1;
+  REQUIRE(cudaStreamCreate(&stream_on_device_1) == cudaSuccess);
+  REQUIRE(cudaSetDevice(0) == cudaSuccess);
+
+  // Copy of the above test but specifying stream from another device
+  using offset_t               = int;
+  constexpr offset_t max_items = 5000000;
+  constexpr offset_t min_items = 1;
+  const offset_t num_items     = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+
+  const auto it = cuda::counting_iterator<int>{0};
+  c2h::device_vector<int> counts(num_items);
+
+  cub::DeviceFor::ForEach(
+    it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())}, stream_on_device_1);
 
   const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
