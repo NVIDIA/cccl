@@ -25,6 +25,7 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -461,27 +462,45 @@ namespace detail
 // Validates stream's device is current device, when CTK >= 12.8, otherwise does nothing.
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaStream_t stream)
 {
-  cudaError_t error = cudaSuccess;
-#  if _CCCL_CTK_AT_LEAST(12, 8)
-  int streamDevice;
-  error = cudaStreamGetDevice(stream, &streamDevice);
-  if (error != cudaSuccess)
+#  if CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
+
+  ::CUdevice current_device;
+  if (const auto error = ::cuda::__driver::__ctxGetDeviceNoThrow(current_device); error != cudaSuccess)
   {
     return error;
   }
-  int currentDevice;
-  error = cudaGetDevice(&currentDevice);
-  if (error != cudaSuccess)
+
+  ::CUcontext stream_ctx;
+  if (const auto error = ::cuda::__driver::__streamGetCtxNoThrow(stream_ctx, stream); error != cudaSuccess)
   {
     return error;
   }
-  _CCCL_ASSERT(currentDevice == streamDevice, "current device must match CUB stream device");
-  if (currentDevice != streamDevice)
+
+  if (const auto error = ::cuda::__driver::__ctxPushNoThrow(stream_ctx); error != cudaSuccess)
+  {
+    return error;
+  }
+
+  ::CUdevice stream_device;
+  if (const auto error = ::cuda::__driver::__ctxGetDeviceNoThrow(stream_device); error != cudaSuccess)
+  {
+    return error;
+  }
+
+  if (const auto error = ::cuda::__driver::__ctxPopNoThrow(stream_ctx); error != cudaSuccess)
+  {
+    return error;
+  }
+
+  _CCCL_ASSERT(current_device == stream_device, "current device must match CUB stream device");
+  if (current_device != stream_device)
   {
     return cudaErrorInvalidDevice;
   }
-#  endif // _CCCL_CTK_AT_LEAST(12,8)
-  return error;
+#  else
+  (void) stream;
+#  endif // CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
+  return cudaSuccess;
 }
 } // namespace detail
 
