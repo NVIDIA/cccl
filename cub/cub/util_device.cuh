@@ -459,7 +459,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t
 
 namespace detail
 {
-// Validates stream's device is current device, when CTK >= 12.8, otherwise does nothing.
+// Validates stream's device is current device
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaStream_t stream)
 {
 #  if CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
