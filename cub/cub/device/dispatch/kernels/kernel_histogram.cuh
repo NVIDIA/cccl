@@ -35,7 +35,13 @@ struct Transforms
   // Transform functors for converting samples to bin-ids
   //---------------------------------------------------------------------
 
-  // Searches for bin given a list of bin-boundary levels
+  // Searches for bin given a list of bin-boundary levels.
+  //
+  // For roughly uniformly-spaced levels we replace a 22-iteration UpperBound
+  // binary search with an interpolated first-guess plus a short linear
+  // correction window. If the correction window does not converge within a
+  // small fixed number of steps, we fall back to UpperBound so non-uniform
+  // level distributions still produce correct results.
   template <typename LevelIteratorT>
   struct SearchTransform
   {
@@ -67,13 +73,99 @@ struct Transforms
       WrappedLevelIteratorT wrapped_levels(d_levels);
 
       const int num_bins = num_output_levels - 1;
-      if (valid)
+      if (!valid)
       {
-        bin = UpperBound(wrapped_levels, num_output_levels, static_cast<LevelT>(sample)) - 1;
+        return;
+      }
+
+      const LevelT s = static_cast<LevelT>(sample);
+
+      // For very small bin counts, the interpolation overhead is not worth
+      // it; fall back to the original binary search.
+      if (num_bins < 4)
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
         if (bin >= num_bins)
         {
           bin = -1;
         }
+        return;
+      }
+
+      // Read first and last levels. These are warp/CTA-uniform and land in
+      // L1 / texture cache after the first read, so the per-thread cost is
+      // amortized across all subsequent samples.
+      const LevelT first_level = wrapped_levels[0];
+      const LevelT last_level  = wrapped_levels[num_bins];
+
+      // Out-of-range samples map to bin -1.
+      if (s < first_level || !(s < last_level))
+      {
+        bin = -1;
+        return;
+      }
+
+      // Interpolated first-guess index. Use double-precision arithmetic to
+      // avoid overflow for wide integer types and to compute the fractional
+      // index for floating-point types.
+      const double s_d     = static_cast<double>(s);
+      const double first_d = static_cast<double>(first_level);
+      const double last_d  = static_cast<double>(last_level);
+      const double range_d = last_d - first_d;
+      int guess            = (range_d > 0.0) ? static_cast<int>(((s_d - first_d) * num_bins) / range_d) : 0;
+      if (guess < 0)
+      {
+        guess = 0;
+      }
+      else if (guess > num_bins - 1)
+      {
+        guess = num_bins - 1;
+      }
+
+      // Linear correction window. Most jittered-uniform inputs land within
+      // +/- 2; cap at +/- K. If the correction does not converge, fall back
+      // to UpperBound so irregularly-spaced levels still produce correct
+      // results.
+      constexpr int kCorrectionWindow = 4;
+
+      // Walk left: if d_levels[guess] > s, we are above the target bin.
+      int steps = 0;
+      while (guess > 0 && wrapped_levels[guess] > s)
+      {
+        --guess;
+        if (++steps >= kCorrectionWindow)
+        {
+          break;
+        }
+      }
+
+      // Walk right: if d_levels[guess + 1] <= s, we are below the target bin.
+      steps = 0;
+      while (guess < num_bins - 1 && !(s < wrapped_levels[guess + 1]))
+      {
+        ++guess;
+        if (++steps >= kCorrectionWindow)
+        {
+          break;
+        }
+      }
+
+      // Verify convergence: d_levels[guess] <= s < d_levels[guess + 1]
+      // (the upper check is implicit when guess == num_bins - 1 because
+      // we already ruled out s >= last_level above).
+      const bool low_ok  = !(s < wrapped_levels[guess]);
+      const bool high_ok = (guess == num_bins - 1) || (s < wrapped_levels[guess + 1]);
+      if (low_ok && high_ok)
+      {
+        bin = guess;
+        return;
+      }
+
+      // Fall back to binary search for irregular level distributions.
+      bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
+      if (bin >= num_bins)
+      {
+        bin = -1;
       }
     }
   };
