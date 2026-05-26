@@ -984,25 +984,73 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             max_num_output_bins);
       }
 
+      // Bin-space partitioning (`BinPartitions` template parameter) splits the
+      // output bin space across the persistent grid: each block writes only to
+      // bins in its partition's range and reads `total_pixels /
+      // partition_block_count` samples to do so. With `BinPartitions == 2`,
+      // each output bin is touched by only half the grid, halving cross-block
+      // atomic contention per bin at the cost of 2x sample reads (each
+      // partition independently scans every pixel). Worth it on
+      // atomic-contention-bound paths (very-high-bin and multi-channel).
+      //
+      // We instantiate both `BinPartitions == 1` (no partitioning, the default
+      // path) and `BinPartitions == 2` (partitioned) and pick at runtime
+      // depending on grid size: partitioning requires `num_thread_blocks >= 2`
+      // so both partitions get at least one block, otherwise the bins in
+      // partition 1 would never be written.
       // The direct-atomic kernel skips per-block privatization entirely
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
-      auto direct_atomic_kernel_ptr =
+      auto direct_atomic_kernel_p1_ptr =
         &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
                                                           PRIVATIZED_SMEM_BINS,
                                                           NUM_CHANNELS,
                                                           NUM_ACTIVE_CHANNELS,
+                                                          /*BinPartitions=*/1,
                                                           SampleIteratorT,
                                                           CounterT,
                                                           privatized_decode_op_t,
                                                           output_decode_op_t,
                                                           OffsetT>;
+      auto direct_atomic_kernel_p2_ptr =
+        &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                          PRIVATIZED_SMEM_BINS,
+                                                          NUM_CHANNELS,
+                                                          NUM_ACTIVE_CHANNELS,
+                                                          /*BinPartitions=*/2,
+                                                          SampleIteratorT,
+                                                          CounterT,
+                                                          privatized_decode_op_t,
+                                                          output_decode_op_t,
+                                                          OffsetT>;
+      const bool use_bin_partitions = (num_thread_blocks >= 2);
+      auto direct_atomic_kernel_ptr =
+        use_bin_partitions ? direct_atomic_kernel_p2_ptr : direct_atomic_kernel_p1_ptr;
       if (false)
       {
         DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
                                                          PRIVATIZED_SMEM_BINS,
                                                          NUM_CHANNELS,
                                                          NUM_ACTIVE_CHANNELS,
+                                                         /*BinPartitions=*/1,
+                                                         SampleIteratorT,
+                                                         CounterT,
+                                                         privatized_decode_op_t,
+                                                         output_decode_op_t,
+                                                         OffsetT>
+          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
+            d_samples,
+            num_output_bins_wrapper,
+            d_output_histograms,
+            second_level_array,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples);
+        DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                         PRIVATIZED_SMEM_BINS,
+                                                         NUM_CHANNELS,
+                                                         NUM_ACTIVE_CHANNELS,
+                                                         /*BinPartitions=*/2,
                                                          SampleIteratorT,
                                                          CounterT,
                                                          privatized_decode_op_t,
