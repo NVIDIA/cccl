@@ -1032,22 +1032,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                           privatized_decode_op_t,
                                                           output_decode_op_t,
                                                           OffsetT>;
-      // Runtime gate: partitioning helps when atomics-per-bin is high (lots of
-      // pixels per bin -> high contention even with the SMEM cuckoo cache
-      // absorbing hot bins). When pixels << bins (e.g. 1M pixels into 2M bins
-      // with Entropy=1.0), the cache wipes most contention and the 2x sample
-      // reads are pure cost. Use total_pixels / max_num_output_bins as a
-      // proxy for contention level; require >= 16 atomics-per-bin on average.
-      // (For Bins=2097152, this enables partitioning at Elements=268M (134
-      // atomics/bin) but disables it at Elements=1M (0.5 atomics/bin).
-      // Threshold tuned in iter 5: 16 gives a clean separation that excludes
-      // borderline contention-light configs like Elements=33M / Bins=2M.)
+      // Runtime gate: "lite" partitioning halves cross-block atomic
+      // contention on each output bin without doubling DRAM reads (every
+      // block still reads all its assigned samples; the partition mask
+      // simply discards out-of-partition decoded bins before the cache
+      // / GMEM atomic). Worth trying whenever each output bin gets
+      // enough atomic traffic that contention is the bottleneck. We
+      // gate on `total_pixels / max_num_output_bins >= 4` to avoid
+      // running it on configs where atomic contention is already
+      // negligible (e.g. Elements=1M / Bins=2M => 0.5 atomics/bin).
       const OffsetT total_pixels_for_partition =
         num_row_pixels * num_rows;
       const bool atomic_contention_high =
         (max_num_output_bins > 0)
         && (static_cast<long long>(total_pixels_for_partition)
-            >= 1000LL * static_cast<long long>(max_num_output_bins));
+            >= 4LL * static_cast<long long>(max_num_output_bins));
       const bool use_bin_partitions =
         kBinPartitionsEligible && (num_thread_blocks >= 2) && atomic_contention_high;
       // Pick the kernel pointer through a constexpr branch so the

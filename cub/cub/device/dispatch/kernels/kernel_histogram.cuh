@@ -1437,30 +1437,27 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
 
   // -------------------------------------------------------------------
-  // Bin-space partitioning across blocks (when BinPartitions == 2):
+  // Bin-space partitioning across blocks ("lite" form, when BinPartitions == 2):
   //   - Block "partition" = block_id % BinPartitions
-  //   - Block "partition_block_id" = block_id / BinPartitions
-  //   - Within a partition, blocks divide pixels among themselves
-  //     using `partition_block_id` as the block index and
-  //     `partition_total_threads` as the stride.
-  //   - Each block writes only to bins in [partition*split, (partition+1)*split)
-  //     where `split` is computed per-channel from `num_output_bins`.
-  // For BinPartitions == 1 these reduce to the original block_id / total_threads.
+  //   - Each block reads ALL pixels via the standard grid-strided loop
+  //     (`total_threads` stride). Each block only commits writes to bins
+  //     in [partition*split, (partition+1)*split) where `split` is
+  //     computed per-channel from `num_output_bins`. Other bins are
+  //     turned into the `bin == -1` sentinel which the warp coalescer
+  //     treats as no-op.
+  // This halves cross-block atomic contention on each output bin without
+  // doubling DRAM sample reads (the "full" variant tried in iters 1-5,
+  // which had each partition's M/2 blocks re-sweep all pixels via
+  // partition_total_threads, was a net regression because the cuckoo
+  // SMEM cache already absorbs most contention and the 2x DRAM cost
+  // dominates).
+  // For BinPartitions == 1 the partition mask is a no-op (split is set
+  // to num_output_bins+1, so every bin is in partition 0).
   // -------------------------------------------------------------------
   static_assert(BinPartitions == 1 || BinPartitions == 2,
                 "BinPartitions must be 1 or 2");
-  const unsigned int partition          = (BinPartitions == 1) ? 0u : (block_id % static_cast<unsigned int>(BinPartitions));
-  const unsigned int partition_block_id = (BinPartitions == 1) ? block_id : (block_id / static_cast<unsigned int>(BinPartitions));
-  // Number of blocks in each partition. Partitions 0..(BinPartitions-1) get
-  // ceil/floor of (blocks_per_grid / BinPartitions). For BinPartitions == 2,
-  // partition 0 gets ceil(N/2), partition 1 gets floor(N/2).
-  const unsigned int partition_block_count =
-    (BinPartitions == 1)
-      ? blocks_per_grid
-      : ((blocks_per_grid + (static_cast<unsigned int>(BinPartitions) - 1u - partition))
-         / static_cast<unsigned int>(BinPartitions));
-  const unsigned int partition_total_threads = partition_block_count * blockDim.x;
-  const unsigned int tid_partition           = partition_block_id * blockDim.x + threadIdx.x;
+  const unsigned int partition =
+    (BinPartitions == 1) ? 0u : (block_id % static_cast<unsigned int>(BinPartitions));
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -1550,17 +1547,21 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   if (num_rows == 1)
   {
-    // Pixel sweep parameters: when BinPartitions == 1 these are the
-    // original whole-grid stride (every block participates in the
-    // pixel sweep). When BinPartitions == 2, blocks are partitioned
-    // into two groups, and within each group blocks stride together.
-    // Each block reads `total_pixels / partition_block_count` samples,
-    // i.e. each partition independently scans every pixel. This
-    // halves the cross-block atomic contention per output bin (only
-    // blocks in this partition can write to bins in [partition*split,
-    // (partition+1)*split)) at the cost of 2x sample reads.
-    const OffsetT step         = static_cast<OffsetT>(partition_total_threads);
-    const OffsetT start        = static_cast<OffsetT>(tid_partition);
+    // Pixel sweep parameters: every thread strides over the whole pixel
+    // space using `total_threads` (the standard grid-strided loop). When
+    // `BinPartitions == 2`, each thread additionally filters its writes
+    // to its own partition's bin range -- so half the reads are wasted
+    // compute (decode + cache lookup) but no extra global samples are
+    // fetched. This is "lite" bin-space partitioning: it halves the
+    // cross-block atomic contention per output bin (only blocks in this
+    // partition can write to bins in [partition*split, (partition+1)*
+    // split)) without doubling DRAM throughput like "full"
+    // partitioning would (full partitioning had each partition's blocks
+    // independently re-sweep all pixels via partition_total_threads,
+    // which was a net regression in iter 4 against the cuckoo-cache
+    // baseline).
+    const OffsetT step         = static_cast<OffsetT>(total_threads);
+    const OffsetT start        = static_cast<OffsetT>(tid_global);
     const unsigned int lane_id = threadIdx.x & 0x1f;
 
     // Per-channel bin partition split. When BinPartitions == 1 the
@@ -1742,10 +1743,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   {
     // Slow path: row-strided input that is not flattenable to a single
     // linear array. No coalescing here since it's the rare path.
-    // The bin partitioning still applies: each block restricts its
-    // output writes to its own partition's bin range, and partitions
-    // independently stride pixels using `tid_partition` /
-    // `partition_total_threads`.
+    // Bin partitioning ("lite" form) still applies: every thread strides
+    // over all pixels via `total_threads`, but each block only commits
+    // writes to its partition's bin range.
     int partition_split[NumActiveChannels];
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -1754,8 +1754,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
                               ? num_output_bins_wrapper[ch] + 1
                               : (num_output_bins_wrapper[ch] >> 1);
     }
-    for (OffsetT pixel = static_cast<OffsetT>(tid_partition); pixel < total_pixels;
-         pixel += static_cast<OffsetT>(partition_total_threads))
+    for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
+         pixel += static_cast<OffsetT>(total_threads))
     {
       const OffsetT row     = pixel / num_row_pixels;
       const OffsetT col     = pixel - row * num_row_pixels;
