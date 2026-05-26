@@ -699,6 +699,60 @@ struct Transforms
   };
 };
 
+//! @brief Chunked privatized-bin decode op wrapper.
+//!
+//! Wraps an inner decode op (`ScaleTransform` for EVEN paths and the uniform-detected
+//! RANGE fast-path; `SearchTransform` for non-uniform RANGE paths) so the per-block
+//! dyn-SMEM histogram only counts samples whose full-domain bin falls in
+//! `[chunk_start, chunk_start + chunk_size)`. The returned local bin is shifted down by
+//! `chunk_start` so the agent indexes a SMEM histogram of size `chunk_size`.
+//!
+//! Used by the chunked dyn-SMEM staging-fused path: the dispatch loops `num_chunks` times,
+//! each pass paying 1x sample read but only 1x SMEM atomicAdd_block (instead of the legacy
+//! 1x sample read + 1x GMEM atomicAdd_block on the GMEM-priv persistent kernel). For
+//! Bins=60000 single-channel this trades 2x sample reads for 2x SMEM atomic latency, which
+//! pays off when the persistent-kernel atomic phase dominates.
+template <typename Inner>
+struct ChunkedDecodeOp
+{
+  Inner inner;
+  int chunk_start;
+  int chunk_size;
+
+  // Forwards to inner ScaleTransform::Init(num_levels, max_level, min_level).
+  template <typename L>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int num_levels, L max_level, L min_level)
+  {
+    inner.Init(num_levels, max_level, min_level);
+  }
+
+  // Forwards to inner SearchTransform::Init(d_levels, num_output_levels).
+  template <typename It>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(It d_levels, int num_output_levels)
+  {
+    inner.Init(d_levels, num_output_levels);
+  }
+
+  // Sets the chunk window in privatized-bin space. Called by the chunked-dispatch loop
+  // before the kernel launch, so the kernel sees the chunk via the by-value GRID_CONSTANT
+  // decode-op argument.
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void SetChunk(int start, int size)
+  {
+    chunk_start = start;
+    chunk_size  = size;
+  }
+
+  template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+  {
+    int full_bin = -1;
+    inner.template BinSelect<LOAD_MODIFIER>(sample, full_bin, valid);
+    // Map to chunk-local bin if in window, else -1 so the agent's accumulate path skips it.
+    const int local_bin = full_bin - chunk_start;
+    bin                 = (full_bin >= 0 && local_bin >= 0 && local_bin < chunk_size) ? local_bin : -1;
+  }
+};
+
 /******************************************************************************
  * Histogram kernel entry points
  *****************************************************************************/

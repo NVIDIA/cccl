@@ -78,6 +78,24 @@ static constexpr int max_extended_smem_bins_single_channel        = 2048;
 static constexpr int max_extended_smem_bins_single_channel_large  = 8192;
 static constexpr int max_extended_smem_bins_single_channel_xlarge = 16384;
 
+// Chunked dyn-SMEM staging-fused tier for histograms with bins exceeding the dyn-SMEM
+// xlarge tier (16384). Each chunk runs the existing dyn-SMEM staging-combine path over
+// a `chunk_size`-bin slice of the privatized-bin space, with the per-chunk decode op
+// remapping samples outside the slice to bin -1. Trades `num_chunks` x sample reads
+// for `num_chunks` x SMEM atomicAdd_block (instead of 1x GMEM atomicAdd_block on the
+// legacy persistent-kernel GMEM-priv path).
+//
+// Single-channel chunk_size choice (per worker-1 brief-6 empirical sweep): 2 chunks
+// of 30000 (2-chunk) wins for the 60000-bin EVEN axis. 3-chunk of 20000 (-4.7% on
+// even.base vs 2-chunk) and 4-chunk of 15000 (-6.3% vs 2-chunk) lose: more launches
+// and more wasted classify+sample-read passes dominate the SMEM atomicAdd_block savings.
+// Per-block dyn-SMEM at 30000 bins is 120 KB single-channel, well within B200's
+// ~228 KiB per-CTA cap.
+static constexpr int chunked_smem_chunk_size_single_channel = 30000;
+static constexpr int chunked_smem_num_chunks_single_channel = 2;
+static constexpr int chunked_smem_bins_max_single_channel =
+  chunked_smem_chunk_size_single_channel * chunked_smem_num_chunks_single_channel;
+
 // ---------------------------------------------------------------------------
 // Uniform-level detection for the RANGE host-init dispatch path.
 //
@@ -1704,6 +1722,128 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
   return cudaSuccess;
 }
 
+// Chunked dyn-SMEM staging-fused dispatch helper for non-byte single-channel samples.
+//
+// For bin counts that exceed the dyn-SMEM xlarge tier (16384) but fit within the chunk
+// grid `kChunkSize * kNumChunks`, this helper runs the existing dyn-SMEM staging-combine
+// path `kNumChunks` times, each pass with a `ChunkedDecodeOp<Inner>` that maps samples
+// outside the chunk window to bin -1. Trades `kNumChunks` x sample reads for `kNumChunks`
+// x SMEM atomicAdd_block (vs. 1x sample read + 1x GMEM atomicAdd_block on the legacy
+// GMEM-priv persistent kernel path).
+//
+// The temporary-storage size is computed by the per-chunk dispatch's `d_temp_storage==nullptr`
+// pre-pass; subsequent chunks reuse the same temp storage since their geometry is identical
+// (same grid, same per-block staging slab size for `kChunkSize` privatized bins).
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          int kChunkSize,
+          int kNumChunks,
+          typename InnerPrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename OffsetT,
+          typename PolicySelector,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_chunked_staging_smem(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  SampleIteratorT d_samples,
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+  ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op,
+  ::cuda::std::array<InnerPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> inner_privatized_decode_op,
+  int max_num_output_bins,
+  OffsetT num_row_pixels,
+  OffsetT num_rows,
+  OffsetT row_stride_samples,
+  cudaStream_t stream,
+  PolicySelector policy_selector,
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  using ChunkedPrivatizedDecodeOpT = ChunkedDecodeOp<InnerPrivatizedDecodeOpT>;
+
+  constexpr int kPrivatizedSmemBins = max_extended_smem_bins_single_channel_xlarge;
+
+  // Build the chunked privatized decode op array (per-channel). The chunk window is set
+  // per-iteration below.
+  ::cuda::std::array<ChunkedPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> chunked_privatized_decode_op{};
+  for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+  {
+    chunked_privatized_decode_op[ch].inner = inner_privatized_decode_op[ch];
+  }
+
+  for (int chunk_idx = 0; chunk_idx < kNumChunks; ++chunk_idx)
+  {
+    const int chunk_start = chunk_idx * kChunkSize;
+    if (chunk_start >= max_num_output_bins)
+    {
+      break; // No samples can fall in this chunk window; safe to skip.
+    }
+    const int chunk_size = ::cuda::std::min(kChunkSize, max_num_output_bins - chunk_start);
+
+    // Set chunk window in the per-channel chunked decode ops.
+    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+    {
+      chunked_privatized_decode_op[ch].SetChunk(chunk_start, chunk_size);
+    }
+
+    // Offset output-histogram pointers so the chunk writes its slice of the final histogram.
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> chunk_output_histograms{};
+    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+    {
+      chunk_output_histograms[ch] = d_output_histograms[ch] + chunk_start;
+    }
+
+    // Each chunk overrides `num_privatized_levels` to `chunk_size + 1` so the inner dispatch
+    // computes per-block staging slabs of size `chunk_size` (vs. the original full bin count).
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> chunk_levels{};
+    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+    {
+      chunk_levels[ch] = chunk_size + 1;
+    }
+
+    // For the size-only pre-pass (d_temp_storage==nullptr), one call returns the full size.
+    // Otherwise we re-use the same temp storage across all chunks.
+    if (const auto error = CubDebug(
+          (detail::histogram::dispatch<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            kPrivatizedSmemBins,
+            false, // IsDeviceInit
+            false, // IsEven (unused for host-init)
+            false // IsByteSample (unused for host-init)
+            >(d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              chunk_output_histograms,
+              chunk_levels,
+              chunk_levels,
+              output_decode_op,
+              chunked_privatized_decode_op,
+              chunk_size,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
+    {
+      return error;
+    }
+
+    // After the size-only pre-pass returns, exit before launching real chunks.
+    if (d_temp_storage == nullptr)
+    {
+      return cudaSuccess;
+    }
+  }
+
+  return cudaSuccess;
+}
+
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
@@ -2022,6 +2162,39 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
                     d_output_histograms,
                     num_output_levels,
                     num_output_levels,
+                    uniform_out_op,
+                    uniform_priv_op,
+                    max_num_output_bins_uniform,
+                    num_row_pixels,
+                    num_rows,
+                    row_stride_samples,
+                    stream,
+                    policy_selector,
+                    kernel_source,
+                    launcher_factory))))
+            {
+              return error;
+            }
+            return cudaSuccess;
+          }
+
+          // Chunked dyn-SMEM staging-fused tier for uniform-detected RANGE single-channel:
+          // xlarge < bins <= chunked_smem_bins_max_single_channel. Mirrors the EVEN single-channel
+          // chunked tier; routes through the dyn-SMEM xlarge path in chunks of
+          // chunked_smem_chunk_size_single_channel bins. Wins when the legacy persistent kernel's
+          // GMEM atomicAdd_block dominates -- e.g. Bins=60000 uniform-RANGE.
+          if (max_num_output_bins_uniform > max_extended_smem_bins_single_channel_xlarge
+              && max_num_output_bins_uniform <= chunked_smem_bins_max_single_channel)
+          {
+            if (const auto error =
+                  CubDebug((dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                                         NUM_ACTIVE_CHANNELS,
+                                                         chunked_smem_chunk_size_single_channel,
+                                                         chunked_smem_num_chunks_single_channel>(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_samples,
+                    d_output_histograms,
                     uniform_out_op,
                     uniform_priv_op,
                     max_num_output_bins_uniform,
@@ -2509,6 +2682,38 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
                 d_output_histograms,
                 num_output_levels,
                 num_output_levels,
+                output_decode_op,
+                privatized_decode_op,
+                max_num_output_bins,
+                num_row_pixels,
+                num_rows,
+                row_stride_samples,
+                stream,
+                policy_selector,
+                kernel_source,
+                launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+
+      // Chunked dyn-SMEM staging-fused tier: xlarge < bins <= chunked_smem_bins_max_single_channel.
+      // EVEN single-channel only -- routes through the dyn-SMEM xlarge tier in chunks of
+      // chunked_smem_chunk_size_single_channel bins, paying num_chunks x sample reads to swap
+      // legacy GMEM-priv persistent kernel's GMEM atomicAdd_block for SMEM atomicAdd_block.
+      if (max_num_output_bins > max_extended_smem_bins_single_channel_xlarge
+          && max_num_output_bins <= chunked_smem_bins_max_single_channel)
+      {
+        if (const auto error =
+              CubDebug((dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                                     NUM_ACTIVE_CHANNELS,
+                                                     chunked_smem_chunk_size_single_channel,
+                                                     chunked_smem_num_chunks_single_channel>(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_samples,
+                d_output_histograms,
                 output_decode_op,
                 privatized_decode_op,
                 max_num_output_bins,
