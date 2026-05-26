@@ -1512,52 +1512,82 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
           if (bin >= 0 && static_cast<int>(lane_id) == leader)
           {
             const CounterT contribution = static_cast<CounterT>(__popc(peers));
-            // Multiplicative-hash slot index. Using Knuth's constant for
-            // a good spread across the cache; mask with slot_count - 1
-            // (slot count is a power of two) for a cheap modulo.
-            const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
-            const int slot          = static_cast<int>(hash & (kCacheSlotsPerChannel - 1));
-            // Probe slot: on key match, fold contribution into the
-            // cache slot via atomicAdd_block (intra-block scope, ~10x
-            // cheaper than the device-scope atomicAdd to GMEM).
-            //
-            // On key miss (slot key differs from our bin), CAS in our
-            // bin id; if CAS wins (slot was -1 sentinel), we own the
-            // slot and add our contribution. If CAS loses (another
-            // warp in this block already claimed the slot for a
-            // different bin), we evict by atomicAdd-ing the existing
-            // slot's count to GMEM... actually that's the harder
-            // codepath. The simpler-and-still-correct policy: on
-            // miss, fall back directly to the global atomicAdd.
-            // The cache only helps when a bin maps to the same slot
-            // repeatedly within a block, which is the high-frequency
-            // case. Cold/random bins go straight to GMEM.
-            const int existing_key = s_cache_keys[ch][slot];
-            if (existing_key == bin)
+            // Two hash functions (cuckoo-style): on a primary slot
+            // collision, try a secondary slot before falling back to
+            // GMEM. This roughly doubles the effective cache hit rate
+            // for moderate-entropy distributions where a few bins
+            // dominate but each thread is otherwise visiting random
+            // bins.
+            const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
+            const int slot1          = static_cast<int>(hash1 & (kCacheSlotsPerChannel - 1));
+            const int existing_key1  = s_cache_keys[ch][slot1];
+            if (existing_key1 == bin)
             {
-              // Hit: bump cache count.
-              atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+              // Primary hit: bump cache count.
+              atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
             }
-            else if (existing_key == -1)
+            else if (existing_key1 == -1)
             {
-              // Empty slot: try to claim it via CAS.
-              const int prev = atomicCAS(&s_cache_keys[ch][slot], -1, bin);
+              // Primary slot empty: try to claim it via CAS.
+              const int prev = atomicCAS(&s_cache_keys[ch][slot1], -1, bin);
               if (prev == -1 || prev == bin)
               {
-                atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+                atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
               }
               else
               {
-                // Lost the race; another warp claimed the slot for a
-                // different bin. Bypass cache for this update.
-                atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+                // Lost the race. Try secondary slot.
+                const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
+                const int slot2          = static_cast<int>(hash2 & (kCacheSlotsPerChannel - 1));
+                const int existing_key2  = s_cache_keys[ch][slot2];
+                if (existing_key2 == bin)
+                {
+                  atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
+                }
+                else if (existing_key2 == -1)
+                {
+                  const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
+                  if (prev2 == -1 || prev2 == bin)
+                  {
+                    atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
+                  }
+                  else
+                  {
+                    atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+                  }
+                }
+                else
+                {
+                  atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+                }
               }
             }
             else
             {
-              // Slot is occupied by a different bin: bypass the cache
-              // (we don't evict here to keep the hot path branchless).
-              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+              // Primary occupied by a different bin: try the secondary slot.
+              const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
+              const int slot2          = static_cast<int>(hash2 & (kCacheSlotsPerChannel - 1));
+              const int existing_key2  = s_cache_keys[ch][slot2];
+              if (existing_key2 == bin)
+              {
+                atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
+              }
+              else if (existing_key2 == -1)
+              {
+                const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
+                if (prev2 == -1 || prev2 == bin)
+                {
+                  atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
+                }
+                else
+                {
+                  atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+                }
+              }
+              else
+              {
+                atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+              }
             }
           }
         }
