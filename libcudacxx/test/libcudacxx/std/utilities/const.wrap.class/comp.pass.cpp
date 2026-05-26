@@ -7,10 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: Remove once constant_wrapper is exposed.
-
 // gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::__type
+//   typename decltype(__cw_fixed_value(_Xp))::type
 // UNSUPPORTED: gcc-10 || gcc-11
 
 // nvcc 12.0 segfaults.
@@ -86,10 +84,12 @@ struct WithOps
   {
     return l.value > r.value;
   }
-  // TEST_FUNC friend constexpr auto operator<=>(WithOps l, WithOps r)
-  // {
-  //   return l.value <=> r.value;
-  // }
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+  TEST_FUNC friend constexpr auto operator<=>(WithOps l, WithOps r)
+  {
+    return l.value <=> r.value;
+  }
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 struct OpsReturnNonStructural
@@ -124,10 +124,12 @@ struct OpsReturnNonStructural
   {
     return NonStructural{l.value > r.value ? 1 : 0};
   }
-  // TEST_FUNC friend constexpr auto operator<=>(OpsReturnNonStructural l, OpsReturnNonStructural r)
-  // {
-  //   return NonStructural{(l.value < r.value) ? -1 : (l.value > r.value) ? 1 : 0};
-  // }
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+  TEST_FUNC friend constexpr auto operator<=>(OpsReturnNonStructural l, OpsReturnNonStructural r)
+  {
+    return NonStructural{(l.value < r.value) ? -1 : (l.value > r.value) ? 1 : 0};
+  }
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 struct NoOps
@@ -163,10 +165,12 @@ concept HasGreaterEqual = requires(L l, R r) {
   { l >= r };
 };
 
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 template <class L, class R>
 concept HasSpaceship = requires(L l, R r) {
   { l <=> r };
 };
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class L, class R>
 concept HasNoexceptEqual = requires(L l, R r) {
@@ -198,10 +202,12 @@ concept HasNoexceptGreaterEqual = requires(L l, R r) {
   { l >= r } noexcept;
 };
 
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 template <class L, class R>
 concept HasNoexceptSpaceship = requires(L l, R r) {
   { l <=> r } noexcept;
 };
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // Concept checks for int comparisons
 static_assert(HasEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
@@ -210,7 +216,9 @@ static_assert(HasLess<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wr
 static_assert(HasLessEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasGreater<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-// static_assert(HasSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+static_assert(HasSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 static_assert(HasNoexceptEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptNotEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
@@ -218,7 +226,9 @@ static_assert(HasNoexceptLess<cuda::std::__constant_wrapper<6>, cuda::std::__con
 static_assert(HasNoexceptLessEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptGreater<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-// static_assert(HasNoexceptSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+static_assert(HasNoexceptSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // NoOps
 static_assert(!HasEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
@@ -227,7 +237,9 @@ static_assert(!HasLess<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__cons
 static_assert(!HasLessEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
 static_assert(!HasGreater<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
 static_assert(!HasGreaterEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-// static_assert(!HasSpaceship<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+static_assert(!HasSpaceship<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // Concept checks for WithOps comparisons
 static_assert(HasNoexceptEqual<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
@@ -238,10 +250,12 @@ static_assert(
 static_assert(HasNoexceptGreater<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
 static_assert(
   HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-// static_assert(!HasNoexceptSpaceship<cuda::std::__constant_wrapper<WithOps{6}>,
-// cuda::std::__constant_wrapper<WithOps{3}>>,
-//               "strong_ordering is not a structural type, so the call falls back to runtime implicit conversion and "
-//               "operator<=>, which is noexcept(false)");
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+static_assert(
+  !HasNoexceptSpaceship<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>,
+  "strong_ordering is not a structural type, so the call falls back to runtime implicit conversion and "
+  "operator<=>, which is noexcept(false)");
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // clang-format off
 // Non-structural types use implicit conversion to underlying type
@@ -285,10 +299,11 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cw6 >= cw3;
     static_assert(static_cast<bool>(greater_equal));
 
-    // todo: handle spaceship operator
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     // strong_ordering is not a structural type
-    // cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw6 <=> cw3;
-    // assert(spaceship == cuda::std::strong_ordering::greater);
+    cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw6 <=> cw3;
+    assert(spaceship == cuda::std::strong_ordering::greater);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   {
@@ -314,9 +329,10 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) greater_cmp = cw3a > cw3b;
     static_assert(!static_cast<bool>(greater_cmp));
 
-    // todo: handle spaceship operator
-    // cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw3a <=> cw3b;
-    // assert(spaceship == cuda::std::strong_ordering::equal);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+    cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw3a <=> cw3b;
+    assert(spaceship == cuda::std::strong_ordering::equal);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   {
@@ -342,9 +358,10 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cwWithOps6 >= cwWithOps3;
     static_assert(static_cast<bool>(greater_equal));
 
-    // todo: handle spaceship operator
-    // cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cwWithOps6 <=> cwWithOps3;
-    // assert(spaceship == cuda::std::strong_ordering::greater);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+    cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cwWithOps6 <=> cwWithOps3;
+    assert(spaceship == cuda::std::strong_ordering::greater);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   {
@@ -370,9 +387,10 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) greater = cwWithOps3a > cwWithOps3b;
     static_assert(!static_cast<bool>(greater));
 
-    // todo: handle spaceship operator
-    // cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cwWithOps3a <=> cwWithOps3b;
-    // assert(spaceship == cuda::std::strong_ordering::equal);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+    cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cwWithOps3a <=> cwWithOps3b;
+    assert(spaceship == cuda::std::strong_ordering::equal);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   {
@@ -398,9 +416,10 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<NonStructural> decltype(auto) greater_equal = cwOpt6 >= cwOpt3;
     assert(greater_equal.get() == 1);
 
-    // todo: handle spaceship operator
-    // cuda::std::same_as<NonStructural> decltype(auto) spaceship = cwOpt6 <=> cwOpt3;
-    // assert(spaceship.get() == 1);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+    cuda::std::same_as<NonStructural> decltype(auto) spaceship = cwOpt6 <=> cwOpt3;
+    assert(spaceship.get() == 1);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   {
@@ -426,9 +445,10 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<bool> decltype(auto) greater_equal = cw6 >= i;
     assert(greater_equal);
 
-    // todo: handle spaceship operator
-    // cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw6 <=> i;
-    // assert(spaceship == cuda::std::strong_ordering::greater);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+    cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw6 <=> i;
+    assert(spaceship == cuda::std::strong_ordering::greater);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   {
@@ -454,10 +474,11 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cw6 >= ic3;
     static_assert(static_cast<bool>(greater_equal));
 
-    // todo: handle spaceship operator
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     // strong_ordering is not a structural type
-    // cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw6 <=> ic3;
-    // assert(spaceship == cuda::std::strong_ordering::greater);
+    cuda::std::same_as<cuda::std::strong_ordering> decltype(auto) spaceship = cw6 <=> ic3;
+    assert(spaceship == cuda::std::strong_ordering::greater);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   return true;
