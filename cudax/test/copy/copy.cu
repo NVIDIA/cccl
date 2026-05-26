@@ -60,7 +60,7 @@ TEST_CASE("copy d2d 2D row-major to column-major", "[copy][d2d][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i + j * M] = i * N + j;
+      expected[i + static_cast<std::size_t>(j) * M] = static_cast<std::size_t>(i) * N + j;
     }
   }
   test_copy<layout_right, layout_left>(data, expected, M, N);
@@ -78,7 +78,7 @@ TEST_CASE("copy d2d 2D column-major to row-major", "[copy][d2d][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i * N + j] = i + j * M;
+      expected[static_cast<std::size_t>(i) * N + j] = i + static_cast<std::size_t>(j) * M;
     }
   }
   test_copy<layout_left, layout_right>(data, expected, M, N);
@@ -123,7 +123,8 @@ TEST_CASE("copy d2d 3D row-major to column-major", "[copy][d2d][3d]")
     {
       for (int k = 0; k < D2; ++k)
       {
-        expected[i + j * D0 + k * D0 * D1] = i * (D1 * D2) + j * D2 + k;
+        expected[i + static_cast<std::size_t>(j) * D0 + static_cast<std::size_t>(k) * D0 * D1] =
+          static_cast<std::size_t>(i) * (D1 * D2) + static_cast<std::size_t>(j) * D2 + k;
       }
     }
   }
@@ -153,7 +154,7 @@ TEST_CASE("copy d2d 2D strided padded row-major", "[copy][d2d][2d][stride][row]"
   {
     for (int j = 0; j < N; ++j)
     {
-      data[i * Ld + j] = i * N + j;
+      data[static_cast<std::size_t>(i) * Ld + j] = static_cast<std::size_t>(i) * N + j;
     }
   }
   test_copy_strided(data, shape, strides);
@@ -178,7 +179,7 @@ TEST_CASE("copy d2d 2D strided padded column-major", "[copy][d2d][2d][stride][co
   {
     for (int j = 0; j < N; ++j)
     {
-      data[i + j * Ld] = i * N + j;
+      data[i + static_cast<std::size_t>(j) * Ld] = static_cast<std::size_t>(i) * N + j;
     }
   }
   test_copy_strided(data, shape, strides);
@@ -207,7 +208,8 @@ TEST_CASE("copy d2d 3D strided permutation", "[copy][d2d][3d][stride][permutatio
     {
       for (int k = 0; k < D2; ++k)
       {
-        expected[i + j * (D2 * D0) + k * D0] = input[i * (D1 * D2) + j * D2 + k];
+        expected[i + static_cast<std::size_t>(j) * (D2 * D0) + static_cast<std::size_t>(k) * D0] =
+          input[static_cast<std::size_t>(i) * (D1 * D2) + static_cast<std::size_t>(j) * D2 + k];
       }
     }
   }
@@ -237,7 +239,8 @@ TEST_CASE("copy d2d 3D strided different stride order", "[copy][d2d][3d][stride]
     {
       for (int k = 0; k < D2; ++k)
       {
-        expected[i * 8 + j * 16 + k] = input[i * (D1 * D2) + j * D2 + k];
+        expected[static_cast<std::size_t>(i) * 8 + static_cast<std::size_t>(j) * 16 + k] =
+          input[static_cast<std::size_t>(i) * (D1 * D2) + static_cast<std::size_t>(j) * D2 + k];
       }
     }
   }
@@ -311,7 +314,7 @@ TEST_CASE("copy d2d 2D transposition non-tile-divisible", "[copy][d2d][2d][bound
   {
     for (int c = 0; c < N; ++c)
     {
-      expected[r + c * M] = data[r * N + c];
+      expected[r + static_cast<std::size_t>(c) * M] = data[static_cast<std::size_t>(r) * N + c];
     }
   }
   test_copy<layout_right, layout_left>(data, expected, M, N);
@@ -329,7 +332,7 @@ TEST_CASE("copy d2d 2D large transposition", "[copy][d2d][2d][large][transpose]"
   {
     for (int c = 0; c < N; ++c)
     {
-      expected[r + c * M] = data[r * N + c];
+      expected[r + static_cast<std::size_t>(c) * M] = data[static_cast<std::size_t>(r) * N + c];
     }
   }
   test_copy<layout_right, layout_left>(data, expected, M, N);

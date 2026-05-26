@@ -73,7 +73,7 @@ C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][war
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start = expected.begin() + i * 32;
+    auto start = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end   = start + 32;
 
     cuda::std::iota(start, end, i); // initialize host input for every warp
@@ -131,7 +131,7 @@ C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start   = expected.begin() + i * 32;
+    auto start   = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end     = start + 32;
     int init_val = 3;
 
@@ -139,8 +139,8 @@ C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
     cuda::std::inclusive_scan(start, end, start, sum_op{}, init_val);
 
-    expected_aggr.push_back(expected[i * 32 + 31] - init_val); // warp aggregate does not take
-                                                               // initial value into account
+    expected_aggr.push_back(expected[i * 32 + 31] - init_val); // NOLINT(bugprone-misplaced-widening-cast) warp
+                                                               // aggregate does not take initial value into account
   }
 
   REQUIRE(expected == d_out);
@@ -206,7 +206,7 @@ C2H_TEST("Warp array-based partial inclusive scan works with initial value", "[s
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32;
+    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end        = start + 32;
     int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
 
@@ -285,7 +285,7 @@ C2H_TEST("Warp array-based partial inclusive scan aggregate works with initial v
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32;
+    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end        = start + 32;
     int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
     int init_val    = 3;

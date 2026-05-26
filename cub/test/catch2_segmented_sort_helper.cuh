@@ -128,7 +128,8 @@ public:
 
     for (int i = 0; i < count; i++)
     {
-      auto const next_end = (i == count - 1) ? out_keys.size() : unique_indexes_out[i + 1];
+      auto const next_end =
+        (i == count - 1) ? out_keys.size() : unique_indexes_out[i + 1]; // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(keys_histogram[unique_keys_out[i]] == next_end - unique_indexes_out[i]);
     }
   }

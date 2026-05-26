@@ -103,7 +103,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
 
   constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.threads_per_block);
   constexpr uint32_t ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
-  constexpr BufferSizeT TILE_SIZE     = static_cast<BufferSizeT>(BLOCK_THREADS * ITEMS_PER_THREAD);
+  constexpr BufferSizeT TILE_SIZE =
+    static_cast<BufferSizeT>(BLOCK_THREADS * ITEMS_PER_THREAD); // NOLINT(bugprone-misplaced-widening-cast)
 
   BufferOffsetT num_blev_buffers = buffer_offset_tile.LoadValid(last_tile_offset);
 

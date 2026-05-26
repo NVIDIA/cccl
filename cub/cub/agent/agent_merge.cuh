@@ -78,8 +78,9 @@ struct agent_t
   struct alignas(cub::detail::LoadToSharedBufferAlignBytes<ValueT>()) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
-    static constexpr int bytes_needed = cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1)
-                                      + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
+    static constexpr int bytes_needed =
+      cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1) // NOLINT(bugprone-misplaced-widening-cast)
+      + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
 
     char c_array[bytes_needed];
   };

@@ -1360,7 +1360,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     auto large_segments_selector = kernel_source.LargeSegmentsSelector(
       active_policy.medium_segment.items_per_tile(), d_begin_offsets, d_end_offsets);
     auto small_segments_selector = kernel_source.SmallSegmentsSelector(
-      active_policy.small_segment.items_per_tile() + 1, d_begin_offsets, d_end_offsets);
+      active_policy.small_segment.items_per_tile() + 1, // NOLINT(bugprone-misplaced-widening-cast)
+      d_begin_offsets,
+      d_end_offsets);
 
     auto device_partition_temp_storage = keys_slot->create_alias<uint8_t>();
     if (partition_segments)

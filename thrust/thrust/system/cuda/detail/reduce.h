@@ -310,15 +310,16 @@ struct ReduceAgent
       // Read first item
       if ((IS_FIRST_TILE) && (thread_offset < valid_items))
       {
-        thread_aggregate = load_it[block_offset + thread_offset];
+        thread_aggregate = load_it[block_offset + thread_offset]; // NOLINT(bugprone-misplaced-widening-cast)
         thread_offset += BLOCK_THREADS;
       }
 
       // Continue reading items (block-striped)
       while (thread_offset < valid_items)
       {
-        thread_aggregate =
-          reduction_op(thread_aggregate, thrust::raw_reference_cast(load_it[block_offset + thread_offset]));
+        thread_aggregate = reduction_op(
+          thread_aggregate,
+          thrust::raw_reference_cast(load_it[block_offset + thread_offset])); // NOLINT(bugprone-misplaced-widening-cast)
         thread_offset += BLOCK_THREADS;
       }
     }
@@ -410,8 +411,8 @@ struct ReduceAgent
     {
       // We give each thread block at least one tile of input.
       T thread_aggregate;
-      Size block_offset    = blockIdx.x * ITEMS_PER_TILE;
-      Size even_share_base = gridDim.x * ITEMS_PER_TILE;
+      Size block_offset    = static_cast<Size>(blockIdx.x) * ITEMS_PER_TILE;
+      Size even_share_base = static_cast<Size>(gridDim.x) * ITEMS_PER_TILE;
 
       if (block_offset + ITEMS_PER_TILE > num_items)
       {

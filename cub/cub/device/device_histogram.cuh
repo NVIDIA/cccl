@@ -750,7 +750,7 @@ public:
 
     if constexpr (sizeof(OffsetT) > sizeof(int))
     {
-      if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+      if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
       {
         // Down-convert OffsetT data type
         return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
@@ -1450,7 +1450,7 @@ public:
 
     if constexpr (sizeof(OffsetT) > sizeof(int))
     {
-      if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+      if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
       {
         // Down-convert OffsetT data type
         return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(

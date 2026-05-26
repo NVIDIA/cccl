@@ -78,7 +78,8 @@ struct guarded_load_t
     const auto lane_id    = linear_tid % LOGICAL_WARP_THREADS;
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
-      const auto expected_value = static_cast<T>(linear_tid * ITEMS_PER_THREAD + item);
+      const auto expected_value =
+        static_cast<T>(linear_tid * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
 
       const bool is_oob = LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED
                           ? item * LOGICAL_WARP_THREADS + lane_id >= valid_items
@@ -121,7 +122,8 @@ struct unguarded_load_t
   {
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
-      const auto expected_value = static_cast<T>(threadIdx.x * ITEMS_PER_THREAD + item);
+      const auto expected_value =
+        static_cast<T>(threadIdx.x * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
 
       if (reg[item] != expected_value)
       {

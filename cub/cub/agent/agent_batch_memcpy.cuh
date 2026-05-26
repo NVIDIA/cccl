@@ -188,7 +188,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   // Bytes after `out_chars_aligned` to the last VectorT-aligned
   // address at (or before) `out_begin` + `num_bytes`
   uint32_t out_end_aligned{};
-  if (in_end_padding_req + alignment_offset > num_bytes)
+  if (in_end_padding_req + alignment_offset > num_bytes) // NOLINT(bugprone-misplaced-widening-cast)
   {
     out_end_aligned = out_start_aligned;
   }

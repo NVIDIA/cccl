@@ -1097,7 +1097,8 @@ public:
     }
 
     // Force kernel code-generation in all compiler passes
-    if (num_items <= static_cast<OffsetT>(policy.single_tile.threads_per_block * policy.single_tile.items_per_thread))
+    if (num_items <= (static_cast<OffsetT>(policy.single_tile.threads_per_block)
+                      * static_cast<OffsetT>(policy.single_tile.items_per_thread)))
     {
       // Small, single tile size
       return __invoke_single_tile(kernel_source.RadixSortSingleTileKernel(), policy.single_tile);

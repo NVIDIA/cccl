@@ -37,7 +37,7 @@ struct estimate_pi
     thrust::default_random_engine rng;
 
     // jump past the numbers used by the subsequences before me
-    rng.discard(N * thread_id);
+    rng.discard(N * thread_id); // NOLINT(bugprone-misplaced-widening-cast)
 
     // create a mapping from random numbers to [0,1)
     thrust::uniform_real_distribution<float> u01(0, 1);

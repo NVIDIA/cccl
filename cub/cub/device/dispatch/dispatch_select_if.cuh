@@ -603,7 +603,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") Dis
 
     constexpr auto threads_per_block = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
     constexpr auto items_per_thread  = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
-    constexpr auto tile_size         = static_cast<OffsetT>(threads_per_block * items_per_thread);
+    constexpr auto tile_size         = static_cast<OffsetT>(threads_per_block) * static_cast<OffsetT>(items_per_thread);
 
     // The maximum number of items per partition
     static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
@@ -918,7 +918,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 
   constexpr auto threads_per_block = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
   constexpr auto items_per_thread  = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
-  constexpr auto tile_size         = static_cast<OffsetT>(threads_per_block * items_per_thread);
+  constexpr auto tile_size         = static_cast<OffsetT>(threads_per_block) * static_cast<OffsetT>(items_per_thread);
 
   static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr auto full_tile_partition_size =

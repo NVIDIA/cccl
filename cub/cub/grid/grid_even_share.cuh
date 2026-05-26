@@ -158,8 +158,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockInit(int block_id, detail::constant_t<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
   {
-    block_stride = grid_size * TILE_ITEMS;
-    block_offset = (block_id * TILE_ITEMS);
+    block_stride = static_cast<OffsetT>(grid_size) * TILE_ITEMS;
+    block_offset = static_cast<OffsetT>(block_id) * TILE_ITEMS;
     block_end    = num_items;
   }
 

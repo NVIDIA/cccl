@@ -49,6 +49,7 @@ struct LargeSegmentsSelectorT
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
+    // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
     const OffsetT segment_size =
       d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
     return segment_size > value;
@@ -74,6 +75,7 @@ struct SmallSegmentsSelectorT
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
+    // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
     const OffsetT segment_size =
       d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
     return segment_size < value;

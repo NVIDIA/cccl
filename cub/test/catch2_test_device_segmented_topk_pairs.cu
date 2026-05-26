@@ -40,7 +40,8 @@ struct flag_intra_segment_duplicates
   template <typename IndexT>
   __device__ bool operator()(IndexT idx) const
   {
-    return d_segment_ids[idx] == d_segment_ids[idx + 1] && d_sorted_items[idx] == d_sorted_items[idx + 1];
+    return d_segment_ids[idx] == d_segment_ids[idx + 1] // NOLINT(bugprone-misplaced-widening-cast)
+        && d_sorted_items[idx] == d_sorted_items[idx + 1];
   }
 };
 

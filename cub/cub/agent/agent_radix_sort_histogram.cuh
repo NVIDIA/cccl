@@ -247,7 +247,8 @@ struct AgentRadixSortHistogram
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
       OffsetT portion_size   = ::cuda::std::min(MAX_PORTION_SIZE, num_items - portion_offset);
-      for (OffsetT offset = blockIdx.x * TILE_ITEMS; offset < portion_size; offset += TILE_ITEMS * gridDim.x)
+      for (OffsetT offset = static_cast<OffsetT>(blockIdx.x) * TILE_ITEMS; offset < portion_size;
+           offset += static_cast<OffsetT>(TILE_ITEMS) * gridDim.x)
       {
         OffsetT tile_offset = portion_offset + offset;
         bit_ordered_type keys[ITEMS_PER_THREAD];

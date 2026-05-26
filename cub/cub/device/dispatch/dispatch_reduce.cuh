@@ -782,8 +782,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   // Check for small, single tile size
-  if (num_items
-      <= static_cast<OffsetT>(active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread))
+  if (num_items <= (static_cast<OffsetT>(active_policy.single_tile.threads_per_block)
+                    * static_cast<OffsetT>(active_policy.single_tile.items_per_thread)))
   {
     // Return if the caller is simply requesting the size of the storage allocation
     if (d_temp_storage == nullptr)
