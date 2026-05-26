@@ -14,10 +14,6 @@ struct OperatorCode
   std::string local_var; // e.g., "op_0"
 };
 
-// Generate a well-known binary operation body (e.g., CCCL_PLUS → "*out = *a + *b").
-// Returns "" for unknown ops.
-std::string get_well_known_op_body(cccl_op_kind_t kind, const std::string& type_name);
-
 // Generate code for a binary operator (reduce, scan).
 // Produces an extern "C" device function declaration (or inline for well-known ops)
 // and a functor struct that wraps it.
