@@ -431,7 +431,7 @@ protected:
 
     void add_dangling_events(backend_ctx_untyped& bctx, const event_list& lst)
     {
-      auto guard = ::std::lock_guard(dangling_events_mutex);
+      auto guard = ::std::scoped_lock(dangling_events_mutex);
       dangling_events.merge(lst);
       /* If the number of dangling events gets too high, we try to optimize
        * the list to avoid keeping events alive for no reason. */
@@ -468,7 +468,7 @@ protected:
       void remove(int task_id)
       {
         // Erase that leaf task if it is found, or do nothing
-        auto guard = ::std::lock_guard(leaf_tasks_mutex);
+        auto guard = ::std::scoped_lock(leaf_tasks_mutex);
         leaf_tasks.erase(task_id);
       }
 
@@ -518,7 +518,7 @@ protected:
       }
 
       {
-        auto guard = ::std::lock_guard(leaves.leaf_tasks_mutex);
+        auto guard = ::std::scoped_lock(leaves.leaf_tasks_mutex);
 
         // Sync with the events of all leaf tasks
         for (auto& [t_id, t_done_prereqs] : leaves.get_leaf_tasks())
@@ -544,7 +544,7 @@ protected:
 
       {
         // Wait for all pending get() operations associated to frozen logical data
-        auto guard = ::std::lock_guard(pending_freeze_mutex);
+        auto guard = ::std::scoped_lock(pending_freeze_mutex);
 
         for (auto& [fake_t_id, get_prereqs] : pending_freeze)
         {
@@ -565,7 +565,7 @@ protected:
       // not "reachable". For example if some async operations occurred in a data
       // handle destructor there could be some remaining events to sync with to
       // make sure data were properly deallocated.
-      auto guard = ::std::lock_guard(dangling_events_mutex);
+      auto guard = ::std::scoped_lock(dangling_events_mutex);
       if (dangling_events.size() > 0)
       {
         prereqs.merge(mv(dangling_events));
@@ -582,7 +582,7 @@ protected:
 
     void add_pending_freeze(const task& fake_t, const event_list& events)
     {
-      auto guard = ::std::lock_guard(pending_freeze_mutex);
+      auto guard = ::std::scoped_lock(pending_freeze_mutex);
 
       // This creates an entry if necessary (there can be multiple gets)
       event_list& prereqs = pending_freeze[fake_t.get_unique_id()];
@@ -596,7 +596,7 @@ protected:
     // sync'ed with
     void remove_pending_freeze(const task& fake_t)
     {
-      auto guard = ::std::lock_guard(pending_freeze_mutex);
+      auto guard = ::std::scoped_lock(pending_freeze_mutex);
       pending_freeze.erase(fake_t.get_unique_id());
     }
 
