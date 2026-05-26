@@ -135,20 +135,15 @@ struct __invalid_tuple_constraints
 template <class... _Types>
 struct __tuple_constraints
 {
-  template <int = 0>
-  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_default_constructible() noexcept
+  struct __default_constructible
   {
-    if constexpr ((is_default_constructible_v<_Types> && ...))
-    { // [tuple.cnstr]-6: is_default_constructible_v<Types> is true for all i.
-      constexpr bool __is_implicit = (__is_implicitly_default_constructible<_Types>::value && ...);
-      constexpr bool __is_nothrow  = (is_nothrow_default_constructible_v<_Types> && ...);
-      return _TupleConstructorTraits<__is_implicit, !__is_implicit, __is_nothrow>{};
-    }
-    else
-    {
-      return _InvalidTupleConstructor{};
-    }
-  }
+    static constexpr bool __constructible = (is_default_constructible_v<_Types> && ...);
+    static constexpr bool __implicit_constructible =
+      __constructible && (__is_implicitly_default_constructible<_Types>::value && ...);
+    static constexpr bool __explicit_constructible =
+      __constructible && !(__is_implicitly_default_constructible<_Types>::value && ...);
+    static constexpr bool __nothrow_constructible = (is_nothrow_default_constructible_v<_Types> && ...);
+  };
 
   template <int = 0>
   [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_copy_constructible() noexcept
@@ -238,11 +233,11 @@ struct __tuple_constraints
         || decltype(__constraints_with_arg::template __check_variadic_constructible<
                     _UTypes...>())::__explicit_constructible;
       constexpr bool __rest_is_default_constructible =
-        decltype(__constraints_defaulted::__check_default_constructible())::__implicit_constructible
-        || decltype(__constraints_defaulted::__check_default_constructible())::__explicit_constructible;
+        __constraints_defaulted::__default_constructible::__implicit_constructible
+        || __constraints_defaulted::__default_constructible::__explicit_constructible;
       constexpr bool __is_nothrow =
         decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>())::__nothrow_constructible
-        && decltype(__constraints_defaulted::__check_default_constructible())::__nothrow_constructible;
+        && __constraints_defaulted::__default_constructible::__nothrow_constructible;
       return _TupleConstructorTraits<false, __is_arg_constructible && __rest_is_default_constructible, __is_nothrow>{};
     }
     else
