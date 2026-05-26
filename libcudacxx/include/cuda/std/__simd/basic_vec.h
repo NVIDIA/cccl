@@ -29,6 +29,7 @@
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/data.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
