@@ -130,12 +130,12 @@ struct agent_batched_topk_cluster
   // ---------------------------------------------------------------------------
   // Block-scan used by the leader block to prefix-sum its merged histogram
   // ---------------------------------------------------------------------------
-  // Constraint: every leader thread owns at most one bucket. Threads beyond
-  // num_buckets contribute zero to the scan, which keeps the prefix-sum loop
-  // body trivial (1 item per thread, no inner loops).
-  static_assert(num_buckets <= threads_per_block,
-                "Cluster top-k requires num_buckets <= threads_per_block (1 bin per leader thread or fewer)");
-  using block_scan_t = BlockScan<offset_t, threads_per_block, BLOCK_SCAN_WARP_SCANS>;
+  // The leader-block prefix sum spans `num_buckets` entries. Each thread owns
+  // `buckets_per_thread` consecutive buckets in a blocked arrangement; entries
+  // past the last valid bucket contribute zero so the histogram size is no
+  // longer constrained to be `<= threads_per_block`.
+  static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, threads_per_block);
+  using block_scan_t                      = BlockScan<offset_t, threads_per_block, BLOCK_SCAN_WARP_SCANS>;
 
   // ---------------------------------------------------------------------------
   // Shared memory storage
@@ -208,11 +208,12 @@ private:
   }
 
   // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
-  // plus identification of the bucket holding the k-th item. Every thread of
-  // the leader block participates with one bucket; threads with rank beyond
-  // num_buckets contribute zero. The single thread that owns the k-th bucket
-  // writes the per-pass state. The caller must guarantee the leader block
-  // has finished its DSMEM merge before invoking this.
+  // plus identification of the bucket holding the k-th item. Each thread of
+  // the leader block contributes `buckets_per_thread` consecutive buckets in
+  // a blocked arrangement; entries past `num_buckets` contribute zero. The
+  // single (thread, slot) pair that owns the k-th bucket writes the per-pass
+  // state. The caller must guarantee the leader block has finished its DSMEM
+  // merge before invoking this.
   _CCCL_DEVICE _CCCL_FORCEINLINE void leader_identify_kth_bucket(int pass)
   {
     // Capture `state.k` before the scan: this is the only legal window where
@@ -221,27 +222,38 @@ private:
     // after that point would race with that write.
     const out_offset_t target_k = temp_storage.state.k;
 
-    const int bucket        = static_cast<int>(threadIdx.x);
-    const bool owns_bucket  = bucket < num_buckets;
-    const offset_t hist_val = owns_bucket ? temp_storage.hist[bucket] : offset_t{0};
-    offset_t prefix         = 0;
+    offset_t hist_vals[buckets_per_thread];
+    offset_t prefixes[buckets_per_thread];
 
-    block_scan_t(temp_storage.scan_storage).ExclusiveSum(hist_val, prefix);
-
-    // Exactly one thread satisfies `prefix < target_k <= prefix + hist_val`.
-    if (owns_bucket && prefix < target_k && prefix + hist_val >= target_k)
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 0; j < buckets_per_thread; ++j)
     {
-      const out_offset_t new_k = target_k - static_cast<out_offset_t>(prefix);
-      const offset_t new_len   = hist_val;
-      temp_storage.state.len   = new_len;
-      temp_storage.state.k     = new_k;
-      // Early-stop opportunity: the bucket holding the k-th key contains
-      // exactly the remaining `k` items. Every candidate is therefore part
-      // of the top-k, so subsequent radix passes only redistribute the same
-      // items across finer buckets without changing the final result.
-      temp_storage.state.early_stop =
-        (static_cast<out_offset_t>(new_len) == new_k) ? ::cuda::std::uint32_t{1} : ::cuda::std::uint32_t{0};
-      detail::topk::set_kth_key_bits<key_t, bits_per_pass>(temp_storage.state.kth_key_bits, pass, bucket);
+      const int bucket = static_cast<int>(threadIdx.x) * buckets_per_thread + j;
+      hist_vals[j]     = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
+    }
+
+    block_scan_t(temp_storage.scan_storage).ExclusiveSum(hist_vals, prefixes);
+
+    // Exactly one (thread, slot) pair satisfies
+    // `prefix < target_k <= prefix + hist_val`.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 0; j < buckets_per_thread; ++j)
+    {
+      const int bucket = static_cast<int>(threadIdx.x) * buckets_per_thread + j;
+      if (bucket < num_buckets && prefixes[j] < target_k && prefixes[j] + hist_vals[j] >= target_k)
+      {
+        const out_offset_t new_k = target_k - static_cast<out_offset_t>(prefixes[j]);
+        const offset_t new_len   = hist_vals[j];
+        temp_storage.state.len   = new_len;
+        temp_storage.state.k     = new_k;
+        // Early-stop opportunity: the bucket holding the k-th key contains
+        // exactly the remaining `k` items. Every candidate is therefore part
+        // of the top-k, so subsequent radix passes only redistribute the same
+        // items across finer buckets without changing the final result.
+        temp_storage.state.early_stop =
+          (static_cast<out_offset_t>(new_len) == new_k) ? ::cuda::std::uint32_t{1} : ::cuda::std::uint32_t{0};
+        detail::topk::set_kth_key_bits<key_t, bits_per_pass>(temp_storage.state.kth_key_bits, pass, bucket);
+      }
     }
   }
 
@@ -249,28 +261,29 @@ private:
   // Per-direction implementation
   // -------------------------------------------------------------------------
   template <detail::topk::select SelectDirection>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void run(
-    ::cooperative_groups::cluster_group& cluster,
-    num_segments_val_t segment_id,
-    unsigned int cluster_rank,
-    segment_size_val_t segment_size,
-    out_offset_t k)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  run(::cooperative_groups::cluster_group& cluster,
+      num_segments_val_t segment_id,
+      unsigned int cluster_rank,
+      segment_size_val_t segment_size,
+      out_offset_t k)
   {
-    using extract_bin_op_t         = detail::topk::extract_bin_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
-    using identify_candidates_op_t = detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
+    using identify_candidates_op_t =
+      detail::topk::identify_candidates_op_t<key_t, SelectDirection, bits_per_pass, decomposer_t>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
 
     // Sentinel key used to pad partial tiles. Worst-possible value for the
     // requested direction so the sentinel can't land in the selected set.
-    const key_t pad_key = (SelectDirection == detail::topk::select::max)
-                          ? ::cuda::std::numeric_limits<key_t>::lowest()
-                          : ::cuda::std::numeric_limits<key_t>::max();
+    const key_t pad_key =
+      (SelectDirection == detail::topk::select::max)
+        ? ::cuda::std::numeric_limits<key_t>::lowest()
+        : ::cuda::std::numeric_limits<key_t>::max();
 
-    auto block_keys_in = d_key_segments_it[segment_id];
-    const auto block_offset_in_cluster =
-      static_cast<segment_size_val_t>(static_cast<int>(cluster_rank) * tile_items);
+    auto block_keys_in                 = d_key_segments_it[segment_id];
+    const auto block_offset_in_cluster = static_cast<segment_size_val_t>(static_cast<int>(cluster_rank) * tile_items);
 
     // Striped load into per-thread registers. Each thread holds
     // `items_per_thread` keys spanning the block's tile within the cluster
@@ -281,7 +294,7 @@ private:
     {
       const segment_size_val_t local_idx  = static_cast<segment_size_val_t>(j * threads_per_block + threadIdx.x);
       const segment_size_val_t global_idx = block_offset_in_cluster + local_idx;
-      thread_keys[j] = (global_idx < segment_size) ? block_keys_in[global_idx] : pad_key;
+      thread_keys[j]                      = (global_idx < segment_size) ? block_keys_in[global_idx] : pad_key;
     }
 
     // DSMEM pointers into the leader block's shared memory.
@@ -475,9 +488,7 @@ private:
     cluster.sync();
 
     const bool ok = detail::params::dispatch_discrete(
-      select_directions,
-      segment_id,
-      [this, &cluster, segment_id, cluster_rank, segment_size, k](auto direction_tag) {
+      select_directions, segment_id, [this, &cluster, segment_id, cluster_rank, segment_size, k](auto direction_tag) {
         constexpr detail::topk::select Direction = decltype(direction_tag)::value;
         this->template run<Direction>(cluster, segment_id, cluster_rank, segment_size, k);
       });
@@ -485,7 +496,6 @@ private:
     (void) ok;
   }
 };
-
 } // namespace detail::batched_topk_cluster
 
 CUB_NAMESPACE_END

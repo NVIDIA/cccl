@@ -28,12 +28,12 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_device.cuh>
 
+#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <cuda_runtime.h>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -43,11 +43,13 @@ namespace detail::batched_topk_cluster
 // Default tuning
 // -----------------------------------------------------------------------------
 // Defaults give a 32 Ki-item cluster tile (cluster_size * threads_per_block *
-// items_per_thread = 8 * 256 * 16). The leader block's BlockScan uses 1 bin
-// per thread, so threads_per_block (256) must be >= num_buckets
-// (1 << bits_per_pass = 256). Cluster size is 8 — the largest portable
-// cluster size — so all eight blocks of the cluster participate in the
-// histogram merge.
+// items_per_thread = 8 * 256 * 16). The leader block's BlockScan partitions
+// `num_buckets` (1 << bits_per_pass = 256) entries across threads_per_block
+// (256) threads, so each thread happens to own a single bin in the default
+// configuration; the agent itself supports `num_buckets > threads_per_block`
+// via `ceil_div(num_buckets, threads_per_block)` items per thread. Cluster
+// size is 8 — the largest portable cluster size — so all eight blocks of the
+// cluster participate in the histogram merge.
 inline constexpr int default_cluster_size      = 8;
 inline constexpr int default_threads_per_block = 256;
 inline constexpr int default_items_per_thread  = 16;
@@ -66,14 +68,14 @@ template <int ClusterSize,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterSize, 1, 1) _CCCL_KERNEL_ATTRIBUTES void
-  device_segmented_topk_cluster_kernel(
-  KeyInputItItT d_key_segments_it,
-  KeyOutputItItT d_key_segments_out_it,
-  SegmentSizeParameterT segment_sizes,
-  KParameterT k_param,
-  SelectDirectionParameterT select_directions,
-  NumSegmentsParameterT num_segments)
+__launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterSize, 1, 1)
+  _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_cluster_kernel(
+    KeyInputItItT d_key_segments_it,
+    KeyOutputItItT d_key_segments_out_it,
+    SegmentSizeParameterT segment_sizes,
+    KParameterT k_param,
+    SelectDirectionParameterT select_directions,
+    NumSegmentsParameterT num_segments)
 {
   using agent_t = agent_batched_topk_cluster<
     ClusterSize,
@@ -89,7 +91,8 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterSize, 1, 1) _CCCL_KER
 
   __shared__ typename agent_t::TempStorage temp_storage;
 
-  agent_t agent(temp_storage, d_key_segments_it, d_key_segments_out_it, segment_sizes, k_param, select_directions, num_segments);
+  agent_t agent(
+    temp_storage, d_key_segments_it, d_key_segments_out_it, segment_sizes, k_param, select_directions, num_segments);
 
   agent.Process();
 }
@@ -101,10 +104,10 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(ClusterSize, 1, 1) _CCCL_KER
 // keys-only path and assumes the maximum segment size fits in a single cluster
 // tile (`ClusterSize * ThreadsPerBlock * ItemsPerThread`). Both restrictions
 // match the small/decode-style segmented top-k workloads we are prototyping for.
-template <int ClusterSize        = default_cluster_size,
-          int ThreadsPerBlock    = default_threads_per_block,
-          int ItemsPerThread     = default_items_per_thread,
-          int BitsPerPass        = default_bits_per_pass,
+template <int ClusterSize     = default_cluster_size,
+          int ThreadsPerBlock = default_threads_per_block,
+          int ItemsPerThread  = default_items_per_thread,
+          int BitsPerPass     = default_bits_per_pass,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename SegmentSizeParameterT,
@@ -148,8 +151,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static_assert(!detail::params::is_per_segment_param_v<NumSegmentsParameterT>,
                 "Number of segments must be resolved on the host.");
 
-  using num_segments_val_t  = typename NumSegmentsParameterT::value_type;
-  const auto num_seg_val    = num_segments.get_param(num_segments_val_t{0});
+  using num_segments_val_t    = typename NumSegmentsParameterT::value_type;
+  const auto num_seg_val      = num_segments.get_param(num_segments_val_t{0});
   const auto num_seg_unsigned = static_cast<unsigned long long>(num_seg_val);
   if (num_seg_unsigned == 0)
   {
@@ -167,7 +170,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return cudaErrorNotSupported;
   }
 
-  const auto grid_blocks = static_cast<unsigned long long>(num_seg_unsigned) * static_cast<unsigned long long>(ClusterSize);
+  const auto grid_blocks =
+    static_cast<unsigned long long>(num_seg_unsigned) * static_cast<unsigned long long>(ClusterSize);
   if (grid_blocks > static_cast<unsigned long long>(::cuda::std::numeric_limits<int>::max()))
   {
     return cudaErrorInvalidValue;
@@ -188,20 +192,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // The kernel declares `__cluster_dims__(ClusterSize, 1, 1)`, so the
   // cluster dimension is fixed at compile time. Launch via the standard
   // triple-chevron syntax; the cluster setup is applied automatically.
-  if (const auto error =
-        CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                   dim3(static_cast<unsigned int>(grid_blocks), 1, 1),
-                   dim3(static_cast<unsigned int>(ThreadsPerBlock), 1, 1),
-                   0,
-                   stream)
-                   .doit(
-                     kernel,
-                     d_key_segments_it,
-                     d_key_segments_out_it,
-                     segment_sizes,
-                     k_param,
-                     select_directions,
-                     num_segments)))
+  if (const auto error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          dim3(static_cast<unsigned int>(grid_blocks), 1, 1),
+          dim3(static_cast<unsigned int>(ThreadsPerBlock), 1, 1),
+          0,
+          stream)
+          .doit(
+            kernel, d_key_segments_it, d_key_segments_out_it, segment_sizes, k_param, select_directions, num_segments)))
   {
     return error;
   }
@@ -218,7 +216,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   return CubDebug(detail::DebugSyncStream(stream));
 }
-
 } // namespace detail::batched_topk_cluster
 
 CUB_NAMESPACE_END
