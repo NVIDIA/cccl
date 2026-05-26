@@ -206,8 +206,9 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 // SMEM atomicAdd_block contention dominates. Use 768 threads / 12 ipt (matching SM90 sample_size=1
 // shape) to spread atomic contention across more concurrent issues per CTA.
 //
-// Verified empirically vs 512/12 (-1.27%) and 928/12 (-0.79%) on this benchmark suite; 768/12
-// is the local optimum. LOAD_LDG was verified vs LOAD_CA (-0.50%); LOAD_LDG wins.
+// Verified empirically vs 512/12 (-1.27%), 928/12 (-0.79%), 768/16 (-1.43%); 768/12 wins.
+// LOAD_LDG was verified vs LOAD_CA (-0.50%); LOAD_LDG wins. BLOCK_LOAD_VECTORIZE slightly beats
+// BLOCK_LOAD_DIRECT (+0.08%, within noise).
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
 {
