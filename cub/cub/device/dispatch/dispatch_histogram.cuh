@@ -892,22 +892,39 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // Raise the dyn-SMEM cap on the fused kernel before launch (the previous
       // `set_max_dynamic_smem_size_for(sweep_kernel, ...)` call set it on the
       // staging-only kernel, but that's a different function pointer).
-      if (const auto err =
-            launcher_factory.set_max_dynamic_smem_size_for(fused_kernel_ptr, dyn_smem_bytes_for_staging);
-          err != cudaSuccess)
+      cudaError_t cap_err =
+        launcher_factory.set_max_dynamic_smem_size_for(fused_kernel_ptr, dyn_smem_bytes_for_staging);
+      if (cap_err != cudaSuccess)
       {
         // Don't propagate; just clear and fall through to the two-launch path.
         (void) cudaGetLastError();
       }
       else
       {
+        // Query the FUSED kernel's per-SM occupancy with the actual dyn-SMEM
+        // budget. The fused kernel may have higher register / shared-memory
+        // pressure than the staging-only kernel (extra grid.sync code paths,
+        // the inline reduce-and-write loop), so its occupancy can be lower.
+        // Cooperative launch requires `num_thread_blocks <= sm_count *
+        // sm_occupancy_of_the_kernel_we_are_launching`. If the fused kernel
+        // doesn't fit at the staging-grid size, fall back gracefully.
+        int fused_sm_occupancy = 0;
+        const auto occ_err = launcher_factory.MaxSmOccupancy(
+          fused_sm_occupancy, fused_kernel_ptr, threads_per_block, dyn_smem_bytes_for_staging);
+        if (occ_err != cudaSuccess)
+        {
+          (void) cudaGetLastError();
+          fused_sm_occupancy = 0;
+        }
+        const bool fused_fits = (fused_sm_occupancy > 0)
+                                && (num_thread_blocks <= fused_sm_occupancy * sm_count);
         int device_ordinal        = 0;
         int cooperative_supported = 0;
         const bool coop_query_ok =
           (cudaGetDevice(&device_ordinal) == cudaSuccess
            && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
            && cooperative_supported != 0);
-        if (coop_query_ok)
+        if (coop_query_ok && fused_fits)
         {
           // The fused kernel takes the same arguments as the staging-only
           // sweep kernel: (d_samples, num_output_bins, num_privatized_bins,
