@@ -343,7 +343,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // the same warp scans more samples (i.e. more chances for matching
   // bins per warp scan).
   constexpr int direct_atomic_bin_threshold_single = 1 << 20;
-  constexpr int direct_atomic_bin_threshold_multi  = 60000;
+  constexpr int direct_atomic_bin_threshold_multi  = 16384;
   const int direct_atomic_bin_threshold =
     (NUM_ACTIVE_CHANNELS > 1) ? direct_atomic_bin_threshold_multi : direct_atomic_bin_threshold_single;
   const bool use_direct_atomic_to_output =
