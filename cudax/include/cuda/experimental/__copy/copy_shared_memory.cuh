@@ -25,7 +25,6 @@
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
 #include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__algorithm/stable_sort.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -34,7 +33,6 @@
 
 #include <cuda/experimental/__copy/copy_shared_memory_utils.cuh>
 #include <cuda/experimental/__copy/tensor_iterator.cuh>
-#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 #include <cuda/experimental/__copy_bytes/types.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -43,7 +41,7 @@
 //!
 //! The overall idea is to decompose the tensors into tiles that can fit in shared memory.
 //! Each tile is assigned to a thread block. A tile can entirely represent a dimension or split the respective extent.
-//! The algorithm creates tiles only for contiguous dimensions in the destination tensor.
+//! The algorithm creates tiles over dimensions that provide coalesced accesses in the source and destination tensors.
 //!
 //! (1) Grid decomposition
 //! The tensor is partitioned into tiles whose per-dimension sizes are capped by warp size and shared-memory capacity.
@@ -54,18 +52,38 @@
 //!   1. *Load*: threads cooperatively read source elements into shared memory.
 //!      This requires additional logic to "transpose" the source tensor into a row-major order.
 //!      The mapping is determined by using the source-tile permutation obtained by sorting by |src stride|.
-//!   2. *Store*: after a barrier, threads read shared memory in the destination-natural
-//!      (row-major) order and write to global memory, achieving coalesced destination writes.
+//!   2. *Store*: after a barrier, threads read shared memory in destination-coalesced order by using the
+//!      destination-tile permutation obtained by sorting by |dst stride|.
 //!
 //! Boundary tiles that extend past the tensor extents fall back to a direct element-wise copy without shared memory.
 
 namespace cuda::experimental
 {
+//! @brief Compute the shared-memory offset for the XOR swizzle.
+//!
+//! @param[in] __offset The offset in the shared-memory tile.
+//! @return The offset in the shared-memory tile with the XOR swizzle applied.
+template <bool _UseXorSwizzle>
+[[nodiscard]] _CCCL_DEVICE_API __tile_extent_t __smem_offset(__tile_extent_t __offset) noexcept
+{
+  if constexpr (_UseXorSwizzle)
+  {
+    static_assert(__max_tile_size == 32, "XOR shared-memory swizzle assumes 32 banks and 32-element tile modes");
+    constexpr __tile_extent_t __swizzle_tile_size = __max_tile_size * __max_tile_size;
+    const auto __outer                            = __offset / __swizzle_tile_size;
+    const auto __inner                            = __offset - (__outer * __swizzle_tile_size);
+    const auto __row                              = __inner / __max_tile_size;
+    const auto __col                              = __inner - (__row * __max_tile_size);
+    return __outer * __swizzle_tile_size + __row * __max_tile_size + (__col ^ __row);
+  }
+  return __offset;
+}
+
 //! @brief Shared-memory tiled transpose kernel for arbitrary-rank tensors.
 //!
 //! Each block processes one tile. Threads cooperatively iterate over tile elements with a stride loop. Full (interior)
 //! tiles use a two-phase shared-memory transpose: load source data into shared memory using source-coalesced ordering,
-//! then store from shared memory to destination using destination-natural ordering. Partial (boundary) tiles copy
+//! then store from shared memory to destination using destination-coalesced ordering. Partial (boundary) tiles copy
 //! elements directly without shared memory.
 //!
 //! @param[in]  __config                 Kernel launch configuration
@@ -78,14 +96,17 @@ namespace cuda::experimental
 //! @param[in]  __grid_tile_dst_strides  Per-dimension destination strides scaled by tile sizes
 //! @param[in]  __tile_perm_iter         Coordinate iterator for src-permuted tile decomposition
 //! @param[in]  __src_perm_src_strides   Src-permuted source strides for loading
-//! @param[in]  __tile_perm_smem_strides Src-permuted shared memory strides for loading
-//! @param[in]  __tile_natural_iter      Coordinate iterator for dst-natural tile decomposition
-//! @param[in]  __dst_strides            Per-dimension destination strides for storing
+//! @param[in]  __tile_src_perm_smem_strides Src-permuted shared memory strides for loading
+//! @param[in]  __tile_dst_perm_iter     Coordinate iterator for dst-permuted tile decomposition
+//! @param[in]  __dst_perm_dst_strides   Dst-permuted destination strides for storing
+//! @param[in]  __tile_dst_smem_strides  Dst-permuted shared memory strides for storing
+//! @param[in]  __dst_strides            Per-dimension destination strides for partial tiles
 //! @param[in]  __tile_total_size        Total number of elements in one tile
 //! @param[in]  __tile_sizes             Per-dimension tile extents
 //! @param[in]  __extents                Per-dimension tensor extents (for partial-tile bounds)
 //! @param[in]  __src_strides            Per-dimension source strides (for partial-tile access)
-template <typename _Config,
+template <bool _UseXorSwizzle,
+          typename _Config,
           ::cuda::std::size_t _MaxRankUZ,
           typename _TpSrc,
           typename _TpDst,
@@ -105,8 +126,10 @@ __global__ void __copy_shared_mem_kernel(
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTOut, _MaxRankUZ> __grid_tile_dst_strides,
   _CCCL_GRID_CONSTANT const __tensor_coord_iterator<__tile_extent_t, _MaxRankUZ> __tile_perm_iter,
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTIn, _MaxRankUZ> __src_perm_src_strides,
-  _CCCL_GRID_CONSTANT const ::cuda::std::array<__tile_extent_t, _MaxRankUZ> __tile_perm_smem_strides,
-  _CCCL_GRID_CONSTANT const __tensor_coord_iterator<__tile_extent_t, _MaxRankUZ> __tile_natural_iter,
+  _CCCL_GRID_CONSTANT const ::cuda::std::array<__tile_extent_t, _MaxRankUZ> __tile_src_perm_smem_strides,
+  _CCCL_GRID_CONSTANT const __tensor_coord_iterator<__tile_extent_t, _MaxRankUZ> __tile_dst_perm_iter,
+  _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTOut, _MaxRankUZ> __dst_perm_dst_strides,
+  _CCCL_GRID_CONSTANT const ::cuda::std::array<__tile_extent_t, _MaxRankUZ> __tile_dst_perm_smem_strides,
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTOut, _MaxRankUZ> __dst_strides,
   _CCCL_GRID_CONSTANT const int __tile_total_size,
   _CCCL_GRID_CONSTANT const ::cuda::std::array<__tile_extent_t, _MaxRankUZ> __tile_sizes,
@@ -164,22 +187,29 @@ __global__ void __copy_shared_mem_kernel(
 
     // (1) load src to shared memory by using the src/tile-permuted ordering
     const __partial_tensor_src __src_tensor{__src_ptr, __src_perm_src_strides, __src_accessor};
-    const __partial_tensor_smem __smem_tensor{__smem, __tile_perm_smem_strides, ::cuda::std::default_accessor<_Tp>{}};
+    const __partial_tensor_smem __smem_tensor{
+      __smem, __tile_src_perm_smem_strides, ::cuda::std::default_accessor<_Tp>{}};
 
     for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
     {
-      const auto __coords     = __tile_perm_iter(__i);
-      __smem_tensor(__coords) = __src_tensor(__coords);
+      const auto __coords          = __tile_perm_iter(__i);
+      const auto __raw_offset      = __smem_tensor.__offset(__coords);
+      const auto __swizzled_offset = ::cuda::experimental::__smem_offset<_UseXorSwizzle>(__raw_offset);
+      __smem[__swizzled_offset]    = __src_tensor(__coords);
     }
     __syncthreads();
 
-    // (2) store from shared memory to destination by using the dst-natural ordering (row-major)
-    const __partial_tensor_dst __dst_tensor{__dst_ptr, __dst_strides, __dst_accessor};
+    // (2) store from shared memory to destination by using the dst/tile-permuted ordering
+    const __partial_tensor_dst __dst_tensor{__dst_ptr, __dst_perm_dst_strides, __dst_accessor};
+    const __partial_tensor_smem __smem_dst_tensor{
+      __smem, __tile_dst_perm_smem_strides, ::cuda::std::default_accessor<_Tp>{}};
 
     for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
     {
-      const auto __coords    = __tile_natural_iter(__i);
-      __dst_tensor(__coords) = __smem[__i];
+      const auto __coords          = __tile_dst_perm_iter(__i);
+      const auto __raw_offset      = __smem_dst_tensor.__offset(__coords);
+      const auto __swizzled_offset = ::cuda::experimental::__smem_offset<_UseXorSwizzle>(__raw_offset);
+      __dst_tensor(__coords)       = __smem[__swizzled_offset];
     }
   }
 
@@ -223,12 +253,10 @@ __global__ void __copy_shared_mem_kernel(
 
 //! @brief Launch the shared-memory tiled transpose kernel.
 //!
-//! Precomputes the src-coalesced permutation and tile shapes, constructs coordinate iterators, then launches one
-//! block per tile.
+//! Precomputes the source/destination-coalesced permutations and tile shapes, constructs coordinate iterators, then
+//! launches one block per tile.
 //!
 //! @pre `__src.__rank >= 2`
-//! @pre `__dst.__strides[0] == 1`
-//! @pre `__src.__strides[0] != 1`
 //!
 //! @param[in]  __src          Source raw tensor descriptor
 //! @param[out] __dst          Destination raw tensor descriptor
@@ -253,12 +281,11 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   namespace cudax = ::cuda::experimental;
   using ::cuda::std::size_t;
   _CCCL_ASSERT(__src.__rank >= 2, "Rank must be at least 2 for shared memory transpose");
-  _CCCL_ASSERT(__src.__strides[0] != 1, "Source must not have stride-1 in mode 0");
-  _CCCL_ASSERT(__dst.__strides[0] == 1, "Destination must have stride-1 in mode 0");
 
-  size_t __tile_total_size = 0;
-  const auto __tile_sizes  = cudax::__find_shared_mem_tiling<_TpIn>(__dst, __tile_total_size);
-  const auto __rank        = __src.__rank;
+  const auto __tiling          = cudax::__find_shared_mem_tiling<_TpIn>(__src, __dst);
+  const auto __tile_sizes      = __tiling.__tile_sizes;
+  const auto __rank            = __src.__rank;
+  const auto __tile_total_size = __tiling.__tile_total_size;
 
   //--------------------------------------------------------------------------------------------------------------------
   // Find the grid size (number of blocks) and strides for block index decomposition
@@ -279,20 +306,13 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   }
 
   //--------------------------------------------------------------------------------------------------------------------
-  // source-coalesced permutation: sort modes by ascending |src_stride|
-  ::cuda::std::array<size_t, _MaxRank> __src_perm{};
-  for (size_t __i = 0; __i < _MaxRank; ++__i)
-  {
-    __src_perm[__i] = __i;
-  }
-  ::cuda::std::stable_sort(
-    __src_perm.begin(), __src_perm.begin() + __rank, __stride_compare<_StrideTIn, _MaxRank>{__src.__strides});
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Reordered arrays for loading src to shared memory based on the source-coalesced permutation
+  // Reordered arrays for loading src and storing dst based on coalesced permutations
   ::cuda::std::array<_StrideTIn, _MaxRank> __src_perm_src_strides{};
-  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_perm_sizes{};
-  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_perm_smem_strides{};
+  ::cuda::std::array<_StrideTOut, _MaxRank> __dst_perm_dst_strides{};
+  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_src_perm_sizes{};
+  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_dst_perm_sizes{};
+  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_src_perm_smem_strides{};
+  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_dst_perm_smem_strides{};
   ::cuda::std::array<__tile_extent_t, _MaxRank> __canonical_strides{};
   __canonical_strides[0] = 1;
   for (size_t __i = 1; __i < __rank; ++__i)
@@ -301,22 +321,30 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   }
   for (size_t __i = 0; __i < __rank; ++__i)
   {
-    const auto __p                = __src_perm[__i];
-    __tile_perm_sizes[__i]        = __tile_sizes[__p];
-    __src_perm_src_strides[__i]   = __src.__strides[__p];
-    __tile_perm_smem_strides[__i] = __canonical_strides[__p];
+    const auto __p                    = __tiling.__src_perm[__i];
+    __tile_src_perm_sizes[__i]        = __tile_sizes[__p];
+    __src_perm_src_strides[__i]       = __src.__strides[__p];
+    __tile_src_perm_smem_strides[__i] = __canonical_strides[__p];
+
+    const auto __q                    = __tiling.__dst_perm[__i];
+    __tile_dst_perm_sizes[__i]        = __tile_sizes[__q];
+    __dst_perm_dst_strides[__i]       = __dst.__strides[__q];
+    __tile_dst_perm_smem_strides[__i] = __canonical_strides[__q];
   }
   for (size_t __i = __rank; __i < _MaxRank; ++__i)
   {
-    __tile_perm_sizes[__i] = 1;
+    __tile_src_perm_sizes[__i] = 1;
+    __tile_dst_perm_sizes[__i] = 1;
   }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Construct coordinate iterators on the host (precomputed fast modulo/division)
   // namely, given a linear index, compute the multi-dimensional coordinates
   const __tensor_coord_iterator<_ExtentT, _MaxRank> __grid_iter{__grid_tile_sizes}; // grid tile index
-  const __tensor_coord_iterator<__tile_extent_t, _MaxRank> __tile_perm_iter{__tile_perm_sizes}; // src -> shared memory
-  const __tensor_coord_iterator<__tile_extent_t, _MaxRank> __tile_natural_iter{__tile_sizes}; // shared memory -> dst
+  const __tensor_coord_iterator<__tile_extent_t, _MaxRank> __tile_perm_iter{__tile_src_perm_sizes}; // src -> shared
+                                                                                                    // memory
+  const __tensor_coord_iterator<__tile_extent_t, _MaxRank> __tile_dst_perm_iter{__tile_dst_perm_sizes}; // shared memory
+                                                                                                        // -> dst
 
   //--------------------------------------------------------------------------------------------------------------------
   // Launch the kernel
@@ -327,37 +355,81 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
     ::cuda::block_dims(__thread_block_size),
     ::cuda::grid_dims(__grid_size),
     ::cuda::dynamic_shared_memory<__value_type[]>(__tile_total_size));
-  const auto __kernel = cudax::__copy_shared_mem_kernel<
-    decltype(__config),
-    _MaxRank,
-    _TpIn,
-    _TpOut,
-    _SrcAccessor,
-    _DstAccessor,
-    _ExtentT,
-    _StrideTIn,
-    _StrideTOut>;
 
-  ::cuda::launch(
-    __stream,
-    __config,
-    __kernel,
-    __src.__data,
-    __src_accessor,
-    __dst.__data,
-    __dst_accessor,
-    __grid_iter,
-    __grid_tile_src_strides,
-    __grid_tile_dst_strides,
-    __tile_perm_iter,
-    __src_perm_src_strides,
-    __tile_perm_smem_strides,
-    __tile_natural_iter,
-    __dst.__strides,
-    static_cast<int>(__tile_total_size),
-    __tile_sizes,
-    __dst.__extents,
-    __src.__strides);
+  if (__tiling.__use_xor_swizzle)
+  {
+    const auto __kernel = cudax::__copy_shared_mem_kernel<
+      true,
+      decltype(__config),
+      _MaxRank,
+      _TpIn,
+      _TpOut,
+      _SrcAccessor,
+      _DstAccessor,
+      _ExtentT,
+      _StrideTIn,
+      _StrideTOut>;
+
+    ::cuda::launch(
+      __stream,
+      __config,
+      __kernel,
+      __src.__data,
+      __src_accessor,
+      __dst.__data,
+      __dst_accessor,
+      __grid_iter,
+      __grid_tile_src_strides,
+      __grid_tile_dst_strides,
+      __tile_perm_iter,
+      __src_perm_src_strides,
+      __tile_src_perm_smem_strides,
+      __tile_dst_perm_iter,
+      __dst_perm_dst_strides,
+      __tile_dst_perm_smem_strides,
+      __dst.__strides,
+      static_cast<int>(__tile_total_size),
+      __tile_sizes,
+      __dst.__extents,
+      __src.__strides);
+  }
+  else
+  {
+    const auto __kernel = cudax::__copy_shared_mem_kernel<
+      false,
+      decltype(__config),
+      _MaxRank,
+      _TpIn,
+      _TpOut,
+      _SrcAccessor,
+      _DstAccessor,
+      _ExtentT,
+      _StrideTIn,
+      _StrideTOut>;
+
+    ::cuda::launch(
+      __stream,
+      __config,
+      __kernel,
+      __src.__data,
+      __src_accessor,
+      __dst.__data,
+      __dst_accessor,
+      __grid_iter,
+      __grid_tile_src_strides,
+      __grid_tile_dst_strides,
+      __tile_perm_iter,
+      __src_perm_src_strides,
+      __tile_src_perm_smem_strides,
+      __tile_dst_perm_iter,
+      __dst_perm_dst_strides,
+      __tile_dst_perm_smem_strides,
+      __dst.__strides,
+      static_cast<int>(__tile_total_size),
+      __tile_sizes,
+      __dst.__extents,
+      __src.__strides);
+  }
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)
