@@ -110,7 +110,8 @@ struct Transforms
       // float itself); fall back to double for double / 64-bit integers to
       // avoid precision loss for very-wide ranges. Use the fast (lower
       // precision) divide for float since the verify + fallback handles any
-      // interpolation slop.
+      // interpolation slop. The earlier sample-in-range check guarantees
+      // first_level < last_level so no zero-range guard is needed.
       using InterpT =
         ::cuda::std::_If<(sizeof(LevelT) <= 4 && !::cuda::std::is_same_v<LevelT, double>), float, double>;
       const InterpT s_f     = static_cast<InterpT>(s);
@@ -124,16 +125,12 @@ struct Transforms
         // catch any interpolation error.
         NV_IF_ELSE_TARGET(
           NV_IS_DEVICE,
-          (guess = (range_f > 0.0f)
-                     ? static_cast<int>(__fdividef((s_f - first_f) * static_cast<float>(num_bins), range_f))
-                     : 0;),
-          (guess = (range_f > 0.0f)
-                     ? static_cast<int>(((s_f - first_f) * static_cast<float>(num_bins)) / range_f)
-                     : 0;));
+          (guess = static_cast<int>(__fdividef((s_f - first_f) * static_cast<float>(num_bins), range_f));),
+          (guess = static_cast<int>(((s_f - first_f) * static_cast<float>(num_bins)) / range_f);));
       }
       else
       {
-        guess = (range_f > InterpT(0)) ? static_cast<int>(((s_f - first_f) * num_bins) / range_f) : 0;
+        guess = static_cast<int>(((s_f - first_f) * num_bins) / range_f);
       }
       if (guess < 0)
       {
