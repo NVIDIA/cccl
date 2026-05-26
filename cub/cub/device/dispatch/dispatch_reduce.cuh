@@ -812,15 +812,15 @@ template <typename OverrideAccumT   = use_default,
             static_cast<OverrideAccumT*>(nullptr))),
           typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT, StableReductionOrder>,
           typename KernelSource   = DeviceReduceKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitValueT,
-              AccumT,
-              TransformOpT,
-              StableReductionOrder>,
+            PolicySelector,
+            InputIteratorT,
+            OutputIteratorT,
+            OffsetT,
+            ReductionOpT,
+            InitValueT,
+            AccumT,
+            TransformOpT,
+            StableReductionOrder>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
@@ -873,9 +873,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     if constexpr (StableReductionOrder)
     {
-      const bool single_tile_problem =
-        num_items <= static_cast<OffsetT>(
-          active_policy.single_tile.threads_per_block * active_policy.single_tile.items_per_thread);
+      const bool single_tile_problem = num_items <= (static_cast<OffsetT>(active_policy.single_tile.threads_per_block)
+                                                     * active_policy.single_tile.items_per_thread);
 
       // if the problem is small enough to fit into a single tile, just handle it and return early
       if (single_tile_problem)

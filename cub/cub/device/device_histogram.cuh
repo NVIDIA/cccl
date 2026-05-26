@@ -776,7 +776,7 @@ public:
       [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
-          if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+          if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
             return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
               storage,
@@ -1502,7 +1502,7 @@ public:
       [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
-          if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+          if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
             return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
               storage,

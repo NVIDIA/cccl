@@ -634,7 +634,8 @@ struct AgentSelectIf
 
     for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += BLOCK_THREADS)
     {
-      *((d_selected_out + streaming_context.num_previously_selected()) + (num_selections_prefix + item)) =
+      *((d_selected_out + streaming_context.num_previously_selected())
+        + (num_selections_prefix + item)) = // NOLINT(bugprone-misplaced-widening-cast)
         temp_storage.raw_exchange.Alias()[item];
     }
   }
