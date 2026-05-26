@@ -127,10 +127,11 @@ struct Transforms
 
       // Verify the guess: d_levels[guess] <= s < d_levels[guess + 1]. We
       // load both bracketing levels in parallel to expose memory-level
-      // parallelism and branch on the result. For jittered-uniform levels
-      // the guess is almost always correct.
+      // parallelism and branch on the result. The level array has length
+      // num_bins + 1, so wrapped_levels[guess + 1] is always in-bounds for
+      // guess <= num_bins - 1.
       const LevelT lvl_lo = wrapped_levels[guess];
-      const LevelT lvl_hi = (guess == num_bins - 1) ? last_level : wrapped_levels[guess + 1];
+      const LevelT lvl_hi = wrapped_levels[guess + 1];
 
       if (!(s < lvl_lo) && (s < lvl_hi))
       {
@@ -163,7 +164,7 @@ struct Transforms
         if (g2 <= num_bins - 1)
         {
           // lvl2_lo is lvl_hi (loaded already).
-          const LevelT lvl2_hi = (g2 == num_bins - 1) ? last_level : wrapped_levels[g2 + 1];
+          const LevelT lvl2_hi = wrapped_levels[g2 + 1];
           if (s < lvl2_hi)
           {
             bin = g2;
