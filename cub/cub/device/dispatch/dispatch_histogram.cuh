@@ -1730,21 +1730,34 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
         return cudaSuccess;
       }
     }
-    // Multi-channel dyn-SMEM staging tiers (range path) — DISABLED.
-    //
-    // Tests: cub.test.device.histogram.lid_0 'DeviceHistogram::Histogram*
-    // basic use' Nch=3, 1024 bins, HistogramRange section intermittently
-    // fails (~30%) when this path routes through the SMEM-priv staging
-    // tier (PRIVATIZED_SMEM_BINS=2048). The failure persists even when
-    // the cooperative-launch fused kernel is bypassed and the legacy
-    // two-kernel staging path (sweep + standalone combine) is used,
-    // indicating the bug is in the multi-channel SMEM-priv staging+combine
-    // interaction rather than in the fused kernel itself. Adding
-    // `__threadfence()` before `grid.sync()` did not change the failure
-    // rate. Until the underlying race is identified, route multi-channel
-    // range through the GMEM-priv (PRIVATIZED_SMEM_BINS=0) persistent
-    // kernel below, which is correct and was also faster on most measured
-    // multi-channel range configs.
+    // Multi-channel dyn-SMEM staging tiers (range path). For multi-channel
+    // SearchTransform-based dispatch the per-sample compute (binary search in
+    // levels) dominates over atomic-add throughput, so the higher-occupancy
+    // GMEM-priv path (PRIVATIZED_SMEM_BINS=0 + persistent kernel) often beats
+    // the lower-occupancy SMEM-priv staging path. We therefore only enable the
+    // medium tier (2048) for multi-channel range, where occupancy stays high
+    // (Nch * 2048 * 4 = 24 KB at Nch=3, plenty of headroom).
+    else if constexpr (NUM_ACTIVE_CHANNELS >= 2 && NUM_ACTIVE_CHANNELS <= 4)
+    {
+      if (max_num_output_bins > max_privatized_smem_bins
+          && max_num_output_bins <= max_extended_smem_bins_single_channel)
+      {
+        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
+        if (const auto error = CubDebug(
+              (detail::histogram::dispatch<
+                NUM_CHANNELS,
+                NUM_ACTIVE_CHANNELS,
+                PRIVATIZED_SMEM_BINS,
+                false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
+                                     num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
+                                     max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
+                                     policy_selector, kernel_source, launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+    }
     // Dispatch
     if (max_num_output_bins > max_privatized_smem_bins)
     {
