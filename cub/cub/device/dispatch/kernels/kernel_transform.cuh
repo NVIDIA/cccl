@@ -298,13 +298,14 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       }
       else
       {
-        in += threadIdx.x * vec_size;
+        in += threadIdx.x * vec_size; // NOLINT(bugprone-misplaced-widening-cast)
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j = 0; j < vec_size; ++j)
           {
+            // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
             input[i * vec_size + j] = in[i * vec_size * threads_per_block + j];
           }
         }
@@ -343,13 +344,14 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   else
   {
     // serial path
-    out += threadIdx.x * vec_size;
+    out += threadIdx.x * vec_size; // NOLINT(bugprone-misplaced-widening-cast)
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; ++j)
       {
+        // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
         out[i * vec_size * threads_per_block + j] = output[i * vec_size + j];
       }
     }

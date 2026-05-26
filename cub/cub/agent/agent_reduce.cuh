@@ -331,14 +331,15 @@ struct AgentReduceImpl
     // Read first item
     if (IsFirstTile && (thread_offset < valid_items))
     {
-      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
+      thread_aggregate =
+        transform_op(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
       thread_offset += NumThreads;
     }
 
     // Continue reading items (block-striped)
     while (thread_offset < valid_items)
     {
-      InputT item(d_wrapped_in[block_offset + thread_offset]);
+      InputT item(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += NumThreads;
