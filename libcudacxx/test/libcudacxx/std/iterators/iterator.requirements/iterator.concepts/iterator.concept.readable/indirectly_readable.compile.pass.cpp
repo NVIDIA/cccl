@@ -54,8 +54,7 @@ struct indirection_mismatch
 };
 static_assert(
   !cuda::std::same_as<cuda::std::iter_value_t<indirection_mismatch>, cuda::std::iter_reference_t<indirection_mismatch>>
-    && check_indirectly_readable<indirection_mismatch>(),
-  "");
+  && check_indirectly_readable<indirection_mismatch>());
 static_assert(!check_indirectly_readable<missing_dereference>());
 
 // `iter_rvalue_reference_t` can't be missing unless the dereference operator is also missing.
