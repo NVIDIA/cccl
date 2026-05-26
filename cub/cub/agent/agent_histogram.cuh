@@ -326,6 +326,26 @@ struct AgentHistogram
   }
 
   // Accumulate pixels.  Specialized for RLE compression.
+  //
+  // For GMEM-privatized paths on SM_70+ we drop the intra-thread RLE
+  // compression in favour of warp-coalesced atomics: at each pixel
+  // every warp lane participates in
+  // `__match_any_sync(0xffffffffu, bin)` and the leader of each peer
+  // group issues one `atomicAdd_block` with `__popc(peers)` as the
+  // increment. This collapses up to 32 contended same-bin atomics on
+  // a hot bin into 1, which is a much larger win than intra-thread
+  // RLE compression of pixels_per_thread <= 16 neighbours when bin
+  // counts are >= a few thousand and atomics target high-latency
+  // GMEM-priv slabs.
+  //
+  // For SMEM-privatized paths (`PrivatizedSmemBins > 0` and runtime
+  // `prefer_smem`) we keep the legacy intra-thread RLE because SMEM
+  // atomics are cheap (~5 cycle latency) so the warp-coalesce
+  // overhead dominates the saved-atomic count for low-bin configs
+  // (e.g. Bins == 32).
+  //
+  // The 3-active-channel iteration order (channel-outer, pixel-inner)
+  // is preserved for both paths.
   template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
     SampleT samples[pixels_per_thread][NumChannels],
@@ -333,44 +353,87 @@ struct AgentHistogram
     TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::true_type is_rle_compress)
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    // Warp-coalesce only on GMEM-privatized paths (PrivatizedSmemBins
+    // == 0). The SMEM path uses cheap shared atomics that don't
+    // benefit enough to amortise the `__match_any_sync` overhead at
+    // low bin counts (e.g. Bins == 32).
+    if constexpr (PrivatizedSmemBins == 0)
     {
-      // Bin pixels
-      int bins[pixels_per_thread];
-
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_70,
+        (const int lane_id = static_cast<int>(threadIdx.x & 0x1f);
+         _CCCL_PRAGMA_UNROLL_FULL()
+         for (int ch = 0; ch < NumActiveChannels; ++ch) {
+           _CCCL_PRAGMA_UNROLL_FULL()
+           for (int pixel = 0; pixel < pixels_per_thread; ++pixel) {
+             int bin = -1;
+             privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+             const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+             const int leader_lane    = __ffs(static_cast<int>(peers)) - 1;
+             if (bin >= 0 && lane_id == leader_lane) {
+               atomicAdd_block(privatized_histograms[ch] + bin, static_cast<CounterT>(__popc(peers)));
+             }
+           }
+         }),
+        (// Pre-SM70 fallback: per-lane atomicAdd_block (or atomicAdd on
+         // pre-SM60), skip warp coalesce.
+         _CCCL_PRAGMA_UNROLL_FULL()
+         for (int ch = 0; ch < NumActiveChannels; ++ch) {
+           _CCCL_PRAGMA_UNROLL_FULL()
+           for (int pixel = 0; pixel < pixels_per_thread; ++pixel) {
+             int bin = -1;
+             privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+             if (bin >= 0) {
+               NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                                 (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
+                                 (atomicAdd(privatized_histograms[ch] + bin, 1);));
+             }
+           }
+         }));
+    }
+    else
+    {
+      // SMEM-privatized: keep legacy intra-thread RLE compression with
+      // per-lane atomics on cheap shared-memory bins.
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
-        bins[pixel] = -1;
-        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
-      }
+        // Bin pixels
+        int bins[pixels_per_thread];
 
-      CounterT accumulator = 1;
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pixel = 0; pixel < pixels_per_thread - 1; ++pixel)
-      {
-        if (bins[pixel] != bins[pixel + 1])
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
         {
-          if (bins[pixel] >= 0)
-          {
-            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                              (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
-                              (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
-          }
-
-          accumulator = 0;
+          bins[pixel] = -1;
+          privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
         }
-        accumulator++;
-      }
 
-      // Last pixel
-      if (bins[pixels_per_thread - 1] >= 0)
-      {
-        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                          (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
-                          (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+        CounterT accumulator = 1;
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int pixel = 0; pixel < pixels_per_thread - 1; ++pixel)
+        {
+          if (bins[pixel] != bins[pixel + 1])
+          {
+            if (bins[pixel] >= 0)
+            {
+              NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                                (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
+                                (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
+            }
+
+            accumulator = 0;
+          }
+          accumulator++;
+        }
+
+        // Last pixel
+        if (bins[pixels_per_thread - 1] >= 0)
+        {
+          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                            (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
+                            (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+        }
       }
     }
   }
