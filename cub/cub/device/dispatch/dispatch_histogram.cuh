@@ -1047,7 +1047,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const bool atomic_contention_high =
         (max_num_output_bins > 0)
         && (static_cast<long long>(total_pixels_for_partition)
-            >= 16LL * static_cast<long long>(max_num_output_bins));
+            >= 1000LL * static_cast<long long>(max_num_output_bins));
       const bool use_bin_partitions =
         kBinPartitionsEligible && (num_thread_blocks >= 2) && atomic_contention_high;
       // Pick the kernel pointer through a constexpr branch so the
