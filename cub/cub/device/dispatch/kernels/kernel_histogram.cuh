@@ -436,6 +436,11 @@ struct Transforms
         FractionStorageT bins;
         FractionStorageT range;
         FastDivideT range_divider;
+        // True iff bins == range, the common benchmark case (e.g. uniform
+        // even-spaced bins where one bin == one sample value). When set,
+        // ComputeBin short-circuits to `sample - min_level` and skips both
+        // the multiply by `bins` and the divide-by-range.
+        bool bins_eq_range;
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
@@ -488,6 +493,7 @@ struct Transforms
       // in `ComputeBin`. This is a no-op for non-integral CommonT (e.g. user types),
       // where IntArithmeticT may still be uint64_t but the integral overload is not used.
       result.fraction.range_divider.Init(static_cast<IntArithmeticT>(result.fraction.range));
+      result.fraction.bins_eq_range = (result.fraction.bins == result.fraction.range);
       return result;
     }
 
@@ -574,9 +580,17 @@ struct Transforms
     //! with a libdivide-style "round-up" multiplier that gives an exact
     //! `floor(numerator / range)` for any non-negative numerator
     //! representable in `IntArithmeticT`.
+    //!
+    //! Fast path: when `bins == range` (the dispatched-for-uniform-bins case
+    //! that dominates our benchmarks), bin equals `sample - min_level` and we
+    //! skip both the multiply by `bins` and the divide-by-range entirely.
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
+      if (scale.fraction.bins_eq_range)
+      {
+        return static_cast<int>(static_cast<IntArithmeticT>(sample - min_level));
+      }
       const IntArithmeticT numerator =
         static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins);
       return static_cast<int>(scale.fraction.range_divider.Divide(numerator));
