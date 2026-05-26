@@ -224,6 +224,9 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
 // SM100 sample_size 8 (F64) single-channel non-byte tuning. F64 has half the throughput per byte
 // and the dyn-SMEM 16384 tier already saturates at ~5 TB/s for F64 entropy=1.0; aim for a balanced
 // {threads, ipt} that doesn't regress lower-bin tiers either.
+//
+// Verified empirically vs 768/8 (-0.37% overall, but -3% on range): 512/8 wins because it
+// trades a small even-path regression for a larger range-path improvement.
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
 {
