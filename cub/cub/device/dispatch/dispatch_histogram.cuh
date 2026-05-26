@@ -58,6 +58,24 @@ namespace detail::histogram
 // Maximum number of bins per channel for which we will use a privatized smem strategy
 static constexpr int max_privatized_smem_bins = 256;
 
+// Extended SMEM-privatized tiers for single-channel non-byte sample histograms. These tiers
+// scale the per-block SMEM histogram allocation up so the agent can keep larger histograms
+// on chip (avoiding the slow GMEM atomicAdd_block of the GMEM-privatized path) at the cost
+// of extra per-block SMEM and reduced occupancy.
+//
+// We carry three tiers:
+//   - 2048 bins x 4 bytes = 8 KB SMEM/block (static SMEM), plenty of occupancy headroom.
+//   - 8192 bins x 4 bytes = 32 KB SMEM/block (static SMEM), fits within ptxas default
+//     static-SMEM cap (48 KB).
+//   - 16384 bins x 4 bytes = 64 KB SMEM/block (dynamic SMEM). Static SMEM exceeds the
+//     ptxas default 48 KB cap, so this tier uses extern __shared__ + cudaFuncSetAttribute
+//     (cudaFuncAttributeMaxDynamicSharedMemorySize). On SM90/SM100 the per-CTA SMEM
+//     budget is large enough (B200 supports ~228 KiB per CTA) for this tier to launch
+//     with reasonable occupancy.
+static constexpr int max_extended_smem_bins_single_channel        = 2048;
+static constexpr int max_extended_smem_bins_single_channel_large  = 8192;
+static constexpr int max_extended_smem_bins_single_channel_xlarge = 16384;
+
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           typename SampleIteratorT,
@@ -152,6 +170,113 @@ struct DeviceHistogramKernelSource
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
       OffsetT>;
+  }
+
+  /// Host-init variant of the staging histogram sweep kernel. Skips StoreOutput so
+  /// a follow-on combine kernel handles cross-block reduction.
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingHostInitKernel()
+  {
+    return &DeviceHistogramSweepStagingHostInitKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT>;
+  }
+
+  /// Device-init staging variant of the histogram sweep kernel.
+  template <typename PolicyT,
+            int PRIVATIZED_SMEM_BINS,
+            typename FirstLevelArrayT,
+            typename SecondLevelArrayT,
+            bool IsEven,
+            bool IsByteSample>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingKernelDeviceInit()
+  {
+    using DecodeOpT = ::cuda::std::conditional_t<IsEven,
+                                                 typename TransformsT::ScaleTransform,
+                                                 typename TransformsT::template SearchTransform<const LevelT*>>;
+
+    using PrivatizedDecodeOpT =
+      ::cuda::std::conditional_t<IsByteSample, typename TransformsT::PassThruTransform, DecodeOpT>;
+    using OutputDecodeOpT =
+      ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
+
+    return &DeviceHistogramSweepStagingKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      FirstLevelArrayT,
+      SecondLevelArrayT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT,
+      IsEven>;
+  }
+
+  /// Combine kernel: reduces per-block privatized histograms across all blocks.
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramCombineKernel()
+  {
+    return &DeviceHistogramCombineKernel<NUM_ACTIVE_CHANNELS, CounterT>;
+  }
+
+  /// Host-init dynamic-SMEM variant of the staging histogram sweep kernel. Used for the
+  /// xlarge tier (>48 KB SMEM/block) on architectures supporting larger dyn-SMEM via
+  /// cudaFuncSetAttribute.
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingHostInitDynSmemKernel()
+  {
+    return &DeviceHistogramSweepStagingHostInitDynSmemKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT>;
+  }
+
+  /// Device-init dynamic-SMEM variant of the staging histogram sweep kernel.
+  template <typename PolicyT,
+            int PRIVATIZED_SMEM_BINS,
+            typename FirstLevelArrayT,
+            typename SecondLevelArrayT,
+            bool IsEven,
+            bool IsByteSample>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingDynSmemKernelDeviceInit()
+  {
+    using DecodeOpT = ::cuda::std::conditional_t<IsEven,
+                                                 typename TransformsT::ScaleTransform,
+                                                 typename TransformsT::template SearchTransform<const LevelT*>>;
+
+    using PrivatizedDecodeOpT =
+      ::cuda::std::conditional_t<IsByteSample, typename TransformsT::PassThruTransform, DecodeOpT>;
+    using OutputDecodeOpT =
+      ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
+
+    return &DeviceHistogramSweepStagingDynSmemKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      FirstLevelArrayT,
+      SecondLevelArrayT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT,
+      IsEven>;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
@@ -263,9 +388,77 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
-  auto sweep_kernel      = [&] {
-    if constexpr (IsDeviceInit)
+  const auto init_kernel    = kernel_source.template HistogramInitKernel<PolicySelector>();
+  const auto combine_kernel = kernel_source.HistogramCombineKernel();
+
+  // Whether this dispatch uses the dynamic-SMEM staging tier (xlarge, 16384 bins, 64 KB SMEM/block).
+  // The static-SMEM AgentHistogram would exceed the ptxas 48 KB cap for this PRIVATIZED_SMEM_BINS, so
+  // we MUST avoid instantiating the non-staging static-SMEM sweep kernel when this tier is selected.
+  static constexpr bool kStagingUsesDynSmem = (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_xlarge);
+  // Whether the staging-combine path is enabled at all. Currently restricted to the dyn-SMEM xlarge
+  // tier on single-channel paths; the static-SMEM extended tiers (2048, 8192) are routed through the
+  // normal sweep_kernel path here for correctness with the leader's persistent-kernel / direct-atomic
+  // logic. The xlarge tier always uses staging because non-staging static SMEM is impossible.
+  static constexpr bool kStagingChannelOk = (NUM_ACTIVE_CHANNELS == 1);
+  static constexpr bool kStagingPrivOk    = kStagingUsesDynSmem;
+  // For the dyn-SMEM xlarge tier we always run staging (max_num_output_bins is bounded by the dispatch
+  // selector to <= 16384), so the runtime check reduces to true here.
+  static constexpr bool kUseStagingPath = kStagingChannelOk && kStagingPrivOk;
+
+  // Build the staging sweep kernel pointer for the dyn-SMEM xlarge tier. For other tiers this is unused.
+  auto staging_sweep_kernel = [&] {
+    if constexpr (kStagingUsesDynSmem)
+    {
+      if constexpr (IsDeviceInit)
+      {
+        return kernel_source.template HistogramSweepStagingDynSmemKernelDeviceInit<
+               PolicySelector,
+               PRIVATIZED_SMEM_BINS,
+               FirstLevelArrayT,
+               SecondLevelArrayT,
+               IsEven,
+               IsByteSample>();
+      }
+      else
+      {
+        using output_decode_op_t     = typename FirstLevelArrayT::value_type;
+        using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+        return kernel_source.template HistogramSweepStagingHostInitDynSmemKernel<
+               PolicySelector,
+               PRIVATIZED_SMEM_BINS,
+               privatized_decode_op_t,
+               output_decode_op_t>();
+      }
+    }
+    else if constexpr (IsDeviceInit)
+    {
+      // Returned but unused for non-dyn-SMEM tiers; pick a kernel pointer with the same shape
+      // so `decltype(staging_sweep_kernel)` is well-defined.
+      return kernel_source.template HistogramSweepKernelDeviceInit<
+             PolicySelector,
+             PRIVATIZED_SMEM_BINS,
+             FirstLevelArrayT,
+             SecondLevelArrayT,
+             IsEven,
+             IsByteSample>();
+    }
+    else
+    {
+      using output_decode_op_t     = typename FirstLevelArrayT::value_type;
+      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+      return kernel_source
+        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
+    }
+  }();
+
+  // For the dyn-SMEM xlarge tier, alias `sweep_kernel` to `staging_sweep_kernel` to avoid instantiating
+  // the static-SMEM AgentHistogram (which would exceed the ptxas 48 KB cap for 16384 bins).
+  auto sweep_kernel = [&] {
+    if constexpr (kStagingUsesDynSmem)
+    {
+      return staging_sweep_kernel;
+    }
+    else if constexpr (IsDeviceInit)
     {
       return kernel_source.template HistogramSweepKernelDeviceInit<
              PolicySelector,
@@ -294,12 +487,47 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  // Get SM occupancy for sweep_kernel
-  int histogram_sweep_sm_occupancy;
-  if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block)))
+  // Compute the dynamic-SMEM size for the staging-dyn-smem path. When staging is enabled and
+  // PRIVATIZED_SMEM_BINS exceeds the ptxas static-SMEM cap, the per-block histogram lives in
+  // extern __shared__; the launch must reserve enough dynamic SMEM and the kernel must have
+  // its cudaFuncAttributeMaxDynamicSharedMemorySize attribute raised accordingly.
+  // Layout: per-channel contiguous, sum_ch num_privatized_bins[ch] entries.
+  int dyn_smem_bytes_for_staging = 0;
+  if constexpr (kStagingUsesDynSmem)
   {
-    return error;
+    int total_bins = 0;
+    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+    {
+      total_bins += (num_privatized_levels[ch] - 1);
+    }
+    dyn_smem_bytes_for_staging = total_bins * static_cast<int>(kernel_source.CounterSize());
+  }
+
+  // Get SM occupancy for sweep_kernel. For the staging-dyn-smem path, occupancy must be queried
+  // with the dynamic-SMEM byte budget set so the driver accounts for the per-CTA SMEM footprint.
+  int histogram_sweep_sm_occupancy;
+  if constexpr (kStagingUsesDynSmem)
+  {
+    // Raise the kernel's max-dynamic-SMEM cap so the occupancy query accounts for the dyn-SMEM
+    // CTA footprint. (The cap also has to be raised before the actual launch below.)
+    if (const auto error =
+          CubDebug(launcher_factory.set_max_dynamic_smem_size_for(sweep_kernel, dyn_smem_bytes_for_staging)))
+    {
+      return error;
+    }
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block, dyn_smem_bytes_for_staging)))
+    {
+      return error;
+    }
+  }
+  else
+  {
+    if (const auto error =
+          CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block)))
+    {
+      return error;
+    }
   }
 
   // Get device occupancy for sweep_kernel
@@ -628,27 +856,92 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-    if (const auto error = CubDebug(
-          launcher_factory(sweep_grid_dims,
-                           threads_per_block,
-                           0,
-                           stream,
-                           /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-            .doit(sweep_kernel,
-                  d_samples,
-                  num_output_bins_wrapper,
-                  num_privatized_bins_wrapper,
-                  d_output_histograms,
-                  d_privatized_histograms_wrapper,
-                  first_level_array,
-                  second_level_array,
-                  num_row_pixels,
-                  num_rows,
-                  row_stride_samples,
-                  tiles_per_row,
-                  tile_queue)))
+    if constexpr (kUseStagingPath)
     {
-      return error;
+      // Dynamic-SMEM staging path: launch the staging sweep kernel (which skips per-block
+      // atomicAdd-to-global), then run the combine kernel to reduce per-block staging slabs
+      // into the final output histogram.
+      // The dynamic-SMEM cap was already raised above as part of the occupancy query
+      // (set_max_dynamic_smem_size_for in the kStagingUsesDynSmem branch).
+      if (const auto error = CubDebug(
+            launcher_factory(sweep_grid_dims,
+                             threads_per_block,
+                             dyn_smem_bytes_for_staging,
+                             stream,
+                             /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+              .doit(staging_sweep_kernel,
+                    d_samples,
+                    num_output_bins_wrapper,
+                    num_privatized_bins_wrapper,
+                    d_output_histograms,
+                    d_privatized_histograms_wrapper,
+                    first_level_array,
+                    second_level_array,
+                    num_row_pixels,
+                    num_rows,
+                    row_stride_samples,
+                    tiles_per_row,
+                    tile_queue)))
+      {
+        return error;
+      }
+
+      // Combine kernel: 256 threads x ceil(num_privatized_bins / 256) blocks per channel.
+      // For non-byte samples, num_privatized_bins == num_output_bins (PassThru output decode).
+      constexpr int combine_threads = 256;
+      int combine_blocks_x          = (max_num_output_bins + combine_threads - 1) / combine_threads;
+
+      // Cast d_privatized_histograms to const for combine kernel.
+      ::cuda::std::array<const CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_const_wrapper;
+      for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+      {
+        d_privatized_const_wrapper[ch] = d_privatized_histograms_wrapper[ch];
+      }
+
+      dim3 combine_grid_dims;
+      combine_grid_dims.x = (unsigned int) combine_blocks_x;
+      combine_grid_dims.y = (unsigned int) NUM_ACTIVE_CHANNELS;
+      combine_grid_dims.z = 1;
+
+      if (const auto error = CubDebug(
+            launcher_factory(combine_grid_dims,
+                             combine_threads,
+                             0,
+                             stream,
+                             /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+              .doit(combine_kernel,
+                    d_output_histograms,
+                    d_privatized_const_wrapper,
+                    num_privatized_bins_wrapper,
+                    num_thread_blocks)))
+      {
+        return error;
+      }
+    }
+    else
+    {
+      if (const auto error = CubDebug(
+            launcher_factory(sweep_grid_dims,
+                             threads_per_block,
+                             0,
+                             stream,
+                             /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+              .doit(sweep_kernel,
+                    d_samples,
+                    num_output_bins_wrapper,
+                    num_privatized_bins_wrapper,
+                    d_output_histograms,
+                    d_privatized_histograms_wrapper,
+                    first_level_array,
+                    second_level_array,
+                    num_row_pixels,
+                    num_rows,
+                    row_stride_samples,
+                    tiles_per_row,
+                    tile_queue)))
+      {
+        return error;
+      }
     }
   }
 
@@ -1159,6 +1452,46 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     }
     int max_num_output_bins = max_levels - 1;
 
+    // For single-channel non-byte samples with `max_extended_smem_bins_single_channel_large` < bins
+    // <= `max_extended_smem_bins_single_channel_xlarge` (8192 < bins <= 16384), use the dynamic-SMEM
+    // xlarge tier. The agent accumulates into 64 KB of dyn-SMEM (extern __shared__) per block, and
+    // a follow-on combine kernel reduces per-block staging slabs into the final output histogram.
+    if constexpr (NUM_ACTIVE_CHANNELS == 1)
+    {
+      if (max_num_output_bins > max_extended_smem_bins_single_channel_large
+          && max_num_output_bins <= max_extended_smem_bins_single_channel_xlarge)
+      {
+        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
+        if (const auto error = CubDebug(
+              (detail::histogram::dispatch<
+                NUM_CHANNELS,
+                NUM_ACTIVE_CHANNELS,
+                PRIVATIZED_SMEM_BINS,
+                false, // IsDeviceInit
+                false, // IsEven (unused for host-init)
+                false // IsByteSample (unused for host-init)
+                >(d_temp_storage,
+                  temp_storage_bytes,
+                  d_samples,
+                  d_output_histograms,
+                  num_output_levels,
+                  num_output_levels,
+                  output_decode_op,
+                  privatized_decode_op,
+                  max_num_output_bins,
+                  num_row_pixels,
+                  num_rows,
+                  row_stride_samples,
+                  stream,
+                  policy_selector,
+                  kernel_source,
+                  launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+    }
     // Dispatch
     if (max_num_output_bins > max_privatized_smem_bins)
     {
@@ -1365,6 +1698,39 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     }
     int max_num_output_bins = max_levels - 1;
 
+    // For single-channel non-byte samples with `max_extended_smem_bins_single_channel_large` < bins
+    // <= `max_extended_smem_bins_single_channel_xlarge` (8192 < bins <= 16384), use the dynamic-SMEM
+    // xlarge tier with the staging+combine path.
+    if constexpr (NUM_ACTIVE_CHANNELS == 1)
+    {
+      if (max_num_output_bins > max_extended_smem_bins_single_channel_large
+          && max_num_output_bins <= max_extended_smem_bins_single_channel_xlarge)
+      {
+        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
+        if (const auto error = CubDebug(
+              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_samples,
+                d_output_histograms,
+                num_output_levels,
+                num_output_levels,
+                output_decode_op,
+                privatized_decode_op,
+                max_num_output_bins,
+                num_row_pixels,
+                num_rows,
+                row_stride_samples,
+                stream,
+                policy_selector,
+                kernel_source,
+                launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+    }
     if (max_num_output_bins > max_privatized_smem_bins)
     {
       constexpr int PRIVATIZED_SMEM_BINS = 0;

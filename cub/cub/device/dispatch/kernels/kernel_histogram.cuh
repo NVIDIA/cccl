@@ -20,7 +20,10 @@
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -206,6 +209,20 @@ struct fast_divide_by_constant
     return (((n - hi) >> 1) + hi) >> (shift - 1);
   }
 };
+
+// Detect whether a decode op is the pass-through transform (any specialization of
+// Transforms<L,O,S>::PassThruTransform). Identifies transforms that map identically
+// from input bin to output bin, which is required for the combine staging path.
+template <typename T, typename = void>
+struct is_pass_thru_transform : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct is_pass_thru_transform<T, ::cuda::std::void_t<typename T::is_pass_thru_transform>> : ::cuda::std::true_type
+{};
+
+template <typename T>
+inline constexpr bool is_pass_thru_transform_v = is_pass_thru_transform<T>::value;
 
 template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
@@ -636,6 +653,11 @@ struct Transforms
   // Pass-through bin transform operator
   struct PassThruTransform
   {
+    // Tag for detecting the pass-through transform without depending on its template
+    // parameters. Used by dispatch to decide whether the combine staging path is safe
+    // (the combine kernel assumes output_decode_op is identity).
+    using is_pass_thru_transform = ::cuda::std::true_type;
+
 // GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
 // bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
 #if _CCCL_COMPILER(GCC, >=, 13)
@@ -1472,6 +1494,446 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       }
     }
   }
+}
+
+//! Host-init variant of the staging histogram sweep kernel.
+//! Skips StoreOutput() so a follow-on combine kernel handles cross-block reduction.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingHostInitKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    GridQueue<int> tile_queue)
+{
+  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.threads_per_block,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT>;
+
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+  AgentHistogramT agent(
+    temp_storage,
+    d_samples,
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op_wrapper.data(),
+    privatized_decode_op_wrapper.data());
+
+  agent.InitBinCounters();
+  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+  // Skip agent.StoreOutput(); the combine kernel handles cross-block reduction.
+  if (agent.prefer_smem)
+  {
+    agent.StoreSmemToStagingSlab();
+  }
+}
+
+//! Histogram privatized sweep kernel that defers per-block-to-global combine.
+//!
+//! Same as DeviceHistogramSweepDeviceInitKernel, but skips the final StoreOutput()
+//! call. The privatized per-block histograms remain in global memory at
+//! `d_privatized_histograms_wrapper`, where a follow-on combine kernel reduces
+//! them across blocks and writes the final output histogram. This avoids the
+//! per-block `atomicAdd` to the global output bins, which is the dominant cost
+//! for high-bin GMEM-privatized configurations.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename FirstLevelArrayT,
+          typename SecondLevelArrayT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT,
+          bool IsEven>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const FirstLevelArrayT first_level_array,
+    _CCCL_GRID_CONSTANT const SecondLevelArrayT second_level_array,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
+{
+  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  if constexpr (IsEven)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    {
+      const int num_levels   = num_output_bins_wrapper[channel] + 1;
+      const auto upper_level = first_level_array[channel];
+      const auto lower_level = second_level_array[channel];
+      privatized_decode_op[channel].Init(num_levels, upper_level, lower_level);
+      output_decode_op[channel].Init(num_levels, upper_level, lower_level);
+    }
+  }
+  else
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    {
+      const auto num_output_levels = first_level_array[channel];
+      const auto levels            = second_level_array[channel];
+      privatized_decode_op[channel].Init(levels, num_output_levels);
+      output_decode_op[channel].Init(levels, num_output_levels);
+    }
+  }
+
+  // Thread block type for compositing input tiles
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.threads_per_block,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT>;
+
+  // Shared memory for AgentHistogram
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+  AgentHistogramT agent(
+    temp_storage,
+    d_samples,
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op,
+    privatized_decode_op);
+
+  // Initialize counters
+  agent.InitBinCounters();
+
+  // Consume input tiles
+  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+  // Skip agent.StoreOutput() -- combine kernel below handles per-block reduction.
+  // For SMEM-privatized configurations, copy the in-block SMEM histograms out to
+  // their per-block GMEM staging slabs so the combine kernel can read them.
+  if (agent.prefer_smem)
+  {
+    agent.StoreSmemToStagingSlab();
+  }
+}
+
+//! Host-init dynamic-SMEM variant of the staging histogram sweep kernel.
+//!
+//! Same per-tile accumulate as DeviceHistogramSweepStagingHostInitKernel, but the privatized
+//! per-block histogram is stored in dynamic shared memory (`extern __shared__`) instead of
+//! the agent's static `_TempStorage`. This lets us scale `PrivatizedSmemBins` up beyond the
+//! ptxas default 48 KiB static-SMEM cap on architectures (SM90+, SM100) that support a
+//! larger dynamic-SMEM region per CTA via `cudaFuncSetAttribute(cudaFuncAttributeMaxDynamicSharedMemorySize, ...)`.
+//!
+//! The host is responsible for:
+//!   - Calling `cudaFuncSetAttribute(this_kernel, cudaFuncAttributeMaxDynamicSharedMemorySize,
+//!     dyn_smem_bytes)` before launch, where `dyn_smem_bytes >= sum_ch num_privatized_bins[ch] * sizeof(CounterT)`.
+//!   - Passing `dyn_smem_bytes` as the third triple-chevron parameter at launch.
+//!
+//! Skips StoreOutput(); a follow-on combine kernel handles cross-block reduction.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingHostInitDynSmemKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    GridQueue<int> tile_queue)
+{
+  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.threads_per_block,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT,
+                   /* UseDynamicSmemHistogram = */ true>;
+
+  // Static SMEM holds only the BlockLoad union, the tile_idx, and the per-channel
+  // histogram pointer array. The histogram bins themselves live in dynamic SMEM below.
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+  // Dynamic SMEM allocated by the launch (third chevron parameter, must be >=
+  // sum_ch num_privatized_bins[ch] * sizeof(CounterT)). Layout per channel is
+  // contiguous: ch=0 occupies [0, num_privatized_bins[0]), ch=1 occupies
+  // [num_privatized_bins[0], num_privatized_bins[0] + num_privatized_bins[1]), etc.
+  extern __shared__ unsigned char dyn_smem_raw[];
+  CounterT* dyn_smem_histograms = reinterpret_cast<CounterT*>(dyn_smem_raw);
+
+  AgentHistogramT agent(
+    temp_storage,
+    d_samples,
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op_wrapper.data(),
+    privatized_decode_op_wrapper.data(),
+    dyn_smem_histograms);
+
+  agent.InitBinCounters();
+  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+  // Skip agent.StoreOutput(); the combine kernel handles cross-block reduction.
+  if (agent.prefer_smem)
+  {
+    agent.StoreSmemToStagingSlab();
+  }
+}
+
+//! Device-init dynamic-SMEM variant of the staging histogram sweep kernel. Mirrors
+//! DeviceHistogramSweepStagingKernel but with the privatized histogram in extern __shared__
+//! memory; see DeviceHistogramSweepStagingHostInitDynSmemKernel for the host-side requirements.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename FirstLevelArrayT,
+          typename SecondLevelArrayT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT,
+          bool IsEven>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingDynSmemKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const FirstLevelArrayT first_level_array,
+    _CCCL_GRID_CONSTANT const SecondLevelArrayT second_level_array,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
+{
+  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  if constexpr (IsEven)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    {
+      const int num_levels   = num_output_bins_wrapper[channel] + 1;
+      const auto upper_level = first_level_array[channel];
+      const auto lower_level = second_level_array[channel];
+      privatized_decode_op[channel].Init(num_levels, upper_level, lower_level);
+      output_decode_op[channel].Init(num_levels, upper_level, lower_level);
+    }
+  }
+  else
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    {
+      const auto num_output_levels = first_level_array[channel];
+      const auto levels            = second_level_array[channel];
+      privatized_decode_op[channel].Init(levels, num_output_levels);
+      output_decode_op[channel].Init(levels, num_output_levels);
+    }
+  }
+
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.threads_per_block,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT,
+                   /* UseDynamicSmemHistogram = */ true>;
+
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+  extern __shared__ unsigned char dyn_smem_raw[];
+  CounterT* dyn_smem_histograms = reinterpret_cast<CounterT*>(dyn_smem_raw);
+
+  AgentHistogramT agent(
+    temp_storage,
+    d_samples,
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op,
+    privatized_decode_op,
+    dyn_smem_histograms);
+
+  agent.InitBinCounters();
+  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+  // Skip agent.StoreOutput() -- combine kernel below handles per-block reduction.
+  if (agent.prefer_smem)
+  {
+    agent.StoreSmemToStagingSlab();
+  }
+}
+
+//! Combine kernel: reduces per-block privatized histograms across all blocks
+//! into the final output histogram. Each output bin is computed by summing
+//! the corresponding column of the (num_blocks x num_privatized_bins) staging
+//! matrix.
+//!
+//! For non-byte samples (PassThruTransform output decode), num_privatized_bins
+//! equals num_output_bins and the bin index is identity. For byte samples
+//! (with a non-trivial output decode op) the host pre-decodes the bin mapping
+//! before launch.
+//!
+//! Launch configuration: 256 threads/block, gridDim.x covers num_privatized_bins
+//! per channel; gridDim.y is NumActiveChannels.
+template <int NumActiveChannels, typename CounterT>
+_CCCL_KERNEL_ATTRIBUTES void DeviceHistogramCombineKernel(
+  ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+  ::cuda::std::array<const CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+  ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+  int num_thread_blocks)
+{
+  const int channel = blockIdx.y;
+  if (channel >= NumActiveChannels)
+  {
+    return;
+  }
+
+  const int channel_bins = num_privatized_bins_wrapper[channel];
+  const int bin          = blockIdx.x * blockDim.x + threadIdx.x;
+  if (bin >= channel_bins)
+  {
+    return;
+  }
+
+  const CounterT* __restrict__ priv = d_privatized_histograms_wrapper[channel];
+  CounterT sum                      = 0;
+
+  // Sum the same bin across all blocks. Memory layout: priv[block_idx * channel_bins + bin]
+  // Stride is `channel_bins`. Since blocks read the same `bin` column, this is a strided
+  // reduction; L2 cache should help amortize the strided fetches across warps.
+  for (int b = 0; b < num_thread_blocks; ++b)
+  {
+    sum += priv[b * channel_bins + bin];
+  }
+
+  // Write final output. The init kernel zeroed d_output_histograms,
+  // so a non-atomic store is safe here (bin index is unique per thread).
+  d_output_histograms_wrapper[channel][bin] = sum;
 }
 } // namespace detail::histogram
 CUB_NAMESPACE_END
