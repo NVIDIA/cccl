@@ -833,7 +833,15 @@ struct AgentHistogram
         num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
     }
 
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes no difference in cub.bench.histogram.even.base
+    // NOTE: `_CCCL_PDL_TRIGGER_NEXT_LAUNCH` was previously called here, but
+    // for the staging dispatch paths the kernel calls `StoreSmemToStagingSlab`
+    // (per-block SMEM->GMEM flush) AFTER `ConsumeTiles`, and the follow-on
+    // combine kernel reads from those staging slabs. Triggering the next
+    // launch here releases the combine kernel before the staging slabs are
+    // written, causing intermittent multi-channel test failures (~30%) in
+    // cub.test.device.histogram.lid_0. The trigger is now emitted by each
+    // kernel call site in kernel_histogram.cuh after all of its work that
+    // the next kernel depends on has completed.
   }
 
   //! Initialize privatized bin counters.  Specialized for privatized shared-memory counters
