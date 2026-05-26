@@ -129,7 +129,7 @@ struct Transforms
       // +/- 2; cap at +/- K. If the correction does not converge, fall back
       // to UpperBound so irregularly-spaced levels still produce correct
       // results.
-      constexpr int kCorrectionWindow = 4;
+      constexpr int kCorrectionWindow = 2;
 
       // Walk left: if d_levels[guess] > s, we are above the target bin.
       int steps = 0;
