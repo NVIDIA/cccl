@@ -626,11 +626,6 @@ enum class scan_algorithm
   lookback_deterministic,
 };
 
-_CCCL_API constexpr bool is_warpspeed_algorithm(scan_algorithm algorithm)
-{
-  return algorithm == scan_algorithm::warpspeed;
-}
-
 #if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
 {
@@ -939,6 +934,12 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr auto get_warpspeed_policy(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<scan_warpspeed_policy>
   {
+    // Force fall-through to lookback so the lookback_deterministic upgrade can route
+    // run_to_run determinism for non-associative (accum, op) (fp + plus)
+    if (require_run_to_run_determinism && accum_op_is_non_associative())
+    {
+      return {};
+    }
     if (cc >= ::cuda::compute_capability{12, 0})
     {
       return get_sm120_fallback_warpspeed_policy();
@@ -1039,7 +1040,7 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  select_unconstrained(::cuda::compute_capability cc) const -> scan_policy
+  select_base_policy(::cuda::compute_capability cc) const -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
@@ -1432,7 +1433,7 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
-    auto policy = select_unconstrained(cc);
+    auto policy = select_base_policy(cc);
     // Upgrade classic lookback to the 32-tile batched variant only for non-associative (accum, op).
     if (require_run_to_run_determinism && policy.algorithm == scan_algorithm::lookback && accum_op_is_non_associative())
     {
