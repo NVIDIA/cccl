@@ -160,7 +160,15 @@ struct __tuple_constraints
   template <class... _UTypes>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __disambiguating_constraints() noexcept
   {
-    if constexpr (sizeof...(_Types) == 1)
+    if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
+    { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
+      return false;
+    }
+    else if constexpr (sizeof...(_Types) == 0)
+    { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
+      return false;
+    }
+    else if constexpr (sizeof...(_Types) == 1)
     { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
       using _U0 = __type_index_c<0, _UTypes...>;
       return !is_same_v<remove_cvref_t<_U0>, tuple<_Types...>>;
@@ -179,25 +187,21 @@ struct __tuple_constraints
   }
 
   template <class... _UTypes>
+  struct __variadic_constructible_impl
+  { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+    static constexpr bool __constructible = (is_constructible_v<_Types, _UTypes> && ...);
+    // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+    static constexpr bool __implicit_constructible = __constructible && (is_convertible_v<_UTypes, _Types> && ...);
+    static constexpr bool __explicit_constructible = __constructible && !(is_convertible_v<_UTypes, _Types> && ...);
+    static constexpr bool __nothrow_constructible  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
+  };
+
+  template <class... _UTypes>
   [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_constructible() noexcept
   {
-    if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
-    { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
-      return _InvalidTupleConstructor{};
-    }
-    else if constexpr (sizeof...(_Types) == 0)
-    { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
-      return _InvalidTupleConstructor{};
-    }
-    else if constexpr (!__disambiguating_constraints<_UTypes...>())
+    if constexpr (__disambiguating_constraints<_UTypes...>())
     { // [tuple.cnstr]-13.3: disambiguating-constraint is true
-      return _InvalidTupleConstructor{};
-    }
-    else if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
-    { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-      constexpr bool __is_implicit = (is_convertible_v<_UTypes, _Types> && ...);
-      constexpr bool __is_nothrow  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
-      return _TupleConstructorTraits<__is_implicit, !__is_implicit, __is_nothrow>{};
+      return __variadic_constructible_impl<_UTypes...>{};
     }
     else
     {
