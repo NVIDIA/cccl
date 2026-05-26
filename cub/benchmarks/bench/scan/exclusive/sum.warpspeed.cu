@@ -32,7 +32,7 @@
 // %RANGE% TUNE_ITEMS_PLUS_ONE ipt 8:256:8
 
 // %RANGE% TUNE_LOOKBACK_STAGES lbs -2:2:1
-// %RANGE% TUNE_BLOCK_IDX_STAGES lbs -2:2:1
+// %RANGE% TUNE_BLOCK_IDX_STAGES bis -2:2:1
 
 #      define USES_WARPSPEED() 1
 using op_t              = ::cuda::std::plus<>;
