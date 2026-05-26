@@ -768,7 +768,36 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const bool coop_query_ok = (cudaGetDevice(&device_ordinal) == cudaSuccess
           && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
           && cooperative_supported != 0);
-      if (coop_query_ok)
+      // The persistent / direct-atomic kernels may have lower per-SM occupancy
+      // than the staging sweep kernel that was used to size `num_thread_blocks`,
+      // so we must verify the chosen kernel's occupancy fits the requested
+      // cooperative grid; otherwise `cudaLaunchCooperativeKernel` will fail
+      // with cudaErrorCooperativeLaunchTooLarge and we fall back to the legacy
+      // two-kernel path (which is much slower for high-bin GMEM-priv configs).
+      int persistent_sm_occupancy = 0;
+      int direct_atomic_sm_occupancy = 0;
+      const auto persist_occ_err = launcher_factory.MaxSmOccupancy(
+        persistent_sm_occupancy, persistent_kernel_ptr, threads_per_block);
+      if (persist_occ_err != cudaSuccess)
+      {
+        (void) cudaGetLastError();
+        persistent_sm_occupancy = 0;
+      }
+      const auto direct_occ_err = launcher_factory.MaxSmOccupancy(
+        direct_atomic_sm_occupancy, direct_atomic_kernel_ptr, threads_per_block);
+      if (direct_occ_err != cudaSuccess)
+      {
+        (void) cudaGetLastError();
+        direct_atomic_sm_occupancy = 0;
+      }
+      const int persistent_capacity = persistent_sm_occupancy * sm_count;
+      const int direct_atomic_capacity = direct_atomic_sm_occupancy * sm_count;
+      const bool persistent_fits = (persistent_sm_occupancy > 0)
+                                   && (num_thread_blocks <= persistent_capacity);
+      const bool direct_atomic_fits = (direct_atomic_sm_occupancy > 0)
+                                      && (num_thread_blocks <= direct_atomic_capacity);
+      const bool selected_fits = use_direct_atomic_to_output ? direct_atomic_fits : persistent_fits;
+      if (coop_query_ok && selected_fits)
       {
         cudaError_t coop_status = cudaSuccess;
         if (use_direct_atomic_to_output)
