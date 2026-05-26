@@ -19,6 +19,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__numeric/narrow.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
