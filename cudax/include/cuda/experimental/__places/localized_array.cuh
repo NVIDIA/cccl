@@ -359,7 +359,7 @@ private:
   pos4 index_to_grid_pos(size_t linearized_index, F&& delinearize)
   {
     const pos4 coords = delinearize(linearized_index);
-    pos4 eplace_coords;
+    pos4 eplace_coords(0);
     mapper(&eplace_coords, coords, data_dims, grid.get_dims());
     return eplace_coords;
   }
