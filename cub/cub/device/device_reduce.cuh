@@ -233,14 +233,13 @@ private:
         !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
       constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
       constexpr auto is_4b_or_greater = !no_determinism || sizeof(AccumT) >= 4;
-      constexpr auto is_output_accum = !no_determinism || ::cuda::std::is_same_v<OutputT, AccumT>;
+      constexpr auto is_output_accum  = !no_determinism || ::cuda::std::is_same_v<OutputT, AccumT>;
 
       // If the conditions for gpu-to-gpu determinism or non-deterministic
       // reduction are not met, we fall back to run-to-run determinism.
       using determinism_t = ::cuda::std::conditional_t<
         (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
-          || (no_determinism
-              && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater && is_output_accum)),
+          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater && is_output_accum)),
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
 
@@ -421,9 +420,9 @@ public:
   //!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
   //!   The non-deterministic implementation is only used when the output type matches the accumulator type.
   //!   The accumulator type is the decayed result type of invoking ``reduction_op`` with the initial value and an input
-  //!   value. For example, reducing ``std::uint8_t`` input with ``cuda::std::plus`` and a ``std::uint8_t`` initial value
-  //!   accumulates in ``int`` due to integer promotion.
-  //!   If the output type does not match the accumulator type, CUB falls back to run-to-run determinism.
+  //!   value. For example, reducing ``std::uint8_t`` input with ``cuda::std::plus`` and a ``std::uint8_t`` initial
+  //!   value accumulates in ``int`` due to integer promotion. If the output type does not match the accumulator type,
+  //!   CUB falls back to run-to-run determinism.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
   //! Snippet
@@ -2032,7 +2031,8 @@ public:
   //!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
   //!   The non-deterministic implementation is only used when the output type matches the accumulator type.
   //!   The accumulator type is the decayed result type of invoking ``reduction_op`` with the initial value and the
-  //!   transformed input value. For example, reducing transformed ``std::uint8_t`` values with ``cuda::std::plus`` and a
+  //!   transformed input value. For example, reducing transformed ``std::uint8_t`` values with ``cuda::std::plus`` and
+  //!   a
   //!   ``std::uint8_t`` initial value accumulates in ``int`` due to integer promotion.
   //!   If the output type does not match the accumulator type, CUB falls back to run-to-run determinism.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.

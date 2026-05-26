@@ -672,25 +672,26 @@ C2H_TEST("Device reduce not_guaranteed falls back when output type differs from 
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-        policy_t,
-        decltype(d_in.begin()),
-        decltype(d_out.begin()),
-        offset_t,
-        op_t,
-        init_t,
-        accumulator_t,
-        transform_t>),
+          policy_t,
+          decltype(d_in.begin()),
+          decltype(d_out.begin()),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>),
     reinterpret_cast<void*>(
-      cub::detail::reduce::DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
+      cub::detail::reduce::
+        DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-        policy_t,
-        accumulator_t*,
-        decltype(d_out.begin()),
-        int, // always used with int offset
-        op_t,
-        init_t,
-        accumulator_t>)};
+          policy_t,
+          accumulator_t*,
+          decltype(d_out.begin()),
+          int, // always used with int offset
+          op_t,
+          init_t,
+          accumulator_t>)};
 
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           allowed_kernels(kernels),
@@ -717,31 +718,33 @@ C2H_TEST("Device sum not_guaranteed falls back when output type differs from acc
   num_items_t num_items = static_cast<num_items_t>(d_in.size());
   size_t expected_bytes_allocated{};
 
-  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items));
+  REQUIRE(
+    cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items));
 
   using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
   auto kernels   = cuda::std::array<void*, 3>{
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-        policy_t,
-        decltype(d_in.begin()),
-        decltype(d_out.begin()),
-        offset_t,
-        op_t,
-        init_t,
-        accumulator_t,
-        transform_t>),
+          policy_t,
+          decltype(d_in.begin()),
+          decltype(d_out.begin()),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>),
     reinterpret_cast<void*>(
-      cub::detail::reduce::DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
+      cub::detail::reduce::
+        DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
     reinterpret_cast<void*>(
       cub::detail::reduce::DeviceReduceSingleTileKernel<
-        policy_t,
-        accumulator_t*,
-        decltype(d_out.begin()),
-        int, // always used with int offset
-        op_t,
-        init_t,
-        accumulator_t>)};
+          policy_t,
+          accumulator_t*,
+          decltype(d_out.begin()),
+          int, // always used with int offset
+          op_t,
+          init_t,
+          accumulator_t>)};
 
   auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
                           allowed_kernels(kernels),
