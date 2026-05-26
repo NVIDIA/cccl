@@ -34,6 +34,7 @@ Checks:
   - '-bugprone-argument-comment'
   # This is just noise for the most part
   - '-bugprone-multi-level-implicit-pointer-conversion'
+  - '-bugprone-signed-char-misuse'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
