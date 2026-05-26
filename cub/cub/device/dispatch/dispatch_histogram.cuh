@@ -1032,8 +1032,22 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                           privatized_decode_op_t,
                                                           output_decode_op_t,
                                                           OffsetT>;
+      // Runtime gate: partitioning helps when atomics-per-bin is high (lots of
+      // pixels per bin -> high contention even with the SMEM cuckoo cache
+      // absorbing hot bins). When pixels << bins (e.g. 1M pixels into 2M bins
+      // with Entropy=1.0), the cache wipes most contention and the 2x sample
+      // reads are pure cost. Use total_pixels / max_num_output_bins as a
+      // proxy for contention level; require >= 4 atomics-per-bin on average.
+      // (For Bins=2097152, this enables partitioning at Elements=268M but
+      // disables it at Elements=1M.)
+      const OffsetT total_pixels_for_partition =
+        num_row_pixels * num_rows;
+      const bool atomic_contention_high =
+        (max_num_output_bins > 0)
+        && (static_cast<long long>(total_pixels_for_partition)
+            >= 4LL * static_cast<long long>(max_num_output_bins));
       const bool use_bin_partitions =
-        kBinPartitionsEligible && (num_thread_blocks >= 2);
+        kBinPartitionsEligible && (num_thread_blocks >= 2) && atomic_contention_high;
       // Pick the kernel pointer through a constexpr branch so the
       // BinPartitions=2 instantiation only enters the binary on eligible
       // code paths. We type-erase to a `const void*` since the function-
