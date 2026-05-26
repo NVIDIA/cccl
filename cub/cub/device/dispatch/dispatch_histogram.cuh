@@ -328,16 +328,24 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   sweep_grid_dims.y = (unsigned int) blocks_per_col;
   sweep_grid_dims.z = 1;
 
-  // For the GMEM-privatized host-init path with very high bin counts, the
-  // dispatch uses a direct-atomic-to-output kernel instead of per-block
-  // privatization + gather merge. With very high bin counts the per-block
-  // privatization storage (`num_blocks * num_bins * sizeof(CounterT)`) is
-  // huge, and zeroing it dominates runtime, while contention on the output
-  // histogram is so low (each output bin only sees a tiny fraction of the
-  // input samples) that direct atomic-adds to the output win. The threshold
-  // (1<<20 ~= 1M bins) is conservative; below it the gather merge is
-  // preferred because contention starts to bite.
-  constexpr int direct_atomic_bin_threshold = 1 << 20;
+  // For the GMEM-privatized host-init path the dispatch uses a
+  // direct-atomic-to-output kernel instead of per-block privatization +
+  // gather merge. The direct-atomic kernel uses warp-level coalesced
+  // atomics (`__match_any_sync`) so cross-block contention on hot bins
+  // is largely amortised; the main remaining concern is mid-bin paths
+  // where contention per bin is moderate but per-block privatization is
+  // also small.
+  //
+  // Multi-active-channel paths benefit from direct-atomic at lower bin
+  // counts than single-channel paths because the per-block privatization
+  // storage scales with NUM_ACTIVE_CHANNELS while contention per channel
+  // does not, and because warp-level coalescing is more effective when
+  // the same warp scans more samples (i.e. more chances for matching
+  // bins per warp scan).
+  constexpr int direct_atomic_bin_threshold_single = 1 << 20;
+  constexpr int direct_atomic_bin_threshold_multi  = 60000;
+  const int direct_atomic_bin_threshold =
+    (NUM_ACTIVE_CHANNELS > 1) ? direct_atomic_bin_threshold_multi : direct_atomic_bin_threshold_single;
   const bool use_direct_atomic_to_output =
 #if _CCCL_HOSTED()
     (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && max_num_output_bins >= direct_atomic_bin_threshold);
