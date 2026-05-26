@@ -1077,49 +1077,65 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   constexpr int unroll = 4;
   const OffsetT total_pixels = num_rows * num_row_pixels;
 
+  // Per-warp atomic coalescing: when multiple lanes in a warp produce
+  // the same bin id, fold their contributions into one device-scope
+  // atomicAdd issued by the lane with the lowest matching lane id.
+  // This converts up to 32 contended atomics on a hot bin into 1,
+  // dramatically reducing atomic traffic for low-entropy distributions.
+  //
+  // We always pass the full warp mask `0xffffffffu` to
+  // `__match_any_sync` so the coalescer doesn't depend on
+  // `__activemask()` in possibly-divergent code. The pixel sweep loop
+  // is structured so every lane in a warp executes the same number of
+  // iterations: we use a single grid-strided loop with a per-iteration
+  // bounds check that issues a sentinel `bin == -1` for past-the-end
+  // pixels, keeping all lanes in lockstep through the coalescer.
   if (num_rows == 1)
   {
-    const OffsetT step  = static_cast<OffsetT>(total_threads);
-    const OffsetT start = static_cast<OffsetT>(tid_global);
+    const OffsetT step         = static_cast<OffsetT>(total_threads);
+    const OffsetT start        = static_cast<OffsetT>(tid_global);
+    const unsigned int lane_id = threadIdx.x & 0x1f;
 
-    // Unrolled stride loop: each iteration handles `unroll` pixels per
-    // thread. The `unroll * step` chunk ensures every iteration is a
-    // contiguous strided block of pixels, so loads remain coalesced.
-    OffsetT pixel = start;
-    for (; pixel + (unroll - 1) * step < total_pixels; pixel += unroll * step)
+    // Determine the maximum number of `unroll`-sized chunks any thread
+    // in the grid will run, so every thread iterates the same number
+    // of times. Past-the-end pixels yield `bin = -1`, which the
+    // coalescer treats as a no-op group.
+    const OffsetT chunk           = static_cast<OffsetT>(unroll) * step;
+    const OffsetT chunk_iters_max = (total_pixels + chunk - 1) / chunk;
+
+    for (OffsetT it = 0; it < chunk_iters_max; ++it)
     {
+      const OffsetT pixel = start + it * chunk;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < unroll; ++u)
       {
-        const OffsetT pix_off = (pixel + u * step) * NumChannels;
+        const OffsetT this_pixel = pixel + u * step;
+        const bool valid_pixel   = this_pixel < total_pixels;
+        const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ch = 0; ch < NumActiveChannels; ++ch)
         {
-          auto sample = d_samples[pix_off + ch];
-          int bin     = -1;
-          privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
-          const int num_bins = num_output_bins_wrapper[ch];
-          if (bin >= 0 && bin < num_bins)
+          int bin = -1;
+          if (valid_pixel)
           {
-            atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+            auto sample = d_samples[pix_off + ch];
+            privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+            const int num_bins = num_output_bins_wrapper[ch];
+            if (bin >= num_bins)
+            {
+              bin = -1;
+            }
           }
-        }
-      }
-    }
-    // Cleanup loop for the tail.
-    for (; pixel < total_pixels; pixel += step)
-    {
-      const OffsetT pix_off = pixel * NumChannels;
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        auto sample = d_samples[pix_off + ch];
-        int bin     = -1;
-        privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
-        const int num_bins = num_output_bins_wrapper[ch];
-        if (bin >= 0 && bin < num_bins)
-        {
-          atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+          // Coalesce same-bin lanes into a single atomic add. All
+          // lanes in the warp must call `__match_any_sync` with the
+          // same mask; we use 0xffffffffu so the call is well-defined
+          // even when individual lanes have invalid bins (-1).
+          const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+          const int leader         = __ffs(static_cast<int>(peers)) - 1;
+          if (bin >= 0 && static_cast<int>(lane_id) == leader)
+          {
+            atomicAdd(&d_output_histograms_wrapper[ch][bin], static_cast<CounterT>(__popc(peers)));
+          }
         }
       }
     }
@@ -1127,7 +1143,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   else
   {
     // Slow path: row-strided input that is not flattenable to a single
-    // linear array.
+    // linear array. No coalescing here since it's the rare path.
     for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
          pixel += static_cast<OffsetT>(total_threads))
     {
