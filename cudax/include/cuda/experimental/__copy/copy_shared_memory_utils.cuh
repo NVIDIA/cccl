@@ -33,6 +33,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/array>
 
+#  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 #  include <cuda/experimental/__copy_bytes/types.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -107,11 +108,147 @@ __num_contiguous_dimensions(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank
 //! full warp of coalesced accesses.
 inline constexpr size_t __max_tile_size = 32;
 
-//! @brief Decide whether the shared-memory tiled transpose kernel is profitable.
+// The structure holds the tiling information to optimize the transpose (shared-memory) kernel.
+// - __tile_sizes: the size of each tile dimension in shared-memory
+// - __src_perm: the permutation of the source dimensions (copy to shared-memory)
+// - __dst_perm: the permutation of the destination dimensions (copy from shared-memory)
+// - __tile_total_size: the total size of the tile in shared-memory
+// - __active_tile_dims: the number of dimensions covered by the tile
+// - __active_32_dims: the number of tile dimensions with extent __max_tile_size
+// - __is_valid: true if the tiling is valid
+// - __use_xor_swizzle: true if the XOR swizzle is used
+template <::cuda::std::size_t _MaxRank>
+struct __shared_mem_tiling_result
+{
+  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_sizes{};
+  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __src_perm{};
+  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __dst_perm{};
+  ::cuda::std::size_t __tile_total_size  = 1;
+  ::cuda::std::size_t __active_tile_dims = 0;
+  ::cuda::std::size_t __active_32_dims   = 0;
+  bool __is_valid                        = false;
+  bool __use_xor_swizzle                 = false;
+};
+
+//! @brief Adds a contiguous stride-1 run from one tensor to the shared-memory tile.
 //!
-//! Returns true when the destination has stride-1 in mode 0, the source does not, there are at least two contiguous
-//! destination dimensions, the resulting tile is large enough to amortize the shared-memory overhead, and the total
-//! number of tiles is sufficient to utilize the GPU (at least one full wave across all SMs).
+//! @param[in]     __tensor                 Raw tensor descriptor used to find coalesced modes
+//! @param[in]     __perm                   Mode order to scan
+//! @param[in,out] __result                 Shared-memory tiling result updated with selected tile sizes
+//! @param[in]     __max_shared_mem_bytes   Maximum shared-memory capacity for one tile
+//! @return Number of coalesced elements covered by this tensor's selected tile run
+template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __add_coalesced_tile_run(
+  const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor,
+  const ::cuda::std::array<::cuda::std::size_t, _MaxRank>& __perm,
+  __shared_mem_tiling_result<_MaxRank>& __result,
+  ::cuda::std::size_t __max_shared_mem_bytes) noexcept
+{
+  using ::cuda::std::size_t;
+  size_t __coalesced_tile_size = 1;
+  _StrideT __expected_stride   = 1;
+
+  for (size_t __i = 0; __i < __tensor.__rank; ++__i)
+  {
+    const auto __perm_i = __perm[__i];
+    const auto __extent = static_cast<size_t>(__tensor.__extents[__perm_i]);
+    const auto __stride = ::cuda::experimental::__abs_integer(__tensor.__strides[__perm_i]);
+    if (__stride != __expected_stride) // input tensor not contiguous
+    {
+      break;
+    }
+
+    if (__result.__tile_sizes[__perm_i] == 1) // first time we see this dimension
+    {
+      const auto __tile_size             = ::cuda::std::min(__extent, __max_tile_size);
+      const auto __tile_total_size_bytes = __result.__tile_total_size * __tile_size * sizeof(_Tp);
+      if (__tile_total_size_bytes > __max_shared_mem_bytes)
+      {
+        break;
+      }
+      // if the tile fits in shared-memory, update the result
+      __result.__tile_sizes[__perm_i] = static_cast<__tile_extent_t>(__tile_size);
+      __result.__tile_total_size *= __tile_size;
+      ++__result.__active_tile_dims;
+      if (__tile_size == __max_tile_size)
+      {
+        ++__result.__active_32_dims;
+      }
+    }
+    __coalesced_tile_size *= __result.__tile_sizes[__perm_i];
+    __expected_stride *= static_cast<_StrideT>(__extent);
+  }
+  return __coalesced_tile_size;
+}
+
+//! @brief Compute a source/destination-aware shared-memory tile.
+//!
+//! The selected tile spans coalesced dimensions from both layouts. This keeps the load phase ordered by source stride
+//! and the store phase ordered by destination stride, without requiring either coalesced dimension to be mode 0.
+//!
+//! @param[in] __src Source raw tensor descriptor
+//! @param[in] __dst Destination raw tensor descriptor
+//! @return Shared-memory tiling decision and layout permutations
+template <typename _TpIn,
+          typename _ExtentT,
+          typename _StrideTIn,
+          typename _TpSrc,
+          typename _StrideTOut,
+          typename _TpDst,
+          ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API __shared_mem_tiling_result<_MaxRank>
+__find_shared_mem_tiling(const __raw_tensor<_ExtentT, _StrideTIn, _TpSrc, _MaxRank>& __src,
+                         const __raw_tensor<_ExtentT, _StrideTOut, _TpDst, _MaxRank>& __dst) noexcept
+{
+  using ::cuda::std::size_t;
+  __shared_mem_tiling_result<_MaxRank> __result{};
+  // initialize the source and destination permutations and sort them by stride
+  for (size_t __i = 0; __i < _MaxRank; ++__i)
+  {
+    __result.__tile_sizes[__i] = 1;
+    __result.__src_perm[__i]   = __i;
+    __result.__dst_perm[__i]   = __i;
+  }
+  __result.__src_perm = ::cuda::experimental::__stride_order(__src);
+  __result.__dst_perm = ::cuda::experimental::__stride_order(__dst);
+
+  const auto __current_dev            = ::cuda::experimental::__current_device();
+  const size_t __max_shared_mem_bytes = __current_dev.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
+  const auto __src_coalesced_tile_size =
+    ::cuda::experimental::__add_coalesced_tile_run(__src, __result.__src_perm, __result, __max_shared_mem_bytes);
+  const auto __dst_coalesced_tile_size =
+    ::cuda::experimental::__add_coalesced_tile_run(__dst, __result.__dst_perm, __result, __max_shared_mem_bytes);
+
+  // If the tile total size is too small, or the coalescing is not useful on both sides, or the number of active tile
+  // dimensions is less than 2, return the result.
+  if (__result.__tile_total_size < __max_tile_size * 8 || __src_coalesced_tile_size < 2 || __dst_coalesced_tile_size < 2
+      || __result.__active_tile_dims < 2)
+  {
+    return __result;
+  }
+
+  // There must be enough blocks to keep the GPU busy (at least one full wave across all SMs).
+  const size_t __num_sms = __current_dev.attribute<::cudaDevAttrMultiProcessorCount>();
+  size_t __num_tiles     = 1;
+  for (size_t __r = 0; __r < __dst.__rank; ++__r)
+  {
+    const auto __extent    = static_cast<size_t>(__dst.__extents[__r]);
+    const auto __tile_size = static_cast<size_t>(__result.__tile_sizes[__r]);
+    __num_tiles *= ::cuda::ceil_div(__extent, __tile_size);
+  }
+  if (__num_tiles < __num_sms)
+  {
+    return __result;
+  }
+
+  __result.__is_valid = true;
+  // Shared memory swizzle makes sense only for 32-bit and 64-bit types.
+  __result.__use_xor_swizzle = (sizeof(_TpIn) == 4 || sizeof(_TpIn) == 8) //
+                            && __result.__active_32_dims == 2;
+  return __result;
+}
+
+//! @brief Decide whether the shared-memory tiled transpose kernel is profitable.
 //!
 //! @param[in] __src Source raw tensor descriptor
 //! @param[in] __dst Destination raw tensor descriptor
@@ -126,88 +263,7 @@ template <typename _ExtentT,
 __use_shared_mem_kernel(const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _MaxRank>& __src,
                         const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst) noexcept
 {
-  using ::cuda::std::size_t;
-  using __rank_t                    = typename __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>::__rank_t;
-  const size_t __num_contiguous_dst = ::cuda::experimental::__num_contiguous_dimensions(__dst);
-  // * destination is contiguous (in dimension 0) -> coalesced destination writes
-  // * source is not contiguous (already excluded by vectorized/contiguous copy)
-  // * there are at least two contiguous destination dimensions -> otherwise, direct copy is better
-  if (__src.__strides[0] == 1 || __dst.__strides[0] != 1 || __num_contiguous_dst < 2)
-  {
-    return false;
-  }
-
-  // * the tile is large enough to benefits from coalesced memory accesses.
-  // algorithm:
-  // - accumulate the product of the tile sizes until the shared memory limit is reached
-  // - the tile size (which is at block level) is capped at the warp size to get coalesced accesses
-  const auto __current_dev            = ::cuda::experimental::__current_device();
-  const size_t __max_shared_mem_bytes = __current_dev.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
-  size_t __size_product               = 1;
-  int __tile_rank                     = 0;
-  for (size_t __r = 0; __r < __num_contiguous_dst; ++__r, ++__tile_rank)
-  {
-    const auto __tile_size_r = ::cuda::std::min(static_cast<size_t>(__dst.__extents[__r]), __max_tile_size);
-    if (__size_product * __tile_size_r * sizeof(_TpIn) > __max_shared_mem_bytes)
-    {
-      break;
-    }
-    __size_product *= __tile_size_r;
-  }
-  // if the final tile size is too small, exit
-  // 8 means each warp performs (block size / warp size) iterations >= 8
-  if (__tile_rank < 2 || __size_product < __max_tile_size * 8)
-  {
-    return false;
-  }
-
-  // * there are enough tiles to keep the GPU busy (at least one full wave across all SMs)
-  size_t __num_tiles = 1; // __num_tiles == number of blocks
-  for (__rank_t __r = 0; __r < __dst.__rank; ++__r)
-  {
-    const auto __extent    = static_cast<size_t>(__dst.__extents[__r]);
-    const auto __tile_size = (__r < __tile_rank) ? ::cuda::std::min(__extent, __max_tile_size) : size_t{1};
-    __num_tiles *= ::cuda::ceil_div(__extent, __tile_size);
-  }
-  const size_t __num_sms = __current_dev.attribute<::cudaDevAttrMultiProcessorCount>();
-  return __num_tiles >= __num_sms;
-}
-
-//! @brief Compute the shared-memory tile sizes for a destination tensor.
-//!
-//! Greedily expands the tile across contiguous dimensions up to the warp-size cap per dimension and the device
-//! shared-memory limit. Dimensions beyond the tile rank are set to extent 1.
-//!
-//! @param[in]  __tensor          Destination raw tensor descriptor
-//! @param[out] __tile_total_size Total number of elements in one tile (output)
-//! @return Per-dimension tile sizes (unused dimensions are 1)
-template <typename _TpIn, typename _ExtentT, typename _StrideT, typename _TpOut, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API ::cuda::std::array<__tile_extent_t, _MaxRank> __find_shared_mem_tiling(
-  const __raw_tensor<_ExtentT, _StrideT, _TpOut, _MaxRank>& __tensor, ::cuda::std::size_t& __tile_total_size) noexcept
-{
-  using ::cuda::std::size_t;
-  const auto __current_dev            = ::cuda::experimental::__current_device();
-  const size_t __max_shared_mem_bytes = __current_dev.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
-  const size_t __num_contiguous_dst   = ::cuda::experimental::__num_contiguous_dimensions(__tensor);
-
-  ::cuda::std::array<__tile_extent_t, _MaxRank> __tile_sizes{};
-  __tile_total_size  = 1;
-  size_t __tile_rank = 0;
-  for (size_t __r = 0; __r < __num_contiguous_dst; ++__r, ++__tile_rank)
-  {
-    const auto __tile_size_r = ::cuda::std::min(static_cast<size_t>(__tensor.__extents[__r]), __max_tile_size);
-    if (__tile_total_size * __tile_size_r * sizeof(_TpIn) > __max_shared_mem_bytes)
-    {
-      break;
-    }
-    __tile_sizes[__r] = static_cast<__tile_extent_t>(__tile_size_r);
-    __tile_total_size *= __tile_size_r;
-  }
-  for (size_t __r = __tile_rank; __r < _MaxRank; ++__r)
-  {
-    __tile_sizes[__r] = 1;
-  }
-  return __tile_sizes;
+  return ::cuda::experimental::__find_shared_mem_tiling<_TpIn>(__src, __dst).__is_valid;
 }
 
 //! @brief Compute the thread block size for the shared-memory kernel.
