@@ -187,6 +187,16 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!
 //! @tparam OffsetT
 //!   Signed integer type for global offsets
+//!
+//! @tparam UseDynamicSmemHistogram
+//!   When true, the privatized histogram storage lives in dynamic shared memory (passed in
+//!   via an external pointer) rather than in the agent's static `_TempStorage`. This is used
+//!   to lift the per-block bin count above the ptxas default 48 KB static-SMEM cap on
+//!   architectures that support large dynamic SMEM (e.g. SM100 supports up to ~228 KiB
+//!   per CTA via cudaFuncSetAttribute(cudaFuncAttributeMaxDynamicSharedMemorySize)).
+//!   When true, `_TempStorage::histograms` becomes a per-channel pointer array initialized
+//!   from a caller-supplied extern shared-memory base pointer; all accumulate / init / store
+//!   paths still index `histograms[ch][bin]` and remain unchanged.
 template <typename AgentHistogramPolicyT,
           int PrivatizedSmemBins,
           int NumChannels,
@@ -195,7 +205,8 @@ template <typename AgentHistogramPolicyT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          bool UseDynamicSmemHistogram = false>
 struct AgentHistogram
 {
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
@@ -230,10 +241,21 @@ struct AgentHistogram
     BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
   using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
+  // Histogram storage type. With static SMEM, we store the histogram inline in the
+  // agent's _TempStorage. With dynamic SMEM (UseDynamicSmemHistogram == true), we
+  // store only a per-channel pointer array; the actual bin storage lives in extern
+  // __shared__ memory allocated by the caller's kernel launch (via the third
+  // triple-chevron parameter, with `cudaFuncSetAttribute(cudaFuncAttributeMaxDynamicSharedMemorySize, ...)`
+  // set so the launch is permitted to use more than the 48 KB ptxas default).
+  using HistogramsStorageT =
+    ::cuda::std::_If<UseDynamicSmemHistogram, CounterT* [NumActiveChannels], CounterT[NumActiveChannels][PrivatizedSmemBins + 1]>;
+
   struct _TempStorage
   {
-    // Smem needed for block-privatized smem histogram (with 1 word of padding)
-    CounterT histograms[NumActiveChannels][PrivatizedSmemBins + 1];
+    // SMEM holding (or pointing at) per-block-privatized histogram.
+    // - Static path: a CounterT[NumActiveChannels][PrivatizedSmemBins+1] inline array (with 1 word of padding).
+    // - Dynamic path: a CounterT*[NumActiveChannels] pointer array; bins live in extern __shared__.
+    HistogramsStorageT histograms;
     int tile_idx;
 
     union
@@ -631,6 +653,10 @@ struct AgentHistogram
                                                : // prefer gmem privatized histograms
                       blockIdx.x & 1) // prefer blended privatized histograms
   {
+    static_assert(!UseDynamicSmemHistogram,
+                  "AgentHistogram with UseDynamicSmemHistogram=true requires the dynamic-SMEM "
+                  "constructor that takes an extern __shared__ base pointer.");
+
     const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
 
     // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
@@ -639,6 +665,59 @@ struct AgentHistogram
     {
       const auto offset                 = static_cast<::cuda::std::int64_t>(blockId) * num_privatized_bins[ch];
       this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
+    }
+  }
+
+  //! Dynamic-SMEM constructor.
+  //!
+  //! Used when `UseDynamicSmemHistogram == true`. The caller's kernel allocates a contiguous
+  //! `extern __shared__ CounterT[]` block of size sum(num_privatized_bins[ch]) entries and
+  //! passes its base pointer here. We initialize per-channel pointers in `_TempStorage::histograms`
+  //! so the existing accumulate / init / store paths can index `histograms[ch][bin]` unchanged.
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
+    TempStorage& temp_storage,
+    SampleIteratorT d_samples,
+    const int* num_output_bins,
+    const int* num_privatized_bins,
+    CounterT** d_output_histograms,
+    CounterT** d_privatized_histograms,
+    const OutputDecodeOpT* output_decode_op,
+    const PrivatizedDecodeOpT* privatized_decode_op,
+    CounterT* dyn_smem_histogram_base)
+      : temp_storage(temp_storage.Alias())
+      , d_wrapped_samples(d_samples)
+      , d_native_samples(NativePointer(d_wrapped_samples))
+      , num_output_bins(num_output_bins)
+      , num_privatized_bins(num_privatized_bins)
+      , d_output_histograms(d_output_histograms)
+      , output_decode_op(output_decode_op)
+      , privatized_decode_op(privatized_decode_op)
+      , prefer_smem((mem_preference == SMEM) ? true : // prefer smem privatized histograms
+                      (mem_preference == GMEM) ? false
+                                               : // prefer gmem privatized histograms
+                      blockIdx.x & 1) // prefer blended privatized histograms
+  {
+    static_assert(UseDynamicSmemHistogram,
+                  "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmemHistogram=true.");
+
+    const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
+
+    // Initialize the locations of this block's privatized GMEM histograms.
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + (blockId * num_privatized_bins[ch]);
+    }
+
+    // Initialize per-channel SMEM pointers from the extern __shared__ base. Channels are laid
+    // out contiguously: ch=0 starts at base, ch=1 starts at base + num_privatized_bins[0], etc.
+    // num_privatized_bins is the per-channel bin count and is a small int array passed in
+    // grid-constant memory, so this loop is cheap.
+    CounterT* p = dyn_smem_histogram_base;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      this->temp_storage.histograms[ch] = p;
+      p += num_privatized_bins[ch];
     }
   }
 
@@ -717,6 +796,30 @@ struct AgentHistogram
     else
     {
       StoreOutput(d_privatized_histograms);
+    }
+  }
+
+  //! Copy the privatized SMEM histogram to this block's per-block GMEM staging slab.
+  //!
+  //! Used by the staging dispatch path: instead of doing per-block atomicAdd into the
+  //! global output histogram, each block leaves its privatized histogram in GMEM as a
+  //! per-block staging slab. A follow-on combine kernel reduces across blocks.
+  //!
+  //! Only meaningful when prefer_smem is true (SMEM-privatized path); for the
+  //! GMEM-privatized path the per-block histograms are already in GMEM.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreSmemToStagingSlab()
+  {
+    // Barrier to make sure all SMEM updates have completed
+    __syncthreads();
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      const int channel_bins = num_privatized_bins[ch];
+      for (int bin = threadIdx.x; bin < channel_bins; bin += threads_per_block)
+      {
+        d_privatized_histograms[ch][bin] = temp_storage.histograms[ch][bin];
+      }
     }
   }
 };
