@@ -142,16 +142,6 @@ projects:
     - "pyproject.toml"
     exclude_regexes: []
 
-  # `python_experimental` is the matrix project that runs `test_py_stf`. It
-  # consumes the regular cuda-cccl wheel built by the `python` project, so any
-  # change that affects the `python` project also affects `python_experimental`.
-  python_experimental:
-    name: "Python Experimental"
-    matrix_project: "python_experimental"
-    lite_dependencies: [python]
-    full_dependencies: []
-    include_regexes: []
-
   packaging:
     name: "CCCL Packaging"
     matrix_project: "packaging"
