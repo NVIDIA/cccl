@@ -105,33 +105,22 @@ struct Transforms
         return;
       }
 
-      // Interpolated first-guess index. Use float arithmetic when the level
-      // type fits cleanly in float precision (32-bit-or-smaller integers and
-      // float itself); fall back to double for double / 64-bit integers to
-      // avoid precision loss for very-wide ranges. Use the fast (lower
-      // precision) divide for float since the verify + fallback handles any
-      // interpolation slop. The earlier sample-in-range check guarantees
-      // first_level < last_level so no zero-range guard is needed.
-      using InterpT =
-        ::cuda::std::_If<(sizeof(LevelT) <= 4 && !::cuda::std::is_same_v<LevelT, double>), float, double>;
-      const InterpT s_f     = static_cast<InterpT>(s);
-      const InterpT first_f = static_cast<InterpT>(first_level);
-      const InterpT last_f  = static_cast<InterpT>(last_level);
-      const InterpT range_f = last_f - first_f;
+      // Interpolated first-guess index. We always use a fast 32-bit float
+      // divide (MUFU.RCP) for the slope: the divide does not have to be
+      // accurate, only close enough that the verify-or-1-step-correct path
+      // hits a handful of bins. The full UpperBound fallback catches any
+      // remaining mismatch from precision loss or non-uniform spacing.
+      // For wide-ranged 64-bit types we still compute (sample - first) in
+      // the level type to avoid float overflow on the difference itself.
+      const auto delta = (s - first_level);
+      const auto range = (last_level - first_level);
       int guess;
-      if constexpr (::cuda::std::is_same_v<InterpT, float>)
-      {
-        // Fast approximate divide (uses MUFU.RCP); the verify path will
-        // catch any interpolation error.
-        NV_IF_ELSE_TARGET(
-          NV_IS_DEVICE,
-          (guess = static_cast<int>(__fdividef((s_f - first_f) * static_cast<float>(num_bins), range_f));),
-          (guess = static_cast<int>(((s_f - first_f) * static_cast<float>(num_bins)) / range_f);));
-      }
-      else
-      {
-        guess = static_cast<int>(((s_f - first_f) * num_bins) / range_f);
-      }
+      NV_IF_ELSE_TARGET(
+        NV_IS_DEVICE,
+        (guess = static_cast<int>(
+           __fdividef(static_cast<float>(delta) * static_cast<float>(num_bins), static_cast<float>(range)));),
+        (guess = static_cast<int>(
+           (static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));));
       if (guess < 0)
       {
         guess = 0;
