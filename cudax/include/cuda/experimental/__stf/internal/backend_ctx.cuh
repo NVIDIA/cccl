@@ -43,6 +43,7 @@
 
 #include <atomic>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -113,7 +114,7 @@ protected:
   public:
     friend class backend_ctx_untyped;
 
-    impl(async_resources_handle async_resources = async_resources_handle())
+    impl(async_resources_handle async_resources = async_resources_handle(), bool initialize_cuda_runtime = true)
         : auto_scheduler(reserved::scheduler::make(getenv("CUDASTF_SCHEDULE")))
         , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
         // Record whether the handle was supplied by the caller *before* we
@@ -122,12 +123,14 @@ protected:
         , user_provided_handle(bool(async_resources))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
     {
-      // Forces init
-      cudaError_t ret = cudaFree(0);
-
-      // If we are running the task in the context of a CUDA callback, we are
-      // not allowed to issue any CUDA API call.
-      EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
+      if (initialize_cuda_runtime)
+      {
+        // Initialize the CUDA runtime before STF starts issuing work.
+        cudaError_t ret = cudaFree(0);
+        // If we are running the task in the context of a CUDA callback, we
+        // are not allowed to issue any CUDA API call.
+        EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
+      }
 
       // Enable peer memory accesses (if not done already)
       machine::instance().enable_peer_accesses();
