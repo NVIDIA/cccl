@@ -998,6 +998,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // depending on grid size: partitioning requires `num_thread_blocks >= 2`
       // so both partitions get at least one block, otherwise the bins in
       // partition 1 would never be written.
+      //
+      // Empirical: bin-space partitioning is profitable on the range
+      // (SearchTransform / non-uniform bins) path -- where per-pixel decode is
+      // a binary search and the kernel is atomic-contention-bound -- but it
+      // regresses the even (ScaleTransform / uniform bins) path -- where
+      // per-pixel decode is a multiply-shift and the kernel is read-bound
+      // (the 2x sample reads outweigh the halved atomic contention). Multi-
+      // active-channel paths likewise regressed in iter 1 (more samples per
+      // pixel, more re-decode cost). Restrict partitioning to the
+      // single-active-channel range path until we have a finer-grained
+      // selector.
       // The direct-atomic kernel skips per-block privatization entirely
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
@@ -1023,7 +1034,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                           privatized_decode_op_t,
                                                           output_decode_op_t,
                                                           OffsetT>;
-      const bool use_bin_partitions = (num_thread_blocks >= 2);
+      // Gate on (a) sufficient grid (>= 2 blocks) so each partition has at
+      // least one block, and (b) the range single-active-channel path where
+      // per-pixel binary search makes the kernel atomic-contention-bound.
+      constexpr bool kBinPartitionsEligible =
+        (!IsEven) && (NUM_ACTIVE_CHANNELS == 1);
+      const bool use_bin_partitions =
+        kBinPartitionsEligible && (num_thread_blocks >= 2);
       auto direct_atomic_kernel_ptr =
         use_bin_partitions ? direct_atomic_kernel_p2_ptr : direct_atomic_kernel_p1_ptr;
       if (false)
