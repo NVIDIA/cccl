@@ -186,8 +186,7 @@ def _run_stackable_while(cfg, max_new_tokens):
         # Advance step and compute done = (step < max_new_tokens) ? 1 : 0.
         # Uses the scratch-buffered helper to sidestep the PyTorch
         # caching-allocator / while-graph-capture mod-4 miscount described
-        # in stf_advance_counter_flag and
-        # tests/stf/probe_k_sweep_torch_variants.py.
+        # in stf_advance_counter_flag.
         stf_advance_counter_flag(
             ctx, l_step, l_done, max_new_tokens, scratch=l_cond_scratch
         )

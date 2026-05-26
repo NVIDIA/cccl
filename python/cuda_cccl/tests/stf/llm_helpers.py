@@ -538,9 +538,7 @@ def stf_advance_counter_flag(
     updates is silently dropped. The bug has been pinned to the PyTorch
     caching allocator allocating a transient tensor (for the cast /
     comparison result) on a stream that is simultaneously under STF's
-    while-graph capture — reproducer in
-    ``tests/stf/probe_k_sweep_torch_variants.py`` (see mode
-    ``r_single_cast_scratch`` for the passing baseline).
+    while-graph capture.
 
     The workaround is to sink the transient cast into an STF-owned scratch
     buffer so PyTorch never allocates inside the captured body. Pass a

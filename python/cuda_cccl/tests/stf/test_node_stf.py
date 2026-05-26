@@ -673,8 +673,8 @@ def integrate_torchode_dopri5(y0_t, w: MLPWeightsT, cfg: NodeConfig):
 def _build_stf_persistent_forward(cfg: NodeConfig, weights: MLPWeights):
     """Build STF context and logical data once; return a ``forward`` closure.
 
-    Persistent-context timing pattern (cf. ``bench_multi_lora.py``): all
-    allocations and weight staging happen out of the timed path. The
+    Persistent-context timing pattern: all allocations and weight staging
+    happen out of the timed path. The
     returned closure opens a fresh ``graph_scope() + repeat(N)`` each
     invocation, runs the integration, and returns without synchronising
     (the caller synchronises and times).
