@@ -420,7 +420,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_xlarge)
     || (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_large)
     || (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel);
-  static constexpr bool kStagingChannelOk = (NUM_ACTIVE_CHANNELS == 1);
+  static constexpr bool kStagingChannelOk = (NUM_ACTIVE_CHANNELS >= 1 && NUM_ACTIVE_CHANNELS <= 4);
   static constexpr bool kStagingPrivOk    = kStagingUsesDynSmem;
   // For all dyn-SMEM extended tiers we always run staging.
   static constexpr bool kUseStagingPath = kStagingChannelOk && kStagingPrivOk;
@@ -1624,6 +1624,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     //   - medium: bins in (256, 2048],   8 KB dyn-SMEM/block (max occupancy).
     //   - large:  bins in (2048, 8192],  32 KB dyn-SMEM/block.
     //   - xlarge: bins in (8192, 16384], 64 KB dyn-SMEM/block.
+    //
+    // For multi-active-channel non-byte samples, the dyn-SMEM size scales with
+    // NUM_ACTIVE_CHANNELS, so xlarge (16384*4*Nch bytes) exceeds B200's
+    // ~228 KB per-CTA cap for Nch >= 4. We restrict multi-channel routing to
+    // medium and large tiers (Nch * tier * 4 bytes <= ~96 KB).
     if constexpr (NUM_ACTIVE_CHANNELS == 1)
     {
       if (max_num_output_bins > max_privatized_smem_bins
@@ -1690,6 +1695,47 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
                   policy_selector,
                   kernel_source,
                   launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+    }
+    // Multi-channel dyn-SMEM staging tiers: 2 <= Nch * 4 * bins <= ~96 KB
+    // (medium and large only; xlarge would exceed per-CTA SMEM cap on Nch=4).
+    else if constexpr (NUM_ACTIVE_CHANNELS >= 2 && NUM_ACTIVE_CHANNELS <= 4)
+    {
+      if (max_num_output_bins > max_privatized_smem_bins
+          && max_num_output_bins <= max_extended_smem_bins_single_channel)
+      {
+        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
+        if (const auto error = CubDebug(
+              (detail::histogram::dispatch<
+                NUM_CHANNELS,
+                NUM_ACTIVE_CHANNELS,
+                PRIVATIZED_SMEM_BINS,
+                false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
+                                     num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
+                                     max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
+                                     policy_selector, kernel_source, launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+      if (max_num_output_bins > max_extended_smem_bins_single_channel
+          && max_num_output_bins <= max_extended_smem_bins_single_channel_large)
+      {
+        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
+        if (const auto error = CubDebug(
+              (detail::histogram::dispatch<
+                NUM_CHANNELS,
+                NUM_ACTIVE_CHANNELS,
+                PRIVATIZED_SMEM_BINS,
+                false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
+                                     num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
+                                     max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
+                                     policy_selector, kernel_source, launcher_factory))))
         {
           return error;
         }
@@ -1902,8 +1948,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     }
     int max_num_output_bins = max_levels - 1;
 
-    // For single-channel non-byte samples with bins in (256, 16384], use the
-    // dyn-SMEM staging+fused tier (medium=2048, large=8192, xlarge=16384).
+    // Dyn-SMEM staging+fused tiers (single-channel: medium/large/xlarge;
+    // multi-channel: medium/large only).
     if constexpr (NUM_ACTIVE_CHANNELS == 1)
     {
       if (max_num_output_bins > max_privatized_smem_bins
@@ -1956,6 +2002,37 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
                 policy_selector,
                 kernel_source,
                 launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+    }
+    else if constexpr (NUM_ACTIVE_CHANNELS >= 2 && NUM_ACTIVE_CHANNELS <= 4)
+    {
+      if (max_num_output_bins > max_privatized_smem_bins
+          && max_num_output_bins <= max_extended_smem_bins_single_channel)
+      {
+        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
+        if (const auto error = CubDebug(
+              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms, num_output_levels,
+                num_output_levels, output_decode_op, privatized_decode_op, max_num_output_bins, num_row_pixels,
+                num_rows, row_stride_samples, stream, policy_selector, kernel_source, launcher_factory))))
+        {
+          return error;
+        }
+        return cudaSuccess;
+      }
+      if (max_num_output_bins > max_extended_smem_bins_single_channel
+          && max_num_output_bins <= max_extended_smem_bins_single_channel_large)
+      {
+        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
+        if (const auto error = CubDebug(
+              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms, num_output_levels,
+                num_output_levels, output_decode_op, privatized_decode_op, max_num_output_bins, num_row_pixels,
+                num_rows, row_stride_samples, stream, policy_selector, kernel_source, launcher_factory))))
         {
           return error;
         }
