@@ -213,7 +213,7 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
 {
   static constexpr int items                                     = 12;
   static constexpr int threads                                   = 768;
-  static constexpr bool rle_compress                             = false;
+  static constexpr bool rle_compress                             = true;
   static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
@@ -232,7 +232,7 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
 {
   static constexpr int items                                     = 8;
   static constexpr int threads                                   = 512;
-  static constexpr bool rle_compress                             = false;
+  static constexpr bool rle_compress                             = true;
   static constexpr bool work_stealing                            = false;
   static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
