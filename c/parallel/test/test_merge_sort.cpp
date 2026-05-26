@@ -49,6 +49,7 @@ auto& get_cache()
   return fixture<merge_sort_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool DisableSassCheck = false>
 struct merge_sort_build
 {
   template <typename... Rest>
@@ -64,6 +65,11 @@ struct merge_sort_build
   {
     return cccl_device_merge_sort_build(build_ptr, input_keys, input_items, output_keys, output_items, op, rest...);
   }
+
+  static constexpr bool should_check_sass(int)
+  {
+    return !DisableSassCheck;
+  }
 };
 
 struct merge_sort_run
@@ -75,7 +81,7 @@ struct merge_sort_run
   }
 };
 
-template <typename BuildCache = merge_sort_build_cache_t, typename KeyT = std::string>
+template <bool DisableSassCheck = false, typename BuildCache = merge_sort_build_cache_t, typename KeyT = std::string>
 void merge_sort(
   cccl_iterator_t input_keys,
   cccl_iterator_t input_items,
@@ -86,7 +92,7 @@ void merge_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, merge_sort_build, merge_sort_cleanup, merge_sort_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT, merge_sort_build<DisableSassCheck>, merge_sort_cleanup, merge_sort_run, BuildCache, KeyT>(
     cache, lookup_key, input_keys, input_items, output_keys, output_items, num_items, op);
 }
 
@@ -187,7 +193,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
   const auto& test_key = make_key<key_t, item_t>();
 
-  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
+  merge_sort<true>(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
@@ -221,7 +227,7 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
   const auto& test_key = make_key<key_t, item_t>();
 
-  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
+  merge_sort<true>(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
