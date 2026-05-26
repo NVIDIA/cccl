@@ -175,6 +175,14 @@ template <class... _Types>
 struct __tuple_constraints
 {
   template <class... _UTypes>
+  struct _VariadicConstructibleTraits
+  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+    static constexpr bool __implicit_constructible = (is_convertible_v<_UTypes, _Types> && ...);
+    static constexpr bool __explicit_constructible = !__implicit_constructible;
+    static constexpr bool __nothrow_constructible  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
+  };
+
+  template <class... _UTypes>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __is_variadic_constructible() noexcept
   {
     if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
@@ -217,26 +225,12 @@ struct __tuple_constraints
     }
   }
 
-  template <class... _UTypes>
-  struct __variadic_constructible_impl
-  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
-    static constexpr bool __implicit_constructible = (is_convertible_v<_UTypes, _Types> && ...);
-    static constexpr bool __explicit_constructible = !(is_convertible_v<_UTypes, _Types> && ...);
-    static constexpr bool __nothrow_constructible  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
-  };
-
-  template <class... _UTypes>
-  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_constructible() noexcept
-  {
-    if constexpr (__is_variadic_constructible<_UTypes...>())
-    { // [tuple.cnstr]-13.3: disambiguating-constraint is true
-      return __variadic_constructible_impl<_UTypes...>{};
-    }
-    else
-    {
-      return _InvalidTupleConstructor{};
-    }
-  }
+  template <class... _UTypes, enable_if_t<__is_variadic_constructible<_UTypes...>(), int> = 0>
+  [[nodiscard]]
+  _CCCL_API static _CCCL_CONSTEVAL auto __is_variadic_constructible(__tuple_types<_UTypes...>) noexcept
+    -> _VariadicConstructibleTraits<_UTypes...>;
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __is_variadic_constructible(...) noexcept
+    -> _InvalidTupleConstructor;
 
   // Get the constraints for the constructor with less rank
   template <class... _UTypes>
@@ -255,7 +249,8 @@ struct __tuple_constraints
       using __constraints_with_arg =
         decltype(__get_sub_constraints(__make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>{}));
 
-      using __traits_with_arg = decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>());
+      using __traits_with_arg =
+        decltype(__constraints_with_arg::__is_variadic_constructible(__tuple_types<_UTypes...>{}));
       using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(
         __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>{}));
 
