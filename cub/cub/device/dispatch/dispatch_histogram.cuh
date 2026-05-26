@@ -1009,6 +1009,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // pixel, more re-decode cost). Restrict partitioning to the
       // single-active-channel range path until we have a finer-grained
       // selector.
+      // Gate on (a) sufficient grid (>= 2 blocks) so each partition has at
+      // least one block, and (b) the range single-active-channel path where
+      // per-pixel binary search makes the kernel atomic-contention-bound.
+      // Both clauses are constexpr so when `kBinPartitionsEligible` is false
+      // (e.g. even / multi-channel paths) we elide the BinPartitions=2 kernel
+      // template instantiation entirely, keeping compile-time and per-TU
+      // device-image footprint identical to upstream.
+      constexpr bool kBinPartitionsEligible =
+        (!IsEven) && (NUM_ACTIVE_CHANNELS == 1);
       // The direct-atomic kernel skips per-block privatization entirely
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
@@ -1023,26 +1032,39 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                           privatized_decode_op_t,
                                                           output_decode_op_t,
                                                           OffsetT>;
-      auto direct_atomic_kernel_p2_ptr =
-        &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
-                                                          PRIVATIZED_SMEM_BINS,
-                                                          NUM_CHANNELS,
-                                                          NUM_ACTIVE_CHANNELS,
-                                                          /*BinPartitions=*/2,
-                                                          SampleIteratorT,
-                                                          CounterT,
-                                                          privatized_decode_op_t,
-                                                          output_decode_op_t,
-                                                          OffsetT>;
-      // Gate on (a) sufficient grid (>= 2 blocks) so each partition has at
-      // least one block, and (b) the range single-active-channel path where
-      // per-pixel binary search makes the kernel atomic-contention-bound.
-      constexpr bool kBinPartitionsEligible =
-        (!IsEven) && (NUM_ACTIVE_CHANNELS == 1);
       const bool use_bin_partitions =
         kBinPartitionsEligible && (num_thread_blocks >= 2);
-      auto direct_atomic_kernel_ptr =
-        use_bin_partitions ? direct_atomic_kernel_p2_ptr : direct_atomic_kernel_p1_ptr;
+      // Pick the kernel pointer through a constexpr branch so the
+      // BinPartitions=2 instantiation only enters the binary on eligible
+      // code paths. We type-erase to a `const void*` since the function-
+      // pointer types differ in the BinPartitions template arg.
+      const void* direct_atomic_kernel_ptr_void =
+        reinterpret_cast<const void*>(direct_atomic_kernel_p1_ptr);
+      if constexpr (kBinPartitionsEligible)
+      {
+        if (use_bin_partitions)
+        {
+          auto direct_atomic_kernel_p2_ptr =
+            &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                              PRIVATIZED_SMEM_BINS,
+                                                              NUM_CHANNELS,
+                                                              NUM_ACTIVE_CHANNELS,
+                                                              /*BinPartitions=*/2,
+                                                              SampleIteratorT,
+                                                              CounterT,
+                                                              privatized_decode_op_t,
+                                                              output_decode_op_t,
+                                                              OffsetT>;
+          direct_atomic_kernel_ptr_void =
+            reinterpret_cast<const void*>(direct_atomic_kernel_p2_ptr);
+        }
+      }
+      // For occupancy queries we still need a typed function pointer; both
+      // BinPartitions=1 and BinPartitions=2 kernels are launched with
+      // `__launch_bounds__(threads_per_block)` and have similar register
+      // pressure, so querying the BinPartitions=1 instantiation gives a safe
+      // upper bound on the active grid size for either case.
+      auto direct_atomic_kernel_ptr = direct_atomic_kernel_p1_ptr;
       if (false)
       {
         DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
@@ -1063,24 +1085,27 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_row_pixels,
             num_rows,
             row_stride_samples);
-        DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
-                                                         PRIVATIZED_SMEM_BINS,
-                                                         NUM_CHANNELS,
-                                                         NUM_ACTIVE_CHANNELS,
-                                                         /*BinPartitions=*/2,
-                                                         SampleIteratorT,
-                                                         CounterT,
-                                                         privatized_decode_op_t,
-                                                         output_decode_op_t,
-                                                         OffsetT>
-          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
-            d_samples,
-            num_output_bins_wrapper,
-            d_output_histograms,
-            second_level_array,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples);
+        if constexpr (kBinPartitionsEligible)
+        {
+          DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                           PRIVATIZED_SMEM_BINS,
+                                                           NUM_CHANNELS,
+                                                           NUM_ACTIVE_CHANNELS,
+                                                           /*BinPartitions=*/2,
+                                                           SampleIteratorT,
+                                                           CounterT,
+                                                           privatized_decode_op_t,
+                                                           output_decode_op_t,
+                                                           OffsetT>
+            <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
+              d_samples,
+              num_output_bins_wrapper,
+              d_output_histograms,
+              second_level_array,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples);
+        }
       }
 
       int device_ordinal        = 0;
@@ -1135,7 +1160,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             const_cast<void*>(static_cast<const void*>(&num_rows)),
             const_cast<void*>(static_cast<const void*>(&row_stride_samples))};
           coop_status = cudaLaunchCooperativeKernel(
-            reinterpret_cast<const void*>(direct_atomic_kernel_ptr),
+            direct_atomic_kernel_ptr_void,
             persistent_grid_dims,
             dim3{static_cast<unsigned int>(threads_per_block)},
             direct_kernel_args,
