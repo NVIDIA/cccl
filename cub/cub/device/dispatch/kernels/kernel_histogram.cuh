@@ -1304,6 +1304,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       }
     }
   }
+
+  // Emit the trigger so any PDL-launched downstream kernel in the stream
+  // sees a completion signal. (Cooperative launches typically do not use
+  // PDL, so this is a no-op in the common case.)
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Persistent grid-resident histogram sweep kernel that fuses output-histogram
@@ -1502,6 +1507,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       }
     }
   }
+
+  // Emit the trigger so any PDL-launched downstream kernel in the stream
+  // sees a completion signal. (Cooperative launches typically do not use
+  // PDL, so this is a no-op in the common case.)
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Host-init variant of the staging histogram sweep kernel.
@@ -2083,6 +2093,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       d_out[bin] = total;
     }
   }
+
+  // Emit the trigger so any PDL-launched downstream kernel in the stream
+  // sees a completion signal. (Cooperative launches typically do not use
+  // PDL, so this is a no-op in the common case.)
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Combine kernel: reduces per-block privatized histograms across all blocks
