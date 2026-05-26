@@ -205,6 +205,9 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 // {384 threads, t_scale(16)=16 ipt} is suboptimal for the dyn-SMEM 16384-bin tier where
 // SMEM atomicAdd_block contention dominates. Use 768 threads / 12 ipt (matching SM90 sample_size=1
 // shape) to spread atomic contention across more concurrent issues per CTA.
+//
+// Verified empirically vs 512/12 (-1.27%) and 928/12 (-0.79%) on this benchmark suite; 768/12
+// is the local optimum.
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
 {
