@@ -271,8 +271,7 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename RealInitValueT,
-          bool ForceInclusive,
-          bool RunToRunDeterministic = false>
+          bool ForceInclusive>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   warpspeed::Squad squad,
   warpspeed::SpecialRegisters specialRegisters,
@@ -321,9 +320,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   // Lookback-specific variables:
   int idxTilePrev = 0;
   AccumT sumExclusiveCtaPrev; // only valid in squadLookback lane_0
-
-  const int numTiles = static_cast<int>(::cuda::ceil_div(params.numElem, ::cuda::std::size_t(tile_size)));
-
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -351,16 +347,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     // We need to handle the first and the last -partial- tile differently
     const bool is_first_tile = idxTile == 0;
 
-    if constexpr (!RunToRunDeterministic)
+    if (squad == squadSched)
     {
-      if (squad == squadSched)
-      {
-        ////////////////////////////////////////////////////////////////////////////////
-        // Load next tile index
-        ////////////////////////////////////////////////////////////////////////////////
-        warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
-        squadGetNextBlockIdx(squad, refNextBlockIdxW);
-      }
+      ////////////////////////////////////////////////////////////////////////////////
+      // Load next tile index
+      ////////////////////////////////////////////////////////////////////////////////
+      warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
+      squadGetNextBlockIdx(squad, refNextBlockIdxW);
     }
 
     const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
@@ -381,22 +374,15 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    // Get next tile index (all squads)
+    // Get next tile index from shared memory (all squads)
     ////////////////////////////////////////////////////////////////////////////////
     uint4 regNextBlockIdx{};
-    bool nextIdxTileValid = false;
-    if constexpr (!RunToRunDeterministic)
     {
       warpspeed::SmemRef refNextBlockIdxR = phaseNextBlockIdxR.acquireRef();
       regNextBlockIdx                     = refNextBlockIdxR.data();
       refNextBlockIdxR.setFenceLdsToAsyncProxy();
-      nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);
     }
-    else
-    {
-      // evenly share all the tiles among all the CTAs
-      nextIdxTileValid = (idxTile + static_cast<int>(gridDim.x)) < numTiles;
-    }
+    bool nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);
 
     if (squad == squadReduce)
     {
@@ -495,8 +481,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       if (squad.isLeaderThread())
       {
-        warpspeed::storeTileAggregate(
-          params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadSum, idxTile, numTiles);
+        warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadSum, idxTile);
       }
       ////////////////////////////////////////////////////////////////////////////////
       // Store thread sum
@@ -513,9 +498,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 
       if (!is_first_tile)
       {
-        AccumT regSumExclusiveCta =
-          warpspeed::warpIncrementalLookback<RunToRunDeterministic, look_ahead_items_per_thread>(
-            specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op, numTiles);
+        AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
+          specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
         if (squad.isLeaderThread())
         {
           refSumExclusiveCtaW.data() = regSumExclusiveCta;
@@ -804,14 +788,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       break;
     }
     // Update idxTile
-    if constexpr (RunToRunDeterministic)
-    {
-      idxTile += static_cast<int>(gridDim.x);
-    }
-    else
-    {
-      idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
-    }
+    idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
   }
 
   if (squad == squadLoad)
@@ -825,7 +802,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT,
-          bool RunToRunDeterministic,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -851,7 +827,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 
   // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
   warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
-    kernelBody<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive, RunToRunDeterministic>(
+    kernelBody<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
   });
 #endif // __cccl_ptx_isa >= 860

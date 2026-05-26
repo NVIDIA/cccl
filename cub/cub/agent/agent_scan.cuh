@@ -150,8 +150,9 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive = false,
-          bool UsePDL         = false>
+          bool ForceInclusive        = false,
+          bool UsePDL                = false,
+          bool RunToRunDeterministic = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -199,8 +200,9 @@ struct AgentScan
   using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT>;
+  using DelayConstructorT = typename AgentScanPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT =
+    TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT, RunToRunDeterministic>;
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles

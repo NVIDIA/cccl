@@ -203,12 +203,12 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-    NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                   auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-                     d_in, d_out, tile_state.lookahead, num_items, num_stages};
-                   device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, RunToRunDeterministic>(
-                     scan_params, scan_op, init_value);
-                 }));
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_100, ({
+        auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
+          d_in, d_out, tile_state.lookahead, num_items, num_stages};
+        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+      }));
 #else
     static_assert(sizeof(d_in) == 0,
                   "Implementation bug: Tuning policy selected warpspeed, but CUDA compiler does not support it");
@@ -232,6 +232,9 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
                           policy.delay_constructor.delay,
                           policy.delay_constructor.l2_write_latency>>;
 
+    static constexpr bool is_lookback_deterministic =
+      (active_policy.algorithm == scan_algorithm::lookback_deterministic);
+
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<
       ScanPolicyT,
@@ -242,7 +245,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       OffsetT,
       AccumT,
       ForceInclusive,
-      /* UsePDL */ true>;
+      /* UsePDL */ true,
+      /* RunToRunDeterministic */ is_lookback_deterministic>;
 
     // Shared memory for AgentScan
     __shared__ typename AgentScanT::TempStorage temp_storage;

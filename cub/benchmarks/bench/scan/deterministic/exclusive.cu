@@ -7,26 +7,9 @@
 #  warning "This benchmark does not support being compiled for multiple architectures. Disabling it."
 #else // _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 
-#  if __CUDA_ARCH_LIST__ < 1000
-#    warning "Warpspeed deterministic scan requires at least sm_100. Disabling it."
-#  else // __CUDA_ARCH_LIST__ >= 1000
+#  include <cub/device/dispatch/dispatch_scan.cuh>
 
-#    if __cccl_ptx_isa < 860
-#      warning "Warpspeed deterministic scan requires at least PTX ISA 8.6. Disabling it."
-#    else // __cccl_ptx_isa >= 860
-
-#      include <cub/device/dispatch/dispatch_scan.cuh>
-
-#      include <nvbench_helper.cuh>
-
-// %RANGE% TUNE_NUM_REDUCE_SCAN_WARPS wrps 1:8:1
-// %RANGE% TUNE_NUM_LOOKBACK_ITEMS lbi 1:8:1
-// %RANGE% TUNE_ITEMS_PLUS_ONE ipt 8:256:8
-
-#      if !TUNE_BASE
-#        define USES_WARPSPEED() 1
-#        include "../policy_selector.h"
-#      endif // !TUNE_BASE
+#  include <nvbench_helper.cuh>
 
 template <typename T, typename OffsetT>
 static void exclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
@@ -35,9 +18,8 @@ try
   using input_it_t  = const T*;
   using output_it_t = T*;
   using offset_t    = cub::detail::choose_offset_t<OffsetT>;
-  static_assert(sizeof(offset_t) == sizeof(::cuda::std::size_t), "warpspeed scan uses size_t offsets");
-  using scan_op_t = ::cuda::std::plus<T>;
-  using init_t    = cub::detail::InputValue<T>;
+  using scan_op_t   = ::cuda::std::plus<T>;
+  using init_t      = cub::detail::InputValue<T>;
 
   const auto elements                 = static_cast<::cuda::std::size_t>(state.get_int64("Elements{io}"));
   const bool run_to_run_deterministic = state.get_int64("Det") != 0;
@@ -63,12 +45,7 @@ try
       scan_op_t{},
       init_t{T{}},
       static_cast<offset_t>(elements),
-      0 /* stream */
-#      if !TUNE_BASE
-      ,
-      policy_selector<T>{}
-#      endif // !TUNE_BASE
-    );
+      0 /* stream */);
   }
   else
   {
@@ -80,12 +57,7 @@ try
       scan_op_t{},
       init_t{T{}},
       static_cast<offset_t>(elements),
-      0 /* stream */
-#      if !TUNE_BASE
-      ,
-      policy_selector<T>{}
-#      endif // !TUNE_BASE
-    );
+      0 /* stream */);
   }
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
@@ -101,12 +73,7 @@ try
         scan_op_t{},
         init_t{T{}},
         static_cast<offset_t>(elements),
-        launch.get_stream()
-#      if !TUNE_BASE
-          ,
-        policy_selector<T>{}
-#      endif // !TUNE_BASE
-      );
+        launch.get_stream());
     }
     else
     {
@@ -118,12 +85,7 @@ try
         scan_op_t{},
         init_t{T{}},
         static_cast<offset_t>(elements),
-        launch.get_stream()
-#      if !TUNE_BASE
-          ,
-        policy_selector<T>{}
-#      endif // !TUNE_BASE
-      );
+        launch.get_stream());
     }
   });
 }
@@ -133,7 +95,7 @@ catch (const std::exception& e)
 }
 
 using types   = nvbench::type_list<float, double>;
-using offsets = nvbench::type_list<int64_t>; // warpspeed scan requires size_t-equivalent offset
+using offsets = nvbench::type_list<int64_t>;
 
 NVBENCH_BENCH_TYPES(exclusive_scan, NVBENCH_TYPE_AXES(types, offsets))
   .set_name("base")
@@ -141,6 +103,4 @@ NVBENCH_BENCH_TYPES(exclusive_scan, NVBENCH_TYPE_AXES(types, offsets))
   .add_int64_axis("Det", {0, 1})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
-#    endif // __cccl_ptx_isa >= 860
-#  endif // __CUDA_ARCH_LIST__ >= 1000
 #endif // _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) == 1

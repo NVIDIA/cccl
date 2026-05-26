@@ -620,8 +620,14 @@ struct scan_warpspeed_policy
 enum class scan_algorithm
 {
   lookback,
-  warpspeed
+  warpspeed,
+  lookback_deterministic,
 };
+
+_CCCL_API constexpr bool is_warpspeed_algorithm(scan_algorithm algorithm)
+{
+  return algorithm == scan_algorithm::warpspeed;
+}
 
 #if !_CCCL_COMPILER(NVRTC)
 inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
@@ -632,6 +638,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
       return os << "scan_algorithm::lookback";
     case scan_algorithm::warpspeed:
       return os << "scan_algorithm::warpspeed";
+    case scan_algorithm::lookback_deterministic:
+      return os << "scan_algorithm::lookback_deterministic";
     default:
       return os << "scan_algorithm::<unknown>";
   }
@@ -872,6 +880,9 @@ struct policy_selector
   bool accum_is_primitive_or_trivially_copy_constructible;
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
+  // When set, the policy selector upgrades scan_algorithm::lookback to scan_algorithm::lookback_deterministic
+  // for non-associative (accum, op) pairs (currently: float/double + plus). Other combinations are unaffected.
+  bool require_run_to_run_determinism = false;
 
   _CCCL_API constexpr auto get_sm100_fallback_warpspeed_policy() const -> scan_warpspeed_policy
   {
@@ -988,7 +999,7 @@ struct policy_selector
 #endif
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  [[nodiscard]] _CCCL_API constexpr auto select_unconstrained(::cuda::arch_id arch) const -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
@@ -1373,6 +1384,22 @@ struct policy_selector
       BLOCK_SCAN_RAKING,
       default_delay);
   }
+
+  _CCCL_API constexpr bool accum_op_is_non_associative() const
+  {
+    return operation_t == op_kind_t::plus && (accum_type == type_t::float32 || accum_type == type_t::float64);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  {
+    auto policy = select_unconstrained(arch);
+    // Upgrade classic lookback to the 32-tile batched variant only for non-associative (accum, op).
+    if (require_run_to_run_determinism && policy.algorithm == scan_algorithm::lookback && accum_op_is_non_associative())
+    {
+      policy.algorithm = scan_algorithm::lookback_deterministic;
+    }
+    return policy;
+  }
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -1399,7 +1426,12 @@ struct benchmark_match_for_policy_selector<
 };
 
 // stateless version which can be passed to kernels
-template <typename InputIteratorT, typename OutputIteratorT, typename AccumT, typename OffsetT, typename ScanOpT>
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename AccumT,
+          typename OffsetT,
+          typename ScanOpT,
+          bool RunToRunDeterministic = false>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
@@ -1430,7 +1462,8 @@ struct policy_selector_from_types
       ::cuda::std::is_trivially_copyable_v<OutputValueT>,
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
-      benchmark_match};
+      benchmark_match,
+      RunToRunDeterministic};
     return policies(arch);
   }
 };

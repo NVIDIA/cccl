@@ -1254,7 +1254,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
-          typename DelayConstructorT = detail::default_delay_constructor_t<T>>
+          typename DelayConstructorT = detail::default_delay_constructor_t<T>,
+          bool RunToRunDeterministic = false>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
@@ -1278,7 +1279,8 @@ struct TilePrefixCallbackOp
 
   // Fields
   _TempStorage& temp_storage; ///< Reference to a warp-reduction instance
-  ScanTileStateT& tile_status; ///< Interface to tile status
+  ScanTileStateT& tile_status; ///< Interface to tile status (non-anchor tiles stay at PARTIAL on the deterministic
+                               ///< path)
   ScanOpT scan_op; ///< Binary scan operator
   int tile_idx; ///< The current tile index
   T exclusive_prefix; ///< Exclusive prefix for the tile
@@ -1328,7 +1330,8 @@ struct TilePrefixCallbackOp
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
 
-  // BlockScan prefix callback functor (called by the first warp)
+  // BlockScan prefix callback functor — non-deterministic overload.
+  template <bool D = RunToRunDeterministic, ::cuda::std::enable_if_t<!D, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
   {
     // Update our status with our tile-aggregate
@@ -1372,6 +1375,56 @@ struct TilePrefixCallbackOp
     }
 
     // Return exclusive_prefix
+    return exclusive_prefix;
+  }
+
+  // BlockScan prefix callback functor — run-to-run-deterministic overload.
+  template <bool D = RunToRunDeterministic, ::cuda::std::enable_if_t<D, int> = 0>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+  {
+    if (threadIdx.x == 0)
+    {
+      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      tile_status.SetPartial(tile_idx, block_aggregate);
+    }
+
+    const int predecessor_idx = tile_idx - threadIdx.x - 1;
+    StatusWord predecessor_status;
+    DelayConstructorT construct_delay(tile_idx);
+
+    // lane that maps to the anchor tile (tile idx multiple of 32)
+    const int batch_last_lane = (tile_idx - 1) & 31;
+
+    T value;
+    while (true)
+    {
+      tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
+      const int my_is_inclusive     = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+      const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, batch_last_lane);
+      if (anchor_is_inclusive)
+      {
+        break;
+      }
+    }
+
+    const int tail_flag = (static_cast<int>(threadIdx.x) == batch_last_lane);
+    exclusive_prefix =
+      WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
+
+    if (threadIdx.x == 0)
+    {
+      inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
+
+      // Only anchor tiles publish INCLUSIVE; non-anchor tiles stay at PARTIAL.
+      if ((tile_idx & 31) == 0)
+      {
+        tile_status.SetInclusive(tile_idx, inclusive_prefix);
+      }
+
+      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+    }
+
     return exclusive_prefix;
   }
 

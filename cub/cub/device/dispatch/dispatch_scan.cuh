@@ -537,8 +537,6 @@ struct DispatchScan
       return error;
     }
 
-    const int scan_grid_dim = RunToRunDeterministic ? ::cuda::std::min(sm_count, num_tiles) : num_tiles;
-    // Init kernel still allocates/initializes one state per tile.
     const int grid_dim = num_tiles;
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
@@ -644,12 +642,11 @@ struct DispatchScan
       const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
 
 #  ifdef CUB_DEBUG_LOG
-      _CubLog(
-        "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
+      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
 #  endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_dim, block_dim, smem_size, stream, /* use_pdl */ !RunToRunDeterministic)
+            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
@@ -933,22 +930,23 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT         = ::cuda::std::__accumulator_t<ScanOpT,
-                                                         cub::detail::it_value_t<InputIteratorT>,
-                                                         ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                          cub::detail::it_value_t<InputIteratorT>,
-                                                                          typename InitValueT::value_type>>,
-  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource   = DeviceScanKernelSource<
-      PolicySelector,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      AccumT,
-      EnforceInclusive,
-      RunToRunDeterministic>,
+  typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
+                                                 cub::detail::it_value_t<InputIteratorT>,
+                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                  cub::detail::it_value_t<InputIteratorT>,
+                                                                  typename InitValueT::value_type>>,
+  typename PolicySelector =
+    policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, RunToRunDeterministic>,
+  typename KernelSource = DeviceScanKernelSource<
+    PolicySelector,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive,
+    RunToRunDeterministic>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires scan_policy_selector<PolicySelector>
@@ -1022,17 +1020,18 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource   = DeviceScanKernelSource<
-      PolicySelector,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      AccumT,
-      EnforceInclusive,
-      RunToRunDeterministic>,
+  typename PolicySelector =
+    policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, RunToRunDeterministic>,
+  typename KernelSource = DeviceScanKernelSource<
+    PolicySelector,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive,
+    RunToRunDeterministic>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
