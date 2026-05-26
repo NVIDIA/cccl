@@ -20,14 +20,14 @@
 TEST_FUNC void test_size_and_alignment()
 {
   using arr_t = cuda::__uninitialized_array<int, 4>;
-  static_assert(sizeof(arr_t) >= 4 * sizeof(int), "");
-  static_assert(alignof(arr_t) == alignof(int), "");
+  static_assert(sizeof(arr_t) >= 4 * sizeof(int));
+  static_assert(alignof(arr_t) == alignof(int));
 }
 
 TEST_FUNC void test_custom_alignment()
 {
   using arr_t = cuda::__uninitialized_array<int, 4, 32>;
-  static_assert(alignof(arr_t) == 32, "");
+  static_assert(alignof(arr_t) == 32);
 }
 
 TEST_FUNC void test_element_access()
@@ -46,8 +46,8 @@ TEST_FUNC void test_element_access()
 TEST_FUNC void test_data_pointer_const_correctness()
 {
   using arr_t = cuda::__uninitialized_array<int, 4>;
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<arr_t&>().data()), int*>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<const arr_t&>().data()), const int*>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<arr_t&>().data()), int*>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<const arr_t&>().data()), const int*>::value);
   arr_t arr{};
   assert(arr.data() != nullptr);
 }

@@ -58,13 +58,12 @@ TEST_FUNC constexpr void test()
   assert(*rbegin == T(-1));
 
   const auto crbegin = range.crbegin();
-  static_assert(cuda::std::is_same<decltype(crbegin), const typename inplace_vector::const_reverse_iterator>::value,
-                "");
+  static_assert(cuda::std::is_same<decltype(crbegin), const typename inplace_vector::const_reverse_iterator>::value);
   assert(*crbegin == T(-1));
 
   const auto const_rbegin = const_range.rbegin();
   static_assert(
-    cuda::std::is_same<decltype(const_rbegin), const typename inplace_vector::const_reverse_iterator>::value, "");
+    cuda::std::is_same<decltype(const_rbegin), const typename inplace_vector::const_reverse_iterator>::value);
   assert(*const_rbegin == T(-42));
 
   const auto rend = range.rend();
@@ -76,8 +75,7 @@ TEST_FUNC constexpr void test()
   assert(*cuda::std::prev(crend) == T(1));
 
   const auto const_rend = const_range.rend();
-  static_assert(cuda::std::is_same<decltype(const_rend), const typename inplace_vector::const_reverse_iterator>::value,
-                "");
+  static_assert(cuda::std::is_same<decltype(const_rend), const typename inplace_vector::const_reverse_iterator>::value);
   assert(*cuda::std::prev(const_rend) == T(0));
 }
 
