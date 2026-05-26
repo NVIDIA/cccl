@@ -125,43 +125,51 @@ struct Transforms
         guess = num_bins - 1;
       }
 
-      // Linear correction window. Most jittered-uniform inputs land within
-      // +/- 2; cap at +/- K. If the correction does not converge, fall back
-      // to UpperBound so irregularly-spaced levels still produce correct
-      // results.
-      constexpr int kCorrectionWindow = 1;
+      // Verify the guess: d_levels[guess] <= s < d_levels[guess + 1]. We
+      // load both bracketing levels in parallel to expose memory-level
+      // parallelism and branch on the result. For jittered-uniform levels
+      // the guess is almost always correct.
+      const LevelT lvl_lo = wrapped_levels[guess];
+      const LevelT lvl_hi = (guess == num_bins - 1) ? last_level : wrapped_levels[guess + 1];
 
-      // Walk left: if d_levels[guess] > s, we are above the target bin.
-      int steps = 0;
-      while (guess > 0 && wrapped_levels[guess] > s)
-      {
-        --guess;
-        if (++steps >= kCorrectionWindow)
-        {
-          break;
-        }
-      }
-
-      // Walk right: if d_levels[guess + 1] <= s, we are below the target bin.
-      steps = 0;
-      while (guess < num_bins - 1 && !(s < wrapped_levels[guess + 1]))
-      {
-        ++guess;
-        if (++steps >= kCorrectionWindow)
-        {
-          break;
-        }
-      }
-
-      // Verify convergence: d_levels[guess] <= s < d_levels[guess + 1]
-      // (the upper check is implicit when guess == num_bins - 1 because
-      // we already ruled out s >= last_level above).
-      const bool low_ok  = !(s < wrapped_levels[guess]);
-      const bool high_ok = (guess == num_bins - 1) || (s < wrapped_levels[guess + 1]);
-      if (low_ok && high_ok)
+      if (!(s < lvl_lo) && (s < lvl_hi))
       {
         bin = guess;
         return;
+      }
+
+      // One-step linear correction: try a single neighbor before falling
+      // back to a binary search. If the guess was high, try guess - 1; if
+      // low, try guess + 1.
+      if (s < lvl_lo)
+      {
+        // guess too high; check guess - 1.
+        const int g2 = guess - 1;
+        if (g2 >= 0)
+        {
+          const LevelT lvl2_lo = wrapped_levels[g2];
+          // lvl2_hi is lvl_lo (loaded already).
+          if (!(s < lvl2_lo))
+          {
+            bin = g2;
+            return;
+          }
+        }
+      }
+      else
+      {
+        // s >= lvl_hi: guess too low; check guess + 1.
+        const int g2 = guess + 1;
+        if (g2 <= num_bins - 1)
+        {
+          // lvl2_lo is lvl_hi (loaded already).
+          const LevelT lvl2_hi = (g2 == num_bins - 1) ? last_level : wrapped_levels[g2 + 1];
+          if (s < lvl2_hi)
+          {
+            bin = g2;
+            return;
+          }
+        }
       }
 
       // Fall back to binary search for irregular level distributions.
