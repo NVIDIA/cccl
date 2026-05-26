@@ -936,6 +936,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   // Store output to global (if necessary)
   agent.StoreOutput();
+
+  // No follow-on kernel reads our writes; emit the trigger so any
+  // downstream PDL-launched kernel in the stream sees a completion signal.
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Histogram privatized sweep kernel entry point (multi-block) with device-side initialization.
@@ -1122,6 +1126,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   // Store output to global (if necessary)
   agent.StoreOutput();
+
+  // No follow-on kernel reads our writes; emit the trigger so any
+  // downstream PDL-launched kernel in the stream sees a completion signal.
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Persistent grid-resident histogram sweep kernel that fuses output-histogram
@@ -1597,6 +1605,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   {
     agent.StoreSmemToStagingSlab();
   }
+
+  // PDL trigger MUST be after `StoreSmemToStagingSlab`: the follow-on
+  // combine kernel reads from the per-block GMEM staging slabs, so it
+  // cannot start until those slabs have been written by every block of
+  // this kernel.
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Histogram privatized sweep kernel that defers per-block-to-global combine.
@@ -1712,6 +1726,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   {
     agent.StoreSmemToStagingSlab();
   }
+
+  // PDL trigger MUST be after `StoreSmemToStagingSlab`: the follow-on
+  // combine kernel reads from the per-block GMEM staging slabs.
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Host-init dynamic-SMEM variant of the staging histogram sweep kernel.
@@ -1808,6 +1826,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   {
     agent.StoreSmemToStagingSlab();
   }
+
+  // PDL trigger MUST be after `StoreSmemToStagingSlab`: the follow-on
+  // combine kernel reads from the per-block GMEM staging slabs.
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Device-init dynamic-SMEM variant of the staging histogram sweep kernel. Mirrors
@@ -1916,6 +1938,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   {
     agent.StoreSmemToStagingSlab();
   }
+
+  // PDL trigger MUST be after `StoreSmemToStagingSlab`: the follow-on
+  // combine kernel reads from the per-block GMEM staging slabs.
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 //! Host-init dynamic-SMEM variant of the FUSED staging+combine sweep kernel.
@@ -2108,6 +2134,18 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramCombineKernel(
   ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
   int num_thread_blocks)
 {
+  // The dispatch launches this kernel with `dependent_launch=true` for PDL.
+  // Without `cudaGridDependencySynchronize()` here, this kernel can start
+  // running BEFORE the previous (staging-sweep) kernel has finished writing
+  // its per-block staging slabs to GMEM. The sweep kernel does the staging
+  // slab write in `StoreSmemToStagingSlab()` which executes AFTER the agent
+  // has emitted `cudaTriggerProgrammaticLaunchCompletion()` (the agent
+  // emits the trigger at the end of `ConsumeTiles`, before the per-CTA
+  // SMEM->GMEM flush). The combine kernel must therefore explicitly wait
+  // for the sweep kernel to fully exit (membar) before reading the staging
+  // slabs. `cudaGridDependencySynchronize()` does that.
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
   const int channel = blockIdx.y;
   if (channel >= NumActiveChannels)
   {
