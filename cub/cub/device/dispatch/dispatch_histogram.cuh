@@ -328,7 +328,29 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   sweep_grid_dims.y = (unsigned int) blocks_per_col;
   sweep_grid_dims.z = 1;
 
-  // Temporary storage allocation requirements
+  // For the GMEM-privatized host-init path with very high bin counts, the
+  // dispatch uses a direct-atomic-to-output kernel instead of per-block
+  // privatization + gather merge. With very high bin counts the per-block
+  // privatization storage (`num_blocks * num_bins * sizeof(CounterT)`) is
+  // huge, and zeroing it dominates runtime, while contention on the output
+  // histogram is so low (each output bin only sees a tiny fraction of the
+  // input samples) that direct atomic-adds to the output win. The threshold
+  // (1<<20 ~= 1M bins) is conservative; below it the gather merge is
+  // preferred because contention starts to bite.
+  constexpr int direct_atomic_bin_threshold = 1 << 20;
+  const bool use_direct_atomic_to_output =
+#if _CCCL_HOSTED()
+    (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && max_num_output_bins >= direct_atomic_bin_threshold);
+#else
+    false;
+#endif
+
+  // Temporary storage allocation requirements. Even when the direct-atomic
+  // path is selected, we still report the full privatization storage: this
+  // keeps a safe legacy fallback (the non-cooperative two-kernel sequence
+  // below) usable if `cudaLaunchCooperativeKernel` fails on this device,
+  // and lets `temp_storage_bytes` remain a valid upper bound for callers
+  // that decide between paths at run-time.
   constexpr int NUM_ALLOCATIONS      = NUM_ACTIVE_CHANNELS + 1;
   void* allocations[NUM_ALLOCATIONS] = {};
   size_t allocation_sizes[NUM_ALLOCATIONS];
@@ -451,33 +473,93 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             max_num_output_bins);
       }
 
+      // The direct-atomic kernel skips per-block privatization entirely
+      // and writes atomically to the output histograms. Used only when
+      // `use_direct_atomic_to_output` is true (see threshold above).
+      auto direct_atomic_kernel_ptr =
+        &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                          PRIVATIZED_SMEM_BINS,
+                                                          NUM_CHANNELS,
+                                                          NUM_ACTIVE_CHANNELS,
+                                                          SampleIteratorT,
+                                                          CounterT,
+                                                          privatized_decode_op_t,
+                                                          output_decode_op_t,
+                                                          OffsetT>;
+      if (false)
+      {
+        DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                         PRIVATIZED_SMEM_BINS,
+                                                         NUM_CHANNELS,
+                                                         NUM_ACTIVE_CHANNELS,
+                                                         SampleIteratorT,
+                                                         CounterT,
+                                                         privatized_decode_op_t,
+                                                         output_decode_op_t,
+                                                         OffsetT>
+          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
+            d_samples,
+            num_output_bins_wrapper,
+            d_output_histograms,
+            second_level_array,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples);
+      }
+
       int device_ordinal        = 0;
       int cooperative_supported = 0;
       if (cudaGetDevice(&device_ordinal) == cudaSuccess
           && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
           && cooperative_supported != 0)
       {
-        void* kernel_args[] = {
-          const_cast<void*>(static_cast<const void*>(&d_samples)),
-          const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
-          const_cast<void*>(static_cast<const void*>(&num_privatized_bins_wrapper)),
-          const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
-          const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper)),
-          const_cast<void*>(static_cast<const void*>(&first_level_array)),
-          const_cast<void*>(static_cast<const void*>(&second_level_array)),
-          const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
-          const_cast<void*>(static_cast<const void*>(&num_rows)),
-          const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
-          const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
-          const_cast<void*>(static_cast<const void*>(&tile_queue)),
-          const_cast<void*>(static_cast<const void*>(&max_num_output_bins))};
-        const cudaError_t coop_status = cudaLaunchCooperativeKernel(
-          reinterpret_cast<const void*>(persistent_kernel_ptr),
-          persistent_grid_dims,
-          dim3{static_cast<unsigned int>(threads_per_block)},
-          kernel_args,
-          /*sharedMem=*/0,
-          stream);
+        cudaError_t coop_status = cudaSuccess;
+        if (use_direct_atomic_to_output)
+        {
+          // For the very-high-bin GMEM-privatized path, dispatch the
+          // direct-atomic kernel instead of the gather-merge persistent
+          // kernel. It needs only the output histograms, the privatized
+          // decode op, and the input geometry.
+          void* direct_kernel_args[] = {
+            const_cast<void*>(static_cast<const void*>(&d_samples)),
+            const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
+            const_cast<void*>(static_cast<const void*>(&second_level_array)),
+            const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
+            const_cast<void*>(static_cast<const void*>(&num_rows)),
+            const_cast<void*>(static_cast<const void*>(&row_stride_samples))};
+          coop_status = cudaLaunchCooperativeKernel(
+            reinterpret_cast<const void*>(direct_atomic_kernel_ptr),
+            persistent_grid_dims,
+            dim3{static_cast<unsigned int>(threads_per_block)},
+            direct_kernel_args,
+            /*sharedMem=*/0,
+            stream);
+        }
+        else
+        {
+          void* kernel_args[] = {
+            const_cast<void*>(static_cast<const void*>(&d_samples)),
+            const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&num_privatized_bins_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
+            const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&first_level_array)),
+            const_cast<void*>(static_cast<const void*>(&second_level_array)),
+            const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
+            const_cast<void*>(static_cast<const void*>(&num_rows)),
+            const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
+            const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
+            const_cast<void*>(static_cast<const void*>(&tile_queue)),
+            const_cast<void*>(static_cast<const void*>(&max_num_output_bins))};
+          coop_status = cudaLaunchCooperativeKernel(
+            reinterpret_cast<const void*>(persistent_kernel_ptr),
+            persistent_grid_dims,
+            dim3{static_cast<unsigned int>(threads_per_block)},
+            kernel_args,
+            /*sharedMem=*/0,
+            stream);
+        }
         if (coop_status == cudaSuccess)
         {
           launched_persistent = true;

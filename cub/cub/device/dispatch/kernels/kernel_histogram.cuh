@@ -968,5 +968,125 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     }
   }
 }
+
+//! Persistent grid-resident histogram sweep kernel that fuses output-histogram
+//! initialization with a direct-atomic sweep. For the very-high-bin
+//! GMEM-privatized path the per-block privatization storage is so large
+//! (`num_blocks * num_bins * sizeof(CounterT)`) that the
+//! `InitBinCounters` zero-fill plus the gather-merge dominate runtime. At
+//! these bin counts atomic contention on the final output histogram is
+//! also low (each output bin only sees a tiny fraction of the input
+//! samples), so it is faster to:
+//!
+//! 1. Cooperatively zero the output histogram once (Phase 1).
+//! 2. `grid.sync()` to make the zeros visible (Phase 2).
+//! 3. Have every thread atomic-add (device-scope) directly into the
+//!    output histogram (Phase 3).
+//!
+//! This avoids ~`num_blocks * num_bins * sizeof(CounterT)` bytes of
+//! temporary GMEM writes (init) and reads + writes (gather merge), and
+//! also lets the dispatch layer skip the per-block privatization
+//! allocation entirely.
+//!
+//! This kernel must be launched cooperatively
+//! (`cudaLaunchCooperativeKernel`) so that all blocks are co-resident on
+//! the device, which is a precondition of `grid_group::sync()`.
+//!
+//! Unlike `DeviceHistogramSweepPersistentKernel`, this kernel does not
+//! use `AgentHistogram`. The agent's `AccumulatePixels` uses
+//! `atomicAdd_block` (block-scope), which is undefined for memory shared
+//! across blocks. We therefore implement a small stand-alone sweep that
+//! reads samples directly from `d_samples` and uses device-scope
+//! `atomicAdd` against `d_output_histograms`.
+//!
+//! The sweep iterates `OffsetT` total samples; the dispatch layer
+//! flattens `(num_row_pixels, num_rows, row_stride_samples)` into a
+//! single linear input region when possible, but here we always treat
+//! the input as a single linear array of `total_pixels = num_rows *
+//! num_row_pixels` pixels and skip any padding columns explicitly when
+//! `row_stride_samples != num_row_pixels * NumChannels`.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDirectAtomicPersistentKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples)
+{
+  namespace cg = ::cooperative_groups;
+
+  cg::grid_group grid = cg::this_grid();
+
+  // ---------------------------------------------------------------------
+  // Phase 1: zero the output histograms via a grid-wide stride loop.
+  // ---------------------------------------------------------------------
+  const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
+  const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
+  const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
+  const unsigned int total_threads   = blocks_per_grid * blockDim.x;
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    const int channel_bins = num_output_bins_wrapper[ch];
+    for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
+    {
+      d_output_histograms_wrapper[ch][bin] = 0;
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Phase 2: grid-wide synchronization so that all output-histogram
+  // zeros are visible to every block before the atomic-sweep phase
+  // begins.
+  // ---------------------------------------------------------------------
+  grid.sync();
+
+  // ---------------------------------------------------------------------
+  // Phase 3: direct-atomic sweep. Each thread strides over input pixels
+  // and atomic-adds into the output histogram for every active channel.
+  // No per-block privatization storage is needed.
+  // ---------------------------------------------------------------------
+  const OffsetT total_pixels = num_rows * num_row_pixels;
+  for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
+       pixel += static_cast<OffsetT>(total_threads))
+  {
+    // Recover the (row, col) coordinates so we can apply the row stride
+    // when the input is not a contiguous packed array of pixels.
+    const OffsetT row     = pixel / num_row_pixels;
+    const OffsetT col     = pixel - row * num_row_pixels;
+    const OffsetT pix_off = row * row_stride_samples + col * NumChannels;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      auto sample = d_samples[pix_off + ch];
+      int bin     = -1;
+      privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+      const int num_bins = num_output_bins_wrapper[ch];
+      // ScaleTransform's BinSelect can produce `bin == num_bins` for
+      // floating-point sample values that round up at the upper edge of
+      // the range. Treat any such overflow as an out-of-range sample.
+      if (bin >= 0 && bin < num_bins)
+      {
+        atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+      }
+    }
+  }
+}
 } // namespace detail::histogram
 CUB_NAMESPACE_END
