@@ -60,9 +60,9 @@ import pytest
 
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
-from numba import cuda
+from numba import cuda  # noqa: E402
 
-import cuda.stf as stf
+import cuda.stf as stf  # noqa: E402
 
 numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
