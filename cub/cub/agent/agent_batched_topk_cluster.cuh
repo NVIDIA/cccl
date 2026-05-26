@@ -23,7 +23,12 @@
 //!      the next pass.
 //!
 //! Output cursors live in the same cluster-shared `state` and are reached the
-//! same way (cluster-scope DSMEM atomics).
+//! same way (cluster-scope DSMEM atomics). Defining
+//! `CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT` switches the final filter pass
+//! to a block-aggregated variant that first counts selected / candidate keys
+//! in block-local shared-memory counters and then issues a single DSMEM
+//! atomic per block per counter to reserve a contiguous output range. This
+//! lets us A/B the two strategies without touching the rest of the kernel.
 
 #pragma once
 
@@ -155,6 +160,15 @@ struct agent_batched_topk_cluster
     key_prefix_t broadcast_kth;
     ::cuda::std::uint32_t broadcast_early_stop;
     typename block_scan_t::TempStorage scan_storage;
+#ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
+    // Final-filter block-aggregation slots. First populated by per-thread
+    // `atomicAdd_block` calls that count the block's selected / candidate
+    // keys, then overwritten by thread 0 with the leader-side base position
+    // returned from a single DSMEM atomic per counter, so the same slots
+    // double as the broadcast channel for the base to the rest of the block.
+    out_offset_t block_out_cnt;
+    out_offset_t block_out_back_cnt;
+#endif
   };
 
   struct TempStorage : Uninitialized<_TempStorage>
@@ -402,6 +416,14 @@ private:
     if (threadIdx.x == 0)
     {
       temp_storage.broadcast_kth = leader_state->kth_key_bits;
+#ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
+      // Piggyback the block-local output-counter init on the broadcast_kth
+      // publish: the `__syncthreads()` below already orders these writes
+      // against the per-thread `atomicAdd_block` calls in the first phase
+      // of the block-aggregated path, so no dedicated init+sync is needed.
+      temp_storage.block_out_cnt      = 0;
+      temp_storage.block_out_back_cnt = 0;
+#endif
     }
     __syncthreads();
     kth_key_bits_local = temp_storage.broadcast_kth;
@@ -417,6 +439,90 @@ private:
     // identified prefix.
     identify_candidates_op_t identify_op(&kth_key_bits_local, last_pass, total_bits, decomposer_t{});
 
+#ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
+    // Block-aggregated variant: each thread first reserves its slot in the
+    // block's local counters via cheap `atomicAdd_block`, then thread 0 of
+    // every block claims the block's contiguous range in the leader's
+    // counters with a single DSMEM `atomicAdd` per counter. This collapses
+    // up to `threads_per_block * items_per_thread` DSMEM atomics per block
+    // down to two, at the cost of one extra block-wide barrier (the local
+    // counters are zeroed inside the pre-existing broadcast_kth publish)
+    // and one additional pass over the per-thread keys to materialize the
+    // writes.
+
+    // Per-thread, per-item local slot index within the block. Only the
+    // entries corresponding to `selected` / `candidate` keys are written and
+    // later read; the rest stay undefined because the write loop below
+    // re-runs `identify_op` and reproduces the same control flow.
+    out_offset_t local_pos[items_per_thread];
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 0; j < items_per_thread; ++j)
+    {
+      const segment_size_val_t local_idx  = static_cast<segment_size_val_t>(j * threads_per_block + threadIdx.x);
+      const segment_size_val_t global_idx = block_offset_in_cluster + local_idx;
+      if (global_idx >= segment_size)
+      {
+        continue;
+      }
+      const key_t key = thread_keys[j];
+      const auto res  = identify_op(key);
+      if (res == detail::topk::candidate_class::selected)
+      {
+        local_pos[j] = atomicAdd_block(&temp_storage.block_out_cnt, out_offset_t{1});
+      }
+      else if (res == detail::topk::candidate_class::candidate)
+      {
+        local_pos[j] = atomicAdd_block(&temp_storage.block_out_back_cnt, out_offset_t{1});
+      }
+    }
+    __syncthreads();
+
+    // Thread 0 of every block (leader block included) reserves the block's
+    // contiguous range in the leader's counters. The returned old value is
+    // the block's base; we stash it back into the same shared-memory slot
+    // so the rest of the block can pick it up after the barrier without a
+    // separate broadcast field. For the leader block these atomics target
+    // its own shared memory; for non-leaders they go through DSMEM.
+    if (threadIdx.x == 0)
+    {
+      const out_offset_t fwd_count    = temp_storage.block_out_cnt;
+      const out_offset_t back_count   = temp_storage.block_out_back_cnt;
+      temp_storage.block_out_cnt      = atomicAdd(&leader_state->out_cnt, fwd_count);
+      temp_storage.block_out_back_cnt = atomicAdd(&leader_state->out_back_cnt, back_count);
+    }
+    __syncthreads();
+
+    const out_offset_t fwd_base  = temp_storage.block_out_cnt;
+    const out_offset_t back_base = temp_storage.block_out_back_cnt;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int j = 0; j < items_per_thread; ++j)
+    {
+      const segment_size_val_t local_idx  = static_cast<segment_size_val_t>(j * threads_per_block + threadIdx.x);
+      const segment_size_val_t global_idx = block_offset_in_cluster + local_idx;
+      if (global_idx >= segment_size)
+      {
+        continue;
+      }
+      const key_t key = thread_keys[j];
+      const auto res  = identify_op(key);
+      if (res == detail::topk::candidate_class::selected)
+      {
+        const out_offset_t pos = fwd_base + local_pos[j];
+        block_keys_out[pos]    = key;
+      }
+      else if (res == detail::topk::candidate_class::candidate)
+      {
+        const out_offset_t back_pos = back_base + local_pos[j];
+        if (back_pos < num_kth)
+        {
+          const out_offset_t pos = k - 1 - back_pos;
+          block_keys_out[pos]    = key;
+        }
+      }
+    }
+#else
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < items_per_thread; ++j)
     {
@@ -443,6 +549,7 @@ private:
         }
       }
     }
+#endif
 
     // Final cluster barrier: hold every block in the cluster until all DSMEM
     // atomics into the leader's state are complete. Without this, a fast
