@@ -446,7 +446,6 @@ struct DispatchScan
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
                     kernel_source.make_tile_state_kernel_arg(tile_state),
-                    /* atomic_counter, unused on lookback path */ static_cast<::cuda::std::uint32_t*>(nullptr),
                     start_tile,
                     scan_op,
                     init_value,
@@ -491,27 +490,13 @@ struct DispatchScan
     }
 
     CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_warpspeed_policy warpspeed_policy = policy_getter().warpspeed;
-    CUB_DETAIL_CONSTEXPR_ISH const bool is_sm90_atomic_warpspeed =
-      policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed_deterministic_atomic;
 
     const int num_tiles =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
 
-    // Atomic counter is only used by the sm_90 atomic-scheduling path; skip the allocation otherwise.
-    const bool needs_atomic_counter = is_sm90_atomic_warpspeed;
-    size_t allocation_sizes[2];
-    allocation_sizes[0] = static_cast<size_t>(num_tiles) * kernel_source.look_ahead_tile_state_size();
-    allocation_sizes[1] = needs_atomic_counter ? sizeof(::cuda::std::uint32_t) : 0;
-
-    void* allocations[2] = {};
-    if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-    {
-      return error;
-    }
-
     if (d_temp_storage == nullptr)
     {
+      temp_storage_bytes = static_cast<size_t>(num_tiles) * kernel_source.look_ahead_tile_state_size();
       return cudaSuccess;
     }
 
@@ -526,14 +511,7 @@ struct DispatchScan
       return error;
     }
 
-    // Atomic-scheduling caps the launch at one wave (extra CTAs just atomicAdd, get an out-of-range
-    // index, and early-exit). SM 100+ HW cluster scheduling needs gridDim == num_tiles.
-    const int scan_grid_dim = is_sm90_atomic_warpspeed ? ::cuda::std::min(sm_count, num_tiles) : num_tiles;
-    const int grid_dim      = num_tiles;
-
-    auto* d_atomic_counter = needs_atomic_counter ? static_cast<::cuda::std::uint32_t*>(allocations[1]) : nullptr;
-    void* d_tile_state     = allocations[0];
-
+    const int grid_dim = num_tiles;
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
     if (const auto error =
@@ -614,19 +592,10 @@ struct DispatchScan
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
               .doit(kernel_source.InitKernel(),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_tile_state),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
                     grid_dim)))
       {
         return error;
-      }
-
-      // Counter starts at 0; every CTA (including its first tile) claims via atomicAdd and bounds-checks.
-      if (needs_atomic_counter)
-      {
-        if (const auto error = CubDebug(cudaMemsetAsync(d_atomic_counter, 0, sizeof(::cuda::std::uint32_t), stream)))
-        {
-          return error;
-        }
       }
 
       // Check for failure to launch
@@ -647,17 +616,15 @@ struct DispatchScan
       const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
 
 #  ifdef CUB_DEBUG_LOG
-      _CubLog(
-        "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
+      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
 #  endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_tile_state),
-                    d_atomic_counter,
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
                     /* start_tile, unused */ 0,
                     ::cuda::std::move(scan_op),
                     init_value,
@@ -794,7 +761,6 @@ struct DispatchScan
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
                     kernel_source.make_tile_state_kernel_arg(tile_state),
-                    /* atomic_counter, unused on lookback path */ static_cast<::cuda::std::uint32_t*>(nullptr),
                     start_tile,
                     scan_op,
                     init_value,
@@ -823,7 +789,7 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
   {
-    if CUB_DETAIL_CONSTEXPR_ISH (detail::scan::is_warpspeed_algorithm(policy_getter().algorithm))
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
     {
       return __invoke_warpspeed_algorithm(policy_getter);
     }

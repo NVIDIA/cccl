@@ -1202,7 +1202,8 @@ struct TilePrefixCallbackOp
 
   // Fields
   _TempStorage& temp_storage; ///< Reference to a warp-reduction instance
-  ScanTileStateT& tile_status; ///< Interface to tile status
+  ScanTileStateT& tile_status; ///< Interface to tile status (non-anchor tiles stay at PARTIAL on the deterministic
+                               ///< path)
   ScanOpT scan_op; ///< Binary scan operator
   int tile_idx; ///< The current tile index
   T exclusive_prefix; ///< Exclusive prefix for the tile
@@ -1252,7 +1253,8 @@ struct TilePrefixCallbackOp
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
 
-  // BlockScan prefix callback functor (called by the first warp)
+  // BlockScan prefix callback functor — non-deterministic overload.
+  template <bool D = RunToRunDeterministic, ::cuda::std::enable_if_t<!D, int> = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
   {
     // Update our status with our tile-aggregate
@@ -1266,61 +1268,29 @@ struct TilePrefixCallbackOp
     int predecessor_idx = tile_idx - threadIdx.x - 1;
     StatusWord predecessor_status;
     T window_aggregate;
+
+    // Wait for the warp-wide window of predecessor tiles to become valid
     DelayConstructorT construct_delay(tile_idx);
+    ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
 
-    if constexpr (RunToRunDeterministic)
+    // The exclusive tile prefix starts out as the current window aggregate
+    exclusive_prefix = window_aggregate;
+
+    // Keep sliding the window back until we come across a tile whose inclusive prefix is known
+    while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
     {
-      // 32-tile batched lookback, wait until the batch-base lane has flipped to INCLUSIVE
-      const int batch_base      = ((tile_idx - 1) >> 5) << 5;
-      const int batch_last_lane = tile_idx - 1 - batch_base;
-      T value;
-      while (true)
-      {
-        tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
-        const int my_is_inclusive   = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
-        const int base_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, batch_last_lane);
-        if (base_is_inclusive)
-        {
-          break;
-        }
-      }
-      const int tail_flag = (static_cast<int>(threadIdx.x) == batch_last_lane);
-      window_aggregate =
-        WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
-      exclusive_prefix = window_aggregate;
-    }
-    else
-    {
-      // Keep sliding the window back until we come across a tile whose inclusive prefix is known
+      predecessor_idx -= detail::warp_threads;
+
+      // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
-      exclusive_prefix = window_aggregate;
-      while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
-      {
-        predecessor_idx -= detail::warp_threads;
-
-        // Update exclusive tile prefix with the window prefix
-        ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
-        exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
-      }
+      exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
     }
 
     // Compute the inclusive tile prefix and update the status for this tile
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
-
-      // for deterministic only batch-base tiles publish INCLUSIVE
-      if constexpr (RunToRunDeterministic)
-      {
-        if ((tile_idx & 31) == 0)
-        {
-          tile_status.SetInclusive(tile_idx, inclusive_prefix);
-        }
-      }
-      else
-      {
-        tile_status.SetInclusive(tile_idx, inclusive_prefix);
-      }
+      tile_status.SetInclusive(tile_idx, inclusive_prefix);
 
       detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
 
@@ -1328,6 +1298,56 @@ struct TilePrefixCallbackOp
     }
 
     // Return exclusive_prefix
+    return exclusive_prefix;
+  }
+
+  // BlockScan prefix callback functor — run-to-run-deterministic overload.
+  template <bool D = RunToRunDeterministic, ::cuda::std::enable_if_t<D, int> = 0>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+  {
+    if (threadIdx.x == 0)
+    {
+      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      tile_status.SetPartial(tile_idx, block_aggregate);
+    }
+
+    const int predecessor_idx = tile_idx - threadIdx.x - 1;
+    StatusWord predecessor_status;
+    DelayConstructorT construct_delay(tile_idx);
+
+    // lane that maps to the anchor tile (tile idx multiple of 32)
+    const int batch_last_lane = (tile_idx - 1) & 31;
+
+    T value;
+    while (true)
+    {
+      tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
+      const int my_is_inclusive     = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+      const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, batch_last_lane);
+      if (anchor_is_inclusive)
+      {
+        break;
+      }
+    }
+
+    const int tail_flag = (static_cast<int>(threadIdx.x) == batch_last_lane);
+    exclusive_prefix =
+      WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
+
+    if (threadIdx.x == 0)
+    {
+      inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
+
+      // Only anchor tiles publish INCLUSIVE; non-anchor tiles stay at PARTIAL.
+      if ((tile_idx & 31) == 0)
+      {
+        tile_status.SetInclusive(tile_idx, inclusive_prefix);
+      }
+
+      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+    }
+
     return exclusive_prefix;
   }
 

@@ -67,7 +67,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   constexpr scan_policy policy = current_policy<PolicySelectorT>();
-  if constexpr (is_warpspeed_algorithm(policy.algorithm))
+  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
     device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
   }
@@ -118,7 +118,7 @@ template <typename PolicySelector>
 {
   constexpr scan_policy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (is_warpspeed_algorithm(policy.algorithm))
+  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
     return num_total_threads(policy.warpspeed);
   }
@@ -191,7 +191,6 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
-  _CCCL_GRID_CONSTANT ::cuda::std::uint32_t* const atomic_counter,
   _CCCL_GRID_CONSTANT const int start_tile,
   ScanOpT scan_op,
 // nvcc 12.0 gets stuck compiling some TUs like `cub.bench.scan.exclusive.sum.base`, so only enable for newer versions
@@ -203,29 +202,15 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const int num_stages)
 {
   static constexpr scan_policy active_policy = current_policy<PolicySelector>();
-  if constexpr (is_warpspeed_algorithm(active_policy.algorithm))
+  if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-    if constexpr (RunToRunDeterministic)
-    {
-      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                     auto scan_params =
-                       scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-                         d_in, d_out, tile_state.warpspeed, atomic_counter, num_items, num_stages};
-                     device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT, RunToRunDeterministic>(
-                       scan_params, scan_op, init_value);
-                   }));
-    }
-    else
-    {
-      NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                     auto scan_params =
-                       scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-                         d_in, d_out, tile_state.warpspeed, atomic_counter, num_items, num_stages};
-                     device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT, RunToRunDeterministic>(
-                       scan_params, scan_op, init_value);
-                   }));
-    }
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_100, ({
+        auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
+          d_in, d_out, tile_state.warpspeed, num_items, num_stages};
+        device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+      }));
 #else
     static_assert(sizeof(d_in) == 0,
                   "Implementation bug: Tuning policy selected warpspeed, but CUDA compiler does not support it");

@@ -174,7 +174,7 @@ struct AgentScan
   // Parameterized BlockScan type
   using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
 
-  // Run-to-run determinism uses the 32-batched lookback variant inside TilePrefixCallbackOp.
+  // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentScanPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackOpT =
     TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT, RunToRunDeterministic>;

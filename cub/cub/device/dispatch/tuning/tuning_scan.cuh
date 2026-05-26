@@ -624,14 +624,11 @@ enum class scan_algorithm
   lookback,
   warpspeed,
   lookback_deterministic,
-  warpspeed_deterministic,
-  warpspeed_deterministic_atomic
 };
 
 _CCCL_API constexpr bool is_warpspeed_algorithm(scan_algorithm algorithm)
 {
-  return algorithm == scan_algorithm::warpspeed || algorithm == scan_algorithm::warpspeed_deterministic
-      || algorithm == scan_algorithm::warpspeed_deterministic_atomic;
+  return algorithm == scan_algorithm::warpspeed;
 }
 
 #if _CCCL_HOSTED()
@@ -645,10 +642,6 @@ inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
       return os << "scan_algorithm::warpspeed";
     case scan_algorithm::lookback_deterministic:
       return os << "scan_algorithm::lookback_deterministic";
-    case scan_algorithm::warpspeed_deterministic:
-      return os << "scan_algorithm::warpspeed_deterministic";
-    case scan_algorithm::warpspeed_deterministic_atomic:
-      return os << "scan_algorithm::warpspeed_deterministic_atomic";
     default:
       return os << "scan_algorithm::<unknown>";
   }
@@ -889,8 +882,6 @@ struct policy_selector
   bool accum_is_primitive_or_trivially_copy_constructible;
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
-  // Routes per-arch: atomic-scheduled warpspeed on sm_90, default warpspeed on sm_100+, lookback_deterministic
-  // elsewhere.
   bool require_run_to_run_determinism = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_warpspeed_policy() const -> scan_warpspeed_policy
@@ -1000,12 +991,6 @@ struct policy_selector
 
       return get_sm100_fallback_warpspeed_policy();
     }
-    // sm_90 run-to-run-deterministic path: warpspeed without HW cluster scheduling. fp+plus only.
-    if (require_run_to_run_determinism && cc >= ::cuda::compute_capability{9, 0} && operation_t == op_kind_t::plus
-        && (accum_type == type_t::float32 || accum_type == type_t::float64))
-    {
-      return get_sm100_fallback_warpspeed_policy();
-    }
     return {};
   }
 
@@ -1061,18 +1046,7 @@ struct policy_selector
       const auto warpspeed_policy_opt = get_warpspeed_policy(cc);
       if (warpspeed_policy_opt && can_use_warpspeed(cc, *warpspeed_policy_opt))
       {
-        // arch < sm_100 reaches warpspeed only via the deterministic sm_90 atomic path; sm_100+ uses
-        // HW cluster scheduling (deterministic if requested, otherwise the default non-det path).
-        scan_algorithm algorithm = scan_algorithm::warpspeed;
-        if (cc < ::cuda::compute_capability{10, 0})
-        {
-          algorithm = scan_algorithm::warpspeed_deterministic_atomic;
-        }
-        else if (require_run_to_run_determinism)
-        {
-          algorithm = scan_algorithm::warpspeed_deterministic;
-        }
-        return {algorithm, scan_lookback_policy{}, *warpspeed_policy_opt};
+        return {scan_algorithm::warpspeed, scan_lookback_policy{}, *warpspeed_policy_opt};
       }
     }
 

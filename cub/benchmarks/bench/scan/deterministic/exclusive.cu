@@ -18,9 +18,8 @@ try
   using input_it_t  = const T*;
   using output_it_t = T*;
   using offset_t    = cub::detail::choose_offset_t<OffsetT>;
-  static_assert(sizeof(offset_t) == sizeof(::cuda::std::size_t), "warpspeed scan uses size_t offsets");
-  using scan_op_t = ::cuda::std::plus<T>;
-  using init_t    = cub::detail::InputValue<T>;
+  using scan_op_t   = ::cuda::std::plus<T>;
+  using init_t      = cub::detail::InputValue<T>;
 
   const auto elements                 = static_cast<::cuda::std::size_t>(state.get_int64("Elements{io}"));
   const bool run_to_run_deterministic = state.get_int64("Det") != 0;
@@ -39,14 +38,26 @@ try
   if (run_to_run_deterministic)
   {
     cub::detail::scan::dispatch_with_accum<T, cub::ForceInclusive::No, true>(
-      nullptr, tmp_size, d_input, d_output, scan_op_t{}, init_t{T{}}, static_cast<offset_t>(elements), 0 /* stream */
-    );
+      nullptr,
+      tmp_size,
+      d_input,
+      d_output,
+      scan_op_t{},
+      init_t{T{}},
+      static_cast<offset_t>(elements),
+      0 /* stream */);
   }
   else
   {
-    // Det=0: default policy — warpspeed on SM>=100, classic lookback elsewhere.
     cub::detail::scan::dispatch_with_accum<T, cub::ForceInclusive::No, false>(
-      nullptr, tmp_size, d_input, d_output, scan_op_t{}, init_t{T{}}, static_cast<offset_t>(elements), 0 /* stream */);
+      nullptr,
+      tmp_size,
+      d_input,
+      d_output,
+      scan_op_t{},
+      init_t{T{}},
+      static_cast<offset_t>(elements),
+      0 /* stream */);
   }
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
@@ -84,7 +95,7 @@ catch (const std::exception& e)
 }
 
 using types   = nvbench::type_list<float, double>;
-using offsets = nvbench::type_list<int64_t>; // warpspeed scan requires size_t-equivalent offset
+using offsets = nvbench::type_list<int64_t>;
 
 NVBENCH_BENCH_TYPES(exclusive_scan, NVBENCH_TYPE_AXES(types, offsets))
   .set_name("base")
