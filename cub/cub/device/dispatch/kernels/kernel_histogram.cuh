@@ -59,7 +59,6 @@ struct fast_divide_by_constant
   static constexpr int kBits = static_cast<int>(sizeof(UInt) * 8);
 
   UInt magic; // multiplier (low N bits of the round-up multiplier)
-  UInt divisor; // original divisor (kept so we can fall back to plain divide if needed)
   unsigned char shift; // shift amount; for power-of-two divisors this is log2(d)
   unsigned char mode; // 0: identity (d == 1); 1: power-of-two; 2: general round-up
 
@@ -98,7 +97,6 @@ struct fast_divide_by_constant
   //! today.
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(UInt d)
   {
-    divisor = d;
     if (d <= UInt{1})
     {
       magic = UInt{0};
