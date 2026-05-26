@@ -7,6 +7,7 @@ Sweep K from 1 to 12 on the minimal "one persistent LD, K sequential .rw()
 in body" pattern. Is K=4 a singleton failure or is there a periodic / range
 pattern?
 """
+
 from __future__ import annotations
 
 import numpy as np

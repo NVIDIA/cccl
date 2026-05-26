@@ -68,7 +68,6 @@ from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -79,7 +78,7 @@ class NodeConfig:
     """Workload shape for the Neural ODE benchmark."""
 
     batch: int = 64
-    state_dim: int = 32   # D
+    state_dim: int = 32  # D
     hidden_dim: int = 128  # H
     n_steps: int = 500
     t0: float = 0.0
@@ -284,8 +283,7 @@ def integrate_rk4_compile_f(y0: "torch.Tensor", w: MLPWeightsT, cfg: NodeConfig)
     return y
 
 
-def _rk4_loop_for_compile(y, h_step: float, n_steps: int,
-                          W1, b1, W2, b2, W3, b3):
+def _rk4_loop_for_compile(y, h_step: float, n_steps: int, W1, b1, W2, b2, W3, b3):
     """Whole integrator as a single Python function, to hand to torch.compile.
 
     Inductor is allowed to unroll the loop entirely, removing all
@@ -303,9 +301,7 @@ def _rk4_loop_for_compile(y, h_step: float, n_steps: int,
 _rk4_loop_compiled = torch.compile(_rk4_loop_for_compile, mode="default")
 
 
-def integrate_rk4_compile_all(
-    y0: "torch.Tensor", w: MLPWeightsT, cfg: NodeConfig
-):
+def integrate_rk4_compile_all(y0: "torch.Tensor", w: MLPWeightsT, cfg: NodeConfig):
     """torch.compile the WHOLE integrator -- loop body + iteration.
 
     When Inductor successfully unrolls the Python for-loop this collapses
@@ -315,8 +311,15 @@ def integrate_rk4_compile_all(
     """
     y = y0.clone()
     return _rk4_loop_compiled(
-        y, cfg.h_step, cfg.n_steps,
-        w.W1, w.b1, w.W2, w.b2, w.W3, w.b3,
+        y,
+        cfg.h_step,
+        cfg.n_steps,
+        w.W1,
+        w.b1,
+        w.W2,
+        w.b2,
+        w.W3,
+        w.b3,
     )
 
 
@@ -373,8 +376,18 @@ _DOP_E7 = -1.0 / 40.0
 
 
 def _dopri5_body(
-    y, t, h, W1, b1, W2, b2, W3, b3,
-    t_end: float, atol: float, rtol: float,
+    y,
+    t,
+    h,
+    W1,
+    b1,
+    W2,
+    b2,
+    W3,
+    b3,
+    t_end: float,
+    atol: float,
+    rtol: float,
 ):
     """One Dopri5 step with adaptive step size and mask-based accept/reject.
 
@@ -392,32 +405,61 @@ def _dopri5_body(
     h_used = torch.minimum(h, t_end - t)
 
     k1 = _f_theta(y, W1, b1, W2, b2, W3, b3)
-    k2 = _f_theta(y + h_used * (_DOP_A21 * k1),
-                  W1, b1, W2, b2, W3, b3)
-    k3 = _f_theta(y + h_used * (_DOP_A31 * k1 + _DOP_A32 * k2),
-                  W1, b1, W2, b2, W3, b3)
-    k4 = _f_theta(y + h_used * (_DOP_A41 * k1 + _DOP_A42 * k2 + _DOP_A43 * k3),
-                  W1, b1, W2, b2, W3, b3)
+    k2 = _f_theta(y + h_used * (_DOP_A21 * k1), W1, b1, W2, b2, W3, b3)
+    k3 = _f_theta(y + h_used * (_DOP_A31 * k1 + _DOP_A32 * k2), W1, b1, W2, b2, W3, b3)
+    k4 = _f_theta(
+        y + h_used * (_DOP_A41 * k1 + _DOP_A42 * k2 + _DOP_A43 * k3),
+        W1,
+        b1,
+        W2,
+        b2,
+        W3,
+        b3,
+    )
     k5 = _f_theta(
         y + h_used * (_DOP_A51 * k1 + _DOP_A52 * k2 + _DOP_A53 * k3 + _DOP_A54 * k4),
-        W1, b1, W2, b2, W3, b3,
+        W1,
+        b1,
+        W2,
+        b2,
+        W3,
+        b3,
     )
     k6 = _f_theta(
-        y + h_used * (_DOP_A61 * k1 + _DOP_A62 * k2 + _DOP_A63 * k3
-                      + _DOP_A64 * k4 + _DOP_A65 * k5),
-        W1, b1, W2, b2, W3, b3,
+        y
+        + h_used
+        * (
+            _DOP_A61 * k1
+            + _DOP_A62 * k2
+            + _DOP_A63 * k3
+            + _DOP_A64 * k4
+            + _DOP_A65 * k5
+        ),
+        W1,
+        b1,
+        W2,
+        b2,
+        W3,
+        b3,
     )
 
     # 5th-order solution (NB: no k2 contribution -- b2 = 0 in Dopri5).
-    y5 = y + h_used * (_DOP_B1 * k1 + _DOP_B3 * k3 + _DOP_B4 * k4
-                       + _DOP_B5 * k5 + _DOP_B6 * k6)
+    y5 = y + h_used * (
+        _DOP_B1 * k1 + _DOP_B3 * k3 + _DOP_B4 * k4 + _DOP_B5 * k5 + _DOP_B6 * k6
+    )
 
     # 7th stage for embedded 4th-order error estimate (FSAL evaluates at y5).
     k7 = _f_theta(y5, W1, b1, W2, b2, W3, b3)
 
     # Error estimate = difference between 5th- and 4th-order updates.
-    err_vec = h_used * (_DOP_E1 * k1 + _DOP_E3 * k3 + _DOP_E4 * k4
-                        + _DOP_E5 * k5 + _DOP_E6 * k6 + _DOP_E7 * k7)
+    err_vec = h_used * (
+        _DOP_E1 * k1
+        + _DOP_E3 * k3
+        + _DOP_E4 * k4
+        + _DOP_E5 * k5
+        + _DOP_E6 * k6
+        + _DOP_E7 * k7
+    )
     # Scale relative to solution magnitude (torchdiffeq-compatible norm).
     scale = atol + rtol * torch.maximum(y.abs(), y5.abs())
     err_norm = torch.sqrt(torch.mean((err_vec / scale) ** 2))
@@ -463,15 +505,30 @@ def _warmup_dopri5_body(cfg: NodeConfig):
     b3 = torch.zeros((D,), dtype=dtype, device=device)
 
     _ = _dopri5_body_compiled(
-        y, t, h, W1, b1, W2, b2, W3, b3,
-        cfg.t1, 1e-6, 1e-6,
+        y,
+        t,
+        h,
+        W1,
+        b1,
+        W2,
+        b2,
+        W3,
+        b3,
+        cfg.t1,
+        1e-6,
+        1e-6,
     )
     torch.cuda.synchronize()
 
 
 def integrate_dopri5_python(
-    y0_t: "torch.Tensor", w: MLPWeightsT, cfg: NodeConfig,
-    *, atol: float = 1e-6, rtol: float = 1e-6, max_steps: int = 10_000,
+    y0_t: "torch.Tensor",
+    w: MLPWeightsT,
+    cfg: NodeConfig,
+    *,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    max_steps: int = 10_000,
 ) -> tuple["torch.Tensor", int]:
     """Pure-PyTorch Dopri5 integrator using the same body.
 
@@ -490,8 +547,18 @@ def integrate_dopri5_python(
     steps = 0
     for _ in range(max_steps):
         y, t, h, cond = _dopri5_body_compiled(
-            y, t, h, w.W1, w.b1, w.W2, w.b2, w.W3, w.b3,
-            cfg.t1, atol, rtol,
+            y,
+            t,
+            h,
+            w.W1,
+            w.b1,
+            w.W2,
+            w.b2,
+            w.W3,
+            w.b3,
+            cfg.t1,
+            atol,
+            rtol,
         )
         steps += 1
         if bool(cond.item() < 0.5):
@@ -513,14 +580,17 @@ def integrate_dopri5_python(
 
 def _make_torchdiffeq_field(w: MLPWeightsT):
     """Wrap the autonomous vector field in the ``f(t, y)`` signature odeint expects."""
+
     def f(_t, y):
         return _f_theta(y, w.W1, w.b1, w.W2, w.b2, w.W3, w.b3)
+
     return f
 
 
 def integrate_torchdiffeq_rk4(y0_t, w: MLPWeightsT, cfg: NodeConfig):
     """torchdiffeq fixed-step RK4, same step size as the STF and eager paths."""
     from torchdiffeq import odeint
+
     f = _make_torchdiffeq_field(w)
     t = torch.tensor([cfg.t0, cfg.t1], device="cuda", dtype=cfg.torch_dtype)
     return odeint(f, y0_t, t, method="rk4", options={"step_size": cfg.h_step})[-1]
@@ -529,6 +599,7 @@ def integrate_torchdiffeq_rk4(y0_t, w: MLPWeightsT, cfg: NodeConfig):
 def integrate_torchdiffeq_dopri5(y0_t, w: MLPWeightsT, cfg: NodeConfig):
     """torchdiffeq adaptive Dopri5 -- library default for Neural ODEs."""
     from torchdiffeq import odeint
+
     f = _make_torchdiffeq_field(w)
     t = torch.tensor([cfg.t0, cfg.t1], device="cuda", dtype=cfg.torch_dtype)
     return odeint(f, y0_t, t, method="dopri5", rtol=1e-6, atol=1e-6)[-1]
@@ -551,8 +622,9 @@ def integrate_torchdiffeq_dopri5(y0_t, w: MLPWeightsT, cfg: NodeConfig):
 # ---------------------------------------------------------------------------
 
 
-def _build_torchode_dopri5_solver(w: MLPWeightsT, cfg: NodeConfig,
-                                   *, atol: float = 1e-6, rtol: float = 1e-6):
+def _build_torchode_dopri5_solver(
+    w: MLPWeightsT, cfg: NodeConfig, *, atol: float = 1e-6, rtol: float = 1e-6
+):
     """Build a torchode AutoDiffAdjoint solver bound to the given weights.
 
     Returns a ``callable(y0_t) -> final_state`` closure. Uses torch.compile
@@ -651,13 +723,25 @@ def _build_stf_persistent_forward(cfg: NodeConfig, weights: MLPWeights):
                 with pytorch_task(
                     ctx,
                     l_y.rw(),
-                    l_W1.read(), l_b1.read(),
-                    l_W2.read(), l_b2.read(),
-                    l_W3.read(), l_b3.read(),
+                    l_W1.read(),
+                    l_b1.read(),
+                    l_W2.read(),
+                    l_b2.read(),
+                    l_W3.read(),
+                    l_b3.read(),
                 ) as (tY, tW1, tb1, tW2, tb2, tW3, tb3):
-                    tY.copy_(_rk4_body_compiled(
-                        tY, h, tW1, tb1, tW2, tb2, tW3, tb3,
-                    ))
+                    tY.copy_(
+                        _rk4_body_compiled(
+                            tY,
+                            h,
+                            tW1,
+                            tb1,
+                            tW2,
+                            tb2,
+                            tW3,
+                            tb3,
+                        )
+                    )
 
     return forward, ctx, y_host
 
@@ -695,8 +779,11 @@ def integrate_rk4_stf(cfg: NodeConfig, weights: MLPWeights) -> np.ndarray:
 
 
 def _build_stf_dopri5_forward(
-    cfg: NodeConfig, weights: MLPWeights,
-    *, atol: float = 1e-6, rtol: float = 1e-6,
+    cfg: NodeConfig,
+    weights: MLPWeights,
+    *,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
 ):
     """STF persistent-context Dopri5 integrator. Returns ``(forward, ctx, y_host)``.
 
@@ -744,7 +831,9 @@ def _build_stf_dopri5_forward(
         # Reset (y, t, h) before the while loop. Each forward must start
         # from the same IC so repeated timed invocations are comparable.
         with pytorch_task(ctx, l_y.write(), l_t.write(), l_h.write()) as (
-            tY, tT, tH,
+            tY,
+            tT,
+            tH,
         ):
             tY.copy_(y0_cuda)
             tT.fill_(t0_val)
@@ -753,18 +842,34 @@ def _build_stf_dopri5_forward(
         with ctx.while_loop() as loop:
             with pytorch_task(
                 ctx,
-                l_y.rw(), l_t.rw(), l_h.rw(), l_cond.write(),
-                l_W1.read(), l_b1.read(),
-                l_W2.read(), l_b2.read(),
-                l_W3.read(), l_b3.read(),
+                l_y.rw(),
+                l_t.rw(),
+                l_h.rw(),
+                l_cond.write(),
+                l_W1.read(),
+                l_b1.read(),
+                l_W2.read(),
+                l_b2.read(),
+                l_W3.read(),
+                l_b3.read(),
             ) as (tY, tT, tH, tC, tW1, tb1, tW2, tb2, tW3, tb3):
                 # Squeeze (1,) -> 0-d for the compiled body which expects
                 # scalars; unsqueeze back on writeback.
                 t0d = tT.squeeze()
                 h0d = tH.squeeze()
                 y_new, t_new, h_new, cond = _dopri5_body_compiled(
-                    tY, t0d, h0d, tW1, tb1, tW2, tb2, tW3, tb3,
-                    t_end, atol, rtol,
+                    tY,
+                    t0d,
+                    h0d,
+                    tW1,
+                    tb1,
+                    tW2,
+                    tb2,
+                    tW3,
+                    tb3,
+                    t_end,
+                    atol,
+                    rtol,
                 )
                 tY.copy_(y_new)
                 tT.copy_(t_new.unsqueeze(0))
@@ -777,12 +882,18 @@ def _build_stf_dopri5_forward(
 
 
 def integrate_dopri5_stf(
-    cfg: NodeConfig, weights: MLPWeights,
-    *, atol: float = 1e-6, rtol: float = 1e-6,
+    cfg: NodeConfig,
+    weights: MLPWeights,
+    *,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
 ) -> np.ndarray:
     """One-shot STF Dopri5 run -- used by the correctness test."""
     forward, ctx, y_host = _build_stf_dopri5_forward(
-        cfg, weights, atol=atol, rtol=rtol,
+        cfg,
+        weights,
+        atol=atol,
+        rtol=rtol,
     )
     torch.cuda.synchronize()
     forward()
@@ -855,14 +966,19 @@ def test_node_correctness():
 
     w_t = weights.as_torch(device="cuda", dtype=cfg.torch_dtype)
     y0_t = torch.as_tensor(
-        build_y0(cfg, seed=0), device="cuda", dtype=cfg.torch_dtype,
+        build_y0(cfg, seed=0),
+        device="cuda",
+        dtype=cfg.torch_dtype,
     )
 
     y_eager = integrate_rk4_eager(y0_t, w_t, cfg).detach().cpu().numpy()
     y_stf = integrate_rk4_stf(cfg, weights)
 
     np.testing.assert_allclose(
-        y_stf, y_eager, atol=1e-4, rtol=1e-4,
+        y_stf,
+        y_eager,
+        atol=1e-4,
+        rtol=1e-4,
         err_msg=(
             "STF RK4 trajectory does not match eager reference. "
             "Likely causes: (1) compiled body and eager body diverged in "
@@ -874,13 +990,23 @@ def test_node_correctness():
     # Sanity: torchdiffeq/rk4 at the same step size must also match. If this
     # diverges, the later benchmark comparison is not apples-to-apples.
     try:
-        y_td = integrate_torchdiffeq_rk4(
-            torch.as_tensor(build_y0(cfg, seed=0), device="cuda",
-                            dtype=cfg.torch_dtype),
-            w_t, cfg,
-        ).detach().cpu().numpy()
+        y_td = (
+            integrate_torchdiffeq_rk4(
+                torch.as_tensor(
+                    build_y0(cfg, seed=0), device="cuda", dtype=cfg.torch_dtype
+                ),
+                w_t,
+                cfg,
+            )
+            .detach()
+            .cpu()
+            .numpy()
+        )
         np.testing.assert_allclose(
-            y_td, y_eager, atol=1e-4, rtol=1e-4,
+            y_td,
+            y_eager,
+            atol=1e-4,
+            rtol=1e-4,
             err_msg="torchdiffeq RK4 at same step size does not match eager reference.",
         )
 
@@ -890,13 +1016,23 @@ def test_node_correctness():
         # disagree on intermediate trajectory but must converge to the
         # same endpoint within combined solver tolerance.
         y_stf_dopri5 = integrate_dopri5_stf(cfg, weights, atol=1e-6, rtol=1e-6)
-        y_td_dopri5 = integrate_torchdiffeq_dopri5(
-            torch.as_tensor(build_y0(cfg, seed=0), device="cuda",
-                            dtype=cfg.torch_dtype),
-            w_t, cfg,
-        ).detach().cpu().numpy()
+        y_td_dopri5 = (
+            integrate_torchdiffeq_dopri5(
+                torch.as_tensor(
+                    build_y0(cfg, seed=0), device="cuda", dtype=cfg.torch_dtype
+                ),
+                w_t,
+                cfg,
+            )
+            .detach()
+            .cpu()
+            .numpy()
+        )
         np.testing.assert_allclose(
-            y_stf_dopri5, y_td_dopri5, atol=1e-4, rtol=1e-4,
+            y_stf_dopri5,
+            y_td_dopri5,
+            atol=1e-4,
+            rtol=1e-4,
             err_msg=(
                 "STF Dopri5 (while_loop) endpoint does not match "
                 "torchdiffeq Dopri5 at the same tolerance. Likely causes: "
@@ -910,13 +1046,23 @@ def test_node_correctness():
     # torchode Dopri5 cross-check: same algorithm as torchdiffeq, different
     # host driver. Both should agree on the endpoint to within tolerance.
     try:
-        y_to_dopri5 = integrate_torchode_dopri5(
-            torch.as_tensor(build_y0(cfg, seed=0), device="cuda",
-                            dtype=cfg.torch_dtype),
-            w_t, cfg,
-        ).detach().cpu().numpy()
+        y_to_dopri5 = (
+            integrate_torchode_dopri5(
+                torch.as_tensor(
+                    build_y0(cfg, seed=0), device="cuda", dtype=cfg.torch_dtype
+                ),
+                w_t,
+                cfg,
+            )
+            .detach()
+            .cpu()
+            .numpy()
+        )
         np.testing.assert_allclose(
-            y_to_dopri5, y_td_dopri5, atol=1e-4, rtol=1e-4,
+            y_to_dopri5,
+            y_td_dopri5,
+            atol=1e-4,
+            rtol=1e-4,
             err_msg=(
                 "torchode Dopri5 endpoint does not match torchdiffeq "
                 "Dopri5 at the same tolerance -- baselines disagree, so "
@@ -952,16 +1098,19 @@ def _run_benchmark(cfg: NodeConfig, *, iters: int, warmup: int):
 
     results["py/eager"] = _time_callable(
         lambda: integrate_rk4_eager(y0_t, w_t, cfg),
-        iters=iters, warmup=warmup,
+        iters=iters,
+        warmup=warmup,
     )
     results["py/compile-f"] = _time_callable(
         lambda: integrate_rk4_compile_f(y0_t, w_t, cfg),
-        iters=iters, warmup=warmup,
+        iters=iters,
+        warmup=warmup,
     )
     if compile_all_ok:
         results["py/compile-all"] = _time_callable(
             lambda: integrate_rk4_compile_all(y0_t, w_t, cfg),
-            iters=iters, warmup=warmup,
+            iters=iters,
+            warmup=warmup,
         )
     else:
         results["py/compile-all"] = float("nan")
@@ -970,18 +1119,27 @@ def _run_benchmark(cfg: NodeConfig, *, iters: int, warmup: int):
     forward, ctx, _y_host = _build_stf_persistent_forward(cfg, weights)
     try:
         results["stf/repeat"] = _time_stf(
-            forward, ctx, iters=iters, warmup=warmup,
+            forward,
+            ctx,
+            iters=iters,
+            warmup=warmup,
         )
     finally:
         ctx.finalize()
 
     # STF persistent context (adaptive Dopri5 via ctx.while_loop).
     dopri_forward, dopri_ctx, _ = _build_stf_dopri5_forward(
-        cfg, weights, atol=1e-6, rtol=1e-6,
+        cfg,
+        weights,
+        atol=1e-6,
+        rtol=1e-6,
     )
     try:
         results["stf/dopri5"] = _time_stf(
-            dopri_forward, dopri_ctx, iters=iters, warmup=warmup,
+            dopri_forward,
+            dopri_ctx,
+            iters=iters,
+            warmup=warmup,
         )
     finally:
         dopri_ctx.finalize()
@@ -989,13 +1147,16 @@ def _run_benchmark(cfg: NodeConfig, *, iters: int, warmup: int):
     # torchdiffeq baselines. Optional: skip cleanly if not installed.
     try:
         import torchdiffeq  # noqa: F401  # import for presence check
+
         results["torchdiffeq/rk4"] = _time_callable(
             lambda: integrate_torchdiffeq_rk4(y0_t, w_t, cfg),
-            iters=iters, warmup=warmup,
+            iters=iters,
+            warmup=warmup,
         )
         results["torchdiffeq/dopri5"] = _time_callable(
             lambda: integrate_torchdiffeq_dopri5(y0_t, w_t, cfg),
-            iters=iters, warmup=warmup,
+            iters=iters,
+            warmup=warmup,
         )
     except ImportError:
         print("[torchdiffeq] not installed; skipping torchdiffeq baselines.")
@@ -1005,10 +1166,12 @@ def _run_benchmark(cfg: NodeConfig, *, iters: int, warmup: int):
     # torchode baseline. Optional.
     try:
         import torchode  # noqa: F401
+
         torchode_solve = _build_torchode_dopri5_solver(w_t, cfg)
         results["torchode/dopri5"] = _time_callable(
             lambda: torchode_solve(y0_t),
-            iters=iters, warmup=warmup,
+            iters=iters,
+            warmup=warmup,
         )
     except ImportError:
         print("[torchode] not installed; skipping torchode baseline.")
@@ -1032,16 +1195,25 @@ def _print_table(cfg: NodeConfig, results: dict[str, float]):
             sp = eager / t if t > 0 else float("nan")
             print(f"  {name:<22} {t:>10.2f}   {sp:>18.2f}x")
 
-    print("\n  [Fixed-schedule RK4 -- same algorithm, "
-          f"{cfg.n_steps} steps x 4 f-evals = {cfg.n_steps * 4} f-evals]")
+    print(
+        "\n  [Fixed-schedule RK4 -- same algorithm, "
+        f"{cfg.n_steps} steps x 4 f-evals = {cfg.n_steps * 4} f-evals]"
+    )
     print(f"  {'mode':<22} {'ms / run':>12} {'speedup vs eager':>20}")
     print("  " + "-" * 56)
-    for name in ("py/eager", "py/compile-f", "py/compile-all",
-                 "torchdiffeq/rk4", "stf/repeat"):
+    for name in (
+        "py/eager",
+        "py/compile-f",
+        "py/compile-all",
+        "torchdiffeq/rk4",
+        "stf/repeat",
+    ):
         _print_row(name, results.get(name, float("nan")))
 
-    print("\n  [Adaptive solvers -- different algorithm / f-eval count; "
-          "NOT apples-to-apples with the block above]")
+    print(
+        "\n  [Adaptive solvers -- different algorithm / f-eval count; "
+        "NOT apples-to-apples with the block above]"
+    )
     print(f"  {'mode':<22} {'ms / run':>12} {'speedup vs eager':>20}")
     print("  " + "-" * 56)
     for name in ("torchdiffeq/dopri5", "torchode/dopri5", "stf/dopri5"):

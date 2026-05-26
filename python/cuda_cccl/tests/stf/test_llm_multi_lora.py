@@ -58,8 +58,6 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-import cuda.stf._experimental as stf  # noqa: E402
-
 from test_llm_lora import (  # noqa: E402
     LoRAConfig,
     _default_cfg,
@@ -73,6 +71,7 @@ from test_llm_lora import (  # noqa: E402
     stf_lora_linear,
 )
 
+import cuda.stf._experimental as stf  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Weight allocation -- shared W plus K (A_k, B_k) adapter pairs.
@@ -172,9 +171,9 @@ def run_multi_lora_forward(
         _warmup_compiled_bodies(cfg)
 
     H, S = cfg.hidden, cfg.seq
-    x_host = np.random.default_rng(seed + 1).standard_normal(
-        (1, S, H)
-    ).astype(cfg.np_dtype)
+    x_host = (
+        np.random.default_rng(seed + 1).standard_normal((1, S, H)).astype(cfg.np_dtype)
+    )
     y_hosts = [np.zeros((1, S, H), dtype=cfg.np_dtype) for _ in range(K)]
 
     torch.cuda.synchronize()
@@ -189,7 +188,11 @@ def run_multi_lora_forward(
     l_y_list = [ctx.logical_data(y_hosts[k], name=f"y_{k}") for k in range(K)]
 
     l_W, adapters = build_multi_lora_weights(
-        ctx, cfg, K, seed=seed, zero_init_B=zero_init_B,
+        ctx,
+        cfg,
+        K,
+        seed=seed,
+        zero_init_B=zero_init_B,
     )
 
     # Shared base: computed ONCE, read by K combine tasks. This is
@@ -197,8 +200,12 @@ def run_multi_lora_forward(
     # batch-shared; only the rank-r LoRA deltas are per-request.
     l_y_base = ctx.logical_data_empty((1, S, H), cfg.np_dtype, name="y_base")
     stf_base_linear(
-        ctx, l_x, l_W, l_y_base,
-        use_compile=use_compile, use_graph_scope=use_graph_scope,
+        ctx,
+        l_x,
+        l_W,
+        l_y_base,
+        use_compile=use_compile,
+        use_graph_scope=use_graph_scope,
     )
 
     # One graph_scope per adapter, grouping BOTH the LoRA task and its
@@ -220,7 +227,9 @@ def run_multi_lora_forward(
     # level (so e.g. a future decode loop could refresh it each step).
     for k, (l_A_k, l_B_k) in enumerate(adapters):
         l_y_delta_k = ctx.logical_data_empty(
-            (1, S, H), cfg.np_dtype, name=f"y_delta_{k}",
+            (1, S, H),
+            cfg.np_dtype,
+            name=f"y_delta_{k}",
         )
         with _maybe_graph_scope(ctx, use_graph_scope):
             if use_graph_scope and hasattr(l_y_base, "push"):
@@ -228,9 +237,14 @@ def run_multi_lora_forward(
             # Inner primitives must NOT open their own graph_scope here
             # (that would nest two scopes and collapse the intended shape).
             stf_lora_linear(
-                ctx, l_x, l_A_k, l_B_k, l_y_delta_k,
+                ctx,
+                l_x,
+                l_A_k,
+                l_B_k,
+                l_y_delta_k,
                 alpha_over_r=cfg.alpha_over_r,
-                use_compile=use_compile, use_graph_scope=False,
+                use_compile=use_compile,
+                use_graph_scope=False,
             )
             stf_combine_add(ctx, l_y_base, l_y_delta_k, l_y_list[k])
 
@@ -262,8 +276,10 @@ def test_multi_lora_headline():
     K = _env_K(8)
 
     y_list, elapsed = run_multi_lora_forward(
-        cfg, K=K,
-        use_compile=True, use_graph_scope=True,
+        cfg,
+        K=K,
+        use_compile=True,
+        use_graph_scope=True,
         seed=0,
     )
 
@@ -315,21 +331,30 @@ def test_multi_lora_zero_init_all_match_base():
     K = 4  # small to keep the test fast
 
     y_list, _ = run_multi_lora_forward(
-        cfg, K=K,
-        use_compile=True, use_graph_scope=True,
-        zero_init_B=True, seed=42,
+        cfg,
+        K=K,
+        use_compile=True,
+        use_graph_scope=True,
+        zero_init_B=True,
+        seed=42,
     )
 
     # Reference base-only forward from the single-LoRA file.
     y_base, _ = run_lora_forward(
         cfg,
-        use_compile=True, use_graph_scope=True,
-        zero_init_B=True, include_lora=False, seed=42,
+        use_compile=True,
+        use_graph_scope=True,
+        zero_init_B=True,
+        include_lora=False,
+        seed=42,
     )
 
     for k, y in enumerate(y_list):
         np.testing.assert_allclose(
-            y, y_base, atol=1e-5, rtol=1e-5,
+            y,
+            y_base,
+            atol=1e-5,
+            rtol=1e-5,
             err_msg=(
                 f"adapter {k} zero-init output does not match base-only "
                 f"(likely a wiring bug in the K-fanout)"

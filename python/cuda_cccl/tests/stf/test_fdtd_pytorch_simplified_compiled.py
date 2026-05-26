@@ -267,19 +267,28 @@ def test_fdtd_3d_pytorch_simplified_compiled(
     # any CUDA graph capture) and inside ctx.repeat() for replay.
     def _timestep_body():
         # --- E updates ---
-        with pytorch_task(
-            ctx, lex.rw(), lhy.read(), lhz.read(), lepsilon.read()
-        ) as (ex, hy, hz, epsilon):
+        with pytorch_task(ctx, lex.rw(), lhy.read(), lhz.read(), lepsilon.read()) as (
+            ex,
+            hy,
+            hz,
+            epsilon,
+        ):
             _update_ex(ex, hy, hz, epsilon, dt, dx)
 
-        with pytorch_task(
-            ctx, ley.rw(), lhx.read(), lhz.read(), lepsilon.read()
-        ) as (ey, hx, hz, epsilon):
+        with pytorch_task(ctx, ley.rw(), lhx.read(), lhz.read(), lepsilon.read()) as (
+            ey,
+            hx,
+            hz,
+            epsilon,
+        ):
             _update_ey(ey, hx, hz, epsilon, dt, dy)
 
-        with pytorch_task(
-            ctx, lez.rw(), lhx.read(), lhy.read(), lepsilon.read()
-        ) as (ez, hx, hy, epsilon):
+        with pytorch_task(ctx, lez.rw(), lhx.read(), lhy.read(), lepsilon.read()) as (
+            ez,
+            hx,
+            hy,
+            epsilon,
+        ):
             _update_ez(ez, hx, hy, epsilon, dt, dz)
 
         # Time-dependent point source: use the device counter so the
@@ -287,25 +296,32 @@ def test_fdtd_3d_pytorch_simplified_compiled(
         # Not worth compiling (single-cell scatter).
         with pytorch_task(ctx, lez.rw(), lstep.rw()) as (ez, step):
             t_dev = step.to(torch.float64) * dt
-            ez[cx, cy, cz] = ez[cx, cy, cz] + torch.sin(
-                kx_phase - omega * t_dev[0]
-            )
+            ez[cx, cy, cz] = ez[cx, cy, cz] + torch.sin(kx_phase - omega * t_dev[0])
             step.add_(1)
 
         # --- H updates ---
-        with pytorch_task(
-            ctx, lhx.rw(), ley.read(), lez.read(), lmu.read()
-        ) as (hx, ey, ez, mu):
+        with pytorch_task(ctx, lhx.rw(), ley.read(), lez.read(), lmu.read()) as (
+            hx,
+            ey,
+            ez,
+            mu,
+        ):
             _update_hx(hx, ey, ez, mu, dt, dy)
 
-        with pytorch_task(
-            ctx, lhy.rw(), lex.read(), lez.read(), lmu.read()
-        ) as (hy, ex, ez, mu):
+        with pytorch_task(ctx, lhy.rw(), lex.read(), lez.read(), lmu.read()) as (
+            hy,
+            ex,
+            ez,
+            mu,
+        ):
             _update_hy(hy, ex, ez, mu, dt, dz)
 
-        with pytorch_task(
-            ctx, lhz.rw(), lex.read(), ley.read(), lmu.read()
-        ) as (hz, ex, ey, mu):
+        with pytorch_task(ctx, lhz.rw(), lex.read(), ley.read(), lmu.read()) as (
+            hz,
+            ex,
+            ey,
+            mu,
+        ):
             _update_hz(hz, ex, ey, mu, dt, dx)
 
     total = int(timesteps)

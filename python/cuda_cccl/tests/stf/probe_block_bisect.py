@@ -14,17 +14,20 @@ Variants (progressively add stages of the real block):
 
 from __future__ import annotations
 
-import sys
 import numpy as np
-import torch
-
-import cuda.stf._experimental as stf
 from llm_helpers import (
-    TINY, build_random_weights, make_cond_scratch,
+    TINY,
+    build_random_weights,
+    make_cond_scratch,
     stf_advance_counter_flag,
-    stf_attention_sdpa, stf_ffn_fused, stf_layernorm, stf_linear,
+    stf_attention_sdpa,
+    stf_ffn_fused,
+    stf_layernorm,
+    stf_linear,
 )
 from pytorch_task import pytorch_task
+
+import cuda.stf._experimental as stf
 
 
 def block_M0(ctx, l_x, lw, l_out, cfg):
@@ -94,6 +97,7 @@ def block_M4(ctx, l_x, lw, l_out, cfg):
 def block_M5(ctx, l_x, lw, l_out, cfg):
     """Full real block."""
     from llm_helpers import stf_transformer_block
+
     stf_transformer_block(ctx, l_x, lw, l_out, cfg)
 
 
@@ -151,9 +155,16 @@ def block_M4c(ctx, l_x, lw, l_out, cfg):
         to[:] = tx1 + tf
 
 
-BLOCKS = {"M0": block_M0, "M1": block_M1, "M2": block_M2,
-          "M3": block_M3, "M4": block_M4, "M4b": block_M4b, "M4c": block_M4c,
-          "M5": block_M5}
+BLOCKS = {
+    "M0": block_M0,
+    "M1": block_M1,
+    "M2": block_M2,
+    "M3": block_M3,
+    "M4": block_M4,
+    "M4b": block_M4b,
+    "M4c": block_M4c,
+    "M5": block_M5,
+}
 
 
 def run(mode: str, NA: int = 2, NB: int = 2, rounds: int = 1):
@@ -196,11 +207,11 @@ def run(mode: str, NA: int = 2, NB: int = 2, rounds: int = 1):
 if __name__ == "__main__":
     # Is it chain length, block identity, or asymmetry?
     tests = [
-        ("M4",  3, 3),   # longer symmetric M4
-        ("M4",  4, 4),   # even longer M4
-        ("M4b", 1, 1),   # short M4b
-        ("M4b", 2, 1),   # asymmetric M4b
-        ("M4b", 1, 2),   # asymmetric M4b, other way
+        ("M4", 3, 3),  # longer symmetric M4
+        ("M4", 4, 4),  # even longer M4
+        ("M4b", 1, 1),  # short M4b
+        ("M4b", 2, 1),  # asymmetric M4b
+        ("M4b", 1, 2),  # asymmetric M4b, other way
     ]
     for mode, na, nb in tests:
         print(f"[{mode}] NA={na} NB={nb} ...", flush=True)

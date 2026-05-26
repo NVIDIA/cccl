@@ -27,6 +27,7 @@ Variants, all inside one ``stackable_context + while_loop`` body:
 Expected final value of l_acc after ``rounds`` body replays, starting 0:
     all variants: rounds * K
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -37,7 +38,6 @@ torch = pytest.importorskip("torch")
 from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-
 
 N = 128
 
@@ -119,9 +119,9 @@ def main():
     print("-" * 72)
     combos = [(1, 1), (1, 2), (1, 3), (1, 4), (1, 6), (2, 4), (4, 4), (8, 4)]
     for name, fn in [
-        ("one_ld_many_rw",                       run_one_ld_many_rw),
-        ("many_ld_persistent_one_rw_each",       run_many_ld_persistent_one_rw_each),
-        ("fresh_inbody_many_ld_one_rw_each",     run_fresh_inbody_many_ld_one_rw_each),
+        ("one_ld_many_rw", run_one_ld_many_rw),
+        ("many_ld_persistent_one_rw_each", run_many_ld_persistent_one_rw_each),
+        ("fresh_inbody_many_ld_one_rw_each", run_fresh_inbody_many_ld_one_rw_each),
     ]:
         for rounds, K in combos:
             try:

@@ -9,6 +9,7 @@ the bug is in the Cython stackable_task glue; if it passes, the bug is
 specific to PyTorch integration (ExternalStream + caching allocator inside
 while_graph_scope capture).
 """
+
 from __future__ import annotations
 
 import numpy as np

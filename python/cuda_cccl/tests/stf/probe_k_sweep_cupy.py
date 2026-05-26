@@ -9,6 +9,7 @@ stackable_task glue; if it passes, the bug is specific to the PyTorch bridge
 (ExternalStream context manager or caching allocator interacting with
 while_graph_scope capture).
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -28,7 +29,11 @@ def _as_cupy(cai_obj):
         shape=tuple(cai["shape"]),
         dtype=np.dtype(cai["typestr"]),
         memptr=cp.cuda.MemoryPointer(
-            cp.cuda.UnownedMemory(cai["data"][0], int(np.prod(cai["shape"]) * np.dtype(cai["typestr"]).itemsize), None),
+            cp.cuda.UnownedMemory(
+                cai["data"][0],
+                int(np.prod(cai["shape"]) * np.dtype(cai["typestr"]).itemsize),
+                None,
+            ),
             0,
         ),
     )

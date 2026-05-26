@@ -11,12 +11,13 @@ same while body with our stf_advance_counter_flag counter.
 from __future__ import annotations
 
 import sys
+
 import numpy as np
 import torch
-
-import cuda.stf._experimental as stf
 from llm_helpers import make_cond_scratch, stf_advance_counter_flag
 from pytorch_task import pytorch_task
+
+import cuda.stf._experimental as stf
 
 
 def run(NA: int, NB: int, *, H: int = 32, rounds: int = 2, writeback="setitem"):
@@ -70,5 +71,5 @@ if __name__ == "__main__":
     for NA, NB in [(2, 2), (6, 6), (6, 2), (2, 6)]:
         print(f"[{mode}] NA={NA} NB={NB} ...", flush=True)
         run(NA, NB, writeback=mode)
-        print(f"  OK", flush=True)
+        print("  OK", flush=True)
     print(f"[{mode}] all combos passed", flush=True)

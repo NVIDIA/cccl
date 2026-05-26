@@ -12,6 +12,7 @@ Same outer plumbing as probe_k_sweep.py; only the body differs:
 - ``add_inplace``: ``ta.add_(1.0)``   (pure in-place, no temporary)
 - ``fill_plus`` : ``ta.fill_(ta[0].item() + 1.0)`` (intentionally bad: host sync)
 """
+
 from __future__ import annotations
 
 import numpy as np

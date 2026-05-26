@@ -8,12 +8,16 @@ from __future__ import annotations
 
 import numpy as np
 import torch
-
-import cuda.stf._experimental as stf
 from llm_helpers import (
-    TINY, make_cond_scratch, stf_advance_counter_flag, stf_layernorm, stf_linear,
+    TINY,
+    make_cond_scratch,
+    stf_advance_counter_flag,
+    stf_layernorm,
+    stf_linear,
 )
 from pytorch_task import pytorch_task
+
+import cuda.stf._experimental as stf
 
 
 def thin_block(ctx, l_x, lw, l_out, cfg):
@@ -25,8 +29,9 @@ def thin_block(ctx, l_x, lw, l_out, cfg):
     h = ctx.logical_data_empty((B, S, cfg.ffn_hidden), d, name="h")
     stf_linear(ctx, xn, lw["W_up"], lw["b_up"], h)
     p = ctx.logical_data_empty((B, S, H), d, name="p")
-    with pytorch_task(ctx, h.read(), lw["W_down"].read(), lw["b_down"].read(),
-                      p.write()) as (th, tw, tb, tp):
+    with pytorch_task(
+        ctx, h.read(), lw["W_down"].read(), lw["b_down"].read(), p.write()
+    ) as (th, tw, tb, tp):
         tp[:] = torch.nn.functional.gelu(th) @ tw + tb
     with pytorch_task(ctx, l_x.read(), p.read(), l_out.write()) as (tx, tpp, to):
         to[:] = tx + tpp
@@ -48,6 +53,7 @@ def run(NA: int, NB: int, rounds: int = 4):
     l_cs = make_cond_scratch(ctx)
 
     from llm_helpers import build_random_weights
+
     w = build_random_weights(ctx, cfg, seed=1, read_only=True)
     lw = w["layers"][0]
 
@@ -72,11 +78,19 @@ def run(NA: int, NB: int, rounds: int = 4):
 
 if __name__ == "__main__":
     # rounds=1 first to isolate body-size vs rounds
-    for na, nb, rnd in [(1, 1, 1), (4, 4, 1), (8, 8, 1),
-                        (1, 1, 4), (4, 4, 2), (4, 4, 4),
-                        (1, 4, 1), (4, 1, 1),
-                        (1, 4, 4), (4, 1, 4)]:
+    for na, nb, rnd in [
+        (1, 1, 1),
+        (4, 4, 1),
+        (8, 8, 1),
+        (1, 1, 4),
+        (4, 4, 2),
+        (4, 4, 4),
+        (1, 4, 1),
+        (4, 1, 1),
+        (1, 4, 4),
+        (4, 1, 4),
+    ]:
         print(f"[thin] NA={na} NB={nb} rounds={rnd} ...", flush=True)
         run(na, nb, rounds=rnd)
-        print(f"[thin]   OK", flush=True)
+        print("[thin]   OK", flush=True)
     print("ALL thin configs passed", flush=True)

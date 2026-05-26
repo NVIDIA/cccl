@@ -172,7 +172,6 @@ Caveats
 
 from __future__ import annotations
 
-import contextlib
 import os
 import time
 from dataclasses import dataclass
@@ -182,18 +181,16 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from cuda import stf  # noqa: E402
-from cuda.stf._experimental import data_place  # noqa: E402
-
-from pytorch_task import pytorch_task  # noqa: E402
-
 # Reuse the Triton SGMV/BGMV fused kernels from the sibling bench. This keeps
 # the "kernel" story identical across rows -- all three rows call the same
 # fused Triton launcher inside their per-round compute step. The only thing
 # that differs between rows is how H2D transfer is scheduled against that
 # compute.
 from bench_multi_lora_vs_fused import fused_triton  # noqa: E402
+from pytorch_task import pytorch_task  # noqa: E402
 
+from cuda import stf  # noqa: E402
+from cuda.stf._experimental import data_place  # noqa: E402
 
 _FP16 = torch.float16
 _NP_FP16 = np.float16
@@ -207,7 +204,7 @@ _NP_FP16 = np.float16
 @dataclass(frozen=True)
 class StreamedConfig:
     N_rounds: int = 32
-    K: int = 4           # adapters per round
+    K: int = 4  # adapters per round
     hidden: int = 4096
     rank: int = 16
     seq: int = 512
@@ -226,11 +223,11 @@ class StreamedConfig:
 class StreamedCase:
     cfg: StreamedConfig
     # Per-round host weights, pinned. Shape per round: A=(K,H,r), B=(K,r,H).
-    A_host_np: list[np.ndarray]        # N entries, numpy views backed by pinned tensors
+    A_host_np: list[np.ndarray]  # N entries, numpy views backed by pinned tensors
     B_host_np: list[np.ndarray]
-    A_host_pt: list[torch.Tensor]      # pinned CPU tensors (same storage as _np views)
+    A_host_pt: list[torch.Tensor]  # pinned CPU tensors (same storage as _np views)
     B_host_pt: list[torch.Tensor]
-    x_dev: torch.Tensor                # (S, H), persistent on device
+    x_dev: torch.Tensor  # (S, H), persistent on device
 
 
 def _gen_case(cfg: StreamedConfig, *, seed: int = 0) -> StreamedCase:
@@ -251,12 +248,14 @@ def _gen_case(cfg: StreamedConfig, *, seed: int = 0) -> StreamedCase:
         A_host_np.append(a_pt.numpy())
         B_host_np.append(b_pt.numpy())
 
-    x_np = (rng.standard_normal((S, H), dtype=np.float32).astype(_NP_FP16) * 0.02)
+    x_np = rng.standard_normal((S, H), dtype=np.float32).astype(_NP_FP16) * 0.02
     x_dev = torch.from_numpy(x_np).cuda()
     return StreamedCase(
         cfg=cfg,
-        A_host_np=A_host_np, B_host_np=B_host_np,
-        A_host_pt=A_host_pt, B_host_pt=B_host_pt,
+        A_host_np=A_host_np,
+        B_host_np=B_host_np,
+        A_host_pt=A_host_pt,
+        B_host_pt=B_host_pt,
         x_dev=x_dev,
     )
 
@@ -271,11 +270,11 @@ def _gen_case(cfg: StreamedConfig, *, seed: int = 0) -> StreamedCase:
 
 
 def _compute_round(
-    x: torch.Tensor,         # (S, H)
-    A_stack: torch.Tensor,   # (K, H, r)
-    B_stack: torch.Tensor,   # (K, r, H)
+    x: torch.Tensor,  # (S, H)
+    A_stack: torch.Tensor,  # (K, H, r)
+    B_stack: torch.Tensor,  # (K, r, H)
     alpha: float,
-) -> torch.Tensor:           # (K, S, H)
+) -> torch.Tensor:  # (K, S, H)
     """One round: y[k] = alpha * ((x @ A[k]) @ B[k]) for k in 0..K-1.
 
     Dispatches to SGMV / BGMV via ``fused_triton``. Returns a freshly
@@ -422,8 +421,7 @@ def _build_stf_forward(case: StreamedCase):
 
     # Per-round output (K, S, H). STF allocates on device when written.
     l_ys = [
-        ctx.logical_data_empty((K, S, H), _NP_FP16, name=f"y_{i}")
-        for i in range(N)
+        ctx.logical_data_empty((K, S, H), _NP_FP16, name=f"y_{i}") for i in range(N)
     ]
 
     y_host_buf = np.empty((N, K, S, H), dtype=_NP_FP16)
@@ -440,7 +438,9 @@ def _build_stf_forward(case: StreamedCase):
             # Merging the two copies into one task halves per-round
             # task-submit overhead vs splitting into A-task and B-task.
             with pytorch_task(
-                ctx, l_A_dev[buf].write(), l_B_dev[buf].write(),
+                ctx,
+                l_A_dev[buf].write(),
+                l_B_dev[buf].write(),
             ) as (d_a, d_b):
                 d_a.copy_(A_host_pt[i], non_blocking=True)
                 d_b.copy_(B_host_pt[i], non_blocking=True)
@@ -476,8 +476,9 @@ def _build_stf_forward(case: StreamedCase):
 # ---------------------------------------------------------------------------
 
 
-def _check_close(label: str, got: np.ndarray, ref: np.ndarray,
-                 *, atol=5e-2, rtol=1e-2) -> None:
+def _check_close(
+    label: str, got: np.ndarray, ref: np.ndarray, *, atol=5e-2, rtol=1e-2
+) -> None:
     if got.shape != ref.shape:
         raise AssertionError(
             f"[correctness:{label}] shape mismatch: got {got.shape} vs ref {ref.shape}"
@@ -549,8 +550,9 @@ def _time_callable(fn, *, iters: int, warmup: int, label: str = "") -> float:
     return (time.perf_counter() - t0) / iters
 
 
-def _time_stf(case: StreamedCase, *, iters: int, warmup: int,
-              label: str = "stf") -> float:
+def _time_stf(
+    case: StreamedCase, *, iters: int, warmup: int, label: str = "stf"
+) -> float:
     ctx, fwd, _read, fin = _build_stf_forward(case)
     try:
         for _ in range(warmup):
@@ -581,16 +583,17 @@ _ROWS = ("py/serial", "py/stream", "stf")
 def run_cell(cfg: StreamedConfig, *, iters: int, warmup: int) -> dict:
     case = _gen_case(cfg, seed=0)
     correctness_sanity(case)
-    row: dict = {"seq": cfg.seq, "N": cfg.N_rounds, "K": cfg.K,
-                 "r": cfg.rank}
+    row: dict = {"seq": cfg.seq, "N": cfg.N_rounds, "K": cfg.K, "r": cfg.rank}
 
     fwd_ser, _ = _build_py_serial_forward(case)
-    row["py/serial"] = _time_callable(fwd_ser, iters=iters, warmup=warmup,
-                                       label="py/serial")
+    row["py/serial"] = _time_callable(
+        fwd_ser, iters=iters, warmup=warmup, label="py/serial"
+    )
 
     fwd_str, _ = _build_py_stream_forward(case)
-    row["py/stream"] = _time_callable(fwd_str, iters=iters, warmup=warmup,
-                                       label="py/stream")
+    row["py/stream"] = _time_callable(
+        fwd_str, iters=iters, warmup=warmup, label="py/stream"
+    )
 
     row["stf"] = _time_stf(case, iters=iters, warmup=warmup, label="stf")
     return row
@@ -644,9 +647,9 @@ def _fmt_table(rows: list[dict]) -> str:
         r_stf_str = stream / stf_ms if stf_ms > 0 else float("inf")
         line = (
             f"{row['seq']:>4} {row['N']:>3} {row['K']:>3} {row['r']:>3}"
-            f" {ser*1e3:>11.3f} ms"
-            f" {stream*1e3:>11.3f} ms"
-            f" {stf_ms*1e3:>11.3f} ms"
+            f" {ser * 1e3:>11.3f} ms"
+            f" {stream * 1e3:>11.3f} ms"
+            f" {stf_ms * 1e3:>11.3f} ms"
             f" {r_str:>9.2f}x"
             f" {r_stf:>9.2f}x"
             f" {r_stf_str:>9.2f}x"

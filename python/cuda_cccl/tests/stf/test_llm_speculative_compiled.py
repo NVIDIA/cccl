@@ -41,8 +41,8 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from llm_helpers import (  # noqa: E402
-    TINY,
     DRAFT,
+    TINY,
     build_random_weights,
     spec_decode_loop,
     stf_append_token_hidden,
@@ -52,7 +52,6 @@ from llm_helpers import (  # noqa: E402
 from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-
 
 K = int(os.environ.get("LLM_K", "4"))
 ROUNDS = int(os.environ.get("LLM_ROUNDS", "16"))
@@ -70,8 +69,21 @@ SEED = 0xC0DE
 
 
 def _block_fn(
-    x, ln1_g, ln1_b, Wq, Wk, Wv, Wo, ln2_g, ln2_b,
-    Wup, bup, Wdn, bdn, heads: int, head_dim: int,
+    x,
+    ln1_g,
+    ln1_b,
+    Wq,
+    Wk,
+    Wv,
+    Wo,
+    ln2_g,
+    ln2_b,
+    Wup,
+    bup,
+    Wdn,
+    bdn,
+    heads: int,
+    head_dim: int,
 ):
     F = torch.nn.functional
     hidden = heads * head_dim
@@ -104,19 +116,52 @@ def _stf_block_compiled(ctx, l_x, layer_w, l_out, cfg):
     """One STF task = one compiled transformer block."""
     with pytorch_task(
         ctx,
-        l_x.read(), l_out.write(),
-        layer_w["ln1_gamma"].read(), layer_w["ln1_beta"].read(),
-        layer_w["Wq"].read(), layer_w["Wk"].read(),
-        layer_w["Wv"].read(), layer_w["Wo"].read(),
-        layer_w["ln2_gamma"].read(), layer_w["ln2_beta"].read(),
-        layer_w["W_up"].read(), layer_w["b_up"].read(),
-        layer_w["W_down"].read(), layer_w["b_down"].read(),
+        l_x.read(),
+        l_out.write(),
+        layer_w["ln1_gamma"].read(),
+        layer_w["ln1_beta"].read(),
+        layer_w["Wq"].read(),
+        layer_w["Wk"].read(),
+        layer_w["Wv"].read(),
+        layer_w["Wo"].read(),
+        layer_w["ln2_gamma"].read(),
+        layer_w["ln2_beta"].read(),
+        layer_w["W_up"].read(),
+        layer_w["b_up"].read(),
+        layer_w["W_down"].read(),
+        layer_w["b_down"].read(),
     ) as (
-        tx, to, tg1, tb1, Wq, Wk, Wv, Wo, tg2, tb2, Wup, bup, Wdn, bdn,
+        tx,
+        to,
+        tg1,
+        tb1,
+        Wq,
+        Wk,
+        Wv,
+        Wo,
+        tg2,
+        tb2,
+        Wup,
+        bup,
+        Wdn,
+        bdn,
     ):
         out = _compiled_block(
-            tx, tg1, tb1, Wq, Wk, Wv, Wo, tg2, tb2,
-            Wup, bup, Wdn, bdn, cfg.heads, cfg.head_dim,
+            tx,
+            tg1,
+            tb1,
+            Wq,
+            Wk,
+            Wv,
+            Wo,
+            tg2,
+            tb2,
+            Wup,
+            bup,
+            Wdn,
+            bdn,
+            cfg.heads,
+            cfg.head_dim,
         )
         to[:] = out
 
@@ -127,8 +172,10 @@ def _stf_transformer_stack_compiled(ctx, l_in, weights, cfg, l_out):
     B, S, H = 1, cfg.seq, cfg.hidden
     cur = l_in
     for i, layer_w in enumerate(weights["layers"]):
-        nxt = l_out if i == cfg.n_layers - 1 else ctx.logical_data_empty(
-            (B, S, H), cfg.np_dtype, name=f"h{i + 1}"
+        nxt = (
+            l_out
+            if i == cfg.n_layers - 1
+            else ctx.logical_data_empty((B, S, H), cfg.np_dtype, name=f"h{i + 1}")
         )
         _stf_block_compiled(ctx, cur, layer_w, nxt, cfg)
         cur = nxt
@@ -142,6 +189,7 @@ def _make_compiled_forward(cfg, weights):
         with pytorch_task(ctx, l_hn.read(), l_hidden.write()) as (thn, th):
             th[:] = thn
         stf_lm_head(ctx, l_hidden, weights["lm_head"], l_logits)
+
     return _forward
 
 
@@ -164,15 +212,24 @@ def _warmup_compile(cfg):
     lng = torch.ones(H, dtype=dtype, device=device)
     lnb = torch.zeros(H, dtype=dtype, device=device)
     W = lambda a, b: torch.randn(a, b, dtype=dtype, device=device)  # noqa: E731
-    b1d = lambda n: torch.zeros(n, dtype=dtype, device=device)      # noqa: E731
+    b1d = lambda n: torch.zeros(n, dtype=dtype, device=device)  # noqa: E731
 
     args = (
-        x, lng, lnb,
-        W(H, H), W(H, H), W(H, H), W(H, H),
-        lng, lnb,
-        W(H, cfg.ffn_hidden), b1d(cfg.ffn_hidden),
-        W(cfg.ffn_hidden, H), b1d(H),
-        cfg.heads, cfg.head_dim,
+        x,
+        lng,
+        lnb,
+        W(H, H),
+        W(H, H),
+        W(H, H),
+        W(H, H),
+        lng,
+        lnb,
+        W(H, cfg.ffn_hidden),
+        b1d(cfg.ffn_hidden),
+        W(cfg.ffn_hidden, H),
+        b1d(H),
+        cfg.heads,
+        cfg.head_dim,
     )
     for _ in range(1 + WARMUP):
         _ = _compiled_block(*args)
@@ -223,7 +280,9 @@ def run_spec_decode_compiled(max_rounds: int, K_val: int):
     cfg_d = DRAFT
 
     rng = np.random.default_rng(SEED)
-    hidden_t_host = rng.standard_normal((1, cfg_t.seq, cfg_t.hidden)).astype(cfg_t.np_dtype)
+    hidden_t_host = rng.standard_normal((1, cfg_t.seq, cfg_t.hidden)).astype(
+        cfg_t.np_dtype
+    )
     hidden_d_host = hidden_t_host.copy()
     draft_toks_host = np.zeros((1, K_val + 1), dtype=np.int64)
     target_toks_host = np.zeros((1, K_val + 1), dtype=np.int64)
@@ -241,7 +300,10 @@ def run_spec_decode_compiled(max_rounds: int, K_val: int):
 
     target_w = build_random_weights(ctx, cfg_t, seed=1, read_only=True)
     draft_w = build_random_weights(
-        ctx, cfg_d, seed=2, read_only=True,
+        ctx,
+        cfg_d,
+        seed=2,
+        read_only=True,
         share_emb_lm_head_from=target_w,
     )
 

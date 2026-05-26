@@ -44,6 +44,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+
 import numpy as np
 import pytest
 import torch
@@ -53,7 +54,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # noqa: E402
 from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # ODE models -- verbatim from torchdiffeq/examples/ode_demo.py
@@ -71,7 +71,7 @@ class Lambda(nn.Module):
         )
 
     def forward(self, t, y):
-        return torch.mm(y ** 3, self.A)
+        return torch.mm(y**3, self.A)
 
 
 class ODEFunc(nn.Module):
@@ -98,7 +98,7 @@ class ODEFunc(nn.Module):
                 nn.init.constant_(m.bias, val=0.0)
 
     def forward(self, t, y):
-        return self.net(y ** 3)
+        return self.net(y**3)
 
 
 # ---------------------------------------------------------------------------
@@ -111,16 +111,33 @@ class ODEFunc(nn.Module):
 _A21 = 1.0 / 5.0
 _A31, _A32 = 3.0 / 40.0, 9.0 / 40.0
 _A41, _A42, _A43 = 44.0 / 45.0, -56.0 / 15.0, 32.0 / 9.0
-_A51, _A52, _A53, _A54 = 19372.0 / 6561.0, -25360.0 / 2187.0, 64448.0 / 6561.0, -212.0 / 729.0
+_A51, _A52, _A53, _A54 = (
+    19372.0 / 6561.0,
+    -25360.0 / 2187.0,
+    64448.0 / 6561.0,
+    -212.0 / 729.0,
+)
 _A61, _A62, _A63, _A64, _A65 = (
-    9017.0 / 3168.0, -355.0 / 33.0, 46732.0 / 5247.0, 49.0 / 176.0, -5103.0 / 18656.0,
+    9017.0 / 3168.0,
+    -355.0 / 33.0,
+    46732.0 / 5247.0,
+    49.0 / 176.0,
+    -5103.0 / 18656.0,
 )
 _A71, _A73, _A74, _A75, _A76 = (
-    35.0 / 384.0, 500.0 / 1113.0, 125.0 / 192.0, -2187.0 / 6784.0, 11.0 / 84.0,
+    35.0 / 384.0,
+    500.0 / 1113.0,
+    125.0 / 192.0,
+    -2187.0 / 6784.0,
+    11.0 / 84.0,
 )
 _E1, _E3, _E4, _E5, _E6, _E7 = (
-    71.0 / 57600.0, -71.0 / 16695.0, 71.0 / 1920.0,
-    -17253.0 / 339200.0, 22.0 / 525.0, -1.0 / 40.0,
+    71.0 / 57600.0,
+    -71.0 / 16695.0,
+    71.0 / 1920.0,
+    -17253.0 / 339200.0,
+    22.0 / 525.0,
+    -1.0 / 40.0,
 )
 _C2, _C3, _C4, _C5, _C6, _C7 = 1.0 / 5.0, 3.0 / 10.0, 4.0 / 5.0, 8.0 / 9.0, 1.0, 1.0
 
@@ -152,21 +169,18 @@ def _dopri5_step(y, t, h, t_end, atol, rtol, k_fn):
         t + _C6 * h,
         y + h * (_A61 * k1 + _A62 * k2 + _A63 * k3 + _A64 * k4 + _A65 * k5),
     )
-    y_prop = y + h * (
-        _A71 * k1 + _A73 * k3 + _A74 * k4 + _A75 * k5 + _A76 * k6
-    )
+    y_prop = y + h * (_A71 * k1 + _A73 * k3 + _A74 * k4 + _A75 * k5 + _A76 * k6)
     k7 = k_fn(t + _C7 * h, y_prop)
 
-    err = h * (
-        _E1 * k1 + _E3 * k3 + _E4 * k4 + _E5 * k5 + _E6 * k6 + _E7 * k7
-    )
+    err = h * (_E1 * k1 + _E3 * k3 + _E4 * k4 + _E5 * k5 + _E6 * k6 + _E7 * k7)
     sc = atol + rtol * torch.maximum(y.abs(), y_prop.abs())
     err_norm = ((err / sc) ** 2).mean().sqrt()
 
     accept = err_norm <= 1.0
     safety = 0.9
-    factor = (safety * (1.0 / err_norm.clamp(min=1e-20))
-              .clamp_max(10.0) ** 0.2).clamp(0.2, 10.0)
+    factor = (safety * (1.0 / err_norm.clamp(min=1e-20)).clamp_max(10.0) ** 0.2).clamp(
+        0.2, 10.0
+    )
 
     y_new = torch.where(accept, y_prop, y)
     t_new = torch.where(accept, t + h, t)
@@ -180,7 +194,8 @@ def _dopri5_step(y, t, h, t_end, atol, rtol, k_fn):
 
 def _lambda_body(y, t, h, t_end, atol, rtol, A):
     def k_fn(t_, y_):  # noqa: ARG001 (t unused, autonomous)
-        return torch.mm(y_ ** 3, A)
+        return torch.mm(y_**3, A)
+
     return _dopri5_step(y, t, h, t_end, atol, rtol, k_fn)
 
 
@@ -192,9 +207,10 @@ _lambda_body_compiled = torch.compile(_lambda_body, mode="default", fullgraph=Tr
 
 def _odefunc_body(y, t, h, t_end, atol, rtol, W1, b1, W2, b2):
     def k_fn(t_, y_):  # noqa: ARG001
-        y3 = y_ ** 3
+        y3 = y_**3
         h1 = torch.tanh(y3 @ W1.t() + b1)
         return h1 @ W2.t() + b2
+
     return _dopri5_step(y, t, h, t_end, atol, rtol, k_fn)
 
 
@@ -212,8 +228,7 @@ def _extract_model_params(f: nn.Module):
         return _lambda_body_compiled, [f.A]
     if isinstance(f, ODEFunc):
         lin0, _, lin1 = f.net[0], f.net[1], f.net[2]
-        return _odefunc_body_compiled, [lin0.weight, lin0.bias,
-                                        lin1.weight, lin1.bias]
+        return _odefunc_body_compiled, [lin0.weight, lin0.bias, lin1.weight, lin1.bias]
     raise TypeError(
         f"stf_odeint does not yet know how to bind vector field of type "
         f"{type(f).__name__}. Extend _extract_model_params to add support."
@@ -242,7 +257,13 @@ def _warmup_body(body_compiled, params, y0, dtype, device, t_end_val):
     h_scalar = torch.full((), 0.1, device=device, dtype=dtype)
     t_end_scalar = torch.full((), t_end_val, device=device, dtype=dtype)
     _ = body_compiled(
-        y0_det, t_scalar, h_scalar, t_end_scalar, 1e-6, 1e-6, *detached_params,
+        y0_det,
+        t_scalar,
+        h_scalar,
+        t_end_scalar,
+        1e-6,
+        1e-6,
+        *detached_params,
     )
     torch.cuda.synchronize()
 
@@ -253,8 +274,12 @@ def _warmup_body(body_compiled, params, y0, dtype, device, t_end_val):
 
 
 def _build_stf_odeint_persistent(
-    f: nn.Module, y0: torch.Tensor, t_span,
-    *, atol: float = 1e-6, rtol: float = 1e-6,
+    f: nn.Module,
+    y0: torch.Tensor,
+    t_span,
+    *,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
 ):
     """Persistent-context form of stf_odeint.
 
@@ -279,9 +304,7 @@ def _build_stf_odeint_persistent(
 
     ctx = stf.stackable_context()
 
-    np_dtype = np.dtype(
-        {torch.float32: "float32", torch.float64: "float64"}[dtype]
-    )
+    np_dtype = np.dtype({torch.float32: "float32", torch.float64: "float64"}[dtype])
 
     # y is host-backed so the caller can read the final state back after
     # ctx.finalize().
@@ -310,7 +333,9 @@ def _build_stf_odeint_persistent(
         # Reset (y, t, h) at the top of every forward so repeated calls
         # start from the same IC.
         with pytorch_task(ctx, l_y.write(), l_t.write(), l_h.write()) as (
-            tY, tT, tH,
+            tY,
+            tT,
+            tH,
         ):
             tY.copy_(y0_cuda)
             tT.fill_(t0_f)
@@ -319,7 +344,10 @@ def _build_stf_odeint_persistent(
         with ctx.while_loop() as loop:
             with pytorch_task(
                 ctx,
-                l_y.rw(), l_t.rw(), l_h.rw(), l_cond.write(),
+                l_y.rw(),
+                l_t.rw(),
+                l_h.rw(),
+                l_cond.write(),
                 *[lp.read() for lp in l_params],
             ) as tensors:
                 tY, tT, tH, tC = tensors[:4]
@@ -327,7 +355,13 @@ def _build_stf_odeint_persistent(
                 t0d = tT.squeeze()
                 h0d = tH.squeeze()
                 y_new, t_new, h_new, cond = body_compiled(
-                    tY, t0d, h0d, t_end_cuda, atol, rtol, *param_tensors,
+                    tY,
+                    t0d,
+                    h0d,
+                    t_end_cuda,
+                    atol,
+                    rtol,
+                    *param_tensors,
                 )
                 tY.copy_(y_new)
                 tT.copy_(t_new.unsqueeze(0))
@@ -339,8 +373,12 @@ def _build_stf_odeint_persistent(
 
 
 def stf_odeint(
-    f: nn.Module, y0: torch.Tensor, t_span,
-    *, atol: float = 1e-6, rtol: float = 1e-6,
+    f: nn.Module,
+    y0: torch.Tensor,
+    t_span,
+    *,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
 ) -> torch.Tensor:
     """Minimal drop-in replacement for ``torchdiffeq.odeint(f, y0, [t0,t1])``.
 
@@ -354,7 +392,11 @@ def stf_odeint(
     ``_build_stf_odeint_persistent`` when calling in a loop.
     """
     forward, ctx, y_host = _build_stf_odeint_persistent(
-        f, y0, t_span, atol=atol, rtol=rtol,
+        f,
+        y0,
+        t_span,
+        atol=atol,
+        rtol=rtol,
     )
     forward()
     ctx.finalize()
@@ -386,8 +428,13 @@ def stf_odeint(
 
 
 def _build_cudagraph_host_odeint_persistent(
-    f: nn.Module, y0: torch.Tensor, t_span,
-    *, atol: float = 1e-6, rtol: float = 1e-6, max_iters: int = 10_000,
+    f: nn.Module,
+    y0: torch.Tensor,
+    t_span,
+    *,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    max_iters: int = 10_000,
 ):
     """Persistent CUDA-graph + host-driven termination solver.
 
@@ -428,7 +475,13 @@ def _build_cudagraph_host_odeint_persistent(
     torch.cuda.synchronize()
     with torch.no_grad():
         _ = body_compiled(
-            y_buf, t_buf, h_buf, t_end_buf, atol, rtol, *param_bufs,
+            y_buf,
+            t_buf,
+            h_buf,
+            t_end_buf,
+            atol,
+            rtol,
+            *param_bufs,
         )
     torch.cuda.synchronize()
 
@@ -446,7 +499,13 @@ def _build_cudagraph_host_odeint_persistent(
     with torch.cuda.stream(s):
         with torch.cuda.graph(graph):
             y_new, t_new, h_new, cond = body_compiled(
-                y_buf, t_buf, h_buf, t_end_buf, atol, rtol, *param_bufs,
+                y_buf,
+                t_buf,
+                h_buf,
+                t_end_buf,
+                atol,
+                rtol,
+                *param_bufs,
             )
             y_buf.copy_(y_new)
             t_buf.copy_(t_new)
@@ -469,20 +528,27 @@ def _build_cudagraph_host_odeint_persistent(
                 break
         else:
             raise RuntimeError(
-                f"manual CUDA-graph solver did not converge in "
-                f"{max_iters} iterations"
+                f"manual CUDA-graph solver did not converge in {max_iters} iterations"
             )
 
     return forward, y_buf
 
 
 def cudagraph_host_odeint(
-    f: nn.Module, y0: torch.Tensor, t_span,
-    *, atol: float = 1e-6, rtol: float = 1e-6,
+    f: nn.Module,
+    y0: torch.Tensor,
+    t_span,
+    *,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
 ) -> torch.Tensor:
     """One-shot wrapper around ``_build_cudagraph_host_odeint_persistent``."""
     forward, y_buf = _build_cudagraph_host_odeint_persistent(
-        f, y0, t_span, atol=atol, rtol=rtol,
+        f,
+        y0,
+        t_span,
+        atol=atol,
+        rtol=rtol,
     )
     forward()
     torch.cuda.synchronize()
@@ -496,25 +562,26 @@ def cudagraph_host_odeint(
 
 def _torchdiffeq_odeint(f, y0, t_span, *, atol=1e-6, rtol=1e-6):
     from torchdiffeq import odeint
+
     t = torch.tensor(
         [float(t_span[0]), float(t_span[1])],
-        device=y0.device, dtype=y0.dtype,
+        device=y0.device,
+        dtype=y0.dtype,
     )
     return odeint(f, y0, t, method="dopri5", atol=atol, rtol=rtol)[-1]
 
 
 def _torchode_odeint(f, y0, t_span, *, atol=1e-6, rtol=1e-6):
     import torchode as to
+
     # torchode expects f(t, y); our nn.Modules already have that signature.
     term = to.ODETerm(f, with_stats=False)
     method = to.Dopri5(term=term)
     controller = to.IntegralController(atol=atol, rtol=rtol, term=term)
     solver = to.AutoDiffAdjoint(method, controller)
     B = y0.shape[0]
-    t_start = torch.full((B,), float(t_span[0]),
-                         device=y0.device, dtype=y0.dtype)
-    t_end = torch.full((B,), float(t_span[1]),
-                       device=y0.device, dtype=y0.dtype)
+    t_start = torch.full((B,), float(t_span[0]), device=y0.device, dtype=y0.dtype)
+    t_end = torch.full((B,), float(t_span[1]), device=y0.device, dtype=y0.dtype)
     problem = to.InitialValueProblem(y0=y0, t_start=t_start, t_end=t_end)
     return solver.solve(problem).ys[:, -1]
 
@@ -539,7 +606,10 @@ def _assert_endpoints_match(label: str, *ys, atol=1e-4, rtol=1e-4):
     ys_np = [y.detach().cpu().numpy() for y in ys]
     for i in range(1, len(ys_np)):
         np.testing.assert_allclose(
-            ys_np[0], ys_np[i], atol=atol, rtol=rtol,
+            ys_np[0],
+            ys_np[i],
+            atol=atol,
+            rtol=rtol,
             err_msg=f"[{label}] solver #{i} disagrees with solver #0",
         )
 
@@ -549,18 +619,20 @@ def test_ode_demo_correctness_lambda():
     cfg = _ode_demo_cfg()
     f = Lambda().cuda()
 
-    y_td = _torchdiffeq_odeint(f, cfg["y0"], cfg["t_span"],
-                               atol=cfg["atol"], rtol=cfg["rtol"])
+    y_td = _torchdiffeq_odeint(
+        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
+    )
     try:
-        y_to = _torchode_odeint(f, cfg["y0"], cfg["t_span"],
-                                atol=cfg["atol"], rtol=cfg["rtol"])
+        y_to = _torchode_odeint(
+            f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
+        )
     except ImportError:
         y_to = None
 
-    y_stf = stf_odeint(f, cfg["y0"], cfg["t_span"],
-                      atol=cfg["atol"], rtol=cfg["rtol"])
-    y_cg = cudagraph_host_odeint(f, cfg["y0"], cfg["t_span"],
-                                 atol=cfg["atol"], rtol=cfg["rtol"])
+    y_stf = stf_odeint(f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"])
+    y_cg = cudagraph_host_odeint(
+        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
+    )
 
     ys = [y_td, y_stf, y_cg] + ([y_to] if y_to is not None else [])
     _assert_endpoints_match("Lambda", *ys)
@@ -572,18 +644,20 @@ def test_ode_demo_correctness_odefunc():
     torch.manual_seed(0xC0DE)
     f = ODEFunc().cuda()
 
-    y_td = _torchdiffeq_odeint(f, cfg["y0"], cfg["t_span"],
-                               atol=cfg["atol"], rtol=cfg["rtol"])
+    y_td = _torchdiffeq_odeint(
+        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
+    )
     try:
-        y_to = _torchode_odeint(f, cfg["y0"], cfg["t_span"],
-                                atol=cfg["atol"], rtol=cfg["rtol"])
+        y_to = _torchode_odeint(
+            f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
+        )
     except ImportError:
         y_to = None
 
-    y_stf = stf_odeint(f, cfg["y0"], cfg["t_span"],
-                      atol=cfg["atol"], rtol=cfg["rtol"])
-    y_cg = cudagraph_host_odeint(f, cfg["y0"], cfg["t_span"],
-                                 atol=cfg["atol"], rtol=cfg["rtol"])
+    y_stf = stf_odeint(f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"])
+    y_cg = cudagraph_host_odeint(
+        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
+    )
 
     ys = [y_td, y_stf, y_cg] + ([y_to] if y_to is not None else [])
     _assert_endpoints_match("ODEFunc", *ys)
@@ -638,42 +712,57 @@ def test_ode_demo_benchmark():
     # torchdiffeq.odeint: closure over f since it's stateless across calls.
     t_td = _time_callable(
         lambda: _torchdiffeq_odeint(
-            f, cfg["y0"], cfg["t_span"],
-            atol=cfg["atol"], rtol=cfg["rtol"],
+            f,
+            cfg["y0"],
+            cfg["t_span"],
+            atol=cfg["atol"],
+            rtol=cfg["rtol"],
         ),
-        iters=iters, warmup=warmup,
+        iters=iters,
+        warmup=warmup,
     )
 
     # torchode: build the solver once (torchode has per-call Python setup
     # that we don't want to amortise into every timed iteration).
     try:
         import torchode as to
+
         term = to.ODETerm(f, with_stats=False)
         method = to.Dopri5(term=term)
         controller = to.IntegralController(
-            atol=cfg["atol"], rtol=cfg["rtol"], term=term,
+            atol=cfg["atol"],
+            rtol=cfg["rtol"],
+            term=term,
         )
         solver_obj = to.AutoDiffAdjoint(method, controller)
         try:
             solver_obj = torch.compile(
-                solver_obj, mode="reduce-overhead", fullgraph=False,
+                solver_obj,
+                mode="reduce-overhead",
+                fullgraph=False,
             )
         except Exception:  # noqa: BLE001
             pass
 
         B = cfg["y0"].shape[0]
         t_start = torch.full(
-            (B,), float(cfg["t_span"][0]),
-            device=cfg["y0"].device, dtype=cfg["y0"].dtype,
+            (B,),
+            float(cfg["t_span"][0]),
+            device=cfg["y0"].device,
+            dtype=cfg["y0"].dtype,
         )
         t_end = torch.full(
-            (B,), float(cfg["t_span"][1]),
-            device=cfg["y0"].device, dtype=cfg["y0"].dtype,
+            (B,),
+            float(cfg["t_span"][1]),
+            device=cfg["y0"].device,
+            dtype=cfg["y0"].dtype,
         )
 
         def torchode_call():
             problem = to.InitialValueProblem(
-                y0=cfg["y0"], t_start=t_start, t_end=t_end,
+                y0=cfg["y0"],
+                t_start=t_start,
+                t_end=t_end,
             )
             return solver_obj.solve(problem).ys[:, -1]
 
@@ -684,15 +773,21 @@ def test_ode_demo_benchmark():
     # Manual CUDAGraph + host-driven termination (NO STF). Same compiled
     # body, same Dopri5 math, just a different outer loop.
     forward_cg, _ = _build_cudagraph_host_odeint_persistent(
-        f, cfg["y0"], cfg["t_span"],
-        atol=cfg["atol"], rtol=cfg["rtol"],
+        f,
+        cfg["y0"],
+        cfg["t_span"],
+        atol=cfg["atol"],
+        rtol=cfg["rtol"],
     )
     t_cg = _time_callable(forward_cg, iters=iters, warmup=warmup)
 
     # STF: persistent context.
     forward, ctx, _ = _build_stf_odeint_persistent(
-        f, cfg["y0"], cfg["t_span"],
-        atol=cfg["atol"], rtol=cfg["rtol"],
+        f,
+        cfg["y0"],
+        cfg["t_span"],
+        atol=cfg["atol"],
+        rtol=cfg["rtol"],
     )
     try:
         t_stf = _time_stf_forward(forward, iters=iters, warmup=warmup)
@@ -754,11 +849,11 @@ def test_ode_demo_benchmark():
 
 _SWEEP_CONFIGS = [
     # (B, D, H, label)
-    (1,    2,   50, "toy (ode_demo)"),
-    (1,   16,  128, "small"),
-    (32,  64,  256, "medium (latent-ODE)"),
-    (64, 128,  256, "medium-large"),
-    (32, 256,  512, "large (FFJORD-ish)"),
+    (1, 2, 50, "toy (ode_demo)"),
+    (1, 16, 128, "small"),
+    (32, 64, 256, "medium (latent-ODE)"),
+    (64, 128, 256, "medium-large"),
+    (32, 256, 512, "large (FFJORD-ish)"),
 ]
 
 
@@ -786,39 +881,50 @@ def test_ode_demo_sweep():
         f = ODEFunc(dim=D, hidden=H).cuda()
         # 0.5 * N(0, 1) IC keeps |y**3| moderate and the adaptive solver
         # from taking pathologically small steps at random-init.
-        y0 = (torch.randn(B, D, device="cuda", dtype=torch.float32) * 0.5)
+        y0 = torch.randn(B, D, device="cuda", dtype=torch.float32) * 0.5
 
         # ---- torchdiffeq ----
         t_td = _time_callable(
             lambda f=f, y0=y0: _torchdiffeq_odeint(
-                f, y0, t_span, atol=atol, rtol=rtol,
+                f,
+                y0,
+                t_span,
+                atol=atol,
+                rtol=rtol,
             ),
-            iters=iters, warmup=warmup,
+            iters=iters,
+            warmup=warmup,
         )
 
         # ---- torchode (built + compiled once per config) ----
         try:
             import torchode as to
+
             term = to.ODETerm(f, with_stats=False)
             method = to.Dopri5(term=term)
             controller = to.IntegralController(atol=atol, rtol=rtol, term=term)
             solver_obj = to.AutoDiffAdjoint(method, controller)
             try:
                 solver_obj = torch.compile(
-                    solver_obj, mode="reduce-overhead", fullgraph=False,
+                    solver_obj,
+                    mode="reduce-overhead",
+                    fullgraph=False,
                 )
             except Exception:  # noqa: BLE001
                 pass
 
-            t_start = torch.full((B,), float(t_span[0]),
-                                 device=y0.device, dtype=y0.dtype)
-            t_end = torch.full((B,), float(t_span[1]),
-                               device=y0.device, dtype=y0.dtype)
+            t_start = torch.full(
+                (B,), float(t_span[0]), device=y0.device, dtype=y0.dtype
+            )
+            t_end = torch.full((B,), float(t_span[1]), device=y0.device, dtype=y0.dtype)
 
-            def torchode_call(solver_obj=solver_obj, y0=y0,
-                              t_start=t_start, t_end=t_end):
+            def torchode_call(
+                solver_obj=solver_obj, y0=y0, t_start=t_start, t_end=t_end
+            ):
                 prob = to.InitialValueProblem(
-                    y0=y0, t_start=t_start, t_end=t_end,
+                    y0=y0,
+                    t_start=t_start,
+                    t_end=t_end,
                 )
                 return solver_obj.solve(prob).ys[:, -1]
 
@@ -833,13 +939,21 @@ def test_ode_demo_sweep():
 
         # ---- Manual CUDAGraph + host-sync loop (NO STF) ----
         forward_cg, _ = _build_cudagraph_host_odeint_persistent(
-            f, y0, t_span, atol=atol, rtol=rtol,
+            f,
+            y0,
+            t_span,
+            atol=atol,
+            rtol=rtol,
         )
         t_cg = _time_callable(forward_cg, iters=iters, warmup=warmup)
 
         # ---- STF drop-in (persistent context per config) ----
         forward, ctx, _ = _build_stf_odeint_persistent(
-            f, y0, t_span, atol=atol, rtol=rtol,
+            f,
+            y0,
+            t_span,
+            atol=atol,
+            rtol=rtol,
         )
         try:
             t_stf = _time_stf_forward(forward, iters=iters, warmup=warmup)
@@ -867,10 +981,7 @@ def test_ode_demo_sweep():
     for label, B, D, H, t_td, t_to, t_cg, t_stf in rows:
         to_s = "n/a" if t_to != t_to else f"{t_to:8.2f} ms"
         vs_td = f"{t_td / t_stf:>5.2f}x" if t_stf > 0 else "nan"
-        vs_cg = (
-            f"{t_cg / t_stf:>5.2f}x"
-            if t_cg == t_cg and t_stf > 0 else "n/a"
-        )
+        vs_cg = f"{t_cg / t_stf:>5.2f}x" if t_cg == t_cg and t_stf > 0 else "n/a"
         print(
             f"  {label:<22} {B:>4} {D:>5} {H:>5} "
             f"{t_td:8.2f} ms  {to_s:>10}  {t_cg:8.2f} ms "

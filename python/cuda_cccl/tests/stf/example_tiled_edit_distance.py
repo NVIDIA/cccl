@@ -180,8 +180,9 @@ def _make_sequences(L: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
 
 
 @nbcuda.jit
-def _tile_edit_kernel(a_tile, b_tile, top_row, left_col, corner_in, S,
-                      last_row, last_col, corner_out):
+def _tile_edit_kernel(
+    a_tile, b_tile, top_row, left_col, corner_in, S, last_row, last_col, corner_out
+):
     """Compute one ``TS x TS`` tile's DP.
 
     Indexing convention: ``S`` has shape ``(TS+1, TS+1)``. Row / column 0 are
@@ -321,9 +322,7 @@ def _subtile_edit_kernel(a_tile, b_tile, S, sub_diag_idx, B_sub, sub_ts):
             j = j0 + jj
             up = S[i - 1, j] + 1
             lf = S[i, j - 1] + 1
-            dg = S[i - 1, j - 1] + (
-                0 if a_tile[i - 1] == b_tile[j - 1] else 1
-            )
+            dg = S[i - 1, j - 1] + (0 if a_tile[i - 1] == b_tile[j - 1] else 1)
             v = up
             if lf < v:
                 v = lf
@@ -350,8 +349,19 @@ def _extract_boundaries_kernel(S, last_row, last_col, corner_out):
 
 
 @nbcuda.jit
-def _tile_edit_cg_kernel(a_tile, b_tile, top_row, left_col, corner_in,
-                         S, last_row, last_col, corner_out, B_sub, sub_ts):
+def _tile_edit_cg_kernel(
+    a_tile,
+    b_tile,
+    top_row,
+    left_col,
+    corner_in,
+    S,
+    last_row,
+    last_col,
+    corner_out,
+    B_sub,
+    sub_ts,
+):
     """One kernel per tile: ``B_sub`` blocks cooperate via grid-sync.
 
     This is the **realistic** single-launch multi-block kernel. Launched with
@@ -411,9 +421,7 @@ def _tile_edit_cg_kernel(a_tile, b_tile, top_row, left_col, corner_in,
                 j = j0 + jj
                 up = S[i - 1, j] + 1
                 lf = S[i, j - 1] + 1
-                dg = S[i - 1, j - 1] + (
-                    0 if a_tile[i - 1] == b_tile[j - 1] else 1
-                )
+                dg = S[i - 1, j - 1] + (0 if a_tile[i - 1] == b_tile[j - 1] else 1)
                 v = up
                 if lf < v:
                     v = lf
@@ -433,8 +441,19 @@ def _tile_edit_cg_kernel(a_tile, b_tile, top_row, left_col, corner_in,
         corner_out[0] = S[TS, TS]
 
 
-def _launch_tile(nb_stream, a_tile, b_tile, top_row, left_col, corner_in,
-                 S, last_row, last_col, corner_out, sub_ts: int) -> None:
+def _launch_tile(
+    nb_stream,
+    a_tile,
+    b_tile,
+    top_row,
+    left_col,
+    corner_in,
+    S,
+    last_row,
+    last_col,
+    corner_out,
+    sub_ts: int,
+) -> None:
     """Compute one outer tile by launching the appropriate kernel sequence.
 
     ``sub_ts == 0``
@@ -460,17 +479,22 @@ def _launch_tile(nb_stream, a_tile, b_tile, top_row, left_col, corner_in,
 
     if sub_ts == 0:
         _tile_edit_kernel[1, _THREADS_PER_BLOCK, nb_stream](
-            a_tile, b_tile, top_row, left_col, corner_in, S,
-            last_row, last_col, corner_out,
+            a_tile,
+            b_tile,
+            top_row,
+            left_col,
+            corner_in,
+            S,
+            last_row,
+            last_col,
+            corner_out,
         )
         return
 
     if sub_ts < 0:
         actual_sub_ts = -sub_ts
         TS = a_tile.shape[0]
-        assert TS % actual_sub_ts == 0, (
-            f"sub_ts={sub_ts} does not divide TS={TS}"
-        )
+        assert TS % actual_sub_ts == 0, f"sub_ts={sub_ts} does not divide TS={TS}"
         B = TS // actual_sub_ts
         _init_boundary_kernel[1, _THREADS_PER_BLOCK, nb_stream](
             top_row, left_col, corner_in, S
@@ -486,13 +510,20 @@ def _launch_tile(nb_stream, a_tile, b_tile, top_row, left_col, corner_in,
         return
 
     TS = a_tile.shape[0]
-    assert TS % sub_ts == 0, (
-        f"sub_ts={sub_ts} does not divide TS={TS}"
-    )
+    assert TS % sub_ts == 0, f"sub_ts={sub_ts} does not divide TS={TS}"
     B = TS // sub_ts
     _tile_edit_cg_kernel[B, sub_ts, nb_stream](
-        a_tile, b_tile, top_row, left_col, corner_in, S,
-        last_row, last_col, corner_out, B, sub_ts,
+        a_tile,
+        b_tile,
+        top_row,
+        left_col,
+        corner_in,
+        S,
+        last_row,
+        last_col,
+        corner_out,
+        B,
+        sub_ts,
     )
 
 
@@ -546,8 +577,7 @@ def _seeded_corner(I: int, J: int, TS: int) -> np.ndarray:
     return np.array([I * TS], dtype=np.int32)
 
 
-def cupy_wavefront(A: np.ndarray, B: np.ndarray, TS: int, *,
-                   sub_ts: int = 0) -> int:
+def cupy_wavefront(A: np.ndarray, B: np.ndarray, TS: int, *, sub_ts: int = 0) -> int:
     """Honest single-stream baseline: same Numba kernels, submitted serially.
 
     All TxT tiles run one after the other on a single non-default CUDA stream,
@@ -610,8 +640,8 @@ def cupy_wavefront(A: np.ndarray, B: np.ndarray, TS: int, *,
                         cin = d_corner_seed[(I, J)]
                     _launch_tile(
                         nb_stream,
-                        d_A[I * TS:(I + 1) * TS],
-                        d_B[J * TS:(J + 1) * TS],
+                        d_A[I * TS : (I + 1) * TS],
+                        d_B[J * TS : (J + 1) * TS],
                         top,
                         left,
                         cin,
@@ -632,8 +662,9 @@ def cupy_wavefront(A: np.ndarray, B: np.ndarray, TS: int, *,
 # ---------------------------------------------------------------------------
 
 
-def _stf_tiled_impl(A: np.ndarray, B: np.ndarray, TS: int,
-                    n_gpus: int, *, sub_ts: int = 0) -> int:
+def _stf_tiled_impl(
+    A: np.ndarray, B: np.ndarray, TS: int, n_gpus: int, *, sub_ts: int = 0
+) -> int:
     """Shared implementation for the single- and multi-GPU STF variants.
 
     ``n_gpus == 1`` yields the single-GPU version (no ``exec_place`` on tasks,
@@ -653,13 +684,11 @@ def _stf_tiled_impl(A: np.ndarray, B: np.ndarray, TS: int,
 
     # Sequence tiles -- create once, read by all tasks that touch this row / col.
     la_tiles = [
-        ctx.logical_data(np.ascontiguousarray(A[I * TS:(I + 1) * TS]),
-                         name=f"a[{I}]")
+        ctx.logical_data(np.ascontiguousarray(A[I * TS : (I + 1) * TS]), name=f"a[{I}]")
         for I in range(M)
     ]
     lb_tiles = [
-        ctx.logical_data(np.ascontiguousarray(B[J * TS:(J + 1) * TS]),
-                         name=f"b[{J}]")
+        ctx.logical_data(np.ascontiguousarray(B[J * TS : (J + 1) * TS]), name=f"b[{J}]")
         for J in range(N)
     ]
 
@@ -692,12 +721,10 @@ def _stf_tiled_impl(A: np.ndarray, B: np.ndarray, TS: int,
 
     # Seeded boundaries (I == 0 row, J == 0 column, and the left / top corners).
     l_top_seed = [
-        ctx.logical_data(_seeded_top_row(J, TS), name=f"ts[{J}]")
-        for J in range(N)
+        ctx.logical_data(_seeded_top_row(J, TS), name=f"ts[{J}]") for J in range(N)
     ]
     l_left_seed = [
-        ctx.logical_data(_seeded_left_col(I, TS), name=f"ls[{I}]")
-        for I in range(M)
+        ctx.logical_data(_seeded_left_col(I, TS), name=f"ls[{I}]") for I in range(M)
     ]
     l_corner_seed = {}
     for J in range(N):
@@ -725,9 +752,7 @@ def _stf_tiled_impl(A: np.ndarray, B: np.ndarray, TS: int,
     # ``numba_task`` helper converts the task's CAI args into ready-to-use
     # Numba device arrays so the body reads as a plain kernel launch.
     for I in range(M):
-        exec_args = (
-            (stf.exec_place.device(I % n_gpus),) if n_gpus > 1 else ()
-        )
+        exec_args = (stf.exec_place.device(I % n_gpus),) if n_gpus > 1 else ()
         for J in range(N):
             with numba_task(
                 ctx,
@@ -757,15 +782,15 @@ def _stf_tiled_impl(A: np.ndarray, B: np.ndarray, TS: int,
     return result[0]
 
 
-def stf_tiled_single(A: np.ndarray, B: np.ndarray, TS: int, *,
-                     sub_ts: int = 0) -> int:
+def stf_tiled_single(A: np.ndarray, B: np.ndarray, TS: int, *, sub_ts: int = 0) -> int:
     """Single-GPU STF tiled Levenshtein. See :func:`_launch_tile` for ``sub_ts``."""
 
     return _stf_tiled_impl(A, B, TS, n_gpus=1, sub_ts=sub_ts)
 
 
-def stf_tiled_multi(A: np.ndarray, B: np.ndarray, TS: int, n_gpus: int, *,
-                    sub_ts: int = 0) -> int:
+def stf_tiled_multi(
+    A: np.ndarray, B: np.ndarray, TS: int, n_gpus: int, *, sub_ts: int = 0
+) -> int:
     """Multi-GPU STF tiled Levenshtein. Row-cyclic placement across ``n_gpus``.
 
     The *only* difference from ``stf_tiled_single`` is the
@@ -849,37 +874,53 @@ def test_tiled_edit_distance_2gpu_consistency():
     assert single == multi, f"stf_tiled_multi={multi} disagrees with single={single}"
 
 
-def _run_one_benchmark_section(label: str, A, B, cfg: "EditConfig", sub_ts: int,
-                               ngpus_used: int) -> dict:
+def _run_one_benchmark_section(
+    label: str, A, B, cfg: "EditConfig", sub_ts: int, ngpus_used: int
+) -> dict:
     """Time cupy_wavefront / stf_tiled_single / stf_tiled_multi for one sub_ts."""
 
     print(f"\n-- {label} (sub_ts={sub_ts}) --")
     print(f"{'implementation':<28} {'ms / run':>12}  {'speedup':>8}")
 
-    t_cupy = _time_one(cupy_wavefront, A, B, cfg.TS,
-                       warmup=cfg.warmup, iters=cfg.iters, sub_ts=sub_ts)
+    t_cupy = _time_one(
+        cupy_wavefront, A, B, cfg.TS, warmup=cfg.warmup, iters=cfg.iters, sub_ts=sub_ts
+    )
     print(f"{'cupy_wavefront':<28} {t_cupy:>12.2f}  {1.0:>7.2f}x")
 
-    t_stf1 = _time_one(stf_tiled_single, A, B, cfg.TS,
-                       warmup=cfg.warmup, iters=cfg.iters, sub_ts=sub_ts)
-    print(f"{'stf_tiled_single':<28} {t_stf1:>12.2f}  "
-          f"{t_cupy / t_stf1:>7.2f}x")
+    t_stf1 = _time_one(
+        stf_tiled_single,
+        A,
+        B,
+        cfg.TS,
+        warmup=cfg.warmup,
+        iters=cfg.iters,
+        sub_ts=sub_ts,
+    )
+    print(f"{'stf_tiled_single':<28} {t_stf1:>12.2f}  {t_cupy / t_stf1:>7.2f}x")
 
     t_stfN = None
     if ngpus_used >= 2:
-        t_stfN = _time_one(stf_tiled_multi, A, B, cfg.TS, ngpus_used,
-                           warmup=cfg.warmup, iters=cfg.iters, sub_ts=sub_ts)
-        print(f"{f'stf_tiled_multi ({ngpus_used} GPUs)':<28} {t_stfN:>12.2f}  "
-              f"{t_cupy / t_stfN:>7.2f}x")
+        t_stfN = _time_one(
+            stf_tiled_multi,
+            A,
+            B,
+            cfg.TS,
+            ngpus_used,
+            warmup=cfg.warmup,
+            iters=cfg.iters,
+            sub_ts=sub_ts,
+        )
+        print(
+            f"{f'stf_tiled_multi ({ngpus_used} GPUs)':<28} {t_stfN:>12.2f}  "
+            f"{t_cupy / t_stfN:>7.2f}x"
+        )
     else:
         print(f"{'stf_tiled_multi':<28} {'skipped':>12}  (need >= 2 GPUs)")
 
     # Correctness gate: all implementations for this sub_ts must agree.
     s_cupy = cupy_wavefront(A, B, cfg.TS, sub_ts=sub_ts)
     s_stf1 = stf_tiled_single(A, B, cfg.TS, sub_ts=sub_ts)
-    assert s_cupy == s_stf1, (
-        f"[sub_ts={sub_ts}] cupy={s_cupy} != stf_single={s_stf1}"
-    )
+    assert s_cupy == s_stf1, f"[sub_ts={sub_ts}] cupy={s_cupy} != stf_single={s_stf1}"
     if ngpus_used >= 2:
         s_stfN = stf_tiled_multi(A, B, cfg.TS, ngpus_used, sub_ts=sub_ts)
         assert s_stf1 == s_stfN, (
@@ -916,8 +957,9 @@ def test_tiled_edit_distance_benchmark():
     # Section 1: single-block kernel path (1 CUDA block / tile). Makes the
     # STF wavefront story look most dramatic because per-tile SM occupancy is
     # tiny so concurrent tiles genuinely co-tenant SMs.
-    single = _run_one_benchmark_section("single-block kernel", A, B, cfg,
-                                        sub_ts=0, ngpus_used=ngpus_used)
+    single = _run_one_benchmark_section(
+        "single-block kernel", A, B, cfg, sub_ts=0, ngpus_used=ngpus_used
+    )
 
     # Section 2: multi-block sub-tile kernel path. Each tile dispatches
     # 2*B - 1 sub-diagonal kernels with up to B blocks each, so each tile
@@ -926,8 +968,12 @@ def test_tiled_edit_distance_benchmark():
     multi = None
     if cfg.sub_ts > 0:
         multi = _run_one_benchmark_section(
-            "multi-block sub-tile kernel", A, B, cfg,
-            sub_ts=cfg.sub_ts, ngpus_used=ngpus_used,
+            "multi-block sub-tile kernel",
+            A,
+            B,
+            cfg,
+            sub_ts=cfg.sub_ts,
+            ngpus_used=ngpus_used,
         )
     else:
         print(

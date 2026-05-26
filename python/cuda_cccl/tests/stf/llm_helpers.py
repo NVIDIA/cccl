@@ -30,9 +30,6 @@ torch = pytest.importorskip("torch")
 
 from pytorch_task import pytorch_task  # noqa: E402
 
-import cuda.stf._experimental as stf  # noqa: E402
-
-
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -66,14 +63,24 @@ class MiniGPTConfig:
 
 # Preset used everywhere except speculative-decoding draft.
 TINY = MiniGPTConfig(
-    hidden=384, heads=6, head_dim=64, ffn_mult=4,
-    n_layers=6, seq=256, vocab=1024,
+    hidden=384,
+    heads=6,
+    head_dim=64,
+    ffn_mult=4,
+    n_layers=6,
+    seq=256,
+    vocab=1024,
 )
 
 # Smaller 2-layer draft used in speculative decoding.
 DRAFT = MiniGPTConfig(
-    hidden=384, heads=6, head_dim=64, ffn_mult=4,
-    n_layers=2, seq=256, vocab=1024,
+    hidden=384,
+    heads=6,
+    head_dim=64,
+    ffn_mult=4,
+    n_layers=2,
+    seq=256,
+    vocab=1024,
 )
 
 
@@ -158,10 +165,12 @@ def build_random_weights(
         weights["emb"] = share_emb_lm_head_from["emb"]
         weights["lm_head"] = share_emb_lm_head_from["lm_head"]
     else:
-        weights["emb"] = _alloc_random("emb", (cfg.vocab, cfg.hidden),
-                                       cfg.vocab, sidx + 1)
-        weights["lm_head"] = _alloc_random("lm_head", (cfg.hidden, cfg.vocab),
-                                           cfg.hidden, sidx + 2)
+        weights["emb"] = _alloc_random(
+            "emb", (cfg.vocab, cfg.hidden), cfg.vocab, sidx + 1
+        )
+        weights["lm_head"] = _alloc_random(
+            "lm_head", (cfg.hidden, cfg.vocab), cfg.hidden, sidx + 2
+        )
         _mark_ro(weights["emb"])
         _mark_ro(weights["lm_head"])
 
@@ -170,17 +179,17 @@ def build_random_weights(
         base = sidx + 100 + i * 32
         layer = {
             "ln1_gamma": _alloc_const(f"L{i}.ln1_g", (H,), 1.0),
-            "ln1_beta":  _alloc_const(f"L{i}.ln1_b", (H,), 0.0),
-            "Wq":        _alloc_random(f"L{i}.Wq", (H, H), H, base + 1),
-            "Wk":        _alloc_random(f"L{i}.Wk", (H, H), H, base + 2),
-            "Wv":        _alloc_random(f"L{i}.Wv", (H, H), H, base + 3),
-            "Wo":        _alloc_random(f"L{i}.Wo", (H, H), H, base + 4),
+            "ln1_beta": _alloc_const(f"L{i}.ln1_b", (H,), 0.0),
+            "Wq": _alloc_random(f"L{i}.Wq", (H, H), H, base + 1),
+            "Wk": _alloc_random(f"L{i}.Wk", (H, H), H, base + 2),
+            "Wv": _alloc_random(f"L{i}.Wv", (H, H), H, base + 3),
+            "Wo": _alloc_random(f"L{i}.Wo", (H, H), H, base + 4),
             "ln2_gamma": _alloc_const(f"L{i}.ln2_g", (H,), 1.0),
-            "ln2_beta":  _alloc_const(f"L{i}.ln2_b", (H,), 0.0),
-            "W_up":      _alloc_random(f"L{i}.Wup", (H, Fh), H, base + 5),
-            "b_up":      _alloc_const(f"L{i}.bup", (Fh,), 0.0),
-            "W_down":    _alloc_random(f"L{i}.Wdn", (Fh, H), Fh, base + 6),
-            "b_down":    _alloc_const(f"L{i}.bdn", (H,), 0.0),
+            "ln2_beta": _alloc_const(f"L{i}.ln2_b", (H,), 0.0),
+            "W_up": _alloc_random(f"L{i}.Wup", (H, Fh), H, base + 5),
+            "b_up": _alloc_const(f"L{i}.bup", (Fh,), 0.0),
+            "W_down": _alloc_random(f"L{i}.Wdn", (Fh, H), Fh, base + 6),
+            "b_down": _alloc_const(f"L{i}.bdn", (H,), 0.0),
         }
 
         for ld in layer.values():
@@ -210,9 +219,12 @@ def stf_linear(ctx, l_x, l_W, l_b, l_out):
         with pytorch_task(ctx, l_x.read(), l_W.read(), l_out.write()) as (tx, tw, to):
             to[:] = torch.matmul(tx, tw)
     else:
-        with pytorch_task(
-            ctx, l_x.read(), l_W.read(), l_b.read(), l_out.write()
-        ) as (tx, tw, tb, to):
+        with pytorch_task(ctx, l_x.read(), l_W.read(), l_b.read(), l_out.write()) as (
+            tx,
+            tw,
+            tb,
+            to,
+        ):
             to[:] = torch.matmul(tx, tw) + tb
 
 
@@ -221,8 +233,10 @@ def stf_ffn_fused(ctx, l_x, l_Wup, l_bup, l_Wdn, l_bdn, l_out):
     with pytorch_task(
         ctx,
         l_x.read(),
-        l_Wup.read(), l_bup.read(),
-        l_Wdn.read(), l_bdn.read(),
+        l_Wup.read(),
+        l_bup.read(),
+        l_Wdn.read(),
+        l_bdn.read(),
         l_out.write(),
     ) as (tx, twu, tbu, twd, tbd, to):
         h = torch.nn.functional.gelu(torch.matmul(tx, twu) + tbu)
@@ -232,9 +246,12 @@ def stf_ffn_fused(ctx, l_x, l_Wup, l_bup, l_Wdn, l_bdn, l_out):
 def stf_attention_sdpa(ctx, l_Q, l_K, l_V, l_out, cfg, *, is_causal=True):
     """Single-task SDPA attention (flash / mem-efficient backends)."""
     H, D = cfg.heads, cfg.head_dim
-    with pytorch_task(
-        ctx, l_Q.read(), l_K.read(), l_V.read(), l_out.write()
-    ) as (tq, tk, tv, to):
+    with pytorch_task(ctx, l_Q.read(), l_K.read(), l_V.read(), l_out.write()) as (
+        tq,
+        tk,
+        tv,
+        to,
+    ):
         b, s, _ = tq.shape
         q = tq.view(b, s, H, D).transpose(1, 2).contiguous()
         k = tk.view(b, s, H, D).transpose(1, 2).contiguous()
@@ -257,16 +274,20 @@ def stf_attention_parallel_heads(ctx, l_Q, l_K, l_V, l_out, cfg, *, is_causal=Tr
 
     head_outs = []
     for h_idx in range(H):
-        l_head = ctx.logical_data_empty((B, S, D), dtype=cfg.np_dtype,
-                                        name=f"head{h_idx}_out")
-        with pytorch_task(
-            ctx, l_Q.read(), l_K.read(), l_V.read(), l_head.write()
-        ) as (tq, tk, tv, th):
+        l_head = ctx.logical_data_empty(
+            (B, S, D), dtype=cfg.np_dtype, name=f"head{h_idx}_out"
+        )
+        with pytorch_task(ctx, l_Q.read(), l_K.read(), l_V.read(), l_head.write()) as (
+            tq,
+            tk,
+            tv,
+            th,
+        ):
             b, s, _ = tq.shape
             q = tq.view(b, s, H, D)[:, :, h_idx, :]
             k = tk.view(b, s, H, D)[:, :, h_idx, :]
             v = tv.view(b, s, H, D)[:, :, h_idx, :]
-            scores = torch.matmul(q, k.transpose(-1, -2)) / (D ** 0.5)
+            scores = torch.matmul(q, k.transpose(-1, -2)) / (D**0.5)
             if is_causal:
                 mask = torch.triu(
                     torch.ones(s, s, device=scores.device, dtype=torch.bool),
@@ -307,28 +328,28 @@ def make_block_scratches(ctx, cfg: MiniGPTConfig, *, tag: str) -> dict:
         return ctx.logical_data_empty(shape, dtype, name=f"{tag}.{name}")
 
     return {
-        "xn":   _alloc("xn"),
-        "Q":    _alloc("Q"),
-        "K":    _alloc("K"),
-        "V":    _alloc("V"),
+        "xn": _alloc("xn"),
+        "Q": _alloc("Q"),
+        "K": _alloc("K"),
+        "V": _alloc("V"),
         "attn": _alloc("attn"),
         "proj": _alloc("proj"),
-        "x1":   _alloc("x1"),
-        "x1n":  _alloc("x1n"),
-        "ffn":  _alloc("ffn_out"),
+        "x1": _alloc("x1"),
+        "x1n": _alloc("x1n"),
+        "ffn": _alloc("ffn_out"),
         # One dedicated "next hidden" buffer. The caller can use it as the
         # stack's output and then copy back into the real hidden — keeping
         # the forward's output (and the first-layer's input) on distinct
         # logical data avoids edge cases where STF's dep tracking sees an
         # aliased in/out across a deep chain of intermediates.
         "h_next": _alloc("h_next"),
-        "h_inter": [
-            _alloc(f"h{i + 1}") for i in range(cfg.n_layers - 1)
-        ],
+        "h_inter": [_alloc(f"h{i + 1}") for i in range(cfg.n_layers - 1)],
     }
 
 
-def stf_transformer_block(ctx, l_x, layer_w, l_out, cfg, *, scratches=None, attention="sdpa"):
+def stf_transformer_block(
+    ctx, l_x, layer_w, l_out, cfg, *, scratches=None, attention="sdpa"
+):
     """ln1 -> {Wq, Wk, Wv} -> attn -> Wo + residual -> ln2 -> ffn + residual.
 
     If ``scratches`` is provided, reuses its entries (``xn/Q/K/V/attn/proj/
@@ -342,15 +363,15 @@ def stf_transformer_block(ctx, l_x, layer_w, l_out, cfg, *, scratches=None, atte
         B, S, H = l_x.shape[0], l_x.shape[1], cfg.hidden
         dtype = cfg.np_dtype
         scratches = {
-            "xn":   ctx.logical_data_empty((B, S, H), dtype, name="xn"),
-            "Q":    ctx.logical_data_empty((B, S, H), dtype, name="Q"),
-            "K":    ctx.logical_data_empty((B, S, H), dtype, name="K"),
-            "V":    ctx.logical_data_empty((B, S, H), dtype, name="V"),
+            "xn": ctx.logical_data_empty((B, S, H), dtype, name="xn"),
+            "Q": ctx.logical_data_empty((B, S, H), dtype, name="Q"),
+            "K": ctx.logical_data_empty((B, S, H), dtype, name="K"),
+            "V": ctx.logical_data_empty((B, S, H), dtype, name="V"),
             "attn": ctx.logical_data_empty((B, S, H), dtype, name="attn"),
             "proj": ctx.logical_data_empty((B, S, H), dtype, name="proj"),
-            "x1":   ctx.logical_data_empty((B, S, H), dtype, name="x1"),
-            "x1n":  ctx.logical_data_empty((B, S, H), dtype, name="x1n"),
-            "ffn":  ctx.logical_data_empty((B, S, H), dtype, name="ffn_out"),
+            "x1": ctx.logical_data_empty((B, S, H), dtype, name="x1"),
+            "x1n": ctx.logical_data_empty((B, S, H), dtype, name="x1n"),
+            "ffn": ctx.logical_data_empty((B, S, H), dtype, name="ffn_out"),
         }
     s = scratches
 
@@ -371,24 +392,37 @@ def stf_transformer_block(ctx, l_x, layer_w, l_out, cfg, *, scratches=None, atte
     stf_linear(ctx, s["attn"], layer_w["Wo"], None, s["proj"])
 
     # Residual 1
-    with pytorch_task(ctx, l_x.read(), s["proj"].read(), s["x1"].write()) as (tx, tp, tx1):
+    with pytorch_task(ctx, l_x.read(), s["proj"].read(), s["x1"].write()) as (
+        tx,
+        tp,
+        tx1,
+    ):
         tx1[:] = tx + tp
 
     stf_layernorm(ctx, s["x1"], layer_w["ln2_gamma"], layer_w["ln2_beta"], s["x1n"])
 
     stf_ffn_fused(
-        ctx, s["x1n"],
-        layer_w["W_up"], layer_w["b_up"],
-        layer_w["W_down"], layer_w["b_down"],
+        ctx,
+        s["x1n"],
+        layer_w["W_up"],
+        layer_w["b_up"],
+        layer_w["W_down"],
+        layer_w["b_down"],
         s["ffn"],
     )
 
     # Residual 2
-    with pytorch_task(ctx, s["x1"].read(), s["ffn"].read(), l_out.write()) as (tx1, tf, to):
+    with pytorch_task(ctx, s["x1"].read(), s["ffn"].read(), l_out.write()) as (
+        tx1,
+        tf,
+        to,
+    ):
         to[:] = tx1 + tf
 
 
-def stf_transformer_stack(ctx, l_hidden_in, weights, cfg, l_hidden_out, *, scratches=None):
+def stf_transformer_stack(
+    ctx, l_hidden_in, weights, cfg, l_hidden_out, *, scratches=None
+):
     """Run all n_layers blocks.
 
     If ``scratches`` is provided, uses ``scratches['h_inter']`` as the
@@ -413,9 +447,11 @@ def stf_transformer_stack(ctx, l_hidden_in, weights, cfg, l_hidden_out, *, scrat
 
 def stf_lm_head(ctx, l_hidden, l_lm_head, l_logits):
     """logits = hidden @ lm_head_weight."""
-    with pytorch_task(
-        ctx, l_hidden.read(), l_lm_head.read(), l_logits.write()
-    ) as (th, tw, tl):
+    with pytorch_task(ctx, l_hidden.read(), l_lm_head.read(), l_logits.write()) as (
+        th,
+        tw,
+        tl,
+    ):
         tl[:] = torch.matmul(th, tw)
 
 
@@ -522,9 +558,11 @@ def stf_advance_counter_flag(
     # buffer (``add_``) or (b) routed through the STF-owned ``scratch``.
     # Any PyTorch temporary whose result is then written into an STF
     # buffer reactivates the mod-4 bug.
-    with pytorch_task(
-        ctx, l_counter.rw(), scratch.write(), l_flag.write()
-    ) as (tc, tsc, tf):
+    with pytorch_task(ctx, l_counter.rw(), scratch.write(), l_flag.write()) as (
+        tc,
+        tsc,
+        tf,
+    ):
         tc.add_(1.0)
         tsc[:] = (tc < float(max_value)).to(tsc.dtype)
         tf.copy_(tsc.view(tf.shape))
@@ -612,18 +650,17 @@ def spec_decode_loop(
         l_draft_logits = ctx.logical_data_empty(
             (1, cfg_draft.seq, V), cfg_draft.np_dtype, name="draft_logits"
         )
-        l_draft_next = ctx.logical_data_empty(
-            (1,), np.int64, name="draft_next"
-        )
+        l_draft_next = ctx.logical_data_empty((1,), np.int64, name="draft_next")
 
         for k in range(K):
             draft_forward(ctx, l_hidden_draft, l_draft_logits)
             stf_sample_argmax_last(ctx, l_draft_logits, l_draft_next)
             # Store into position k of the K-buffer of draft tokens.
-            with pytorch_task(
-                ctx, l_draft_tokens.rw(), l_draft_next.read()
-            ) as (tdt, tdn):
-                tdt[0, k:k + 1].copy_(tdn.view(1))
+            with pytorch_task(ctx, l_draft_tokens.rw(), l_draft_next.read()) as (
+                tdt,
+                tdn,
+            ):
+                tdt[0, k : k + 1].copy_(tdn.view(1))
             stf_append_token_hidden(ctx, l_hidden_draft, l_emb, l_draft_next)
 
         # Argmax at each of the last K+1 positions (target verifier tokens
@@ -635,8 +672,8 @@ def spec_decode_loop(
             l_picked_scratch.write(),
             l_target_tokens.write(),
         ) as (tl, tps, tt):
-            torch.argmax(tl[0, -(K + 1):, :], dim=-1, out=tps)
-            tt[0, :K + 1].copy_(tps)
+            torch.argmax(tl[0, -(K + 1) :, :], dim=-1, out=tps)
+            tt[0, : K + 1].copy_(tps)
 
         # --- 3) Accept/reject + emit bonus -----------------------------
         l_final_token = _logical_data_empty_no_export(
@@ -656,11 +693,11 @@ def spec_decode_loop(
             # to tac's float dtype in the scratch write).
             tad[:] = prefix_ok.sum().to(tad.dtype).view(tad.shape)
             tac.add_(tad)
-            tft.copy_(tt[0, K:K + 1])
+            tft.copy_(tt[0, K : K + 1])
 
         # --- 4) Slide both hidden states by one token ------------------
         stf_append_token_hidden(ctx, l_hidden_target, l_emb, l_final_token)
-        stf_append_token_hidden(ctx, l_hidden_draft,  l_emb, l_final_token)
+        stf_append_token_hidden(ctx, l_hidden_draft, l_emb, l_final_token)
 
         # --- 5) Round counter / termination ----------------------------
         stf_advance_counter_flag(

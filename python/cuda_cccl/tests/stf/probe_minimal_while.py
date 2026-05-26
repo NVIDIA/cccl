@@ -3,13 +3,14 @@
 Body = a few pytorch_task in-place adds. If this hangs with rounds>1, the
 bug is in the while_loop machinery itself, not our workload.
 """
+
 from __future__ import annotations
 
 import numpy as np
-
-import cuda.stf._experimental as stf
 from llm_helpers import make_cond_scratch, stf_advance_counter_flag
 from pytorch_task import pytorch_task
+
+import cuda.stf._experimental as stf
 
 
 def run(depth: int, rounds: int):
@@ -38,5 +39,5 @@ if __name__ == "__main__":
     for depth, rounds in [(1, 1), (1, 4), (4, 1), (4, 4), (8, 8)]:
         print(f"[min] depth={depth} rounds={rounds}", flush=True)
         run(depth, rounds)
-        print(f"[min]   OK", flush=True)
+        print("[min]   OK", flush=True)
     print("all minimal configs passed", flush=True)

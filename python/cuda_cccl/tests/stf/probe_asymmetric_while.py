@@ -35,8 +35,6 @@ already visible with plain matmul / linear helpers).
 from __future__ import annotations
 
 import numpy as np
-
-import cuda.stf._experimental as stf
 from llm_helpers import (
     TINY,
     build_random_weights,
@@ -46,6 +44,8 @@ from llm_helpers import (
     stf_transformer_stack,
 )
 from pytorch_task import pytorch_task
+
+import cuda.stf._experimental as stf
 
 
 def _build_hidden(cfg, rng):

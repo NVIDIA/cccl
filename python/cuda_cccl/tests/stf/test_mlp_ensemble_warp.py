@@ -54,11 +54,9 @@ import time
 
 import numpy as np
 import pytest
-
 import warp as wp
 
 import cuda.stf._experimental as stf
-
 
 # ---------------------------------------------------------------------------
 # MLP geometry. Large enough that each per-layer kernel is not purely
@@ -66,10 +64,10 @@ import cuda.stf._experimental as stf
 # observable over Warp's per-launch bookkeeping.
 # ---------------------------------------------------------------------------
 
-D_IN  = 4096
+D_IN = 4096
 D_HID = 4096
 D_OUT = 64
-LR    = wp.float32(0.01)
+LR = wp.float32(0.01)
 
 STEPS_DEFAULT = 16
 
@@ -147,7 +145,7 @@ def upd_W2(
     tid = wp.tid()
     H = W2.shape[1]
     o = tid // H
-    h = tid %  H
+    h = tid % H
     W2[o, h] = W2[o, h] - lr * (y[o] - target[o]) * z[h]
 
 
@@ -162,7 +160,7 @@ def upd_W1(
     tid = wp.tid()
     D = W1.shape[1]
     h = tid // D
-    d = tid %  D
+    d = tid % D
     W1[h, d] = W1[h, d] - lr * gz[h] * x[d]
 
 
@@ -186,26 +184,18 @@ class Ensemble:
         self.z, self.y, self.gz = [], [], []
 
         for _ in range(n_members):
-            W1 = (rng.uniform(-1.0, 1.0, (D_HID, D_IN)).astype(np.float32) * s1)
-            W2 = (rng.uniform(-1.0, 1.0, (D_OUT, D_HID)).astype(np.float32) * s2)
-            x  = rng.standard_normal(D_IN).astype(np.float32)
+            W1 = rng.uniform(-1.0, 1.0, (D_HID, D_IN)).astype(np.float32) * s1
+            W2 = rng.uniform(-1.0, 1.0, (D_OUT, D_HID)).astype(np.float32) * s2
+            x = rng.standard_normal(D_IN).astype(np.float32)
             tg = rng.standard_normal(D_OUT).astype(np.float32)
 
             self.W1.append(wp.array(W1, dtype=wp.float32, device=self.device))
             self.W2.append(wp.array(W2, dtype=wp.float32, device=self.device))
             self.x.append(wp.array(x, dtype=wp.float32, device=self.device))
-            self.target.append(
-                wp.array(tg, dtype=wp.float32, device=self.device)
-            )
-            self.z.append(
-                wp.zeros(D_HID, dtype=wp.float32, device=self.device)
-            )
-            self.y.append(
-                wp.zeros(D_OUT, dtype=wp.float32, device=self.device)
-            )
-            self.gz.append(
-                wp.zeros(D_HID, dtype=wp.float32, device=self.device)
-            )
+            self.target.append(wp.array(tg, dtype=wp.float32, device=self.device))
+            self.z.append(wp.zeros(D_HID, dtype=wp.float32, device=self.device))
+            self.y.append(wp.zeros(D_OUT, dtype=wp.float32, device=self.device))
+            self.gz.append(wp.zeros(D_HID, dtype=wp.float32, device=self.device))
 
     def snapshot_weights(self):
         wp.synchronize()
@@ -253,39 +243,46 @@ def _wrap_stream(raw_ptr: int, device) -> wp.Stream:
 # ---------------------------------------------------------------------------
 
 
-def ref_train_ensemble(stream: wp.Stream, ens: "Ensemble",
-                       steps: int, lr=LR) -> None:
+def ref_train_ensemble(stream: wp.Stream, ens: "Ensemble", steps: int, lr=LR) -> None:
     """All E members trained back-to-back on one caller-provided stream."""
     BLOCKS_W2 = D_OUT * D_HID
     BLOCKS_W1 = D_HID * D_IN
     for _ in range(steps):
         for k in range(ens.n):
             wp.launch(
-                kernel=fwd_L1, dim=D_HID,
+                kernel=fwd_L1,
+                dim=D_HID,
                 inputs=[ens.W1[k], ens.x[k], ens.z[k]],
-                device=ens.device, stream=stream,
+                device=ens.device,
+                stream=stream,
             )
             wp.launch(
-                kernel=fwd_L2, dim=D_OUT,
+                kernel=fwd_L2,
+                dim=D_OUT,
                 inputs=[ens.W2[k], ens.z[k], ens.y[k]],
-                device=ens.device, stream=stream,
+                device=ens.device,
+                stream=stream,
             )
             wp.launch(
-                kernel=bwd_gz, dim=D_HID,
-                inputs=[ens.y[k], ens.target[k], ens.W2[k],
-                        ens.z[k], ens.gz[k]],
-                device=ens.device, stream=stream,
+                kernel=bwd_gz,
+                dim=D_HID,
+                inputs=[ens.y[k], ens.target[k], ens.W2[k], ens.z[k], ens.gz[k]],
+                device=ens.device,
+                stream=stream,
             )
             wp.launch(
-                kernel=upd_W2, dim=BLOCKS_W2,
-                inputs=[ens.y[k], ens.target[k], ens.z[k],
-                        ens.W2[k], lr],
-                device=ens.device, stream=stream,
+                kernel=upd_W2,
+                dim=BLOCKS_W2,
+                inputs=[ens.y[k], ens.target[k], ens.z[k], ens.W2[k], lr],
+                device=ens.device,
+                stream=stream,
             )
             wp.launch(
-                kernel=upd_W1, dim=BLOCKS_W1,
+                kernel=upd_W1,
+                dim=BLOCKS_W1,
                 inputs=[ens.gz[k], ens.x[k], ens.W1[k], lr],
-                device=ens.device, stream=stream,
+                device=ens.device,
+                stream=stream,
             )
 
 
@@ -333,9 +330,7 @@ def stf_train_ensemble(
     if stream is not None:
         _wp_stream_cache[(id(device), int(stream.cuda_stream))] = stream
 
-    ctx = stf.context(
-        use_graph=use_graph, stream=ctx_stream_arg, handle=handle
-    )
+    ctx = stf.context(use_graph=use_graph, stream=ctx_stream_arg, handle=handle)
 
     tokens = [ctx.token() for _ in range(ens.n)]
 
@@ -347,31 +342,39 @@ def stf_train_ensemble(
             with ctx.task(tokens[k].rw()) as t:
                 s = _wrap_stream(t.stream_ptr(), device)
                 wp.launch(
-                    kernel=fwd_L1, dim=D_HID,
+                    kernel=fwd_L1,
+                    dim=D_HID,
                     inputs=[ens.W1[k], ens.x[k], ens.z[k]],
-                    device=device, stream=s,
+                    device=device,
+                    stream=s,
                 )
                 wp.launch(
-                    kernel=fwd_L2, dim=D_OUT,
+                    kernel=fwd_L2,
+                    dim=D_OUT,
                     inputs=[ens.W2[k], ens.z[k], ens.y[k]],
-                    device=device, stream=s,
+                    device=device,
+                    stream=s,
                 )
                 wp.launch(
-                    kernel=bwd_gz, dim=D_HID,
-                    inputs=[ens.y[k], ens.target[k], ens.W2[k],
-                            ens.z[k], ens.gz[k]],
-                    device=device, stream=s,
+                    kernel=bwd_gz,
+                    dim=D_HID,
+                    inputs=[ens.y[k], ens.target[k], ens.W2[k], ens.z[k], ens.gz[k]],
+                    device=device,
+                    stream=s,
                 )
                 wp.launch(
-                    kernel=upd_W2, dim=BLOCKS_W2,
-                    inputs=[ens.y[k], ens.target[k], ens.z[k],
-                            ens.W2[k], lr],
-                    device=device, stream=s,
+                    kernel=upd_W2,
+                    dim=BLOCKS_W2,
+                    inputs=[ens.y[k], ens.target[k], ens.z[k], ens.W2[k], lr],
+                    device=device,
+                    stream=s,
                 )
                 wp.launch(
-                    kernel=upd_W1, dim=BLOCKS_W1,
+                    kernel=upd_W1,
+                    dim=BLOCKS_W1,
                     inputs=[ens.gz[k], ens.x[k], ens.W1[k], lr],
-                    device=device, stream=s,
+                    device=device,
+                    stream=s,
                 )
 
     ctx.finalize()
@@ -434,7 +437,11 @@ def test_stf_graph_stream_handle():
 
     h = stf.async_resources()
     stf_train_ensemble(
-        ens_stf, steps, use_graph=True, stream=stream, handle=h,
+        ens_stf,
+        steps,
+        use_graph=True,
+        stream=stream,
+        handle=h,
     )
     wp.synchronize()
 
@@ -471,38 +478,48 @@ def _benchmark(ensemble_sizes=None, steps: int = STEPS_DEFAULT, niter: int = 8):
             f"MLP({D_IN}->{D_HID}->{D_OUT}) ==="
         )
 
-        seed = 0x5eed
-        ens_ref   = Ensemble(n, seed=seed, device=device)
-        ens_tok   = Ensemble(n, seed=seed, device=device); clone_weights(ens_ref, ens_tok)
-        ens_tokg  = Ensemble(n, seed=seed, device=device); clone_weights(ens_ref, ens_tokg)
-        ens_tokgh = Ensemble(n, seed=seed, device=device); clone_weights(ens_ref, ens_tokgh)
+        seed = 0x5EED
+        ens_ref = Ensemble(n, seed=seed, device=device)
+        ens_tok = Ensemble(n, seed=seed, device=device)
+        clone_weights(ens_ref, ens_tok)
+        ens_tokg = Ensemble(n, seed=seed, device=device)
+        clone_weights(ens_ref, ens_tokg)
+        ens_tokgh = Ensemble(n, seed=seed, device=device)
+        clone_weights(ens_ref, ens_tokgh)
 
         stream = wp.Stream(device)
         handle = stf.async_resources()
 
-        ref   = _time("ref_train_ensemble (single stream)",
-                      lambda: ref_train_ensemble(stream, ens_ref, steps),
-                      niter)
-        tok   = _time("stf_train_ensemble (tokens)",
-                      lambda: stf_train_ensemble(ens_tok, steps),
-                      niter)
-        tokg  = _time("stf_train_ensemble (tokens, graph)",
-                      lambda: stf_train_ensemble(ens_tokg, steps,
-                                                 use_graph=True),
-                      niter)
+        ref = _time(
+            "ref_train_ensemble (single stream)",
+            lambda: ref_train_ensemble(stream, ens_ref, steps),
+            niter,
+        )
+        tok = _time(
+            "stf_train_ensemble (tokens)",
+            lambda: stf_train_ensemble(ens_tok, steps),
+            niter,
+        )
+        tokg = _time(
+            "stf_train_ensemble (tokens, graph)",
+            lambda: stf_train_ensemble(ens_tokg, steps, use_graph=True),
+            niter,
+        )
         # The stream-backend override path (stream_ctx(stream, ah)) does
         # not chain consecutive contexts correctly through the shared
         # caller stream with Warp kernels -- see test_stf_graph_stream_handle
         # for the note. We only exercise the graph-backend override path
         # here, which does work.
-        tokgh = _time("stf_train_ensemble (tokens,graph,+stream,+handle)",
-                      lambda: stf_train_ensemble(
-                          ens_tokgh, steps, use_graph=True,
-                          stream=stream, handle=handle),
-                      niter)
+        tokgh = _time(
+            "stf_train_ensemble (tokens,graph,+stream,+handle)",
+            lambda: stf_train_ensemble(
+                ens_tokgh, steps, use_graph=True, stream=stream, handle=handle
+            ),
+            niter,
+        )
 
-        print(f"  tokens / ref                           {tok   / ref:6.2f}x")
-        print(f"  tokens(graph) / ref                    {tokg  / ref:6.2f}x")
+        print(f"  tokens / ref                           {tok / ref:6.2f}x")
+        print(f"  tokens(graph) / ref                    {tokg / ref:6.2f}x")
         print(f"  tokens(graph,+stream,+handle) / ref    {tokgh / ref:6.2f}x")
 
         _assert_weights_equal(ens_ref, ens_tok)
@@ -517,12 +534,20 @@ if __name__ == "__main__":
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--e", type=int, nargs="*", default=None,
-                   help="ensemble sizes to sweep (default: 1,2,4,8,16,32)")
-    p.add_argument("--steps", type=int, default=STEPS_DEFAULT,
-                   help="training steps per benchmark iteration")
-    p.add_argument("--niter", type=int, default=8,
-                   help="outer repetitions per variant")
+    p.add_argument(
+        "--e",
+        type=int,
+        nargs="*",
+        default=None,
+        help="ensemble sizes to sweep (default: 1,2,4,8,16,32)",
+    )
+    p.add_argument(
+        "--steps",
+        type=int,
+        default=STEPS_DEFAULT,
+        help="training steps per benchmark iteration",
+    )
+    p.add_argument("--niter", type=int, default=8, help="outer repetitions per variant")
     args = p.parse_args()
 
     wp.init()

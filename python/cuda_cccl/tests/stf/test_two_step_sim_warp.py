@@ -37,9 +37,8 @@ import warp as wp
 
 import cuda.stf._experimental as stf
 
-
 N = 1 << 16  # buffer size
-FRAMES = 5   # how many times to "step" each path
+FRAMES = 5  # how many times to "step" each path
 
 
 # ---------------------------------------------------------------------------
@@ -299,7 +298,9 @@ if __name__ == "__main__":
     if run_token:
         _run_case("STF unified (token)", run_stf_unified, x_ref, y_ref, dev)
     else:
-        print("  STF unified (token)              ... SKIP "
-              "(hard-aborts; set STF_TWOSTEP_RUN_TOKEN=1 to run)")
+        print(
+            "  STF unified (token)              ... SKIP "
+            "(hard-aborts; set STF_TWOSTEP_RUN_TOKEN=1 to run)"
+        )
     _run_case("STF unified (logical_data)", run_stf_unified_ld, x_ref, y_ref, dev)
     _run_case("STF unified (single task)", run_stf_single_task, x_ref, y_ref, dev)

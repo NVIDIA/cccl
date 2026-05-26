@@ -15,6 +15,7 @@ structures instead of ``stackable_context + while_loop``:
 Each variant should produce ``hidden == rounds * K`` if the K-unrolled
 fresh-scratch body works when not inside a captured while-loop body.
 """
+
 from __future__ import annotations
 
 import time
@@ -27,7 +28,6 @@ torch = pytest.importorskip("torch")
 from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-
 
 N = 128
 
@@ -76,8 +76,8 @@ def main():
     print("-" * 55)
     combos = [(1, 1), (1, 2), (1, 4), (2, 2), (2, 4), (4, 2), (4, 4), (8, 4), (16, 4)]
     for name, fn in [
-        ("host_eager",     run_host_eager),
-        ("host_graph",     run_host_graph),
+        ("host_eager", run_host_eager),
+        ("host_graph", run_host_graph),
         ("host_per_round", run_host_per_round),
     ]:
         for rounds, K in combos:
@@ -92,7 +92,9 @@ def main():
                 exp = rounds * K
                 ok = f"ERR {type(e).__name__}"
                 dt = float("nan")
-            print(f"{name:<18} {rounds:>6d} {K:>3d}  {exp:>6d} {got:>6.1f}  {ok}  ({dt*1e3:.1f}ms)")
+            print(
+                f"{name:<18} {rounds:>6d} {K:>3d}  {exp:>6d} {got:>6.1f}  {ok}  ({dt * 1e3:.1f}ms)"
+            )
 
 
 if __name__ == "__main__":

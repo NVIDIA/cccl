@@ -80,7 +80,6 @@ from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -90,7 +89,7 @@ import cuda.stf._experimental as stf  # noqa: E402
 class LoRAConfig:
     """Shape of the adapted linear layer + LoRA hyperparameters."""
 
-    hidden: int = 512   # W is (hidden, hidden); input is (1, seq, hidden)
+    hidden: int = 512  # W is (hidden, hidden); input is (1, seq, hidden)
     seq: int = 64
     rank: int = 8
     alpha: float = 16.0
@@ -274,9 +273,11 @@ def stf_base_linear(
     (intra-kernel fusion).
     """
     with _maybe_graph_scope(ctx, use_graph_scope):
-        with pytorch_task(
-            ctx, l_x.read(), l_W.read(), l_y_base.write()
-        ) as (tx, tw, to):
+        with pytorch_task(ctx, l_x.read(), l_W.read(), l_y_base.write()) as (
+            tx,
+            tw,
+            to,
+        ):
             if use_compile:
                 to[:] = _base_compiled(tx, tw)
             else:
@@ -316,9 +317,11 @@ def stf_combine_add(ctx, l_y_base, l_y_delta, l_y):
     Intentionally not graph-scoped or compiled -- a single elementwise add
     is not worth the overhead of either wrapper.
     """
-    with pytorch_task(
-        ctx, l_y_base.read(), l_y_delta.read(), l_y.write()
-    ) as (tyb, tyd, to):
+    with pytorch_task(ctx, l_y_base.read(), l_y_delta.read(), l_y.write()) as (
+        tyb,
+        tyd,
+        to,
+    ):
         to[:] = tyb + tyd
 
 
@@ -351,9 +354,9 @@ def run_lora_forward(
         _warmup_compiled_bodies(cfg)
 
     H, S = cfg.hidden, cfg.seq
-    x_host = np.random.default_rng(seed + 1).standard_normal(
-        (1, S, H)
-    ).astype(cfg.np_dtype)
+    x_host = (
+        np.random.default_rng(seed + 1).standard_normal((1, S, H)).astype(cfg.np_dtype)
+    )
     y_host = np.zeros((1, S, H), dtype=cfg.np_dtype)
 
     torch.cuda.synchronize()
@@ -377,20 +380,33 @@ def run_lora_forward(
         l_y_delta = ctx.logical_data_empty((1, S, H), cfg.np_dtype, name="y_delta")
 
         stf_base_linear(
-            ctx, l_x, l_W, l_y_base,
-            use_compile=use_compile, use_graph_scope=use_graph_scope,
+            ctx,
+            l_x,
+            l_W,
+            l_y_base,
+            use_compile=use_compile,
+            use_graph_scope=use_graph_scope,
         )
         stf_lora_linear(
-            ctx, l_x, l_A, l_B, l_y_delta,
+            ctx,
+            l_x,
+            l_A,
+            l_B,
+            l_y_delta,
             alpha_over_r=cfg.alpha_over_r,
-            use_compile=use_compile, use_graph_scope=use_graph_scope,
+            use_compile=use_compile,
+            use_graph_scope=use_graph_scope,
         )
         stf_combine_add(ctx, l_y_base, l_y_delta, l_y)
     else:
         # No LoRA wiring: base task writes directly into the output buffer.
         stf_base_linear(
-            ctx, l_x, l_W, l_y,
-            use_compile=use_compile, use_graph_scope=use_graph_scope,
+            ctx,
+            l_x,
+            l_W,
+            l_y,
+            use_compile=use_compile,
+            use_graph_scope=use_graph_scope,
         )
 
     ctx.finalize()
@@ -416,7 +432,10 @@ def test_lora_adapted_linear_headline():
     cfg = _default_cfg()
 
     y, elapsed = run_lora_forward(
-        cfg, use_compile=True, use_graph_scope=True, seed=0,
+        cfg,
+        use_compile=True,
+        use_graph_scope=True,
+        seed=0,
     )
 
     assert y.shape == (1, cfg.seq, cfg.hidden), f"shape mismatch: {y.shape}"
@@ -451,18 +470,29 @@ def test_lora_zero_init_matches_base():
 
     # LoRA wired in, but B = 0 => delta identically 0 => y = y_base.
     y_lora, _ = run_lora_forward(
-        cfg, use_compile=True, use_graph_scope=True,
-        zero_init_B=True, include_lora=True, seed=42,
+        cfg,
+        use_compile=True,
+        use_graph_scope=True,
+        zero_init_B=True,
+        include_lora=True,
+        seed=42,
     )
 
     # Base only (no LoRA wiring at all).
     y_base, _ = run_lora_forward(
-        cfg, use_compile=True, use_graph_scope=True,
-        zero_init_B=True, include_lora=False, seed=42,
+        cfg,
+        use_compile=True,
+        use_graph_scope=True,
+        zero_init_B=True,
+        include_lora=False,
+        seed=42,
     )
 
     np.testing.assert_allclose(
-        y_lora, y_base, atol=1e-5, rtol=1e-5,
+        y_lora,
+        y_base,
+        atol=1e-5,
+        rtol=1e-5,
         err_msg="LoRA zero-init output does not match base-only output",
     )
 

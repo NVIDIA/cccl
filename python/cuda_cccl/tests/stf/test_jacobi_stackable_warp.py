@@ -30,7 +30,6 @@ import warp as wp
 
 import cuda.stf._experimental as stf
 
-
 # ---------------------------------------------------------------------------
 # STF <-> Warp glue: wp.Stream adapter cache and CAI -> wp.array helpers.
 #
@@ -210,8 +209,11 @@ def test_jacobi_stackable_warp():
         dA = get_arg_warp(t, 0, wp.float64, (m, n))
         dAnew = get_arg_warp(t, 1, wp.float64, (m, n))
         wp.launch(
-            init_kernel, dim=(m, n), inputs=[dA, dAnew],
-            device=device, stream=s,
+            init_kernel,
+            dim=(m, n),
+            inputs=[dA, dAnew],
+            device=device,
+            stream=s,
         )
 
     # Iterative solve with while_loop. Each iteration resets the
@@ -223,8 +225,11 @@ def test_jacobi_stackable_warp():
             s = wrap_stream(t.stream_ptr(), device)
             dres = get_arg_warp(t, 0, wp.float64, (1,))
             wp.launch(
-                reset_residual, dim=1, inputs=[dres],
-                device=device, stream=s,
+                reset_residual,
+                dim=1,
+                inputs=[dres],
+                device=device,
+                stream=s,
             )
 
         with ctx.task(lA.read(), lAnew.write(), lresidual.rw()) as t:
@@ -233,8 +238,11 @@ def test_jacobi_stackable_warp():
             dAnew = get_arg_warp(t, 1, wp.float64, (m, n))
             dres = get_arg_warp(t, 2, wp.float64, (1,))
             wp.launch(
-                jacobi_step, dim=(m, n), inputs=[dA, dAnew, dres],
-                device=device, stream=s,
+                jacobi_step,
+                dim=(m, n),
+                inputs=[dA, dAnew, dres],
+                device=device,
+                stream=s,
             )
 
         with ctx.task(lA.rw(), lAnew.read()) as t:
@@ -242,8 +250,11 @@ def test_jacobi_stackable_warp():
             dA = get_arg_warp(t, 0, wp.float64, (m, n))
             dAnew = get_arg_warp(t, 1, wp.float64, (m, n))
             wp.launch(
-                copy_back, dim=(m, n), inputs=[dA, dAnew],
-                device=device, stream=s,
+                copy_back,
+                dim=(m, n),
+                inputs=[dA, dAnew],
+                device=device,
+                stream=s,
             )
 
         loop.continue_while(lresidual, ">", tol)
@@ -275,15 +286,21 @@ def test_graph_scope_warp():
             s = wrap_stream(t.stream_ptr(), device)
             dX = get_arg_warp(t, 0, wp.float32, (n,))
             wp.launch(
-                scale_kernel, dim=n, inputs=[dX, wp.float32(2.0)],
-                device=device, stream=s,
+                scale_kernel,
+                dim=n,
+                inputs=[dX, wp.float32(2.0)],
+                device=device,
+                stream=s,
             )
         with ctx.task(lX.rw()) as t:
             s = wrap_stream(t.stream_ptr(), device)
             dX = get_arg_warp(t, 0, wp.float32, (n,))
             wp.launch(
-                add_kernel, dim=n, inputs=[dX, wp.float32(1.0)],
-                device=device, stream=s,
+                add_kernel,
+                dim=n,
+                inputs=[dX, wp.float32(1.0)],
+                device=device,
+                stream=s,
             )
 
     with ctx.graph_scope():
@@ -291,8 +308,11 @@ def test_graph_scope_warp():
             s = wrap_stream(t.stream_ptr(), device)
             dX = get_arg_warp(t, 0, wp.float32, (n,))
             wp.launch(
-                scale_kernel, dim=n, inputs=[dX, wp.float32(3.0)],
-                device=device, stream=s,
+                scale_kernel,
+                dim=n,
+                inputs=[dX, wp.float32(3.0)],
+                device=device,
+                stream=s,
             )
 
     ctx.finalize()
@@ -316,8 +336,11 @@ def test_repeat_warp():
             s = wrap_stream(t.stream_ptr(), device)
             dX = get_arg_warp(t, 0, wp.float32, (n,))
             wp.launch(
-                add_kernel, dim=n, inputs=[dX, wp.float32(1.0)],
-                device=device, stream=s,
+                add_kernel,
+                dim=n,
+                inputs=[dX, wp.float32(1.0)],
+                device=device,
+                stream=s,
             )
 
     ctx.finalize()
@@ -347,8 +370,7 @@ def _submit_join4_task(ctx, branch_lds, lX, lresidual, n: int, loop_iters: int, 
     with ctx.task(*branch_deps, lX.write(), lresidual.write()) as t:
         s = wrap_stream(t.stream_ptr(), device)
         branches = [
-            get_arg_warp(t, index, wp.float32, (n,))
-            for index in range(len(branch_lds))
+            get_arg_warp(t, index, wp.float32, (n,)) for index in range(len(branch_lds))
         ]
         dX = get_arg_warp(t, len(branch_lds), wp.float32, (n,))
         dres = get_arg_warp(t, len(branch_lds) + 1, wp.float32, (1,))
@@ -428,9 +450,7 @@ def test_launchable_graph_k_branches_then_while_warp():
         expected = k_branches * expected + branch_bias_sum
         expected = expected + while_iters
 
-    assert np.allclose(X_host, expected), (
-        f"Expected {expected[0]}, got {X_host[0]}"
-    )
+    assert np.allclose(X_host, expected), f"Expected {expected[0]}, got {X_host[0]}"
 
 
 if __name__ == "__main__":

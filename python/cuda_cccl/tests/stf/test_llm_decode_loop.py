@@ -53,16 +53,15 @@ from llm_helpers import (  # noqa: E402
     build_random_weights,
     make_cond_scratch,
     stf_advance_counter_flag,
+    stf_append_token_hidden,
     stf_lm_head,
     stf_sample_argmax_last,
-    stf_append_token_hidden,
     stf_transformer_stack,
     validate_forward,
 )
 from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-
 
 MAX_TOKENS = int(os.environ.get("LLM_MAX_TOKENS", "8"))
 SEED = 0xC0DE

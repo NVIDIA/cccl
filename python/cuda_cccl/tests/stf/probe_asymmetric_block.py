@@ -7,10 +7,7 @@ can tell whether the hang is triggered by a specific op inside the block.
 
 from __future__ import annotations
 
-import sys
 import numpy as np
-
-import cuda.stf._experimental as stf
 from llm_helpers import (
     TINY,
     build_random_weights,
@@ -18,6 +15,8 @@ from llm_helpers import (
     stf_advance_counter_flag,
     stf_transformer_block,
 )
+
+import cuda.stf._experimental as stf
 
 
 def run(NA: int, NB: int, *, rounds: int = 1):
@@ -61,5 +60,5 @@ if __name__ == "__main__":
     for NA, NB in [(1, 1), (2, 2), (6, 6), (2, 1), (1, 2), (6, 2), (2, 6)]:
         print(f"NA={NA} NB={NB} ...", flush=True)
         run(NA, NB)
-        print(f"  OK", flush=True)
+        print("  OK", flush=True)
     print("all combos passed", flush=True)

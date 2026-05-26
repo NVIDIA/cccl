@@ -16,22 +16,18 @@ chaining work with Warp.
 
 from __future__ import annotations
 
-import os
-import sys
-
 import numpy as np
-from cuda.bindings import runtime as cudart
 import warp as wp
 
 import cuda.stf._experimental as stf
-
+from cuda.bindings import runtime as cudart
 
 N = 1 << 12
 ITERS = 1 << 16
 N_ROUNDS = 20
-N_TOKENS = 4     # ensemble members
-N_STEPS = 4      # training steps per context
-N_KERNELS = 5    # kernels chained inside each task body
+N_TOKENS = 4  # ensemble members
+N_STEPS = 4  # training steps per context
+N_KERNELS = 5  # kernels chained inside each task body
 
 
 @wp.kernel
@@ -41,7 +37,7 @@ def slow_set(arr: wp.array(dtype=wp.int32), value: wp.int32, iters: wp.int32):
         return
     acc = wp.int32(0)
     for k in range(iters):
-        acc += (k * 1103515245 + 12345) & 0x7fffffff
+        acc += (k * 1103515245 + 12345) & 0x7FFFFFFF
     arr[i] = value + (acc & 0)
 
 
@@ -55,7 +51,9 @@ def _check_cuda(err) -> None:
 _wp_stream_cache: dict[int, "wp.Stream"] = {}
 
 
-def _wrap(ptr: int, device: "wp.Device", caller: "wp.Stream | None" = None) -> "wp.Stream":
+def _wrap(
+    ptr: int, device: "wp.Device", caller: "wp.Stream | None" = None
+) -> "wp.Stream":
     # Cache so that STF-provided pool-stream ptrs are wrapped exactly once,
     # and the caller's own wp.Stream (if any) is reused when STF hands the
     # same ptr back to a task (can happen on the stream backend).
@@ -94,9 +92,13 @@ def run(sync_at_task_end: bool) -> tuple[int, int]:
                     with ctx.task(toks[k].rw()) as t:
                         task_stream = _wrap(int(t.stream_ptr()), device, caller_wp)
                         for _kern in range(N_KERNELS):
-                            wp.launch(kernel=slow_set, dim=N,
-                                      inputs=[arrs[k], value, ITERS],
-                                      device=device, stream=task_stream)
+                            wp.launch(
+                                kernel=slow_set,
+                                dim=N,
+                                inputs=[arrs[k], value, ITERS],
+                                device=device,
+                                stream=task_stream,
+                            )
                         if sync_at_task_end:
                             wp.synchronize_stream(task_stream)
             ctx.finalize()
@@ -121,7 +123,7 @@ def run(sync_at_task_end: bool) -> tuple[int, int]:
         else:
             bad += 1
             print(
-                f"  round {r:3d}  FAIL: {round_bad}/{N_TOKENS*N} slots != 2, "
+                f"  round {r:3d}  FAIL: {round_bad}/{N_TOKENS * N} slots != 2, "
                 f"first mismatch tok={first_bad_k} idx={first_bad_idx} val={first_bad_val}"
             )
     return ok, bad

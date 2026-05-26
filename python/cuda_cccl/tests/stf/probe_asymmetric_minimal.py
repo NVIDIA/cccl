@@ -12,11 +12,12 @@ progress so a hanging run is obvious).
 from __future__ import annotations
 
 import sys
-import numpy as np
 
-import cuda.stf._experimental as stf
+import numpy as np
 from llm_helpers import make_cond_scratch, stf_advance_counter_flag
 from pytorch_task import pytorch_task
+
+import cuda.stf._experimental as stf
 
 
 def chain(ctx, l_buf, n):

@@ -12,11 +12,9 @@ with a fresh hidden scratch + a copy-back into the shared hidden buffer).
 
 Runs a sweep over (rounds, K) and prints pass/fail/hang per combo.
 """
+
 from __future__ import annotations
 
-import os
-import signal
-import sys
 import time
 
 import numpy as np
@@ -28,15 +26,14 @@ from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
 
-
 N = 128  # size of the "hidden" buffer
 
 
 def _probe_body(ctx, l_hidden, l_round, l_done, K: int, max_rounds: int):
     """Body is captured once. Inside:
-        - K unrolled iterations, each allocates a fresh l_scratch, writes it
-          from l_hidden, copies back into l_hidden.
-        - Increment the round counter and emit done flag.
+    - K unrolled iterations, each allocates a fresh l_scratch, writes it
+      from l_hidden, copies back into l_hidden.
+    - Increment the round counter and emit done flag.
     """
     with ctx.while_loop() as loop:
         for k in range(K):
@@ -78,14 +75,23 @@ def run_probe(rounds: int, K: int):
 
 def main():
     print("=== while_loop + K-unrolled fresh logical_data probe ===")
-    print(f"{'rounds':>6} {'K':>3}  {'elapsed':>9}  {'expected':>9}  {'got':>9}  status")
+    print(
+        f"{'rounds':>6} {'K':>3}  {'elapsed':>9}  {'expected':>9}  {'got':>9}  status"
+    )
     print("-" * 70)
 
     combos = [
-        (1, 1), (1, 2), (1, 4),
-        (2, 1), (2, 2), (2, 4),
-        (4, 1), (4, 2), (4, 4),
-        (8, 2), (8, 4),
+        (1, 1),
+        (1, 2),
+        (1, 4),
+        (2, 1),
+        (2, 2),
+        (2, 4),
+        (4, 1),
+        (4, 2),
+        (4, 4),
+        (8, 2),
+        (8, 4),
     ]
 
     for rounds, K in combos:
@@ -105,7 +111,9 @@ def main():
             expected = float(rounds * K)
             status = f"ERR: {type(e).__name__}"
 
-        print(f"{rounds:>6d} {K:>3d}  {dt * 1e3:>7.1f}ms  {expected:>9.1f}  {got:>9.1f}  {status}")
+        print(
+            f"{rounds:>6d} {K:>3d}  {dt * 1e3:>7.1f}ms  {expected:>9.1f}  {got:>9.1f}  {status}"
+        )
 
 
 if __name__ == "__main__":

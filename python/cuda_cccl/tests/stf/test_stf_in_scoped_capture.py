@@ -29,10 +29,9 @@ from __future__ import annotations
 
 import numpy as np
 import warp as wp
-from cuda.bindings import runtime as cudart
 
 import cuda.stf._experimental as stf
-
+from cuda.bindings import runtime as cudart
 
 N = 1 << 12
 

@@ -14,9 +14,8 @@ Expected final value of h after `rounds` body replays, starting at h=0:
   A/B/C: rounds * K
   D:     rounds * K  (2K half-steps)
 """
-from __future__ import annotations
 
-import time
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -26,7 +25,6 @@ torch = pytest.importorskip("torch")
 from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-
 
 N = 128
 
@@ -90,10 +88,10 @@ def run(variant, rounds, K):
     ld = ctx.logical_data(d, name="done")
 
     body = {
-        "fresh_scratch":  _body_fresh_scratch,
+        "fresh_scratch": _body_fresh_scratch,
         "shared_scratch": _body_shared_scratch,
-        "direct_rw":      _body_direct_rw,
-        "two_step_nosc":  _body_two_step_nosc,
+        "direct_rw": _body_direct_rw,
+        "two_step_nosc": _body_two_step_nosc,
     }[variant]
     body(ctx, lh, lr, ld, K, rounds)
     ctx.finalize()

@@ -8,21 +8,28 @@ number of logical_data_empty nodes.
 from __future__ import annotations
 
 import numpy as np
-
-import cuda.stf._experimental as stf
 from llm_helpers import (
-    TINY, build_random_weights, make_cond_scratch,
+    TINY,
+    build_random_weights,
+    make_cond_scratch,
     stf_advance_counter_flag,
-    stf_attention_sdpa, stf_ffn_fused, stf_layernorm, stf_linear,
+    stf_attention_sdpa,
+    stf_ffn_fused,
+    stf_layernorm,
+    stf_linear,
 )
 from pytorch_task import pytorch_task
+
+import cuda.stf._experimental as stf
 
 
 def make_pool(ctx, cfg):
     B, S, H = 1, cfg.seq, cfg.hidden
     d = cfg.np_dtype
-    return {k: ctx.logical_data_empty((B, S, H), d, name=k)
-            for k in ["xn", "Q", "K", "V", "attn", "proj", "x1", "x1n", "ffn_out"]}
+    return {
+        k: ctx.logical_data_empty((B, S, H), d, name=k)
+        for k in ["xn", "Q", "K", "V", "attn", "proj", "x1", "x1n", "ffn_out"]
+    }
 
 
 def block_pooled(ctx, l_x, lw, l_out, cfg, pool):
@@ -33,12 +40,16 @@ def block_pooled(ctx, l_x, lw, l_out, cfg, pool):
     stf_linear(ctx, pool["xn"], lw["Wv"], None, pool["V"])
     stf_attention_sdpa(ctx, pool["Q"], pool["K"], pool["V"], pool["attn"], cfg)
     stf_linear(ctx, pool["attn"], lw["Wo"], None, pool["proj"])
-    with pytorch_task(ctx, l_x.read(), pool["proj"].read(),
-                      pool["x1"].write()) as (tx, tp, to):
+    with pytorch_task(ctx, l_x.read(), pool["proj"].read(), pool["x1"].write()) as (
+        tx,
+        tp,
+        to,
+    ):
         to[:] = tx + tp
     stf_layernorm(ctx, pool["x1"], lw["ln2_gamma"], lw["ln2_beta"], pool["x1n"])
-    stf_ffn_fused(ctx, pool["x1n"], lw["W_up"], lw["b_up"],
-                  lw["W_down"], lw["b_down"], l_out)
+    stf_ffn_fused(
+        ctx, pool["x1n"], lw["W_up"], lw["b_up"], lw["W_down"], lw["b_down"], l_out
+    )
 
 
 def run(NA: int, NB: int, rounds: int = 1):
@@ -62,10 +73,14 @@ def run(NA: int, NB: int, rounds: int = 1):
 
     # Inter-layer buffers, also pooled per chain.
     B, S, H = 1, cfg.seq, cfg.hidden
-    inter_a = [ctx.logical_data_empty((B, S, H), cfg.np_dtype, name=f"ia{i}")
-               for i in range(max(NA, 1))]
-    inter_b = [ctx.logical_data_empty((B, S, H), cfg.np_dtype, name=f"ib{i}")
-               for i in range(max(NB, 1))]
+    inter_a = [
+        ctx.logical_data_empty((B, S, H), cfg.np_dtype, name=f"ia{i}")
+        for i in range(max(NA, 1))
+    ]
+    inter_b = [
+        ctx.logical_data_empty((B, S, H), cfg.np_dtype, name=f"ib{i}")
+        for i in range(max(NB, 1))
+    ]
 
     def chain(buf, n, inter, pool):
         cur = buf
@@ -87,5 +102,5 @@ if __name__ == "__main__":
     for na, nb in [(2, 2), (4, 4), (1, 4), (4, 1), (2, 6), (6, 2)]:
         print(f"[pooled] NA={na} NB={nb} ...", flush=True)
         run(na, nb)
-        print(f"[pooled]   OK", flush=True)
+        print("[pooled]   OK", flush=True)
     print("all pooled configs passed", flush=True)

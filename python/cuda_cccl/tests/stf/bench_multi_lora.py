@@ -73,19 +73,15 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from pytorch_task import pytorch_task  # noqa: E402
-
-import cuda.stf._experimental as stf  # noqa: E402
-
 from test_llm_lora import (  # noqa: E402
     LoRAConfig,
     _base_compiled,
-    _init_random,
     _lora_compiled,
-    _maybe_graph_scope,
     _warmup_compiled_bodies,
 )
 from test_llm_multi_lora import build_multi_lora_weights  # noqa: E402
 
+import cuda.stf._experimental as stf  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Config selection
@@ -111,8 +107,8 @@ def _gen_tensors(cfg: LoRAConfig, K: int, *, seed: int = 0, device: str = "cuda"
     H, S, r = cfg.hidden, cfg.seq, cfg.rank
     dt = cfg.torch_dtype
 
-    scale_H = 1.0 / (H ** 0.5)
-    scale_r = 1.0 / (r ** 0.5)
+    scale_H = 1.0 / (H**0.5)
+    scale_r = 1.0 / (r**0.5)
 
     x = torch.randn((1, S, H), generator=g, device=device, dtype=dt)
     W = torch.randn((H, H), generator=g, device=device, dtype=dt) * scale_H
@@ -213,6 +209,7 @@ def _build_py_multistream_forward(cfg: LoRAConfig, K: int, *, use_compile: bool)
         for ev in done_events:
             default.wait_event(ev)
         return y_list
+
     # ===== concurrency boilerplate ends =====
 
     return forward, streams
@@ -225,7 +222,11 @@ def _build_py_multistream_forward(cfg: LoRAConfig, K: int, *, use_compile: bool)
 
 
 def _build_stf_persistent_forward(
-    cfg: LoRAConfig, K: int, *, seed: int = 0, use_graph_scope: bool = True,
+    cfg: LoRAConfig,
+    K: int,
+    *,
+    seed: int = 0,
+    use_graph_scope: bool = True,
 ):
     """Return ``(forward, ctx)``. ``forward()`` submits one multi-LoRA pass.
 
@@ -265,8 +266,7 @@ def _build_stf_persistent_forward(
         for k in range(K)
     ]
     l_y_list = [
-        ctx.logical_data_empty((1, S, H), cfg.np_dtype, name=f"y_{k}")
-        for k in range(K)
+        ctx.logical_data_empty((1, S, H), cfg.np_dtype, name=f"y_{k}") for k in range(K)
     ]
 
     alpha = cfg.alpha_over_r
@@ -278,7 +278,9 @@ def _build_stf_persistent_forward(
         """One multi-LoRA forward. Submits tasks; does not sync."""
         with _scope():
             with pytorch_task(ctx, l_x.read(), l_W.read(), l_y_base.write()) as (
-                tx, tw, tob,
+                tx,
+                tw,
+                tob,
             ):
                 tob[:] = _base_compiled(tx, tw)
 
@@ -289,11 +291,18 @@ def _build_stf_persistent_forward(
                 if use_graph_scope:
                     l_y_base.push(stf.AccessMode.READ)
                 with pytorch_task(
-                    ctx, l_x.read(), l_A_k.read(), l_B_k.read(), l_y_delta_k.write(),
+                    ctx,
+                    l_x.read(),
+                    l_A_k.read(),
+                    l_B_k.read(),
+                    l_y_delta_k.write(),
                 ) as (tx, ta, tb, tod):
                     tod[:] = _lora_compiled(tx, ta, tb, alpha)
                 with pytorch_task(
-                    ctx, l_y_base.read(), l_y_delta_k.read(), l_y_k.write(),
+                    ctx,
+                    l_y_base.read(),
+                    l_y_delta_k.read(),
+                    l_y_k.write(),
                 ) as (tyb, tyd, to):
                     to[:] = tyb + tyd
 
@@ -371,22 +380,32 @@ def run_sweep(cfg: LoRAConfig, Ks: tuple[int, ...], *, iters: int, warmup: int):
         # STF persistent, plain tasks (no graph_scope). Isolates pure STF
         # scheduling overhead from the per-scope graph capture cost.
         stf_forward, stf_ctx = _build_stf_persistent_forward(
-            cfg, K, seed=0, use_graph_scope=False,
+            cfg,
+            K,
+            seed=0,
+            use_graph_scope=False,
         )
         try:
             row["stf/compile"] = _time_stf(
-                stf_forward, iters=iters, warmup=warmup,
+                stf_forward,
+                iters=iters,
+                warmup=warmup,
             )
         finally:
             stf_ctx.finalize()
 
         # STF persistent, with graph_scope per base + K adapters.
         stf_forward, stf_ctx = _build_stf_persistent_forward(
-            cfg, K, seed=0, use_graph_scope=True,
+            cfg,
+            K,
+            seed=0,
+            use_graph_scope=True,
         )
         try:
             row["stf/compile+gs"] = _time_stf(
-                stf_forward, iters=iters, warmup=warmup,
+                stf_forward,
+                iters=iters,
+                warmup=warmup,
             )
         finally:
             stf_ctx.finalize()

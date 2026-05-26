@@ -59,7 +59,11 @@ def test_transformer_block_dag():
     weights = build_random_weights(ctx, cfg, seed=1, read_only=False)
 
     stf_transformer_block(
-        ctx, l_x, weights["layers"][0], l_out, cfg,
+        ctx,
+        l_x,
+        weights["layers"][0],
+        l_out,
+        cfg,
         attention="parallel_heads",
     )
 

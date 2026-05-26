@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+
 from cuda.bindings import runtime as cudart
 
 pytest.importorskip("numba")
@@ -22,7 +23,6 @@ pytest.importorskip("numba.cuda")
 from numba import cuda
 
 import cuda.stf._experimental as stf
-
 
 N = 1 << 14
 ITERS = 1 << 18
@@ -36,7 +36,7 @@ def slow_set(arr, value, iters):
         return
     acc = 0
     for k in range(iters):
-        acc += (k * 1103515245 + 12345) & 0x7fffffff
+        acc += (k * 1103515245 + 12345) & 0x7FFFFFFF
     # commit value; the (acc & 0) term keeps the busy loop from being elided
     arr[i] = value + (acc & 0)
 
@@ -96,7 +96,9 @@ def main() -> None:
                 f"first mismatch idx={first_idx} val={int(h_arr[first_idx])}"
             )
 
-    print(f"\nnumba + C-facade stream-only back-to-back: {ok} OK, {bad} FAIL (rounds={N_ROUNDS})")
+    print(
+        f"\nnumba + C-facade stream-only back-to-back: {ok} OK, {bad} FAIL (rounds={N_ROUNDS})"
+    )
 
 
 if __name__ == "__main__":

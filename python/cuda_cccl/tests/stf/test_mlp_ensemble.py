@@ -64,10 +64,10 @@ numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 # per-launch overhead / concurrency-win trade-off is visible.
 # ---------------------------------------------------------------------------
 
-D_IN  = 4096  # input dim
+D_IN = 4096  # input dim
 D_HID = 4096  # hidden dim
-D_OUT = 64    # output dim
-LR    = np.float32(0.01)
+D_OUT = 64  # output dim
+LR = np.float32(0.01)
 
 # Default training length per benchmark iteration. Larger `steps` amortizes
 # the STF context-build cost over more token-scheduled launches, which is
@@ -136,7 +136,7 @@ def upd_W2(y, target, z, W2, lr):
         return
     H = W2.shape[1]
     o = tid // H
-    h = tid %  H
+    h = tid % H
     W2[o, h] -= lr * (y[o] - target[o]) * z[h]
 
 
@@ -149,7 +149,7 @@ def upd_W1(gz, x, W1, lr):
         return
     D = W1.shape[1]
     h = tid // D
-    d = tid %  D
+    d = tid % D
     W1[h, d] -= lr * gz[h] * x[d]
 
 
@@ -157,10 +157,10 @@ def upd_W1(gz, x, W1, lr):
 # multiple blocks for the two big update kernels.
 THREADS = 128
 
-BLOCKS_H  = (D_HID + THREADS - 1) // THREADS              # for fwd_L1 / bwd_gz
-BLOCKS_O  = (D_OUT + THREADS - 1) // THREADS              # for fwd_L2
-BLOCKS_W2 = (D_OUT * D_HID + THREADS - 1) // THREADS      # for upd_W2
-BLOCKS_W1 = (D_HID * D_IN  + THREADS - 1) // THREADS      # for upd_W1
+BLOCKS_H = (D_HID + THREADS - 1) // THREADS  # for fwd_L1 / bwd_gz
+BLOCKS_O = (D_OUT + THREADS - 1) // THREADS  # for fwd_L2
+BLOCKS_W2 = (D_OUT * D_HID + THREADS - 1) // THREADS  # for upd_W2
+BLOCKS_W1 = (D_HID * D_IN + THREADS - 1) // THREADS  # for upd_W1
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +195,7 @@ class Ensemble:
         for _ in range(n_members):
             W1 = rng.uniform(-1.0, 1.0, (D_HID, D_IN)).astype(np.float32) * s1
             W2 = rng.uniform(-1.0, 1.0, (D_OUT, D_HID)).astype(np.float32) * s2
-            x  = rng.standard_normal(D_IN).astype(np.float32)
+            x = rng.standard_normal(D_IN).astype(np.float32)
             tg = rng.standard_normal(D_OUT).astype(np.float32)
 
             self.W1.append(cuda.to_device(W1))
@@ -240,17 +240,15 @@ def ref_train_ensemble(stream, ens: "Ensemble", steps: int, lr=LR) -> None:
     """
     for _ in range(steps):
         for k in range(ens.n):
-            fwd_L1[BLOCKS_H,  THREADS, stream](ens.W1[k], ens.x[k], ens.z[k])
-            fwd_L2[BLOCKS_O,  THREADS, stream](ens.W2[k], ens.z[k], ens.y[k])
-            bwd_gz[BLOCKS_H,  THREADS, stream](
+            fwd_L1[BLOCKS_H, THREADS, stream](ens.W1[k], ens.x[k], ens.z[k])
+            fwd_L2[BLOCKS_O, THREADS, stream](ens.W2[k], ens.z[k], ens.y[k])
+            bwd_gz[BLOCKS_H, THREADS, stream](
                 ens.y[k], ens.target[k], ens.W2[k], ens.z[k], ens.gz[k]
             )
             upd_W2[BLOCKS_W2, THREADS, stream](
                 ens.y[k], ens.target[k], ens.z[k], ens.W2[k], lr
             )
-            upd_W1[BLOCKS_W1, THREADS, stream](
-                ens.gz[k], ens.x[k], ens.W1[k], lr
-            )
+            upd_W1[BLOCKS_W1, THREADS, stream](ens.gz[k], ens.x[k], ens.W1[k], lr)
 
 
 # ---------------------------------------------------------------------------
@@ -302,17 +300,15 @@ def stf_train_ensemble(
         for k in range(ens.n):
             with ctx.task(tokens[k].rw()) as t:
                 s = cuda.external_stream(t.stream_ptr())
-                fwd_L1[BLOCKS_H,  THREADS, s](ens.W1[k], ens.x[k], ens.z[k])
-                fwd_L2[BLOCKS_O,  THREADS, s](ens.W2[k], ens.z[k], ens.y[k])
-                bwd_gz[BLOCKS_H,  THREADS, s](
+                fwd_L1[BLOCKS_H, THREADS, s](ens.W1[k], ens.x[k], ens.z[k])
+                fwd_L2[BLOCKS_O, THREADS, s](ens.W2[k], ens.z[k], ens.y[k])
+                bwd_gz[BLOCKS_H, THREADS, s](
                     ens.y[k], ens.target[k], ens.W2[k], ens.z[k], ens.gz[k]
                 )
                 upd_W2[BLOCKS_W2, THREADS, s](
                     ens.y[k], ens.target[k], ens.z[k], ens.W2[k], lr
                 )
-                upd_W1[BLOCKS_W1, THREADS, s](
-                    ens.gz[k], ens.x[k], ens.W1[k], lr
-                )
+                upd_W1[BLOCKS_W1, THREADS, s](ens.gz[k], ens.x[k], ens.W1[k], lr)
 
     ctx.finalize()
 
@@ -364,9 +360,7 @@ def test_stf_graph_and_stream_handle(use_graph):
     stream.synchronize()
 
     h = stf.async_resources()
-    stf_train_ensemble(
-        ens_stf, steps, use_graph=use_graph, stream=stream, handle=h
-    )
+    stf_train_ensemble(ens_stf, steps, use_graph=use_graph, stream=stream, handle=h)
     stream.synchronize()
 
     _assert_weights_equal(ens_ref, ens_stf)
@@ -408,39 +402,51 @@ def _benchmark(ensemble_sizes=None, steps: int = STEPS_DEFAULT, niter: int = 8):
 
         # Each variant gets its own ensemble so they don't fight over
         # weights -- all cloned from a common seed for fairness.
-        seed = 0x5eed
-        ens_ref  = Ensemble(n, seed=seed)
-        ens_tok  = Ensemble(n, seed=seed); clone_weights(ens_ref, ens_tok)
-        ens_tokg = Ensemble(n, seed=seed); clone_weights(ens_ref, ens_tokg)
-        ens_tokh = Ensemble(n, seed=seed); clone_weights(ens_ref, ens_tokh)
-        ens_tokgh= Ensemble(n, seed=seed); clone_weights(ens_ref, ens_tokgh)
+        seed = 0x5EED
+        ens_ref = Ensemble(n, seed=seed)
+        ens_tok = Ensemble(n, seed=seed)
+        clone_weights(ens_ref, ens_tok)
+        ens_tokg = Ensemble(n, seed=seed)
+        clone_weights(ens_ref, ens_tokg)
+        ens_tokh = Ensemble(n, seed=seed)
+        clone_weights(ens_ref, ens_tokh)
+        ens_tokgh = Ensemble(n, seed=seed)
+        clone_weights(ens_ref, ens_tokgh)
 
         stream = cuda.stream()
         handle = stf.async_resources()
 
-        ref   = _time("ref_train_ensemble (single stream)",
-                      lambda: ref_train_ensemble(stream, ens_ref, steps),
-                      niter)
-        tok   = _time("stf_train_ensemble (tokens)",
-                      lambda: stf_train_ensemble(ens_tok, steps),
-                      niter)
-        tokg  = _time("stf_train_ensemble (tokens, graph)",
-                      lambda: stf_train_ensemble(ens_tokg, steps,
-                                                 use_graph=True),
-                      niter)
-        tokh  = _time("stf_train_ensemble (tokens,+stream,+handle)",
-                      lambda: stf_train_ensemble(ens_tokh, steps,
-                                                 stream=stream, handle=handle),
-                      niter)
-        tokgh = _time("stf_train_ensemble (tokens,graph,+stream,+handle)",
-                      lambda: stf_train_ensemble(ens_tokgh, steps,
-                                                 use_graph=True,
-                                                 stream=stream, handle=handle),
-                      niter)
+        ref = _time(
+            "ref_train_ensemble (single stream)",
+            lambda: ref_train_ensemble(stream, ens_ref, steps),
+            niter,
+        )
+        tok = _time(
+            "stf_train_ensemble (tokens)",
+            lambda: stf_train_ensemble(ens_tok, steps),
+            niter,
+        )
+        tokg = _time(
+            "stf_train_ensemble (tokens, graph)",
+            lambda: stf_train_ensemble(ens_tokg, steps, use_graph=True),
+            niter,
+        )
+        tokh = _time(
+            "stf_train_ensemble (tokens,+stream,+handle)",
+            lambda: stf_train_ensemble(ens_tokh, steps, stream=stream, handle=handle),
+            niter,
+        )
+        tokgh = _time(
+            "stf_train_ensemble (tokens,graph,+stream,+handle)",
+            lambda: stf_train_ensemble(
+                ens_tokgh, steps, use_graph=True, stream=stream, handle=handle
+            ),
+            niter,
+        )
 
-        print(f"  tokens / ref                           {tok   / ref:6.2f}x")
-        print(f"  tokens(graph) / ref                    {tokg  / ref:6.2f}x")
-        print(f"  tokens(+stream,+handle) / ref          {tokh  / ref:6.2f}x")
+        print(f"  tokens / ref                           {tok / ref:6.2f}x")
+        print(f"  tokens(graph) / ref                    {tokg / ref:6.2f}x")
+        print(f"  tokens(+stream,+handle) / ref          {tokh / ref:6.2f}x")
         print(f"  tokens(graph,+stream,+handle) / ref    {tokgh / ref:6.2f}x")
 
         # Correctness spot-check at the largest-timed state.
@@ -457,11 +463,19 @@ if __name__ == "__main__":
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--e", type=int, nargs="*", default=None,
-                   help="ensemble sizes to sweep (default: 1,2,4,8,16,32)")
-    p.add_argument("--steps", type=int, default=STEPS_DEFAULT,
-                   help="training steps per benchmark iteration")
-    p.add_argument("--niter", type=int, default=8,
-                   help="outer repetitions per variant")
+    p.add_argument(
+        "--e",
+        type=int,
+        nargs="*",
+        default=None,
+        help="ensemble sizes to sweep (default: 1,2,4,8,16,32)",
+    )
+    p.add_argument(
+        "--steps",
+        type=int,
+        default=STEPS_DEFAULT,
+        help="training steps per benchmark iteration",
+    )
+    p.add_argument("--niter", type=int, default=8, help="outer repetitions per variant")
     args = p.parse_args()
     _benchmark(ensemble_sizes=args.e, steps=args.steps, niter=args.niter)

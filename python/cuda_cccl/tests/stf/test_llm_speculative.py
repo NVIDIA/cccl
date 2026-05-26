@@ -49,8 +49,8 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from llm_helpers import (  # noqa: E402
-    TINY,
     DRAFT,
+    TINY,
     build_random_weights,
     spec_decode_loop,
     stf_append_token_hidden,
@@ -61,7 +61,6 @@ from llm_helpers import (  # noqa: E402
 from pytorch_task import pytorch_task  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-
 
 K = int(os.environ.get("LLM_K", "4"))
 ROUNDS = int(os.environ.get("LLM_ROUNDS", "16"))
@@ -82,6 +81,7 @@ def make_forward(cfg, weights):
     reusing a shared pool across K calls triggers STF dep-tracking hangs
     in practice).
     """
+
     def _forward(ctx, l_hidden, l_logits):
         B, S, H = 1, cfg.seq, cfg.hidden
         l_hn = ctx.logical_data_empty((B, S, H), cfg.np_dtype, name="h_next")
@@ -89,6 +89,7 @@ def make_forward(cfg, weights):
         with pytorch_task(ctx, l_hn.read(), l_hidden.write()) as (thn, th):
             th[:] = thn
         stf_lm_head(ctx, l_hidden, weights["lm_head"], l_logits)
+
     return _forward
 
 
@@ -140,7 +141,9 @@ def run_spec_decode(max_rounds: int, K_val: int):
     cfg_d = DRAFT
 
     rng = np.random.default_rng(SEED)
-    hidden_t_host = rng.standard_normal((1, cfg_t.seq, cfg_t.hidden)).astype(cfg_t.np_dtype)
+    hidden_t_host = rng.standard_normal((1, cfg_t.seq, cfg_t.hidden)).astype(
+        cfg_t.np_dtype
+    )
     hidden_d_host = hidden_t_host.copy()
     draft_toks_host = np.zeros((1, K_val + 1), dtype=np.int64)
     target_toks_host = np.zeros((1, K_val + 1), dtype=np.int64)
@@ -158,7 +161,10 @@ def run_spec_decode(max_rounds: int, K_val: int):
 
     target_w = build_random_weights(ctx, cfg_t, seed=1, read_only=True)
     draft_w = build_random_weights(
-        ctx, cfg_d, seed=2, read_only=True,
+        ctx,
+        cfg_d,
+        seed=2,
+        read_only=True,
         share_emb_lm_head_from=target_w,
     )
 
