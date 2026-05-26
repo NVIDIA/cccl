@@ -250,7 +250,6 @@ public:
   _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
   {
     abort();
-    *result = pos4(0);
   }
 };
 
