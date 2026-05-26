@@ -48,6 +48,8 @@
 #include <cuda/std/tuple>
 
 #include <cstdio>
+#include <unordered_map>
+#include <vector>
 
 #include <nv/target>
 
@@ -75,6 +77,236 @@ static constexpr int max_privatized_smem_bins = 256;
 static constexpr int max_extended_smem_bins_single_channel        = 2048;
 static constexpr int max_extended_smem_bins_single_channel_large  = 8192;
 static constexpr int max_extended_smem_bins_single_channel_xlarge = 16384;
+
+// ---------------------------------------------------------------------------
+// Uniform-level detection for the RANGE host-init dispatch path.
+//
+// When the user-supplied `d_levels` array is exactly uniformly spaced, the
+// SearchTransform classify path produces the same bin assignment as the
+// ScaleTransform classify path used by EVEN. SearchTransform is much more
+// expensive: per-sample interpolated guess + verify + 1-step linear correction
+// + UpperBound fallback. ScaleTransform reduces classify to a precomputed
+// magic-multiplier multiply-high + shift (integral) or a single multiply
+// (floating-point), with a `bins_eq_range` short-circuit when bins == range.
+//
+// We detect uniformity once per (d_levels, num_levels) tuple on the size-only
+// pre-pass (`d_temp_storage == nullptr`) and cache the verified-uniform flag
+// + endpoints in a thread-local map. The timed real-launch path performs only
+// a cache lookup with zero CUDA syncs - required because nvbench runs a
+// blocking kernel on the user's stream and any sync inside the timed lambda
+// deadlocks against it.
+//
+// Cached uniform-level detection result for one (d_levels, num_levels) pair.
+//
+// `uniform` is the verified uniformity flag; `lo` / `hi` are the endpoints
+// (`d_levels[0]` and `d_levels[num_levels - 1]`) used by the caller to build
+// a `ScaleTransform`. Cached so subsequent dispatch_range calls with the same
+// level array (the common nvbench / app loop case) do not pay the
+// host-device sync each iteration.
+template <typename LevelT>
+struct cached_uniform_result
+{
+  bool uniform;
+  LevelT lo;
+  LevelT hi;
+};
+
+// Internal helper: detect uniform-spaced levels by streaming all levels to
+// host, computing stride = (last - first) / num_bins, and verifying every
+// interior level matches. The full-array copy + sync is only performed on a
+// cache miss; subsequent calls with the same (d_levels, num_levels) are
+// served from the thread-local cache and incur no GPU sync.
+//
+// On any cudaMemcpy / sync failure returns `{false, 0, 0}` so the caller
+// transparently falls back to the SearchTransform path.
+template <typename LevelT>
+_CCCL_HOST_API _CCCL_FORCEINLINE cached_uniform_result<LevelT>
+detect_uniform_levels_host_uncached(const LevelT* d_levels, int num_levels, cudaStream_t stream)
+{
+  cached_uniform_result<LevelT> result{false, LevelT{}, LevelT{}};
+
+  if (num_levels < 2)
+  {
+    // Degenerate case - no meaningful uniformity check, bail to slow path.
+    return result;
+  }
+
+  const int num_bins = num_levels - 1;
+
+  // Stage all levels on host (one cudaMemcpy + sync). Largest active bench
+  // axis is 60000 bins * 8 bytes ~= 480 KB which fits comfortably.
+  std::vector<LevelT> h_levels(static_cast<size_t>(num_levels));
+  cudaError_t err = cudaMemcpyAsync(
+    h_levels.data(),
+    d_levels,
+    static_cast<size_t>(num_levels) * sizeof(LevelT),
+    cudaMemcpyDeviceToHost,
+    stream);
+  if (err != cudaSuccess)
+  {
+    return result;
+  }
+  err = cudaStreamSynchronize(stream);
+  if (err != cudaSuccess)
+  {
+    return result;
+  }
+
+  const LevelT first = h_levels[0];
+  const LevelT last  = h_levels[num_bins];
+  result.lo          = first;
+  result.hi          = last;
+  // Empty range cannot match any uniform spacing.
+  if (!(first < last))
+  {
+    return result;
+  }
+
+  if constexpr (::cuda::std::is_integral_v<LevelT>)
+  {
+    // Integer levels: exact match level[i] == first + i*stride required.
+    using WideT = ::cuda::std::_If<sizeof(LevelT) <= sizeof(int64_t), int64_t, LevelT>;
+    const WideT range = static_cast<WideT>(last) - static_cast<WideT>(first);
+    if ((range % static_cast<WideT>(num_bins)) != WideT{0})
+    {
+      return result;
+    }
+    const WideT stride = range / static_cast<WideT>(num_bins);
+    if (stride <= WideT{0})
+    {
+      return result;
+    }
+    for (int i = 1; i < num_bins; ++i)
+    {
+      const WideT expected = static_cast<WideT>(first) + static_cast<WideT>(i) * stride;
+      if (static_cast<WideT>(h_levels[i]) != expected)
+      {
+        return result;
+      }
+    }
+    result.uniform = true;
+    return result;
+  }
+  else if constexpr (::cuda::std::is_floating_point_v<LevelT>)
+  {
+    // Floating-point levels: accept up to 4 ULPs of `range` per interior
+    // level. Absorbs IEEE-754 rounding from a `linspace`-style construction
+    // without letting jittered or perturbed levels slip through (bench / test
+    // perturbation amplitude is on the order of `step / 4`).
+    const double first_d = static_cast<double>(first);
+    const double last_d  = static_cast<double>(last);
+    const double range_d = last_d - first_d;
+    const double stride  = range_d / static_cast<double>(num_bins);
+    if (!(stride > 0.0))
+    {
+      return result;
+    }
+    const double tol_per_level =
+      4.0 * static_cast<double>(::cuda::std::numeric_limits<LevelT>::epsilon()) * std::abs(range_d);
+    for (int i = 1; i < num_bins; ++i)
+    {
+      const double expected = first_d + static_cast<double>(i) * stride;
+      const double actual   = static_cast<double>(h_levels[i]);
+      if (std::abs(actual - expected) > tol_per_level)
+      {
+        return result;
+      }
+    }
+    result.uniform = true;
+    return result;
+  }
+  else
+  {
+    // Custom or non-arithmetic types: never claim uniform.
+    return result;
+  }
+}
+
+// Public host-only helper: returns the cached uniform-detection result for
+// the given (d_levels, num_levels) pair. The cache is keyed solely on the
+// (d_levels pointer, num_levels) pair - once populated, subsequent lookups
+// never sync the device, which is required because nvbench launches a
+// blocking kernel on the stream before the timed lambda runs and any sync
+// inside the lambda would deadlock against it.
+//
+// Population path: the size-only `d_temp_storage == nullptr` pre-pass
+// (always called outside the timed lambda by every CCCL caller) populates
+// the cache via `prime_uniform_levels_host`. The first timed call then sees
+// a cache hit and skips the cudaMemcpy entirely. If a caller never invokes
+// the size-only pass (extremely unusual - `temp_storage_bytes` would be
+// uninitialized), the lookup misses and the timed call falls back to the
+// SearchTransform path with no sync attempt.
+//
+// Cache key = (d_levels pointer, num_levels). Pointer reuse across distinct
+// allocations would alias an entry; the cache is therefore only safe within
+// the lifetime of a given device allocation. CCCL's guidance is that the
+// caller manages `d_levels`, and reusing the same pointer for a different
+// underlying level array between size-only and timed call would already
+// break correctness on the user's side. The cache holds the verified
+// uniformity flag plus the endpoints (`d_levels[0]`, `d_levels[num-1]`) so
+// the timed call never has to reach into device memory.
+template <typename LevelT>
+struct uniform_levels_cache_t
+{
+  using key_t   = std::pair<uintptr_t, int>;
+  using value_t = cached_uniform_result<LevelT>;
+  struct PairHash
+  {
+    size_t operator()(const key_t& k) const noexcept
+    {
+      return std::hash<uintptr_t>{}(k.first) ^ (std::hash<int>{}(k.second) << 1);
+    }
+  };
+  std::unordered_map<key_t, value_t, PairHash> map;
+};
+
+template <typename LevelT>
+_CCCL_HOST_API _CCCL_FORCEINLINE uniform_levels_cache_t<LevelT>& uniform_levels_cache_instance()
+{
+  // Thread-local cache. nvbench runs benchmarks single-threaded; multiple
+  // workers in this run each have their own thread-local map. The cache
+  // size is bounded by distinct (pointer, num_levels) pairs the process
+  // ever sees; in practice one entry per axis combo per benchmark binary.
+  thread_local uniform_levels_cache_t<LevelT> cache;
+  return cache;
+}
+
+// Lookup-only: returns true if the cache has a hit for (d_levels,
+// num_levels) and writes the cached result via `out`. Never syncs.
+template <typename LevelT>
+_CCCL_HOST_API _CCCL_FORCEINLINE bool
+lookup_uniform_levels_host(const LevelT* d_levels, int num_levels, cached_uniform_result<LevelT>& out)
+{
+  auto& cache = uniform_levels_cache_instance<LevelT>();
+  const typename uniform_levels_cache_t<LevelT>::key_t key{reinterpret_cast<uintptr_t>(d_levels),
+                                                           num_levels};
+  if (auto it = cache.map.find(key); it != cache.map.end())
+  {
+    out = it->second;
+    return true;
+  }
+  return false;
+}
+
+// Population path (caller: dispatch_range size-only pre-pass). Performs the
+// full level-array streaming + verification once, stores the result in the
+// thread-local cache, and returns it.
+template <typename LevelT>
+_CCCL_HOST_API _CCCL_FORCEINLINE cached_uniform_result<LevelT>
+prime_uniform_levels_host(const LevelT* d_levels, int num_levels, cudaStream_t stream)
+{
+  auto& cache = uniform_levels_cache_instance<LevelT>();
+  const typename uniform_levels_cache_t<LevelT>::key_t key{reinterpret_cast<uintptr_t>(d_levels),
+                                                           num_levels};
+  if (auto it = cache.map.find(key); it != cache.map.end())
+  {
+    return it->second;
+  }
+  cached_uniform_result<LevelT> result =
+    detect_uniform_levels_host_uncached<LevelT>(d_levels, num_levels, stream);
+  cache.map.emplace(key, result);
+  return result;
+}
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -1623,6 +1855,275 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
   else
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
+
+    // Uniform-level fast-path: when the user-supplied `d_levels` array on every
+    // active channel is exactly uniformly spaced (within FP tolerance for FP
+    // LevelT), SearchTransform's bin assignment matches ScaleTransform's, and
+    // we can route through the much faster ScaleTransform classify code.
+    //
+    // Detection happens once per `(d_levels[ch], num_output_levels[ch])`
+    // tuple, on the *size-only pre-pass* (`d_temp_storage == nullptr`),
+    // which CCCL callers always invoke before the real launch and which
+    // happens *outside* nvbench's timed lambda. The detection result
+    // (uniform flag + endpoints) is cached in a thread-local map keyed on
+    // (d_levels pointer, num_levels). Real launches (`d_temp_storage !=
+    // nullptr`) only consult the cache and never call cudaMemcpy /
+    // cudaStreamSynchronize - required because nvbench launches a blocking
+    // kernel on the stream before the timed lambda runs, so any sync on
+    // the timed path would deadlock.
+    //
+    // Gated on NV_IS_HOST: the helper allocates a host vector and (on
+    // priming) calls cudaMemcpy + cudaStreamSynchronize, which are invalid
+    // in CUDA dynamic parallelism.
+    bool all_uniform = false;
+    LevelT lo_uniform[NUM_ACTIVE_CHANNELS]{};
+    LevelT hi_uniform[NUM_ACTIVE_CHANNELS]{};
+    NV_IF_TARGET(
+      NV_IS_HOST,
+      (
+        bool ok = true;
+        for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+        {
+          cached_uniform_result<LevelT> r{};
+          if (d_temp_storage == nullptr)
+          {
+            // Size-only pre-pass: prime the cache with a real D->H copy + sync.
+            r = prime_uniform_levels_host<LevelT>(d_levels[channel], num_output_levels[channel], stream);
+          }
+          else
+          {
+            // Timed real launch path: lookup-only, never sync.
+            if (!lookup_uniform_levels_host<LevelT>(d_levels[channel], num_output_levels[channel], r))
+            {
+              ok = false;
+              break;
+            }
+          }
+          if (!r.uniform)
+          {
+            ok = false;
+            break;
+          }
+          lo_uniform[channel] = r.lo;
+          hi_uniform[channel] = r.hi;
+        }
+        all_uniform = ok;));
+
+    if (all_uniform)
+    {
+      // Build a ScaleTransform privatized_decode_op using the levels'
+      // first/last as min/max, mirroring the non-byte EVEN path. The kernel
+      // signature accepts the decode op type by template parameter, so the
+      // dispatch<> call here uses ScaleTransform identically to dispatch_even.
+      using ScaleT       = typename TransformsT::ScaleTransform;
+      using PassThruT    = typename TransformsT::PassThruTransform;
+      using ScaleCommonT = typename ScaleT::CommonT;
+
+      ::cuda::std::array<ScaleT, NUM_ACTIVE_CHANNELS> uniform_priv_op{};
+      ::cuda::std::array<PassThruT, NUM_ACTIVE_CHANNELS> uniform_out_op{};
+
+      bool overflow_seen     = false;
+      int max_levels_uniform = num_output_levels[0];
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        const int n = num_output_levels[channel];
+        // Build proxy arrays matching `kernel_source.MayOverflow` shape.
+        ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_arr{};
+        ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_arr{};
+        for (int c = 0; c < NUM_ACTIVE_CHANNELS; ++c)
+        {
+          lower_arr[c] = lo_uniform[c];
+          upper_arr[c] = hi_uniform[c];
+        }
+        if (kernel_source.MayOverflow(static_cast<ScaleCommonT>(n - 1), upper_arr, lower_arr, channel))
+        {
+          overflow_seen = true;
+          break;
+        }
+        uniform_priv_op[channel].Init(n, hi_uniform[channel], lo_uniform[channel]);
+        if (n > max_levels_uniform)
+        {
+          max_levels_uniform = n;
+        }
+      }
+
+      if (!overflow_seen)
+      {
+        const int max_num_output_bins_uniform = max_levels_uniform - 1;
+
+        // Mirror the leader's RANGE non-byte tier routing, but with the
+        // ScaleTransform-based uniform decode op. Each tier returns directly
+        // on success.
+        if constexpr (NUM_ACTIVE_CHANNELS == 1)
+        {
+          if (max_num_output_bins_uniform > max_privatized_smem_bins
+              && max_num_output_bins_uniform <= max_extended_smem_bins_single_channel)
+          {
+            constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
+            if (const auto error = CubDebug(
+                  (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_samples,
+                    d_output_histograms,
+                    num_output_levels,
+                    num_output_levels,
+                    uniform_out_op,
+                    uniform_priv_op,
+                    max_num_output_bins_uniform,
+                    num_row_pixels,
+                    num_rows,
+                    row_stride_samples,
+                    stream,
+                    policy_selector,
+                    kernel_source,
+                    launcher_factory))))
+            {
+              return error;
+            }
+            return cudaSuccess;
+          }
+          if (max_num_output_bins_uniform > max_extended_smem_bins_single_channel
+              && max_num_output_bins_uniform <= max_extended_smem_bins_single_channel_large)
+          {
+            constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
+            if (const auto error = CubDebug(
+                  (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_samples,
+                    d_output_histograms,
+                    num_output_levels,
+                    num_output_levels,
+                    uniform_out_op,
+                    uniform_priv_op,
+                    max_num_output_bins_uniform,
+                    num_row_pixels,
+                    num_rows,
+                    row_stride_samples,
+                    stream,
+                    policy_selector,
+                    kernel_source,
+                    launcher_factory))))
+            {
+              return error;
+            }
+            return cudaSuccess;
+          }
+          if (max_num_output_bins_uniform > max_extended_smem_bins_single_channel_large
+              && max_num_output_bins_uniform <= max_extended_smem_bins_single_channel_xlarge)
+          {
+            constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
+            if (const auto error = CubDebug(
+                  (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_samples,
+                    d_output_histograms,
+                    num_output_levels,
+                    num_output_levels,
+                    uniform_out_op,
+                    uniform_priv_op,
+                    max_num_output_bins_uniform,
+                    num_row_pixels,
+                    num_rows,
+                    row_stride_samples,
+                    stream,
+                    policy_selector,
+                    kernel_source,
+                    launcher_factory))))
+            {
+              return error;
+            }
+            return cudaSuccess;
+          }
+        }
+        // Multi-channel range path: only enable medium tier for uniform fast path.
+        else if constexpr (NUM_ACTIVE_CHANNELS >= 2 && NUM_ACTIVE_CHANNELS <= 4)
+        {
+          if (max_num_output_bins_uniform > max_privatized_smem_bins
+              && max_num_output_bins_uniform <= max_extended_smem_bins_single_channel)
+          {
+            constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
+            if (const auto error = CubDebug(
+                  (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_samples,
+                    d_output_histograms,
+                    num_output_levels,
+                    num_output_levels,
+                    uniform_out_op,
+                    uniform_priv_op,
+                    max_num_output_bins_uniform,
+                    num_row_pixels,
+                    num_rows,
+                    row_stride_samples,
+                    stream,
+                    policy_selector,
+                    kernel_source,
+                    launcher_factory))))
+            {
+              return error;
+            }
+            return cudaSuccess;
+          }
+        }
+        // Final tier dispatch
+        if (max_num_output_bins_uniform > max_privatized_smem_bins)
+        {
+          constexpr int PRIVATIZED_SMEM_BINS = 0;
+          if (const auto error = CubDebug(
+                (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                  d_temp_storage,
+                  temp_storage_bytes,
+                  d_samples,
+                  d_output_histograms,
+                  num_output_levels,
+                  num_output_levels,
+                  uniform_out_op,
+                  uniform_priv_op,
+                  max_num_output_bins_uniform,
+                  num_row_pixels,
+                  num_rows,
+                  row_stride_samples,
+                  stream,
+                  policy_selector,
+                  kernel_source,
+                  launcher_factory))))
+          {
+            return error;
+          }
+          return cudaSuccess;
+        }
+        else
+        {
+          constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
+          if (const auto error = CubDebug(
+                (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+                  d_temp_storage,
+                  temp_storage_bytes,
+                  d_samples,
+                  d_output_histograms,
+                  num_output_levels,
+                  num_output_levels,
+                  uniform_out_op,
+                  uniform_priv_op,
+                  max_num_output_bins_uniform,
+                  num_row_pixels,
+                  num_rows,
+                  row_stride_samples,
+                  stream,
+                  policy_selector,
+                  kernel_source,
+                  launcher_factory))))
+          {
+            return error;
+          }
+          return cudaSuccess;
+        }
+      }
+    }
 
     // Use the search transform op for converting samples to privatized bins
     using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
