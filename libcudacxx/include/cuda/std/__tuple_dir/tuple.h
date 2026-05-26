@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
@@ -29,6 +30,7 @@
 #include <cuda/std/__tuple_dir/tuple_leaf.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
@@ -458,7 +460,50 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_bas
     , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
 {}
 
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for std::tuple and cuda::std::tuple
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::tuple<_Tp...>> : integral_constant<size_t, sizeof...(_Tp)>
+{};
+
+template <size_t _Ip, class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::tuple<_Tp...>>
+{
+  static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in cuda::std::tuple_element<> (std::tuple)");
+  using type = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
+};
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<tuple<_Tp...>> : integral_constant<size_t, sizeof...(_Tp)>
+{};
+
+template <size_t _Ip, class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
+{
+  static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in cuda::std::tuple_element<> (cuda::std::tuple)");
+  using type = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
+};
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::tuple
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class... _Tp>
+struct tuple_size<::cuda::std::tuple<_Tp...>> : ::cuda::std::integral_constant<::cuda::std::size_t, sizeof...(_Tp)>
+{};
+
+template <::cuda::std::size_t _Ip, class... _Tp>
+struct tuple_element<_Ip, ::cuda::std::tuple<_Tp...>>
+{
+  static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in std::tuple_element<> (cuda::std::tuple)");
+  using type = ::cuda::std::tuple_element_t<_Ip, ::cuda::std::__tuple_types<_Tp...>>;
+};
+
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

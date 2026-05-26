@@ -42,8 +42,7 @@ struct not_forward_iterator
   TEST_FUNC not_forward_iterator& operator--(int);
 };
 static_assert(cuda::std::input_iterator<not_forward_iterator> && !cuda::std::forward_iterator<not_forward_iterator>
-                && !cuda::std::bidirectional_iterator<not_forward_iterator>,
-              "");
+              && !cuda::std::bidirectional_iterator<not_forward_iterator>);
 
 struct wrong_iterator_category
 {

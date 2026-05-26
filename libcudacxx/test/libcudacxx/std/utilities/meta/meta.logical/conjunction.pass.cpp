@@ -53,8 +53,7 @@ int main(int, char**)
   static_assert(!cuda::std::conjunction<cuda::std::true_type, cuda::std::true_type, cuda::std::false_type>::value);
   static_assert(!cuda::std::conjunction<cuda::std::true_type, cuda::std::false_type, cuda::std::false_type>::value);
   static_assert(!cuda::std::conjunction<cuda::std::false_type, cuda::std::true_type, cuda::std::false_type>::value);
-  static_assert(!cuda::std::conjunction<cuda::std::false_type, cuda::std::false_type, cuda::std::false_type>::value,
-                "");
+  static_assert(!cuda::std::conjunction<cuda::std::false_type, cuda::std::false_type, cuda::std::false_type>::value);
 
   static_assert(cuda::std::conjunction_v<cuda::std::true_type, cuda::std::true_type, cuda::std::true_type>);
   static_assert(!cuda::std::conjunction_v<cuda::std::true_type, cuda::std::false_type, cuda::std::true_type>);
