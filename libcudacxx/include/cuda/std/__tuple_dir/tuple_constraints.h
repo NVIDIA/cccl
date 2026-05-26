@@ -158,7 +158,7 @@ struct __tuple_constraints
   };
 
   template <class... _UTypes>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __disambiguating_constraints() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __is_variadic_constructible() noexcept
   {
     if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
     { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
@@ -171,35 +171,47 @@ struct __tuple_constraints
     else if constexpr (sizeof...(_Types) == 1)
     { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
       using _U0 = __type_index_c<0, _UTypes...>;
-      return !is_same_v<remove_cvref_t<_U0>, tuple<_Types...>>;
+      if constexpr (!is_same_v<remove_cvref_t<_U0>, tuple<_Types...>>)
+      { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+        return (is_constructible_v<_Types, _UTypes> && ...);
+      }
+      else
+      {
+        return false;
+      }
     }
     else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
     { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
       //    !is_same_v<remove_cvref_t<U0>, allocator_arg_t> || is_same_v<remove_cvref_t<T0>, allocator_arg_t>>
       using _U0 = __type_index_c<0, _UTypes...>;
       using _T0 = __type_index_c<0, _Types...>;
-      return !is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>;
+      if constexpr (!is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>)
+      { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+        return (is_constructible_v<_Types, _UTypes> && ...);
+      }
+      else
+      {
+        return false;
+      }
     }
     else
-    { // 12.3: otherwise, true_type
-      return true;
+    { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+      return (is_constructible_v<_Types, _UTypes> && ...);
     }
   }
 
   template <class... _UTypes>
   struct __variadic_constructible_impl
-  { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-    static constexpr bool __constructible = (is_constructible_v<_Types, _UTypes> && ...);
-    // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
-    static constexpr bool __implicit_constructible = __constructible && (is_convertible_v<_UTypes, _Types> && ...);
-    static constexpr bool __explicit_constructible = __constructible && !(is_convertible_v<_UTypes, _Types> && ...);
+  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+    static constexpr bool __implicit_constructible = (is_convertible_v<_UTypes, _Types> && ...);
+    static constexpr bool __explicit_constructible = !(is_convertible_v<_UTypes, _Types> && ...);
     static constexpr bool __nothrow_constructible  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
   };
 
   template <class... _UTypes>
   [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_constructible() noexcept
   {
-    if constexpr (__disambiguating_constraints<_UTypes...>())
+    if constexpr (__is_variadic_constructible<_UTypes...>())
     { // [tuple.cnstr]-13.3: disambiguating-constraint is true
       return __variadic_constructible_impl<_UTypes...>{};
     }
