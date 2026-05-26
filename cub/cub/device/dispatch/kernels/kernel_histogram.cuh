@@ -1060,30 +1060,92 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // Phase 3: direct-atomic sweep. Each thread strides over input pixels
   // and atomic-adds into the output histogram for every active channel.
   // No per-block privatization storage is needed.
+  //
+  // The dispatch layer flattens `(num_row_pixels, num_rows,
+  // row_stride_samples)` into a single linear array of pixels when
+  // possible (`num_row_pixels * NumChannels == row_stride_samples`), so
+  // the common path has `num_rows == 1` and we can skip the per-pixel
+  // (row, col) reconstruction. We expose a fast path for that case so
+  // the inner loop has no integer division.
+  //
+  // We also unroll the sweep so that each thread holds several samples
+  // and several `atomicAdd` operations in flight at once. This is the
+  // primary mechanism for hiding atomic latency on the very-high-bin
+  // path: with one atomic per iteration the kernel was bottlenecked on
+  // L1TEX scoreboard dependencies (~94% CPI stall in profiling).
   // ---------------------------------------------------------------------
+  constexpr int unroll = 4;
   const OffsetT total_pixels = num_rows * num_row_pixels;
-  for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
-       pixel += static_cast<OffsetT>(total_threads))
-  {
-    // Recover the (row, col) coordinates so we can apply the row stride
-    // when the input is not a contiguous packed array of pixels.
-    const OffsetT row     = pixel / num_row_pixels;
-    const OffsetT col     = pixel - row * num_row_pixels;
-    const OffsetT pix_off = row * row_stride_samples + col * NumChannels;
 
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
+  if (num_rows == 1)
+  {
+    const OffsetT step  = static_cast<OffsetT>(total_threads);
+    const OffsetT start = static_cast<OffsetT>(tid_global);
+
+    // Unrolled stride loop: each iteration handles `unroll` pixels per
+    // thread. The `unroll * step` chunk ensures every iteration is a
+    // contiguous strided block of pixels, so loads remain coalesced.
+    OffsetT pixel = start;
+    for (; pixel + (unroll - 1) * step < total_pixels; pixel += unroll * step)
     {
-      auto sample = d_samples[pix_off + ch];
-      int bin     = -1;
-      privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
-      const int num_bins = num_output_bins_wrapper[ch];
-      // ScaleTransform's BinSelect can produce `bin == num_bins` for
-      // floating-point sample values that round up at the upper edge of
-      // the range. Treat any such overflow as an out-of-range sample.
-      if (bin >= 0 && bin < num_bins)
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < unroll; ++u)
       {
-        atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+        const OffsetT pix_off = (pixel + u * step) * NumChannels;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        {
+          auto sample = d_samples[pix_off + ch];
+          int bin     = -1;
+          privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+          const int num_bins = num_output_bins_wrapper[ch];
+          if (bin >= 0 && bin < num_bins)
+          {
+            atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+          }
+        }
+      }
+    }
+    // Cleanup loop for the tail.
+    for (; pixel < total_pixels; pixel += step)
+    {
+      const OffsetT pix_off = pixel * NumChannels;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        auto sample = d_samples[pix_off + ch];
+        int bin     = -1;
+        privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        const int num_bins = num_output_bins_wrapper[ch];
+        if (bin >= 0 && bin < num_bins)
+        {
+          atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+        }
+      }
+    }
+  }
+  else
+  {
+    // Slow path: row-strided input that is not flattenable to a single
+    // linear array.
+    for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
+         pixel += static_cast<OffsetT>(total_threads))
+    {
+      const OffsetT row     = pixel / num_row_pixels;
+      const OffsetT col     = pixel - row * num_row_pixels;
+      const OffsetT pix_off = row * row_stride_samples + col * NumChannels;
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        auto sample = d_samples[pix_off + ch];
+        int bin     = -1;
+        privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        const int num_bins = num_output_bins_wrapper[ch];
+        if (bin >= 0 && bin < num_bins)
+        {
+          atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+        }
       }
     }
   }
