@@ -1446,12 +1446,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // are flushed cooperatively to the global histogram.
   //
   // Sizing: scale slots/channel inversely with NumActiveChannels so the
-  // total static SMEM footprint stays around 16 KiB across single- and
+  // total static SMEM footprint stays around 32 KiB across single- and
   // multi-channel paths. This keeps occupancy unaffected (test builds
   // also tolerate the smaller footprint). Direct-mapped with
   // multiplicative hash (Knuth's 2654435761) so hot bins distribute
   // across slots and cold bins evict gracefully.
-  constexpr int kCacheSlotsPerChannel = (NumActiveChannels == 1) ? 2048 : 512;
+  constexpr int kCacheSlotsPerChannel = (NumActiveChannels == 1) ? 4096 : 1024;
   __shared__ int s_cache_keys[NumActiveChannels][kCacheSlotsPerChannel];
   __shared__ CounterT s_cache_counts[NumActiveChannels][kCacheSlotsPerChannel];
 
