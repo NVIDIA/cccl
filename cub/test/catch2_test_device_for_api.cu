@@ -10,8 +10,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/tuple>
+#include <cuda/stream>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -423,18 +425,13 @@ C2H_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][devic
 
 C2H_TEST("Device for each n fails when using stream from another device", "[for_each][device]")
 {
-  int num_devices = 0;
-  REQUIRE(cudaGetDeviceCount(&num_devices) == cudaSuccess);
-
-  if (num_devices < 2)
+  if (cuda::devices.size() < 2)
   {
     SKIP("Test requires at least 2 CUDA devices");
   }
 
-  REQUIRE(cudaSetDevice(1) == cudaSuccess);
-  cudaStream_t stream_on_device_1;
-  REQUIRE(cudaStreamCreate(&stream_on_device_1) == cudaSuccess);
-  REQUIRE(cudaSetDevice(0) == cudaSuccess);
+  cuda::stream stream_on_device_1_wrapper(cuda::devices[1]);
+  cudaStream_t stream_on_device_1 = stream_on_device_1_wrapper.release();
 
   // example-begin for-each-n-wo-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
@@ -445,7 +442,6 @@ C2H_TEST("Device for each n fails when using stream from another device", "[for_
   // example-end for-each-n-wo-temp-storage
 
   REQUIRE(cudaStreamDestroy(stream_on_device_1) == cudaSuccess);
-
 }
 
 // todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up

@@ -459,51 +459,44 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t
 
 namespace detail
 {
-// Validates stream's device is current device
+// Validates stream's device is current device. Does nothing if CCCL_DISABLE_STREAM_DEVICE_CHECK or
+// !CCCL_DISABLE_STREAM_DEVICE_CHECK or is being called from device
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaStream_t stream) noexcept
 {
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    (
+
 #  if CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
 
-  ::CUdevice current_device;
-  if (const auto error = ::cuda::__driver::__ctxGetDeviceNoThrow(current_device); error != cudaSuccess)
-  {
-    return error;
-  }
+      ::CUdevice current_device; if (const auto error = ::cuda::__driver::__ctxGetDeviceNoThrow(current_device);
+                                     error != cudaSuccess) { return error; }
 
-  ::CUcontext stream_ctx;
-  if (const auto error = ::cuda::__driver::__streamGetCtxNoThrow(stream_ctx, stream); error != cudaSuccess)
-  {
-    return error;
-  }
+      ::CUcontext stream_ctx;
+      if (const auto error = ::cuda::__driver::__streamGetCtxNoThrow(stream_ctx, stream); error != cudaSuccess) {
+        return error;
+      }
 
-  if (const auto error = ::cuda::__driver::__ctxPushNoThrow(stream_ctx); error != cudaSuccess)
-  {
-    return error;
-  }
+      if (const auto error = ::cuda::__driver::__ctxPushNoThrow(stream_ctx); error != cudaSuccess) { return error; }
 
-  ::CUdevice stream_device;
-  const auto get_device_error = ::cuda::__driver::__ctxGetDeviceNoThrow(stream_device);
+      ::CUdevice stream_device;
+      const auto get_device_error = ::cuda::__driver::__ctxGetDeviceNoThrow(stream_device);
 
-  // Popping from ctx stack first even if get device failed
-  if (const auto error = ::cuda::__driver::__ctxPopNoThrow(stream_ctx); error != cudaSuccess)
-  {
-    return error;
-  }
+      // Popping from ctx stack first even if get device failed
+      if (const auto error = ::cuda::__driver::__ctxPopNoThrow(stream_ctx); error != cudaSuccess) { return error; }
 
-  if (get_device_error != cudaSuccess)
-  {
-    return get_device_error;
-  }
+      if (get_device_error != cudaSuccess) { return get_device_error; }
 
-  _CCCL_ASSERT(current_device == stream_device, "current device must match CUB stream device");
-  if (current_device != stream_device)
-  {
-    return cudaErrorInvalidDevice;
-  }
+      _CCCL_ASSERT(current_device == stream_device, "current device must match CUB stream device");
+      if (current_device != stream_device) { return cudaErrorInvalidDevice; }
 #  else
-  (void) stream;
+      (void) stream;
 #  endif // CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
-  return cudaSuccess;
+      return cudaSuccess;
+
+      ),
+    ( // device path
+      (void) stream; return cudaSuccess;));
 }
 } // namespace detail
 
