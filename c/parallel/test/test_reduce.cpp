@@ -41,12 +41,6 @@ auto& get_cache()
 
 struct reduce_build
 {
-  static bool should_check_sass(int cc_major)
-  {
-    // TODO: add a check for NVRTC version; ref nvbug 5243118
-    return cc_major < 9;
-  }
-
   CUresult operator()(
     BuildResultT* build_ptr,
     cccl_determinism_t determinism,
@@ -80,16 +74,10 @@ struct reduce_build
 
 struct reduce_build_ex
 {
-  static bool should_check_sass(int cc_major)
-  {
-    // TODO: add a check for NVRTC version; ref nvbug 5243118
-    return cc_major < 9;
-  }
-
   cccl_build_config config;
 
   reduce_build_ex(const char** extra_compile_flags, size_t num_flags, const char** extra_include_dirs, size_t num_dirs)
-      : config{extra_compile_flags, num_flags, extra_include_dirs, num_dirs}
+      : config(make_build_config(extra_compile_flags, num_flags, extra_include_dirs, num_dirs))
   {}
 
   CUresult operator()(

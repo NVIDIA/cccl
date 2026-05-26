@@ -67,11 +67,6 @@ struct segmented_reduce_build
       libcudacxx_path,
       ctk_path);
   }
-
-  static constexpr bool should_check_sass(int)
-  {
-    return false;
-  }
 };
 
 struct segmented_reduce_run
@@ -101,12 +96,17 @@ struct segmented_reduce_run
       end_offset,
       op,
       init,
-      0,
+#ifndef CCCL_C_PARALLEL_V2
+      0, // v1 only: guaranteed_max_segment_size
+#endif
       stream);
   }
 };
 
-// Variant that passes a compile-time guaranteed_max_segment_size to exercise different dispatch policies
+#ifndef CCCL_C_PARALLEL_V2
+// v1-only: variant that passes a compile-time guaranteed_max_segment_size to
+// exercise different dispatch policies. v2's cccl_device_segmented_reduce
+// signature doesn't accept guaranteed_max_segment_size.
 template <size_t GuaranteedMaxSegmentSize>
 struct segmented_reduce_run_guaranteed
 {
@@ -138,6 +138,7 @@ struct segmented_reduce_run_guaranteed
       stream);
   }
 };
+#endif // CCCL_C_PARALLEL_V2
 
 template <typename BuildCache = segmented_reduce_build_cache_t, typename KeyT = std::string>
 void segmented_reduce(
@@ -155,6 +156,7 @@ void segmented_reduce(
     cache, lookup_key, input, output, num_segments, start_offsets, end_offsets, op, init);
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 template <size_t GuaranteedMaxSegmentSize,
           typename BuildCache = segmented_reduce_build_cache_t,
           typename KeyT       = std::string>
@@ -176,6 +178,7 @@ void segmented_reduce_guaranteed(
                    BuildCache,
                    KeyT>(cache, lookup_key, input, output, num_segments, start_offsets, end_offsets, op, init);
 }
+#endif // CCCL_C_PARALLEL_V2
 
 // ==============
 //   Test section
@@ -1055,10 +1058,12 @@ extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) 
   REQUIRE(expected_value == std::vector<CmpT>(as_expected)[0]);
 }
 
+#ifndef CCCL_C_PARALLEL_V2
 // ==============
-//   guaranteed_max_segment_size tests
+//   guaranteed_max_segment_size tests (v1-only)
 //   These exercise the small / medium / large dispatch policies in CUB segmented reduce.
 //   Segment sizes are fixed so the guarantee exactly matches, verifying correctness across policies.
+//   v2's cccl_device_segmented_reduce doesn't accept a guaranteed_max_segment_size parameter.
 // ==============
 
 // Helper shared by all three tests: builds offset iterators for uniform-size segments
@@ -1177,3 +1182,4 @@ C2H_TEST_LIST("segmented_reduce respects guaranteed_max_segment_size for large s
 
   run_guaranteed_max_seg_size_test<segment_size, TestType>(n_rows, segment_size, build_cache, test_key);
 }
+#endif // CCCL_C_PARALLEL_V2 (guaranteed_max_segment_size tests)

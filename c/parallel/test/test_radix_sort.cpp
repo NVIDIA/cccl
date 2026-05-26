@@ -23,7 +23,7 @@ using key_types =
   c2h::type_list<uint8_t,
                  int16_t,
                  uint32_t,
-#if _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16() && !defined(CCCL_C_PARALLEL_V2)
                  __half,
 #endif
                  double>;
@@ -74,15 +74,8 @@ auto& get_cache()
   return fixture<radix_sort_build_cache_t, Tag>::get_or_create().get_value();
 }
 
-template <bool CheckSASS = true>
 struct radix_sort_build
 {
-  static constexpr auto should_check_sass(int cc_major)
-  {
-    // TODO: re-enable w/ nvrtc version check
-    return CheckSASS && cc_major < 9;
-  }
-
   // operator arguments are (build_ptr, <all_args_of_algo_driver>, cc_major, cc_minor, <paths>)
   //   of all_args_of_algo_driver we pick out what gets passed to cccl_algo_build function
   CUresult operator()(
@@ -143,7 +136,7 @@ struct radix_sort_run
   }
 };
 
-template <bool CheckSASS = true, typename BuildCache = radix_sort_build_cache_t, typename KeyT = std::string>
+template <typename BuildCache = radix_sort_build_cache_t, typename KeyT = std::string>
 void radix_sort(
   cccl_sort_order_t sort_order,
   cccl_iterator_t d_keys_in,
@@ -160,7 +153,7 @@ void radix_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, radix_sort_build<CheckSASS>, radix_sort_cleanup, radix_sort_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT, radix_sort_build, radix_sort_cleanup, radix_sort_run, BuildCache, KeyT>(
     cache,
     lookup_key,
     sort_order,
@@ -293,7 +286,7 @@ C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
 
-  radix_sort<false>(
+  radix_sort(
     order,
     input_keys_it,
     output_keys_it,

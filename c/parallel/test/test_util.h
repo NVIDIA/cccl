@@ -26,10 +26,15 @@
 #include <type_traits>
 #include <vector>
 
-#include <nvrtc.h>
-
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/types.h>
+
+#ifdef CCCL_C_PARALLEL_V2
+#  include <hostjit/compiler.hpp>
+#  include <hostjit/config.hpp>
+#else
+#  include <nvrtc.h>
+#endif
 
 inline std::string inspect_sass(const void* cubin, size_t cubin_size)
 {
@@ -83,6 +88,20 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
 
 inline std::string compile(const std::string& source)
 {
+#ifdef CCCL_C_PARALLEL_V2
+  // Compile source to LLVM bitcode using hostjit (Clang)
+  hostjit::CompilerConfig config = hostjit::detectDefaultConfig();
+  hostjit::CUDACompiler compiler;
+
+  auto result = compiler.compileToDeviceBitcode(source, config);
+  if (!result.success)
+  {
+    printf("Compilation to LLVM bitcode failed:\n%s\n", result.diagnostics.c_str());
+    REQUIRE(false);
+  }
+
+  return result.bitcode;
+#else
   // compile source to LTO-IR using nvrtc
 
   nvrtcProgram prog;
@@ -110,6 +129,21 @@ inline std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
   return std::string(ltoir.data(), ltoir_size);
+#endif
+}
+
+// Helper to construct a cccl_build_config that works for both v1 (4-field)
+// and v2 (6-field) struct layouts. Uses value-init + explicit assignments so
+// v2's enable_pch / verbose get zero-initialized rather than left undefined.
+inline cccl_build_config
+make_build_config(const char** extra_flags, size_t num_flags, const char** extra_dirs, size_t num_dirs)
+{
+  cccl_build_config config{};
+  config.extra_compile_flags     = extra_flags;
+  config.num_extra_compile_flags = num_flags;
+  config.extra_include_dirs      = extra_dirs;
+  config.num_extra_include_dirs  = num_dirs;
+  return config;
 }
 
 template <class T>
@@ -804,7 +838,11 @@ struct stateful_operation_t
 
 inline operation_t make_operation(std::string_view name, const std::string& code)
 {
+#ifdef CCCL_C_PARALLEL_V2
+  return operation_t{name, compile(code), CCCL_OP_LLVM_IR};
+#else
   return operation_t{name, compile(code), CCCL_OP_LTOIR};
+#endif
 }
 
 inline operation_t make_cpp_operation(std::string_view name, const std::string& cpp_code)

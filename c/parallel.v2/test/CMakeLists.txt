@@ -1,5 +1,11 @@
 cccl_get_c2h()
 
+# v2 reuses the same test sources as v1 from c/parallel/test/, compiled with
+# CCCL_C_PARALLEL_V2 defined. The shared source files contain a small number
+# of #ifdef CCCL_C_PARALLEL_V2 branches that select v2's backend (hostjit
+# bitcode vs nvrtc LTO-IR) and skip v1-only test variants.
+set(v1_test_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../parallel/test")
+
 function(cccl_c_parallel_v2_add_test target_name_var source)
   get_filename_component(target_name "${source}" NAME_WE)
   string(
@@ -27,7 +33,9 @@ function(cccl_c_parallel_v2_add_test target_name_var source)
 
   target_include_directories(
     ${target_name}
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../src/hostjit/include"
+    PRIVATE
+      "${v1_test_dir}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../src/hostjit/include"
   )
 
   list(GET CUDAToolkit_INCLUDE_DIRS 0 CUDA_FIRST_INCLUDE_DIR)
@@ -39,8 +47,7 @@ function(cccl_c_parallel_v2_add_test target_name_var source)
       TEST_THRUST_PATH="-I${CCCL_SOURCE_DIR}/thrust"
       TEST_LIBCUDACXX_PATH="-I${CCCL_SOURCE_DIR}/libcudacxx/include"
       TEST_CTK_PATH="-I${CUDA_FIRST_INCLUDE_DIR}"
-      TEST_INCLUDE_PATH="${CMAKE_CURRENT_SOURCE_DIR}"
-      CCCL_DISABLE_SASS_CHECK
+      TEST_INCLUDE_PATH="${v1_test_dir}"
   )
 
   add_test(NAME ${target_name} COMMAND ${target_name})
@@ -48,14 +55,14 @@ endfunction()
 
 file(
   GLOB test_srcs
-  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+  RELATIVE "${v1_test_dir}"
   CONFIGURE_DEPENDS
-  *.cu
-  *.cpp
+  "${v1_test_dir}/*.cu"
+  "${v1_test_dir}/*.cpp"
 )
 
 foreach (test_src IN LISTS test_srcs)
-  cccl_c_parallel_v2_add_test(test_target "${test_src}")
+  cccl_c_parallel_v2_add_test(test_target "${v1_test_dir}/${test_src}")
 endforeach()
 
 add_subdirectory(freestanding)
