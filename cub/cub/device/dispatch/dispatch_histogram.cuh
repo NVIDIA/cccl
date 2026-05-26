@@ -89,9 +89,14 @@ static constexpr int max_extended_smem_bins_single_channel_xlarge = 16384;
 // of 30000 (2-chunk) wins for the 60000-bin EVEN axis. 3-chunk of 20000 (-4.7% on
 // even.base vs 2-chunk) and 4-chunk of 15000 (-6.3% vs 2-chunk) lose: more launches
 // and more wasted classify+sample-read passes dominate the SMEM atomicAdd_block savings.
-// Per-block dyn-SMEM at 30000 bins is 120 KB single-channel, well within B200's
+// Per-block dyn-SMEM at 32768 bins is 131 KB single-channel, well within B200's
 // ~228 KiB per-CTA cap.
-static constexpr int chunked_smem_chunk_size_single_channel = 30000;
+//
+// Iteration 2: bumped from 30000 to 32768 (a clean power-of-2). Only the first chunk
+// changes effective size when bins=60000 (32768 vs 30000); the second chunk drops from
+// 30000 used to 27232 used. Slightly larger first-chunk SMEM atomic surface should
+// reduce per-bin contention probability.
+static constexpr int chunked_smem_chunk_size_single_channel = 32768;
 static constexpr int chunked_smem_num_chunks_single_channel = 2;
 static constexpr int chunked_smem_bins_max_single_channel =
   chunked_smem_chunk_size_single_channel * chunked_smem_num_chunks_single_channel;
