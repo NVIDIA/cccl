@@ -1437,25 +1437,20 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
 
   // -------------------------------------------------------------------
-  // Bin-space partitioning across blocks ("lite" form, when BinPartitions == 2):
+  // Bin-space partitioning across blocks ("lite" form, when BinPartitions > 1):
   //   - Block "partition" = block_id % BinPartitions
   //   - Each block reads ALL pixels via the standard grid-strided loop
   //     (`total_threads` stride). Each block only commits writes to bins
-  //     in [partition*split, (partition+1)*split) where `split` is
-  //     computed per-channel from `num_output_bins`. Other bins are
-  //     turned into the `bin == -1` sentinel which the warp coalescer
-  //     treats as no-op.
-  // This halves cross-block atomic contention on each output bin without
-  // doubling DRAM sample reads (the "full" variant tried in iters 1-5,
-  // which had each partition's M/2 blocks re-sweep all pixels via
-  // partition_total_threads, was a net regression because the cuckoo
-  // SMEM cache already absorbs most contention and the 2x DRAM cost
-  // dominates).
-  // For BinPartitions == 1 the partition mask is a no-op (split is set
-  // to num_output_bins+1, so every bin is in partition 0).
+  //     in [partition*partition_size, (partition+1)*partition_size)
+  //     where `partition_size = num_output_bins / BinPartitions`. Other
+  //     bins are turned into the `bin == -1` sentinel which the warp
+  //     coalescer treats as no-op.
+  // This reduces cross-block atomic contention on each output bin by a
+  // factor of `BinPartitions` without doubling DRAM sample reads.
+  // For BinPartitions == 1 the partition mask is a no-op.
   // -------------------------------------------------------------------
-  static_assert(BinPartitions == 1 || BinPartitions == 2,
-                "BinPartitions must be 1 or 2");
+  static_assert(BinPartitions == 1 || BinPartitions == 2 || BinPartitions == 4,
+                "BinPartitions must be 1, 2, or 4");
   const unsigned int partition =
     (BinPartitions == 1) ? 0u : (block_id % static_cast<unsigned int>(BinPartitions));
 
@@ -1564,18 +1559,32 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     const OffsetT start        = static_cast<OffsetT>(tid_global);
     const unsigned int lane_id = threadIdx.x & 0x1f;
 
-    // Per-channel bin partition split. When BinPartitions == 1 the
-    // split is a sentinel that puts all bins in partition 0 (so the
-    // partition mask is a no-op). When BinPartitions == 2 the split
-    // is num_output_bins[ch] / 2: partition 0 owns bins [0, split),
-    // partition 1 owns bins [split, num_output_bins[ch]).
-    int partition_split[NumActiveChannels];
+    // Per-channel bin partition bounds. For BinPartitions > 1, this
+    // block owns bins [partition_lo[ch], partition_hi[ch]) where the
+    // bins are split evenly across the BinPartitions partitions. For
+    // BinPartitions == 1 the bounds are [0, num_output_bins[ch]) so
+    // the partition mask is a no-op.
+    int partition_lo[NumActiveChannels];
+    int partition_hi[NumActiveChannels];
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      partition_split[ch] = (BinPartitions == 1)
-                              ? num_output_bins_wrapper[ch] + 1
-                              : (num_output_bins_wrapper[ch] >> 1);
+      if constexpr (BinPartitions == 1)
+      {
+        partition_lo[ch] = 0;
+        partition_hi[ch] = num_output_bins_wrapper[ch];
+      }
+      else
+      {
+        const int n            = num_output_bins_wrapper[ch];
+        const int part_size    = n / static_cast<int>(BinPartitions);
+        partition_lo[ch]       = static_cast<int>(partition) * part_size;
+        // The last partition extends to num_output_bins[ch] to absorb
+        // the remainder of any non-divisible split.
+        partition_hi[ch] = (partition == static_cast<unsigned int>(BinPartitions) - 1u)
+                             ? n
+                             : (static_cast<int>(partition) + 1) * part_size;
+      }
     }
 
     // Determine the maximum number of `unroll`-sized chunks any thread
@@ -1608,25 +1617,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
               bin = -1;
             }
             // Bin-space partition mask: drop bins outside this block's
-            // partition range. Partition 0 keeps bins [0, split);
-            // partition 1 keeps bins [split, num_bins). When
-            // BinPartitions == 1 the split is num_bins+1 so all bins
-            // are in partition 0 and this is a no-op for any block.
-            if constexpr (BinPartitions == 2)
+            // partition range. For BinPartitions > 1 the block owns
+            // bins [partition_lo[ch], partition_hi[ch]) and any bin
+            // outside that range folds to the `bin == -1` sentinel.
+            if constexpr (BinPartitions != 1)
             {
-              if (partition == 0u)
+              if (bin < partition_lo[ch] || bin >= partition_hi[ch])
               {
-                if (bin >= partition_split[ch])
-                {
-                  bin = -1;
-                }
-              }
-              else
-              {
-                if (bin < partition_split[ch])
-                {
-                  bin = -1;
-                }
+                bin = -1;
               }
             }
           }
@@ -1746,13 +1744,25 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     // Bin partitioning ("lite" form) still applies: every thread strides
     // over all pixels via `total_threads`, but each block only commits
     // writes to its partition's bin range.
-    int partition_split[NumActiveChannels];
+    int partition_lo[NumActiveChannels];
+    int partition_hi[NumActiveChannels];
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      partition_split[ch] = (BinPartitions == 1)
-                              ? num_output_bins_wrapper[ch] + 1
-                              : (num_output_bins_wrapper[ch] >> 1);
+      if constexpr (BinPartitions == 1)
+      {
+        partition_lo[ch] = 0;
+        partition_hi[ch] = num_output_bins_wrapper[ch];
+      }
+      else
+      {
+        const int n         = num_output_bins_wrapper[ch];
+        const int part_size = n / static_cast<int>(BinPartitions);
+        partition_lo[ch]    = static_cast<int>(partition) * part_size;
+        partition_hi[ch]    = (partition == static_cast<unsigned int>(BinPartitions) - 1u)
+                                ? n
+                                : (static_cast<int>(partition) + 1) * part_size;
+      }
     }
     for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
          pixel += static_cast<OffsetT>(total_threads))
@@ -1769,24 +1779,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
         privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
         const int num_bins = num_output_bins_wrapper[ch];
         bool keep          = (bin >= 0 && bin < num_bins);
-        if constexpr (BinPartitions == 2)
+        if constexpr (BinPartitions != 1)
         {
-          if (keep)
+          if (keep && (bin < partition_lo[ch] || bin >= partition_hi[ch]))
           {
-            if (partition == 0u)
-            {
-              if (bin >= partition_split[ch])
-              {
-                keep = false;
-              }
-            }
-            else
-            {
-              if (bin < partition_split[ch])
-              {
-                keep = false;
-              }
-            }
+            keep = false;
           }
         }
         if (keep)
