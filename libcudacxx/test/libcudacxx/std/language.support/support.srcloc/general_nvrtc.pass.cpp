@@ -77,7 +77,7 @@ TEST_GLOBAL_VARIABLE __constant__ cuda::std::source_location global_source = cud
 
 TEST_FUNC void test()
 {
-  assert(!compare_strings(global_source.file_name()));
+  assert(!compare_strings(global_source.file_name(), ""));
   // assert(compare_strings(global_source.function_name(), "__builtin_FUNCTION is unsupported"));
   assert(global_source.line() != 0);
 
