@@ -240,17 +240,16 @@ struct __tuple_constraints
       using __constraints_defaulted = decltype(__get_sub_constraints(
         __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>{}));
 
+      using __traits_with_arg = decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>());
+      using __traits_defaulted = typename __constraints_defaulted::__default_constructible;
+
       // The constructor is always explicit.
       constexpr bool __is_arg_constructible =
-        decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>())::__implicit_constructible
-        || decltype(__constraints_with_arg::template __check_variadic_constructible<
-                    _UTypes...>())::__explicit_constructible;
+        __traits_with_arg::__implicit_constructible || __traits_with_arg::__explicit_constructible;
       constexpr bool __rest_is_default_constructible =
-        __constraints_defaulted::__default_constructible::__implicit_constructible
-        || __constraints_defaulted::__default_constructible::__explicit_constructible;
+        __traits_defaulted::__implicit_constructible || __traits_defaulted::__explicit_constructible;
       constexpr bool __is_nothrow =
-        decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>())::__nothrow_constructible
-        && __constraints_defaulted::__default_constructible::__nothrow_constructible;
+        __traits_with_arg::__nothrow_constructible && __traits_defaulted::__nothrow_constructible;
       return _TupleConstructorTraits<false, __is_arg_constructible && __rest_is_default_constructible, __is_nothrow>{};
     }
     else
