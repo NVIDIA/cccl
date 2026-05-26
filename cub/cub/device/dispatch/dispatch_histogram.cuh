@@ -246,6 +246,23 @@ struct DeviceHistogramKernelSource
       OffsetT>;
   }
 
+  /// Host-init FUSED dynamic-SMEM staging+combine sweep kernel. Used for cooperative
+  /// launch that fuses sweep+combine into one kernel via grid_group::sync().
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingFusedHostInitDynSmemKernel()
+  {
+    return &DeviceHistogramSweepStagingFusedHostInitDynSmemKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT>;
+  }
+
   /// Device-init dynamic-SMEM variant of the staging histogram sweep kernel.
   template <typename PolicyT,
             int PRIVATIZED_SMEM_BINS,
@@ -745,9 +762,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
       int device_ordinal        = 0;
       int cooperative_supported = 0;
-      if (cudaGetDevice(&device_ordinal) == cudaSuccess
+      const bool coop_query_ok = (cudaGetDevice(&device_ordinal) == cudaSuccess
           && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
-          && cooperative_supported != 0)
+          && cooperative_supported != 0);
+      if (coop_query_ok)
       {
         cudaError_t coop_status = cudaSuccess;
         if (use_direct_atomic_to_output)
@@ -811,7 +829,132 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 #endif // _CCCL_HOSTED()
 
-  if (!launched_persistent)
+  // For the dyn-SMEM staging tier (xlarge, 16384 bins, single-channel, host-init,
+  // non-byte) we can fuse the staging-sweep + cross-block combine pair into a
+  // single cooperative launch using `grid_group::sync()`. This saves one
+  // `cudaLaunch*` round-trip + the standalone combine kernel's ~18us launch
+  // overhead, which is a meaningful fraction of total runtime on the
+  // small-Elements (1048576) configurations of the xlarge tier.
+  bool launched_fused_staging = false;
+#if _CCCL_HOSTED()
+  if constexpr (kUseStagingPath && !IsDeviceInit)
+  {
+    if (!launched_persistent && blocks_per_row > 0 && blocks_per_col > 0)
+    {
+      using output_decode_op_t     = typename FirstLevelArrayT::value_type;
+      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+
+      // Use a 1-D grid for the cooperative launch; the staging kernel computes
+      // `block_id = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x`,
+      // which evaluates identically for a 1-D `(num_thread_blocks, 1, 1)` grid
+      // and the 2-D `(blocks_per_row, blocks_per_col, 1)` grid; AgentHistogram
+      // also uses this convention.
+      dim3 fused_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
+
+      auto fused_kernel_ptr =
+        kernel_source.template HistogramSweepStagingFusedHostInitDynSmemKernel<
+            PolicySelector,
+            PRIVATIZED_SMEM_BINS,
+            privatized_decode_op_t,
+            output_decode_op_t>();
+
+      // Force device-side instantiation of the fused kernel template via a dead
+      // `<<<>>>` call. Without this, just taking `&kernel` produces only the
+      // host shadow function and the runtime kernel-registration table has no
+      // device-side entry to match it, causing `cudaLaunchCooperativeKernel`
+      // to fail with `cudaErrorInvalidResourceHandle`.
+      if (false)
+      {
+        DeviceHistogramSweepStagingFusedHostInitDynSmemKernel<PolicySelector,
+                                                              PRIVATIZED_SMEM_BINS,
+                                                              NUM_CHANNELS,
+                                                              NUM_ACTIVE_CHANNELS,
+                                                              SampleIteratorT,
+                                                              CounterT,
+                                                              privatized_decode_op_t,
+                                                              output_decode_op_t,
+                                                              OffsetT>
+          <<<fused_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, dyn_smem_bytes_for_staging, stream>>>(
+            d_samples,
+            num_output_bins_wrapper,
+            num_privatized_bins_wrapper,
+            d_output_histograms,
+            d_privatized_histograms_wrapper,
+            first_level_array,
+            second_level_array,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            tiles_per_row,
+            tile_queue);
+      }
+
+      // Raise the dyn-SMEM cap on the fused kernel before launch (the previous
+      // `set_max_dynamic_smem_size_for(sweep_kernel, ...)` call set it on the
+      // staging-only kernel, but that's a different function pointer).
+      if (const auto err =
+            launcher_factory.set_max_dynamic_smem_size_for(fused_kernel_ptr, dyn_smem_bytes_for_staging);
+          err != cudaSuccess)
+      {
+        // Don't propagate; just clear and fall through to the two-launch path.
+        (void) cudaGetLastError();
+      }
+      else
+      {
+        int device_ordinal        = 0;
+        int cooperative_supported = 0;
+        const bool coop_query_ok =
+          (cudaGetDevice(&device_ordinal) == cudaSuccess
+           && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
+           && cooperative_supported != 0);
+        if (coop_query_ok)
+        {
+          // The fused kernel takes the same arguments as the staging-only
+          // sweep kernel: (d_samples, num_output_bins, num_privatized_bins,
+          // d_output_histograms, d_privatized_histograms, output_decode_op,
+          // privatized_decode_op, num_row_pixels, num_rows, row_stride_samples,
+          // tiles_per_row, tile_queue).
+          //
+          // For host-init non-byte, the dispatch caller passes the decode-op
+          // arrays via `first_level_array` (output decode op) and
+          // `second_level_array` (privatized decode op). They were originally
+          // defined here as ::cuda::std::array<DecodeOpT, NUM_ACTIVE_CHANNELS>.
+          void* kernel_args[] = {
+            const_cast<void*>(static_cast<const void*>(&d_samples)),
+            const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&num_privatized_bins_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
+            const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&first_level_array)),
+            const_cast<void*>(static_cast<const void*>(&second_level_array)),
+            const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
+            const_cast<void*>(static_cast<const void*>(&num_rows)),
+            const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
+            const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
+            const_cast<void*>(static_cast<const void*>(&tile_queue))};
+          cudaError_t coop_status = cudaLaunchCooperativeKernel(
+            reinterpret_cast<const void*>(fused_kernel_ptr),
+            fused_grid_dims,
+            dim3{static_cast<unsigned int>(threads_per_block)},
+            kernel_args,
+            /*sharedMem=*/static_cast<size_t>(dyn_smem_bytes_for_staging),
+            stream);
+          if (coop_status == cudaSuccess)
+          {
+            launched_fused_staging = true;
+          }
+          else
+          {
+            // Clear sticky error so legacy two-launch fallback can run cleanly.
+            (void) cudaGetLastError();
+          }
+        }
+      }
+    }
+  }
+#endif // _CCCL_HOSTED()
+
+  if (!launched_persistent && !launched_fused_staging)
   {
     constexpr int histogram_init_threads_per_block = 256;
     int histogram_init_grid_dims =

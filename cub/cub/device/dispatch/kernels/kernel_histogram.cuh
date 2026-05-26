@@ -1888,6 +1888,177 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   }
 }
 
+//! Host-init dynamic-SMEM variant of the FUSED staging+combine sweep kernel.
+//!
+//! This kernel fuses the staging-sweep + cross-block combine pair (previously
+//! `DeviceHistogramSweepStagingHostInitDynSmemKernel` followed by
+//! `DeviceHistogramCombineKernel`) into a single cooperative-launch kernel
+//! that uses `cooperative_groups::this_grid().sync()` between phases. This
+//! eliminates the launch overhead of the standalone combine kernel (~18us
+//! visible on small-Elements configs) by avoiding a second `cudaLaunch*`
+//! round-trip and the associated stream synchronization.
+//!
+//! The kernel must be launched cooperatively
+//! (`cudaLaunchCooperativeKernel`) so that all blocks are co-resident on the
+//! device, which is a precondition of `grid_group::sync()`. The dispatch
+//! layer is responsible for verifying that the requested grid fits on the
+//! device before selecting this kernel.
+//!
+//! Phases:
+//!   1. Each block sweeps its share of the input via `AgentHistogram::ConsumeTiles`
+//!      into per-block dyn-SMEM histograms (the AgentHistogram path with
+//!      UseDynamicSmemHistogram=true).
+//!   2. Each block flushes its dyn-SMEM histograms to its per-block GMEM
+//!      staging slab via `agent.StoreSmemToStagingSlab()`.
+//!   3. `grid.sync()` makes all per-block staging slabs visible to every
+//!      block.
+//!   4. Atomic-free reduce: each thread takes a slice of (channel, bin)
+//!      output indices, sums the corresponding column across all blocks of
+//!      the staging matrix, and writes the final value to the output
+//!      histogram.
+//!
+//! Note that this kernel performs the output-histogram zeroing implicitly via
+//! the final write-out in phase 4; the host therefore does NOT need to launch
+//! `DeviceHistogramInitKernel` before this kernel for the bins covered by
+//! `num_privatized_bins_wrapper` (which equals `num_output_bins_wrapper` for
+//! the non-byte single-channel xlarge tier). The drain counter inside
+//! `tile_queue` is reset by thread 0 of block 0 before the sweep begins, so
+//! the dispatch path can also skip the standalone init kernel entirely.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingFusedHostInitDynSmemKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    GridQueue<int> tile_queue)
+{
+  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+
+  namespace cg = ::cooperative_groups;
+
+  cg::grid_group grid = cg::this_grid();
+
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.threads_per_block,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT,
+                   /* UseDynamicSmemHistogram = */ true>;
+
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+  extern __shared__ unsigned char dyn_smem_raw[];
+  CounterT* dyn_smem_histograms = reinterpret_cast<CounterT*>(dyn_smem_raw);
+
+  // Save the per-channel base of the all-blocks staging slab BEFORE the agent
+  // constructor offsets `d_privatized_histograms` by `block_id * num_privatized_bins[ch]`.
+  CounterT* d_privatized_base[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    d_privatized_base[ch] = d_privatized_histograms_wrapper[ch];
+  }
+
+  // Reset the drain counter so the work-stealing path can use the queue. We do
+  // this BEFORE constructing the agent so the agent's ConsumeTiles can see a
+  // zero drain counter; for the non-work-stealing single-channel xlarge tier
+  // the queue is unused, but resetting it is cheap and makes the kernel safe
+  // for both paths.
+  const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
+  const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
+  const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
+  const unsigned int total_threads   = blocks_per_grid * blockDim.x;
+
+  if (tid_global == 0)
+  {
+    GridQueue<int> queue = tile_queue;
+    queue.ResetDrain();
+  }
+
+  // grid.sync() so the drain reset is visible to every block before the sweep.
+  grid.sync();
+
+  {
+    AgentHistogramT agent(
+      temp_storage,
+      d_samples,
+      num_output_bins_wrapper.data(),
+      num_privatized_bins_wrapper.data(),
+      d_output_histograms_wrapper.data(),
+      d_privatized_histograms_wrapper.data(),
+      output_decode_op_wrapper.data(),
+      privatized_decode_op_wrapper.data(),
+      dyn_smem_histograms);
+
+    agent.InitBinCounters();
+    agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+    if (agent.prefer_smem)
+    {
+      agent.StoreSmemToStagingSlab();
+    }
+  }
+
+  // Phase 3: grid-wide sync so that every block's staging slab writes are
+  // visible to every block before the cross-block reduce.
+  grid.sync();
+
+  // Phase 4: atomic-free reduce across blocks. For the non-byte single-channel
+  // xlarge tier `num_privatized_bins[ch] == num_output_bins[ch]` and
+  // `output_decode_op` is identity (PassThruTransform), so we can directly
+  // sum the staging column for each output bin.
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    const int num_bins            = num_privatized_bins_wrapper[ch];
+    const CounterT* __restrict__ base = d_privatized_base[ch];
+    CounterT* d_out               = d_output_histograms_wrapper[ch];
+    const unsigned int num_bins_u = static_cast<unsigned int>(num_bins);
+    for (unsigned int bin = tid_global; bin < num_bins_u; bin += total_threads)
+    {
+      CounterT total = 0;
+      for (unsigned int b = 0; b < blocks_per_grid; ++b)
+      {
+        total += base[b * num_bins_u + bin];
+      }
+      d_out[bin] = total;
+    }
+  }
+}
+
 //! Combine kernel: reduces per-block privatized histograms across all blocks
 //! into the final output histogram. Each output bin is computed by summing
 //! the corresponding column of the (num_blocks x num_privatized_bins) staging
