@@ -4,7 +4,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
-#include <cub/device/dispatch/dispatch_batched_topk_atomic.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 
 #include <cuda/__execution/determinism.h>
@@ -27,7 +26,6 @@ enum class topk_backend
 {
   baseline,
   cluster,
-  atomic,
   device,
 };
 
@@ -85,21 +83,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t batched_topk_keys(
   {
     (void) h_segment_sizes;
     return cub::detail::batched_topk_cluster::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items,
-      stream);
-  }
-  else if constexpr (selected_backend == topk_backend::atomic)
-  {
-    (void) h_segment_sizes;
-    return cub::detail::batched_topk_atomic::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,

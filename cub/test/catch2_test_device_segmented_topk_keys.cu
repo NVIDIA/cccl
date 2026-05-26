@@ -4,7 +4,6 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
-#include <cub/device/dispatch/dispatch_batched_topk_atomic.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 #include <cub/util_type.cuh>
 
@@ -33,10 +32,9 @@ enum class topk_backend
 {
   baseline,
   cluster,
-  atomic,
 };
 
-inline constexpr topk_backend selected_backend = topk_backend::atomic;
+inline constexpr topk_backend selected_backend = topk_backend::cluster;
 
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -60,20 +58,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   if constexpr (selected_backend == topk_backend::cluster)
   {
     return cub::detail::batched_topk_cluster::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items_guarantee,
-      stream);
-  }
-  else if constexpr (selected_backend == topk_backend::atomic)
-  {
-    return cub::detail::batched_topk_atomic::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,
