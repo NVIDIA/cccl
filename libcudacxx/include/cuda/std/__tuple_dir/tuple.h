@@ -111,20 +111,20 @@ public:
       : __base_(allocator_arg_t(), __a)
   {}
 
-  template <class _Constraints = typename __tuple_constraints<_Tp...>::__is_variadic_copy_constructible,
+  template <class _Constraints = decltype(::cuda::std::__tuple_is_variadic_copy_constructible(__tuple_types<_Tp...>{})),
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple(const _Tp&... __t) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
-  template <class _Constraints = typename __tuple_constraints<_Tp...>::__is_variadic_copy_constructible,
+  template <class _Constraints = decltype(::cuda::std::__tuple_is_variadic_copy_constructible(__tuple_types<_Tp...>{})),
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API constexpr explicit tuple(const _Tp&... __t) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
   template <class _Alloc,
-            class _Constraints = typename __tuple_constraints<_Tp...>::__is_variadic_copy_constructible,
+            class _Constraints = decltype(::cuda::std::__tuple_is_variadic_copy_constructible(__tuple_types<_Tp...>{})),
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     _Constraints::__nothrow_constructible)
@@ -132,7 +132,7 @@ public:
   {}
 
   template <class _Alloc,
-            class _Constraints = typename __tuple_constraints<_Tp...>::__is_variadic_copy_constructible,
+            class _Constraints = decltype(::cuda::std::__tuple_is_variadic_copy_constructible(__tuple_types<_Tp...>{})),
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     _Constraints::__nothrow_constructible)
@@ -140,7 +140,7 @@ public:
   {}
 
   template <class _Alloc,
-            class _Constraints = typename __tuple_constraints<_Tp...>::__is_variadic_copy_constructible,
+            class _Constraints = decltype(::cuda::std::__tuple_is_variadic_copy_constructible(__tuple_types<_Tp...>{})),
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, const tuple& __t) noexcept(
     _Constraints::__nothrow_constructible)
@@ -148,7 +148,7 @@ public:
   {}
 
   template <class _Alloc,
-            class _Constraints = typename __tuple_constraints<_Tp...>::__is_variadic_copy_constructible,
+            class _Constraints = decltype(::cuda::std::__tuple_is_variadic_copy_constructible(__tuple_types<_Tp...>{})),
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t, const _Alloc& __a, const tuple& __t) noexcept(
     _Constraints::__nothrow_constructible)

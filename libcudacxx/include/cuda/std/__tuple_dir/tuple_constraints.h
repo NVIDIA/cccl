@@ -152,20 +152,28 @@ template <class... _Types, enable_if_t<::cuda::std::__tuple_is_default_construct
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_default_constructible(...) noexcept -> _InvalidTupleConstructor;
 
 template <class... _Types>
+struct _TupleVariadicCopyConstructibleTraits
+{
+  static constexpr bool __implicit_constructible = (is_convertible_v<const _Types&, _Types> && ...);
+  static constexpr bool __explicit_constructible = !__implicit_constructible;
+  static constexpr bool __nothrow_constructible  = (is_nothrow_copy_constructible_v<_Types> && ...);
+};
+
+template <class... _Types>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __tuple_is_copy_constructible() noexcept
+{
+  return (is_copy_constructible_v<_Types> && ...);
+}
+
+template <class... _Types, enable_if_t<::cuda::std::__tuple_is_copy_constructible<_Types...>(), int> = 0>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
+  -> _TupleVariadicCopyConstructibleTraits<_Types...>;
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(...) noexcept
+  -> _InvalidTupleConstructor;
+
+template <class... _Types>
 struct __tuple_constraints
 {
-  struct __is_variadic_copy_constructible
-  {
-    // [tuple.cnstr]-9: sizeof...(Types)  ≥ 1 and is_copy_constructible_v<Types> is true for all i.
-    static constexpr bool __constructible = sizeof...(_Types) >= 1 && (is_copy_constructible_v<_Types> && ...);
-    // [tuple.cnstr]-11: !conjunction_v<is_convertible<const Types&, Types>...>
-    static constexpr bool __implicit_constructible =
-      __constructible && (is_convertible_v<const _Types&, _Types> && ...);
-    static constexpr bool __explicit_constructible =
-      __constructible && !(is_convertible_v<const _Types&, _Types> && ...);
-    static constexpr bool __nothrow_constructible = (is_nothrow_copy_constructible_v<_Types> && ...);
-  };
-
   template <class... _UTypes>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __is_variadic_constructible() noexcept
   {
