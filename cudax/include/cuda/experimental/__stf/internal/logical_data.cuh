@@ -2137,7 +2137,7 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
 
 inline void backend_ctx_untyped::impl::print_logical_data_summary() const
 {
-  ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
+  ::std::scoped_lock guard(logical_data_ids_mutex);
 
   fprintf(stderr, "Context current logical data summary\n");
   fprintf(stderr, "====================================\n");
@@ -2474,7 +2474,7 @@ inline void reclaim_memory(
   for (int pass = first_pass; (reclaimed_s < requested_s) && (eligible_data_size < requested_s) && (pass <= 2); pass++)
   {
     // Get the table of all logical data ids used in this context (the parent of the task)
-    ::std::lock_guard<::std::mutex> guard(ctx_state.logical_data_ids_mutex);
+    ::std::scoped_lock guard(ctx_state.logical_data_ids_mutex);
     auto& logical_data_ids = ctx_state.logical_data_ids;
     for (auto& e : logical_data_ids)
     {
