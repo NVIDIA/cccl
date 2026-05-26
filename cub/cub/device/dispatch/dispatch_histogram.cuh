@@ -1730,10 +1730,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
         return cudaSuccess;
       }
     }
-    // Multi-channel dyn-SMEM staging tiers. The dyn-SMEM size scales with
-    // NUM_ACTIVE_CHANNELS, so we only enable the xlarge (16384) tier for
-    // Nch <= 3 (Nch * 16384 * 4 = 192 KB, fits B200's 228 KB per-CTA cap with
-    // occupancy=1). For Nch=4 we cap at the large tier.
+    // Multi-channel dyn-SMEM staging tiers (range path). For multi-channel
+    // SearchTransform-based dispatch the per-sample compute (binary search in
+    // levels) dominates over atomic-add throughput, so the higher-occupancy
+    // GMEM-priv path (PRIVATIZED_SMEM_BINS=0 + persistent kernel) often beats
+    // the lower-occupancy SMEM-priv staging path. We therefore only enable the
+    // medium tier (2048) for multi-channel range, where occupancy stays high
+    // (Nch * 2048 * 4 = 24 KB at Nch=3, plenty of headroom).
     else if constexpr (NUM_ACTIVE_CHANNELS >= 2 && NUM_ACTIVE_CHANNELS <= 4)
     {
       if (max_num_output_bins > max_privatized_smem_bins
@@ -1753,45 +1756,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
           return error;
         }
         return cudaSuccess;
-      }
-      if (max_num_output_bins > max_extended_smem_bins_single_channel
-          && max_num_output_bins <= max_extended_smem_bins_single_channel_large)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<
-                NUM_CHANNELS,
-                NUM_ACTIVE_CHANNELS,
-                PRIVATIZED_SMEM_BINS,
-                false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
-                                     num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
-                                     max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
-                                     policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-      if constexpr (NUM_ACTIVE_CHANNELS <= 3)
-      {
-        if (max_num_output_bins > max_extended_smem_bins_single_channel_large
-            && max_num_output_bins <= max_extended_smem_bins_single_channel_xlarge)
-        {
-          constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
-          if (const auto error = CubDebug(
-                (detail::histogram::dispatch<
-                  NUM_CHANNELS,
-                  NUM_ACTIVE_CHANNELS,
-                  PRIVATIZED_SMEM_BINS,
-                  false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
-                                       num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
-                                       max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
-                                       policy_selector, kernel_source, launcher_factory))))
-          {
-            return error;
-          }
-          return cudaSuccess;
-        }
       }
     }
     // Dispatch
