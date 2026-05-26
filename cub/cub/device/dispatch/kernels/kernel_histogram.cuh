@@ -108,14 +108,33 @@ struct Transforms
       // Interpolated first-guess index. Use float arithmetic when the level
       // type fits cleanly in float precision (32-bit-or-smaller integers and
       // float itself); fall back to double for double / 64-bit integers to
-      // avoid precision loss for very-wide ranges.
+      // avoid precision loss for very-wide ranges. Use the fast (lower
+      // precision) divide for float since the verify + fallback handles any
+      // interpolation slop.
       using InterpT =
         ::cuda::std::_If<(sizeof(LevelT) <= 4 && !::cuda::std::is_same_v<LevelT, double>), float, double>;
       const InterpT s_f     = static_cast<InterpT>(s);
       const InterpT first_f = static_cast<InterpT>(first_level);
       const InterpT last_f  = static_cast<InterpT>(last_level);
       const InterpT range_f = last_f - first_f;
-      int guess = (range_f > InterpT(0)) ? static_cast<int>(((s_f - first_f) * num_bins) / range_f) : 0;
+      int guess;
+      if constexpr (::cuda::std::is_same_v<InterpT, float>)
+      {
+        // Fast approximate divide (uses MUFU.RCP); the verify path will
+        // catch any interpolation error.
+        NV_IF_ELSE_TARGET(
+          NV_IS_DEVICE,
+          (guess = (range_f > 0.0f)
+                     ? static_cast<int>(__fdividef((s_f - first_f) * static_cast<float>(num_bins), range_f))
+                     : 0;),
+          (guess = (range_f > 0.0f)
+                     ? static_cast<int>(((s_f - first_f) * static_cast<float>(num_bins)) / range_f)
+                     : 0;));
+      }
+      else
+      {
+        guess = (range_f > InterpT(0)) ? static_cast<int>(((s_f - first_f) * num_bins) / range_f) : 0;
+      }
       if (guess < 0)
       {
         guess = 0;
