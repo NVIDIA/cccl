@@ -113,7 +113,11 @@ _CCCL_HOST_DEVICE_API constexpr counter_size classify_counter_size()
 template <class SampleT>
 _CCCL_HOST_DEVICE_API constexpr sample_size classify_sample_size()
 {
-  return sizeof(SampleT) == 1 ? sample_size::_1 : sizeof(SampleT) == 2 ? sample_size::_2 : sample_size::unknown;
+  return sizeof(SampleT) == 1   ? sample_size::_1
+       : sizeof(SampleT) == 2   ? sample_size::_2
+       : sizeof(SampleT) == 4   ? sample_size::_4
+       : sizeof(SampleT) == 8   ? sample_size::_8
+                                : sample_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -197,7 +201,38 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
   static constexpr int vec_size                                  = 1 << 2;
 };
 
-// sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
+// SM100 sample_size 4 (I32) single-channel non-byte tuning. The default Policy500 fallback
+// {384 threads, t_scale(16)=16 ipt} is suboptimal for the dyn-SMEM 16384-bin tier where
+// SMEM atomicAdd_block contention dominates. Use 768 threads / 12 ipt (matching SM90 sample_size=1
+// shape) to spread atomic contention across more concurrent issues per CTA.
+template <bool IsEven, class SampleT>
+struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
+{
+  static constexpr int items                                     = 12;
+  static constexpr int threads                                   = 768;
+  static constexpr bool rle_compress                             = false;
+  static constexpr bool work_stealing                            = false;
+  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
+  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
+  static constexpr int vec_size                                  = 1 << 2;
+};
+
+// SM100 sample_size 8 (F64) single-channel non-byte tuning. F64 has half the throughput per byte
+// and the dyn-SMEM 16384 tier already saturates at ~5 TB/s for F64 entropy=1.0; aim for a balanced
+// {threads, ipt} that doesn't regress lower-bin tiers either.
+template <bool IsEven, class SampleT>
+struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
+{
+  static constexpr int items                                     = 8;
+  static constexpr int threads                                   = 512;
+  static constexpr bool rle_compress                             = false;
+  static constexpr bool work_stealing                            = false;
+  static constexpr BlockHistogramMemoryPreference mem_preference = SMEM;
+  static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
+  static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
+  static constexpr int vec_size                                  = 1 << 2;
+};
 
 // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
 
