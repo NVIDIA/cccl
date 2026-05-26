@@ -1,0 +1,34 @@
+[
+  {
+    "variant": "reference",
+    "N": 640,
+    "nsteps": 30,
+    "total_s": 0.69526,
+    "ms_per_step": 23.175325,
+    "wall_s": 3.280249471019488
+  },
+  {
+    "variant": "optimized",
+    "N": 640,
+    "nsteps": 30,
+    "total_s": 0.358185,
+    "ms_per_step": 11.939513,
+    "wall_s": 10.222022271977039
+  },
+  {
+    "variant": "stf_pytorch",
+    "N": 640,
+    "nsteps": 30,
+    "total_s": 0.218027,
+    "ms_per_step": 7.267581,
+    "wall_s": 2.8820899610000197
+  },
+  {
+    "variant": "stf_numba",
+    "N": 640,
+    "nsteps": 30,
+    "total_s": 1.61043,
+    "ms_per_step": 53.681009,
+    "wall_s": 3.550097439001547
+  }
+]

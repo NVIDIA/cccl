@@ -135,21 +135,22 @@ projects:
   python:
     name: "Python"
     matrix_project: "python"
-    lite_dependencies: [cccl_c_parallel_public]
+    lite_dependencies: [cccl_c_parallel_public, cccl_c_stf]
     full_dependencies: []
     include_regexes:
     - "python/cuda_cccl/"
     - "pyproject.toml"
-    exclude_regexes:
-    - "python/cuda_cccl_experimental/"
+    exclude_regexes: []
 
+  # `python_experimental` is the matrix project that runs `test_py_stf`. It
+  # consumes the regular cuda-cccl wheel built by the `python` project, so any
+  # change that affects the `python` project also affects `python_experimental`.
   python_experimental:
     name: "Python Experimental"
     matrix_project: "python_experimental"
-    lite_dependencies: [cccl_c_stf, python]
+    lite_dependencies: [python]
     full_dependencies: []
-    include_regexes:
-    - "python/cuda_cccl_experimental/"
+    include_regexes: []
 
   packaging:
     name: "CCCL Packaging"

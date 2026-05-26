@@ -147,6 +147,8 @@ known-first-party = [
   "cuda.compute",
   "cuda.coop",
   "cuda.coop._experimental",
+  "cuda.stf",
+  "cuda.stf._experimental",
 ]
 
 [tool.pytest.ini_options]

@@ -1,12 +1,18 @@
 .. _cccl-python-stf:
 
-``cuda.stf``: Sequential Task Flow
-==================================
+``cuda.stf._experimental``: Sequential Task Flow
+================================================
 
-The ``cuda.stf`` module provides a Python binding to the **Sequential Task Flow (STF)**
-model for CUDA: you define logical data and submit tasks that read or write that data;
-STF infers dependencies and orchestrates execution and data movement. For the full
-description of the model, see the :ref:`C++ CUDASTF documentation <stf>`.
+The ``cuda.stf._experimental`` module provides a Python binding to the **Sequential
+Task Flow (STF)** model for CUDA: you define logical data and submit tasks that read
+or write that data; STF infers dependencies and orchestrates execution and data
+movement. For the full description of the model, see the
+:ref:`C++ CUDASTF documentation <stf>`.
+
+The module ships inside the ``cuda-cccl`` wheel; install it with
+``pip install cuda-cccl[cu13]`` (or ``[cu12]``). It is exposed under the
+``_experimental`` subpackage because the Python API is still evolving and may change
+without notice.
 
 Example
 -------
@@ -16,15 +22,15 @@ submits four tasks with different read/write annotations. STF orders the tasks s
 dependencies are respected (e.g. the task that writes ``Y`` runs after the one that
 reads ``X`` and writes ``Y``).
 
-.. literalinclude:: ../../python/cuda_cccl_experimental/tests/stf/test_context.py
+.. literalinclude:: ../../python/cuda_cccl/tests/stf/test_context.py
    :language: python
    :pyobject: test_ctx3
-   :caption: Context, logical data, and tasks. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl_experimental/tests/stf/test_context.py>`__
+   :caption: Context, logical data, and tasks. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/test_context.py>`__
 
 Context and logical data
 -------------------------
 
-Create a **context** with :func:`context() <cuda.stf.context>` (optionally
+Create a **context** with :func:`context() <cuda.stf._experimental.context>` (optionally
 ``use_graph=True`` for CUDA graph execution). All logical data and tasks belong to
 one context. When you are done submitting tasks, call :meth:`finalize() <context.finalize>`
 to run the graph and synchronize (or let the context be destroyed; ``finalize`` is
@@ -59,25 +65,25 @@ Use ``with ctx.task(...) as t:`` to get a task handle. Inside the block:
   **CUDA Array Interface**, so you can pass them to Numba (``cuda.from_cuda_array_interface(...)``),
   PyTorch (``torch.as_tensor(...)``), or CuPy (``cp.asarray(...)``).
 
-The ``cuda.stf`` package does not ship Numba/PyTorch helpers; see
-`tests/stf/numba_helpers.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl_experimental/tests/stf/numba_helpers.py>`_,
-`numba_decorator.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl_experimental/tests/stf/numba_decorator.py>`_,
-and `pytorch_task.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl_experimental/tests/stf/pytorch_task.py>`_
+The ``cuda.stf._experimental`` package does not ship Numba/PyTorch helpers; see
+`tests/stf/numba_helpers.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/numba_helpers.py>`_,
+`numba_decorator.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/numba_decorator.py>`_,
+and `pytorch_task.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/pytorch_task.py>`_
 for examples.
 
 Record-once task graphs
 -----------------------
 
-For repeated work, use :func:`task_graph() <cuda.stf.task_graph>` to record an
-STF task DAG once and launch it many times. The graph owns a
+For repeated work, use :func:`task_graph() <cuda.stf._experimental.task_graph>` to
+record an STF task DAG once and launch it many times. The graph owns a
 ``stackable_context`` exposed as ``graph.context``. Declare logical data before
 recording, enter ``with graph:`` exactly once to submit tasks, then call
 ``graph.launch()`` whenever the recorded graph should replay.
 
-.. literalinclude:: ../../python/cuda_cccl_experimental/tests/stf/test_task_graph.py
+.. literalinclude:: ../../python/cuda_cccl/tests/stf/test_task_graph.py
    :language: python
    :pyobject: test_task_graph_relaunch
-   :caption: Record once and replay with ``stf.task_graph()``. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl_experimental/tests/stf/test_task_graph.py>`__
+   :caption: Record once and replay with ``stf.task_graph()``. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/test_task_graph.py>`__
 
 ``graph.context.task(...)`` is intentionally valid only while ``with graph:``
 is active. This catches the common mistake of submitting a task to the owned
@@ -122,7 +128,7 @@ Example collections
 -------------------
 
 For runnable examples (Numba kernels, PyTorch, tokens, multi-GPU, FDTD), see the
-`STF tests and examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl_experimental/tests/stf>`_.
+`STF tests and examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/stf>`_.
 
 For the full STF programming model, graph visualization, and C++ API, see
 :ref:`CUDASTF (C++) <stf>`.

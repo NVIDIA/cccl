@@ -535,9 +535,7 @@ jobs:
   test_py_coop:     { name: "Test cuda.coop._experimental",  gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_coop'} }
   test_py_par:      { name: "Test cuda.compute",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute'} }
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
-  # Python experimental (cuda-cccl-experimental wheel):
-  build_py_experimental_wheel: { name: "Build cuda.cccl.experimental", gpu: false, invoke: { prefix: 'build_cuda_cccl_experimental'} }
-  test_py_stf:      { name: "Test cuda.stf",               gpu: true,  needs: 'build_py_experimental_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
+  test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
 
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }
@@ -598,8 +596,10 @@ projects:
       test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples']
   python_experimental:
     name: "Python Experimental"
+    # STF tests use the regular cuda-cccl wheel built by `build_py_wheel`.
+    # There is no separate wheel build for experimental Python features.
     job_map:
-      build: ['build_py_experimental_wheel']
+      build: []
       test:  ['test_py_stf']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
