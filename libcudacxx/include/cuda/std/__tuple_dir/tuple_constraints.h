@@ -133,18 +133,27 @@ struct __invalid_tuple_constraints
 };
 
 template <class... _Types>
+struct _TupleDefaultConstructibleTraits
+{
+  static constexpr bool __implicit_constructible = (__is_implicitly_default_constructible<_Types>::value && ...);
+  static constexpr bool __explicit_constructible = !__implicit_constructible;
+  static constexpr bool __nothrow_constructible  = (is_nothrow_default_constructible_v<_Types> && ...);
+};
+
+template <class... _Types>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __tuple_is_default_constructible() noexcept
+{
+  return (is_default_constructible_v<_Types> && ...);
+}
+
+template <class... _Types, enable_if_t<::cuda::std::__tuple_is_default_constructible<_Types...>(), int> = 0>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_default_constructible(__tuple_types<_Types...>) noexcept
+  -> _TupleDefaultConstructibleTraits<_Types...>;
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_default_constructible(...) noexcept -> _InvalidTupleConstructor;
+
+template <class... _Types>
 struct __tuple_constraints
 {
-  struct __default_constructible
-  {
-    static constexpr bool __constructible = (is_default_constructible_v<_Types> && ...);
-    static constexpr bool __implicit_constructible =
-      __constructible && (__is_implicitly_default_constructible<_Types>::value && ...);
-    static constexpr bool __explicit_constructible =
-      __constructible && !(__is_implicitly_default_constructible<_Types>::value && ...);
-    static constexpr bool __nothrow_constructible = (is_nothrow_default_constructible_v<_Types> && ...);
-  };
-
   struct __is_variadic_copy_constructible
   {
     // [tuple.cnstr]-9: sizeof...(Types)  ≥ 1 and is_copy_constructible_v<Types> is true for all i.
@@ -237,11 +246,10 @@ struct __tuple_constraints
     {
       using __constraints_with_arg =
         decltype(__get_sub_constraints(__make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>{}));
-      using __constraints_defaulted = decltype(__get_sub_constraints(
-        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>{}));
 
       using __traits_with_arg = decltype(__constraints_with_arg::template __check_variadic_constructible<_UTypes...>());
-      using __traits_defaulted = typename __constraints_defaulted::__default_constructible;
+      using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(
+        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>{}));
 
       // The constructor is always explicit.
       constexpr bool __is_arg_constructible =
