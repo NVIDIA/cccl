@@ -647,6 +647,111 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   REQUIRE(d_out[0] == num_items);
 }
 
+C2H_TEST("Device reduce not_guaranteed falls back when output type differs from accumulator", "[reduce][device]")
+{
+  using input_t       = cuda::std::uint8_t;
+  using output_t      = cuda::std::uint8_t;
+  using accumulator_t = int;
+  using op_t          = cuda::std::plus<>;
+  using init_t        = input_t;
+  using num_items_t   = int;
+  using offset_t      = cub::detail::choose_offset_t<num_items_t>;
+  using transform_t   = cuda::std::identity;
+
+  auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
+  auto d_out            = thrust::device_vector<output_t>(1);
+  num_items_t num_items = static_cast<num_items_t>(d_in.size());
+  init_t init{};
+  size_t expected_bytes_allocated{};
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Reduce(
+            nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items, op_t{}, init));
+
+  using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+  auto kernels   = cuda::std::array<void*, 3>{
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+        policy_t,
+        decltype(d_in.begin()),
+        decltype(d_out.begin()),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+        policy_t,
+        accumulator_t*,
+        decltype(d_out.begin()),
+        int, // always used with int offset
+        op_t,
+        init_t,
+        accumulator_t>)};
+
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          allowed_kernels(kernels),
+                          expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce(d_in.begin(), d_out.begin(), num_items, op_t{}, init, env);
+
+  REQUIRE(d_out[0] == output_t{6});
+}
+
+C2H_TEST("Device sum not_guaranteed falls back when output type differs from accumulator", "[reduce][device]")
+{
+  using input_t       = cuda::std::uint8_t;
+  using output_t      = cuda::std::uint8_t;
+  using accumulator_t = int;
+  using op_t          = cuda::std::plus<>;
+  using init_t        = output_t;
+  using num_items_t   = int;
+  using offset_t      = cub::detail::choose_offset_t<num_items_t>;
+  using transform_t   = cuda::std::identity;
+
+  auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
+  auto d_out            = thrust::device_vector<output_t>(1);
+  num_items_t num_items = static_cast<num_items_t>(d_in.size());
+  size_t expected_bytes_allocated{};
+
+  REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items));
+
+  using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+  auto kernels   = cuda::std::array<void*, 3>{
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+        policy_t,
+        decltype(d_in.begin()),
+        decltype(d_out.begin()),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+        policy_t,
+        accumulator_t*,
+        decltype(d_out.begin()),
+        int, // always used with int offset
+        op_t,
+        init_t,
+        accumulator_t>)};
+
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          allowed_kernels(kernels),
+                          expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce_sum(d_in.begin(), d_out.begin(), num_items, env);
+
+  REQUIRE(d_out[0] == output_t{6});
+}
+
 #if TEST_LAUNCH == 0
 
 TEST_CASE("Device Min works with default environment", "[reduce][device]")
