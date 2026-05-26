@@ -33,7 +33,7 @@ int main(int, char**)
   using P = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
   const P p(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
   static_assert(cuda::std::is_same<const cuda::std::unique_ptr<int>&&,
-  decltype(cuda::std::get<0>(cuda::std::move(p)))>::value, "");
+  decltype(cuda::std::get<0>(cuda::std::move(p)))>::value);
   static_assert(noexcept(cuda::std::get<0>(cuda::std::move(p))));
   const cuda::std::unique_ptr<int>&& ptr = cuda::std::get<0>(cuda::std::move(p));
   assert(*ptr == 3);
