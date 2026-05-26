@@ -38,26 +38,12 @@ try
   if (run_to_run_deterministic)
   {
     cub::detail::scan::dispatch_with_accum<T, cub::ForceInclusive::No, true>(
-      nullptr,
-      tmp_size,
-      d_input,
-      d_output,
-      scan_op_t{},
-      init_t{T{}},
-      static_cast<offset_t>(elements),
-      0 /* stream */);
+      nullptr, tmp_size, d_input, d_output, scan_op_t{}, init_t{T{}}, static_cast<offset_t>(elements), 0 /* stream */);
   }
   else
   {
     cub::detail::scan::dispatch_with_accum<T, cub::ForceInclusive::No, false>(
-      nullptr,
-      tmp_size,
-      d_input,
-      d_output,
-      scan_op_t{},
-      init_t{T{}},
-      static_cast<offset_t>(elements),
-      0 /* stream */);
+      nullptr, tmp_size, d_input, d_output, scan_op_t{}, init_t{T{}}, static_cast<offset_t>(elements), 0 /* stream */);
   }
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);

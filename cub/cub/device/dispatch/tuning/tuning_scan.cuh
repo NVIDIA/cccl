@@ -1039,8 +1039,8 @@ struct policy_selector
 #endif
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  select_base_policy(::cuda::compute_capability cc) const -> scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto select_base_policy(::cuda::compute_capability cc) const
+    -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
