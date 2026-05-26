@@ -246,13 +246,13 @@ struct __tuple_constraints
     }
     else if constexpr (sizeof...(_UTypes) < sizeof...(_Types))
     {
-      using __constraints_with_arg =
-        decltype(__get_sub_constraints(__make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>{}));
+      using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
+      using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
+      using __constraints_with_arg = decltype(__get_sub_constraints(__arg_list{}));
 
       using __traits_with_arg =
         decltype(__constraints_with_arg::__is_variadic_constructible(__tuple_types<_UTypes...>{}));
-      using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(
-        __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>{}));
+      using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(__defaulted_list{}));
 
       // The constructor is always explicit.
       constexpr bool __is_arg_constructible =
