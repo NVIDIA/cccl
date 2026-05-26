@@ -46,6 +46,24 @@ inline constexpr ::cuda::std::size_t __max_shared_mem_kernel_rank = 8;
 //! A tile size is always representable by an unsigned integer.
 using __tile_extent_t = unsigned;
 
+//! @brief Copy a raw tensor descriptor into one with a narrower static maximum rank.
+//!
+//! @param[in] __tensor Raw tensor descriptor with dynamic rank matching _RankOut
+//! @return Raw tensor descriptor with _RankOut as its static maximum rank
+template <::cuda::std::size_t _RankOut, typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, _Tp, _RankOut>
+__narrow_raw_tensor_rank(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
+{
+  _CCCL_ASSERT(__tensor.__rank == _RankOut, "tensor rank must match the narrowed static rank");
+  __raw_tensor<_ExtentT, _StrideT, _Tp, _RankOut> __result{__tensor.__data, _RankOut, {}, {}};
+  for (::cuda::std::size_t __i = 0; __i < _RankOut; ++__i)
+  {
+    __result.__extents[__i] = __tensor.__extents[__i];
+    __result.__strides[__i] = __tensor.__strides[__i];
+  }
+  return __result;
+}
+
 //! @brief Count the number of leading contiguous dimensions in a raw tensor.
 //!
 //! Starting from dimension 0, counts consecutive dimensions where `stride[0] == 1` and `stride[i] == stride[i-1] *
