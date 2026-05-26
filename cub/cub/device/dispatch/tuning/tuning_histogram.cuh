@@ -207,7 +207,7 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 // shape) to spread atomic contention across more concurrent issues per CTA.
 //
 // Verified empirically vs 512/12 (-1.27%) and 928/12 (-0.79%) on this benchmark suite; 768/12
-// is the local optimum.
+// is the local optimum. LOAD_LDG was verified vs LOAD_CA (-0.50%); LOAD_LDG wins.
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
 {
