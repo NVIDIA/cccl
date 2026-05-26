@@ -75,11 +75,11 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
-template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
+template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
 void bench_transform(nvbench::state& state,
                      ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
                      RandomAccessIteratorOut output,
-                     OffsetT num_items,
+                     ::cuda::std::size_t num_items,
                      TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {

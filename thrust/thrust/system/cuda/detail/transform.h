@@ -148,19 +148,13 @@ OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   if constexpr (::cuda::proclaims_copyable_arguments<Predicate>::value
                 && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
   {
-    THRUST_INDEX_TYPE_DISPATCH(
-      status,
-      (CUB_NS_QUALIFIER::DeviceTransform::TransformIf),
-      num_items,
-      (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
+    status = CUB_NS_QUALIFIER::DeviceTransform::TransformIf(
+      firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));
   }
   else
   {
-    THRUST_INDEX_TYPE_DISPATCH(
-      status,
-      (CUB_NS_QUALIFIER::DeviceTransform::__transform_if_stable_argument_addresses),
-      num_items,
-      (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
+    status = CUB_NS_QUALIFIER::DeviceTransform::__transform_if_stable_argument_addresses(
+      firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));
   }
   throw_on_error(status, "transform: failed inside CUB");
 

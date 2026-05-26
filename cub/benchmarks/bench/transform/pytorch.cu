@@ -41,8 +41,6 @@ template <typename Op, typename T>
 static void unary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  using OffsetT = int64_t;
-
   const auto n = state.get_int64("Elements{io}");
   thrust::device_vector<T> in(n, 1337);
   thrust::device_vector<T> out(n, thrust::no_init);
@@ -51,7 +49,7 @@ try
   state.add_global_memory_reads<T>(n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), static_cast<OffsetT>(n), Op{});
+  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -144,8 +142,6 @@ template <typename Op, typename T>
 static void binary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  using OffsetT = int64_t;
-
   const auto n = state.get_int64("Elements{io}");
   thrust::device_vector<T> in1(n, 1337);
   thrust::device_vector<T> in2(n, 42);
@@ -155,7 +151,7 @@ try
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), static_cast<OffsetT>(n), Op{});
+  bench_transform(state, ::cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {
