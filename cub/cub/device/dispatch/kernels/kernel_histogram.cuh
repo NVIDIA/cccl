@@ -105,14 +105,17 @@ struct Transforms
         return;
       }
 
-      // Interpolated first-guess index. Use double-precision arithmetic to
-      // avoid overflow for wide integer types and to compute the fractional
-      // index for floating-point types.
-      const double s_d     = static_cast<double>(s);
-      const double first_d = static_cast<double>(first_level);
-      const double last_d  = static_cast<double>(last_level);
-      const double range_d = last_d - first_d;
-      int guess            = (range_d > 0.0) ? static_cast<int>(((s_d - first_d) * num_bins) / range_d) : 0;
+      // Interpolated first-guess index. Use float arithmetic when the level
+      // type fits cleanly in float precision (32-bit-or-smaller integers and
+      // float itself); fall back to double for double / 64-bit integers to
+      // avoid precision loss for very-wide ranges.
+      using InterpT =
+        ::cuda::std::_If<(sizeof(LevelT) <= 4 && !::cuda::std::is_same_v<LevelT, double>), float, double>;
+      const InterpT s_f     = static_cast<InterpT>(s);
+      const InterpT first_f = static_cast<InterpT>(first_level);
+      const InterpT last_f  = static_cast<InterpT>(last_level);
+      const InterpT range_f = last_f - first_f;
+      int guess = (range_f > InterpT(0)) ? static_cast<int>(((s_f - first_f) * num_bins) / range_f) : 0;
       if (guess < 0)
       {
         guess = 0;
