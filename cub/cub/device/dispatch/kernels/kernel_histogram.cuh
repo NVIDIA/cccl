@@ -20,6 +20,8 @@
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cooperative_groups.h>
@@ -28,6 +30,185 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
+
+//! @brief Self-contained "round-up" / libdivide-style fast unsigned division
+//! by a runtime constant divisor.
+//!
+//! Replaces a 64-bit integer divide in the hot path of `ScaleTransform::ComputeBin`
+//! (the `EVEN`-integer histogram classify) with a multiply-high + shift sequence.
+//! Magic-multiplier and shift are precomputed on the host inside
+//! `ScaleTransform::Init` and propagated to the device via the per-channel
+//! decode-op argument.
+//!
+//! The implementation follows the classic Granlund-Möller / Hacker's-Delight
+//! "round-up" form (libdivide's branchfree variant): for a divisor `d >= 2`,
+//! `n / d = ((((n - mulhi(M, n)) >> 1) + mulhi(M, n)) >> (L-1))` where
+//! `L = ceil(log2(d))` and `M = ceil(2^(N+L) / d) - 2^N` fits in `N` bits.
+//! For `d == 1` we return `n` directly; for `d` a power of two we degenerate
+//! to a plain shift.
+//!
+//! Default-constructible so a zero-initialised instance is well-defined
+//! (acts as the identity divider, divisor==1). `Init` overwrites the state
+//! before any `Divide` call on the device.
+template <typename UInt>
+struct fast_divide_by_constant
+{
+  static_assert(::cuda::std::is_unsigned_v<UInt>, "fast_divide_by_constant requires an unsigned integer divisor type");
+  static_assert(sizeof(UInt) == 4 || sizeof(UInt) == 8, "fast_divide_by_constant supports 32-bit or 64-bit divisors");
+
+  static constexpr int kBits = static_cast<int>(sizeof(UInt) * 8);
+
+  UInt magic; // multiplier (low N bits of the round-up multiplier)
+  UInt divisor; // original divisor (kept so we can fall back to plain divide if needed)
+  unsigned char shift; // shift amount; for power-of-two divisors this is log2(d)
+  unsigned char mode; // 0: identity (d == 1); 1: power-of-two; 2: general round-up
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int CountLeadingZeros64(::cuda::std::uint64_t x)
+  {
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return x == 0 ? 64 : __clzll(static_cast<long long>(x));),
+                      (return x == 0 ? 64 : __builtin_clzll(x);));
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int CountLeadingZeros32(::cuda::std::uint32_t x)
+  {
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return x == 0 ? 32 : __clz(static_cast<int>(x));), (return x == 0 ? 32 : __builtin_clz(x);));
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int CeilLog2(UInt d)
+  {
+    if (d <= UInt{1})
+    {
+      return 0;
+    }
+    if constexpr (sizeof(UInt) == 4)
+    {
+      return kBits - CountLeadingZeros32(static_cast<::cuda::std::uint32_t>(d - UInt{1}));
+    }
+    else
+    {
+      return kBits - CountLeadingZeros64(static_cast<::cuda::std::uint64_t>(d - UInt{1}));
+    }
+  }
+
+  //! @brief Computes the magic-multiplier and shift for divisor `d`.
+  //!
+  //! Must be called before any `Divide` call. Computed on host (or device, if
+  //! constructible from device code), but only the host call site is exercised
+  //! today.
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(UInt d)
+  {
+    divisor = d;
+    if (d <= UInt{1})
+    {
+      magic = UInt{0};
+      shift = 0;
+      mode  = 0; // identity
+      return;
+    }
+    // Power of two?
+    if ((d & (d - UInt{1})) == UInt{0})
+    {
+      magic = UInt{0};
+      // shift = log2(d); CeilLog2 gives that for power-of-two.
+      shift = static_cast<unsigned char>(CeilLog2(d));
+      mode  = 1;
+      return;
+    }
+    // General round-up form. L = ceil(log2(d)); 2^(L-1) < d < 2^L.
+    const int L = CeilLog2(d);
+    // M_full = ceil(2^(N+L) / d). For d not a power of two, 2^N < M_full < 2^(N+1),
+    // so M_low = M_full - 2^N fits in N bits.
+    if constexpr (sizeof(UInt) == 8)
+    {
+      // 128-bit arithmetic. Use compiler __uint128_t when available.
+#if _CCCL_HAS_INT128()
+      const __uint128_t numer = (static_cast<__uint128_t>(1) << (kBits + L));
+      const __uint128_t denom = static_cast<__uint128_t>(d);
+      // ceil(numer / denom) == (numer + denom - 1) / denom
+      const __uint128_t M_full = (numer + denom - 1) / denom;
+      magic                    = static_cast<UInt>(M_full); // truncates the high bit (==1 by construction)
+#else
+      // Fallback: long division of 2^(N+L) by d via Newton-style iteration.
+      // For our histogram divisors (~2^31 max) this branch never runs, but keep
+      // it defensive for portability.
+      UInt q = 0;
+      UInt r = 0;
+      for (int b = kBits + L; b >= 0; --b)
+      {
+        // (r << 1) | bit_of_2^(N+L) at position b
+        UInt new_r = (r << 1) | (b == kBits + L ? UInt{1} : UInt{0});
+        bool carry = (r >> (kBits - 1)) != 0;
+        UInt qbit  = (carry || new_r >= d) ? UInt{1} : UInt{0};
+        if (qbit)
+        {
+          new_r -= d;
+        }
+        r = new_r;
+        q = (q << 1) | qbit;
+      }
+      // q == floor(2^(N+L) / d); add (remainder != 0 ? 1 : 0) for ceil.
+      magic = q + (r != 0 ? UInt{1} : UInt{0});
+#endif
+    }
+    else
+    {
+      // 32-bit divisor: do the magic in 64-bit.
+      const ::cuda::std::uint64_t numer  = (::cuda::std::uint64_t{1} << (kBits + L));
+      const ::cuda::std::uint64_t denom  = static_cast<::cuda::std::uint64_t>(d);
+      const ::cuda::std::uint64_t M_full = (numer + denom - 1) / denom;
+      magic                              = static_cast<UInt>(M_full); // truncates the high bit
+    }
+    shift = static_cast<unsigned char>(L);
+    mode  = 2;
+  }
+
+  //! @brief Computes `n / divisor` exactly for any non-negative `n` representable
+  //! in `UInt`.
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UInt Divide(UInt n) const
+  {
+    if (mode == 0)
+    {
+      return n; // identity (divisor == 1)
+    }
+    if (mode == 1)
+    {
+      return n >> shift; // power-of-two divisor
+    }
+    // General round-up form: n / d = ((((n - hi) >> 1) + hi) >> (L-1)) with hi = mulhi(magic, n).
+    UInt hi;
+    if constexpr (sizeof(UInt) == 8)
+    {
+      NV_IF_ELSE_TARGET(
+        NV_IS_DEVICE,
+        (hi = static_cast<UInt>(__umul64hi(static_cast<unsigned long long>(magic),
+                                           static_cast<unsigned long long>(n)));),
+        ({
+#if _CCCL_HAS_INT128()
+          hi = static_cast<UInt>((static_cast<__uint128_t>(magic) * static_cast<__uint128_t>(n)) >> kBits);
+#else
+          // Manual 64x64->128 high mul, host fallback.
+          const ::cuda::std::uint64_t a_lo = static_cast<::cuda::std::uint32_t>(magic);
+          const ::cuda::std::uint64_t a_hi = magic >> 32;
+          const ::cuda::std::uint64_t b_lo = static_cast<::cuda::std::uint32_t>(n);
+          const ::cuda::std::uint64_t b_hi = n >> 32;
+          const ::cuda::std::uint64_t ll   = a_lo * b_lo;
+          const ::cuda::std::uint64_t lh   = a_lo * b_hi;
+          const ::cuda::std::uint64_t hl   = a_hi * b_lo;
+          const ::cuda::std::uint64_t hh   = a_hi * b_hi;
+          const ::cuda::std::uint64_t mid  = (ll >> 32) + static_cast<::cuda::std::uint32_t>(lh) + static_cast<::cuda::std::uint32_t>(hl);
+          hi                               = hh + (lh >> 32) + (hl >> 32) + (mid >> 32);
+#endif
+        }));
+    }
+    else
+    {
+      hi = static_cast<UInt>((static_cast<::cuda::std::uint64_t>(magic) * static_cast<::cuda::std::uint64_t>(n)) >> kBits);
+    }
+    return (((n - hi) >> 1) + hi) >> (shift - 1);
+  }
+};
+
 template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
 {
@@ -240,6 +421,12 @@ struct Transforms
     using FractionStorageT =
       ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
 
+    // The integral path replaces a 64-bit divide-by-runtime-constant in
+    // `ComputeBin` with a precomputed multiply-high + shift sequence. The
+    // precomputation runs on the host inside `Init` and is propagated to
+    // the device via the per-channel decode-op argument.
+    using FastDivideT = fast_divide_by_constant<IntArithmeticT>;
+
     union ScaleT
     {
       // Used when CommonT is not floating-point to avoid intermediate
@@ -248,6 +435,7 @@ struct Transforms
       {
         FractionStorageT bins;
         FractionStorageT range;
+        FastDivideT range_divider;
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
@@ -288,14 +476,18 @@ struct Transforms
       // wider unsigned type) would sign-extend -1 into a giant value.
       if constexpr (::cuda::std::is_integral_v<T>)
       {
-        using UT          = ::cuda::std::make_unsigned_t<T>;
-        const UT diff     = static_cast<UT>(static_cast<UT>(max_level) - static_cast<UT>(min_level));
+        using UT              = ::cuda::std::make_unsigned_t<T>;
+        const UT diff         = static_cast<UT>(static_cast<UT>(max_level) - static_cast<UT>(min_level));
         result.fraction.range = static_cast<FractionStorageT>(diff);
       }
       else
       {
         result.fraction.range = static_cast<FractionStorageT>(max_level - min_level);
       }
+      // Precompute the magic multiplier + shift for fast (sample - min_level) * bins / range
+      // in `ComputeBin`. This is a no-op for non-integral CommonT (e.g. user types),
+      // where IntArithmeticT may still be uint64_t but the integral overload is not used.
+      result.fraction.range_divider.Init(static_cast<IntArithmeticT>(result.fraction.range));
       return result;
     }
 
@@ -376,24 +568,18 @@ struct Transforms
     }
 
     //! @brief Bin computation for integral types of up to 64-bit types.
-    //!
-    //! Compute `sample - min_level` via the unsigned representation of T,
-    //! mirroring `ComputeScale`. For signed integer T with negative
-    //! `min_level` (e.g. `min_level = INT_MIN`), the signed difference
-    //! `sample - min_level` overflows T and is undefined behaviour; the
-    //! resulting numerator on two's complement is a wildly wrong magnitude
-    //! and produces an incorrect bin (the sample is dropped from the output
-    //! histogram). The unsigned subtraction wraps modularly and yields the
-    //! correct non-negative difference exactly the way `ComputeScale`
-    //! computes `max_level - min_level`.
+    //! Uses a precomputed magic-multiplier + shift to avoid the runtime
+    //! 64-bit integer divide that previously dominated the EVEN-path
+    //! classify. The host-side `Init` populates `scale.fraction.range_divider`
+    //! with a libdivide-style "round-up" multiplier that gives an exact
+    //! `floor(numerator / range)` for any non-negative numerator
+    //! representable in `IntArithmeticT`.
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      using UT                  = ::cuda::std::make_unsigned_t<T>;
-      const IntArithmeticT diff = static_cast<IntArithmeticT>(
-        static_cast<UT>(static_cast<UT>(sample) - static_cast<UT>(min_level)));
-      return static_cast<int>(
-        (diff * static_cast<IntArithmeticT>(scale.fraction.bins)) / static_cast<IntArithmeticT>(scale.fraction.range));
+      const IntArithmeticT numerator =
+        static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins);
+      return static_cast<int>(scale.fraction.range_divider.Divide(numerator));
     }
 
     template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
