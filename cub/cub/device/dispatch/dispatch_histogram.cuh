@@ -1010,14 +1010,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // single-active-channel range path until we have a finer-grained
       // selector.
       // Gate on (a) sufficient grid (>= 2 blocks) so each partition has at
-      // least one block, and (b) the range single-active-channel path where
-      // per-pixel binary search makes the kernel atomic-contention-bound.
-      // Both clauses are constexpr so when `kBinPartitionsEligible` is false
-      // (e.g. even / multi-channel paths) we elide the BinPartitions=2 kernel
-      // template instantiation entirely, keeping compile-time and per-TU
-      // device-image footprint identical to upstream.
-      constexpr bool kBinPartitionsEligible =
-        (!IsEven) && (NUM_ACTIVE_CHANNELS == 1);
+      // least one block, and (b) the single-active-channel path. Multi-
+      // channel paths regressed in iter 1 (the warp coalescer is already
+      // very effective on multi-channel hot bins) and the IsEven branch is
+      // a no-op at this dispatch site (host-init paths always pass IsEven=
+      // false). The constexpr predicate elides the BinPartitions=2 kernel
+      // template instantiation entirely on ineligible code paths, keeping
+      // compile-time and per-TU device-image footprint identical to upstream.
+      constexpr bool kBinPartitionsEligible = (NUM_ACTIVE_CHANNELS == 1);
       // The direct-atomic kernel skips per-block privatization entirely
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
@@ -1037,15 +1037,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // absorbing hot bins). When pixels << bins (e.g. 1M pixels into 2M bins
       // with Entropy=1.0), the cache wipes most contention and the 2x sample
       // reads are pure cost. Use total_pixels / max_num_output_bins as a
-      // proxy for contention level; require >= 4 atomics-per-bin on average.
-      // (For Bins=2097152, this enables partitioning at Elements=268M but
-      // disables it at Elements=1M.)
+      // proxy for contention level; require >= 16 atomics-per-bin on average.
+      // (For Bins=2097152, this enables partitioning at Elements=268M (134
+      // atomics/bin) but disables it at Elements=1M (0.5 atomics/bin).
+      // Threshold tuned in iter 5: 16 gives a clean separation that excludes
+      // borderline contention-light configs like Elements=33M / Bins=2M.)
       const OffsetT total_pixels_for_partition =
         num_row_pixels * num_rows;
       const bool atomic_contention_high =
         (max_num_output_bins > 0)
         && (static_cast<long long>(total_pixels_for_partition)
-            >= 4LL * static_cast<long long>(max_num_output_bins));
+            >= 16LL * static_cast<long long>(max_num_output_bins));
       const bool use_bin_partitions =
         kBinPartitionsEligible && (num_thread_blocks >= 2) && atomic_contention_high;
       // Pick the kernel pointer through a constexpr branch so the
