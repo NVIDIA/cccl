@@ -79,7 +79,7 @@ template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut,
 void bench_transform(nvbench::state& state,
                      ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
                      RandomAccessIteratorOut output,
-                     ::cuda::std::size_t num_items,
+                     ::cuda::std::int64_t num_items,
                      TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
