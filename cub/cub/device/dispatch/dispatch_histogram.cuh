@@ -104,10 +104,11 @@ static constexpr int chunked_smem_bins_max_single_channel =
 // Hybrid SMEM+GMEM split point: bins [0, hybrid_split) live in per-block dyn-SMEM;
 // bins [hybrid_split, max_total) live in per-block GMEM staging. Larger split fits
 // more bins in fast SMEM at the cost of larger SMEM zeroing/flush overhead.
-// 56000 = 224 KB/CTA dyn-SMEM, just under B200's ~232 KB cap. For Bins=60000:
-// SMEM = 56000 bins (93%), GMEM secondary = 4000 bins (7%) -- nearly all atomic
-// traffic lands in the cheap SMEM region.
-static constexpr int hybrid_smem_split_bin_single_channel = 56000;
+// 49152 = 192 KB/CTA dyn-SMEM (48 * 1024, power-of-2 aligned). For Bins=60000:
+// SMEM = 49152 bins (82%), GMEM secondary = 10848 bins (18%). Trades smaller
+// init/flush windows for more GMEM atomic traffic; whether that wins depends on
+// the per-bin atomic distribution.
+static constexpr int hybrid_smem_split_bin_single_channel = 49152;
 
 // ---------------------------------------------------------------------------
 // Uniform-level detection for the RANGE host-init dispatch path.
