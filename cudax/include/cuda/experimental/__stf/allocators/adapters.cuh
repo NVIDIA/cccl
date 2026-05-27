@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -170,24 +171,32 @@ public:
     _CCCL_ASSERT(adapter_state, "Invalid state");
     _CCCL_ASSERT(!cleared_or_moved, "clear() was already called, or the object was moved.");
 
-    cudaStream_t stream = adapter_state->stream;
+    const cudaStream_t stream = adapter_state->stream;
 
-    // Deallocate all buffers, synchronizing lazily on the first blocking deallocation.
-    // This allows stream-ordered deallocations (cudaFreeAsync) that appear before any
-    // blocking ones (cudaFreeHost, cudaFree) to proceed without waiting for the sync.
+    // Deallocate buffers one at a time, popping from the back. If any CUDA
+    // call below throws, ``to_free`` still holds the un-deallocated entries
+    // and ``cleared_or_moved`` stays false, so the caller can recover (catch
+    // and retry, or let the destructor's assertion fire with accurate state).
+    // The per-iteration SCOPE(exit) ensures the just-popped buffer is freed
+    // even if the lazy stream sync throws -- order across buffers does not
+    // matter because each ``raw_buffer`` is independent.
     bool stream_synchronized = false;
-    for (auto& b : adapter_state->to_free)
+    while (!adapter_state->to_free.empty())
     {
-      // Sync stream once before the first blocking deallocation
-      if (!b.memory_node.allocation_is_stream_ordered() && !stream_synchronized)
+      const auto b = mv(adapter_state->to_free.back());
+      adapter_state->to_free.pop_back();
+      SCOPE(exit)
       {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        b.memory_node.deallocate(b.ptr, b.sz, stream);
+      };
+
+      // Sync stream once before the first blocking deallocation.
+      if (!stream_synchronized && !b.memory_node.allocation_is_stream_ordered())
+      {
+        cuda_try(cudaStreamSynchronize(stream));
         stream_synchronized = true;
       }
-      b.memory_node.deallocate(b.ptr, b.sz, stream);
     }
-
-    adapter_state->to_free.clear();
 
     cleared_or_moved = true;
   }
