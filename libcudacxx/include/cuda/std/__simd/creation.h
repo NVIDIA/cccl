@@ -230,8 +230,9 @@ template <__simd_size_type _Ip, __simd_size_type... _Sizes>
     }
     __prefix += __sizes[__k];
   }
-  return sizeof...(_Sizes); // this line is not reachable because _Ip is in the range [0, M), where M is the total size
-                            // of the concatenation of the V1, V2, ..., VN
+  // this line is not reachable because _Ip is in the range [0, M), where M is the total size
+  // of the concatenation of the V1, V2, ..., VN
+  _CCCL_UNREACHABLE();
 }
 
 // Compute the local prefix sum (number of elements before arg _Kp) for a given target arg index _Kp.
@@ -258,7 +259,7 @@ __cat_local_prefix(__simd_size_seq<_Sizes...>) noexcept
 template <typename... _Vs>
 struct __cat_generator
 {
-  const ::cuda::std::tuple<const _Vs&...> __args_;
+  ::cuda::std::tuple<const _Vs&...> __args_;
 
   template <typename _Ic>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Ic) const noexcept
