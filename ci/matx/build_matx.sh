@@ -112,4 +112,4 @@ set -x
 # `cmake --build -j8`. CMake expects a space between `-j` and
 # the numeric argument, or no argument at all.
 # shellcheck disable=SC2086
-cmake --build build -j ${PARALLEL_LEVEL:-}
+time cmake --build build -j ${PARALLEL_LEVEL:-}

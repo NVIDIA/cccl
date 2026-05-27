@@ -125,7 +125,7 @@ declare -a torch_cuda_targets="($torch_cuda_targets)"
 
 set -x
 
-ninja -C ./build "${torch_cuda_targets[@]}" "-j${PARALLEL_LEVEL:-}"
+time ninja -C ./build "${torch_cuda_targets[@]}" "-j${PARALLEL_LEVEL:-}"
 echo "::endgroup::"
 
 echo "PyTorch CUDA targets built successfully with custom CCCL."
