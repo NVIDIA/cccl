@@ -1009,15 +1009,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // pixel, more re-decode cost). Restrict partitioning to the
       // single-active-channel range path until we have a finer-grained
       // selector.
-      // Gate on (a) sufficient grid (>= 2 blocks) so each partition has at
-      // least one block, and (b) the single-active-channel path. Multi-
-      // channel paths regressed in iter 1 (the warp coalescer is already
-      // very effective on multi-channel hot bins) and the IsEven branch is
-      // a no-op at this dispatch site (host-init paths always pass IsEven=
-      // false). The constexpr predicate elides the BinPartitions=2 kernel
-      // template instantiation entirely on ineligible code paths, keeping
-      // compile-time and per-TU device-image footprint identical to upstream.
-      constexpr bool kBinPartitionsEligible = (NUM_ACTIVE_CHANNELS == 1);
+      // Iters 1-5 of this branch found the "full" partitioning variant
+      // (which had each partition's M/2 blocks re-sweep all pixels via
+      // partition_total_threads) regressed multi-channel paths. The
+      // current "lite" variant (every block reads all pixels but only
+      // commits writes to its partition's bin range) has no DRAM cost and
+      // benefits multi-channel high-bin paths the same way as single-
+      // channel, so we run it on both. The remaining gate is the
+      // num_thread_blocks check below.
+      constexpr bool kBinPartitionsEligible = true;
       // The direct-atomic kernel skips per-block privatization entirely
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
