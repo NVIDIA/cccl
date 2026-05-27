@@ -113,6 +113,7 @@ TEST_FUNC constexpr bool test()
     assert(constMoveCtrCalled(cuda::std::get<0>(t2)));
   }
 
+#if !TEST_COMPILER(GCC, <, 9)
   // sizeof...(Types) == 1 && is_convertible_v<decltype(u), T>
   {
     const cuda::std::tuple<CvtFromConstTupleRefRef> t1{};
@@ -126,6 +127,7 @@ TEST_FUNC constexpr bool test()
     cuda::std::tuple<ConvertibleFrom<ExplicitCtrFromConstTupleRefRef>> t2{cuda::std::move(t1)};
     assert(!constMoveCtrCalled(cuda::std::get<0>(t2).v));
   }
+#endif // !TEST_COMPILER(GCC, <, 9)
 
   return true;
 }
