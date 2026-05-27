@@ -45,7 +45,59 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   state.add_global_memory_reads<SampleT>(elements);
   state.add_global_memory_writes<CounterT>(num_bins);
 
+  // Warmup + correctness check: run HistogramEven once outside `state.exec`,
+  // checking the dispatch return code, then verify the produced histogram
+  // bin-by-bin against an independent reference. A failure here throws
+  // before any timed iteration runs, so a silent dispatch failure or a
+  // sample-loss bug can't inflate the measured bandwidth. Skipped when
+  // CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
+  if (bench_correctness_checks_enabled())
+  {
+    thrust::fill(hist.begin(), hist.end(), CounterT{0});
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+    bench_check_cuda(
+      cub::DeviceHistogram::HistogramEven(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_input,
+        d_histogram,
+        num_levels,
+        lower_level,
+        upper_level,
+        static_cast<OffsetT>(elements)),
+      "warmup HistogramEven temp-size");
+    thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
+    d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
+    bench_check_cuda(
+      cub::DeviceHistogram::HistogramEven(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_input,
+        d_histogram,
+        num_levels,
+        lower_level,
+        upper_level,
+        static_cast<OffsetT>(elements)),
+      "warmup HistogramEven");
+    bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
+
+    std::vector<thrust::device_vector<CounterT>> opt_hists_d;
+    opt_hists_d.emplace_back(std::move(hist));
+    bench_verify_histogram_even<1, 1, SampleT, CounterT, OffsetT>(
+      input,
+      opt_hists_d,
+      static_cast<OffsetT>(elements),
+      static_cast<int>(num_bins),
+      lower_level,
+      upper_level,
+      "even");
+    hist        = std::move(opt_hists_d[0]);
+    d_histogram = thrust::raw_pointer_cast(hist.data());
+  }
+
   caching_allocator_t alloc;
+
   // Force the persisting-L2 reservation back to 0 and demote any persisting
   // lines outside the timed window, so neither cudaAccessPolicyWindow nor a
   // bumped cudaLimitPersistingL2CacheSize can carry across iterations. The
