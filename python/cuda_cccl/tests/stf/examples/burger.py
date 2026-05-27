@@ -37,9 +37,9 @@ import os
 
 import numpy as np
 import torch
-from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 BURGER_PLOT = os.environ.get("BURGER_PLOT", "") != ""
 

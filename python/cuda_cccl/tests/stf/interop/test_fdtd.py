@@ -63,9 +63,8 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from cuda.stf._experimental.interop.pytorch import pytorch_task  # noqa: E402
-
 import cuda.stf._experimental as stf  # noqa: E402
+from cuda.stf._experimental.interop.pytorch import pytorch_task  # noqa: E402
 
 try:
     import matplotlib.pyplot as plt
