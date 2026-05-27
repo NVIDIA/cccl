@@ -46,6 +46,7 @@
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -168,7 +169,11 @@ struct _TupleVariadicConstructibleTraits<__tuple_types<_Type>, __tuple_types<_UT
 { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
   static constexpr bool __implicit_constructible = is_convertible<_UType, _Type>::value;
   static constexpr bool __explicit_constructible = !__implicit_constructible;
-  static constexpr bool __nothrow_constructible  = is_nothrow_constructible_v<_Type, _UType>;
+#if _CCCL_COMPILER(MSVC) // MSVC fails to determine `is_nothrow_constructible_v` for the convertible case
+  static constexpr bool __nothrow_constructible = false;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+  static constexpr bool __nothrow_constructible = is_nothrow_constructible_v<_Type, _UType>;
+#endif // !_CCCL_COMPILER(MSVC)
 };
 
 template <class... _Types, class... _UTypes>
@@ -320,6 +325,11 @@ __tuple_tuple_like_constructible_constraint(__tuple_types<_Types...>, __tuple_in
     return (is_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
   }
 }
+
+template <class _UTuple, class... _Types>
+inline constexpr bool __tuple_is_tuple_like_constructible_v =
+  ::cuda::std::__tuple_tuple_like_constructible_constraint<_UTuple>(
+    __tuple_types<_Types...>{}, __make_tuple_indices_t<sizeof...(_Types)>{});
 
 template <class _UTuple,
           class... _Types,

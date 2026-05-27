@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Some early versions (cl.exe 14.16 / VC141) do not identify correct constructors
+// UNSUPPORTED: msvc
+
 // XFAIL: enable-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
