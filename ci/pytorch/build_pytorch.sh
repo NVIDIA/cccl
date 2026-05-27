@@ -83,7 +83,7 @@ declare -a cmake_args=(
   # Need to define this explicitly, torch's FindCUDA logic adds ancient arches if left undefined:
   "-DTORCH_CUDA_ARCH_LIST=7.5;8.0;9.0;10.0;12.0"
 )
-cmake -S ./pytorch -B ./build -G Ninja "${cmake_args[@]}"
+SCCACHE_NO_DIST_COMPILE=1 cmake -S ./pytorch -B ./build -G Ninja "${cmake_args[@]}"
 echo "::endgroup::"
 
 # Verify that the configured build is using the custom CUDA dir for CTK and nvcc:
