@@ -101,6 +101,14 @@ static constexpr int chunked_smem_num_chunks_single_channel = 2;
 static constexpr int chunked_smem_bins_max_single_channel =
   chunked_smem_chunk_size_single_channel * chunked_smem_num_chunks_single_channel;
 
+// Hybrid SMEM+GMEM split point: bins [0, hybrid_split) live in per-block dyn-SMEM;
+// bins [hybrid_split, max_total) live in per-block GMEM staging. Larger split fits
+// more bins in fast SMEM at the cost of larger SMEM zeroing/flush overhead.
+// 56000 = 224 KB/CTA dyn-SMEM, just under B200's ~232 KB cap. For Bins=60000:
+// SMEM = 56000 bins (93%), GMEM secondary = 4000 bins (7%) -- nearly all atomic
+// traffic lands in the cheap SMEM region.
+static constexpr int hybrid_smem_split_bin_single_channel = 56000;
+
 // ---------------------------------------------------------------------------
 // Uniform-level detection for the RANGE host-init dispatch path.
 //
@@ -522,6 +530,27 @@ struct DeviceHistogramKernelSource
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       BinPartitions,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT>;
+  }
+
+  /// Host-init FUSED HYBRID single-pass dynamic-SMEM staging+combine sweep kernel. Eliminates
+  /// the 2x sample re-read of the dual-chunk kernel by handling both bin "chunks" in a single
+  /// sweep: bins in the primary range live in dyn-SMEM, bins in the secondary range live in
+  /// per-block GMEM staging slabs. The decode op is the un-chunked privatized op, classifying
+  /// each sample once into the full bin space.
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto
+  HistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel()
+  {
+    return &DeviceHistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
       SampleIteratorT,
       CounterT,
       PrivatizedDecodeOpT,
@@ -2079,6 +2108,412 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_chunked_staging_smem
   }
 
   return cudaSuccess;
+}
+
+// Hybrid SMEM+GMEM single-pass dispatch helper.
+// Issues a SINGLE cooperative kernel launch that handles both bin chunks of the
+// privatized-bin space in ONE sweep through the input. Bins in the primary range
+// `[0, kSplitBin)` accumulate in dyn-SMEM (sized for kSplitBin per channel), bins
+// in the secondary range `[kSplitBin, max_num_output_bins)` accumulate in a
+// per-block per-channel GMEM staging slab. Eliminates the 2x sample re-read of
+// the dual-chunk kernel by classifying each sample once with the un-chunked
+// privatized decode op and routing the resulting bin to either SMEM or per-block
+// GMEM based on the bin value.
+// Falls back to the chunked dispatch on any setup or launch failure (the chunked
+// path covers the same axis range and is verified-correct).
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          int kSplitBin,
+          int kMaxTotalBins,
+          typename InnerPrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename OffsetT,
+          typename PolicySelector,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_staging_smem(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  SampleIteratorT d_samples,
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+  ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op,
+  ::cuda::std::array<InnerPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> inner_privatized_decode_op,
+  int max_num_output_bins,
+  OffsetT num_row_pixels,
+  OffsetT num_rows,
+  OffsetT row_stride_samples,
+  cudaStream_t stream,
+  PolicySelector policy_selector,
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  constexpr int kPrivatizedSmemBins = max_extended_smem_bins_single_channel_xlarge;
+
+  // The hybrid kernel is single-channel-focused and assumes a chunked split with
+  // primary in SMEM and secondary in per-block GMEM. We require kSplitBin to be at
+  // most kMaxTotalBins / 2 (well, just at most max_num_output_bins).
+  if (max_num_output_bins <= kSplitBin)
+  {
+    // Fallback to the chunked dispatch if the bin count fits entirely in the SMEM
+    // primary range (no secondary GMEM region needed). Should not occur in normal
+    // operation since callers gate this dispatch on max_num_output_bins > xlarge.
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  const int hybrid_split_bin      = kSplitBin;
+  const int hybrid_secondary_size = max_num_output_bins - kSplitBin;
+
+#if _CCCL_HOSTED()
+  // Step 1: Replicate the inner-dispatch setup so we can launch the hybrid kernel.
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    (void) error;
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  const histogram_policy active_policy = policy_selector(cc);
+  const int threads_per_block          = active_policy.threads_per_block;
+  const int pixels_per_thread          = active_policy.pixels_per_thread;
+
+  int sm_count = 0;
+  if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+  {
+    (void) error;
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  // dyn-SMEM bytes per block: per-channel kSplitBin counters.
+  const int dyn_smem_bytes_for_staging =
+    int(sizeof(CounterT)) * hybrid_split_bin * NUM_ACTIVE_CHANNELS;
+
+  // Calculate occupancy and grid size.
+  int fused_sm_occupancy = 0;
+  auto fused_hybrid_kernel_ptr =
+    kernel_source.template HistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel<
+      PolicySelector,
+      kPrivatizedSmemBins,
+      InnerPrivatizedDecodeOpT,
+      OutputDecodeOpT>();
+
+  // Force device-side instantiation of the hybrid kernel template via a dead `<<<>>>` call,
+  // mirroring the pattern used by the existing fused-staging-kernel dispatch. Without this,
+  // just taking `&kernel` produces only the host shadow function and the runtime
+  // kernel-registration table has no device-side entry to match it.
+  if (false)
+  {
+    DeviceHistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel<PolicySelector,
+                                                                          kPrivatizedSmemBins,
+                                                                          NUM_CHANNELS,
+                                                                          NUM_ACTIVE_CHANNELS,
+                                                                          SampleIteratorT,
+                                                                          CounterT,
+                                                                          InnerPrivatizedDecodeOpT,
+                                                                          OutputDecodeOpT,
+                                                                          OffsetT>
+      <<<1, 1, 0, stream>>>(d_samples,
+                            ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>{},
+                            ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>{},
+                            ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
+                            ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
+                            ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
+                            ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>{},
+                            ::cuda::std::array<InnerPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>{},
+                            int{},
+                            int{},
+                            num_row_pixels,
+                            num_rows,
+                            row_stride_samples,
+                            int{},
+                            GridQueue<int>{nullptr});
+  }
+
+  if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(
+        fused_hybrid_kernel_ptr, dyn_smem_bytes_for_staging))
+  {
+    (void) error;
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  if (const auto error =
+        CubDebug(launcher_factory.MaxSmOccupancy(
+          fused_sm_occupancy, fused_hybrid_kernel_ptr, threads_per_block, dyn_smem_bytes_for_staging)))
+  {
+    (void) error;
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  if (fused_sm_occupancy <= 0)
+  {
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  // Calculate launch geometry: pixels per block and tile counts.
+  const int pixels_per_block = threads_per_block * pixels_per_thread;
+  const int total_pixels     = static_cast<int>(num_row_pixels);
+  const int tiles_per_row    = (total_pixels + pixels_per_block - 1) / pixels_per_block;
+
+  // Number of blocks: max grid that fits both occupancy and tiles_per_row * num_rows
+  // (matches the persistent-grid sizing in the existing fused kernel).
+  const int max_blocks_per_grid_by_occupancy = sm_count * fused_sm_occupancy;
+  const int max_blocks_for_work              = ::cuda::std::min(
+    static_cast<int>(num_rows) * tiles_per_row, ::cuda::std::numeric_limits<int>::max() / 2);
+  const int num_thread_blocks =
+    ::cuda::std::min(max_blocks_per_grid_by_occupancy, max_blocks_for_work);
+
+  if (num_thread_blocks <= 0)
+  {
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  // Allocate per-block staging slabs:
+  //   primary slab:   num_thread_blocks * NUM_ACTIVE_CHANNELS * hybrid_split_bin * sizeof(CounterT)
+  //   secondary slab: num_thread_blocks * NUM_ACTIVE_CHANNELS * hybrid_secondary_size * sizeof(CounterT)
+  //   queue counter:  GridQueue<int>::AllocationSize()
+  const size_t primary_slab_bytes_per_channel =
+    size_t(num_thread_blocks) * size_t(hybrid_split_bin) * size_t(kernel_source.CounterSize());
+  const size_t secondary_slab_bytes_per_channel =
+    size_t(num_thread_blocks) * size_t(hybrid_secondary_size) * size_t(kernel_source.CounterSize());
+
+  void* allocations[NUM_ACTIVE_CHANNELS * 2 + 1] = {};
+  size_t allocation_sizes[NUM_ACTIVE_CHANNELS * 2 + 1];
+  for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+  {
+    allocation_sizes[ch]                       = primary_slab_bytes_per_channel;
+    allocation_sizes[ch + NUM_ACTIVE_CHANNELS] = secondary_slab_bytes_per_channel;
+  }
+  allocation_sizes[NUM_ACTIVE_CHANNELS * 2] = GridQueue<int>::AllocationSize();
+
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    return cudaSuccess;
+  }
+
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_primary_staging_array{};
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_secondary_staging_array{};
+  for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+  {
+    d_primary_staging_array[ch]   = static_cast<CounterT*>(allocations[ch]);
+    d_secondary_staging_array[ch] = static_cast<CounterT*>(allocations[ch + NUM_ACTIVE_CHANNELS]);
+  }
+  GridQueue<int> tile_queue(allocations[NUM_ACTIVE_CHANNELS * 2]);
+
+  // Initialize the smem/gmem bin counts wrappers.
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_smem_bins_wrapper{};
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_gmem_bins_wrapper{};
+  for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+  {
+    num_smem_bins_wrapper[ch] = hybrid_split_bin;
+    num_gmem_bins_wrapper[ch] = hybrid_secondary_size;
+  }
+
+  // Build the launch.
+  dim3 grid_dims(num_thread_blocks, 1, 1);
+  dim3 block_dims(threads_per_block, 1, 1);
+
+  void* kernel_args[] = {
+    const_cast<void*>(static_cast<const void*>(&d_samples)),
+    const_cast<void*>(static_cast<const void*>(&num_smem_bins_wrapper)),
+    const_cast<void*>(static_cast<const void*>(&num_gmem_bins_wrapper)),
+    const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
+    const_cast<void*>(static_cast<const void*>(&d_primary_staging_array)),
+    const_cast<void*>(static_cast<const void*>(&d_secondary_staging_array)),
+    const_cast<void*>(static_cast<const void*>(&output_decode_op)),
+    const_cast<void*>(static_cast<const void*>(&inner_privatized_decode_op)),
+    const_cast<void*>(static_cast<const void*>(&hybrid_split_bin)),
+    const_cast<void*>(static_cast<const void*>(&hybrid_secondary_size)),
+    const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
+    const_cast<void*>(static_cast<const void*>(&num_rows)),
+    const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
+    const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
+    const_cast<void*>(static_cast<const void*>(&tile_queue))};
+
+  cudaError_t launch_error = cudaLaunchCooperativeKernel(
+    reinterpret_cast<const void*>(fused_hybrid_kernel_ptr),
+    grid_dims,
+    block_dims,
+    kernel_args,
+    static_cast<size_t>(dyn_smem_bytes_for_staging),
+    stream);
+
+  if (launch_error != cudaSuccess)
+  {
+    // Fallback: re-issue via the chunked dispatch.
+    (void) cudaGetLastError();
+    return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         chunked_smem_chunk_size_single_channel,
+                                         chunked_smem_num_chunks_single_channel>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      output_decode_op,
+      inner_privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory);
+  }
+
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  return cudaSuccess;
+#else
+  // Device-side dispatch is not supported for the cooperative hybrid path.
+  return dispatch_chunked_staging_smem<NUM_CHANNELS,
+                                       NUM_ACTIVE_CHANNELS,
+                                       chunked_smem_chunk_size_single_channel,
+                                       chunked_smem_num_chunks_single_channel>(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_samples,
+    d_output_histograms,
+    output_decode_op,
+    inner_privatized_decode_op,
+    max_num_output_bins,
+    num_row_pixels,
+    num_rows,
+    row_stride_samples,
+    stream,
+    policy_selector,
+    kernel_source,
+    launcher_factory);
+#endif
 }
 
 // TODO(bgruber): drop in CCCL 4.0

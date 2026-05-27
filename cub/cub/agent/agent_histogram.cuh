@@ -299,6 +299,18 @@ struct AgentHistogram
   int partition_lo[NumActiveChannels];
   int partition_hi[NumActiveChannels];
 
+  // Hybrid SMEM+GMEM single-pass mode (used by the hybrid kernel for Bins=60000
+  // single-channel). Each block has a per-block GMEM staging slab containing the
+  // "secondary" bin range [hybrid_split_bin, hybrid_split_bin + hybrid_secondary_size).
+  // The primary range [0, hybrid_split_bin) lives in dyn-SMEM (the existing
+  // `temp_storage.histograms[ch]` pointer set up by the dynamic-SMEM constructor).
+  // When `hybrid_split_bin > 0`, AccumulatePixelsHybrid routes each pixel's bin
+  // (from the un-chunked decode op) to either SMEM or per-block GMEM, eliminating
+  // the second sample-read pass that the dual-chunk kernel pays.
+  CounterT* d_hybrid_secondary_histograms[NumActiveChannels]; // per-block GMEM slab base, offset to this block
+  int hybrid_split_bin; // bins < this go to SMEM; bins in [split, split+secondary_size) go to GMEM
+  int hybrid_secondary_size; // size of the secondary (GMEM) range
+
   template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
   {
@@ -515,6 +527,277 @@ struct AgentHistogram
                             (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
                             (atomicAdd(privatized_histograms[ch] + bin, 1);));
         }
+      }
+    }
+  }
+
+  //! Hybrid SMEM+GMEM accumulation. Routes each pixel's bin (computed from the
+  //! un-chunked decode op) to either the per-channel SMEM histogram for the
+  //! primary range `[0, hybrid_split_bin)` or to the per-block per-channel GMEM
+  //! staging slab for the secondary range `[hybrid_split_bin, hybrid_split_bin
+  //! + hybrid_secondary_size)`. Both atomics are CTA-scoped via `atomicAdd_block`,
+  //! which is cheap for SMEM and reasonably cheap for per-block GMEM (no cross-CTA
+  //! coherence required). RLE-compressed variant: applies the existing intra-thread
+  //! RLE compression to consecutive same-bin pixels, but the flush splits between
+  //! SMEM and GMEM based on the bin value.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixelsHybrid(
+    SampleT samples[pixels_per_thread][NumChannels],
+    bool is_valid[pixels_per_thread],
+    ::cuda::std::true_type is_rle_compress)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      int bins[pixels_per_thread];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+      {
+        bins[pixel] = -1;
+        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
+      }
+
+      CounterT accumulator = 1;
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int pixel = 0; pixel < pixels_per_thread - 1; ++pixel)
+      {
+        if (bins[pixel] != bins[pixel + 1])
+        {
+          const int b = bins[pixel];
+          if (b >= 0)
+          {
+            if (b < hybrid_split_bin)
+            {
+              NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                                (atomicAdd_block(temp_storage.histograms[ch] + b, accumulator);),
+                                (atomicAdd(temp_storage.histograms[ch] + b, accumulator);));
+            }
+            else
+            {
+              const int gbin = b - hybrid_split_bin;
+              NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                                (atomicAdd_block(d_hybrid_secondary_histograms[ch] + gbin, accumulator);),
+                                (atomicAdd(d_hybrid_secondary_histograms[ch] + gbin, accumulator);));
+            }
+          }
+          accumulator = 0;
+        }
+        accumulator++;
+      }
+
+      // Last pixel
+      const int b = bins[pixels_per_thread - 1];
+      if (b >= 0)
+      {
+        if (b < hybrid_split_bin)
+        {
+          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                            (atomicAdd_block(temp_storage.histograms[ch] + b, accumulator);),
+                            (atomicAdd(temp_storage.histograms[ch] + b, accumulator);));
+        }
+        else
+        {
+          const int gbin = b - hybrid_split_bin;
+          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                            (atomicAdd_block(d_hybrid_secondary_histograms[ch] + gbin, accumulator);),
+                            (atomicAdd(d_hybrid_secondary_histograms[ch] + gbin, accumulator);));
+        }
+      }
+    }
+  }
+
+  //! Hybrid SMEM+GMEM accumulation, non-RLE variant.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixelsHybrid(
+    SampleT samples[pixels_per_thread][NumChannels],
+    bool is_valid[pixels_per_thread],
+    ::cuda::std::false_type is_rle_compress)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        int bin = -1;
+        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+        if (bin >= 0)
+        {
+          if (bin < hybrid_split_bin)
+          {
+            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                              (atomicAdd_block(temp_storage.histograms[ch] + bin, 1);),
+                              (atomicAdd(temp_storage.histograms[ch] + bin, 1);));
+          }
+          else
+          {
+            const int gbin = bin - hybrid_split_bin;
+            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                              (atomicAdd_block(d_hybrid_secondary_histograms[ch] + gbin, 1);),
+                              (atomicAdd(d_hybrid_secondary_histograms[ch] + gbin, 1);));
+          }
+        }
+      }
+    }
+  }
+
+  //! Hybrid mode tile consumer.
+  template <bool IsAligned, bool IsFullTile>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTileHybrid(OffsetT block_offset, int valid_samples)
+  {
+    SampleT samples[pixels_per_thread][NumChannels];
+    bool is_valid[pixels_per_thread];
+
+    LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
+    MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
+
+    AccumulatePixelsHybrid(samples, is_valid, ::cuda::std::bool_constant<is_rle_compress>{});
+  }
+
+  //! Hybrid mode ConsumeTiles - work-stealing variant.
+  template <bool IsAligned>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTilesHybrid(
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    OffsetT row_stride_samples,
+    int tiles_per_row,
+    GridQueue<int> tile_queue,
+    ::cuda::std::true_type is_work_stealing)
+  {
+    int num_tiles                = num_rows * tiles_per_row;
+    int tile_idx                 = (blockIdx.y * gridDim.x) + blockIdx.x;
+    OffsetT num_even_share_tiles = gridDim.x * gridDim.y;
+
+    while (tile_idx < num_tiles)
+    {
+      int row             = tile_idx / tiles_per_row;
+      int col             = tile_idx - (row * tiles_per_row);
+      OffsetT row_offset  = row * row_stride_samples;
+      OffsetT col_offset  = (col * tile_samples);
+      OffsetT tile_offset = row_offset + col_offset;
+
+      if (col == tiles_per_row - 1)
+      {
+        OffsetT num_remaining = (num_row_pixels * NumChannels) - col_offset;
+        ConsumeTileHybrid<IsAligned, false>(tile_offset, num_remaining);
+      }
+      else
+      {
+        ConsumeTileHybrid<IsAligned, true>(tile_offset, tile_samples);
+      }
+
+      __syncthreads();
+
+      if (threadIdx.x == 0)
+      {
+        temp_storage.tile_idx = tile_queue.Drain(1) + num_even_share_tiles;
+      }
+
+      __syncthreads();
+
+      tile_idx = temp_storage.tile_idx;
+    }
+  }
+
+  //! Hybrid mode ConsumeTiles - even-share variant.
+  template <bool IsAligned>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTilesHybrid(
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    OffsetT row_stride_samples,
+    int,
+    GridQueue<int>,
+    ::cuda::std::false_type)
+  {
+    for (int row = blockIdx.y; row < num_rows; row += gridDim.y)
+    {
+      OffsetT row_begin   = row * row_stride_samples;
+      OffsetT row_end     = row_begin + (num_row_pixels * NumChannels);
+      OffsetT tile_offset = row_begin + (blockIdx.x * tile_samples);
+
+      while (tile_offset < row_end)
+      {
+        OffsetT num_remaining = row_end - tile_offset;
+
+        if (num_remaining < tile_samples)
+        {
+          ConsumeTileHybrid<IsAligned, false>(tile_offset, num_remaining);
+          break;
+        }
+
+        ConsumeTileHybrid<IsAligned, true>(tile_offset, tile_samples);
+        tile_offset += gridDim.x * tile_samples;
+      }
+    }
+  }
+
+  //! Hybrid mode entry point.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTilesHybrid(
+    OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
+  {
+    constexpr int vec_mask   = alignof(VecT) - 1;
+    constexpr int pixel_mask = alignof(PixelT) - 1;
+    const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
+
+    const bool vec_aligned_rows =
+      (NumChannels == 1) && (samples_per_thread % vec_size == 0)
+      && ((size_t(d_native_samples) & vec_mask) == 0)
+      && ((num_rows == 1) || ((row_bytes & vec_mask) == 0));
+
+    const bool pixel_aligned_rows =
+      (NumChannels > 1)
+      && ((size_t(d_native_samples) & pixel_mask) == 0)
+      && ((row_bytes & pixel_mask) == 0);
+
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
+    if ((d_native_samples != nullptr) && (vec_aligned_rows || pixel_aligned_rows))
+    {
+      ConsumeTilesHybrid<true>(
+        num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
+    }
+    else
+    {
+      ConsumeTilesHybrid<false>(
+        num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
+    }
+  }
+
+  //! Initialize hybrid mode counters: SMEM range [0, hybrid_split_bin) and per-block GMEM
+  //! range [0, hybrid_secondary_size). Single sync at the end.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCountersHybrid()
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      // Zero the SMEM primary range
+      for (int bin = threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+      {
+        temp_storage.histograms[ch][bin] = 0;
+      }
+      // Zero the per-block GMEM secondary slab
+      for (int bin = threadIdx.x; bin < hybrid_secondary_size; bin += threads_per_block)
+      {
+        d_hybrid_secondary_histograms[ch][bin] = 0;
+      }
+    }
+
+    __syncthreads();
+  }
+
+  //! Flush the SMEM primary histogram for hybrid mode to the per-block staging slab.
+  //! After this call, both the primary slab (`d_privatized_histograms[ch][0..split)`)
+  //! and the secondary slab (`d_hybrid_secondary_histograms[ch][0..secondary)`) hold
+  //! this block's contributions for chunk0 and chunk1 respectively.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreHybridSmemToStagingSlab()
+  {
+    __syncthreads();
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      for (int bin = threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+      {
+        d_privatized_histograms[ch][bin] = temp_storage.histograms[ch][bin];
       }
     }
   }
@@ -882,6 +1165,86 @@ struct AgentHistogram
     {
       this->temp_storage.histograms[ch] = p;
       p += num_privatized_bins[ch];
+    }
+  }
+
+  //! Hybrid SMEM+GMEM constructor (for the hybrid single-pass kernel).
+  //!
+  //! Used when `UseDynamicSmemHistogram == true` and the caller wants a hybrid
+  //! split: bins `[0, hybrid_split_bin)` accumulate in dyn-SMEM (sized for `hybrid_split_bin`
+  //! per channel), and bins `[hybrid_split_bin, hybrid_split_bin + hybrid_secondary_size)`
+  //! accumulate in a per-block per-channel GMEM staging slab.
+  //!
+  //! `d_secondary_histograms[ch]` is the all-blocks staging-slab base for channel ch,
+  //! the same shape as `d_privatized_histograms[ch]` but sized for `hybrid_secondary_size`
+  //! bins per block. Both `d_privatized_histograms[ch]` and `d_secondary_histograms[ch]`
+  //! are offset to this block's slab inside the constructor.
+  //!
+  //! `num_privatized_bins[ch]` here is the SMEM (primary) bin count per channel, which
+  //! equals `hybrid_split_bin` for the simple equal-channels case used by the hybrid kernel.
+  //! `hybrid_secondary_size` is the GMEM (secondary) bin count per channel.
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
+    TempStorage& temp_storage,
+    SampleIteratorT d_samples,
+    const int* num_output_bins,
+    const int* num_privatized_bins,
+    CounterT** d_output_histograms,
+    CounterT** d_privatized_histograms,
+    CounterT** d_secondary_histograms,
+    const OutputDecodeOpT* output_decode_op,
+    const PrivatizedDecodeOpT* privatized_decode_op,
+    CounterT* dyn_smem_histogram_base,
+    int hybrid_split_bin_arg,
+    int hybrid_secondary_size_arg)
+      : temp_storage(temp_storage.Alias())
+      , d_wrapped_samples(d_samples)
+      , d_native_samples(NativePointer(d_wrapped_samples))
+      , num_output_bins(num_output_bins)
+      , num_privatized_bins(num_privatized_bins)
+      , d_output_histograms(d_output_histograms)
+      , output_decode_op(output_decode_op)
+      , privatized_decode_op(privatized_decode_op)
+      , prefer_smem(true)
+      , hybrid_split_bin(hybrid_split_bin_arg)
+      , hybrid_secondary_size(hybrid_secondary_size_arg)
+  {
+    static_assert(UseDynamicSmemHistogram,
+                  "Hybrid AgentHistogram constructor requires UseDynamicSmemHistogram=true.");
+
+    const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
+
+    // Initialize the partition bounds to no-op (full bin range) for hybrid mode.
+    // Hybrid mode does its own bin routing inside AccumulatePixelsHybrid; the
+    // partition gating in the regular paths is not used here.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      partition_lo[ch] = 0;
+      partition_hi[ch] = ::cuda::std::numeric_limits<int>::max();
+    }
+
+    // Initialize per-channel per-block primary GMEM staging slab pointers (sized for hybrid_split_bin).
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      this->d_privatized_histograms[ch] =
+        d_privatized_histograms[ch] + (blockId * hybrid_split_bin_arg);
+    }
+
+    // Initialize per-channel per-block secondary GMEM slab pointers (sized for hybrid_secondary_size).
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      this->d_hybrid_secondary_histograms[ch] =
+        d_secondary_histograms[ch] + (blockId * hybrid_secondary_size_arg);
+    }
+
+    // Initialize per-channel SMEM pointers from the extern __shared__ base. Channels are laid
+    // out contiguously: ch=0 starts at base, ch=1 starts at base + hybrid_split_bin, etc.
+    CounterT* p = dyn_smem_histogram_base;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      this->temp_storage.histograms[ch] = p;
+      p += hybrid_split_bin_arg;
     }
   }
 
