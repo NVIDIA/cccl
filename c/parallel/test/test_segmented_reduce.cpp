@@ -413,8 +413,8 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 
   for (std::size_t i = 0; i < n_segments; ++i)
   {
-    auto segment_begin_it = host_input.begin() + segments[i];
-    auto segment_end_it   = host_input.begin() + segments[i + 1];
+    auto segment_begin_it = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i]);
+    auto segment_end_it   = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i + 1]);
     host_output[i]        = std::reduce(segment_begin_it, segment_end_it, v0, [](pair lhs, pair rhs) {
       return pair{static_cast<short>(lhs.a + rhs.a), lhs.b + rhs.b};
     });
@@ -484,8 +484,8 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 
   for (std::size_t i = 0; i < n_segments; ++i)
   {
-    auto segment_begin_it = host_input.begin() + segments[i];
-    auto segment_end_it   = host_input.begin() + segments[i + 1];
+    auto segment_begin_it = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i]);
+    auto segment_end_it   = host_input.begin() + static_cast<std::ptrdiff_t>(segments[i + 1]);
     host_output[i]        = std::reduce(segment_begin_it, segment_end_it, v0, [](pair lhs, pair rhs) {
       return pair{static_cast<short>(lhs.a + rhs.a), lhs.b + rhs.b};
     });

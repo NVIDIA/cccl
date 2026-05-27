@@ -23,7 +23,8 @@ __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT actio
   constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
   T reg[ITEMS_PER_THREAD];
 
   for (int item = 0; item < ITEMS_PER_THREAD; item++)

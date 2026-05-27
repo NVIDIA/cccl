@@ -153,7 +153,7 @@ struct AgentRadixSortHistogram
   {
     // Initialize bins to 0.
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -213,7 +213,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)

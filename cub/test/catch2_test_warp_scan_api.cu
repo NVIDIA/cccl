@@ -40,9 +40,9 @@ __global__ void InclusiveWarpScanKernel(int* output)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = threadIdx.x / 32;
+  int warp_id       = static_cast<int>(threadIdx.x / 32);
   int initial_value = 3;
-  int thread_data   = threadIdx.x % 32 + warp_id;
+  int thread_data   = static_cast<int>(threadIdx.x % 32) + warp_id;
 
   // warp #0 input: {0, 1, 2, 3, ..., 31}
   // warp #1 input: {1, 2, 3, 4, ..., 32}
@@ -92,7 +92,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = threadIdx.x / 32;
+  int warp_id       = static_cast<int>(threadIdx.x / 32);
   int initial_value = 3; // for each warp
   int thread_data   = 1;
   int warp_aggregate;
@@ -166,10 +166,10 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id = threadIdx.x / 32;
+  int warp_id = static_cast<int>(threadIdx.x / 32);
 
   int initial_value = 3;
-  int thread_data   = threadIdx.x % 32 + warp_id;
+  int thread_data   = static_cast<int>(threadIdx.x % 32) + warp_id;
   if (threadIdx.x % 2 == 1)
   {
     thread_data = -thread_data;
@@ -244,8 +244,8 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = threadIdx.x / 32;
-  int lane_id       = threadIdx.x % 32;
+  int warp_id       = static_cast<int>(threadIdx.x / 32);
+  int lane_id       = static_cast<int>(threadIdx.x % 32);
   int initial_value = 3; // for each warp
   int thread_data   = (lane_id < num_warps - 1 - warp_id) ? 0 : 1;
   int valid_items   = 40 - warp_id * 16;

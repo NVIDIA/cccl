@@ -671,8 +671,8 @@ struct AgentRadixSortOnesweep
       , num_items(num_items)
       , current_bit(current_bit)
       , num_bits(num_bits)
-      , warp(threadIdx.x / WARP_THREADS)
-      , lane(::cuda::ptx::get_sreg_laneid())
+      , warp(static_cast<int>(threadIdx.x / WARP_THREADS))
+      , lane(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , decomposer(decomposer)
   {
     // initialization

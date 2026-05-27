@@ -34,7 +34,7 @@ struct inc_t
     }
     else
     {
-      value_increment = static_cast<double>(cuda::std::numeric_limits<T>::max()) / num_item;
+      value_increment = static_cast<double>(cuda::std::numeric_limits<T>::max()) / static_cast<double>(num_item);
     }
   }
 
@@ -202,7 +202,7 @@ class check_unordered_output_helper
   // Checks whether all results have been written correctly
   void check_bit_flags(const c2h::device_vector<std::uint32_t>& flag_vector)
   {
-    auto correctness_flags_end = flag_vector.cbegin() + (num_elements / bits_per_element);
+    auto correctness_flags_end = flag_vector.cbegin() + static_cast<std::ptrdiff_t>(num_elements / bits_per_element);
     const bool all_correct =
       thrust::equal(flag_vector.cbegin(), correctness_flags_end, cuda::constant_iterator(0xFFFFFFFFU));
 
@@ -219,7 +219,7 @@ class check_unordered_output_helper
       {
         if (((mismatch_value >> i) & 0x01u) == 0)
         {
-          bit_index = i;
+          bit_index = static_cast<int>(i);
           break;
         }
       }

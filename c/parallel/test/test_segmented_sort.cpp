@@ -645,7 +645,7 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   for (std::size_t i = 0; i < n_segments; ++i)
   {
     start_offsets[i] = current_offset;
-    current_offset += segment_sizes[i];
+    current_offset += static_cast<SizeT>(segment_sizes[i]);
     end_offsets[i] = current_offset;
   }
 
