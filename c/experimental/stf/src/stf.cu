@@ -361,7 +361,7 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   // Distinct function pointer types (C typedef vs C++ alias) are not
   // convertible via static_cast under nvcc.
   const auto cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp                        = stf_try_allocate([cpp_mapper, grid_ptr] {
+  auto* dp              = stf_try_allocate([cpp_mapper, grid_ptr] {
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);
