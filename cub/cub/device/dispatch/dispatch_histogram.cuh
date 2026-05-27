@@ -1020,15 +1020,35 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // pixel, more re-decode cost). Restrict partitioning to the
       // single-active-channel range path until we have a finer-grained
       // selector.
-      // Iters 1-5 of this branch found the "full" partitioning variant
-      // (which had each partition's M/2 blocks re-sweep all pixels via
-      // partition_total_threads) regressed multi-channel paths. The
-      // current "lite" variant (every block reads all pixels but only
-      // commits writes to its partition's bin range) has no DRAM cost and
-      // benefits multi-channel high-bin paths the same way as single-
-      // channel, so we run it on both. The remaining gate is the
-      // num_thread_blocks check below.
-      constexpr bool kBinPartitionsEligible = true;
+      // Iters 1-5 of brief 13 found the "full" partitioning variant (which
+      // had each partition's M/2 blocks re-sweep all pixels via
+      // partition_total_threads) regressed multi-channel paths.
+      //
+      // Iter 7+ of brief 13 switched to a "lite" variant: kept the original
+      // grid-strided pixel sweep (every thread strides by `total_threads`,
+      // so every pixel is read by exactly one thread) but added a partition
+      // mask that drops out-of-partition decoded bins to a `bin == -1`
+      // sentinel before atomicAdd. Brief 15 confirmed via standalone
+      // bin-by-bin verification that the lite variant is *unsound*:
+      // samples seen by partition X's threads that decode to bins owned by
+      // partition Y are silently dropped, since no thread in partition Y
+      // reads those pixels and the partition X threads discard them. The
+      // resulting histograms have ~1/BinPartitions of the correct counts
+      // (e.g. BinPartitions=256 multi-channel Bins=60000 verify shows GPU
+      // bins ~25 vs CPU reference ~4500). The bench harness reports
+      // `(samples * sizeof(SampleT) + bins * sizeof(CounterT)) / time` as
+      // GlobalMem BW so dropping samples reduces time and inflates BW;
+      // brief 13's "+340.78%" was reward-hacking. ctest never exercised
+      // this path because the existing tests cap Bins at 1024 while the
+      // direct-atomic kernel fires at Bins >= 16384 multi / 2^20 single.
+      //
+      // Disable bin partitioning here until we have a structurally correct
+      // partition variant (each block reads ALL pixels via a partition-
+      // local grid-strided loop with stride `partition_total_threads` =
+      // `blocks_per_partition * blockDim.x`). The kernel-side
+      // BinPartitions plumbing stays in place but no axis combination
+      // triggers it at runtime.
+      constexpr bool kBinPartitionsEligible = false;
       // The direct-atomic kernel skips per-block privatization entirely
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
@@ -1052,22 +1072,22 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // gate on `total_pixels / max_num_output_bins >= 4` to avoid
       // running it on configs where atomic contention is already
       // negligible (e.g. Elements=1M / Bins=2M => 0.5 atomics/bin).
-      const OffsetT total_pixels_for_partition =
-        num_row_pixels * num_rows;
-      const bool atomic_contention_high =
-        (max_num_output_bins > 0)
-        && (static_cast<long long>(total_pixels_for_partition)
-            >= 4LL * static_cast<long long>(max_num_output_bins));
-      const bool use_bin_partitions =
-        kBinPartitionsEligible && (num_thread_blocks >= 256) && atomic_contention_high;
       // Pick the kernel pointer through a constexpr branch so the
-      // BinPartitions=4 instantiation only enters the binary on eligible
+      // BinPartitions=256 instantiation only enters the binary on eligible
       // code paths. We type-erase to a `const void*` since the function-
       // pointer types differ in the BinPartitions template arg.
       const void* direct_atomic_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_kernel_p1_ptr);
       if constexpr (kBinPartitionsEligible)
       {
+        const OffsetT total_pixels_for_partition =
+          num_row_pixels * num_rows;
+        const bool atomic_contention_high =
+          (max_num_output_bins > 0)
+          && (static_cast<long long>(total_pixels_for_partition)
+              >= 4LL * static_cast<long long>(max_num_output_bins));
+        const bool use_bin_partitions =
+          (num_thread_blocks >= 256) && atomic_contention_high;
         if (use_bin_partitions)
         {
           auto direct_atomic_kernel_p4_ptr =
