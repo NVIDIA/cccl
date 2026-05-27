@@ -183,7 +183,7 @@ public:
   void set_user_stream(cudaStream_t user_stream)
   {
     // TODO first introduce the user stream in our pool
-    auto dstream = decorated_stream(user_stream);
+    auto dstream = augmented_stream(user_stream);
 
     this->state().user_dstream = dstream;
 
@@ -245,7 +245,7 @@ public:
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
-    decorated_stream dstream =
+    augmented_stream dstream =
       (user_dstream.has_value())
         ? user_dstream.value()
         : exec_place::current_device().getStream(
@@ -623,7 +623,7 @@ private:
 
     event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
-      auto e = reserved::record_event_in_stream(decorated_stream(stream), *get_dot(), mv(symbol));
+      auto e = reserved::record_event_in_stream(augmented_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 
@@ -646,7 +646,7 @@ private:
 
     // If the context is attached to a user stream, we should use it for
     // finalize() or fence()
-    ::std::optional<decorated_stream> user_dstream;
+    ::std::optional<augmented_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
