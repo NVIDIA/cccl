@@ -183,29 +183,28 @@ public:
     // because we want the just-popped buffer's ``deallocate`` to run even on
     // sync failure -- losing the descriptor without freeing would leak. We
     // capture the sync status, do the deallocation, then surface the sync
-    // error via ``cuda_try(sync_err)`` afterwards. We deliberately do not
-    // wrap that in a SCOPE guard: ``data_place_*::deallocate`` itself can
-    // throw (it uses ``cuda_try`` internally for ``cudaFreeHost`` /
-    // ``cudaFree`` / ``cudaFreeAsync``), and SCOPE bodies are ``noexcept``,
-    // so a deallocate-throw during unwinding would call ``std::terminate``.
-    bool stream_synchronized = false;
+    // error via ``cuda_try(cudaStreamSynchronize_result)`` afterwards. We
+    // deliberately do not wrap that in a SCOPE guard: ``data_place_*::
+    // deallocate`` itself can throw (it uses ``cuda_try`` internally for
+    // ``cudaFreeHost`` / ``cudaFree`` / ``cudaFreeAsync``), and SCOPE bodies
+    // are ``noexcept``, so a deallocate-throw during unwinding would call
+    // ``std::terminate``.
+    bool cudaStreamSynchronize_was_called = false;
     while (!adapter_state->to_free.empty())
     {
       const auto b = mv(adapter_state->to_free.back());
       adapter_state->to_free.pop_back();
 
-      cudaError_t sync_err = cudaSuccess;
-      if (!stream_synchronized && !b.memory_node.allocation_is_stream_ordered())
+      cudaError_t cudaStreamSynchronize_result = cudaSuccess;
+      if (!cudaStreamSynchronize_was_called && !b.memory_node.allocation_is_stream_ordered())
       {
-        sync_err = cudaStreamSynchronize(stream);
-        if (sync_err == cudaSuccess)
-        {
-          stream_synchronized = true;
-        }
+        cudaStreamSynchronize_result     = cudaStreamSynchronize(stream);
+        cudaStreamSynchronize_was_called = true;
       }
 
+      // The following two lines may throw, in which case we're left in steady state
       b.memory_node.deallocate(b.ptr, b.sz, stream);
-      cuda_try(sync_err);
+      cuda_try(cudaStreamSynchronize_result);
     }
 
     cleared_or_moved = true;
