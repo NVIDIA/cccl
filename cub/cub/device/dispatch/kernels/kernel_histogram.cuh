@@ -2252,6 +2252,7 @@ template <typename PolicySelector,
           int PrivatizedSmemBins,
           int NumChannels,
           int NumActiveChannels,
+          int BinPartitions,
           typename SampleIteratorT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
@@ -2281,6 +2282,23 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   cg::grid_group grid = cg::this_grid();
 
+  // Lite bin-space partitioning across blocks (BinPartitions > 1):
+  //   block "partition" = block_id % BinPartitions; each block reads ALL pixels
+  //   via ConsumeTiles (no DRAM doubling) but only commits atomicAdd_block
+  //   writes to the per-block dyn-SMEM staging slab for bins in
+  //   [partition*W, (partition+1)*W) where W = num_privatized_bins / BinPartitions.
+  //   Out-of-partition decoded bins are folded to the bin = -1 sentinel inside
+  //   AgentHistogram::AccumulatePixels and the warp/RLE coalescer skips them.
+  //   Halves cross-block atomic contention on hot bins without doubling DRAM
+  //   sample reads. The Phase-4 cross-block sum still iterates all blocks per
+  //   bin column; non-owner blocks' slab slots are zero (the SMEM was zeroed by
+  //   InitBinCounters and the partition mask prevents any non-zero writes), so
+  //   the sum is correct.
+  static_assert(BinPartitions == 1 || BinPartitions == 2 || BinPartitions == 4 || BinPartitions == 8
+                  || BinPartitions == 16 || BinPartitions == 32 || BinPartitions == 64 || BinPartitions == 128
+                  || BinPartitions == 256,
+                "BinPartitions must be 1, 2, 4, 8, 16, 32, 64, 128, or 256");
+
   using AgentHistogramPolicyT =
     AgentHistogramPolicy<hp.threads_per_block,
                          hp.pixels_per_thread,
@@ -2300,7 +2318,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
                    OffsetT,
-                   /* UseDynamicSmemHistogram = */ true>;
+                   /* UseDynamicSmemHistogram = */ true,
+                   BinPartitions>;
 
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
 

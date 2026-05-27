@@ -503,7 +503,17 @@ struct DeviceHistogramKernelSource
 
   /// Host-init FUSED dynamic-SMEM staging+combine sweep kernel. Used for cooperative
   /// launch that fuses sweep+combine into one kernel via grid_group::sync().
-  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  ///
+  /// `BinPartitions` controls "lite" bin-space partitioning across blocks: each block
+  /// reads all input pixels but only commits SMEM atomicAdd_block writes to bins in
+  /// its partition's range, halving cross-block contention on hot bins without
+  /// doubling DRAM sample reads. `BinPartitions == 1` is the legacy (non-partitioned)
+  /// path.
+  template <typename PolicyT,
+            int PRIVATIZED_SMEM_BINS,
+            int BinPartitions,
+            typename PrivatizedDecodeOpT,
+            typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingFusedHostInitDynSmemKernel()
   {
     return &DeviceHistogramSweepStagingFusedHostInitDynSmemKernel<
@@ -511,6 +521,7 @@ struct DeviceHistogramKernelSource
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
+      BinPartitions,
       SampleIteratorT,
       CounterT,
       PrivatizedDecodeOpT,
@@ -1243,10 +1254,25 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // also uses this convention.
       dim3 fused_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
 
-      auto fused_kernel_ptr =
+      // BinPartitions plumbing for the staging fused kernel. We instantiate
+      // BinPartitions=1 (the legacy non-partitioned path) by default. The
+      // AgentHistogram template now carries the BinPartitions parameter
+      // through to its AccumulatePixels paths so a follow-up iteration can
+      // enable a true "all-pixels-per-block" partition variant; the simple
+      // "lite" mask alone (block-id % BinPartitions decides which bins this
+      // block atomicAdd_blocks to, while keeping the block's even-share tile
+      // assignment) is *unsound* for AgentHistogram-based kernels because
+      // each block sees only its tile slice -- samples on block 0's tiles
+      // mapping to bins block 1 owns are dropped. (`DeviceHistogramSweep
+      // DirectAtomicPersistentKernel` exhibits this same bug for
+      // BinPartitions > 1, because every thread also strides by
+      // `total_threads` so every pixel is read by exactly one thread; lite
+      // there silently drops 1/BinPartitions of samples. See brief stop.)
+      auto fused_kernel_p1_ptr =
         kernel_source.template HistogramSweepStagingFusedHostInitDynSmemKernel<
             PolicySelector,
             PRIVATIZED_SMEM_BINS,
+            /*BinPartitions=*/1,
             privatized_decode_op_t,
             output_decode_op_t>();
 
@@ -1261,6 +1287,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                               PRIVATIZED_SMEM_BINS,
                                                               NUM_CHANNELS,
                                                               NUM_ACTIVE_CHANNELS,
+                                                              /*BinPartitions=*/1,
                                                               SampleIteratorT,
                                                               CounterT,
                                                               privatized_decode_op_t,
@@ -1281,9 +1308,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             tile_queue);
       }
 
-      // Raise the dyn-SMEM cap on the fused kernel before launch (the previous
-      // `set_max_dynamic_smem_size_for(sweep_kernel, ...)` call set it on the
-      // staging-only kernel, but that's a different function pointer).
+      const void* fused_kernel_ptr_void = reinterpret_cast<const void*>(fused_kernel_p1_ptr);
+      auto fused_kernel_ptr             = fused_kernel_p1_ptr;
+
+      // Raise the dyn-SMEM cap on the fused kernel before launch.
       cudaError_t cap_err =
         launcher_factory.set_max_dynamic_smem_size_for(fused_kernel_ptr, dyn_smem_bytes_for_staging);
       if (cap_err != cudaSuccess)
@@ -1300,6 +1328,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         // Cooperative launch requires `num_thread_blocks <= sm_count *
         // sm_occupancy_of_the_kernel_we_are_launching`. If the fused kernel
         // doesn't fit at the staging-grid size, fall back gracefully.
+        // We query the BinPartitions=1 instantiation; the partition mask in
+        // BinPartitions=2 adds only branch-predicate work in the
+        // already-register-heavy AccumulatePixels path, so its occupancy is
+        // effectively identical to BinPartitions=1.
         int fused_sm_occupancy = 0;
         const auto occ_err = launcher_factory.MaxSmOccupancy(
           fused_sm_occupancy, fused_kernel_ptr, threads_per_block, dyn_smem_bytes_for_staging);
@@ -1342,7 +1374,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
             const_cast<void*>(static_cast<const void*>(&tile_queue))};
           cudaError_t coop_status = cudaLaunchCooperativeKernel(
-            reinterpret_cast<const void*>(fused_kernel_ptr),
+            fused_kernel_ptr_void,
             fused_grid_dims,
             dim3{static_cast<unsigned int>(threads_per_block)},
             kernel_args,

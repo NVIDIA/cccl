@@ -206,9 +206,15 @@ template <typename AgentHistogramPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool UseDynamicSmemHistogram = false>
+          bool UseDynamicSmemHistogram = false,
+          int BinPartitions            = 1>
 struct AgentHistogram
 {
+  static_assert(BinPartitions == 1 || BinPartitions == 2 || BinPartitions == 4 || BinPartitions == 8
+                  || BinPartitions == 16 || BinPartitions == 32 || BinPartitions == 64 || BinPartitions == 128
+                  || BinPartitions == 256,
+                "BinPartitions must be 1, 2, 4, 8, 16, 32, 64, 128, or 256");
+
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
   static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
   static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
@@ -280,6 +286,18 @@ struct AgentHistogram
   const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
                                                    // channel
   bool prefer_smem; // for privatized counterss
+
+  // Per-channel "lite" bin-space partition bounds. When BinPartitions > 1, this
+  // block only commits SMEM/GMEM atomicAdd_block writes for bins in
+  // [partition_lo[ch], partition_hi[ch]); other bins are skipped at the
+  // accumulate-write step (the decode + load still happens, but the atomic is
+  // elided). Halves cross-block atomic contention on the staging-slab reduce
+  // path without doubling DRAM sample reads, mirroring the lite partitioning
+  // applied by `DeviceHistogramSweepDirectAtomicPersistentKernel`.
+  // For BinPartitions == 1 the bounds are [0, INT_MAX) so the partition mask is
+  // a no-op.
+  int partition_lo[NumActiveChannels];
+  int partition_hi[NumActiveChannels];
 
   template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
@@ -368,6 +386,18 @@ struct AgentHistogram
            for (int pixel = 0; pixel < pixels_per_thread; ++pixel) {
              int bin = -1;
              privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+             // Lite bin-space partition mask: drop bins outside this block's
+             // partition range so lite-partitioned kernels (BinPartitions > 1)
+             // skip the warp coalescer's atomicAdd_block for out-of-partition
+             // bins. For BinPartitions == 1 the bounds are wide so the test
+             // is always true (and the compiler can fold the check away).
+             if constexpr (BinPartitions != 1)
+             {
+               if (bin < partition_lo[ch] || bin >= partition_hi[ch])
+               {
+                 bin = -1;
+               }
+             }
              const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
              const int leader_lane    = __ffs(static_cast<int>(peers)) - 1;
              if (bin >= 0 && lane_id == leader_lane) {
@@ -383,6 +413,13 @@ struct AgentHistogram
            for (int pixel = 0; pixel < pixels_per_thread; ++pixel) {
              int bin = -1;
              privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+             if constexpr (BinPartitions != 1)
+             {
+               if (bin < partition_lo[ch] || bin >= partition_hi[ch])
+               {
+                 bin = -1;
+               }
+             }
              if (bin >= 0) {
                NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
                                  (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
@@ -406,6 +443,15 @@ struct AgentHistogram
         {
           bins[pixel] = -1;
           privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
+          // Lite bin-space partition mask: fold out-of-partition bins to the
+          // -1 sentinel so RLE-compress treats them as no-op groups.
+          if constexpr (BinPartitions != 1)
+          {
+            if (bins[pixel] < partition_lo[ch] || bins[pixel] >= partition_hi[ch])
+            {
+              bins[pixel] = -1;
+            }
+          }
         }
 
         CounterT accumulator = 1;
@@ -454,6 +500,15 @@ struct AgentHistogram
       {
         int bin = -1;
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+        // Lite bin-space partition mask: drop out-of-partition bins so the
+        // atomicAdd_block is skipped for them.
+        if constexpr (BinPartitions != 1)
+        {
+          if (bin < partition_lo[ch] || bin >= partition_hi[ch])
+          {
+            bin = -1;
+          }
+        }
         if (bin >= 0)
         {
           NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
@@ -669,6 +724,44 @@ struct AgentHistogram
   // Parameter extraction
   //---------------------------------------------------------------------
 
+  //! Compute the per-channel "lite" bin-space partition bounds for this
+  //! block. With `BinPartitions > 1` we split each channel's bin space into
+  //! `BinPartitions` equal-width slices. Block `b` owns slice
+  //! `b % BinPartitions`. The last slice extends to the channel's bin count
+  //! so non-divisible splits are absorbed by the last slice.
+  //!
+  //! For `BinPartitions == 1` we set the bounds to `[0, INT_MAX)` so the
+  //! `partition_lo[ch] <= bin && bin < partition_hi[ch]` test in
+  //! `AccumulatePixels` is always true (and the compiler can fold the
+  //! check away when the template parameter is known).
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitPartitionBounds(int block_id)
+  {
+    if constexpr (BinPartitions == 1)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        partition_lo[ch] = 0;
+        partition_hi[ch] = (1 << 30); // Much larger than any practical bin count
+      }
+    }
+    else
+    {
+      const unsigned int partition =
+        static_cast<unsigned int>(block_id) % static_cast<unsigned int>(BinPartitions);
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        const int n         = num_privatized_bins[ch];
+        const int part_size = n / static_cast<int>(BinPartitions);
+        partition_lo[ch]    = static_cast<int>(partition) * part_size;
+        partition_hi[ch]    = (partition == static_cast<unsigned int>(BinPartitions) - 1u)
+                                ? n
+                                : (static_cast<int>(partition) + 1) * part_size;
+      }
+    }
+  }
+
   //! @brief Constructor
   //!
   //! @param temp_storage
@@ -722,6 +815,10 @@ struct AgentHistogram
 
     const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
 
+    // Initialize the lite bin-space partition bounds. For BinPartitions == 1
+    // (the default) the bounds span the full bin range so no filter is applied.
+    InitPartitionBounds(blockId);
+
     // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
     // Initialize the locations of this block's privatized histograms
     for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -764,6 +861,10 @@ struct AgentHistogram
                   "Dynamic-SMEM AgentHistogram constructor requires UseDynamicSmemHistogram=true.");
 
     const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
+
+    // Initialize the lite bin-space partition bounds. For BinPartitions == 1
+    // (the default) the bounds span the full bin range so no filter is applied.
+    InitPartitionBounds(blockId);
 
     // Initialize the locations of this block's privatized GMEM histograms.
     for (int ch = 0; ch < NumActiveChannels; ++ch)
