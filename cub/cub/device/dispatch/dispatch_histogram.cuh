@@ -1048,9 +1048,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         && (static_cast<long long>(total_pixels_for_partition)
             >= 4LL * static_cast<long long>(max_num_output_bins));
       const bool use_bin_partitions =
-        kBinPartitionsEligible && (num_thread_blocks >= 2) && atomic_contention_high;
+        kBinPartitionsEligible && (num_thread_blocks >= 4) && atomic_contention_high;
       // Pick the kernel pointer through a constexpr branch so the
-      // BinPartitions=2 instantiation only enters the binary on eligible
+      // BinPartitions=4 instantiation only enters the binary on eligible
       // code paths. We type-erase to a `const void*` since the function-
       // pointer types differ in the BinPartitions template arg.
       const void* direct_atomic_kernel_ptr_void =
@@ -1059,19 +1059,19 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       {
         if (use_bin_partitions)
         {
-          auto direct_atomic_kernel_p2_ptr =
+          auto direct_atomic_kernel_p4_ptr =
             &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
                                                               PRIVATIZED_SMEM_BINS,
                                                               NUM_CHANNELS,
                                                               NUM_ACTIVE_CHANNELS,
-                                                              /*BinPartitions=*/2,
+                                                              /*BinPartitions=*/4,
                                                               SampleIteratorT,
                                                               CounterT,
                                                               privatized_decode_op_t,
                                                               output_decode_op_t,
                                                               OffsetT>;
           direct_atomic_kernel_ptr_void =
-            reinterpret_cast<const void*>(direct_atomic_kernel_p2_ptr);
+            reinterpret_cast<const void*>(direct_atomic_kernel_p4_ptr);
         }
       }
       // For occupancy queries we still need a typed function pointer; both
@@ -1106,7 +1106,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                            PRIVATIZED_SMEM_BINS,
                                                            NUM_CHANNELS,
                                                            NUM_ACTIVE_CHANNELS,
-                                                           /*BinPartitions=*/2,
+                                                           /*BinPartitions=*/4,
                                                            SampleIteratorT,
                                                            CounterT,
                                                            privatized_decode_op_t,
