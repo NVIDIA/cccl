@@ -1846,7 +1846,9 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+// minBlocks=2 hint to unlock register-bound 1-block-per-SM occupancy on
+// SMEM-light staging tiers (Bins<=2048 paths use ~8 KB static SMEM).
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingHostInitKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -1934,7 +1936,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+// minBlocks=2 hint mirrors DeviceHistogramSweepStagingHostInitKernel.
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -2056,7 +2059,14 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+// Hint the compiler to fit at least 2 blocks per SM. Mirrors the FUSED variants
+// (single-chunk and dual-chunk) further below; this kernel is also used by the
+// host-init non-byte staging dispatch path and the dispatch sizes the grid
+// using ITS sm_occupancy. Without this hint the staging-only kernel would
+// remain register-bound at 1 block/SM and the dispatch would launch only
+// `sm_count * 1 = 148` blocks even when the (now-occupancy-2) FUSED variant
+// could host 2 * 148 = 296 blocks.
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingHostInitDynSmemKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -2148,7 +2158,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+// minBlocks=2 hint mirrors DeviceHistogramSweepStagingHostInitDynSmemKernel.
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingDynSmemKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -2291,7 +2302,13 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+// Hint the compiler to fit at least 2 blocks per SM. NCU showed Block Limit
+// Registers = 1 for the fused staging+combine kernel (68 regs/thread × 768 threads
+// = 52 KiB regs/block exceeds 32 KiB/block needed for 2 blocks/SM out of B200's
+// 64 KiB regs/SM). Forcing the compiler to budget for 2 blocks reduces register
+// allocation per thread and unlocks higher occupancy when SMEM fits (Bins<=8192
+// staging tiers).
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingFusedHostInitDynSmemKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
