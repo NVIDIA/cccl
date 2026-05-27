@@ -9,6 +9,8 @@
 
 #include <cuda/experimental/copy.cuh>
 
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 
 #include <nvbench/nvbench.cuh>
@@ -157,25 +159,27 @@ void memcpy_neg(nvbench::state& state)
 }
 NVBENCH_BENCH(memcpy_neg).set_name("contiguous-negative-stride (5D, int, 4GB)");
 
-// src: (134217600, 32):(64, 1)
-// dst: (134217600, 32):(64, 1)
+// src: (134217600, 32):(128, 1), offset=32
+// dst: (134217600, 32):(128, 1), offset=32
+// Copies 4GB while allocating 16GB per tensor because of the padded outer stride.
 void vectorization(nvbench::state& state)
 {
   cuda::std::array<int64_t, 2> shape{134217600, 32};
   cuda::std::array<int64_t, 2> strides{128, 1};
   bench_copy<char, int64_t>(state, 32, shape, strides);
 }
-NVBENCH_BENCH(vectorization).set_name("vectorization (2D, char, 4GB)");
+NVBENCH_BENCH(vectorization).set_name("vectorization (2D, char, 4GB copy, 16GB alloc)");
 
-// src: (32 767, (128 * 1024) / sizeof(int)):(128 * 1024, 1)
-// dst: (32 767, (128 * 1024) / sizeof(int)):(128 * 1024, 1)
-void block_countiguous(nvbench::state& state)
+// src: (32767, (128 * 1024) / sizeof(int)):(128 * 1024, 1)
+// dst: (32767, (128 * 1024) / sizeof(int)):(128 * 1024, 1)
+// Copies 4GB while allocating 16GB per tensor because each row is padded to 128K elements.
+void block_contiguous(nvbench::state& state)
 {
   cuda::std::array<int, 2> shape{32767, (128 * 1024) / sizeof(int)};
   cuda::std::array<int, 2> strides{128 * 1024, 1};
   bench_copy(state, 0, shape, strides);
 }
-NVBENCH_BENCH(block_countiguous).set_name("block-countiguous (2D, int, 2GB)");
+NVBENCH_BENCH(block_contiguous).set_name("block-contiguous (2D, int, 4GB copy, 16GB alloc)");
 // (non-vectorizable)
 
 void several_dimensions(nvbench::state& state)
