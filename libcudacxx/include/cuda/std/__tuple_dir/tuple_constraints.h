@@ -171,72 +171,73 @@ template <class... _Types, enable_if_t<::cuda::std::__tuple_is_copy_constructibl
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(...) noexcept
   -> _InvalidTupleConstructor;
 
-template <class... _Types>
-struct __tuple_constraints
-{
-  template <class... _UTypes>
-  struct _VariadicConstructibleTraits
-  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
-    static constexpr bool __implicit_constructible = (is_convertible_v<_UTypes, _Types> && ...);
-    static constexpr bool __explicit_constructible = !__implicit_constructible;
-    static constexpr bool __nothrow_constructible  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
-  };
+template <class, class>
+struct _TupleVariadicConstructibleTraits;
 
-  template <class... _UTypes>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool __is_variadic_constructible() noexcept
-  {
-    if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
-    { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
-      return false;
-    }
-    else if constexpr (sizeof...(_Types) == 0)
-    { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
-      return false;
-    }
-    else if constexpr (sizeof...(_Types) == 1)
-    { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
-      using _U0 = __type_index_c<0, _UTypes...>;
-      if constexpr (!is_same_v<remove_cvref_t<_U0>, tuple<_Types...>>)
-      { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-        return (is_constructible_v<_Types, _UTypes> && ...);
-      }
-      else
-      {
-        return false;
-      }
-    }
-    else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
-    { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
-      //    !is_same_v<remove_cvref_t<U0>, allocator_arg_t> || is_same_v<remove_cvref_t<T0>, allocator_arg_t>>
-      using _U0 = __type_index_c<0, _UTypes...>;
-      using _T0 = __type_index_c<0, _Types...>;
-      if constexpr (!is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>)
-      { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-        return (is_constructible_v<_Types, _UTypes> && ...);
-      }
-      else
-      {
-        return false;
-      }
-    }
-    else
+template <class... _Types, class... _UTypes>
+struct _TupleVariadicConstructibleTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
+{ // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+  static constexpr bool __implicit_constructible = (is_convertible_v<_UTypes, _Types> && ...);
+  static constexpr bool __explicit_constructible = !__implicit_constructible;
+  static constexpr bool __nothrow_constructible  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
+};
+
+template <class... _Types, class... _UTypes>
+[[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool
+__tuple_is_variadic_constructible_constraint(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
+{
+  if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
+  { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
+    return false;
+  }
+  else if constexpr (sizeof...(_Types) == 0)
+  { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
+    return false;
+  }
+  else if constexpr (sizeof...(_Types) == 1)
+  { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
+    using _U0 = __type_index_c<0, _UTypes...>;
+    if constexpr (!is_same_v<remove_cvref_t<_U0>, tuple<_Types...>>)
     { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
       return (is_constructible_v<_Types, _UTypes> && ...);
     }
+    else
+    {
+      return false;
+    }
   }
+  else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
+  { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
+    //    !is_same_v<remove_cvref_t<U0>, allocator_arg_t> || is_same_v<remove_cvref_t<T0>, allocator_arg_t>>
+    using _U0 = __type_index_c<0, _UTypes...>;
+    using _T0 = __type_index_c<0, _Types...>;
+    if constexpr (!is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>)
+    { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+      return (is_constructible_v<_Types, _UTypes> && ...);
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+    return (is_constructible_v<_Types, _UTypes> && ...);
+  }
+}
 
-  template <class... _UTypes, enable_if_t<__is_variadic_constructible<_UTypes...>(), int> = 0>
-  [[nodiscard]]
-  _CCCL_API static _CCCL_CONSTEVAL auto __is_variadic_constructible(__tuple_types<_UTypes...>) noexcept
-    -> _VariadicConstructibleTraits<_UTypes...>;
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __is_variadic_constructible(...) noexcept
-    -> _InvalidTupleConstructor;
+_CCCL_TEMPLATE(class... _Types, class... _UTypes)
+_CCCL_REQUIRES(
+  ::cuda::std::__tuple_is_variadic_constructible_constraint(__tuple_types<_Types...>{}, __tuple_types<_UTypes...>{}))
+[[nodiscard]] _CCCL_API
+_CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
+  -> _TupleVariadicConstructibleTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>;
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(...) noexcept
+  -> _InvalidTupleConstructor;
 
-  // Get the constraints for the constructor with less rank
-  template <class... _UTypes>
-  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __get_sub_constraints(__tuple_types<_UTypes...>) noexcept
-    -> __tuple_constraints<_UTypes...>;
-
+template <class... _Types>
+struct __tuple_constraints
+{
   template <class... _UTypes>
   [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_constructible_less_rank() noexcept
   {
@@ -248,10 +249,9 @@ struct __tuple_constraints
     {
       using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
       using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-      using __constraints_with_arg = decltype(__get_sub_constraints(__arg_list{}));
 
       using __traits_with_arg =
-        decltype(__constraints_with_arg::__is_variadic_constructible(__tuple_types<_UTypes...>{}));
+        decltype(::cuda::std::__tuple_is_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{}));
       using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(__defaulted_list{}));
 
       // The constructor is always explicit.

@@ -155,8 +155,12 @@ public:
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, __t)
   {}
 
+  template <class... _UTypes>
+  using _VariadicConstraints =
+    decltype(::cuda::std::__tuple_is_variadic_constructible(__tuple_types<_Tp...>{}, __tuple_types<_UTypes...>{}));
+
   template <class _Alloc,
-            class _Constraints = decltype(_Constraints::__is_variadic_constructible(__tuple_types<_Tp...>{})),
+            class _Constraints                                       = _VariadicConstraints<_Tp...>,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, tuple&& __t) noexcept(
     _Constraints::__nothrow_constructible)
@@ -164,7 +168,7 @@ public:
   {}
 
   template <class _Alloc,
-            class _Constraints = decltype(_Constraints::__is_variadic_constructible(__tuple_types<_Tp...>{})),
+            class _Constraints                                       = _VariadicConstraints<_Tp...>,
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t, const _Alloc& __a, tuple&& __t) noexcept(
     _Constraints::__nothrow_constructible)
@@ -172,14 +176,14 @@ public:
   {}
 
   template <class... _UTypes,
-            class _Constraints = decltype(_Constraints::__is_variadic_constructible(__tuple_types<_UTypes...>{})),
+            class _Constraints                                       = _VariadicConstraints<_UTypes...>,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple(_UTypes&&... __u) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class... _UTypes,
-            class _Constraints = decltype(_Constraints::__is_variadic_constructible(__tuple_types<_UTypes...>{})),
+            class _Constraints                                       = _VariadicConstraints<_UTypes...>,
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API constexpr explicit tuple(_UTypes&&... __u) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
@@ -187,7 +191,7 @@ public:
 
   template <class _Alloc,
             class... _UTypes,
-            class _Constraints = decltype(_Constraints::__is_variadic_constructible(__tuple_types<_UTypes...>{})),
+            class _Constraints                                       = _VariadicConstraints<_UTypes...>,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
     _Constraints::__nothrow_constructible)
@@ -196,7 +200,7 @@ public:
 
   template <class _Alloc,
             class... _UTypes,
-            class _Constraints = decltype(_Constraints::__is_variadic_constructible(__tuple_types<_UTypes...>{})),
+            class _Constraints                                       = _VariadicConstraints<_UTypes...>,
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
     _Constraints::__nothrow_constructible)

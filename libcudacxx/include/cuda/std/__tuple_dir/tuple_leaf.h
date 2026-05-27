@@ -388,7 +388,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   // Handle non-allocator, full initialization
   // Old MSVC cannot handle the noexept specifier outside of template arguments
   template <class... _Up,
-            class _Constraints = decltype(_Constraints::__is_variadic_constructible(__tuple_types<_Up...>{})),
+            class _Constraints = decltype(::cuda::std::__tuple_is_variadic_constructible(
+              __tuple_types<_Tp...>{}, __tuple_types<_Up...>{})),
             enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
   _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag,
                                             _Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
