@@ -147,7 +147,7 @@ typedef struct stf_dim4
 } stf_dim4;
 
 //! \brief Partition (mapper) function: data coordinates -> grid position.
-//! Writes the result into \p *result.  The out-pointer convention is used
+//! Writes the result into \p *result. The out-pointer convention is used
 //! instead of return-by-value so that the signature is trivially representable
 //! in FFI frameworks (ctypes, cffi, Rust) that cannot return C structs.
 typedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);

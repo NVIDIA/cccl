@@ -482,11 +482,10 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
   auto* grid_ptr = from_opaque(grid);
-  // stf_get_executor_fn (C types: stf_pos4/stf_dim4) and partition_fn_t (C++ types: pos4/dim4)
-  // have identical signatures and layout-compatible argument types (verified by static_asserts
-  // above).  Two typedefs are needed because the C header cannot use C++ class definitions.
-  partition_fn_t cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp                  = stf_try_allocate([cpp_mapper, grid_ptr] {
+  // Distinct function pointer types (C typedef vs C++ alias) are not
+  // convertible via static_cast under nvcc.
+  const auto cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
+  auto* dp              = stf_try_allocate([cpp_mapper, grid_ptr] {
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);
