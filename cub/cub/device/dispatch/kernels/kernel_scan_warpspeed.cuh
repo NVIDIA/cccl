@@ -806,8 +806,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   const scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
-  using agent = agent_warpspeed_scan<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>;
-
   // Cache special registers at start of kernel
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
@@ -830,9 +828,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
     return r;
   }();
 
-  // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
   warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
-    agent{specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res}
+    agent_warpspeed_scan<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>{
+      specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res}
       .dispatch_squad(squad);
   });
 #endif // __cccl_ptx_isa >= 860
