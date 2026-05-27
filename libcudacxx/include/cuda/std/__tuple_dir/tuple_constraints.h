@@ -237,6 +237,32 @@ _CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(__tuple_types<_Types...>,
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(...) noexcept
   -> _InvalidTupleConstructor;
 
+template <class, class>
+struct _TupleVariadicConstructibleLessRankTraits;
+
+template <class... _Types, class... _UTypes>
+struct _TupleVariadicConstructibleLessRankTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
+{
+  using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
+  using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
+
+  using __traits_with_arg =
+    decltype(::cuda::std::__tuple_is_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{}));
+  using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(__defaulted_list{}));
+
+  // The constructor is always explicit.
+  static constexpr bool __is_arg_constructible =
+    __traits_with_arg::__implicit_constructible || __traits_with_arg::__explicit_constructible;
+  static constexpr bool __rest_is_default_constructible =
+    __traits_defaulted::__implicit_constructible || __traits_defaulted::__explicit_constructible;
+  static constexpr bool __is_nothrow =
+    __traits_with_arg::__nothrow_constructible && __traits_defaulted::__nothrow_constructible;
+
+  static constexpr bool __implicit_constructible = false;
+  static constexpr bool __explicit_constructible = __is_arg_constructible && __rest_is_default_constructible;
+  static constexpr bool __nothrow_constructible  = __is_nothrow;
+};
+
 template <class, class, class>
 struct _TupleTupleLikeConstructibleTraits;
 
@@ -310,37 +336,6 @@ template <class>
 template <class... _Types>
 struct __tuple_constraints
 {
-  template <class... _UTypes>
-  [[nodiscard]] static _CCCL_API _CCCL_CONSTEVAL auto __check_variadic_constructible_less_rank() noexcept
-  {
-    if constexpr (sizeof...(_UTypes) == 0)
-    {
-      return _InvalidTupleConstructor{};
-    }
-    else if constexpr (sizeof...(_UTypes) < sizeof...(_Types))
-    {
-      using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
-      using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-
-      using __traits_with_arg =
-        decltype(::cuda::std::__tuple_is_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{}));
-      using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(__defaulted_list{}));
-
-      // The constructor is always explicit.
-      constexpr bool __is_arg_constructible =
-        __traits_with_arg::__implicit_constructible || __traits_with_arg::__explicit_constructible;
-      constexpr bool __rest_is_default_constructible =
-        __traits_defaulted::__implicit_constructible || __traits_defaulted::__explicit_constructible;
-      constexpr bool __is_nothrow =
-        __traits_with_arg::__nothrow_constructible && __traits_defaulted::__nothrow_constructible;
-      return _TupleConstructorTraits<false, __is_arg_constructible && __rest_is_default_constructible, __is_nothrow>{};
-    }
-    else
-    {
-      return _InvalidTupleConstructor{};
-    }
-  }
-
   template <class... _UTypes>
   struct __comparison
   {

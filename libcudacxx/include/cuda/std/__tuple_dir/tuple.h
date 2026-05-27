@@ -207,10 +207,11 @@ public:
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
-  template <class... _UTypes,
-            class _Constraints = decltype(_Constraints::template __check_variadic_constructible_less_rank<_UTypes...>()),
-            enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int>  = 0,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  template <
+    class... _UTypes,
+    enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int> = 0,
+    class _Constraints = _TupleVariadicConstructibleLessRankTraits<__tuple_types<_Tp...>, __tuple_types<_UTypes...>>,
+    enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API constexpr explicit tuple(_UTypes&&... __u) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
