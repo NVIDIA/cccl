@@ -80,6 +80,65 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   state.add_global_memory_reads<SampleT>(elements * num_active_channels);
   state.add_global_memory_writes<CounterT>(num_bins * num_active_channels);
 
+  // Warmup + correctness check: run MultiHistogramRange once outside
+  // `state.exec`, checking the dispatch return code, then verify each
+  // channel's histogram bin-by-bin against an independent reference.
+  // Skipped when CUB_BENCH_HISTOGRAM_VERIFY=0|false|no|off.
+  if (bench_correctness_checks_enabled())
+  {
+    thrust::fill(hist_r.begin(), hist_r.end(), CounterT{0});
+    thrust::fill(hist_g.begin(), hist_g.end(), CounterT{0});
+    thrust::fill(hist_b.begin(), hist_b.end(), CounterT{0});
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+    bench_check_cuda(
+      (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_input,
+        cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+        cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+        cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
+        static_cast<OffsetT>(elements))),
+      "warmup MultiHistogramRange temp-size");
+    thrust::device_vector<unsigned char> warmup_tmp(temp_storage_bytes);
+    d_temp_storage = thrust::raw_pointer_cast(warmup_tmp.data());
+    bench_check_cuda(
+      (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_input,
+        cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+        cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+        cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
+        static_cast<OffsetT>(elements))),
+      "warmup MultiHistogramRange");
+    bench_check_cuda(cudaDeviceSynchronize(), "warmup sync");
+
+    std::vector<thrust::device_vector<CounterT>> opt_hists_d;
+    opt_hists_d.emplace_back(std::move(hist_r));
+    opt_hists_d.emplace_back(std::move(hist_g));
+    opt_hists_d.emplace_back(std::move(hist_b));
+    std::vector<thrust::device_vector<SampleT>> d_levels_per_channel;
+    d_levels_per_channel.emplace_back(std::move(levels_r));
+    d_levels_per_channel.emplace_back(std::move(levels_g));
+    d_levels_per_channel.emplace_back(std::move(levels_b));
+    bench_verify_histogram_range<num_channels, num_active_channels, SampleT, CounterT, OffsetT>(
+      input, opt_hists_d, d_levels_per_channel, static_cast<OffsetT>(elements), "multi.range");
+    hist_r        = std::move(opt_hists_d[0]);
+    hist_g        = std::move(opt_hists_d[1]);
+    hist_b        = std::move(opt_hists_d[2]);
+    d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
+    d_histogram_g = thrust::raw_pointer_cast(hist_g.data());
+    d_histogram_b = thrust::raw_pointer_cast(hist_b.data());
+    levels_r      = std::move(d_levels_per_channel[0]);
+    levels_g      = std::move(d_levels_per_channel[1]);
+    levels_b      = std::move(d_levels_per_channel[2]);
+    d_levels_r    = thrust::raw_pointer_cast(levels_r.data());
+    d_levels_g    = thrust::raw_pointer_cast(levels_g.data());
+    d_levels_b    = thrust::raw_pointer_cast(levels_b.data());
+  }
+
   caching_allocator_t alloc;
   // Force the persisting-L2 reservation back to 0 and demote any persisting
   // lines outside the timed window, so neither cudaAccessPolicyWindow nor a
