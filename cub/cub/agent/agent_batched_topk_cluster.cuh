@@ -348,6 +348,11 @@ private:
         if (temp_storage.broadcast_early_stop != ::cuda::std::uint32_t{0})
         {
           last_pass = pass;
+          // Order the `broadcast_kth` load above against thread 0's
+          // overwrite of `broadcast_kth` in the final filter pass below.
+          // The normal loop exit gets this from the last iteration's
+          // `cluster.sync()`; the early-stop path skips that sync.
+          __syncthreads();
           break;
         }
 #endif
