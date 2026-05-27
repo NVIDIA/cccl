@@ -161,6 +161,17 @@ _CCCL_REQUIRES(::cuda::std::__tuple_copy_constructible_constraints<_Types...>())
 template <class, class>
 struct _TupleVariadicConstructibleTraits;
 
+// NOTE: GCC cannot handle types that have conversion operators together with the is_convertible_v inline variable
+// We can work around this by reifying it into a type
+// sizeof...(Types) == 1 && is_convertible_v<decltype(u), T>
+template <class _Type, class _UType>
+struct _TupleVariadicConstructibleTraits<__tuple_types<_Type>, __tuple_types<_UType>>
+{ // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+  static constexpr bool __implicit_constructible = is_convertible<_UType, _Type>::value;
+  static constexpr bool __explicit_constructible = !__implicit_constructible;
+  static constexpr bool __nothrow_constructible  = is_nothrow_constructible_v<_Type, _UType>;
+};
+
 template <class... _Types, class... _UTypes>
 struct _TupleVariadicConstructibleTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
 { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
@@ -291,14 +302,14 @@ __tuple_tuple_like_constructible_constraint(__tuple_types<_Types...>, __tuple_in
     // [tuple#cnstr]-21.3: is_same_v<T, U> is false
     return false;
   }
-  else if constexpr ((sizeof...(_Types) == 1) && (is_convertible_v<_UTuple, _Types> && ...))
-  { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-    // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-    return false;
-  }
   else if constexpr ((sizeof...(_Types) == 1) && (is_constructible_v<_Types, _UTuple> && ...))
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
     // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
+    return false;
+  }
+  else if constexpr ((sizeof...(_Types) == 1) && (is_convertible_v<_UTuple, _Types> && ...))
+  { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
+    // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
     return false;
   }
   else
