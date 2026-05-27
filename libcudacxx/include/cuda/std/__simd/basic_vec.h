@@ -29,6 +29,7 @@
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/data.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
@@ -38,7 +39,6 @@
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/operations.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -164,7 +164,7 @@ public:
     return {};
   }
 
-  static constexpr integral_constant<__simd_size_type, __simd_size_v<value_type, abi_type>> size{};
+  static constexpr __simd_size_constant<__simd_size_v<value_type, abi_type>> size{};
 
   static constexpr auto __usize = size_t{size};
   static constexpr auto __size  = __simd_size_type{size};
