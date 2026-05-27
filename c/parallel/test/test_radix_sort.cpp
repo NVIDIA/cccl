@@ -23,7 +23,7 @@ using key_types =
   c2h::type_list<uint8_t,
                  int16_t,
                  uint32_t,
-#if _CCCL_HAS_NVFP16() && !defined(CCCL_C_PARALLEL_V2)
+#if _CCCL_HAS_NVFP16()
                  __half,
 #endif
                  double>;

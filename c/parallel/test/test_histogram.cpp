@@ -22,7 +22,7 @@ using sample_types =
                  std::uint16_t,
                  std::int32_t,
                  std::uint64_t,
-#if _CCCL_HAS_NVFP16() && !defined(CCCL_C_PARALLEL_V2)
+#if _CCCL_HAS_NVFP16()
                  __half,
 #endif
                  float,
