@@ -3,6 +3,8 @@
 
 #include <thrust/host_vector.h>
 
+#include <random>
+
 #include <nvbench_helper.cuh>
 
 #include "histogram_common.cuh"
@@ -27,21 +29,29 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  // Quadratic spacing keeps DispatchRange on the SearchTransform path.
+  // Jittered uniform spacing keeps DispatchRange on the SearchTransform path
+  // while keeping bin widths within ~2x of each other. Fixed seed makes the
+  // levels reproducible across runs.
   thrust::host_vector<SampleT> h_levels(num_bins + 1);
-  h_levels[0]    = lower_level;
-  const double L = static_cast<double>(lower_level);
-  const double U = static_cast<double>(upper_level);
-  const double n = static_cast<double>(num_bins);
-  for (int i = 1; i <= num_bins; ++i)
+  const double L    = static_cast<double>(lower_level);
+  const double U    = static_cast<double>(upper_level);
+  const double step = (U - L) / static_cast<double>(num_bins);
+  std::mt19937 rng(0xC0FFEE);
+  std::uniform_real_distribution<double> jitter(-0.25, 0.25);
+  h_levels[0]        = lower_level;
+  h_levels[num_bins] = upper_level;
+  for (int i = 1; i < num_bins; ++i)
   {
-    const double t = static_cast<double>(i) / n;
-    SampleT lvl    = static_cast<SampleT>(L + (U - L) * t * t);
+    SampleT lvl = static_cast<SampleT>(L + i * step + step * jitter(rng));
     if (lvl <= h_levels[i - 1])
     {
       lvl = static_cast<SampleT>(h_levels[i - 1] + SampleT{1});
     }
     h_levels[i] = lvl;
+  }
+  if (h_levels[num_bins] <= h_levels[num_bins - 1])
+  {
+    h_levels[num_bins] = static_cast<SampleT>(h_levels[num_bins - 1] + SampleT{1});
   }
   thrust::device_vector<SampleT> levels = h_levels;
   SampleT* d_levels                     = thrust::raw_pointer_cast(levels.data());
