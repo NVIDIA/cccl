@@ -31,8 +31,10 @@ struct MutableCopy
   TEST_FUNC constexpr MutableCopy(int _val)
       : val(_val)
   {}
-  constexpr MutableCopy(MutableCopy&)                 = default;
+  constexpr MutableCopy(MutableCopy&) = default;
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   TEST_FUNC constexpr MutableCopy(const MutableCopy&) = delete;
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
 
 #if !TEST_COMPILER(NVRTC)
   TEST_FUNC constexpr MutableCopy(cuda::std::allocator_arg_t, const test_allocator<int>&, MutableCopy& o)
@@ -57,8 +59,10 @@ struct ConstCopy
   TEST_FUNC constexpr ConstCopy(int _val)
       : val(_val)
   {}
-  constexpr ConstCopy(const ConstCopy&)     = default;
+  constexpr ConstCopy(const ConstCopy&) = default;
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   TEST_FUNC constexpr ConstCopy(ConstCopy&) = delete;
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
 
 #if !TEST_COMPILER(NVRTC)
   TEST_FUNC constexpr ConstCopy(cuda::std::allocator_arg_t, const test_allocator<int>&, const ConstCopy& o)
@@ -83,8 +87,10 @@ struct MutableMove
   TEST_FUNC constexpr MutableMove(int _val)
       : val(_val)
   {}
-  constexpr MutableMove(MutableMove&&)                 = default;
+  constexpr MutableMove(MutableMove&&) = default;
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   TEST_FUNC constexpr MutableMove(const MutableMove&&) = delete;
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
 
 #if !TEST_COMPILER(NVRTC)
   TEST_FUNC constexpr MutableMove(cuda::std::allocator_arg_t, const test_allocator<int>&, MutableMove&& o)
@@ -112,7 +118,9 @@ struct ConstMove
   TEST_FUNC constexpr ConstMove(const ConstMove&& o) noexcept
       : val(o.val)
   {}
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   TEST_FUNC constexpr ConstMove(ConstMove&&) = delete;
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
 
 #if !TEST_COMPILER(NVRTC)
   TEST_FUNC constexpr ConstMove(cuda::std::allocator_arg_t, const test_allocator<int>&, const ConstMove&& o)
@@ -355,9 +363,11 @@ struct CopyAssign
 
   constexpr CopyAssign& operator=(const CopyAssign&) = default;
 
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
   TEST_FUNC constexpr const CopyAssign& operator=(const CopyAssign&) const = delete;
-  TEST_FUNC constexpr CopyAssign& operator=(CopyAssign&&)                  = delete;
-  TEST_FUNC constexpr const CopyAssign& operator=(CopyAssign&&) const      = delete;
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
+  TEST_FUNC constexpr CopyAssign& operator=(CopyAssign&&)             = delete;
+  TEST_FUNC constexpr const CopyAssign& operator=(CopyAssign&&) const = delete;
 };
 
 struct ConstCopyAssign
@@ -394,7 +404,9 @@ struct MoveAssign
 
   TEST_FUNC constexpr MoveAssign& operator=(const MoveAssign&)             = delete;
   TEST_FUNC constexpr const MoveAssign& operator=(const MoveAssign&) const = delete;
-  TEST_FUNC constexpr const MoveAssign& operator=(MoveAssign&&) const      = delete;
+#if TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
+  TEST_FUNC constexpr const MoveAssign& operator=(MoveAssign&&) const = delete;
+#endif // TEST_STD_VER >= 2020 || !TEST_COMPILER(MSVC)
 };
 
 struct ConstMoveAssign
