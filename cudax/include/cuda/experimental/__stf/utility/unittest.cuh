@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
 #include <filesystem>
+#include <set>
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // One level of macro indirection is required in order to resolve __COUNTER__,
@@ -388,10 +389,29 @@ public:
     // throwing overload would raise ``filesystem_error`` and, because the
     // try/catch below is *inside* this if-branch, would propagate out of the
     // dispatcher and terminate the entire test binary. Treat any error as
-    // "not equivalent" -- i.e. skip this unittest.
+    // "not equivalent" -- i.e. skip this unittest, but tell the user why.
     ::std::error_code __equiv_ec;
     if (!::std::filesystem::equivalent(loc.file_name(), UNITTESTED_FILE, __equiv_ec))
     {
+      if (__equiv_ec)
+      {
+        // Deduplicate per unresolved path: a stale binary can have many
+        // UNITTESTs baked into the same dead header, and we don't want
+        // N copies of the same diagnostic. The function-local static is
+        // initialized at first use; dispatcher calls happen during static
+        // initialization, which is single-threaded for objects with static
+        // storage duration in the same translation unit.
+        static ::std::set<::std::string> __reported;
+        if (__reported.insert(loc.file_name()).second)
+        {
+          fprintf(stderr,
+                  "UNITTEST [skip]: cannot resolve source path %s (%s) -- "
+                  "likely a stale test binary built before that header was "
+                  "moved or renamed. Rebuild to clear.\n",
+                  loc.file_name(),
+                  __equiv_ec.message().c_str());
+        }
+      }
       return *this;
     }
     ++total();
