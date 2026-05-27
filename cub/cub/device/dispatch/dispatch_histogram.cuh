@@ -1048,7 +1048,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         && (static_cast<long long>(total_pixels_for_partition)
             >= 4LL * static_cast<long long>(max_num_output_bins));
       const bool use_bin_partitions =
-        kBinPartitionsEligible && (num_thread_blocks >= 16) && atomic_contention_high;
+        kBinPartitionsEligible && (num_thread_blocks >= 32) && atomic_contention_high;
       // Pick the kernel pointer through a constexpr branch so the
       // BinPartitions=4 instantiation only enters the binary on eligible
       // code paths. We type-erase to a `const void*` since the function-
@@ -1064,7 +1064,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                               PRIVATIZED_SMEM_BINS,
                                                               NUM_CHANNELS,
                                                               NUM_ACTIVE_CHANNELS,
-                                                              /*BinPartitions=*/16,
+                                                              /*BinPartitions=*/32,
                                                               SampleIteratorT,
                                                               CounterT,
                                                               privatized_decode_op_t,
@@ -1106,7 +1106,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                            PRIVATIZED_SMEM_BINS,
                                                            NUM_CHANNELS,
                                                            NUM_ACTIVE_CHANNELS,
-                                                           /*BinPartitions=*/16,
+                                                           /*BinPartitions=*/32,
                                                            SampleIteratorT,
                                                            CounterT,
                                                            privatized_decode_op_t,
