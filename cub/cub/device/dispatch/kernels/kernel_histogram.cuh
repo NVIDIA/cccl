@@ -2636,14 +2636,19 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 1)
   const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
 
-  // Reset the drain counter so the work-stealing path (if any) sees a fresh queue.
-  if (tid_global == 0)
+  // Drain-reset + grid.sync are only needed when the policy enables work stealing
+  // (the drain counter is consumed by the WS even-share-then-steal loop). For
+  // even-share-only policies the drain queue is never read, so we can elide both
+  // the reset and the grid.sync, saving one grid-wide barrier (~5 us on B200).
+  if constexpr (hp.work_stealing)
   {
-    GridQueue<int> queue = tile_queue;
-    queue.ResetDrain();
+    if (tid_global == 0)
+    {
+      GridQueue<int> queue = tile_queue;
+      queue.ResetDrain();
+    }
+    grid.sync();
   }
-
-  grid.sync();
 
   // Single sweep with hybrid accumulation.
   {
