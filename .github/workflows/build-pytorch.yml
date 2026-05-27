@@ -108,7 +108,7 @@ jobs:
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "SCCACHE_RECACHE=1" \
-            `# --env "SCCACHE_DIST_URL=https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"` \
+            --env "SCCACHE_DIST_URL=https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com" \
             --env "SCCACHE_DIST_AUTH_TOKEN=$(
               curl -fsSL -H "Authorization: Bearer $(
                 curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
