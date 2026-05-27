@@ -381,7 +381,16 @@ public:
   unittest& operator->*([[maybe_unused]] Fun&& fun)
   {
 #  ifdef UNITTESTED_FILE
-    if (!::std::filesystem::equivalent(loc.file_name(), UNITTESTED_FILE))
+    // Use the non-throwing overload: ``loc.file_name()`` may legitimately
+    // refer to a path that no longer exists on disk (e.g. a stale binary
+    // built before a header was moved/renamed -- the original path is baked
+    // into the binary as a string literal via std::source_location). The
+    // throwing overload would raise ``filesystem_error`` and, because the
+    // try/catch below is *inside* this if-branch, would propagate out of the
+    // dispatcher and terminate the entire test binary. Treat any error as
+    // "not equivalent" -- i.e. skip this unittest.
+    ::std::error_code __equiv_ec;
+    if (!::std::filesystem::equivalent(loc.file_name(), UNITTESTED_FILE, __equiv_ec))
     {
       return *this;
     }
