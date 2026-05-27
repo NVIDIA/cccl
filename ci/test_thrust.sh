@@ -48,18 +48,19 @@ else
       /home/coder/cccl/
 fi
 
+declare -a PRESET_GPU_PAIRS=()
+
 if $CPU_ONLY; then
-  PRESETS=("thrust-cpu")
-  GPU_REQUIRED=false
+  PRESET_GPU_PAIRS+=("thrust-cpu:false")
 elif $GPU_ONLY; then
-  PRESETS=("thrust-gpu")
-  GPU_REQUIRED=true
+  PRESET_GPU_PAIRS+=("thrust-gpu:true")
 else
-  PRESETS=("thrust")
-  GPU_REQUIRED=true
+  PRESET_GPU_PAIRS+=("thrust-cpu:false" "thrust-gpu:true")
 fi
 
-for PRESET in "${PRESETS[@]}"; do
+for pair in "${PRESET_GPU_PAIRS[@]}"; do
+  PRESET="${pair%%:*}"
+  GPU_REQUIRED="${pair##*:}"
   test_preset "Thrust (${PRESET})" "${PRESET}" "${GPU_REQUIRED}"
 done
 
