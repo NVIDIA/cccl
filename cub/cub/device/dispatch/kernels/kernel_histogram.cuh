@@ -2400,21 +2400,66 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   // xlarge tier `num_privatized_bins[ch] == num_output_bins[ch]` and
   // `output_decode_op` is identity (PassThruTransform), so we can directly
   // sum the staging column for each output bin.
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  //
+  // Two reduction strategies switch based on `num_bins` vs `total_warps`:
+  //
+  // 1. Warp-cooperative (when num_bins < total_warps): one warp owns one bin
+  //    at a time; 32 lanes split the per-block column reduction (each lane
+  //    sums ceil(blocks_per_grid / 32) strided GMEM loads in parallel) then
+  //    warp-shuffle reduce. Avoids leaving 86%+ of threads idle when
+  //    `total_threads >> num_bins` (e.g. Bins=2000 with 296*768=227K threads,
+  //    or 148*768=113K threads at 1 block/SM).
+  //
+  // 2. Thread-per-bin (when num_bins >= total_warps): each thread owns one
+  //    bin and sequentially sums all `blocks_per_grid` slabs. With
+  //    num_bins close to total_threads, every thread has its own bin so
+  //    parallelism is across bins rather than within bins; this is the
+  //    original gather pattern and avoids the per-bin warp-shuffle overhead.
   {
-    const int num_bins            = num_privatized_bins_wrapper[ch];
-    const CounterT* __restrict__ base = d_privatized_base[ch];
-    CounterT* d_out               = d_output_histograms_wrapper[ch];
-    const unsigned int num_bins_u = static_cast<unsigned int>(num_bins);
-    for (unsigned int bin = tid_global; bin < num_bins_u; bin += total_threads)
+    const unsigned int warp_id_global = tid_global >> 5; // tid_global / 32
+    const unsigned int lane           = tid_global & 31u;
+    const unsigned int total_warps    = total_threads >> 5;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      CounterT total = 0;
-      for (unsigned int b = 0; b < blocks_per_grid; ++b)
+      const int num_bins                = num_privatized_bins_wrapper[ch];
+      const CounterT* __restrict__ base = d_privatized_base[ch];
+      CounterT* d_out                   = d_output_histograms_wrapper[ch];
+      const unsigned int num_bins_u     = static_cast<unsigned int>(num_bins);
+
+      if (num_bins_u < total_warps)
       {
-        total += base[b * num_bins_u + bin];
+        for (unsigned int bin = warp_id_global; bin < num_bins_u; bin += total_warps)
+        {
+          CounterT partial = 0;
+          for (unsigned int b = lane; b < blocks_per_grid; b += 32u)
+          {
+            partial += base[b * num_bins_u + bin];
+          }
+          partial += __shfl_xor_sync(0xFFFFFFFFu, partial, 16);
+          partial += __shfl_xor_sync(0xFFFFFFFFu, partial, 8);
+          partial += __shfl_xor_sync(0xFFFFFFFFu, partial, 4);
+          partial += __shfl_xor_sync(0xFFFFFFFFu, partial, 2);
+          partial += __shfl_xor_sync(0xFFFFFFFFu, partial, 1);
+          if (lane == 0)
+          {
+            d_out[bin] = partial;
+          }
+        }
       }
-      d_out[bin] = total;
+      else
+      {
+        for (unsigned int bin = tid_global; bin < num_bins_u; bin += total_threads)
+        {
+          CounterT total = 0;
+          for (unsigned int b = 0; b < blocks_per_grid; ++b)
+          {
+            total += base[b * num_bins_u + bin];
+          }
+          d_out[bin] = total;
+        }
+      }
     }
   }
 
