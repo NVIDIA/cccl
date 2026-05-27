@@ -146,7 +146,8 @@ template <class... _Types>
   return (is_default_constructible_v<_Types> && ...);
 }
 
-template <class... _Types, enable_if_t<::cuda::std::__tuple_is_default_constructible<_Types...>(), int> = 0>
+_CCCL_TEMPLATE(class... _Types)
+_CCCL_REQUIRES(::cuda::std::__tuple_is_default_constructible<_Types...>())
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_default_constructible(__tuple_types<_Types...>) noexcept
   -> _TupleDefaultConstructibleTraits<_Types...>;
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_default_constructible(...) noexcept -> _InvalidTupleConstructor;
@@ -165,7 +166,8 @@ template <class... _Types>
   return (is_copy_constructible_v<_Types> && ...);
 }
 
-template <class... _Types, enable_if_t<::cuda::std::__tuple_is_copy_constructible<_Types...>(), int> = 0>
+_CCCL_TEMPLATE(class... _Types)
+_CCCL_REQUIRES(::cuda::std::__tuple_is_copy_constructible<_Types...>())
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
   -> _TupleVariadicCopyConstructibleTraits<_Types...>;
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(...) noexcept
