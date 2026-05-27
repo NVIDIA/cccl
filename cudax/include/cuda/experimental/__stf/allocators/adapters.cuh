@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -170,6 +171,16 @@ public:
     _CCCL_ASSERT(adapter_state, "Invalid state");
     _CCCL_ASSERT(!cleared_or_moved, "clear() was already called, or the object was moved.");
 
+    // Flip the bool up-front so the destructor's "clear() was not called"
+    // sanity assertion still holds even if a CUDA call below throws and the
+    // caller catches the exception. From the user's contract perspective,
+    // ``clear()`` *was* called; whether every individual deallocation
+    // succeeded is communicated via the thrown ``cuda_exception``.
+    SCOPE(exit)
+    {
+      cleared_or_moved = true;
+    };
+
     cudaStream_t stream = adapter_state->stream;
 
     // Deallocate all buffers, synchronizing lazily on the first blocking deallocation.
@@ -181,15 +192,13 @@ public:
       // Sync stream once before the first blocking deallocation
       if (!b.memory_node.allocation_is_stream_ordered() && !stream_synchronized)
       {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_try(cudaStreamSynchronize(stream));
         stream_synchronized = true;
       }
       b.memory_node.deallocate(b.ptr, b.sz, stream);
     }
 
     adapter_state->to_free.clear();
-
-    cleared_or_moved = true;
   }
 
   /**

@@ -74,7 +74,7 @@ public:
       const int dev = device_ordinal(this->place);
       assert(dev >= 0);
       cudaDeviceProp prop;
-      cuda_safe_call(cudaGetDeviceProperties(&prop, dev));
+      cuda_try(cudaGetDeviceProperties(&prop, dev));
 
       size_t max_mem = prop.totalGlobalMem;
 
