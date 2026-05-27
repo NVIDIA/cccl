@@ -151,13 +151,13 @@ TEST_FUNC constexpr void is_fp_close(const T& a, const T& b)
 //----------------------------------------------------------------------------------------------------------------------
 // vec utilities
 
-template <typename T>
+template <typename T, int _Offset = 1>
 struct iota_generator
 {
   template <typename I>
   TEST_FUNC constexpr T operator()(I i) const noexcept
   {
-    return static_cast<T>(i + 1);
+    return static_cast<T>(i + _Offset);
   }
 };
 
@@ -201,31 +201,6 @@ struct complex_diverse_generator
     }
   }
 };
-
-template <typename T, int N>
-TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int __offset = 1)
-{
-  cuda::std::array<T, N> arr{};
-  for (int i = 0; i < N; ++i)
-  {
-    arr[i] = static_cast<T>(i + __offset);
-  }
-  return arr;
-}
-
-template <typename T, typename Abi, typename U, size_t N>
-TEST_FUNC constexpr bool operator==(const simd::basic_vec<T, Abi>& vec, const cuda::std::array<U, N>& arr)
-{
-  static_assert(simd::basic_vec<T, Abi>::size() == static_cast<int>(N));
-  for (int i = 0; i < static_cast<int>(N); ++i)
-  {
-    if (vec[i] != arr[i])
-    {
-      return false;
-    }
-  }
-  return true;
-}
 
 template <typename T, int N>
 TEST_FUNC constexpr cuda::std::array<T, N> make_iota_array(int __offset = 1)
