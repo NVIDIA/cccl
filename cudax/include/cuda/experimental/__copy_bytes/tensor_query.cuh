@@ -114,7 +114,7 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
   using __rank_t       = typename __raw_tensor_t::__rank_t;
   const auto __rank    = __tensor.__rank;
-  const auto __perm = ::cuda::experimental::__stride_order(__tensor);
+  const auto __perm    = ::cuda::experimental::__stride_order(__tensor);
 
   __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
   for (__rank_t __i = 0; __i < __rank; ++__i)

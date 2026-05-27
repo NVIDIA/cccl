@@ -44,7 +44,6 @@
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/remove_cvref.h>
 
 #  include <cuda/experimental/__copy/copy_contiguous.cuh>
 #  include <cuda/experimental/__copy/copy_optimized.cuh>
