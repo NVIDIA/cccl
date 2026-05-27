@@ -597,11 +597,11 @@ struct scan_warpspeed_policy
 
   // We do not need too many stages for lookback since the lookback warp is the bottleneck. As soon as it produces a new
   // value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
-  int lookback_stages = 2; // TODO(bgruber): make this tunable
+  int lookback_stages = 2;
 
   // If one less than the number of stages, we find a small speedup compared to setting it equal to num_stages. Not sure
   // why.
-  int block_idx_stages = -1; // TODO(bgruber): make this tunable
+  int block_idx_stages = -1;
 
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
