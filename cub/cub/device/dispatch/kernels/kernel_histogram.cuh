@@ -2566,7 +2566,10 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+// __launch_bounds__(N, 1): hybrid is limited to 1 block/SM by the 56000-bin SMEM
+// allocation (~224 KB/CTA on B200), so the minBlocks=1 hint lets the compiler use
+// more registers per thread (no need to budget for 2 blocks/SM SMEM-fit).
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 1)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_smem_bins_wrapper,
