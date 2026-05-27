@@ -3078,6 +3078,43 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
         }
         return cudaSuccess;
       }
+
+      // Hybrid single-pass tier for RANGE non-uniform single-channel: xlarge < bins <=
+      // chunked_smem_bins_max_single_channel. Gated on sizeof(SampleT) <= 4 because
+      // F64 SearchTransform has high per-sample binary-search cost which makes single-pass
+      // (one classify per sample) less of a relative win vs the 2-pass chunked path
+      // (per brief-16: F64 SearchTransform regressed; I32 wins).
+      // Falls back to direct-atomic via the bottom dispatch on setup/launch failure.
+      if constexpr (sizeof(SampleT) <= 4)
+      {
+        if (max_num_output_bins > max_extended_smem_bins_single_channel_xlarge
+            && max_num_output_bins <= chunked_smem_bins_max_single_channel)
+        {
+          if (const auto error =
+                CubDebug((dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
+                                                                   NUM_ACTIVE_CHANNELS,
+                                                                   hybrid_smem_split_bin_single_channel,
+                                                                   chunked_smem_bins_max_single_channel>(
+                  d_temp_storage,
+                  temp_storage_bytes,
+                  d_samples,
+                  d_output_histograms,
+                  output_decode_op,
+                  privatized_decode_op,
+                  max_num_output_bins,
+                  num_row_pixels,
+                  num_rows,
+                  row_stride_samples,
+                  stream,
+                  policy_selector,
+                  kernel_source,
+                  launcher_factory))))
+          {
+            return error;
+          }
+          return cudaSuccess;
+        }
+      }
     }
     // Multi-channel dyn-SMEM staging tiers (range path). For multi-channel
     // SearchTransform-based dispatch the per-sample compute (binary search in
