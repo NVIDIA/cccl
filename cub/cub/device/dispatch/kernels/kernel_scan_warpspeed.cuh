@@ -288,6 +288,23 @@ struct agent_warpspeed_scan
   RealInitValueT real_init_value;
   ScanResources<PolicySelector, InputT, OutputT, AccumT>& res;
 
+  template <typename PhaseT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_next_tile_index(const warpspeed::Squad& squad, PhaseT& phaseNextBlockIdxW)
+  {
+    warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
+    squadGetNextBlockIdx(squad, refNextBlockIdxW);
+  }
+
+  template <typename InOutT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
+    const warpspeed::Squad& squad,
+    warpspeed::SmemPhase<InOutT>& phaseInOutW,
+    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo)
+  {
+    warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
+    warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+  }
+
   // This function is a straight-line implementation of the warp-specialized kernel.
   //
   // It is called from the __global__ kernel body with a squad argument that is the active squad on the current thread.
@@ -339,11 +356,7 @@ struct agent_warpspeed_scan
 
       if (squad == squadSched)
       {
-        ////////////////////////////////////////////////////////////////////////////////
-        // Load next tile index
-        ////////////////////////////////////////////////////////////////////////////////
-        warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
-        squadGetNextBlockIdx(squad, refNextBlockIdxW);
+        load_next_tile_index(squad, phaseNextBlockIdxW);
       }
 
       const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
@@ -356,16 +369,10 @@ struct agent_warpspeed_scan
 
       if (squad == squadLoad)
       {
-        ////////////////////////////////////////////////////////////////////////////////
-        // Load current tile
-        ////////////////////////////////////////////////////////////////////////////////
-        warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
-        warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+        load_current_tile(squad, phaseInOutW, loadInfo);
       }
 
-      ////////////////////////////////////////////////////////////////////////////////
       // Get next tile index from shared memory (all squads)
-      ////////////////////////////////////////////////////////////////////////////////
       uint4 regNextBlockIdx{};
       {
         warpspeed::SmemRef refNextBlockIdxR = phaseNextBlockIdxR.acquireRef();
