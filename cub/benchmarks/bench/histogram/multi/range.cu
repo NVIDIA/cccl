@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <thrust/sequence.h>
+#include <thrust/host_vector.h>
 
 #include <nvbench_helper.cuh>
 
@@ -32,11 +32,23 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  SampleT step = (upper_level - lower_level) / num_bins;
-  thrust::device_vector<SampleT> levels_r(num_bins + 1);
-
-  // TODO Extract sequence to the helper TU
-  thrust::sequence(levels_r.begin(), levels_r.end(), lower_level, step);
+  // Quadratic spacing keeps DispatchRange on the SearchTransform path.
+  thrust::host_vector<SampleT> h_levels(num_bins + 1);
+  h_levels[0]    = lower_level;
+  const double L = static_cast<double>(lower_level);
+  const double U = static_cast<double>(upper_level);
+  const double n = static_cast<double>(num_bins);
+  for (int i = 1; i <= num_bins; ++i)
+  {
+    const double t = static_cast<double>(i) / n;
+    SampleT lvl    = static_cast<SampleT>(L + (U - L) * t * t);
+    if (lvl <= h_levels[i - 1])
+    {
+      lvl = static_cast<SampleT>(h_levels[i - 1] + SampleT{1});
+    }
+    h_levels[i] = lvl;
+  }
+  thrust::device_vector<SampleT> levels_r = h_levels;
   thrust::device_vector<SampleT> levels_g = levels_r;
   thrust::device_vector<SampleT> levels_b = levels_g;
 
@@ -59,25 +71,31 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   state.add_global_memory_writes<CounterT>(num_bins * num_active_channels);
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(
-      alloc,
-      launch
+  // Demote persisting L2 lines outside the timed window so that no
+  // cudaAccessPolicyWindow set by the dispatcher can carry across iterations.
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::timer,
+             [&](nvbench::launch& launch, auto& timer) {
+               cudaCtxResetPersistingL2Cache();
+               timer.start();
+               auto env = cub_bench_env(
+                 alloc,
+                 launch
 #if !TUNE_BASE
-      ,
-      cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
+                 ,
+                 cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
 #endif // !TUNE_BASE
-    );
-    _CCCL_TRY_CUDA_API(
-      (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>),
-      "MultiHistogramRange failed",
-      d_input,
-      cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
-      cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
-      cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
-      static_cast<OffsetT>(elements),
-      env);
-  });
+               );
+               _CCCL_TRY_CUDA_API(
+                 (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>),
+                 "MultiHistogramRange failed",
+                 d_input,
+                 cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
+                 cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
+                 cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
+                 static_cast<OffsetT>(elements),
+                 env);
+               timer.stop();
+             });
 }
 
 using counter_types     = nvbench::type_list<int32_t>;
@@ -92,6 +110,6 @@ using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float
 NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_int64_axis("Bins", {32, 128, 2048, 2097152})
+  .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
+  .add_int64_axis("Bins", {32, 100, 2000, 2097152})
   .add_string_axis("Entropy", {"0.201", "1.000"});
