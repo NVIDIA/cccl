@@ -8,3 +8,4 @@ How-to guides for maintainers.
 
    ../backport_process
    plan_work_with_github_issues
+   use_cccl_agent_skills
