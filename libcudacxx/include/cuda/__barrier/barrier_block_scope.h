@@ -171,9 +171,9 @@ private:
     unsigned int __activeA = ::__match_any_sync(__mask, __update);
     unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
     unsigned int __active  = __activeA & __activeB;
-    int __inc              = ::cuda::std::popcount(__active) * __update;
+    int __inc              = static_cast<int>(::cuda::std::popcount(__active) * __update);
 
-    int __leader = ::__ffs(__active) - 1;
+    int __leader = static_cast<int>(::__ffs(static_cast<int>(__active))) - 1;
     // All threads in mask synchronize here, establishing cummulativity to the __leader:
     ::__syncwarp(__mask);
     arrival_token __token = {};

@@ -293,7 +293,8 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts run_to_run determinism requirements"
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  auto error = cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMin(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << '\n';
@@ -317,7 +318,8 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts not_guaranteed determinism requireme
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  auto error = cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMin(
+    input.begin(), min_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << '\n';
@@ -342,8 +344,12 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts stream", "[reduce][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error =
-    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMin(
+    input.begin(),
+    min_output.begin(),
+    index_output.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << '\n';
@@ -368,7 +374,8 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts run_to_run determinism requirements"
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  auto error = cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMax(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << '\n';
@@ -392,7 +399,8 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts not_guaranteed determinism requireme
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  auto error = cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), env);
+  auto error = cub::DeviceReduce::ArgMax(
+    input.begin(), max_output.begin(), index_output.begin(), static_cast<::cuda::std::int64_t>(input.size()), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << '\n';
@@ -417,8 +425,12 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts stream", "[reduce][env]")
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error =
-    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMax(
+    input.begin(),
+    max_output.begin(),
+    index_output.begin(),
+    static_cast<::cuda::std::int64_t>(input.size()),
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << '\n';
