@@ -137,7 +137,7 @@ struct __shared_mem_tiling_result
 //! @param[in,out] __result                 Shared-memory tiling result updated with selected tile sizes
 //! @param[in]     __max_shared_mem_bytes   Maximum shared-memory capacity for one tile
 //! @return Number of coalesced elements covered by this tensor's selected tile run
-template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
+template <typename _SmemTp, typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __add_coalesced_tile_run(
   const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor,
   const ::cuda::std::array<::cuda::std::size_t, _MaxRank>& __perm,
@@ -161,7 +161,7 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
     if (__result.__tile_sizes[__perm_i] == 1) // first time we see this dimension
     {
       const auto __tile_size             = ::cuda::std::min(__extent, __max_tile_size);
-      const auto __tile_total_size_bytes = __result.__tile_total_size * __tile_size * sizeof(_Tp);
+      const auto __tile_total_size_bytes = __result.__tile_total_size * __tile_size * sizeof(_SmemTp);
       if (__tile_total_size_bytes > __max_shared_mem_bytes)
       {
         break;
@@ -215,9 +215,9 @@ __find_shared_mem_tiling(const __raw_tensor<_ExtentT, _StrideTIn, _TpSrc, _MaxRa
   const auto __current_dev            = ::cuda::experimental::__current_device();
   const size_t __max_shared_mem_bytes = __current_dev.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
   const auto __src_coalesced_tile_size =
-    ::cuda::experimental::__add_coalesced_tile_run(__src, __result.__src_perm, __result, __max_shared_mem_bytes);
+    ::cuda::experimental::__add_coalesced_tile_run<_TpIn>(__src, __result.__src_perm, __result, __max_shared_mem_bytes);
   const auto __dst_coalesced_tile_size =
-    ::cuda::experimental::__add_coalesced_tile_run(__dst, __result.__dst_perm, __result, __max_shared_mem_bytes);
+    ::cuda::experimental::__add_coalesced_tile_run<_TpIn>(__dst, __result.__dst_perm, __result, __max_shared_mem_bytes);
 
   // If the tile total size is too small, or the coalescing is not useful on both sides, or the number of active tile
   // dimensions is less than 2, return the result.
