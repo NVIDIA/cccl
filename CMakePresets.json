@@ -519,6 +519,7 @@
       "name": "libcudacxx",
       "configurePreset": "libcudacxx",
       "targets": [
+        "cccl.test.cuda_runtime_smoke",
         "libcudacxx.test.internal_headers",
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
