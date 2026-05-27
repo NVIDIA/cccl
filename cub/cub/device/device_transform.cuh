@@ -71,16 +71,13 @@ struct DeviceTransform
     Env env)
   {
     // We use int64_t internally, since it's faster than uint64_t and similar to a 32-bit offset type. See
-    // https://github.com/NVIDIA/cccl/issues/8805 for data. We need to check if it can hold the value passed by the
-    // user.
+    // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can hold the
+    // value passed by the user, but otherwise ignore the chosen signed offset type.
     using offset_t = ::cuda::std::int64_t;
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_MSVC(4127) // conditional expression is constant
-    if (sizeof(NumItemsT) >= 8 && num_items > static_cast<NumItemsT>(::cuda::std::numeric_limits<offset_t>::max()))
+    if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
     {
-      return cudaErrorInvalidValue;
+      return error;
     }
-    _CCCL_DIAG_POP
 
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
