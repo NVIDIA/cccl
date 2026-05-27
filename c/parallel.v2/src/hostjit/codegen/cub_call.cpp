@@ -407,7 +407,10 @@ std::string CubCall::source() const
   {
     if (std::holds_alternative<env_stream_t>(arg))
     {
-      src += "#include <cuda/std/execution>\n";
+      // Use the narrow internal env.h header rather than <cuda/std/execution>
+      // — the umbrella header pulls in pstl machinery that depends on <vector>
+      // and exception types not available in the hostjit environment.
+      src += "#include <cuda/std/__execution/env.h>\n";
       src += "#include <cuda/stream_ref>\n";
       break;
     }
