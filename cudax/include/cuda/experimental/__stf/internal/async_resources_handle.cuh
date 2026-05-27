@@ -319,7 +319,7 @@ exec_place::get_stream_pool(bool for_computation, ::cuda::experimental::stf::asy
   return get_stream_pool(for_computation, h.get_place_resources());
 }
 
-[[nodiscard]] inline decorated_stream
+[[nodiscard]] inline augmented_stream
 exec_place::getStream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
 {
   return getStream(h.get_place_resources(), for_computation);

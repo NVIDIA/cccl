@@ -328,7 +328,7 @@ public:
     return pimpl_->hash();
   }
 
-  decorated_stream getDataStream(exec_place_resources& res) const;
+  augmented_stream getDataStream(exec_place_resources& res) const;
 
   /**
    * @brief Get the underlying interface pointer
@@ -669,11 +669,11 @@ public:
   /// inline in `__stf/internal/async_resources_handle.cuh`.
   inline stream_pool& get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const;
 
-  decorated_stream getStream(exec_place_resources& res, bool for_computation = true) const;
+  augmented_stream getStream(exec_place_resources& res, bool for_computation = true) const;
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  inline decorated_stream getStream(::cuda::experimental::stf::async_resources_handle& h,
+  inline augmented_stream getStream(::cuda::experimental::stf::async_resources_handle& h,
                                     bool for_computation = true) const;
 
   cudaStream_t pick_stream(exec_place_resources& res, bool for_computation = true) const
@@ -765,7 +765,7 @@ public:
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place cuda_stream(cudaStream_t stream);
-  static exec_place cuda_stream(const decorated_stream& dstream);
+  static exec_place cuda_stream(const augmented_stream& dstream);
 
   /**
    * @brief Returns the currently active device.
@@ -980,10 +980,10 @@ auto exec_place::operator->*(Fun&& fun) const
   return ::std::forward<Fun>(fun)();
 }
 
-inline decorated_stream stream_pool::next(const exec_place& place)
+inline augmented_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
-  ::std::lock_guard<::std::mutex> locker(pimpl->mtx); // NOLINT(modernize-use-scoped-lock)
+  ::std::scoped_lock locker(pimpl->mtx);
   _CCCL_ASSERT(pimpl->index < pimpl->payload.size(), "stream_pool::next index out of range");
 
   auto& result = pimpl->payload.at(pimpl->index);
@@ -1000,7 +1000,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
     if (stream_err == CUDA_ERROR_CONTEXT_IS_DESTROYED || stream_err == CUDA_ERROR_INVALID_CONTEXT
         || stream_err == CUDA_ERROR_INVALID_HANDLE || ctx == nullptr)
     {
-      result = decorated_stream(nullptr, k_no_stream_id, -1);
+      result = augmented_stream(nullptr, k_no_stream_id, -1);
     }
     else
     {
@@ -1026,7 +1026,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
+inline augmented_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
 {
   return get_stream_pool(for_computation, res).next(*this);
 }
@@ -1743,7 +1743,7 @@ data_place data_place::composite(partitioner_t, const exec_place& g)
   return data_place::composite(&partitioner_t::get_executor, g);
 }
 
-inline decorated_stream data_place::getDataStream(exec_place_resources& res) const
+inline augmented_stream data_place::getDataStream(exec_place_resources& res) const
 {
   return affine_exec_place().getStream(res, false);
 }

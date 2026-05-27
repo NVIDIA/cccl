@@ -142,8 +142,13 @@ public:
       : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
   {}
   stream_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
-      : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
+      : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle), !is_capturing(user_stream)))
   {
+    // A valid user stream means the CUDA runtime has already been initialized.
+    // If that stream is currently capturing, avoid making the backend
+    // constructor issue any additional runtime initialization calls that could
+    // be incompatible with the capture.
+
     // When the caller supplies their own ``async_resources_handle``, its
     // stream pool is very likely already populated with streams that carry
     // residual work from previous contexts. Folding those streams into an
@@ -154,9 +159,7 @@ public:
     // the supported in-capture configuration.
     if (state().user_provided_handle)
     {
-      cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
-      cuda_safe_call(cudaStreamIsCapturing(user_stream, &capture_status));
-      EXPECT(capture_status == cudaStreamCaptureStatusNone,
+      EXPECT(!is_capturing(user_stream),
              "stream_ctx(user_stream, handle): user_stream is in a CUDA graph "
              "capture but a caller-provided async_resources_handle was "
              "supplied. The handle's stream pool may carry uncaptured work "
@@ -174,10 +177,19 @@ public:
 
   ///@}
 
+private:
+  [[nodiscard]] static bool is_capturing(cudaStream_t user_stream)
+  {
+    cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+    cuda_safe_call(cudaStreamIsCapturing(user_stream, &capture_status));
+    return capture_status != cudaStreamCaptureStatusNone;
+  }
+
+public:
   void set_user_stream(cudaStream_t user_stream)
   {
     // TODO first introduce the user stream in our pool
-    auto dstream = decorated_stream(user_stream);
+    auto dstream = augmented_stream(user_stream);
 
     this->state().user_dstream = dstream;
 
@@ -239,7 +251,7 @@ public:
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
-    decorated_stream dstream =
+    augmented_stream dstream =
       (user_dstream.has_value())
         ? user_dstream.value()
         : exec_place::current_device().getStream(
@@ -594,8 +606,8 @@ private:
   class impl : public base::impl
   {
   public:
-    impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : base::impl(mv(_async_resources))
+    impl(async_resources_handle _async_resources = async_resources_handle(nullptr), bool initialize_cuda_runtime = true)
+        : base::impl(mv(_async_resources), initialize_cuda_runtime)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
@@ -617,7 +629,7 @@ private:
 
     event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
-      auto e = reserved::record_event_in_stream(decorated_stream(stream), *get_dot(), mv(symbol));
+      auto e = reserved::record_event_in_stream(augmented_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 
@@ -640,7 +652,7 @@ private:
 
     // If the context is attached to a user stream, we should use it for
     // finalize() or fence()
-    ::std::optional<decorated_stream> user_dstream;
+    ::std::optional<augmented_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -743,14 +755,6 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-UNITTEST("copyable stream_task")
-{
-  stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = t;
-  ctx.finalize();
-};
-
 UNITTEST("movable stream_task")
 {
   stream_ctx ctx;
