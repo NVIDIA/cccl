@@ -70,11 +70,11 @@ struct DeviceTransform
     TransformOp transform_op,
     Env env)
   {
-    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
-    using offset_t        = typename choose_offset_t::type;
-
-    // Check if the number of items exceeds the range covered by the selected signed offset type
-    if (const cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items); error != cudaSuccess)
+    // We use int64_t internally, since it's faster than uint64_t and similar to a 32-bit offset type. See
+    // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can hold the
+    // value passed by the user, but otherwise ignore the chosen signed offset type.
+    using offset_t = ::cuda::std::int64_t;
+    if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
     {
       return error;
     }
