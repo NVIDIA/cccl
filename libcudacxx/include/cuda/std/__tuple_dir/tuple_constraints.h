@@ -331,11 +331,7 @@ inline constexpr bool __tuple_is_tuple_like_constructible_v =
   ::cuda::std::__tuple_tuple_like_constructible_constraint<_UTuple>(
     __tuple_types<_Types...>{}, __make_tuple_indices_t<sizeof...(_Types)>{});
 
-template <class _UTuple,
-          class... _Types,
-          enable_if_t<::cuda::std::__tuple_tuple_like_constructible_constraint<_UTuple>(
-                        __tuple_types<_Types...>{}, __make_tuple_indices_t<sizeof...(_Types)>{}),
-                      int> = 0>
+template <class _UTuple, class... _Types, enable_if_t<__tuple_is_tuple_like_constructible_v<_UTuple, _Types...>, int> = 0>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_tuple_like_constructible(__tuple_types<_Types...>) noexcept
   -> _TupleTupleLikeConstructibleTraits<_UTuple, __tuple_types<_Types...>, __make_tuple_indices_t<sizeof...(_Types)>>;
 template <class>
