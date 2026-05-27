@@ -9,191 +9,16 @@
 //===----------------------------------------------------------------------===//
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <string>
 
 #include <cccl/c/for.h>
-#include <hostjit/codegen/bitcode.hpp>
-#include <hostjit/codegen/types.hpp>
-#include <hostjit/config.hpp>
-#include <hostjit/jit_compiler.hpp>
+#include <hostjit/codegen/cub_call.hpp>
 #include <util/build_utils.h>
 
-using namespace hostjit;
 using namespace hostjit::codegen;
 
 // d_in_0, num_items, op_0_state, stream
 using for_fn_t = int (*)(void*, unsigned long long, void*, void*);
-
-static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
-{
-  const bool has_bc   = BitcodeCollector::is_bitcode_op(op);
-  const bool stateful = (op.type == CCCL_STATEFUL);
-  const std::string op_name(op.name ? op.name : "op");
-
-  // Resolve the element type: a builtin C name (e.g. "int") for primitive
-  // value_types, or an emitted storage struct alias (e.g. "for_value_t") for
-  // custom user types. The storage struct's `preamble` must come before the
-  // first use of `data_type` in the rest of the source.
-  std::string storage_preamble;
-  const std::string data_type = resolve_type(d_data.value_type, "for_value_t", storage_preamble);
-
-  std::string src = R"(#include <cuda_runtime.h>
-#include <cuda_fp16.h>
-#include <cub/device/device_for.cuh>
-
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-
-)";
-
-  src += storage_preamble;
-
-  // Define the iterator type — always a raw pointer for pointer inputs
-  src += std::format("using in_0_it_t = {}*;\n\n", data_type);
-
-  // User op forward declaration or inline source
-  if (op.code_type == CCCL_OP_CPP_SOURCE && op.code && op.code_size > 0)
-  {
-    src += std::string(op.code, op.code_size);
-    src += "\n";
-  }
-  else if (has_bc)
-  {
-    if (stateful)
-    {
-      src += std::format("extern \"C\" __device__ void {}(void* state, {}* input);\n\n", op_name, data_type);
-    }
-    else
-    {
-      src += std::format("extern \"C\" __device__ void {}({}* input);\n\n", op_name, data_type);
-    }
-  }
-
-  // bulk_op_t functor — wraps the user op for cub::DeviceFor::Bulk, whose op
-  // is invoked as op(OffsetT idx). The functor holds d_data so it can compute
-  // d_data + idx and invoke the user op on the pointed-to element.
-  // The functor is passed by value into Bulk; for stateful ops the embedded
-  // state_bytes ride along into device constant memory through the kernel-arg
-  // copy, mirroring the prior hand-rolled approach.
-  if (stateful)
-  {
-    const size_t state_size  = op.size > 0 ? op.size : 1;
-    const size_t state_align = op.alignment > 0 ? op.alignment : 1;
-    src += std::format(
-      "struct bulk_op_t {{\n"
-      "  in_0_it_t d_data;\n"
-      "  alignas({0}) unsigned char state_bytes[{1}];\n"
-      "  __device__ __forceinline__ void operator()(unsigned long long idx) const "
-      "{{ {2}((void*)state_bytes, d_data + idx); }}\n"
-      "}};\n\n",
-      state_align,
-      state_size,
-      op_name);
-  }
-  else
-  {
-    src += std::format(
-      R"(struct bulk_op_t {{
-  in_0_it_t d_data;
-  __device__ __forceinline__ void operator()(unsigned long long idx) const {{ {}(d_data + idx); }}
-}};
-
-)",
-      op_name);
-  }
-
-  // Host wrapper
-  src += R"(extern "C" EXPORT int cccl_jit_for(
-    void* d_in_0, unsigned long long num_items, void* op_0_state, void* stream
-) {
-    in_0_it_t in_0 = static_cast<in_0_it_t>(d_in_0);
-)";
-  if (stateful)
-  {
-    const size_t state_size = op.size > 0 ? op.size : 1;
-    src += std::format("    bulk_op_t op_0{{in_0, {{}}}};\n"
-                       "    __builtin_memcpy(op_0.state_bytes, op_0_state, {});\n",
-                       state_size);
-  }
-  else
-  {
-    src += "    bulk_op_t op_0{in_0};\n";
-  }
-  src += R"(    return (int)cub::DeviceFor::Bulk(num_items, op_0, (cudaStream_t)stream);
-}
-)";
-
-  return src;
-}
-
-// Set up JITCompiler config — mirrors binary_search.cu logic
-static CompilerConfig make_for_jit_config(
-  int cc_major, int cc_minor, cccl_build_config* config, const char* ctk_root, const char* cccl_include_path)
-{
-  auto jit_config             = detectDefaultConfig();
-  jit_config.sm_version       = cc_major * 10 + cc_minor;
-  jit_config.verbose          = false;
-  jit_config.entry_point_name = "cccl_jit_for";
-
-  if (ctk_root && ctk_root[0] != '\0')
-  {
-    jit_config.cuda_toolkit_path = ctk_root;
-    jit_config.library_paths.clear();
-    for (const char* subdir : {"lib64", "lib"})
-    {
-      auto candidate = std::filesystem::path(ctk_root) / subdir;
-      if (std::filesystem::exists(candidate))
-      {
-        jit_config.library_paths.push_back(candidate.string());
-      }
-    }
-  }
-  if (cccl_include_path && cccl_include_path[0] != '\0')
-  {
-    jit_config.cccl_include_path = cccl_include_path;
-    if (jit_config.hostjit_include_path.empty()
-        || !std::filesystem::exists(jit_config.hostjit_include_path + "/hostjit/cuda_minimal"))
-    {
-      auto parent = std::filesystem::path(cccl_include_path).parent_path().string();
-      if (std::filesystem::exists(parent + "/hostjit/cuda_minimal"))
-      {
-        jit_config.hostjit_include_path = parent;
-      }
-    }
-  }
-  if (config)
-  {
-    for (size_t i = 0; i < config->num_extra_include_dirs; ++i)
-    {
-      jit_config.include_paths.push_back(config->extra_include_dirs[i]);
-    }
-    for (size_t i = 0; i < config->num_extra_compile_flags; ++i)
-    {
-      std::string flag = config->extra_compile_flags[i];
-      if (flag.substr(0, 2) == "-D")
-      {
-        auto eq = flag.find('=', 2);
-        if (eq != std::string::npos)
-        {
-          jit_config.macro_definitions[flag.substr(2, eq - 2)] = flag.substr(eq + 1);
-        }
-        else
-        {
-          jit_config.macro_definitions[flag.substr(2)] = "";
-        }
-      }
-    }
-  }
-  return jit_config;
-}
 
 CUresult cccl_device_for_build_ex(
   cccl_device_for_build_result_t* build_ptr,
@@ -214,46 +39,17 @@ try
   const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(config, cub_path, thrust_path);
 
-  auto jit_config = make_for_jit_config(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
-
-  // Collect bitcode from op
-  uintptr_t unique_id = reinterpret_cast<uintptr_t>(build_ptr);
-  BitcodeCollector bitcode(jit_config, unique_id);
-  bitcode.add_op(op, "op_0");
-
-  // Generate source
-  std::string cuda_source = make_for_source(d_data, op);
-  if (const char* dump_path = std::getenv("FOR_DUMP_SOURCE"))
-  {
-    std::ofstream f(dump_path);
-    f << cuda_source;
-  }
-
-  // Compile. unique_ptr owns the JITCompiler so any early throw frees it; we
-  // .release() into build_ptr->jit_compiler (raw void*) on the success path.
-  auto compiler = std::make_unique<JITCompiler>(jit_config);
-  if (!compiler->compile(cuda_source))
-  {
-    std::string err = compiler->getLastError();
-    bitcode.cleanup();
-    throw std::runtime_error("for compilation failed: " + err);
-  }
-  bitcode.cleanup();
-
-  // Extract function pointer
-  using fn_t = int (*)(void*, ...);
-  auto fn    = compiler->getFunction<fn_t>("cccl_jit_for");
-  if (!fn)
-  {
-    throw std::runtime_error("for function lookup failed: " + compiler->getLastError());
-  }
-
-  auto cubin = compiler->getCubin();
+  auto result =
+    CubCall::from("cub/device/device_for.cuh")
+      .run("cub::DeviceFor::ForEachN")
+      .name("cccl_jit_for")
+      .with(in(d_data), num_items, for_each_op(op), stream)
+      .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  cccl::detail::copy_cubin(cubin, build_ptr->cubin, build_ptr->cubin_size);
-  build_ptr->jit_compiler = compiler.release();
-  build_ptr->for_fn       = reinterpret_cast<void*>(fn);
+  cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
+  build_ptr->jit_compiler = result.compiler;
+  build_ptr->for_fn       = result.fn_ptr;
 
   return CUDA_SUCCESS;
 }

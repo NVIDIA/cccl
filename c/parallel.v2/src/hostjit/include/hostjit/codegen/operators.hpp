@@ -45,4 +45,17 @@ OperatorCode make_comparison_op(
   const std::string& var_name, // e.g., "cmp_0"
   const std::string& state_param, // e.g., "cmp_0_state"
   bool has_bitcode);
+
+// Generate code for a for_each operator. Adapts c.parallel's user-op contract
+// (`void op(T*)`) to the contract that cub::DeviceFor::ForEachN expects
+// (`void op(T&)`). Functor is stateless for non-stateful ops; for stateful
+// ops it embeds the state bytes inline so they ride along into device
+// constant memory via the kernel-arg copy.
+OperatorCode make_for_each_op(
+  cccl_op_t op,
+  const std::string& elem_type, // C++ type name for the iterator's element
+  const std::string& functor_name, // e.g., "ForEachOp"
+  const std::string& var_name, // e.g., "op_0"
+  const std::string& state_param, // e.g., "op_0_state"
+  bool has_bitcode);
 } // namespace hostjit::codegen

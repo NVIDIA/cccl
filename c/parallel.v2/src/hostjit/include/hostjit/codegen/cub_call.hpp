@@ -124,17 +124,38 @@ inline typed_scalar_t typed_scalar(cccl_type_info t, const char* name)
   return {t, name};
 }
 
+// env_stream_t: variant of stream_t that emits a cuda::std::execution::env
+// wrapping a cuda::stream_ref instead of a bare cudaStream_t. Use with CUB
+// algorithms that take an env (so CUB manages temp storage internally via
+// the env's memory_resource — caller doesn't have to thread it through).
+struct env_stream_t
+{};
+inline constexpr env_stream_t env_stream{};
+
+// for_each_op_t: wraps a cccl_op_t with c.parallel's void op(T*) contract
+// into the void op(T&) functor that cub::DeviceFor::ForEachN expects.
+struct for_each_op_t
+{
+  cccl_op_t op;
+};
+inline for_each_op_t for_each_op(cccl_op_t op)
+{
+  return {op};
+}
+
 // Argument variant: everything that can appear in .with()
 using Arg = std::variant<
   temp_storage_t,
   temp_bytes_t,
   num_items_t,
   stream_t,
+  env_stream_t,
   input_t,
   output_t,
   cccl_op_t,
   cmp_t,
   unary_op_t,
+  for_each_op_t,
   future_val_t,
   cccl_value_t,
   force_accum_type_t,

@@ -198,6 +198,11 @@ std::string CubCall::source() const
           params.push_back("void* stream");
           cub_args.push_back("(cudaStream_t)stream");
         }
+        else if constexpr (std::is_same_v<T, env_stream_t>)
+        {
+          params.push_back("void* stream");
+          cub_args.push_back("::cuda::std::execution::env{::cuda::stream_ref{(cudaStream_t)stream}}");
+        }
         else if constexpr (std::is_same_v<T, input_t>)
         {
           auto idx         = in_count++;
@@ -253,6 +258,25 @@ std::string CubCall::source() const
           bool has_bc       = BitcodeCollector::is_bitcode_op(a.op);
 
           auto code = make_comparison_op(a.op, accum_type, functor_name, var_name, state_param, has_bc);
+
+          preamble += code.preamble;
+          params.push_back(std::format("void* {}", state_param));
+          setup_lines.push_back(code.setup_code);
+          cub_args.push_back(var_name);
+        }
+        else if constexpr (std::is_same_v<T, for_each_op_t>)
+        {
+          auto idx          = op_count++;
+          auto functor_name = std::format("ForEachOp_{}", idx);
+          auto var_name     = std::format("op_{}", idx);
+          auto state_param  = std::format("op_{}_state", idx);
+          bool has_bc       = BitcodeCollector::is_bitcode_op(a.op);
+
+          // The element type is the first input iterator's value_type, which
+          // CubCall has already resolved via find_accum_type.
+          const std::string elem_type = iter_elem_type_name(accum_info);
+
+          auto code = make_for_each_op(a.op, elem_type, functor_name, var_name, state_param, has_bc);
 
           preamble += code.preamble;
           params.push_back(std::format("void* {}", state_param));
@@ -378,6 +402,15 @@ std::string CubCall::source() const
   if (tuple_inputs_)
   {
     src += "#include <cuda/std/tuple>\n";
+  }
+  for (const auto& arg : args_)
+  {
+    if (std::holds_alternative<env_stream_t>(arg))
+    {
+      src += "#include <cuda/std/execution>\n";
+      src += "#include <cuda/stream_ref>\n";
+      break;
+    }
   }
   src += std::format("#include <{}>\n\n", include_);
 
@@ -521,6 +554,10 @@ CubCallResult CubCall::compile(
           bitcode.add_op(a.op, std::format("cmp_{}", op_idx++));
         }
         else if constexpr (std::is_same_v<T, unary_op_t>)
+        {
+          bitcode.add_op(a.op, std::format("op_{}", op_idx++));
+        }
+        else if constexpr (std::is_same_v<T, for_each_op_t>)
         {
           bitcode.add_op(a.op, std::format("op_{}", op_idx++));
         }

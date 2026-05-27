@@ -445,4 +445,69 @@ OperatorCode make_comparison_op(
 
   return result;
 }
+
+OperatorCode make_for_each_op(
+  cccl_op_t op,
+  const std::string& elem_type,
+  const std::string& functor_name,
+  const std::string& var_name,
+  const std::string& state_param,
+  bool has_bitcode)
+{
+  const std::string op_name = (op.name && op.name[0]) ? op.name : "user_op";
+  const bool is_stateful    = (op.type == CCCL_STATEFUL);
+
+  OperatorCode result;
+  result.local_var = var_name;
+
+  // Forward declaration / embedded source.
+  if (op.code_type == CCCL_OP_CPP_SOURCE && op.code && op.code_size > 0)
+  {
+    result.preamble += std::string(op.code, op.code_size) + "\n\n";
+  }
+  else if (has_bitcode)
+  {
+    if (is_stateful)
+    {
+      result.preamble +=
+        std::format("extern \"C\" __device__ void {}(void* state, {}* input);\n\n", op_name, elem_type);
+    }
+    else
+    {
+      result.preamble += std::format("extern \"C\" __device__ void {}({}* input);\n\n", op_name, elem_type);
+    }
+  }
+
+  if (is_stateful)
+  {
+    const size_t state_size  = op.size > 0 ? op.size : 1;
+    const size_t state_align = op.alignment > 0 ? op.alignment : 1;
+    result.preamble += std::format(
+      "struct {0} {{\n"
+      "  alignas({3}) unsigned char state_bytes[{4}];\n"
+      "  __device__ __forceinline__ void operator()({1}& elem) const "
+      "{{ {2}((void*)state_bytes, &elem); }}\n"
+      "}};\n\n",
+      functor_name,
+      elem_type,
+      op_name,
+      state_align,
+      state_size);
+    result.setup_code = std::format(
+      "{0} {1}; __builtin_memcpy({1}.state_bytes, {2}, {3});", functor_name, var_name, state_param, state_size);
+  }
+  else
+  {
+    result.preamble += std::format(
+      "struct {0} {{\n"
+      "  __device__ __forceinline__ void operator()({1}& elem) const {{ {2}(&elem); }}\n"
+      "}};\n\n",
+      functor_name,
+      elem_type,
+      op_name);
+    result.setup_code = std::format("{} {}{{}};", functor_name, var_name);
+  }
+
+  return result;
+}
 } // namespace hostjit::codegen
