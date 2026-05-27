@@ -34,7 +34,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = ::cuda::std::int64_t;
+  using offset_t = cuda::std::int64_t;
 
   // test edge cases around 16, 128, page size, and full tile
   const offset_t num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097, 100'000);
@@ -60,7 +60,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
 C2H_TEST("DeviceTransform::Transform works for large number of items",
          "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = ::cuda::std::int64_t;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const auto num_items = detail::make_large_offset<offset_t>();
 
@@ -79,7 +79,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
 C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
          "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = ::cuda::std::int64_t;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const offset_t num_items = detail::make_large_offset<offset_t>();
 
@@ -114,7 +114,7 @@ C2H_TEST("DeviceTransform::Transform works with large input",
 try
 {
   using type     = std::uint32_t;
-  using offset_t = ::cuda::std::int64_t;
+  using offset_t = cuda::std::int64_t;
 
   const auto delta         = GENERATE(-123456, 123456);
   const offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + delta);
@@ -295,7 +295,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream nstream",
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = ::cuda::std::int64_t;
+  using offset_t = cuda::std::int64_t;
 
   const offset_t num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<type> a(num_items, thrust::no_init);
@@ -784,10 +784,10 @@ C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
   // completely async work of filling, 2x transforming and 1x reduction. we also avoid using the launch wrapper, since
   // it would synchronize
   fill_pdl(thrust::raw_pointer_cast(data.data()), num_items, 42);
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
   thrust::reduce_into(
-    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, ::cuda::std::logical_and{});
+    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, cuda::std::logical_and{});
   REQUIRE(result[0]); // access finally synchronize
 }
 #endif
