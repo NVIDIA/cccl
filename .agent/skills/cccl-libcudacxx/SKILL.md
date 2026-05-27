@@ -7,7 +7,7 @@ description: |
   "libcudacxx code style", "make this libcudacxx code compliant".
 ---
 
-# libcudacxx
+# cccl-libcudacxx
 
 libcudacxx is CCCL's C++ standard library for both host and device code. It provides
 `<cuda/std/...>` headers that mirror the C++ standard library (`<cuda/std/atomic>`,
@@ -46,9 +46,9 @@ or the prologue/epilogue mechanism provides it. Every header must include:
 
 Tests live under `libcudacxx/test/`. Two categories:
 
-- **Lit tests** — structured as `.pass.cpp` / `.fail.cpp` / `.verify.cpp` files;
-  discovered and run by the lit runner. Naming and organization rules in
-  `references/style/testing.md`.
+- **Lit tests** — structured as `.pass.cpp` / `.compile.pass.cpp` / `.fail.cpp` /
+  `.verify.cpp` / `.runfail.cpp` files; discovered and run by the lit runner. Test-authoring
+  conventions, lit directives, and validation commands live in `references/style/testing.md`.
 - **Unit tests** — conventional CMake/CTest targets; heavier integration scenarios.
 
 Run lit tests via `cccl-test` (the underlying `build_and_test_targets.sh` script takes a `--lit-tests` flag).
@@ -59,16 +59,17 @@ Style is applied to `libcudacxx/include/` and `cudax/include/`. Pre-commit runs
 clang-format and a set of custom checks. CI enforces the same set.
 
 Style is split across focused references below. When making a file compliant, work
-through naming → macros → templates → headers → visibility → comments in that order,
-then verify with `pre-commit run --files <files>`.
+through naming → macros → templates → headers → visibility → comments/Doxygen in that
+order, then verify with `pre-commit run --files <files>`.
 
 ## Additional resources
 
-- `references/style/naming.md` — naming conventions: types, functions, macros, files
-- `references/style/macros.md` — `_CCCL_*` macro rules; API, host/device, nodiscard
-- `references/style/templates.md` — template parameters, concepts, SFINAE, `constexpr`
+- `references/style/naming.md` — naming conventions: symbols, template params, plural collections, type qualification
+- `references/style/macros.md` — `_CCCL_*` macro rules; API, host/device, nodiscard; C++ version policy and backports
+- `references/style/templates.md` — template parameters, concepts, SFINAE, `constexpr`, trailing return types
 - `references/style/headers.md` — include order, guard format, license selection
 - `references/style/visibility.md` — `_CCCL_HIDE_FROM_ABI`, inlining, `noexcept` rules
-- `references/style/testing.md` — lit test layout, naming conventions, unit test targets
-- `references/docs.md` — index of libcudacxx documentation (standard/extended/PTX API).
-- `references/tools.md` — build and test scripts for libcudacxx.
+- `references/style/doxygen.md` — inline comment policy and Doxygen requirements for public APIs
+- `references/style/testing.md` — lit test layout, naming, test kinds, support headers, lit directives, validation commands
+- `references/docs.md` — index of libcudacxx documentation (standard/extended/PTX API)
+- `references/tools.md` — build and test scripts for libcudacxx

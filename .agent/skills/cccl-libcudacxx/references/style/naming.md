@@ -22,6 +22,15 @@ Avoid single-letter template parameter names. Prefer short but descriptive names
 - Wrong: `_T`, `_U`
 - Correct: `_Tp`, `_Up`, `_Key`, `_Value`
 
+## Plural names for collections
+
+Prefer plural identifiers for arrays, spans, lists, and other collection-shaped variables:
+
+```cpp
+int values[4];   // correct
+int value[4];    // wrong — singular reads as a single value
+```
+
 ## Class data members and constructor parameters
 
 Non-public data members carry a trailing underscore:

@@ -6,7 +6,7 @@ description: |
   "sphinx docs", "doxygen api docs".
 ---
 
-# Documentation
+# cccl-docs
 
 CCCL's documentation is a Sphinx site with Doxygen-generated API references bridged via Breathe. The source lives entirely under `docs/`. There is no CMake-based doc target — the build entry point is a single shell script.
 

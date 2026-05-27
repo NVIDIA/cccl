@@ -9,7 +9,7 @@
 | `docs/cudax/stf.rst` | Sequential Task Flow (STF) programming model for CUDA kernels. |
 | `docs/cudax/stf/index.rst` | Auto-generated STF API documentation (and subdirectories). |
 | `docs/cudax/api/index.rst` | Full API reference for all cudax components (and subdirectories). |
-| `cudax/README.md` | Feature overview, compiler requirements (C++20, CUDA 12+), installation instructions. |
+| `cudax/README.md` | Feature overview, compiler requirements (C++17, CUDA 12.3+), installation instructions. |
 
 ## Adjacent
 

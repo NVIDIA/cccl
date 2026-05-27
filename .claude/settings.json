@@ -51,7 +51,9 @@
       "Bash(file *)",
       "Bash(stat *)",
       "Bash(command -v *)",
-      "Bash(mkdir -p /tmp/claude/*)"
+      "Bash(mkdir -p /tmp/claude/*)",
+      "Agent(cccl-*)",
+      "Skill(cccl-*)"
     ]
   },
   "hooks": {
@@ -60,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"CCCL repo orientation: load the `cccl` skill via the Skill tool BEFORE doing anything else. It is the entry point that surfaces all repo-local skills (.claude/skills -> .agent/skills) and agents (.claude/agents -> .agent/agents). If you are unfamiliar with how skills/agents work in this repo, load `cccl-agent-impl` first.\"}}'"
+            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"CCCL repo orientation: load the `cccl` skill via the Skill tool BEFORE doing anything else. It is the entry point that surfaces all repo-local skills (.claude/skills -> .agent/skills) and agents (.claude/agents -> .agent/agents).\"}}'"
           }
         ]
       }

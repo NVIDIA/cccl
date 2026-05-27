@@ -7,7 +7,7 @@ description: |
   run", "clang-format failed", "pre-commit hook failed", "fix formatting".
 ---
 
-# Pre-commit
+# cccl-precommit
 
 Reference and orientation for CCCL's pre-commit setup. Configuration lives
 in `.pre-commit-config.yaml`; tool settings (ruff, codespell, mypy) live in

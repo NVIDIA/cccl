@@ -12,12 +12,14 @@ You are a non-interactive read-only `cccl-ci-overrides` agent. The caller has pa
 
 ## FOR THE CALLING AGENT — What you must provide
 
-1. **One of `paths:` (newline-separated changed paths) or `diff_range: <BASE>..<HEAD>`** — drives skip-tag and dirty-project analysis.
-2. **`failed_jobs:`** (path to a file with failed-job names, one per line) — drives direct-reproduction override entries.
-3. **`for_workflow:`** — `pull_request` (default) | `pull_request_lite` | `nightly` | `weekly`.
-4. **Working directory** — absolute path; `pwd` to confirm.
+1. **At least one of:**
+   - `paths:` — newline-separated changed paths; drives skip-tag and dirty-project analysis.
+   - `diff_range: <BASE>..<HEAD>` — same effect as `paths`, computed from a git range.
+   - `failed_jobs:` — path to a file with failed-job names (one per line); drives direct-reproduction override entries.
 
-At least one of `paths` / `diff_range` / `failed_jobs` required. Missing all three → return `under-briefed: no inputs`.
+   Missing all three → return `under-briefed: no inputs`.
+2. **Optional `for_workflow:`** — `pull_request` (default) | `pull_request_lite` | `nightly` | `weekly`.
+3. **Working directory** — absolute path; `pwd` to confirm.
 
 ## Sources of truth
 

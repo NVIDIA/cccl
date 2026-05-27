@@ -8,7 +8,7 @@ description: |
   "cub device reduce", "cub tuning policy".
 ---
 
-# CUB
+# cccl-cub
 
 CUB is CCCL's CUDA primitive library. It provides cooperative algorithms at
 three hardware scopes — thread block, warp, and full device — plus internal

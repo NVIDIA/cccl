@@ -32,15 +32,4 @@ Prefer `_CCCL_REQUIRES` or concept-based constraints when available. When fallin
 `enable_if`, place it in the trailing return type or as a defaulted non-type template
 parameter — never in the function parameter list.
 
-## Modern C++
-
-The repository supports C++17 as the minimum, but many C++20 and later features have been
-backported via CCCL macros and `cuda/std` wrappers. Prefer the backported form over
-manual SFINAE when available:
-
-- Concepts → `_CCCL_TEMPLATE(...)` / `_CCCL_REQUIRES(...)` / `_CCCL_CONCEPT`
-- `consteval` replacements → `_CCCL_CONSTEVAL`
-- `[[nodiscard]]` → use directly (supported from C++17)
-
-Consult `libcudacxx/include/cuda/std/__cccl/` for the available portability macros before
-writing bespoke SFINAE.
+See `macros.md` for the full list of C++20-and-later features backported via CCCL macros.

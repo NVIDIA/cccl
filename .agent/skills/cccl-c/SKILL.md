@@ -6,7 +6,7 @@ description: |
   Triggers: "what is cccl c", "c parallel library", "cccl c bindings", "cccl ffi", "c api".
 ---
 
-# C Parallel Library
+# cccl-c
 
 The C Parallel Library is the stable-ABI C face of CCCL's parallel primitives. It ships as
 `cccl.c.parallel`, a shared library that Python (`cuda.compute`), Numba, and other language

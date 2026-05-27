@@ -8,7 +8,7 @@ description: |
   "cuda::experimental", "cudax features".
 ---
 
-# cudax
+# cccl-cudax
 
 cudax (`cuda/experimental/`) is CCCL's staging ground for features under active
 design. Everything in the `cuda::experimental::` namespace carries zero stability

@@ -77,3 +77,16 @@ if (::cuda::std::is_unsigned_v<T> ? false : (var < 0)) { ... }
 - Reuse `cuda/` or `cuda/std/` macros wherever they exist; do not roll bespoke macros for
   things already covered by the CCCL or standard library infrastructure.
 - Remove unused macros, variables, functions, types, template parameters, and headers.
+
+## C++ version policy and macro backports
+
+The library's minimum supported standard is C++17. Many C++20 features are available
+through CCCL portability macros and `cuda/std/` wrappers — prefer the backport over manual
+SFINAE or version-specific code:
+
+- Concepts → `_CCCL_TEMPLATE(...)` / `_CCCL_REQUIRES(...)` / `_CCCL_CONCEPT`
+- `consteval` → `_CCCL_CONSTEVAL`
+- `[[nodiscard]]` — use directly (supported from C++17)
+
+Consult `libcudacxx/include/cuda/std/__cccl/` for the available portability macros before
+writing bespoke SFINAE or version checks.

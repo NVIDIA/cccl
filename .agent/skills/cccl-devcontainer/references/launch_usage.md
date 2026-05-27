@@ -2,8 +2,8 @@
 
 Launches a CCCL development container via Docker or VSCode. Selects the devcontainer config
 matching the requested CTK version and host compiler from the pre-generated
-`.devcontainer/{cuda-X.Y}-{compiler}/` subdirectory, then starts the container with the repo
-root bind-mounted at `/home/coder/cccl`.
+`.devcontainer/cuda<X.Y>-<compiler>/` subdirectory (e.g. `cuda13.2-gcc14`), then starts the
+container with the repo root bind-mounted at `/home/coder/cccl`.
 
 ## Location
 

@@ -7,7 +7,7 @@ description: |
   "thrust execution policies", "thrust backends".
 ---
 
-# Thrust
+# cccl-thrust
 
 Thrust is CCCL's high-level parallel algorithms library. It provides an STL-like
 interface (`thrust::sort`, `thrust::reduce`, `thrust::transform`, …) that runs on

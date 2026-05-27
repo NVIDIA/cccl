@@ -7,7 +7,7 @@ description: |
   "non-preset build", "list cmake options".
 ---
 
-# CMake
+# cccl-cmake
 
 Reference and orientation for CCCL's CMake configuration layer. Push cmake module
 internals, custom-command definitions, and arch-flag mechanics to `cccl_detail-cmake`.

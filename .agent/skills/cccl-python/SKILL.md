@@ -12,10 +12,30 @@ Python components live under `python/cuda_cccl/`. Requires Python 3.10+, CTK 12.
 - `cuda.coop._experimental` — block/warp primitives for Numba CUDA.
 - `cuda.cccl.headers` — programmatic access to CCCL headers.
 
-## Install from source
+## Install
+
+For dev work from a checkout:
 
 ```
 pip install -e python/cuda_cccl[test-cu12]   # or [test-cu13] for CTK 13.x
+```
+
+PyPI and conda-forge install methods, plus the full requirements list, are in
+`references/install.md`.
+
+## Usage examples
+
+```python
+import cuda.compute
+result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
+
+import cuda.coop._experimental as coop
+@cuda.jit
+def kernel(data):
+    coop.block.reduce(data, binary_op)
+
+import cuda.cccl.headers as headers
+include_paths = headers.get_include_paths()
 ```
 
 ## Build / test scripts
@@ -42,5 +62,6 @@ python/cuda_cccl/
 
 ## Additional resources
 
+- `references/install.md` — PyPI, conda-forge, and source install methods; full requirements.
 - `references/docs.md` — index of Python package documentation.
 - `references/tools.md` — build and test scripts for the Python bindings.

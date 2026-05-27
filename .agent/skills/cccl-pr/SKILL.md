@@ -1,10 +1,10 @@
 ---
-description: "CCCL pull request lifecycle — open a draft PR, edit title/body/state, comment, push new commits, and trigger CI via SHA-verified `/ok to test`. Refuses on `main`; never force-pushes. Triggers: \"open a PR\", \"push and PR\", \"update PR description\", \"mark PR ready\", \"trigger CI on PR\"."
+description: "CCCL pull request lifecycle — open a draft PR, edit title/body/state, comment, push new commits, and trigger CI via SHA-verified `/ok to test`. Refuses on `main`; force-pushes only on explicit user request after risk acknowledgment. Triggers: \"open a PR\", \"push and PR\", \"update PR description\", \"mark PR ready\", \"trigger CI on PR\"."
 ---
 
 # cccl-pr
 
-CCCL PR lifecycle. Route every user-facing question through `cccl-clarify`. Refuses on `main`. Never force-pushes; never deletes branches; never closes or merges PRs.
+CCCL PR lifecycle. Route every user-facing question through `cccl-clarify`. Refuses on `main`. Force-pushes only on explicit user request after risk acknowledgment. Never deletes branches; never closes or merges PRs.
 
 **Merge-blocker check** — before every push or PR-open, detect non-empty `workflows.override` in `ci/matrix.yaml` and `[skip-*]` tags on HEAD's commit message. Both block merge. Surface via `cccl-clarify` — must be reset before final merge.
 
@@ -21,7 +21,7 @@ Infer from phrasing or ask via `cccl-clarify`:
 
 ### 1.1 Sanity checks
 
-- Refuse on `main` (`git rev-parse --git-dir` vs `--git-common-dir`).
+- Refuse on `main`: `git rev-parse --abbrev-ref HEAD` — abort if the result is `main`.
 - Refuse if `git status --porcelain` is dirty (route to `cccl-commit`).
 - Confirm commits ahead: `git log --oneline origin/main..HEAD`.
 
@@ -117,7 +117,7 @@ PR is open, branch is pushed, CI is running (or the user chose to skip triggerin
 
 ## Hard prohibitions
 
-- Never force-push (`--force`, `+<ref>`).
+- Never force-push (`--force`, `+<ref>`) without explicit user request after risk acknowledgment.
 - Never `gh pr close` or `gh pr merge` — out of scope.
 - Never post `/ok to test` without completing the SHA verification gate.
 - Never edit on `main`.
