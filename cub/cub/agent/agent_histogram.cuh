@@ -834,6 +834,10 @@ struct AgentHistogram
   //! After this call, both the primary slab (`d_privatized_histograms[ch][0..split)`)
   //! and the secondary slab (`d_hybrid_secondary_histograms[ch][0..secondary)`) hold
   //! this block's contributions for chunk0 and chunk1 respectively.
+  //!
+  //! Vectorized SMEM->GMEM flush: reads 4 counters per SMEM load and writes 4 per
+  //! GMEM store (when CounterT is 4 bytes). This roughly quarters the load+store
+  //! instruction count for the flush phase.
   _CCCL_DEVICE _CCCL_FORCEINLINE void StoreHybridSmemToStagingSlab()
   {
     __syncthreads();
@@ -841,9 +845,27 @@ struct AgentHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      for (int bin = threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+      if constexpr (sizeof(CounterT) == 4 && alignof(CounterT) == 4)
       {
-        d_privatized_histograms[ch][bin] = temp_storage.histograms[ch][bin];
+        const int vec_count = hybrid_split_bin >> 2;
+        const uint4* const src4 = reinterpret_cast<const uint4*>(temp_storage.histograms[ch]);
+        uint4* const dst4 = reinterpret_cast<uint4*>(d_privatized_histograms[ch]);
+        for (int i = threadIdx.x; i < vec_count; i += threads_per_block)
+        {
+          dst4[i] = src4[i];
+        }
+        // Tail
+        for (int bin = (vec_count << 2) + threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+        {
+          d_privatized_histograms[ch][bin] = temp_storage.histograms[ch][bin];
+        }
+      }
+      else
+      {
+        for (int bin = threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+        {
+          d_privatized_histograms[ch][bin] = temp_storage.histograms[ch][bin];
+        }
       }
     }
   }
