@@ -49,7 +49,7 @@ try
   state.add_global_memory_reads<T>(n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, Op{});
+  bench_transform(state, cuda::std::tuple{in.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -151,7 +151,7 @@ try
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), n, Op{});
+  bench_transform(state, cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {

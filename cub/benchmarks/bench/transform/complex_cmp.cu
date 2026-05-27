@@ -39,7 +39,7 @@ try
 
   // the complex comparison needs lots of compute and transform reads from overlapping input
   using compare_op = less_t;
-  bench_transform(state, ::cuda::std::tuple{in.begin(), in.begin() + 1}, out.begin(), n - 1, compare_op{});
+  bench_transform(state, cuda::std::tuple{in.begin(), in.begin() + 1}, out.begin(), n - 1, compare_op{});
 }
 catch (const std::bad_alloc&)
 {

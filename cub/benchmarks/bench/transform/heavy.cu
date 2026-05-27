@@ -69,7 +69,7 @@ try
   state.add_global_memory_reads<value_t>(n);
   state.add_global_memory_writes<value_t>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, heavy_functor<Heaviness::value>{});
+  bench_transform(state, cuda::std::tuple{in.begin()}, out.begin(), n, heavy_functor<Heaviness::value>{});
 }
 catch (const std::bad_alloc&)
 {

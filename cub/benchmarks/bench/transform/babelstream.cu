@@ -69,7 +69,7 @@ try
   state.add_global_memory_writes<T>(n);
 
   const T scalar = startScalar;
-  bench_transform(state, ::cuda::std::tuple{c.begin()}, b.begin(), n, [=] _CCCL_DEVICE(const T& ci) {
+  bench_transform(state, cuda::std::tuple{c.begin()}, b.begin(), n, [=] _CCCL_DEVICE(const T& ci) {
     return ci * scalar;
   });
 }
@@ -97,7 +97,7 @@ try
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
   bench_transform(
-    state, ::cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, [] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
+    state, cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, [] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
       return ai + bi;
     });
 }
@@ -126,7 +126,7 @@ try
   state.add_global_memory_writes<T>(n);
   const T scalar = startScalar;
   bench_transform(
-    state, ::cuda::std::tuple{b.begin(), c.begin()}, a.begin(), n, [=] _CCCL_DEVICE(const T& bi, const T& ci) {
+    state, cuda::std::tuple{b.begin(), c.begin()}, a.begin(), n, [=] _CCCL_DEVICE(const T& bi, const T& ci) {
       return bi + scalar * ci;
     });
 }
@@ -156,7 +156,7 @@ try
   const T scalar = startScalar;
   bench_transform(
     state,
-    ::cuda::std::tuple{a.begin(), b.begin(), c.begin()},
+    cuda::std::tuple{a.begin(), b.begin(), c.begin()},
     a.begin(),
     n,
     [=] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) {

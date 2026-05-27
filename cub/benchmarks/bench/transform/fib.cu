@@ -68,7 +68,7 @@ try
   state.add_global_memory_reads<index_t>(n);
   state.add_global_memory_writes<output_t>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, fib_t<index_t, output_t>{});
+  bench_transform(state, cuda::std::tuple{in.begin()}, out.begin(), n, fib_t<index_t, output_t>{});
 }
 catch (const std::bad_alloc&)
 {

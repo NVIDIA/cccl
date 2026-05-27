@@ -78,7 +78,7 @@ struct policy_selector
 
 template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
 void bench_transform(nvbench::state& state,
-                     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+                     cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
                      RandomAccessIteratorOut output,
                      ::cuda::std::int64_t num_items,
                      TransformOp transform_op)
