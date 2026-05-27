@@ -2851,18 +2851,21 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
           }
 
           // Chunked dyn-SMEM staging-fused tier for uniform-detected RANGE single-channel:
-          // xlarge < bins <= chunked_smem_bins_max_single_channel. Mirrors the EVEN single-channel
-          // chunked tier; routes through the dyn-SMEM xlarge path in chunks of
-          // chunked_smem_chunk_size_single_channel bins. Wins when the legacy persistent kernel's
-          // GMEM atomicAdd_block dominates -- e.g. Bins=60000 uniform-RANGE.
+          // xlarge < bins <= chunked_smem_bins_max_single_channel.
+          //
+          // Uses the hybrid single-pass dispatch which classifies each sample once and routes
+          // chunk0 to dyn-SMEM and chunk1 to per-block GMEM staging in a single sweep, eliminating
+          // the 2x sample re-read of the chunked path. Falls back to chunked dispatch on any
+          // setup or launch failure (which handles correctness via the verified-correct chunked
+          // path).
           if (max_num_output_bins_uniform > max_extended_smem_bins_single_channel_xlarge
               && max_num_output_bins_uniform <= chunked_smem_bins_max_single_channel)
           {
             if (const auto error =
-                  CubDebug((dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                                         NUM_ACTIVE_CHANNELS,
-                                                         chunked_smem_chunk_size_single_channel,
-                                                         chunked_smem_num_chunks_single_channel>(
+                  CubDebug((dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
+                                                                     NUM_ACTIVE_CHANNELS,
+                                                                     hybrid_smem_split_bin_single_channel,
+                                                                     chunked_smem_bins_max_single_channel>(
                     d_temp_storage,
                     temp_storage_bytes,
                     d_samples,
@@ -3371,17 +3374,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
       }
 
       // Chunked dyn-SMEM staging-fused tier: xlarge < bins <= chunked_smem_bins_max_single_channel.
-      // EVEN single-channel only -- routes through the dyn-SMEM xlarge tier in chunks of
-      // chunked_smem_chunk_size_single_channel bins, paying num_chunks x sample reads to swap
-      // legacy GMEM-priv persistent kernel's GMEM atomicAdd_block for SMEM atomicAdd_block.
+      // EVEN single-channel only.
+      //
+      // Uses the hybrid single-pass dispatch which classifies each sample once and routes
+      // chunk0 to dyn-SMEM and chunk1 to per-block GMEM staging in a single sweep, eliminating
+      // the 2x sample re-read of the chunked path. Falls back to chunked dispatch on any
+      // setup or launch failure (which handles correctness via the verified-correct chunked path).
       if (max_num_output_bins > max_extended_smem_bins_single_channel_xlarge
           && max_num_output_bins <= chunked_smem_bins_max_single_channel)
       {
         if (const auto error =
-              CubDebug((dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                                     NUM_ACTIVE_CHANNELS,
-                                                     chunked_smem_chunk_size_single_channel,
-                                                     chunked_smem_num_chunks_single_channel>(
+              CubDebug((dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
+                                                                 NUM_ACTIVE_CHANNELS,
+                                                                 hybrid_smem_split_bin_single_channel,
+                                                                 chunked_smem_bins_max_single_channel>(
                 d_temp_storage,
                 temp_storage_bytes,
                 d_samples,
