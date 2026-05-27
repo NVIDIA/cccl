@@ -87,8 +87,8 @@ try
             stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build_ptr->cc                  = cc_major * 10 + cc_minor;
-  build_ptr->cubin               = cccl::detail::copy_cubin(result.cubin, &build_ptr->cubin_size);
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
   build_ptr->jit_compiler        = result.compiler;
   build_ptr->histogram_fn        = result.fn_ptr;
   build_ptr->counter_type        = d_output_histograms.value_type;
