@@ -1451,8 +1451,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // -------------------------------------------------------------------
   static_assert(BinPartitions == 1 || BinPartitions == 2 || BinPartitions == 4
                   || BinPartitions == 8 || BinPartitions == 16 || BinPartitions == 32
-                  || BinPartitions == 64,
-                "BinPartitions must be 1, 2, 4, 8, 16, 32, or 64");
+                  || BinPartitions == 64 || BinPartitions == 128,
+                "BinPartitions must be 1, 2, 4, 8, 16, 32, 64, or 128");
   const unsigned int partition =
     (BinPartitions == 1) ? 0u : (block_id % static_cast<unsigned int>(BinPartitions));
 
