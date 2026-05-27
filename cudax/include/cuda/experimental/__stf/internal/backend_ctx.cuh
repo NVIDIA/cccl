@@ -125,23 +125,11 @@ protected:
     {
       if (initialize_cuda_runtime)
       {
-        // Force CUDA runtime init exactly once per process. Previous versions
-        // called ``cudaFree(0)`` unconditionally on every context construction,
-        // but ``cudaFree(0)`` is not capture-safe: under
-        // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` (what Warp's
-        // ``ScopedCapture`` uses) it is rejected with
-        // ``cudaErrorStreamCaptureUnsupported`` *and* invalidates the current
-        // capture, poisoning every subsequent CUDA call on that capture chain.
-        // Running it once, before any user code might enter a capture region,
-        // is sufficient: CUDA init is a process-wide state that does not need
-        // to be re-checked per STF context.
-        static ::std::once_flag cuda_init_flag;
-        ::std::call_once(cuda_init_flag, [] {
-          cudaError_t ret = cudaFree(0);
-          // If we are running the task in the context of a CUDA callback, we
-          // are not allowed to issue any CUDA API call.
-          EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
-        });
+        // Initialize the CUDA runtime before STF starts issuing work.
+        cudaError_t ret = cudaFree(0);
+        // If we are running the task in the context of a CUDA callback, we
+        // are not allowed to issue any CUDA API call.
+        EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
       }
 
       // Enable peer memory accesses (if not done already)
