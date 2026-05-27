@@ -296,10 +296,11 @@ public:
 
   // We cannot instantiate _TupleLikeConstraints eagerly because the leads to recursive constraints
   // We need to SFINAE the constructor away before instantiating the traits
+  // MSVC has issues assigning the variable directly
   template <class _UTuple>
   static constexpr bool __is_tuple_like_constructible =
-    ::cuda::std::__tuple_tuple_like_constructible_constraint<_UTuple>(
-      __tuple_types<_Tp...>{}, __make_tuple_indices_t<sizeof...(_Tp)>{});
+    bool_constant<::cuda::std::__tuple_tuple_like_constructible_constraint<_UTuple>(
+      __tuple_types<_Tp...>{}, __make_tuple_indices_t<sizeof...(_Tp)>{})>::value;
 
   template <class _Tuple,
             enable_if_t<__is_tuple_like_constructible<_Tuple>, int>  = 0,
