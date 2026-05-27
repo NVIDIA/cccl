@@ -764,20 +764,66 @@ struct AgentHistogram
 
   //! Initialize hybrid mode counters: SMEM range [0, hybrid_split_bin) and per-block GMEM
   //! range [0, hybrid_secondary_size). Single sync at the end.
+  //!
+  //! Vectorized SMEM init: writes 4 counters per store (when CounterT is 4 bytes
+  //! and the histogram base is 16-byte aligned). This roughly quarters the number
+  //! of SMEM store instructions for the SMEM init pass on B200, where each SM has
+  //! 256B-wide SMEM access.
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCountersHybrid()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      // Zero the SMEM primary range
-      for (int bin = threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+      // Zero the SMEM primary range. If `hybrid_split_bin` is a multiple of 4 and
+      // the histogram base pointer is 16-byte aligned (CounterT == int 4-byte),
+      // use vectorized 4-wide writes. Otherwise fall back to scalar writes.
+      if constexpr (sizeof(CounterT) == 4 && alignof(CounterT) == 4)
       {
-        temp_storage.histograms[ch][bin] = 0;
+        const int vec_count = hybrid_split_bin >> 2; // hybrid_split_bin / 4
+        // hybrid_split_bin == 56000 is a multiple of 4 (56000 = 4 * 14000); the
+        // dyn-SMEM extern base is 16-byte aligned by the CUDA runtime.
+        uint4* const ptr4 = reinterpret_cast<uint4*>(temp_storage.histograms[ch]);
+        const uint4 zero4 = {0u, 0u, 0u, 0u};
+        for (int i = threadIdx.x; i < vec_count; i += threads_per_block)
+        {
+          ptr4[i] = zero4;
+        }
+        // Tail: write any leftover scalar bins (hybrid_split_bin & 3).
+        for (int bin = (vec_count << 2) + threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+        {
+          temp_storage.histograms[ch][bin] = 0;
+        }
       }
-      // Zero the per-block GMEM secondary slab
-      for (int bin = threadIdx.x; bin < hybrid_secondary_size; bin += threads_per_block)
+      else
       {
-        d_hybrid_secondary_histograms[ch][bin] = 0;
+        for (int bin = threadIdx.x; bin < hybrid_split_bin; bin += threads_per_block)
+        {
+          temp_storage.histograms[ch][bin] = 0;
+        }
+      }
+
+      // Zero the per-block GMEM secondary slab. Vectorize the same way; the slab
+      // base is 16-byte aligned by alias_temporaries.
+      if constexpr (sizeof(CounterT) == 4 && alignof(CounterT) == 4)
+      {
+        const int vec_count = hybrid_secondary_size >> 2;
+        uint4* const ptr4 = reinterpret_cast<uint4*>(d_hybrid_secondary_histograms[ch]);
+        const uint4 zero4 = {0u, 0u, 0u, 0u};
+        for (int i = threadIdx.x; i < vec_count; i += threads_per_block)
+        {
+          ptr4[i] = zero4;
+        }
+        for (int bin = (vec_count << 2) + threadIdx.x; bin < hybrid_secondary_size; bin += threads_per_block)
+        {
+          d_hybrid_secondary_histograms[ch][bin] = 0;
+        }
+      }
+      else
+      {
+        for (int bin = threadIdx.x; bin < hybrid_secondary_size; bin += threads_per_block)
+        {
+          d_hybrid_secondary_histograms[ch][bin] = 0;
+        }
       }
     }
 
