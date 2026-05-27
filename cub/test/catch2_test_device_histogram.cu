@@ -228,6 +228,12 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
 
   const auto min_bin_width = max_level / (max_level_count - 1);
 
+  // Perturb interior levels to defeat uniform-spacing detection so the
+  // SearchTransform path is exercised. Endpoints stay anchored. When
+  // min_bin_width is too small for a strictly monotonic shift (e.g. byte-sample
+  // tests with 256 levels), levels stay uniform.
+  const auto perturbation_step = min_bin_width / 4;
+
   array<c2h::host_vector<LevelT>, ActiveChannels> levels;
   for (size_t c = 0; c < ActiveChannels; ++c)
   {
@@ -240,7 +246,12 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
       // The last level is taken from the range instead of being computed, because `lower + num_bins * min_bin_width`
       // rounds up beyond max_level and thus yields infinity when max_level is the maximum of a floating point LevelT,
       // see NVIDIA/cccl#1793.
-      levels[c][l] = (l == num_bins) ? upper : static_cast<LevelT>(lower + l * min_bin_width);
+      auto level = (l == num_bins) ? upper : static_cast<LevelT>(lower + l * min_bin_width);
+      if (l > 0 && l < num_levels[c] - 1 && perturbation_step > LevelT{0})
+      {
+        level = static_cast<LevelT>(level + (l % 2 == 0 ? perturbation_step : -perturbation_step));
+      }
+      levels[c][l] = level;
       if (l > 0)
       {
         REQUIRE(levels[c][l - 1] < levels[c][l]);
