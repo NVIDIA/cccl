@@ -268,6 +268,26 @@ template <typename PolicySelector,
           bool ForceInclusive>
 struct agent_warpspeed_scan
 {
+  static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
+  static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
+  static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
+  static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
+  static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
+  static constexpr warpspeed::SquadDesc squadLookback  = squad_lookback(policy);
+
+  static constexpr int tile_size                   = policy.tile_size();
+  static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
+
+  // We might try to instantiate the kernel with huge types which would lead to a small tile size. Ensure its never 0
+  static constexpr int elemPerThread = policy.items_per_thread;
+  static_assert(elemPerThread * squadReduce.threadCount() == tile_size, "Invalid tuning policy");
+
+  warpspeed::SpecialRegisters specialRegisters;
+  scanKernelParams<InputT, OutputT, AccumT> params;
+  ScanOpT scan_op;
+  RealInitValueT real_init_value;
+  ScanResources<PolicySelector, InputT, OutputT, AccumT>& res;
+
   // This function is a straight-line implementation of the warp-specialized kernel.
   //
   // It is called from the __global__ kernel body with a squad argument that is the active squad on the current thread.
@@ -275,28 +295,8 @@ struct agent_warpspeed_scan
   // Using this structure, all code that is not executed by the current squad is DCE (dead-code-eliminated) by the
   // compiler and all warp-specialization dispatch is performed once at the start of the kernel and not in any of the
   // hot loops (even if that may seem the case from a first glance at the code).
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void dispatch_squad(
-    warpspeed::Squad squad,
-    warpspeed::SpecialRegisters specialRegisters,
-    const scanKernelParams<InputT, OutputT, AccumT>& params,
-    ScanOpT scan_op,
-    RealInitValueT real_init_value,
-    ScanResources<PolicySelector, InputT, OutputT, AccumT>& res)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void dispatch_squad(warpspeed::Squad squad)
   {
-    static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
-    static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
-    static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
-    static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
-    static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
-    static constexpr warpspeed::SquadDesc squadLookback  = squad_lookback(policy);
-
-    static constexpr int tile_size                   = policy.tile_size();
-    static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
-
-    // We might try to instantiate the kernel with huge types which would lead to a small tile size. Ensure its never 0
-    static constexpr int elemPerThread = policy.items_per_thread;
-    static_assert(elemPerThread * squadReduce.threadCount() == tile_size, "Invalid tuning policy");
-
     // Inclusive scan if no init_value type is provided
     static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
     static constexpr bool isInclusive = ForceInclusive || !hasInit;
@@ -832,8 +832,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
 
   // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
   warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
-    agent::dispatch_squad(
-      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res);
+    agent{specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res}
+      .dispatch_squad(squad);
   });
 #endif // __cccl_ptx_isa >= 860
 }
