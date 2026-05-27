@@ -12,7 +12,6 @@ flow (``ctx.while_loop`` + residual-driven exit), identical numerics
 
 This is the missing piece between:
   * ``test_jacobi_stackable_numba.py``   -- numba + conditional while_loop
-  * ``test_mlp_ensemble_warp.py``        -- warp + tokens (no while_loop)
   * ``test_stf_in_scoped_capture.py``    -- warp + graph capture
 
 Combining them gives the pattern Newton-style physics codebases need: a
@@ -33,10 +32,9 @@ import cuda.stf._experimental as stf
 # ---------------------------------------------------------------------------
 # STF <-> Warp glue: wp.Stream adapter cache and CAI -> wp.array helpers.
 #
-# The cache mirrors ``test_mlp_ensemble_warp.py``: double-registering the
-# same raw cudaStream_t with Warp corrupts its internal state, so we
-# memoize one ``wp.Stream`` wrapper per (device, raw ptr) pair. STF's
-# stream pool is small, so the cache stays small.
+# Double-registering the same raw cudaStream_t with Warp corrupts its
+# internal state, so we memoize one ``wp.Stream`` wrapper per (device, raw
+# ptr) pair. STF's stream pool is small, so the cache stays small.
 # ---------------------------------------------------------------------------
 
 
