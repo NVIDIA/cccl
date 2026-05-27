@@ -46,10 +46,14 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   state.add_global_memory_writes<CounterT>(num_bins);
 
   caching_allocator_t alloc;
-  // Demote persisting L2 lines outside the timed window so that no
-  // cudaAccessPolicyWindow set by the dispatcher can carry across iterations.
+  // Force the persisting-L2 reservation back to 0 and demote any persisting
+  // lines outside the timed window, so neither cudaAccessPolicyWindow nor a
+  // bumped cudaLimitPersistingL2CacheSize can carry across iterations. The
+  // default reservation is 0; hardcoding 0 also clears any pollution left by
+  // a prior benchmark in the same nvbench process.
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::timer,
              [&](nvbench::launch& launch, auto& timer) {
+               cudaDeviceSetLimit(cudaLimitPersistingL2CacheSize, 0);
                cudaCtxResetPersistingL2Cache();
                timer.start();
                auto env = cub_bench_env(
