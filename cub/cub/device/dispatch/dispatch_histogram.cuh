@@ -512,15 +512,8 @@ struct DeviceHistogramKernelSource
 
   /// Host-init FUSED dynamic-SMEM staging+combine sweep kernel. Used for cooperative
   /// launch that fuses sweep+combine into one kernel via grid_group::sync().
-  ///
-  /// `BinPartitions` controls "lite" bin-space partitioning across blocks: each block
-  /// reads all input pixels but only commits SMEM atomicAdd_block writes to bins in
-  /// its partition's range, halving cross-block contention on hot bins without
-  /// doubling DRAM sample reads. `BinPartitions == 1` is the legacy (non-partitioned)
-  /// path.
   template <typename PolicyT,
             int PRIVATIZED_SMEM_BINS,
-            int BinPartitions,
             typename PrivatizedDecodeOpT,
             typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingFusedHostInitDynSmemKernel()
@@ -530,7 +523,6 @@ struct DeviceHistogramKernelSource
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
-      BinPartitions,
       SampleIteratorT,
       CounterT,
       PrivatizedDecodeOpT,
@@ -1025,129 +1017,27 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             max_num_output_bins);
       }
 
-      // Bin-space partitioning (`BinPartitions` template parameter) splits the
-      // output bin space across the persistent grid: each block writes only to
-      // bins in its partition's range and reads `total_pixels /
-      // partition_block_count` samples to do so. With `BinPartitions == 2`,
-      // each output bin is touched by only half the grid, halving cross-block
-      // atomic contention per bin at the cost of 2x sample reads (each
-      // partition independently scans every pixel). Worth it on
-      // atomic-contention-bound paths (very-high-bin and multi-channel).
-      //
-      // We instantiate both `BinPartitions == 1` (no partitioning, the default
-      // path) and `BinPartitions == 2` (partitioned) and pick at runtime
-      // depending on grid size: partitioning requires `num_thread_blocks >= 2`
-      // so both partitions get at least one block, otherwise the bins in
-      // partition 1 would never be written.
-      //
-      // Empirical: bin-space partitioning is profitable on the range
-      // (SearchTransform / non-uniform bins) path -- where per-pixel decode is
-      // a binary search and the kernel is atomic-contention-bound -- but it
-      // regresses the even (ScaleTransform / uniform bins) path -- where
-      // per-pixel decode is a multiply-shift and the kernel is read-bound
-      // (the 2x sample reads outweigh the halved atomic contention). Multi-
-      // active-channel paths likewise regressed in iter 1 (more samples per
-      // pixel, more re-decode cost). Restrict partitioning to the
-      // single-active-channel range path until we have a finer-grained
-      // selector.
-      // Iters 1-5 of brief 13 found the "full" partitioning variant (which
-      // had each partition's M/2 blocks re-sweep all pixels via
-      // partition_total_threads) regressed multi-channel paths.
-      //
-      // Iter 7+ of brief 13 switched to a "lite" variant: kept the original
-      // grid-strided pixel sweep (every thread strides by `total_threads`,
-      // so every pixel is read by exactly one thread) but added a partition
-      // mask that drops out-of-partition decoded bins to a `bin == -1`
-      // sentinel before atomicAdd. Brief 15 confirmed via standalone
-      // bin-by-bin verification that the lite variant is *unsound*:
-      // samples seen by partition X's threads that decode to bins owned by
-      // partition Y are silently dropped, since no thread in partition Y
-      // reads those pixels and the partition X threads discard them. The
-      // resulting histograms have ~1/BinPartitions of the correct counts
-      // (e.g. BinPartitions=256 multi-channel Bins=60000 verify shows GPU
-      // bins ~25 vs CPU reference ~4500). The bench harness reports
-      // `(samples * sizeof(SampleT) + bins * sizeof(CounterT)) / time` as
-      // GlobalMem BW so dropping samples reduces time and inflates BW;
-      // brief 13's "+340.78%" was reward-hacking. ctest never exercised
-      // this path because the existing tests cap Bins at 1024 while the
-      // direct-atomic kernel fires at Bins >= 16384 multi / 2^20 single.
-      //
-      // Disable bin partitioning here until we have a structurally correct
-      // partition variant (each block reads ALL pixels via a partition-
-      // local grid-strided loop with stride `partition_total_threads` =
-      // `blocks_per_partition * blockDim.x`). The kernel-side
-      // BinPartitions plumbing stays in place but no axis combination
-      // triggers it at runtime.
-      constexpr bool kBinPartitionsEligible = false;
       // The direct-atomic kernel skips per-block privatization entirely
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
-      auto direct_atomic_kernel_p1_ptr =
+      auto direct_atomic_kernel_ptr =
         &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
                                                           PRIVATIZED_SMEM_BINS,
                                                           NUM_CHANNELS,
                                                           NUM_ACTIVE_CHANNELS,
-                                                          /*BinPartitions=*/1,
                                                           SampleIteratorT,
                                                           CounterT,
                                                           privatized_decode_op_t,
                                                           output_decode_op_t,
                                                           OffsetT>;
-      // Runtime gate: "lite" partitioning halves cross-block atomic
-      // contention on each output bin without doubling DRAM reads (every
-      // block still reads all its assigned samples; the partition mask
-      // simply discards out-of-partition decoded bins before the cache
-      // / GMEM atomic). Worth trying whenever each output bin gets
-      // enough atomic traffic that contention is the bottleneck. We
-      // gate on `total_pixels / max_num_output_bins >= 4` to avoid
-      // running it on configs where atomic contention is already
-      // negligible (e.g. Elements=1M / Bins=2M => 0.5 atomics/bin).
-      // Pick the kernel pointer through a constexpr branch so the
-      // BinPartitions=256 instantiation only enters the binary on eligible
-      // code paths. We type-erase to a `const void*` since the function-
-      // pointer types differ in the BinPartitions template arg.
       const void* direct_atomic_kernel_ptr_void =
-        reinterpret_cast<const void*>(direct_atomic_kernel_p1_ptr);
-      if constexpr (kBinPartitionsEligible)
-      {
-        const OffsetT total_pixels_for_partition =
-          num_row_pixels * num_rows;
-        const bool atomic_contention_high =
-          (max_num_output_bins > 0)
-          && (static_cast<long long>(total_pixels_for_partition)
-              >= 4LL * static_cast<long long>(max_num_output_bins));
-        const bool use_bin_partitions =
-          (num_thread_blocks >= 256) && atomic_contention_high;
-        if (use_bin_partitions)
-        {
-          auto direct_atomic_kernel_p4_ptr =
-            &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
-                                                              PRIVATIZED_SMEM_BINS,
-                                                              NUM_CHANNELS,
-                                                              NUM_ACTIVE_CHANNELS,
-                                                              /*BinPartitions=*/256,
-                                                              SampleIteratorT,
-                                                              CounterT,
-                                                              privatized_decode_op_t,
-                                                              output_decode_op_t,
-                                                              OffsetT>;
-          direct_atomic_kernel_ptr_void =
-            reinterpret_cast<const void*>(direct_atomic_kernel_p4_ptr);
-        }
-      }
-      // For occupancy queries we still need a typed function pointer; both
-      // BinPartitions=1 and BinPartitions=2 kernels are launched with
-      // `__launch_bounds__(threads_per_block)` and have similar register
-      // pressure, so querying the BinPartitions=1 instantiation gives a safe
-      // upper bound on the active grid size for either case.
-      auto direct_atomic_kernel_ptr = direct_atomic_kernel_p1_ptr;
+        reinterpret_cast<const void*>(direct_atomic_kernel_ptr);
       if (false)
       {
         DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
                                                          PRIVATIZED_SMEM_BINS,
                                                          NUM_CHANNELS,
                                                          NUM_ACTIVE_CHANNELS,
-                                                         /*BinPartitions=*/1,
                                                          SampleIteratorT,
                                                          CounterT,
                                                          privatized_decode_op_t,
@@ -1161,27 +1051,6 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_row_pixels,
             num_rows,
             row_stride_samples);
-        if constexpr (kBinPartitionsEligible)
-        {
-          DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
-                                                           PRIVATIZED_SMEM_BINS,
-                                                           NUM_CHANNELS,
-                                                           NUM_ACTIVE_CHANNELS,
-                                                           /*BinPartitions=*/256,
-                                                           SampleIteratorT,
-                                                           CounterT,
-                                                           privatized_decode_op_t,
-                                                           output_decode_op_t,
-                                                           OffsetT>
-            <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
-              d_samples,
-              num_output_bins_wrapper,
-              d_output_histograms,
-              second_level_array,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples);
-        }
       }
 
       int device_ordinal        = 0;
@@ -1304,25 +1173,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // also uses this convention.
       dim3 fused_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
 
-      // BinPartitions plumbing for the staging fused kernel. We instantiate
-      // BinPartitions=1 (the legacy non-partitioned path) by default. The
-      // AgentHistogram template now carries the BinPartitions parameter
-      // through to its AccumulatePixels paths so a follow-up iteration can
-      // enable a true "all-pixels-per-block" partition variant; the simple
-      // "lite" mask alone (block-id % BinPartitions decides which bins this
-      // block atomicAdd_blocks to, while keeping the block's even-share tile
-      // assignment) is *unsound* for AgentHistogram-based kernels because
-      // each block sees only its tile slice -- samples on block 0's tiles
-      // mapping to bins block 1 owns are dropped. (`DeviceHistogramSweep
-      // DirectAtomicPersistentKernel` exhibits this same bug for
-      // BinPartitions > 1, because every thread also strides by
-      // `total_threads` so every pixel is read by exactly one thread; lite
-      // there silently drops 1/BinPartitions of samples. See brief stop.)
-      auto fused_kernel_p1_ptr =
+      auto fused_kernel_ptr =
         kernel_source.template HistogramSweepStagingFusedHostInitDynSmemKernel<
             PolicySelector,
             PRIVATIZED_SMEM_BINS,
-            /*BinPartitions=*/1,
             privatized_decode_op_t,
             output_decode_op_t>();
 
@@ -1337,7 +1191,6 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                               PRIVATIZED_SMEM_BINS,
                                                               NUM_CHANNELS,
                                                               NUM_ACTIVE_CHANNELS,
-                                                              /*BinPartitions=*/1,
                                                               SampleIteratorT,
                                                               CounterT,
                                                               privatized_decode_op_t,
@@ -1358,8 +1211,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             tile_queue);
       }
 
-      const void* fused_kernel_ptr_void = reinterpret_cast<const void*>(fused_kernel_p1_ptr);
-      auto fused_kernel_ptr             = fused_kernel_p1_ptr;
+      const void* fused_kernel_ptr_void = reinterpret_cast<const void*>(fused_kernel_ptr);
 
       // Raise the dyn-SMEM cap on the fused kernel before launch.
       cudaError_t cap_err =
@@ -1378,10 +1230,6 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         // Cooperative launch requires `num_thread_blocks <= sm_count *
         // sm_occupancy_of_the_kernel_we_are_launching`. If the fused kernel
         // doesn't fit at the staging-grid size, fall back gracefully.
-        // We query the BinPartitions=1 instantiation; the partition mask in
-        // BinPartitions=2 adds only branch-predicate work in the
-        // already-register-heavy AccumulatePixels path, so its occupancy is
-        // effectively identical to BinPartitions=1.
         int fused_sm_occupancy = 0;
         const auto occ_err = launcher_factory.MaxSmOccupancy(
           fused_sm_occupancy, fused_kernel_ptr, threads_per_block, dyn_smem_bytes_for_staging);

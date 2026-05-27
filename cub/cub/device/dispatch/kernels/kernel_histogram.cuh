@@ -1405,7 +1405,6 @@ template <typename PolicySelector,
           int PrivatizedSmemBins,
           int NumChannels,
           int NumActiveChannels,
-          int BinPartitions,
           typename SampleIteratorT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
@@ -1435,26 +1434,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
   const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
-
-  // -------------------------------------------------------------------
-  // Bin-space partitioning across blocks ("lite" form, when BinPartitions > 1):
-  //   - Block "partition" = block_id % BinPartitions
-  //   - Each block reads ALL pixels via the standard grid-strided loop
-  //     (`total_threads` stride). Each block only commits writes to bins
-  //     in [partition*partition_size, (partition+1)*partition_size)
-  //     where `partition_size = num_output_bins / BinPartitions`. Other
-  //     bins are turned into the `bin == -1` sentinel which the warp
-  //     coalescer treats as no-op.
-  // This reduces cross-block atomic contention on each output bin by a
-  // factor of `BinPartitions` without doubling DRAM sample reads.
-  // For BinPartitions == 1 the partition mask is a no-op.
-  // -------------------------------------------------------------------
-  static_assert(BinPartitions == 1 || BinPartitions == 2 || BinPartitions == 4
-                  || BinPartitions == 8 || BinPartitions == 16 || BinPartitions == 32
-                  || BinPartitions == 64 || BinPartitions == 128 || BinPartitions == 256,
-                "BinPartitions must be 1, 2, 4, 8, 16, 32, 64, 128, or 256");
-  const unsigned int partition =
-    (BinPartitions == 1) ? 0u : (block_id % static_cast<unsigned int>(BinPartitions));
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -1545,49 +1524,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   if (num_rows == 1)
   {
     // Pixel sweep parameters: every thread strides over the whole pixel
-    // space using `total_threads` (the standard grid-strided loop). When
-    // `BinPartitions == 2`, each thread additionally filters its writes
-    // to its own partition's bin range -- so half the reads are wasted
-    // compute (decode + cache lookup) but no extra global samples are
-    // fetched. This is "lite" bin-space partitioning: it halves the
-    // cross-block atomic contention per output bin (only blocks in this
-    // partition can write to bins in [partition*split, (partition+1)*
-    // split)) without doubling DRAM throughput like "full"
-    // partitioning would (full partitioning had each partition's blocks
-    // independently re-sweep all pixels via partition_total_threads,
-    // which was a net regression in iter 4 against the cuckoo-cache
-    // baseline).
+    // space using `total_threads` (the standard grid-strided loop).
     const OffsetT step         = static_cast<OffsetT>(total_threads);
     const OffsetT start        = static_cast<OffsetT>(tid_global);
     const unsigned int lane_id = threadIdx.x & 0x1f;
-
-    // Per-channel bin partition bounds. For BinPartitions > 1, this
-    // block owns bins [partition_lo[ch], partition_hi[ch]) where the
-    // bins are split evenly across the BinPartitions partitions. For
-    // BinPartitions == 1 the bounds are [0, num_output_bins[ch]) so
-    // the partition mask is a no-op.
-    int partition_lo[NumActiveChannels];
-    int partition_hi[NumActiveChannels];
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
-    {
-      if constexpr (BinPartitions == 1)
-      {
-        partition_lo[ch] = 0;
-        partition_hi[ch] = num_output_bins_wrapper[ch];
-      }
-      else
-      {
-        const int n            = num_output_bins_wrapper[ch];
-        const int part_size    = n / static_cast<int>(BinPartitions);
-        partition_lo[ch]       = static_cast<int>(partition) * part_size;
-        // The last partition extends to num_output_bins[ch] to absorb
-        // the remainder of any non-divisible split.
-        partition_hi[ch] = (partition == static_cast<unsigned int>(BinPartitions) - 1u)
-                             ? n
-                             : (static_cast<int>(partition) + 1) * part_size;
-      }
-    }
 
     // Determine the maximum number of `unroll`-sized chunks any thread
     // in the grid will run, so every thread iterates the same number
@@ -1617,17 +1557,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
             if (bin >= num_bins)
             {
               bin = -1;
-            }
-            // Bin-space partition mask: drop bins outside this block's
-            // partition range. For BinPartitions > 1 the block owns
-            // bins [partition_lo[ch], partition_hi[ch]) and any bin
-            // outside that range folds to the `bin == -1` sentinel.
-            if constexpr (BinPartitions != 1)
-            {
-              if (bin < partition_lo[ch] || bin >= partition_hi[ch])
-              {
-                bin = -1;
-              }
             }
           }
           // Coalesce same-bin lanes into a single atomic add. All
@@ -1743,29 +1672,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   {
     // Slow path: row-strided input that is not flattenable to a single
     // linear array. No coalescing here since it's the rare path.
-    // Bin partitioning ("lite" form) still applies: every thread strides
-    // over all pixels via `total_threads`, but each block only commits
-    // writes to its partition's bin range.
-    int partition_lo[NumActiveChannels];
-    int partition_hi[NumActiveChannels];
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
-    {
-      if constexpr (BinPartitions == 1)
-      {
-        partition_lo[ch] = 0;
-        partition_hi[ch] = num_output_bins_wrapper[ch];
-      }
-      else
-      {
-        const int n         = num_output_bins_wrapper[ch];
-        const int part_size = n / static_cast<int>(BinPartitions);
-        partition_lo[ch]    = static_cast<int>(partition) * part_size;
-        partition_hi[ch]    = (partition == static_cast<unsigned int>(BinPartitions) - 1u)
-                                ? n
-                                : (static_cast<int>(partition) + 1) * part_size;
-      }
-    }
     for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
          pixel += static_cast<OffsetT>(total_threads))
     {
@@ -1780,15 +1686,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
         int bin     = -1;
         privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
         const int num_bins = num_output_bins_wrapper[ch];
-        bool keep          = (bin >= 0 && bin < num_bins);
-        if constexpr (BinPartitions != 1)
-        {
-          if (keep && (bin < partition_lo[ch] || bin >= partition_hi[ch]))
-          {
-            keep = false;
-          }
-        }
-        if (keep)
+        if (bin >= 0 && bin < num_bins)
         {
           atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
         }
@@ -2263,7 +2161,6 @@ template <typename PolicySelector,
           int PrivatizedSmemBins,
           int NumChannels,
           int NumActiveChannels,
-          int BinPartitions,
           typename SampleIteratorT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
@@ -2299,23 +2196,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
 
   cg::grid_group grid = cg::this_grid();
 
-  // Lite bin-space partitioning across blocks (BinPartitions > 1):
-  //   block "partition" = block_id % BinPartitions; each block reads ALL pixels
-  //   via ConsumeTiles (no DRAM doubling) but only commits atomicAdd_block
-  //   writes to the per-block dyn-SMEM staging slab for bins in
-  //   [partition*W, (partition+1)*W) where W = num_privatized_bins / BinPartitions.
-  //   Out-of-partition decoded bins are folded to the bin = -1 sentinel inside
-  //   AgentHistogram::AccumulatePixels and the warp/RLE coalescer skips them.
-  //   Halves cross-block atomic contention on hot bins without doubling DRAM
-  //   sample reads. The Phase-4 cross-block sum still iterates all blocks per
-  //   bin column; non-owner blocks' slab slots are zero (the SMEM was zeroed by
-  //   InitBinCounters and the partition mask prevents any non-zero writes), so
-  //   the sum is correct.
-  static_assert(BinPartitions == 1 || BinPartitions == 2 || BinPartitions == 4 || BinPartitions == 8
-                  || BinPartitions == 16 || BinPartitions == 32 || BinPartitions == 64 || BinPartitions == 128
-                  || BinPartitions == 256,
-                "BinPartitions must be 1, 2, 4, 8, 16, 32, 64, 128, or 256");
-
   using AgentHistogramPolicyT =
     AgentHistogramPolicy<hp.threads_per_block,
                          hp.pixels_per_thread,
@@ -2335,8 +2215,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
                    OffsetT,
-                   /* UseDynamicSmemHistogram = */ true,
-                   BinPartitions>;
+                   /* UseDynamicSmemHistogram = */ true>;
 
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
 
@@ -2612,8 +2491,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 1)
                    PrivatizedDecodeOpT,
                    OutputDecodeOpT,
                    OffsetT,
-                   /* UseDynamicSmemHistogram = */ true,
-                   /* BinPartitions = */ 1>;
+                   /* UseDynamicSmemHistogram = */ true>;
 
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
 
