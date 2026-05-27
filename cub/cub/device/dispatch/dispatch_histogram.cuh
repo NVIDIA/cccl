@@ -1884,14 +1884,89 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_chunked_staging_smem
     chunked_privatized_decode_op[ch].inner = inner_privatized_decode_op[ch];
   }
 
-  for (int chunk_idx = 0; chunk_idx < kNumChunks; ++chunk_idx)
+  // Balanced-chunks fix (worker-2 brief 11): split max_num_output_bins evenly across
+  // chunks so every chunk has the same dyn-SMEM footprint, the same per-SM occupancy,
+  // the same `num_thread_blocks`, and one uniform temp-storage requirement.
+  //
+  // The previous implementation used a fixed `kChunkSize` for all but the last chunk,
+  // and the size pre-pass (`d_temp_storage == nullptr`) returned after just the first
+  // chunk. For Bins=60000 with kChunkSize=32768, chunk 0 had size 32768 and chunk 1 had
+  // size 27232; the smaller chunk 1's lower dyn-SMEM gave it higher per-SM occupancy
+  // and more `num_thread_blocks`, so its real launch's `alias_temporaries` returned
+  // `cudaErrorInvalidValue`. Bench harnesses ignore dispatch return codes so chunk 1
+  // failed silently, leaving bins 32768..59999 empty and inflating the reported BW
+  // for any Bins=60000 chunked-tier configuration (single-channel EVEN/RANGE,
+  // F64/I32, both entropies).
+  //
+  // Equal-size chunks (ceil(M / chunks_needed) bins each) eliminate the bug at its root:
+  // both chunks have identical geometry so the size pre-pass needs only one inner
+  // dispatch call, and the runtime loop reuses the same allocation safely.
+  const int chunks_needed =
+    (max_num_output_bins + kChunkSize - 1) / kChunkSize; // ceil(max_num_output_bins / kChunkSize)
+  const int chunk_size_balanced =
+    (chunks_needed > 0) ? (max_num_output_bins + chunks_needed - 1) / chunks_needed : 0;
+
+  // Size pre-pass: query temp storage with chunk_size = balanced upper-bound. The actual
+  // chunks are at most `chunk_size_balanced` bins, so the same allocation is sufficient.
+  if (d_temp_storage == nullptr)
   {
-    const int chunk_start = chunk_idx * kChunkSize;
+    if (chunks_needed == 0)
+    {
+      temp_storage_bytes = 0;
+      return cudaSuccess;
+    }
+
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> probe_levels{};
+    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+    {
+      probe_levels[ch] = chunk_size_balanced + 1;
+      chunked_privatized_decode_op[ch].SetChunk(0, chunk_size_balanced);
+    }
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> probe_outputs{};
+    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
+    {
+      probe_outputs[ch] = nullptr;
+    }
+
+    if (const auto error = CubDebug(
+          (detail::histogram::dispatch<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            kPrivatizedSmemBins,
+            false, // IsDeviceInit
+            false, // IsEven (unused for host-init)
+            false // IsByteSample (unused for host-init)
+            >(/*d_temp_storage=*/nullptr,
+              temp_storage_bytes,
+              d_samples,
+              probe_outputs,
+              probe_levels,
+              probe_levels,
+              output_decode_op,
+              chunked_privatized_decode_op,
+              chunk_size_balanced,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
+    {
+      return error;
+    }
+    return cudaSuccess;
+  }
+
+  // Real launch loop: each chunk reuses the same balanced-chunk-sized temp storage.
+  for (int chunk_idx = 0; chunk_idx < chunks_needed; ++chunk_idx)
+  {
+    const int chunk_start = chunk_idx * chunk_size_balanced;
     if (chunk_start >= max_num_output_bins)
     {
-      break; // No samples can fall in this chunk window; safe to skip.
+      break; // Defensive; should not trigger for chunks_needed = ceil(M / kChunkSize).
     }
-    const int chunk_size = ::cuda::std::min(kChunkSize, max_num_output_bins - chunk_start);
+    const int chunk_size = ::cuda::std::min(chunk_size_balanced, max_num_output_bins - chunk_start);
 
     // Set chunk window in the per-channel chunked decode ops.
     for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
@@ -1914,8 +1989,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_chunked_staging_smem
       chunk_levels[ch] = chunk_size + 1;
     }
 
-    // For the size-only pre-pass (d_temp_storage==nullptr), one call returns the full size.
-    // Otherwise we re-use the same temp storage across all chunks.
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<
             NUM_CHANNELS,
@@ -1944,10 +2017,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_chunked_staging_smem
       return error;
     }
 
-    // After the size-only pre-pass returns, exit before launching real chunks.
-    if (d_temp_storage == nullptr)
+    // Defense-in-depth: if any inner-dispatch launch encountered an asynchronous error
+    // (e.g. cudaErrorInvalidConfiguration), surface it now so callers cannot silently
+    // accept a partially-launched chunked histogram.
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
     {
-      return cudaSuccess;
+      return error;
     }
   }
 
