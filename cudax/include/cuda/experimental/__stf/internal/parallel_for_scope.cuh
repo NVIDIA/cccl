@@ -813,7 +813,7 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       // Synchronize stream with allocation events
-      reserved::join_with_stream(ctx, decorated_stream(stream), alloc_events, "alloc_sync", false);
+      reserved::join_with_stream(ctx, augmented_stream(stream), alloc_events, "alloc_sync", false);
 
       // TODO optimize the case where there was a single block to write to result ??
       reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>
@@ -824,7 +824,7 @@ public:
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
       // Stream context: create event from stream to represent kernel completion
-      completion_event = event_list(reserved::record_event_in_stream(decorated_stream(stream)));
+      completion_event = event_list(reserved::record_event_in_stream(augmented_stream(stream)));
     }
     else
     {
@@ -878,7 +878,7 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::join_with_stream(ctx, decorated_stream(stream), completion_event, "dealloc_sync", false);
+      reserved::join_with_stream(ctx, augmented_stream(stream), completion_event, "dealloc_sync", false);
     }
     else
     {

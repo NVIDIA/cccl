@@ -52,19 +52,16 @@ TEST_FUNC void test_uses_allocator_sfinae_evaluation()
     static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value);
 
     static_assert(
-      cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value,
-      "");
+      cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value);
   }
   {
     using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault, BadDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly>::value,
-                  "");
+    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly>::value);
 
     static_assert(
       cuda::std::
-        is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault, BadDefault>::value,
-      "");
+        is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault, BadDefault>::value);
   }
 }
 

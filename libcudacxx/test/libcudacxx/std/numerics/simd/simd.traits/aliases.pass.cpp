@@ -35,13 +35,13 @@ TEST_FUNC constexpr void test_vec_alias()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// mask<T, N> resolves to basic_mask<sizeof(T), deduce-abi-t<T, N>>
+// mask<T, N> resolves to basic_vec<T, deduce-abi-t<T, N>>::mask_type
 
 template <typename T, int N>
 TEST_FUNC constexpr void test_mask_alias()
 {
   using Alias  = simd::mask<T, N>;
-  using Direct = simd::basic_mask<sizeof(T), simd::fixed_size<N>>;
+  using Direct = typename simd::vec<T, N>::mask_type;
   static_assert(cuda::std::is_same_v<Alias, Direct>);
 }
 
@@ -56,7 +56,7 @@ TEST_FUNC constexpr void test_default_size()
   static_assert(cuda::std::is_same_v<DefaultVec, NativeVec>);
 
   using DefaultMask = simd::mask<T>;
-  using NativeMask  = simd::basic_mask<sizeof(T), simd::native<T>>;
+  using NativeMask  = typename NativeVec::mask_type;
   static_assert(cuda::std::is_same_v<DefaultMask, NativeMask>);
 }
 

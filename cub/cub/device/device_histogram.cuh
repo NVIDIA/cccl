@@ -2001,11 +2001,10 @@ public:
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        auto policy_selector =
-          detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>{};
-
+    using default_policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
@@ -2465,11 +2464,10 @@ public:
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        auto policy_selector =
-          detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>{};
-
+    using default_policy_selector =
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)

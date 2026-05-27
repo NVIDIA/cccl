@@ -18,6 +18,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -375,6 +376,53 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // - Directly take the segment parameters since all segments are large
   }
   return CubDebug(detail::DebugSyncStream(stream));
+}
+// Env-based dispatch function handling memory allocation as well. This is usually done by the device-layer, but there
+// is no public API for segmented topk yet.
+template <typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT,
+          typename TotalNumItemsGuaranteeT,
+          typename EnvT = ::cuda::std::execution::env<>>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_env(
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  ValueInputItItT d_value_segments_it,
+  ValueOutputItItT d_value_segments_out_it,
+  SegmentSizeParameterT segment_sizes,
+  KParameterT k,
+  SelectDirectionParameterT select_directions,
+  NumSegmentsParameterT num_segments,
+  TotalNumItemsGuaranteeT total_num_items_guarantee,
+  EnvT env = {})
+{
+  using default_policy_selector =
+    policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
+                               it_value_t<it_value_t<ValueInputItItT>>,
+                               ::cuda::std::int64_t,
+                               params::static_max_value_v<KParameterT>>;
+  return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+      return dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_key_segments_it,
+        d_key_segments_out_it,
+        d_value_segments_it,
+        d_value_segments_out_it,
+        segment_sizes,
+        k,
+        select_directions,
+        num_segments,
+        total_num_items_guarantee,
+        stream,
+        policy_selector);
+    });
 }
 } // namespace detail::batched_topk
 
