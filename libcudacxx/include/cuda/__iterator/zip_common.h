@@ -57,7 +57,7 @@ struct __zip_iter_constraints
     (::cuda::std::sized_sentinel_for<_Iterators, _Iterators> && ...) || __all_random_access;
 
   static constexpr bool __all_nothrow_iter_movable =
-    (noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iterators&>())) && ...)
+    (noexcept(::cuda::std::ranges::__iter_move_cpo{}(::cuda::std::declval<const _Iterators&>())) && ...)
     && (::cuda::std::is_nothrow_move_constructible_v<::cuda::std::iter_rvalue_reference_t<_Iterators>> && ...);
 
   static constexpr bool __all_indirectly_swappable = (::cuda::std::indirectly_swappable<_Iterators> && ...);
@@ -138,9 +138,9 @@ struct __zip_iter_move
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
   [[nodiscard]] _CCCL_API constexpr __iter_move_ret<_Iterators...> operator()(const _Iterators&... __iters) const
-    noexcept(noexcept(__iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...}))
+    noexcept(noexcept(__iter_move_ret<_Iterators...>{::cuda::std::ranges::__iter_move_cpo{}(__iters)...}))
   {
-    return __iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...};
+    return __iter_move_ret<_Iterators...>{::cuda::std::ranges::__iter_move_cpo{}(__iters)...};
   }
 };
 

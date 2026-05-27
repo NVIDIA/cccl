@@ -60,7 +60,7 @@ void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>
   stream.sync();
 
   thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 }
 
 template <typename Layout, typename T, typename... Ints>
@@ -102,7 +102,7 @@ void test_copy_strided(
   stream.sync();
 
   thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ void test_copy_stride_relaxed(
   stream.sync();
 
   thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 }
 
 template <typename T, size_t Rank>

@@ -47,14 +47,11 @@ private:
 int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::propagate_on_container_copy_assignment,
-                                    cuda::std::true_type>::value),
-                "");
+                                    cuda::std::true_type>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::propagate_on_container_copy_assignment,
-                                    cuda::std::false_type>::value),
-                "");
+                                    cuda::std::false_type>::value));
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::propagate_on_container_copy_assignment,
-                                    cuda::std::false_type>::value),
-                "");
+                                    cuda::std::false_type>::value));
 
   return 0;
 }

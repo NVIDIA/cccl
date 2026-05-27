@@ -429,24 +429,24 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr __iterator<false> begin()
   {
-    return __iterator<false>{*this, ::cuda::std::ranges::begin(__base_)};
+    return __iterator<false>{*this, ::cuda::std::ranges::__begin_cpo{}(__base_)};
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(range<const _View2> _CCCL_AND __regular_invocable_with_range_ref<const _Fn&, const _View2>)
   [[nodiscard]] _CCCL_API constexpr __iterator<true> begin() const
   {
-    return __iterator<true>(*this, ::cuda::std::ranges::begin(__base_));
+    return __iterator<true>(*this, ::cuda::std::ranges::__begin_cpo{}(__base_));
   }
 
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
     if constexpr (common_range<_View>)
     {
-      return __iterator<false>(*this, ::cuda::std::ranges::end(__base_));
+      return __iterator<false>(*this, ::cuda::std::ranges::__end_cpo{}(__base_));
     }
     else
     {
-      return __sentinel<false>(::cuda::std::ranges::end(__base_));
+      return __sentinel<false>(::cuda::std::ranges::__end_cpo{}(__base_));
     }
   }
 
@@ -456,11 +456,11 @@ public:
   {
     if constexpr (common_range<const _View>)
     {
-      return __iterator<true>(*this, ::cuda::std::ranges::end(__base_));
+      return __iterator<true>(*this, ::cuda::std::ranges::__end_cpo{}(__base_));
     }
     else
     {
-      return __sentinel<true>(::cuda::std::ranges::end(__base_));
+      return __sentinel<true>(::cuda::std::ranges::__end_cpo{}(__base_));
     }
   }
 
@@ -468,13 +468,13 @@ public:
   _CCCL_REQUIRES(sized_range<_View2>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::__size_cpo{}(__base_);
   }
 };
 

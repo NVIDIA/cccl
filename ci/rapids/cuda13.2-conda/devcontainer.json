@@ -1,10 +1,10 @@
 {
-  "image": "rapidsai/devcontainers:26.06-cpp-mambaforge",
+  "image": "rapidsai/devcontainers:26.08-cpp-mambaforge",
   "runArgs": [
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.06-cuda13.0-conda",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.08-cuda13.2-conda",
     "--ulimit",
     "nofile=500000"
   ],
@@ -14,7 +14,7 @@
   "containerEnv": {
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "CI": "${localEnv:CI}",
-    "CUDA_VERSION": "13.0",
+    "CUDA_VERSION": "13.2",
     "CUDAARCHS": "75-real",
     "DEFAULT_CONDA_ENV": "rapids",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "true",

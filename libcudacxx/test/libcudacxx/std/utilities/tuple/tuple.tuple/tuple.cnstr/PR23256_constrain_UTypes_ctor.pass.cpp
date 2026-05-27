@@ -78,22 +78,22 @@ int main(int, char**)
           cuda::std::tuple<A>,
           cuda::std::allocator_arg_t, cuda::std::allocator<void>,
           cuda::std::tuple<A> const&
-      >::value, "");
+      >::value);
       static_assert(cuda::std::is_constructible<
           cuda::std::tuple<A>,
           cuda::std::allocator_arg_t, cuda::std::allocator<void>,
           cuda::std::tuple<A> &&
-      >::value, "");
+      >::value);
       static_assert(cuda::std::is_constructible<
           cuda::std::tuple<ExplicitA>,
           cuda::std::allocator_arg_t, cuda::std::allocator<void>,
           cuda::std::tuple<ExplicitA> const&
-      >::value, "");
+      >::value);
       static_assert(cuda::std::is_constructible<
           cuda::std::tuple<ExplicitA>,
           cuda::std::allocator_arg_t, cuda::std::allocator<void>,
           cuda::std::tuple<ExplicitA> &&
-      >::value, "");
+      >::value);
   }
   */
   {

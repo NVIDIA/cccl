@@ -71,15 +71,17 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _CCCL_API constexpr bool __constexpr_tail_overlap_fallback(_Tp* __first, _Up* __needle, _Tp* __last)
 {
+  bool __result = false;
   while (__first != __last)
   {
     if (__first == __needle)
     {
-      return true;
+      __result = true;
+      break;
     }
     ++__first;
   }
-  return false;
+  return __result;
 }
 
 _CCCL_EXEC_CHECK_DISABLE

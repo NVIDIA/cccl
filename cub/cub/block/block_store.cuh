@@ -812,10 +812,9 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      // FIXME(bgruber): we should test for contiguous iterator here
-      if constexpr (::cuda::std::is_pointer_v<OutputIteratorT>)
+      if constexpr (::cuda::std::contiguous_iterator<OutputIteratorT> && ::cuda::std::__can_to_address<OutputIteratorT>)
       {
-        StoreDirectBlockedVectorized(linear_tid, block_itr, items);
+        StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
       else
       {

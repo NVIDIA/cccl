@@ -8,6 +8,8 @@ set(
   cpp/redundant_data_different_modes.cu
   cpp/scoped_graph_task.cu
   cpp/task_get_stream.cu
+  cpp/test_pick_stream.cu
+  cpp/test_pick_stream_green_context.cu
   cpp/user_streams.cu
   cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
@@ -66,6 +68,7 @@ set(
   local_stf/stackable_nested_while.cu
   local_stf/stackable_nested.cu
   local_stf/stackable_node_pool_growth.cu
+  local_stf/stream_ctx_lifetime_btb.cu
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
@@ -229,7 +232,6 @@ set(
   cuda/experimental/__stf/utility/scope_guard.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
-  cuda/experimental/__stf/utility/unstable_unique.cuh
 )
 
 cccl_get_cudatoolkit()

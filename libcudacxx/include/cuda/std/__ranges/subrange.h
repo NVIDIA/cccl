@@ -37,7 +37,6 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -274,19 +273,19 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))
+      : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(__range, ::cuda::std::ranges::size(__range))
+      : subrange(__range, ::cuda::std::ranges::__size_cpo{}(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
   _CCCL_API constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
-      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __n)
+      : subrange(::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __n)
   {}
 
   // This often ICEs all of clang and old gcc when it encounteres a rvalue subrange in a pipe
@@ -367,7 +366,7 @@ public:
     {
       if (__n < 0)
       {
-        ::cuda::std::ranges::advance(__begin_, __n);
+        ::cuda::std::ranges::__advance_cpo{}(__begin_, __n);
         if constexpr (_StoreSize)
         {
           __size_ += ::cuda::std::__to_unsigned_like(-__n);
@@ -376,7 +375,7 @@ public:
       }
     }
 
-    [[maybe_unused]] const auto __d = __n - ::cuda::std::ranges::advance(__begin_, __n, __end_);
+    [[maybe_unused]] const auto __d = __n - ::cuda::std::ranges::__advance_cpo{}(__begin_, __n, __end_);
     if constexpr (_StoreSize)
     {
       __size_ -= ::cuda::std::__to_unsigned_like(__d);
@@ -467,37 +466,66 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::cuda::std::ranges::get;
 
-// [ranges.syn]
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::ranges::subrange
 
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
-struct tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : integral_constant<size_t, 2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : integral_constant<size_t, 2>
+{};
+
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
+};
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
+};
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
+};
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
+};
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::ranges::subrange
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : ::cuda::std::integral_constant<::cuda::std::size_t, 2>
 {};
 
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<0, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Ip;
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
 };
-
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<1, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Sp;
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
 };
-
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<0, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Ip;
+  using type _CCCL_NODEBUG_ALIAS = _Ip;
 };
-
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type = _Sp;
+  using type _CCCL_NODEBUG_ALIAS = _Sp;
 };
 
-_CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
