@@ -46,26 +46,32 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   state.add_global_memory_writes<CounterT>(num_bins);
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(
-      alloc,
-      launch
+  // Demote persisting L2 lines outside the timed window so that no
+  // cudaAccessPolicyWindow set by the dispatcher can carry across iterations.
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::timer,
+             [&](nvbench::launch& launch, auto& timer) {
+               cudaCtxResetPersistingL2Cache();
+               timer.start();
+               auto env = cub_bench_env(
+                 alloc,
+                 launch
 #if !TUNE_BASE
-      ,
-      cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
+                 ,
+                 cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
 #endif // !TUNE_BASE
-    );
-    _CCCL_TRY_CUDA_API(
-      cub::DeviceHistogram::HistogramEven,
-      "HistogramEven failed",
-      d_input,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      static_cast<OffsetT>(elements),
-      env);
-  });
+               );
+               _CCCL_TRY_CUDA_API(
+                 cub::DeviceHistogram::HistogramEven,
+                 "HistogramEven failed",
+                 d_input,
+                 d_histogram,
+                 num_levels,
+                 lower_level,
+                 upper_level,
+                 static_cast<OffsetT>(elements),
+                 env);
+               timer.stop();
+             });
 }
 
 using counter_types     = nvbench::type_list<int32_t>;
@@ -80,6 +86,6 @@ using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float
 NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
+  .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
   .add_int64_axis("Bins", {32, 128, 2048, 2097152})
   .add_string_axis("Entropy", {"0.201", "1.000"});
