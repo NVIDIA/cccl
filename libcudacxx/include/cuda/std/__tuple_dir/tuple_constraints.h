@@ -44,11 +44,13 @@
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
+#include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/lazy.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -58,6 +60,12 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class... _Types>
+inline constexpr bool __tuple_all_copy_constructible_v = (is_copy_constructible_v<_Types> && ...);
+
+template <class... _Types>
+inline constexpr bool __tuple_all_move_constructible_v = (is_move_constructible_v<_Types> && ...);
 
 template <class... _Types>
 inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Types> && ...);
@@ -145,17 +153,26 @@ struct _TupleVariadicCopyConstructibleTraits
   static constexpr bool __nothrow_constructible  = (is_nothrow_copy_constructible_v<_Types> && ...);
 };
 
-template <class... _Types>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __tuple_copy_constructible_constraints() noexcept
-{
-  return (is_copy_constructible_v<_Types> && ...);
-}
-
-template <class... _Types, enable_if_t<::cuda::std::__tuple_copy_constructible_constraints<_Types...>(), int> = 0>
+template <class... _Types, enable_if_t<__tuple_all_copy_constructible_v<_Types...>, int> = 0>
 [[nodiscard]]
 _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
   -> _TupleVariadicCopyConstructibleTraits<_Types...>;
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(...) noexcept
+  -> _InvalidTupleConstructor;
+
+template <class... _Types>
+struct _TupleVariadicMoveConstructibleTraits
+{
+  static constexpr bool __implicit_constructible = (is_convertible_v<_Types&&, _Types> && ...);
+  static constexpr bool __explicit_constructible = !__implicit_constructible;
+  static constexpr bool __nothrow_constructible  = (is_nothrow_move_constructible_v<_Types> && ...);
+};
+
+template <class... _Types, enable_if_t<__tuple_all_move_constructible_v<_Types...>, int> = 0>
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_move_constructible(__tuple_types<_Types...>) noexcept
+  -> _TupleVariadicMoveConstructibleTraits<_Types...>;
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_move_constructible(...) noexcept
   -> _InvalidTupleConstructor;
 
 template <class, class>
