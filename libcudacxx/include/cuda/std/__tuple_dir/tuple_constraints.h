@@ -228,14 +228,13 @@ __tuple_variadic_constructible_constraints(__tuple_types<_Types...>, __tuple_typ
   }
 }
 
-template <class... _Types,
-          class... _UTypes,
-          enable_if_t<::cuda::std::__tuple_variadic_constructible_constraints(
-                        __tuple_types<_Types...>{}, __tuple_types<_UTypes...>{}),
-                      int> = 0>
-[[nodiscard]] _CCCL_API
-_CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
-  -> _TupleVariadicConstructibleTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>;
+template <class _Types, class _UTypes>
+inline constexpr bool __tuple_variadic_constructible_constraints_v =
+  ::cuda::std::__tuple_variadic_constructible_constraints(_Types{}, _UTypes{});
+
+template <class _Types, class _UTypes, enable_if_t<__tuple_variadic_constructible_constraints_v<_Types, _UTypes>, int> = 0>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(_Types, _UTypes) noexcept
+  -> _TupleVariadicConstructibleTraits<_Types, _UTypes>;
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(...) noexcept
   -> _InvalidTupleConstructor;
 
