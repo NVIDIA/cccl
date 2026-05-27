@@ -26,7 +26,6 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -49,7 +48,7 @@ class stream_adapter
     raw_buffer(void* ptr_, size_t sz_, data_place memory_node_)
         : ptr(ptr_)
         , sz(sz_)
-        , memory_node(memory_node_)
+        , memory_node(mv(memory_node_))
     {}
 
     void* ptr;
@@ -177,25 +176,36 @@ public:
     // call below throws, ``to_free`` still holds the un-deallocated entries
     // and ``cleared_or_moved`` stays false, so the caller can recover (catch
     // and retry, or let the destructor's assertion fire with accurate state).
-    // The per-iteration SCOPE(exit) ensures the just-popped buffer is freed
-    // even if the lazy stream sync throws -- order across buffers does not
-    // matter because each ``raw_buffer`` is independent.
+    // Order across buffers does not matter because each ``raw_buffer`` is
+    // independent.
+    //
+    // Subtlety: we do not call ``cuda_try(cudaStreamSynchronize(...))`` here
+    // because we want the just-popped buffer's ``deallocate`` to run even on
+    // sync failure -- losing the descriptor without freeing would leak. We
+    // capture the sync status, do the deallocation, then surface the sync
+    // error via ``cuda_try(sync_err)`` afterwards. We deliberately do not
+    // wrap that in a SCOPE guard: ``data_place_*::deallocate`` itself can
+    // throw (it uses ``cuda_try`` internally for ``cudaFreeHost`` /
+    // ``cudaFree`` / ``cudaFreeAsync``), and SCOPE bodies are ``noexcept``,
+    // so a deallocate-throw during unwinding would call ``std::terminate``.
     bool stream_synchronized = false;
     while (!adapter_state->to_free.empty())
     {
       const auto b = mv(adapter_state->to_free.back());
       adapter_state->to_free.pop_back();
-      SCOPE(exit)
-      {
-        b.memory_node.deallocate(b.ptr, b.sz, stream);
-      };
 
-      // Sync stream once before the first blocking deallocation.
+      cudaError_t sync_err = cudaSuccess;
       if (!stream_synchronized && !b.memory_node.allocation_is_stream_ordered())
       {
-        cuda_try(cudaStreamSynchronize(stream));
-        stream_synchronized = true;
+        sync_err = cudaStreamSynchronize(stream);
+        if (sync_err == cudaSuccess)
+        {
+          stream_synchronized = true;
+        }
       }
+
+      b.memory_node.deallocate(b.ptr, b.sz, stream);
+      cuda_try(sync_err);
     }
 
     cleared_or_moved = true;
