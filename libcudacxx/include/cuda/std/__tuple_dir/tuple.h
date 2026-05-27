@@ -298,7 +298,7 @@ public:
   // We need to SFINAE the constructor away before instantiating the traits
   template <class _UTuple>
   static constexpr bool __is_tuple_like_constructible =
-    ::cuda::std::__tuple_is_tuple_like_constructible_constraint<_UTuple>(
+    ::cuda::std::__tuple_tuple_like_constructible_constraint<_UTuple>(
       __tuple_types<_Tp...>{}, __make_tuple_indices_t<sizeof...(_Tp)>{});
 
   template <class _Tuple,
