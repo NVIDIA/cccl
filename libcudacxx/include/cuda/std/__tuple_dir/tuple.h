@@ -82,8 +82,6 @@ public:
     return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
-  using _Constraints = __tuple_constraints<_Tp...>;
-
   template <class _Constraints = decltype(::cuda::std::__tuple_is_default_constructible(__tuple_types<_Tp...>{})),
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple() noexcept(_Constraints::__nothrow_constructible)
@@ -296,6 +294,8 @@ public:
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
+  // We cannot instantiate _TupleLikeConstraints eagerly because the leads to recursive constraints
+  // We need to SFINAE the constructor away before instantiating the traits
   template <class _UTuple>
   static constexpr bool __is_tuple_like_constructible =
     ::cuda::std::__tuple_is_tuple_like_constructible_constraint<_UTuple>(
@@ -358,41 +358,42 @@ public:
     __t.swap(__u);
   }
 
-  template <class... _Up>
-  using __comparison_constraints =
-    _If<(sizeof...(_Tp) == sizeof...(_Up)),
-        typename _Constraints::template __comparison<_Up...>,
-        __invalid_tuple_constraints>;
+  template <class... _UTypes>
+  using _ComparisonConstraints =
+    decltype(::cuda::std::__tuple_is_comparable(__tuple_types<_Tp...>{}, __tuple_types<_UTypes...>{}));
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class... _Up, size_t... _Indices, class _Constraints = __comparison_constraints<_Up...>>
-  [[nodiscard]] _CCCL_API constexpr bool __equal(const tuple<_Up...>& __other, __tuple_indices<_Indices...>) const
+  template <class... _UTypes, size_t... _Indices, class _Constraints = _ComparisonConstraints<_UTypes...>>
+  [[nodiscard]] _CCCL_API constexpr bool __equal(const tuple<_UTypes...>& __other, __tuple_indices<_Indices...>) const
     noexcept(_Constraints::__nothrow_equality_comparable)
   {
     return ((::cuda::std::get<_Indices>(*this) == ::cuda::std::get<_Indices>(__other)) && ...);
   }
 
   // Not a friend function because MSVC has issues with nested namespaces and thrust::tuple
-  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
   _CCCL_REQUIRES(_Constraints::__equality_comparable)
-  [[nodiscard]] _CCCL_API constexpr bool operator==(const tuple<_Up...>& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator==(const tuple<_UTypes...>& __rhs) const
     noexcept(_Constraints::__nothrow_equality_comparable)
   {
     return __equal(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
   _CCCL_REQUIRES(_Constraints::__equality_comparable)
-  [[nodiscard]] _CCCL_API constexpr bool operator!=(const tuple<_Up...>& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(const tuple<_UTypes...>& __rhs) const
     noexcept(_Constraints::__nothrow_equality_comparable)
   {
     return !__equal(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class... _Up, size_t _CurrentIndex, size_t... _Indices, class _Constraints = __comparison_constraints<_Up...>>
+  template <class... _UTypes,
+            size_t _CurrentIndex,
+            size_t... _Indices,
+            class _Constraints = _ComparisonConstraints<_UTypes...>>
   [[nodiscard]] _CCCL_API constexpr bool
-  __tuple_less_than(const tuple<_Up...>& __other, __tuple_indices<_CurrentIndex, _Indices...>) const
+  __tuple_less_than(const tuple<_UTypes...>& __other, __tuple_indices<_CurrentIndex, _Indices...>) const
     noexcept(_Constraints::__nothrow_less_than_comparable)
   {
     if constexpr (sizeof...(_Indices) == 0)
@@ -413,33 +414,33 @@ public:
     }
   }
 
-  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
   _CCCL_REQUIRES(_Constraints::__less_than_comparable)
-  [[nodiscard]] _CCCL_API constexpr bool operator<(const tuple<_Up...>& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator<(const tuple<_UTypes...>& __rhs) const
     noexcept(_Constraints::__nothrow_less_than_comparable)
   {
     return __tuple_less_than(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
   _CCCL_REQUIRES(_Constraints::__less_than_comparable)
-  [[nodiscard]] _CCCL_API constexpr bool operator>(const tuple<_Up...>& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator>(const tuple<_UTypes...>& __rhs) const
     noexcept(_Constraints::__nothrow_less_than_comparable)
   {
     return __rhs.__tuple_less_than(*this, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
   _CCCL_REQUIRES(_Constraints::__less_than_comparable)
-  [[nodiscard]] _CCCL_API constexpr bool operator>=(const tuple<_Up...>& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator>=(const tuple<_UTypes...>& __rhs) const
     noexcept(_Constraints::__nothrow_less_than_comparable)
   {
     return !__tuple_less_than(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
   }
 
-  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_TEMPLATE(class... _UTypes, class _Constraints = _ComparisonConstraints<_UTypes...>)
   _CCCL_REQUIRES(_Constraints::__less_than_comparable)
-  [[nodiscard]] _CCCL_API constexpr bool operator<=(const tuple<_Up...>& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator<=(const tuple<_UTypes...>& __rhs) const
     noexcept(_Constraints::__nothrow_less_than_comparable)
   {
     return !__rhs.__tuple_less_than(*this, __make_tuple_indices_t<sizeof...(_Tp)>{});

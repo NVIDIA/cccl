@@ -110,26 +110,11 @@ template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
   _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
 
-template <bool _IsImplicitlyConstructible, bool _IsExplicitlyConstructible, bool _IsNothrowConstructible>
-struct _TupleConstructorTraits
-{
-  static constexpr bool __implicit_constructible = _IsImplicitlyConstructible;
-  static constexpr bool __explicit_constructible = _IsExplicitlyConstructible;
-  static constexpr bool __nothrow_constructible  = _IsNothrowConstructible;
-};
-
-using _InvalidTupleConstructor = _TupleConstructorTraits<false, false, false>;
-
-struct __invalid_tuple_constraints
+struct _InvalidTupleConstructor
 {
   static constexpr bool __implicit_constructible = false;
   static constexpr bool __explicit_constructible = false;
   static constexpr bool __nothrow_constructible  = false;
-
-  static constexpr bool __equality_comparable          = false;
-  static constexpr bool __nothrow_equality_comparable  = false;
-  static constexpr bool __less_than_comparable         = false;
-  static constexpr bool __nothrow_less_than_comparable = false;
 };
 
 template <class... _Types>
@@ -333,21 +318,37 @@ template <class>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_tuple_like_constructible(...) noexcept
   -> _InvalidTupleConstructor;
 
-template <class... _Types>
-struct __tuple_constraints
+struct _InvalidTupleComparison
 {
-  template <class... _UTypes>
-  struct __comparison
-  {
-    static constexpr bool __equality_comparable = (__is_cpp17_equality_comparable_v<_Types, _UTypes> && ...);
-    static constexpr bool __nothrow_equality_comparable =
-      (__is_cpp17_nothrow_equality_comparable_v<_Types, _UTypes> && ...);
+  static constexpr bool __equality_comparable         = false;
+  static constexpr bool __nothrow_equality_comparable = false;
 
-    static constexpr bool __less_than_comparable = (__is_cpp17_less_than_comparable_v<_Types, _UTypes> && ...);
-    static constexpr bool __nothrow_less_than_comparable =
-      (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
-  };
+  static constexpr bool __less_than_comparable         = false;
+  static constexpr bool __nothrow_less_than_comparable = false;
 };
+
+template <class, class>
+struct _TupleComparableTraits;
+
+template <class... _Types, class... _UTypes>
+struct _TupleComparableTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
+{
+  static constexpr bool __equality_comparable = (__is_cpp17_equality_comparable_v<_Types, _UTypes> && ...);
+  static constexpr bool __nothrow_equality_comparable =
+    (__is_cpp17_nothrow_equality_comparable_v<_Types, _UTypes> && ...);
+
+  static constexpr bool __less_than_comparable = (__is_cpp17_less_than_comparable_v<_Types, _UTypes> && ...);
+  static constexpr bool __nothrow_less_than_comparable =
+    (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
+};
+
+_CCCL_TEMPLATE(class... _Types, class... _UTypes)
+_CCCL_REQUIRES(sizeof...(_Types) == sizeof...(_UTypes))
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
+  -> _TupleComparableTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>;
+template <class>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(...) noexcept -> _InvalidTupleComparison;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
