@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <random>
 #include <thread>
 #include <vector>
 
@@ -24,21 +25,30 @@ namespace
 using sample_t  = int;
 using counter_t = int;
 
-// Non-uniform spacing keeps DispatchRange on the SearchTransform path, which is
-// where the thread_local detection cache is exercised.
+// Jittered uniform spacing keeps DispatchRange on the SearchTransform path,
+// which is where the thread_local detection cache is exercised. Fixed seed
+// makes the levels reproducible across runs.
 auto make_levels(int num_bins) -> thrust::host_vector<sample_t>
 {
+  constexpr double upper = 1024.0;
+  const double step      = upper / static_cast<double>(num_bins);
   thrust::host_vector<sample_t> levels(num_bins + 1);
-  levels[0] = 0;
-  for (int i = 1; i <= num_bins; ++i)
+  std::mt19937 rng(0xC0FFEE);
+  std::uniform_real_distribution<double> jitter(-0.25, 0.25);
+  levels[0]        = 0;
+  levels[num_bins] = static_cast<sample_t>(upper);
+  for (int i = 1; i < num_bins; ++i)
   {
-    const double t = static_cast<double>(i) / num_bins;
-    sample_t v     = static_cast<sample_t>(t * t * 1024.0);
+    sample_t v = static_cast<sample_t>(i * step + step * jitter(rng));
     if (v <= levels[i - 1])
     {
       v = static_cast<sample_t>(levels[i - 1] + 1);
     }
     levels[i] = v;
+  }
+  if (levels[num_bins] <= levels[num_bins - 1])
+  {
+    levels[num_bins] = static_cast<sample_t>(levels[num_bins - 1] + 1);
   }
   return levels;
 }
