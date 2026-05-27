@@ -180,7 +180,7 @@ struct _TupleVariadicConstructibleTraits<__tuple_types<_Types...>, __tuple_types
 };
 
 template <class... _Types, class... _UTypes>
-[[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
 __tuple_variadic_constructible_constraints(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
 {
   if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
@@ -279,7 +279,7 @@ struct _TupleTupleLikeConstructibleTraits<_UTuple, __tuple_types<_Types...>, __t
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _UTuple, class... _Types, size_t... _Indices>
-[[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL bool
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
 __tuple_tuple_like_constructible_constraint(__tuple_types<_Types...>, __tuple_indices<_Indices...>) noexcept
 {
   using ::cuda::std::get;
