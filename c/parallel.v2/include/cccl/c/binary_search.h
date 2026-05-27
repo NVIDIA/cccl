@@ -29,7 +29,11 @@ typedef struct cccl_device_binary_search_build_result_t
   void* cubin;
   size_t cubin_size;
   void* jit_compiler; // hostjit::JITCompiler*
-  void* binary_search_fn; // int(*)(void*, ull, void*, ull, void*, void*)
+  void* binary_search_fn; // int(*)(void*, ull, void*, ull, void*, void*, void*, void*)
+  // 1-byte device sentinel that cub::DeviceFind::{Lower,Upper}Bound requires
+  // as a non-null d_temp_storage argument. Allocated at build time so the
+  // dispatch path doesn't have to allocate per call; freed in cleanup.
+  void* temp_storage;
 } cccl_device_binary_search_build_result_t;
 
 CCCL_C_API CUresult cccl_device_binary_search_build(

@@ -44,8 +44,7 @@ static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
 
   std::string src = R"(#include <cuda_runtime.h>
 #include <cuda_fp16.h>
-#include <cub/agent/agent_for.cuh>
-#include <climits>
+#include <cub/device/device_for.cuh>
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -78,73 +77,38 @@ static std::string make_for_source(cccl_iterator_t d_data, cccl_op_t op)
     }
   }
 
-  // user_op_t functor
+  // bulk_op_t functor — wraps the user op for cub::DeviceFor::Bulk, whose op
+  // is invoked as op(OffsetT idx). The functor holds d_data so it can compute
+  // d_data + idx and invoke the user op on the pointed-to element.
+  // The functor is passed by value into Bulk; for stateful ops the embedded
+  // state_bytes ride along into device constant memory through the kernel-arg
+  // copy, mirroring the prior hand-rolled approach.
   if (stateful)
   {
-    // State bytes are embedded by value, not via host pointer; the bytes
-    // travel into device constant memory through the kernel-arg copy when
-    // CUB launches the kernel. See operators.cpp:generate_binary_functor.
     const size_t state_size  = op.size > 0 ? op.size : 1;
     const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     src += std::format(
-      "struct user_op_t {{\n"
+      "struct bulk_op_t {{\n"
+      "  in_0_it_t d_data;\n"
       "  alignas({0}) unsigned char state_bytes[{1}];\n"
-      "  __device__ __forceinline__ void operator()({2}* input) const "
-      "{{ {3}((void*)state_bytes, input); }}\n"
+      "  __device__ __forceinline__ void operator()(unsigned long long idx) const "
+      "{{ {2}((void*)state_bytes, d_data + idx); }}\n"
       "}};\n\n",
       state_align,
       state_size,
-      data_type,
       op_name);
   }
   else
   {
     src += std::format(
-      R"(struct user_op_t {{
-  __device__ __forceinline__ void operator()({}* input) const {{ {}(input); }}
+      R"(struct bulk_op_t {{
+  in_0_it_t d_data;
+  __device__ __forceinline__ void operator()(unsigned long long idx) const {{ {}(d_data + idx); }}
 }};
 
 )",
-      data_type,
       op_name);
   }
-
-  // Policy
-  src += R"(using OffsetT = unsigned long long;
-using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
-struct device_for_policy {
-  struct ActivePolicy {
-    using for_policy_t = policy_dim_t;
-  };
-};
-
-)";
-
-  // Template kernel
-  src += std::format(
-    R"(template<typename DataIt, typename OpT>
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::threads_per_block)
-void for_kernel(DataIt d_data, OffsetT num_items, OpT user_op)
-{{
-  auto agent_op = [&user_op, &d_data](OffsetT idx) {{
-    user_op(d_data + idx);
-  }};
-  using active_policy_t = device_for_policy::ActivePolicy::for_policy_t;
-  using agent_t = cub::detail::for_each::agent_block_striped_t<active_policy_t, OffsetT, decltype(agent_op)>;
-  constexpr auto threads_per_block  = active_policy_t::threads_per_block;
-  constexpr auto items_per_tile = active_policy_t::items_per_thread * threads_per_block;
-  const auto tile_base     = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
-  const auto num_remaining = num_items - tile_base;
-  const auto items_in_tile = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
-  if (items_in_tile == items_per_tile) {{
-    agent_t{{tile_base, agent_op}}.template consume_tile<true>(items_per_tile, threads_per_block);
-  }} else {{
-    agent_t{{tile_base, agent_op}}.template consume_tile<false>(items_in_tile, threads_per_block);
-  }}
-}}
-
-)");
 
   // Host wrapper
   src += R"(extern "C" EXPORT int cccl_jit_for(
@@ -155,18 +119,15 @@ void for_kernel(DataIt d_data, OffsetT num_items, OpT user_op)
   if (stateful)
   {
     const size_t state_size = op.size > 0 ? op.size : 1;
-    src += std::format("    user_op_t op_0; __builtin_memcpy(op_0.state_bytes, op_0_state, {});\n", state_size);
+    src += std::format("    bulk_op_t op_0{{in_0, {{}}}};\n"
+                       "    __builtin_memcpy(op_0.state_bytes, op_0_state, {});\n",
+                       state_size);
   }
   else
   {
-    src += "    user_op_t op_0{};\n";
+    src += "    bulk_op_t op_0{in_0};\n";
   }
-  src += R"(    if (num_items == 0) return 0;
-    constexpr unsigned long long items_per_block = 512ULL;
-    unsigned long long block_sz = (num_items + items_per_block - 1) / items_per_block;
-    if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;
-    for_kernel<<<(unsigned int)block_sz, 256, 0, (cudaStream_t)stream>>>(in_0, num_items, op_0);
-    return (int)cudaPeekAtLastError();
+  src += R"(    return (int)cub::DeviceFor::Bulk(num_items, op_0, (cudaStream_t)stream);
 }
 )";
 

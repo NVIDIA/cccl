@@ -26,9 +26,8 @@
 using namespace hostjit;
 using namespace hostjit::codegen;
 
-// d_data_state, num_items, d_values_state, num_values, d_out_state, op_state
-// (d_in_0, num_items, d_in_1, num_values, d_out_0, op_0_state, stream)
-using binary_search_fn_t = int (*)(void*, unsigned long long, void*, unsigned long long, void*, void*, void*);
+// (d_in_0, num_items, d_in_1, num_values, d_out_0, op_0_state, d_temp_storage, stream)
+using binary_search_fn_t = int (*)(void*, unsigned long long, void*, unsigned long long, void*, void*, void*, void*);
 
 static std::string make_binary_search_source(
   cccl_iterator_t d_data, cccl_iterator_t d_values, cccl_iterator_t d_out, cccl_op_t op, cccl_binary_search_mode_t mode)
@@ -43,15 +42,11 @@ static std::string make_binary_search_source(
   auto out_code    = make_output_iterator(d_out, out_type, "out_0_it_t", "out_0", "d_out_0");
   auto op_code     = make_comparison_op(op, data_type, "CompareOp", "op_0", "op_0_state", has_bc);
 
-  const std::string mode_str =
-    (mode == CCCL_BINARY_SEARCH_LOWER_BOUND) ? "cub::detail::find::lower_bound" : "cub::detail::find::upper_bound";
+  const char* find_fn = (mode == CCCL_BINARY_SEARCH_LOWER_BOUND) ? "LowerBound" : "UpperBound";
 
   std::string src = R"(#include <cuda_runtime.h>
 #include <cuda_fp16.h>
-#include <cuda/__iterator/zip_iterator.h>
-#include <cub/agent/agent_for.cuh>
-#include <cub/detail/binary_search_helpers.cuh>
-#include <climits>
+#include <cub/device/device_find.cuh>
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -66,50 +61,14 @@ static std::string make_binary_search_source(
   src += out_code.preamble;
   src += op_code.preamble;
 
-  src += R"(using OffsetT = unsigned long long;
-using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
-struct device_for_policy {
-  struct ActivePolicy {
-    using for_policy_t = policy_dim_t;
-  };
-};
-
-)";
-
-  // Template kernel — types deduced when called with <<< >>>
-  src += std::format(
-    R"(template<typename DataIt, typename ValuesIt, typename OutIt, typename CompOp>
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::threads_per_block)
-void binary_search_kernel(DataIt d_data, OffsetT num_data, ValuesIt d_values, OffsetT num_values, OutIt d_out, CompOp op)
-{{
-  auto input_it     = cuda::make_zip_iterator(d_values, d_out);
-  auto comp_wrapper = cub::detail::find::make_comp_wrapper<{}>(d_data, num_data, op);
-  auto agent_op     = [&comp_wrapper, &input_it](OffsetT index) {{
-    comp_wrapper(input_it[index]);
-  }};
-  using active_policy_t = device_for_policy::ActivePolicy::for_policy_t;
-  using agent_t = cub::detail::for_each::agent_block_striped_t<active_policy_t, OffsetT, decltype(agent_op)>;
-  constexpr auto threads_per_block  = active_policy_t::threads_per_block;
-  constexpr auto items_per_tile = active_policy_t::items_per_thread * threads_per_block;
-  const auto tile_base     = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
-  const auto num_remaining = num_values - tile_base;
-  const auto items_in_tile = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
-  if (items_in_tile == items_per_tile) {{
-    agent_t{{tile_base, agent_op}}.template consume_tile<true>(items_per_tile, threads_per_block);
-  }} else {{
-    agent_t{{tile_base, agent_op}}.template consume_tile<false>(items_in_tile, threads_per_block);
-  }}
-}}
-
-)",
-    mode_str);
-
-  // Host wrapper function
+  // Host wrapper function. d_temp_storage is a 1-byte sentinel allocated at
+  // build time; cub::DeviceFind::{Lower,Upper}Bound requires non-null temp
+  // storage to actually run (with nullptr it just sets bytes=1 and returns).
   src += R"(extern "C" EXPORT int cccl_jit_binary_search(
     void* d_in_0, unsigned long long num_items,
     void* d_in_1, unsigned long long num_values,
     void* d_out_0, void* op_0_state,
+    void* d_temp_storage,
     void* stream
 ) {
 )";
@@ -117,14 +76,16 @@ void binary_search_kernel(DataIt d_data, OffsetT num_data, ValuesIt d_values, Of
   src += "    " + values_code.setup_code + "\n";
   src += "    " + out_code.setup_code + "\n";
   src += "    " + op_code.setup_code + "\n";
-  src += R"(    if (num_values == 0) return 0;
-    constexpr unsigned long long items_per_block = 512ULL;
-    unsigned long long block_sz = (num_values + items_per_block - 1) / items_per_block;
-    if (block_sz > (unsigned long long)UINT_MAX) return (int)cudaErrorInvalidValue;
-    binary_search_kernel<<<(unsigned int)block_sz, 256, 0, (cudaStream_t)stream>>>(in_0, num_items, in_1, num_values, out_0, op_0);
-    return (int)cudaPeekAtLastError();
-}
-)";
+  src += std::format(
+    R"(    if (num_values == 0) return 0;
+    size_t temp_storage_bytes = 1;
+    return (int)cub::DeviceFind::{}(
+        d_temp_storage, temp_storage_bytes,
+        in_0, num_items, in_1, num_values, out_0, op_0,
+        (cudaStream_t)stream);
+}})",
+    find_fn);
+  src += "\n";
 
   return src;
 }
@@ -246,9 +207,10 @@ try
 
   auto cubin = compiler->getCubin();
 
-  build_ptr->cc         = cc_major * 10 + cc_minor;
-  build_ptr->cubin      = nullptr;
-  build_ptr->cubin_size = 0;
+  build_ptr->cc           = cc_major * 10 + cc_minor;
+  build_ptr->cubin        = nullptr;
+  build_ptr->cubin_size   = 0;
+  build_ptr->temp_storage = nullptr;
   if (!cubin.empty())
   {
     auto* cubin_copy = new char[cubin.size()];
@@ -256,8 +218,19 @@ try
     build_ptr->cubin      = cubin_copy;
     build_ptr->cubin_size = cubin.size();
   }
+  // Allocate the 1-byte device sentinel that cub::DeviceFind requires as a
+  // non-null d_temp_storage on every dispatch. Done before transferring
+  // ownership of the compiler so an allocation failure doesn't leak.
+  void* temp_storage    = nullptr;
+  cudaError_t alloc_err = cudaMalloc(&temp_storage, 1);
+  if (alloc_err != cudaSuccess)
+  {
+    throw std::runtime_error("binary_search temp_storage allocation failed");
+  }
+
   build_ptr->jit_compiler     = compiler.release();
   build_ptr->binary_search_fn = reinterpret_cast<void*>(fn);
+  build_ptr->temp_storage     = temp_storage;
 
   return CUDA_SUCCESS;
 }
@@ -285,8 +258,15 @@ CUresult cccl_device_binary_search(
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    int status =
-      fn(d_data.state, num_items, d_values.state, num_values, d_out.state, op.state, reinterpret_cast<void*>(stream));
+    int status = fn(
+      d_data.state,
+      num_items,
+      d_values.state,
+      num_values,
+      d_out.state,
+      op.state,
+      build.temp_storage,
+      reinterpret_cast<void*>(stream));
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
   }
   catch (const std::exception& exc)
@@ -343,6 +323,11 @@ try
   {
     delete[] static_cast<char*>(build_ptr->cubin);
     build_ptr->cubin = nullptr;
+  }
+  if (build_ptr->temp_storage)
+  {
+    cudaFree(build_ptr->temp_storage);
+    build_ptr->temp_storage = nullptr;
   }
   build_ptr->cubin_size       = 0;
   build_ptr->binary_search_fn = nullptr;
