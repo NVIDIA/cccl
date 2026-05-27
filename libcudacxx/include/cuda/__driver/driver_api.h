@@ -691,7 +691,8 @@ _CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __streamGetCtxNoThrow(::CUcontext& __result, ::CUstream __stream) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__streamGetCtxNoThrow(::CUcontext& __result, ::CUstream __stream) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamGetCtx);
   return static_cast<cudaError_t>(__driver_fn(__stream, &__result));
