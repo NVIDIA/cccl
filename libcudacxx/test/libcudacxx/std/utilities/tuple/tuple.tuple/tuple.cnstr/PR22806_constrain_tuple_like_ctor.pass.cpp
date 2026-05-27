@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvhpc-23.1
-
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;

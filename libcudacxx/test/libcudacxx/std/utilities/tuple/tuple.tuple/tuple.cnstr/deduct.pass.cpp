@@ -6,14 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: libcpp-no-deduction-guides
-// UNSUPPORTED: msvc
-
-// GCC's implementation of class template deduction is still immature and runs
-// into issues with libc++. However GCC accepts this code when compiling
-// against libstdc++.
-// XFAIL: gcc-7, gcc-10
-
 // <cuda/std/tuple>
 
 // Test that the constructors offered by cuda::std::tuple are formulated
