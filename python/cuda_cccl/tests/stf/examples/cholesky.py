@@ -690,25 +690,7 @@ def compute_norm(ctx, matrix):
     return np.sqrt(norm_sq)
 
 
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Tiled Cholesky decomposition with CUDA STF"
-    )
-    parser.add_argument(
-        "N", type=int, nargs="?", default=1024, help="Matrix size (default: 1024)"
-    )
-    parser.add_argument(
-        "NB", type=int, nargs="?", default=128, help="Block size (default: 128)"
-    )
-    parser.add_argument("--check", action="store_true", help="Check result (slower)")
-    args = parser.parse_args()
-
-    N = args.N
-    NB = args.NB
-    check_result = args.check
-
+def main(N=1024, NB=128, check_result=False):
     assert N % NB == 0, f"Matrix size {N} must be divisible by block size {NB}"
 
     print("=" * 60)
@@ -826,4 +808,18 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Tiled Cholesky decomposition with CUDA STF"
+    )
+    parser.add_argument(
+        "N", type=int, nargs="?", default=1024, help="Matrix size (default: 1024)"
+    )
+    parser.add_argument(
+        "NB", type=int, nargs="?", default=128, help="Block size (default: 128)"
+    )
+    parser.add_argument("--check", action="store_true", help="Check result (slower)")
+    args = parser.parse_args()
+
+    sys.exit(main(N=args.N, NB=args.NB, check_result=args.check))

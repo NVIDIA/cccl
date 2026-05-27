@@ -10,14 +10,11 @@ This file keeps the same toy encrypted arithmetic API, but uses the STF-aware
 ``@jit`` decorator to cover the ergonomic integration path.
 """
 
-import pytest
+import numba
+from numba import cuda
 
-numba = pytest.importorskip("numba")
-pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
-from numba_decorator import jit  # noqa: E402
-
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.numba import jit
 
 numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -132,5 +129,9 @@ def test_fhe_decorator():
     )
 
 
-if __name__ == "__main__":
+def main():
     test_fhe_decorator()
+
+
+if __name__ == "__main__":
+    main()

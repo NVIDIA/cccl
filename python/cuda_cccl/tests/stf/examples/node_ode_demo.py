@@ -42,18 +42,14 @@ Toggles
 from __future__ import annotations
 
 import os
-import sys
 import time
 
 import numpy as np
-import pytest
 import torch
 import torch.nn as nn
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # noqa: E402
-from pytorch_task import pytorch_task  # noqa: E402
-
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 # ---------------------------------------------------------------------------
 # ODE models -- verbatim from torchdiffeq/examples/ode_demo.py
@@ -696,11 +692,10 @@ def _time_stf_forward(forward, *, iters: int, warmup: int) -> float:
     return samples[len(samples) // 2] * 1e3
 
 
-@pytest.mark.skipif(
-    os.environ.get("LLM_ODE_DEMO_BENCH", "0") == "0",
-    reason="Set LLM_ODE_DEMO_BENCH=1 to run the ode_demo benchmark.",
-)
 def test_ode_demo_benchmark():
+    if os.environ.get("LLM_ODE_DEMO_BENCH", "0") == "0":
+        print("Set LLM_ODE_DEMO_BENCH=1 to run the ode_demo benchmark; skipping.")
+        return
     """Same workload as ode_demo.py's eval-time forward call, three solvers."""
     cfg = _ode_demo_cfg()
     iters = int(os.environ.get("LLM_ODE_DEMO_ITERS", "30"))
@@ -857,11 +852,10 @@ _SWEEP_CONFIGS = [
 ]
 
 
-@pytest.mark.skipif(
-    os.environ.get("LLM_ODE_DEMO_SWEEP", "0") == "0",
-    reason="Set LLM_ODE_DEMO_SWEEP=1 to run the problem-size sweep.",
-)
 def test_ode_demo_sweep():
+    if os.environ.get("LLM_ODE_DEMO_SWEEP", "0") == "0":
+        print("Set LLM_ODE_DEMO_SWEEP=1 to run the problem-size sweep; skipping.")
+        return
     """Sweep problem size from ode_demo.py's toy to FFJORD-ish per-step cost.
 
     Reports ``ms/run`` and speedup vs torchdiffeq for each config. Not a
@@ -987,3 +981,16 @@ def test_ode_demo_sweep():
             f"{t_td:8.2f} ms  {to_s:>10}  {t_cg:8.2f} ms "
             f"{t_stf:7.2f} ms {vs_td:>7}  {vs_cg:>12}"
         )
+
+
+def main():
+    test_ode_demo_correctness_lambda()
+    print("ode_demo Lambda correctness: PASS")
+    test_ode_demo_correctness_odefunc()
+    print("ode_demo ODEFunc correctness: PASS")
+    test_ode_demo_benchmark()
+    test_ode_demo_sweep()
+
+
+if __name__ == "__main__":
+    main()

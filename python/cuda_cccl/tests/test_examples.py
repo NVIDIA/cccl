@@ -25,6 +25,7 @@ def discover_examples():
     example_directories = [
         ("Coop Experimental", "coop/_experimental/examples"),
         ("Compute", "compute/examples"),
+        ("STF", "stf/examples"),
     ]
 
     for framework, example_dir in example_directories:

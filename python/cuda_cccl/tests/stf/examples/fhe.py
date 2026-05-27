@@ -27,14 +27,11 @@ from those declarations. The high-level circuit composes ordinary arithmetic
 operations without exposing CUDA streams or events to the user.
 """
 
-import pytest
+import numba
+from numba import cuda
 
-numba = pytest.importorskip("numba")
-pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
-from numba_helpers import numba_arguments  # noqa: E402
-
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.numba import numba_arguments
 
 numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -164,5 +161,9 @@ def test_fhe():
     )
 
 
-if __name__ == "__main__":
+def main():
     test_fhe()
+
+
+if __name__ == "__main__":
+    main()

@@ -8,7 +8,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from pytorch_task import (  # noqa: E402
+from cuda.stf._experimental.interop.pytorch import (  # noqa: E402
     pytorch_task,
     tensor_arg,
     tensor_arguments,

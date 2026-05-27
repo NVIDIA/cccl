@@ -60,13 +60,10 @@ import time
 from dataclasses import dataclass
 
 import numpy as np
-import pytest
+import torch
 
-torch = pytest.importorskip("torch")
-
-from pytorch_task import pytorch_task  # noqa: E402
-
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 # ---------------------------------------------------------------------------
 # Config
@@ -1249,11 +1246,10 @@ def _print_table(cfg: NodeConfig, results: dict[str, float]):
         )
 
 
-@pytest.mark.skipif(
-    os.environ.get("LLM_NODE_BENCH", "0") == "0",
-    reason="Set LLM_NODE_BENCH=1 to run the benchmark.",
-)
 def test_node_benchmark():
+    if os.environ.get("LLM_NODE_BENCH", "0") == "0":
+        print("Set LLM_NODE_BENCH=1 to run the benchmark; skipping.")
+        return
     """Phase 0 gate + Phase 1 gate wrapped in a pytest run.
 
     Behaviour:
@@ -1317,9 +1313,13 @@ def test_node_benchmark():
     )
 
 
-if __name__ == "__main__":
+def main():
     test_node_correctness()
     print("Correctness: PASS")
     if os.environ.get("LLM_NODE_BENCH", "0") != "0":
         test_node_benchmark()
         print("Benchmark: PASS (all gates met)")
+
+
+if __name__ == "__main__":
+    main()

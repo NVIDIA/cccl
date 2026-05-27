@@ -158,23 +158,14 @@ def dump_cuda_graph_dot(cuda_graph, path, verbose=False):
         raise RuntimeError(f"cudaGraphDebugDotPrint failed with cudaError_t={int(err)}")
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cuda-dot", help="write CUDA runtime graph DOT to this path")
-    parser.add_argument(
-        "--cuda-dot-verbose",
-        action="store_true",
-        help="include verbose CUDA node params in --cuda-dot output",
-    )
-    args = parser.parse_args()
-
+def main(cuda_dot=None, cuda_dot_verbose=False):
     wp.init()
 
     graph, out_host = build_picture_graph()
 
-    if args.cuda_dot:
-        dump_cuda_graph_dot(graph.graph, args.cuda_dot, args.cuda_dot_verbose)
-        print(f"CUDA graph DOT written to: {args.cuda_dot}")
+    if cuda_dot:
+        dump_cuda_graph_dot(graph.graph, cuda_dot, cuda_dot_verbose)
+        print(f"CUDA graph DOT written to: {cuda_dot}")
 
     graph.launch()
     graph.reset()
@@ -185,4 +176,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cuda-dot", help="write CUDA runtime graph DOT to this path")
+    parser.add_argument(
+        "--cuda-dot-verbose",
+        action="store_true",
+        help="include verbose CUDA node params in --cuda-dot output",
+    )
+    args = parser.parse_args()
+
+    main(cuda_dot=args.cuda_dot, cuda_dot_verbose=args.cuda_dot_verbose)

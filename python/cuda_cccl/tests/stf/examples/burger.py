@@ -37,7 +37,7 @@ import os
 
 import numpy as np
 import torch
-from pytorch_task import pytorch_task
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 import cuda.stf._experimental as stf
 
@@ -446,5 +446,9 @@ def test_burger():
         plt.show()
 
 
-if __name__ == "__main__":
+def main():
     test_burger()
+
+
+if __name__ == "__main__":
+    main()

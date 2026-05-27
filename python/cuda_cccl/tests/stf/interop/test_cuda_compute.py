@@ -37,7 +37,7 @@ try:
 except ImportError:
     _HAS_NUMBA = False
 
-from tests.stf.numba_task import numba_task
+from cuda.stf._experimental.interop.numba import numba_task
 
 pytestmark = pytest.mark.skipif(
     not (_HAS_CUDA_COMPUTE and _HAS_NUMBA),

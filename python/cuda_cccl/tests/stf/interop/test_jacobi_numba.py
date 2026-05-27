@@ -15,7 +15,10 @@ import pytest
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
 from numba import cuda  # noqa: E402
-from numba_helpers import get_arg_numba, numba_arguments  # noqa: E402
+from cuda.stf._experimental.interop.numba import (  # noqa: E402
+    get_arg_numba,
+    numba_arguments,
+)
 
 import cuda.stf._experimental as stf  # noqa: E402
 

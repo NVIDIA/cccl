@@ -5,6 +5,12 @@
 """
 Optimized PyTorch reference implementation of the viscous Burger solver.
 
+NOTE: this is the only file under ``stf/examples/`` that intentionally
+does **not** use CUDASTF. It is the non-STF baseline kept here for
+direct, side-by-side comparison with :mod:`burger`, which solves the
+exact same problem through STF stackable contexts and graph_scope /
+while_loop / repeat composition.
+
 This is an "as fast as we can make it without STF" implementation with
 the same discretisation, parameters, and validation checks as the STF
 Burger variants.
@@ -58,7 +64,6 @@ import os
 import time
 
 import numpy as np
-import pytest
 import torch
 from torch._higher_order_ops import while_loop as hop_while_loop
 
@@ -346,7 +351,8 @@ def _run_burger(N=None, nsteps=None, substeps=None, nu=0.05):
 
 def test_burger_pytorch_optimized():
     if not torch.cuda.is_available():
-        pytest.skip("CUDA not available")
+        print("CUDA not available, skipping test_burger_pytorch_optimized")
+        return
     _run_burger()
 
 
@@ -468,7 +474,8 @@ def _run_burger_hop(N=None, nsteps=None, substeps=None, nu=0.05):
 def test_burger_pytorch_optimized_hop():
     """Full Burger solve with the CG inner loop driven by a while_loop HOP."""
     if not torch.cuda.is_available():
-        pytest.skip("CUDA not available")
+        print("CUDA not available, skipping test_burger_pytorch_optimized_hop")
+        return
     _run_burger_hop()
 
 
@@ -550,7 +557,8 @@ def test_burger_pytorch_optimized_while_hop():
         driving it from Python
     """
     if not torch.cuda.is_available():
-        pytest.skip("CUDA not available")
+        print("CUDA not available, skipping test_burger_pytorch_optimized_while_hop")
+        return
 
     N = 2560
     h = 1.0 / (N - 1)
@@ -578,7 +586,8 @@ def test_burger_pytorch_optimized_while_hop():
         tX_hop, it_hop = cg_solve_hop(tA_val, tB, N, max_cg, cg_tol_sq)
         torch.cuda.synchronize()
     except Exception as exc:
-        pytest.xfail(f"while_loop HOP not usable on this PyTorch: {exc!r}")
+        print(f"while_loop HOP not usable on this PyTorch: {exc!r}")
+        return
 
     tX_py, _ = cg_solve(tA_val, tB, N, cg_tol=1e-16, max_cg=max_cg)
 
@@ -612,5 +621,9 @@ def test_burger_pytorch_optimized_while_hop():
     print(f"HOP speedup: {py_ms / hop_ms:.2f}x")
 
 
-if __name__ == "__main__":
+def main():
     test_burger_pytorch_optimized()
+
+
+if __name__ == "__main__":
+    main()

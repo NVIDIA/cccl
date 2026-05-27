@@ -8,7 +8,7 @@ import pytest
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
 from numba import cuda  # noqa: E402
-from numba_decorator import jit  # noqa: E402
+from cuda.stf._experimental.interop.numba import jit  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
 

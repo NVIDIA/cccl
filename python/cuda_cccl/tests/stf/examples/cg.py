@@ -32,13 +32,10 @@ Requires CUDA 12.4+ (conditional graph nodes).
 """
 
 import numpy as np
-import pytest
+import torch
 
-torch = pytest.importorskip("torch")
-
-from pytorch_task import pytorch_task  # noqa: E402
-
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 # --- Linear-algebra building blocks (PyTorch, graph-capture safe) ----------
 
@@ -192,5 +189,9 @@ def test_cg_solver():
     print("PASSED")
 
 
-if __name__ == "__main__":
+def main():
     test_cg_solver()
+
+
+if __name__ == "__main__":
+    main()
