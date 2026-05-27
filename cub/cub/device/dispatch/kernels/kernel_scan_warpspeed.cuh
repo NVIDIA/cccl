@@ -102,7 +102,12 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   using InOutT            = typename ScanResourcesT::InOutT;
   using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
 
-  const auto [num_block_idx_stages, num_sum_exclusive_cta_stages] = make_scan_stage_counts(numStages);
+  constexpr auto policy = get_warpspeed_policy<PolicySelector>();
+
+  const int num_block_idx_stages =
+    policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, numStages + policy.block_idx_stages);
+  const int num_sum_exclusive_cta_stages =
+    policy.lookback_stages > 0 ? policy.lookback_stages : ::cuda::std::max(1, numStages + policy.lookback_stages);
 
   ScanResourcesT res = {
     warpspeed::SmemResource<InOutT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
@@ -111,7 +116,6 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
     warpspeed::SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
 
-  constexpr auto policy = get_warpspeed_policy<PolicySelector>();
   setup_scan_resources(
     policy,
     syncHandler,
