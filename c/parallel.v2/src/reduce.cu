@@ -15,6 +15,7 @@
 
 #include <cccl/c/reduce.h>
 #include <hostjit/codegen/cub_call.hpp>
+#include <util/build_utils.h>
 
 using namespace hostjit::codegen;
 
@@ -129,16 +130,8 @@ try
       .with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init, stream)
       .compile(cc_major, cc_minor, &merged_config, ctk_root, cccl_include_path);
 
-  build->cc         = cc_major * 10 + cc_minor;
-  build->cubin      = nullptr;
-  build->cubin_size = 0;
-  if (!result.cubin.empty())
-  {
-    auto* cubin_copy = new char[result.cubin.size()];
-    std::memcpy(cubin_copy, result.cubin.data(), result.cubin.size());
-    build->cubin      = cubin_copy;
-    build->cubin_size = result.cubin.size();
-  }
+  build->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_cubin(result.cubin, build->cubin, build->cubin_size);
   build->jit_compiler     = result.compiler;
   build->reduce_fn        = reinterpret_cast<void*>(result.fn_ptr);
   build->accumulator_size = init.type.size;
@@ -214,18 +207,8 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  if (build_ptr->jit_compiler)
-  {
-    delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
-    build_ptr->jit_compiler = nullptr;
-  }
-  if (build_ptr->cubin)
-  {
-    delete[] static_cast<char*>(build_ptr->cubin);
-    build_ptr->cubin = nullptr;
-  }
-  build_ptr->cubin_size = 0;
-  build_ptr->reduce_fn  = nullptr;
+  cccl::detail::release_jit_artifacts(build_ptr);
+  build_ptr->reduce_fn = nullptr;
 
   return CUDA_SUCCESS;
 }

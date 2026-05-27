@@ -208,16 +208,8 @@ try
   auto cubin = compiler->getCubin();
 
   build_ptr->cc           = cc_major * 10 + cc_minor;
-  build_ptr->cubin        = nullptr;
-  build_ptr->cubin_size   = 0;
   build_ptr->temp_storage = nullptr;
-  if (!cubin.empty())
-  {
-    auto* cubin_copy = new char[cubin.size()];
-    std::memcpy(cubin_copy, cubin.data(), cubin.size());
-    build_ptr->cubin      = cubin_copy;
-    build_ptr->cubin_size = cubin.size();
-  }
+  cccl::detail::copy_cubin(cubin, build_ptr->cubin, build_ptr->cubin_size);
   // Allocate the 1-byte device sentinel that cub::DeviceFind requires as a
   // non-null d_temp_storage on every dispatch. Done before transferring
   // ownership of the compiler so an allocation failure doesn't leak.
@@ -314,22 +306,12 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  if (build_ptr->jit_compiler)
-  {
-    delete static_cast<JITCompiler*>(build_ptr->jit_compiler);
-    build_ptr->jit_compiler = nullptr;
-  }
-  if (build_ptr->cubin)
-  {
-    delete[] static_cast<char*>(build_ptr->cubin);
-    build_ptr->cubin = nullptr;
-  }
+  cccl::detail::release_jit_artifacts(build_ptr);
   if (build_ptr->temp_storage)
   {
     cudaFree(build_ptr->temp_storage);
     build_ptr->temp_storage = nullptr;
   }
-  build_ptr->cubin_size       = 0;
   build_ptr->binary_search_fn = nullptr;
 
   return CUDA_SUCCESS;

@@ -88,16 +88,8 @@ try
     }
   }();
 
-  build_ptr->cc         = cc_major * 10 + cc_minor;
-  build_ptr->cubin      = nullptr;
-  build_ptr->cubin_size = 0;
-  if (!result.cubin.empty())
-  {
-    auto* cubin_copy = new char[result.cubin.size()];
-    std::memcpy(cubin_copy, result.cubin.data(), result.cubin.size());
-    build_ptr->cubin      = cubin_copy;
-    build_ptr->cubin_size = result.cubin.size();
-  }
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
   build_ptr->jit_compiler = result.compiler;
   build_ptr->sort_fn      = result.fn_ptr;
   build_ptr->keys_only    = has_items ? 0 : 1;
@@ -220,18 +212,8 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  if (build_ptr->jit_compiler)
-  {
-    delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
-    build_ptr->jit_compiler = nullptr;
-  }
-  if (build_ptr->cubin)
-  {
-    delete[] static_cast<char*>(build_ptr->cubin);
-    build_ptr->cubin = nullptr;
-  }
-  build_ptr->cubin_size = 0;
-  build_ptr->sort_fn    = nullptr;
+  cccl::detail::release_jit_artifacts(build_ptr);
+  build_ptr->sort_fn = nullptr;
 
   return CUDA_SUCCESS;
 }

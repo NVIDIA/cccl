@@ -72,16 +72,8 @@ try
             stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build_ptr->cc         = cc_major * 10 + cc_minor;
-  build_ptr->cubin      = nullptr;
-  build_ptr->cubin_size = 0;
-  if (!result.cubin.empty())
-  {
-    auto* cubin_copy = new char[result.cubin.size()];
-    std::memcpy(cubin_copy, result.cubin.data(), result.cubin.size());
-    build_ptr->cubin      = cubin_copy;
-    build_ptr->cubin_size = result.cubin.size();
-  }
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
   build_ptr->jit_compiler           = result.compiler;
   build_ptr->three_way_partition_fn = result.fn_ptr;
 
@@ -187,17 +179,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  if (build_ptr->jit_compiler)
-  {
-    delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
-    build_ptr->jit_compiler = nullptr;
-  }
-  if (build_ptr->cubin)
-  {
-    delete[] static_cast<char*>(build_ptr->cubin);
-    build_ptr->cubin = nullptr;
-  }
-  build_ptr->cubin_size             = 0;
+  cccl::detail::release_jit_artifacts(build_ptr);
   build_ptr->three_way_partition_fn = nullptr;
 
   return CUDA_SUCCESS;

@@ -62,16 +62,8 @@ try
             stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build->cc         = cc_major * 10 + cc_minor;
-  build->cubin      = nullptr;
-  build->cubin_size = 0;
-  if (!result.cubin.empty())
-  {
-    auto* cubin_copy = new char[result.cubin.size()];
-    std::memcpy(cubin_copy, result.cubin.data(), result.cubin.size());
-    build->cubin      = cubin_copy;
-    build->cubin_size = result.cubin.size();
-  }
+  build->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_cubin(result.cubin, build->cubin, build->cubin_size);
   build->jit_compiler        = result.compiler;
   build->segmented_reduce_fn = reinterpret_cast<void*>(result.fn_ptr);
 
@@ -168,17 +160,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  if (build_ptr->jit_compiler)
-  {
-    delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
-    build_ptr->jit_compiler = nullptr;
-  }
-  if (build_ptr->cubin)
-  {
-    delete[] static_cast<char*>(build_ptr->cubin);
-    build_ptr->cubin = nullptr;
-  }
-  build_ptr->cubin_size          = 0;
+  cccl::detail::release_jit_artifacts(build_ptr);
   build_ptr->segmented_reduce_fn = nullptr;
 
   return CUDA_SUCCESS;

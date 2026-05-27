@@ -201,17 +201,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  if (build_ptr->jit_compiler)
-  {
-    delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
-    build_ptr->jit_compiler = nullptr;
-  }
-  if (build_ptr->cubin)
-  {
-    delete[] static_cast<char*>(build_ptr->cubin);
-    build_ptr->cubin = nullptr;
-  }
-  build_ptr->cubin_size   = 0;
+  cccl::detail::release_jit_artifacts(build_ptr);
   build_ptr->histogram_fn = nullptr;
 
   return CUDA_SUCCESS;

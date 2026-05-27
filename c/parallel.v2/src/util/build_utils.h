@@ -12,11 +12,13 @@
 
 #include <cstring>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <cccl/c/types.h>
 #include <hostjit/config.hpp>
+#include <hostjit/jit_compiler.hpp>
 
 namespace cccl::detail
 {
@@ -148,23 +150,34 @@ private:
   std::vector<const char*> ptrs_;
 };
 
-// Copy cubin data into a heap-allocated buffer and store size; returns pointer (caller frees with delete[]).
-inline void* copy_cubin(const std::vector<char>& cubin, size_t* out_size)
+// Copy cubin data into a heap-allocated buffer the caller owns. std::make_unique
+// gives RAII between alloc and assign so a throw on the memcpy can't leak.
+// Caller eventually frees via release_jit_artifacts() (or delete[] on out_cubin).
+inline void copy_cubin(const std::vector<char>& cubin, void*& out_cubin, size_t& out_size)
 {
   if (cubin.empty())
   {
-    if (out_size)
-    {
-      *out_size = 0;
-    }
-    return nullptr;
+    out_cubin = nullptr;
+    out_size  = 0;
+    return;
   }
-  auto* buf = new char[cubin.size()];
-  std::memcpy(buf, cubin.data(), cubin.size());
-  if (out_size)
-  {
-    *out_size = cubin.size();
-  }
-  return buf;
+  auto buf = std::make_unique<char[]>(cubin.size());
+  std::memcpy(buf.get(), cubin.data(), cubin.size());
+  out_cubin = buf.release();
+  out_size  = cubin.size();
+}
+
+// Free the JIT compiler and cubin buffer common to every build_result_t in
+// c/parallel.v2/. Algorithm-specific fields (X_fn, determinism, etc.) get
+// nulled by the caller after this. Template'd over the build_result type so
+// each algorithm header doesn't need to include this one transitively.
+template <typename BuildResult>
+void release_jit_artifacts(BuildResult* build_ptr)
+{
+  delete static_cast<hostjit::JITCompiler*>(build_ptr->jit_compiler);
+  build_ptr->jit_compiler = nullptr;
+  delete[] static_cast<char*>(build_ptr->cubin);
+  build_ptr->cubin      = nullptr;
+  build_ptr->cubin_size = 0;
 }
 } // namespace cccl::detail
