@@ -45,6 +45,21 @@ using ::cuda::experimental::stf::mv;
 class exec_place;
 
 /**
+ * @brief Is @p stream currently participating in a CUDA graph capture?
+ *
+ * Returns `false` for `nullptr` (the legacy default stream is never
+ * capturing). `cudaStreamIsCapturing` is itself capture-safe, so this can be
+ * called from contexts where most other driver queries (`cuStreamGetId`,
+ * `cudaStreamGetDevice`, ...) would be rejected with
+ * `cudaErrorStreamCaptureUnsupported` and would *invalidate* the in-flight
+ * capture.
+ */
+[[nodiscard]] inline bool is_stream_capturing(cudaStream_t stream)
+{
+  return cuda_try<cudaStreamIsCapturing>(stream) != cudaStreamCaptureStatusNone;
+}
+
+/**
  * @brief Computes the CUDA device in which the stream was created
  */
 inline int get_device_from_stream(cudaStream_t stream)
@@ -54,12 +69,11 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-  auto capture_status = cudaStreamCaptureStatusNone;
-  if (cudaStreamIsCapturing(stream, &capture_status) == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
+  // participating in capture. Use the active device, which is the device on
+  // which the capture is being constructed.
+  if (is_stream_capturing(stream))
   {
-    // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
-    // participating in capture. Use the active device, which is the device on
-    // which the capture is being constructed.
     return cuda_try<cudaGetDevice>();
   }
 
@@ -97,9 +111,7 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
   {
     return k_no_stream_id;
   }
-  cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
-  const cudaError_t cap_err              = cudaStreamIsCapturing(stream, &capture_status);
-  if (cap_err == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  if (is_stream_capturing(stream))
   {
     return k_no_stream_id;
   }
