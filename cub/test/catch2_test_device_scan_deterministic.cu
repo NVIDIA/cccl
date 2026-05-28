@@ -5,8 +5,6 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/equal.h>
-
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/std/functional>
@@ -59,6 +57,8 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproduci
   {
     REQUIRE(
       cub::DeviceScan::ExclusiveScan(d_input.begin(), d_output.begin(), op, type{}, num_items, env) == cudaSuccess);
-    REQUIRE(thrust::equal(d_output.begin(), d_output.end(), d_reference.begin()));
+
+    // Verify bitwise equality of the reference and output results for every run
+    REQUIRE_THAT(detail::to_vec(d_reference), detail::BitwiseEqualsRange(detail::to_vec(d_output)));
   }
 }
