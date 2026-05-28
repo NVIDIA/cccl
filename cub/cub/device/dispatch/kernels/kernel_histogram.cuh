@@ -294,6 +294,21 @@ struct Transforms
       const LevelT first_level = wrapped_levels[0];
       const LevelT last_level  = wrapped_levels[num_bins];
 
+      // Defensive: if a user-supplied level array has non-monotonic endpoints
+      // (e.g. `last_level <= first_level`), the boundary check below would
+      // misclassify all samples as out-of-range. Fall back to UpperBound,
+      // which uses ordered comparisons only and produces correct results
+      // regardless of endpoint ordering.
+      if (!(first_level < last_level))
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+        return;
+      }
+
       // Out-of-range samples map to bin -1.
       if (s < first_level || !(s < last_level))
       {

@@ -108,6 +108,190 @@ static constexpr int chunked_smem_bins_max_single_channel =
 // the per-bin atomic distribution.
 static constexpr int hybrid_smem_split_bin_single_channel = 49152;
 
+// ---------------------------------------------------------------------------
+// Histogram algorithm catalog and selector.
+//
+// Every dispatch decision in this file goes through the `algorithm` enum and
+// the `select_algorithm` function below. The per-algorithm dispatch helpers
+// (`dispatch<>`, `dispatch_hybrid_single_pass_staging_smem`) stay; they are
+// launchers, not pickers. To add or retire a kernel, add an enumerator here,
+// teach `select_algorithm` when to pick it, and add a `case` to
+// `dispatch_by_algorithm`.
+//
+// Centralising the choice has two purposes. (1) The dispatch trade-off
+// surface (single vs multi channel, EVEN vs RANGE classify cost, bin count,
+// element count, sample width) has grown to the point where ad-hoc cascades
+// across two dispatch entry points make it hard to reason about which kernel
+// runs for a given workload. (2) Per-algorithm ablation runs (forcing one
+// kernel on every cell of a sweep matrix) need a single override point;
+// the `CUB_HISTOGRAM_FORCE_ALGORITHM` macro below provides that.
+enum class algorithm : unsigned char
+{
+  // Tier-0: bins <= 256, fits in the legacy fixed-size privatized SMEM.
+  // The deeper `dispatch<>` chooses between the cooperative SweepPersistent
+  // kernel (single launch) and the legacy Init+Sweep pair.
+  smem_priv_256,
+
+  // Tier-1/2/3: extended SMEM-priv tiers selected per channel count.
+  smem_priv_2k, // 2048 bins (multi-channel medium, single-channel medium)
+  smem_priv_8k, // 8192 bins (single-channel large)
+  smem_priv_16k, // 16384 bins (single-channel xlarge, multi-channel up to 3 active)
+
+  // Hybrid SMEM+GMEM single-pass kernel. One cooperative launch; bins in
+  // (xlarge, chunked_max] for sizeof(SampleT)<=4 single-channel paths.
+  hybrid_single_pass,
+
+  // High-bin GMEM-priv path with the persistent direct-atomic-to-output
+  // kernel + per-block SMEM cuckoo cache. Cache absorbs cross-block
+  // contention for low-entropy hot-bin workloads.
+  gmem_priv_cuckoo,
+
+  // High-bin GMEM-priv path with the cooperative SweepPersistent kernel
+  // (per-block privatised histograms + atomic-free gather merge after
+  // grid.sync). Wins on bandwidth-bound large-input workloads where the
+  // cuckoo cache's lookup chains stall.
+  gmem_priv_sweep,
+};
+
+// Inputs to the selector. Every value used to make a dispatch decision must
+// come through here.
+struct selector_features
+{
+  int num_active_channels; // 1, 2, 3, 4
+  int sample_bytes; // sizeof(SampleT)
+  bool is_byte_sample; // sample_bytes == 1
+  bool is_even; // EVEN entry point (true) or RANGE (false)
+  int num_bins; // max_num_output_bins across active channels
+  long long num_pixels; // total pixels per active channel
+};
+
+// Pick a single algorithm for one cell. Rules are first-match.
+//
+// The selector is split into two regions:
+//
+//   1. Low-bin region (num_bins <= 16384): SMEM-privatised tiers handle these.
+//      Tiers cascade by bin count: smem_priv_256 -> 2K -> 8K -> 16K. Multi-
+//      channel non-EVEN cuts the cascade short at 2K because the per-block
+//      privatisation storage scales with NUM_ACTIVE_CHANNELS and the
+//      SearchTransform classify cost dominates beyond that point.
+//
+//   2. High-bin region (num_bins > 16384): one of three algorithms runs.
+//      Per the panel-based ablation analysis (see autocuda report on
+//      2026-05-28):
+//
+//      Single-channel:
+//        * num_pixels >= ~256M  -> sweep    (hybrid collapses at large input)
+//        * num_bins  >  ~524K   -> cuckoo   (hybrid's tile gets too big)
+//        * RANGE && sizeof==8   -> cuckoo   (binary-search classify hurts hybrid)
+//        * else                 -> hybrid   (single-channel default)
+//
+//      Multi-channel:
+//        * num_pixels >= ~256M  -> sweep    (large-input default)
+//        * else                 -> cuckoo   (multi-channel default)
+template <bool IsByteSample>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features const& f)
+{
+  // CUB_HISTOGRAM_FORCE_ALGORITHM: when defined to the unqualified name of
+  // an `algorithm` enumerator, override every selector decision to return
+  // that algorithm. Used by per-algorithm ablation builds.
+  //
+  // The byte-sample branch still bypasses to `smem_priv_256` because the
+  // other algorithms are not valid for byte-sample inputs.
+#ifdef CUB_HISTOGRAM_FORCE_ALGORITHM
+  if constexpr (IsByteSample)
+  {
+    return algorithm::smem_priv_256;
+  }
+  (void) f;
+  return algorithm::CUB_HISTOGRAM_FORCE_ALGORITHM;
+#else
+  // Byte samples: 256-entry pass-thru privatized histograms, then a final
+  // scale-transform combine. Bin counts above that are not legal for byte
+  // samples (LevelT == SampleT and num_bins fits in [0, 255]).
+  if constexpr (IsByteSample)
+  {
+    return algorithm::smem_priv_256;
+  }
+
+  // -----------------------------------------------------------------------
+  // Low-bin region: SMEM-priv tier cascade.
+  // -----------------------------------------------------------------------
+  if (f.num_bins <= max_privatized_smem_bins)
+  {
+    return algorithm::smem_priv_256;
+  }
+  if (f.num_active_channels == 1)
+  {
+    if (f.num_bins <= max_extended_smem_bins_single_channel)
+    {
+      return algorithm::smem_priv_2k;
+    }
+    if (f.num_bins <= max_extended_smem_bins_single_channel_large)
+    {
+      return algorithm::smem_priv_8k;
+    }
+    if (f.num_bins <= max_extended_smem_bins_single_channel_xlarge)
+    {
+      return algorithm::smem_priv_16k;
+    }
+  }
+  else
+  {
+    // Multi-channel SMEM-priv tiers: only the medium tier (2K) is universally
+    // safe; the large/xlarge tiers stay in play for EVEN (cheap classify)
+    // and only with at most 3 active channels (dyn-SMEM headroom).
+    if (f.num_bins <= max_extended_smem_bins_single_channel)
+    {
+      return algorithm::smem_priv_2k;
+    }
+    if (f.is_even && f.num_bins <= max_extended_smem_bins_single_channel_large)
+    {
+      return algorithm::smem_priv_8k;
+    }
+    if (f.is_even && f.num_active_channels <= 3
+        && f.num_bins <= max_extended_smem_bins_single_channel_xlarge)
+    {
+      return algorithm::smem_priv_16k;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // High-bin region (num_bins > 16384).
+  // -----------------------------------------------------------------------
+  constexpr long long kSweepPixelThreshold = 1LL << 28; // ~256M pixels
+
+  // Large-input cells route to sweep (gather-merge persistent) regardless of
+  // channel layout. Hybrid collapses here (geomean 0.21-1.49x with many
+  // regressions); cuckoo's cache lookup chains stall at this scale.
+  if (f.num_pixels >= kSweepPixelThreshold)
+  {
+    return algorithm::gmem_priv_sweep;
+  }
+
+  if (f.num_active_channels > 1)
+  {
+    // Multi-channel: hybrid is single-channel-only. Cuckoo is the small/
+    // medium-input default.
+    return algorithm::gmem_priv_cuckoo;
+  }
+
+  // Single-channel high-bin region. Hybrid is capped at
+  // `chunked_smem_bins_max_single_channel` (the dispatch helper's
+  // `kMaxTotalBins` parameter); above that, bins outside the
+  // primary+secondary tile go uncounted. Also skip hybrid when the RANGE
+  // classify cost would dominate (F64 SearchTransform).
+  if (f.num_bins > chunked_smem_bins_max_single_channel)
+  {
+    return algorithm::gmem_priv_cuckoo;
+  }
+  if (!f.is_even && f.sample_bytes >= 8)
+  {
+    return algorithm::gmem_priv_cuckoo;
+  }
+  return algorithm::hybrid_single_pass;
+#endif // CUB_HISTOGRAM_FORCE_ALGORITHM
+}
+
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           typename SampleIteratorT,
@@ -440,7 +624,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {})
+  KernelLauncherFactory launcher_factory = {},
+  // When the caller already picked between the direct-atomic-to-output
+  // (cuckoo) path and the cooperative SweepPersistent (gather-merge) path
+  // via the unified algorithm selector, this overrides the legacy
+  // `direct_atomic_bin_threshold` heuristic. Set true to force the
+  // SweepPersistent / Init+Sweep path regardless of bin count.
+  bool disable_direct_atomic = false)
 {
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
@@ -646,13 +836,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // does not, and because warp-level coalescing is more effective when
   // the same warp scans more samples (i.e. more chances for matching
   // bins per warp scan).
+  // Caller may have already picked sweep over direct-atomic via the unified
+  // algorithm selector; honour that. Otherwise fall back to the bin-count-
+  // based heuristic for backwards compatibility.
   constexpr int direct_atomic_bin_threshold_single = 1 << 20;
   constexpr int direct_atomic_bin_threshold_multi  = 16384;
   const int direct_atomic_bin_threshold =
     (NUM_ACTIVE_CHANNELS > 1) ? direct_atomic_bin_threshold_multi : direct_atomic_bin_threshold_single;
   const bool use_direct_atomic_to_output =
 #if _CCCL_HOSTED()
-    (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && max_num_output_bins >= direct_atomic_bin_threshold);
+    (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && !disable_direct_atomic
+     && max_num_output_bins >= direct_atomic_bin_threshold);
 #else
     false;
 #endif
@@ -1530,203 +1724,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
   return cudaSuccess;
 }
 
-// Chunked dyn-SMEM staging-fused dispatch helper for non-byte single-channel samples.
-//
-// For bin counts that exceed the dyn-SMEM xlarge tier (16384) but fit within the chunk
-// grid `kChunkSize * kNumChunks`, this helper runs the existing dyn-SMEM staging-combine
-// path `kNumChunks` times, each pass with a `ChunkedDecodeOp<Inner>` that maps samples
-// outside the chunk window to bin -1. Trades `kNumChunks` x sample reads for `kNumChunks`
-// x SMEM atomicAdd_block (vs. 1x sample read + 1x GMEM atomicAdd_block on the legacy
-// GMEM-priv persistent kernel path).
-//
-// The temporary-storage size is computed by the per-chunk dispatch's `d_temp_storage==nullptr`
-// pre-pass; subsequent chunks reuse the same temp storage since their geometry is identical
-// (same grid, same per-block staging slab size for `kChunkSize` privatized bins).
-template <int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
-          int kChunkSize,
-          int kNumChunks,
-          typename InnerPrivatizedDecodeOpT,
-          typename OutputDecodeOpT,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename OffsetT,
-          typename PolicySelector,
-          typename KernelSource,
-          typename KernelLauncherFactory>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_chunked_staging_smem(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  SampleIteratorT d_samples,
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-  ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op,
-  ::cuda::std::array<InnerPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> inner_privatized_decode_op,
-  int max_num_output_bins,
-  OffsetT num_row_pixels,
-  OffsetT num_rows,
-  OffsetT row_stride_samples,
-  cudaStream_t stream,
-  PolicySelector policy_selector,
-  KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {})
-{
-  using ChunkedPrivatizedDecodeOpT = ChunkedDecodeOp<InnerPrivatizedDecodeOpT>;
-
-  constexpr int kPrivatizedSmemBins = max_extended_smem_bins_single_channel_xlarge;
-
-  // Build the chunked privatized decode op array (per-channel). The chunk window is set
-  // per-iteration below.
-  ::cuda::std::array<ChunkedPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> chunked_privatized_decode_op{};
-  for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
-  {
-    chunked_privatized_decode_op[ch].inner = inner_privatized_decode_op[ch];
-  }
-
-  // Balanced-chunks fix (worker-2 brief 11): split max_num_output_bins evenly across
-  // chunks so every chunk has the same dyn-SMEM footprint, the same per-SM occupancy,
-  // the same `num_thread_blocks`, and one uniform temp-storage requirement.
-  //
-  // The previous implementation used a fixed `kChunkSize` for all but the last chunk,
-  // and the size pre-pass (`d_temp_storage == nullptr`) returned after just the first
-  // chunk. For Bins=60000 with kChunkSize=32768, chunk 0 had size 32768 and chunk 1 had
-  // size 27232; the smaller chunk 1's lower dyn-SMEM gave it higher per-SM occupancy
-  // and more `num_thread_blocks`, so its real launch's `alias_temporaries` returned
-  // `cudaErrorInvalidValue`. Bench harnesses ignore dispatch return codes so chunk 1
-  // failed silently, leaving bins 32768..59999 empty and inflating the reported BW
-  // for any Bins=60000 chunked-tier configuration (single-channel EVEN/RANGE,
-  // F64/I32, both entropies).
-  //
-  // Equal-size chunks (ceil(M / chunks_needed) bins each) eliminate the bug at its root:
-  // both chunks have identical geometry so the size pre-pass needs only one inner
-  // dispatch call, and the runtime loop reuses the same allocation safely.
-  const int chunks_needed =
-    (max_num_output_bins + kChunkSize - 1) / kChunkSize; // ceil(max_num_output_bins / kChunkSize)
-  const int chunk_size_balanced =
-    (chunks_needed > 0) ? (max_num_output_bins + chunks_needed - 1) / chunks_needed : 0;
-
-  // Size pre-pass: query temp storage with chunk_size = balanced upper-bound. The actual
-  // chunks are at most `chunk_size_balanced` bins, so the same allocation is sufficient.
-  if (d_temp_storage == nullptr)
-  {
-    if (chunks_needed == 0)
-    {
-      temp_storage_bytes = 0;
-      return cudaSuccess;
-    }
-
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> probe_levels{};
-    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
-    {
-      probe_levels[ch] = chunk_size_balanced + 1;
-      chunked_privatized_decode_op[ch].SetChunk(0, chunk_size_balanced);
-    }
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> probe_outputs{};
-    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
-    {
-      probe_outputs[ch] = nullptr;
-    }
-
-    if (const auto error = CubDebug(
-          (detail::histogram::dispatch<
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS,
-            kPrivatizedSmemBins,
-            false, // IsDeviceInit
-            false, // IsEven (unused for host-init)
-            false // IsByteSample (unused for host-init)
-            >(/*d_temp_storage=*/nullptr,
-              temp_storage_bytes,
-              d_samples,
-              probe_outputs,
-              probe_levels,
-              probe_levels,
-              output_decode_op,
-              chunked_privatized_decode_op,
-              chunk_size_balanced,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
-    {
-      return error;
-    }
-    return cudaSuccess;
-  }
-
-  // Real launch loop: each chunk reuses the same balanced-chunk-sized temp storage.
-  for (int chunk_idx = 0; chunk_idx < chunks_needed; ++chunk_idx)
-  {
-    const int chunk_start = chunk_idx * chunk_size_balanced;
-    if (chunk_start >= max_num_output_bins)
-    {
-      break; // Defensive; should not trigger for chunks_needed = ceil(M / kChunkSize).
-    }
-    const int chunk_size = ::cuda::std::min(chunk_size_balanced, max_num_output_bins - chunk_start);
-
-    // Set chunk window in the per-channel chunked decode ops.
-    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
-    {
-      chunked_privatized_decode_op[ch].SetChunk(chunk_start, chunk_size);
-    }
-
-    // Offset output-histogram pointers so the chunk writes its slice of the final histogram.
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> chunk_output_histograms{};
-    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
-    {
-      chunk_output_histograms[ch] = d_output_histograms[ch] + chunk_start;
-    }
-
-    // Each chunk overrides `num_privatized_levels` to `chunk_size + 1` so the inner dispatch
-    // computes per-block staging slabs of size `chunk_size` (vs. the original full bin count).
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> chunk_levels{};
-    for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
-    {
-      chunk_levels[ch] = chunk_size + 1;
-    }
-
-    if (const auto error = CubDebug(
-          (detail::histogram::dispatch<
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS,
-            kPrivatizedSmemBins,
-            false, // IsDeviceInit
-            false, // IsEven (unused for host-init)
-            false // IsByteSample (unused for host-init)
-            >(d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              chunk_output_histograms,
-              chunk_levels,
-              chunk_levels,
-              output_decode_op,
-              chunked_privatized_decode_op,
-              chunk_size,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
-    {
-      return error;
-    }
-
-    // Defense-in-depth: if any inner-dispatch launch encountered an asynchronous error
-    // (e.g. cudaErrorInvalidConfiguration), surface it now so callers cannot silently
-    // accept a partially-launched chunked histogram.
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
-    {
-      return error;
-    }
-  }
-
-  return cudaSuccess;
-}
-
 // Hybrid SMEM+GMEM single-pass dispatch helper.
 // Issues a SINGLE cooperative kernel launch that handles both bin chunks of the
 // privatized-bin space in ONE sweep through the input. Bins in the primary range
@@ -1776,24 +1773,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
     // Fallback to the chunked dispatch if the bin count fits entirely in the SMEM
     // primary range (no secondary GMEM region needed). Should not occur in normal
     // operation since callers gate this dispatch on max_num_output_bins > xlarge.
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   const int hybrid_split_bin      = kSplitBin;
@@ -1805,24 +1785,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     (void) error;
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   const histogram_policy active_policy = policy_selector(cc);
@@ -1833,24 +1796,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
   {
     (void) error;
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   // dyn-SMEM bytes per block: per-channel kSplitBin counters.
@@ -1902,24 +1848,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
         fused_hybrid_kernel_ptr, dyn_smem_bytes_for_staging))
   {
     (void) error;
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   if (const auto error =
@@ -1927,46 +1856,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
           fused_sm_occupancy, fused_hybrid_kernel_ptr, threads_per_block, dyn_smem_bytes_for_staging)))
   {
     (void) error;
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   if (fused_sm_occupancy <= 0)
   {
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   // Calculate launch geometry: pixels per block and tile counts.
@@ -1984,24 +1879,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
 
   if (num_thread_blocks <= 0)
   {
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   // Allocate per-block staging slabs:
@@ -2084,24 +1962,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   {
     // Fallback: re-issue via the chunked dispatch.
     (void) cudaGetLastError();
-    return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         chunked_smem_chunk_size_single_channel,
-                                         chunked_smem_num_chunks_single_channel>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_output_histograms,
-      output_decode_op,
-      inner_privatized_decode_op,
-      max_num_output_bins,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      stream,
-      policy_selector,
-      kernel_source,
-      launcher_factory);
+    return cudaErrorNotSupported;
   }
 
   if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -2112,24 +1973,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   return cudaSuccess;
 #else
   // Device-side dispatch is not supported for the cooperative hybrid path.
-  return dispatch_chunked_staging_smem<NUM_CHANNELS,
-                                       NUM_ACTIVE_CHANNELS,
-                                       chunked_smem_chunk_size_single_channel,
-                                       chunked_smem_num_chunks_single_channel>(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_samples,
-    d_output_histograms,
-    output_decode_op,
-    inner_privatized_decode_op,
-    max_num_output_bins,
-    num_row_pixels,
-    num_rows,
-    row_stride_samples,
-    stream,
-    policy_selector,
-    kernel_source,
-    launcher_factory);
+  return cudaErrorNotSupported;
 #endif
 }
 
@@ -2195,6 +2039,194 @@ public:
                       ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
   }
 };
+
+// Single dispatch entry point used by both `dispatch_even` and `dispatch_range`.
+// All algorithm choices flow through this helper: every histogram launch picks
+// a member of `algorithm` via `select_algorithm` and then this switch maps
+// that to the launcher.
+//
+// Arguments mirror what the per-algorithm launchers need: privatized + output
+// level counts, decode-op arrays (output + privatized), max bin count, and
+// the launch geometry. The hybrid launcher ignores `num_privatized_levels`.
+//
+// On hybrid setup failure (`cudaErrorNotSupported` from
+// `dispatch_hybrid_single_pass_staging_smem`), this helper falls through to
+// the GMEM-priv path so users do not see a hard error on devices/conditions
+// where hybrid's cooperative launch cannot be set up.
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT,
+          typename PolicySelector,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
+  algorithm algo,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  SampleIteratorT d_samples,
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels,
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+  ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op,
+  ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op,
+  int max_num_output_bins,
+  OffsetT num_row_pixels,
+  OffsetT num_rows,
+  OffsetT row_stride_samples,
+  cudaStream_t stream,
+  PolicySelector policy_selector,
+  KernelSource kernel_source,
+  KernelLauncherFactory launcher_factory)
+{
+  switch (algo)
+  {
+    case algorithm::smem_priv_256: {
+      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_samples,
+        d_output_histograms,
+        num_privatized_levels,
+        num_output_levels,
+        output_decode_op,
+        privatized_decode_op,
+        max_num_output_bins,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        policy_selector,
+        kernel_source,
+        launcher_factory);
+    }
+    case algorithm::smem_priv_2k: {
+      constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_samples,
+        d_output_histograms,
+        num_privatized_levels,
+        num_output_levels,
+        output_decode_op,
+        privatized_decode_op,
+        max_num_output_bins,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        policy_selector,
+        kernel_source,
+        launcher_factory);
+    }
+    case algorithm::smem_priv_8k: {
+      constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_samples,
+        d_output_histograms,
+        num_privatized_levels,
+        num_output_levels,
+        output_decode_op,
+        privatized_decode_op,
+        max_num_output_bins,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        policy_selector,
+        kernel_source,
+        launcher_factory);
+    }
+    case algorithm::smem_priv_16k: {
+      constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_samples,
+        d_output_histograms,
+        num_privatized_levels,
+        num_output_levels,
+        output_decode_op,
+        privatized_decode_op,
+        max_num_output_bins,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        policy_selector,
+        kernel_source,
+        launcher_factory);
+    }
+    case algorithm::hybrid_single_pass: {
+      // Hybrid is single-channel-only. The selector is responsible for not
+      // routing multi-channel cells here; if it does, fall through to the
+      // GMEM-priv path below.
+      if constexpr (NUM_ACTIVE_CHANNELS == 1)
+      {
+        const auto status =
+          dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
+                                                   NUM_ACTIVE_CHANNELS,
+                                                   hybrid_smem_split_bin_single_channel,
+                                                   chunked_smem_bins_max_single_channel>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            output_decode_op,
+            privatized_decode_op,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            policy_selector,
+            kernel_source,
+            launcher_factory);
+        if (status == cudaSuccess || status != cudaErrorNotSupported)
+        {
+          return status;
+        }
+        // hybrid setup failed; fall through to the GMEM-priv path.
+      }
+      [[fallthrough]];
+    }
+    case algorithm::gmem_priv_cuckoo:
+    case algorithm::gmem_priv_sweep: {
+      // Both go through PRIVATIZED_SMEM_BINS=0 in the deeper `dispatch<>`,
+      // which chooses between the direct-atomic-to-output kernel (with
+      // cuckoo cache) and the SweepPersistent gather-merge kernel based on
+      // `disable_direct_atomic`. We pass that flag from the selector's pick.
+      constexpr int PRIVATIZED_SMEM_BINS  = 0;
+      const bool disable_direct_atomic_io = (algo == algorithm::gmem_priv_sweep);
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_samples,
+        d_output_histograms,
+        num_privatized_levels,
+        num_output_levels,
+        output_decode_op,
+        privatized_decode_op,
+        max_num_output_bins,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        policy_selector,
+        kernel_source,
+        launcher_factory,
+        disable_direct_atomic_io);
+    }
+  }
+  return cudaErrorInvalidValue; // unreachable
+}
 
 template <
   int NUM_CHANNELS,
@@ -2303,224 +2335,36 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
         max_levels = num_output_levels[channel];
       }
     }
-    int max_num_output_bins = max_levels - 1;
+    const int max_num_output_bins = max_levels - 1;
 
-    // For single-channel non-byte samples with bins in (256, 16384], use the
-    // dyn-SMEM staging+fused tier. The fused kernel sweeps into per-block
-    // dyn-SMEM, flushes to a per-block GMEM staging slab, and reduces across
-    // blocks via cooperative_groups grid_group::sync().
-    //
-    // Three tiers cover the range:
-    //   - medium: bins in (256, 2048],   8 KB dyn-SMEM/block (max occupancy).
-    //   - large:  bins in (2048, 8192],  32 KB dyn-SMEM/block.
-    //   - xlarge: bins in (8192, 16384], 64 KB dyn-SMEM/block.
-    //
-    // For multi-active-channel non-byte samples, the dyn-SMEM size scales with
-    // NUM_ACTIVE_CHANNELS, so xlarge (16384*4*Nch bytes) exceeds B200's
-    // ~228 KB per-CTA cap for Nch >= 4. We restrict multi-channel routing to
-    // medium and large tiers (Nch * tier * 4 bytes <= ~96 KB).
-    if constexpr (NUM_ACTIVE_CHANNELS == 1)
-    {
-      if (max_num_output_bins > max_privatized_smem_bins
-          && max_num_output_bins <= max_extended_smem_bins_single_channel)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<
-                NUM_CHANNELS,
-                NUM_ACTIVE_CHANNELS,
-                PRIVATIZED_SMEM_BINS,
-                false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
-                                     num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
-                                     max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
-                                     policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-      if (max_num_output_bins > max_extended_smem_bins_single_channel
-          && max_num_output_bins <= max_extended_smem_bins_single_channel_large)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<
-                NUM_CHANNELS,
-                NUM_ACTIVE_CHANNELS,
-                PRIVATIZED_SMEM_BINS,
-                false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
-                                     num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
-                                     max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
-                                     policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-      if (max_num_output_bins > max_extended_smem_bins_single_channel_large
-          && max_num_output_bins <= max_extended_smem_bins_single_channel_xlarge)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<
-                NUM_CHANNELS,
-                NUM_ACTIVE_CHANNELS,
-                PRIVATIZED_SMEM_BINS,
-                false, // IsDeviceInit
-                false, // IsEven (unused for host-init)
-                false // IsByteSample (unused for host-init)
-                >(d_temp_storage,
-                  temp_storage_bytes,
-                  d_samples,
-                  d_output_histograms,
-                  num_output_levels,
-                  num_output_levels,
-                  output_decode_op,
-                  privatized_decode_op,
-                  max_num_output_bins,
-                  num_row_pixels,
-                  num_rows,
-                  row_stride_samples,
-                  stream,
-                  policy_selector,
-                  kernel_source,
-                  launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
+    selector_features features{};
+    features.num_active_channels = NUM_ACTIVE_CHANNELS;
+    features.sample_bytes        = sizeof(SampleT);
+    features.is_byte_sample      = (sizeof(SampleT) == 1);
+    features.is_even             = false;
+    features.num_bins            = max_num_output_bins;
+    features.num_pixels =
+      static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
+    const algorithm algo = select_algorithm<false>(features);
 
-      // Hybrid single-pass tier for RANGE non-uniform single-channel: xlarge < bins <=
-      // chunked_smem_bins_max_single_channel. Gated on sizeof(SampleT) <= 4 because
-      // F64 SearchTransform has high per-sample binary-search cost which makes single-pass
-      // (one classify per sample) less of a relative win vs the 2-pass chunked path
-      // (per brief-16: F64 SearchTransform regressed; I32 wins).
-      // Falls back to direct-atomic via the bottom dispatch on setup/launch failure.
-      if constexpr (sizeof(SampleT) <= 4)
-      {
-        if (max_num_output_bins > max_extended_smem_bins_single_channel_xlarge
-            && max_num_output_bins <= chunked_smem_bins_max_single_channel)
-        {
-          if (const auto error =
-                CubDebug((dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
-                                                                   NUM_ACTIVE_CHANNELS,
-                                                                   hybrid_smem_split_bin_single_channel,
-                                                                   chunked_smem_bins_max_single_channel>(
-                  d_temp_storage,
-                  temp_storage_bytes,
-                  d_samples,
-                  d_output_histograms,
-                  output_decode_op,
-                  privatized_decode_op,
-                  max_num_output_bins,
-                  num_row_pixels,
-                  num_rows,
-                  row_stride_samples,
-                  stream,
-                  policy_selector,
-                  kernel_source,
-                  launcher_factory))))
-          {
-            return error;
-          }
-          return cudaSuccess;
-        }
-      }
-    }
-    // Multi-channel dyn-SMEM staging tiers (range path). For multi-channel
-    // SearchTransform-based dispatch the per-sample compute (binary search in
-    // levels) dominates over atomic-add throughput, so the higher-occupancy
-    // GMEM-priv path (PRIVATIZED_SMEM_BINS=0 + persistent kernel) often beats
-    // the lower-occupancy SMEM-priv staging path. We therefore only enable the
-    // medium tier (2048) for multi-channel range, where occupancy stays high
-    // (Nch * 2048 * 4 = 24 KB at Nch=3, plenty of headroom).
-    else if constexpr (NUM_ACTIVE_CHANNELS >= 2 && NUM_ACTIVE_CHANNELS <= 4)
-    {
-      if (max_num_output_bins > max_privatized_smem_bins
-          && max_num_output_bins <= max_extended_smem_bins_single_channel)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<
-                NUM_CHANNELS,
-                NUM_ACTIVE_CHANNELS,
-                PRIVATIZED_SMEM_BINS,
-                false, false, false>(d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms,
-                                     num_output_levels, num_output_levels, output_decode_op, privatized_decode_op,
-                                     max_num_output_bins, num_row_pixels, num_rows, row_stride_samples, stream,
-                                     policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-    }
-    // Dispatch
-    if (max_num_output_bins > max_privatized_smem_bins)
-    {
-      // Too many bins to keep in shared memory.
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = (unused for host-init) */ false,
-                                         /* IsByteSample = (unused for host-init) */ false>(
-              d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_output_levels,
-              num_output_levels,
-              output_decode_op,
-              privatized_decode_op,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
-      {
-        return error;
-      }
-    }
-    else
-    {
-      // Dispatch shared-privatized approach
-      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = (unused for host-init) */ false,
-                                         /* IsByteSample = (unused for host-init) */ false>(
-              d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_output_levels,
-              num_output_levels,
-              output_decode_op,
-              privatized_decode_op,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
-      {
-        return error;
-      }
-    }
+    return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      algo,
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      num_output_levels,
+      num_output_levels,
+      output_decode_op,
+      privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory)));
   }
 
   return cudaSuccess;
@@ -2635,8 +2479,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     // Use the pass-thru transform op for converting privatized bins to output bins
     using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
-    using CommonT = typename TransformsT::ScaleTransform::CommonT;
-
     ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
@@ -2660,213 +2502,36 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
         max_levels = num_levels;
       }
     }
-    int max_num_output_bins = max_levels - 1;
+    const int max_num_output_bins = max_levels - 1;
 
-    // Dyn-SMEM staging+fused tiers (single-channel: medium/large/xlarge;
-    // multi-channel: medium/large only).
-    if constexpr (NUM_ACTIVE_CHANNELS == 1)
-    {
-      if (max_num_output_bins > max_privatized_smem_bins
-          && max_num_output_bins <= max_extended_smem_bins_single_channel)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-                d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms, num_output_levels,
-                num_output_levels, output_decode_op, privatized_decode_op, max_num_output_bins, num_row_pixels,
-                num_rows, row_stride_samples, stream, policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-      if (max_num_output_bins > max_extended_smem_bins_single_channel
-          && max_num_output_bins <= max_extended_smem_bins_single_channel_large)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-                d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms, num_output_levels,
-                num_output_levels, output_decode_op, privatized_decode_op, max_num_output_bins, num_row_pixels,
-                num_rows, row_stride_samples, stream, policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-      if (max_num_output_bins > max_extended_smem_bins_single_channel_large
-          && max_num_output_bins <= max_extended_smem_bins_single_channel_xlarge)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                num_output_levels,
-                num_output_levels,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                policy_selector,
-                kernel_source,
-                launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
+    selector_features features{};
+    features.num_active_channels = NUM_ACTIVE_CHANNELS;
+    features.sample_bytes        = sizeof(SampleT);
+    features.is_byte_sample      = (sizeof(SampleT) == 1);
+    features.is_even             = true;
+    features.num_bins            = max_num_output_bins;
+    features.num_pixels =
+      static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
+    const algorithm algo = select_algorithm<false>(features);
 
-      // Chunked dyn-SMEM staging-fused tier: xlarge < bins <= chunked_smem_bins_max_single_channel.
-      // EVEN single-channel only.
-      //
-      // Uses the hybrid single-pass dispatch which classifies each sample once and routes
-      // chunk0 to dyn-SMEM and chunk1 to per-block GMEM staging in a single sweep, eliminating
-      // the 2x sample re-read of the chunked path. Falls back to chunked dispatch on any
-      // setup or launch failure (which handles correctness via the verified-correct chunked path).
-      if (max_num_output_bins > max_extended_smem_bins_single_channel_xlarge
-          && max_num_output_bins <= chunked_smem_bins_max_single_channel)
-      {
-        if (const auto error =
-              CubDebug((dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
-                                                                 NUM_ACTIVE_CHANNELS,
-                                                                 hybrid_smem_split_bin_single_channel,
-                                                                 chunked_smem_bins_max_single_channel>(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                policy_selector,
-                kernel_source,
-                launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-    }
-    else if constexpr (NUM_ACTIVE_CHANNELS >= 2 && NUM_ACTIVE_CHANNELS <= 4)
-    {
-      if (max_num_output_bins > max_privatized_smem_bins
-          && max_num_output_bins <= max_extended_smem_bins_single_channel)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-                d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms, num_output_levels,
-                num_output_levels, output_decode_op, privatized_decode_op, max_num_output_bins, num_row_pixels,
-                num_rows, row_stride_samples, stream, policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-      if (max_num_output_bins > max_extended_smem_bins_single_channel
-          && max_num_output_bins <= max_extended_smem_bins_single_channel_large)
-      {
-        constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
-        if (const auto error = CubDebug(
-              (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-                d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms, num_output_levels,
-                num_output_levels, output_decode_op, privatized_decode_op, max_num_output_bins, num_row_pixels,
-                num_rows, row_stride_samples, stream, policy_selector, kernel_source, launcher_factory))))
-        {
-          return error;
-        }
-        return cudaSuccess;
-      }
-      if constexpr (NUM_ACTIVE_CHANNELS <= 3)
-      {
-        if (max_num_output_bins > max_extended_smem_bins_single_channel_large
-            && max_num_output_bins <= max_extended_smem_bins_single_channel_xlarge)
-        {
-          constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
-          if (const auto error = CubDebug(
-                (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-                  d_temp_storage, temp_storage_bytes, d_samples, d_output_histograms, num_output_levels,
-                  num_output_levels, output_decode_op, privatized_decode_op, max_num_output_bins, num_row_pixels,
-                  num_rows, row_stride_samples, stream, policy_selector, kernel_source, launcher_factory))))
-          {
-            return error;
-          }
-          return cudaSuccess;
-        }
-      }
-    }
-    if (max_num_output_bins > max_privatized_smem_bins)
-    {
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
-                                         /* IsByteSample = */ false>(
-              d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_output_levels,
-              num_output_levels,
-              output_decode_op,
-              privatized_decode_op,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
-      {
-        return error;
-      }
-    }
-    else
-    {
-      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NUM_CHANNELS,
-                                         NUM_ACTIVE_CHANNELS,
-                                         PRIVATIZED_SMEM_BINS,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
-                                         /* IsByteSample = */ false>(
-              d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_output_levels,
-              num_output_levels,
-              output_decode_op,
-              privatized_decode_op,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
-      {
-        return error;
-      }
-    }
+    return CubDebug((dispatch_by_algorithm<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      algo,
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      num_output_levels,
+      num_output_levels,
+      output_decode_op,
+      privatized_decode_op,
+      max_num_output_bins,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      policy_selector,
+      kernel_source,
+      launcher_factory)));
   }
 
   return cudaSuccess;
