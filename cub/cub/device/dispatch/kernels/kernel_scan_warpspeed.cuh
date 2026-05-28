@@ -286,10 +286,10 @@ struct agent_warpspeed_scan
   static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
   static constexpr bool isInclusive = ForceInclusive || !hasInit;
 
-  warpspeed::SpecialRegisters specialRegisters;
-  scanKernelParams<InputT, OutputT, AccumT> params;
+  const warpspeed::SpecialRegisters specialRegisters;
+  const scanKernelParams<InputT, OutputT, AccumT> params;
   ScanOpT scan_op;
-  RealInitValueT real_init_value;
+  const RealInitValueT real_init_value;
   ScanResources<PolicySelector, InputT, OutputT, AccumT>& res;
 
   template <typename PhaseT>
@@ -730,17 +730,15 @@ struct agent_warpspeed_scan
 #  pragma unroll 1
     while (true)
     {
-      // Get stages. When these objects go out of scope, the stage of the resource
-      // is automatically incremented.
+      // Get stages. When these objects go out of scope, the stage of the resource is automatically incremented.
       warpspeed::SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.nextStage();
       warpspeed::SmemStage stageInOut            = res.smemInOut.nextStage();
       warpspeed::SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.nextStage();
       warpspeed::SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.nextStage();
 
-      // Split the stages into phases. Each resource goes through phases where it
-      // is writeable by a set of threads and readable by a set of threads. To
-      // acquire and release a phase, we need to arrive and wait on certain
-      // barriers. The selection of the barriers is handled under the hood.
+      // Split the stages into phases. Each resource goes through phases where it is writeable by a set of threads and
+      // readable by a set of threads. To acquire and release a phase, we need to arrive and wait on certain barriers.
+      // The selection of the barriers is handled under the hood.
       auto [phaseNextBlockIdxW, phaseNextBlockIdxR]         = warpspeed::bindPhases<2>(stageNextBlockIdx);
       auto [phaseInOutW, phaseInOutRW]                      = warpspeed::bindPhases<2>(stageInOut);
       auto [phaseSumThreadAndWarpW, phaseSumThreadAndWarpR] = warpspeed::bindPhases<2>(stageSumThreadAndWarp);
