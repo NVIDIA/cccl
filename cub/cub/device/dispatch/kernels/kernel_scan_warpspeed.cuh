@@ -52,12 +52,6 @@ _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const scan_warpspeed_polic
   return num_total_warps * warp_threads;
 }
 
-template <typename PolicySelector>
-_CCCL_DEVICE_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
-{
-  return current_policy<PolicySelector>().warpspeed;
-}
-
 template <typename InputT, typename OutputT, typename AccumT>
 struct scanKernelParams
 {
@@ -72,7 +66,7 @@ struct scanKernelParams
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
+  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
   struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) InOutT
@@ -103,7 +97,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   using InOutT            = typename ScanResourcesT::InOutT;
   using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
 
-  constexpr auto policy = get_warpspeed_policy<PolicySelector>();
+  constexpr auto policy = current_policy<PolicySelector>().warpspeed;
 
   const int num_block_idx_stages =
     policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, numStages + policy.block_idx_stages);
@@ -271,7 +265,7 @@ template <typename PolicySelector,
           bool ForceInclusive>
 struct warpspeed_scan_closure
 {
-  static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
+  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
 
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
@@ -859,7 +853,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
-  static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
+  static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
 
   // Set up the shared memory resources
   ScanResources<PolicySelector, InputT, OutputT, AccumT> res = [&] {
