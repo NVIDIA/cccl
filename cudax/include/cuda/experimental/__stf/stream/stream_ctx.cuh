@@ -601,13 +601,15 @@ public:
   }
 
 private:
+  using base_impl = typename base::impl;
+
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
-  class impl : public base::impl
+  class impl : public base_impl
   {
   public:
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr), bool initialize_cuda_runtime = true)
-        : base::impl(mv(_async_resources), initialize_cuda_runtime)
+        : base_impl(mv(_async_resources), initialize_cuda_runtime)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
@@ -618,7 +620,7 @@ private:
       deferred_tasks.clear();
       task_map.clear();
       submitted_stream = nullptr;
-      base::impl::cleanup();
+      base_impl::cleanup();
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped

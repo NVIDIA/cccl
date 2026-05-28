@@ -178,11 +178,13 @@ private:
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
-  class impl : public backend_ctx<graph_ctx>::impl
+  using backend_impl = typename backend_ctx<graph_ctx>::impl;
+
+  class impl : public backend_impl
   {
   public:
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        : backend_impl(mv(_async_resources))
         , _graph(shared_cuda_graph())
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
@@ -190,7 +192,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
 
     // Note that graph contexts with an explicit graph passed by the user cannot use stages
     impl(cudaGraph_t g, async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        : backend_impl(mv(_async_resources))
         , _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
     {
@@ -201,7 +203,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
     impl(cudaGraph_t g,
          cudaStream_t user_stream,
          async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        : backend_impl(mv(_async_resources))
         , submitted_stream(user_stream)
         , _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
