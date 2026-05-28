@@ -75,9 +75,19 @@ struct CudaDriverLauncher
 
 struct CudaDriverLauncherFactory
 {
+  CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
+  {
+    if (dependent_launch)
+    {
+      _CCCL_ASSERT((::cuda::compute_capability{cc_} >= ::cuda::compute_capability{9, 0}),
+                   "Enabling PDL for a kernel launch requires SM90+ PTX/SASS");
+    }
+  }
+
   CudaDriverLauncher
   operator()(dim3 grid, dim3 block, unsigned int shared_mem, ::CUstream stream, bool dependent_launch = false) const
   {
+    __assert_pdl_allowed(dependent_launch);
     return CudaDriverLauncher{grid, block, shared_mem, stream, dependent_launch};
   }
 

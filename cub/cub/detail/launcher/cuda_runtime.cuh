@@ -25,9 +25,21 @@ namespace detail
 {
 struct TripleChevronFactory
 {
+  CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
+  {
+    if (dependent_launch)
+    {
+      ::cuda::compute_capability cc;
+      _CCCL_ASSERT(PtxComputeCap(cc) == cudaSuccess, "");
+      _CCCL_ASSERT((cc >= ::cuda::compute_capability{9, 0}),
+                   "Enabling PDL for a kernel launch requires SM90+ PTX/SASS");
+    }
+  }
+
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
     dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
   {
+    __assert_pdl_allowed(dependent_launch);
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 
