@@ -123,11 +123,7 @@ echo "::group::Building $num_targets pytorch CUDA targets with custom CCCL..."
 torch_cuda_targets="$(xargs -a build/cuda_targets.txt)"
 declare -a torch_cuda_targets="($torch_cuda_targets)"
 
-set -x
-
 time ninja -C ./build "${torch_cuda_targets[@]}" "-j${PARALLEL_LEVEL:-}"
-
-{ set +x; } 2>/dev/null
 
 echo "::endgroup::"
 

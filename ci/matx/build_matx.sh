@@ -106,8 +106,6 @@ SCCACHE_NO_DIST_COMPILE=1 cmake \
   -DMATX_BUILD_BENCHMARKS=ON \
   -DMATX_EN_CUTENSOR=ON
 
-set -x
-
 # Disabled because `cmake --build -j ""` is invalid, but so is
 # `cmake --build -j8`. CMake expects a space between `-j` and
 # the numeric argument, or no argument at all.
