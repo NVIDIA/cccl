@@ -430,18 +430,15 @@ C2H_TEST("Device for each n fails when using stream from another device", "[for_
     SKIP("Test requires at least 2 CUDA devices");
   }
 
-  cuda::stream stream_on_device_1_wrapper(cuda::devices[1]);
-  cudaStream_t stream_on_device_1 = stream_on_device_1_wrapper.release();
+  cuda::stream stream_on_device_1(cuda::devices[1]);
 
   // example-begin for-each-n-wo-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   square_ref_t op{};
 
-  auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op, stream_on_device_1);
+  auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op, cuda::stream_ref{stream_on_device_1});
   REQUIRE(result == cudaErrorInvalidDevice);
   // example-end for-each-n-wo-temp-storage
-
-  REQUIRE(cudaStreamDestroy(stream_on_device_1) == cudaSuccess);
 }
 
 // todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up

@@ -35,8 +35,7 @@ C2H_TEST("Device for each n with stream from another device works when using CCC
     SKIP("Test requires at least 2 CUDA devices");
   }
 
-  cuda::stream stream_on_device_1_wrapper(cuda::devices[1]);
-  cudaStream_t stream_on_device_1 = stream_on_device_1_wrapper.release();
+  cuda::stream stream_on_device_1(cuda::devices[1]);
   // Copy of the above test but specifying stream from another device
   using offset_t               = int;
   constexpr offset_t max_items = 5000000;
@@ -52,11 +51,9 @@ C2H_TEST("Device for each n with stream from another device works when using CCC
   c2h::device_vector<int> counts(num_items);
 
   auto result = cub::DeviceFor::ForEach(
-    it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())}, stream_on_device_1);
+    it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())}, cuda::stream_ref{stream_on_device_1});
   REQUIRE(result == cudaSuccess);
 
   const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
-
-  REQUIRE(cudaStreamDestroy(stream_on_device_1) == cudaSuccess);
 }
