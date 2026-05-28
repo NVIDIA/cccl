@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/device/device_scan.cuh>
 
@@ -14,15 +14,10 @@ static void exclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
 try
 {
   using init_t    = T;
-  using offset_t  = cub::detail::choose_offset_t<OffsetT>;
+  using offset_t  = OffsetT;
   using scan_op_t = ::cuda::std::plus<T>;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  if (sizeof(offset_t) == 4 && elements > std::numeric_limits<offset_t>::max())
-  {
-    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
-    return;
-  }
 
   thrust::device_vector<T> input = generate(elements);
   thrust::device_vector<T> output(elements);
