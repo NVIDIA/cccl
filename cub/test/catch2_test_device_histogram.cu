@@ -761,8 +761,6 @@ CUB_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   CHECK(error2 == (num_bins == 1 || sizeof(sample_t) <= 4UL ? cudaSuccess : cudaErrorInvalidValue));
 }
 
-// When the number of bins exceeds what LevelT can represent, the bin computation will overflow
-// during the cast to CommonT. We expect cudaErrorInvalidValue to be returned.
 CUB_TEST_LIST(
   "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", CUB_SMALL, int8_t, int16_t)
 {
@@ -778,13 +776,13 @@ CUB_TEST_LIST(
   auto d_samples   = cuda::counting_iterator<sample_t>{0};
   auto d_histo_out = c2h::device_vector<counter_t>(4096);
 
-  // Test with num_bins that exceeds what LevelT can represent
-  // int8_t max = 127, so 128 bins will overflow
-  // int16_t max = 32767, so 32768 bins will overflow
+  // num_bins that previously overflowed LevelT-typed storage:
+  //   int8_t  max = 127, so 128 bins triggered the bug
+  //   int16_t max = 32767, so 32768 bins triggered the bug
   const int num_bins_overflow = static_cast<int>(cs::numeric_limits<level_t>::max()) + 1;
   const int num_levels        = num_bins_overflow + 1;
 
-  // Verify temp_storage_bytes is always initialized even on error
+  // Verify temp_storage_bytes is always initialized.
   constexpr size_t canary_bytes = 3;
   size_t temp_storage_bytes     = canary_bytes;
 
@@ -798,12 +796,12 @@ CUB_TEST_LIST(
     upper_level,
     num_samples);
 
-  // Should return error because num_bins overflows LevelT
-  CHECK(error1 == cudaErrorInvalidValue);
-  // Should still initialize temp_storage_bytes to a valid value
+  // Now succeeds: bin width is fractional but the integer ComputeBin path
+  // handles it correctly.
+  CHECK(error1 == cudaSuccess);
   CHECK(temp_storage_bytes != canary_bytes);
 
-  // Also verify that valid num_bins works
+  // Also verify that num_bins == numeric_limits<LevelT>::max() still works.
   const int valid_num_bins   = static_cast<int>(cs::numeric_limits<level_t>::max());
   const int valid_num_levels = valid_num_bins + 1;
 
