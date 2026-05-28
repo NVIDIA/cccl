@@ -340,7 +340,7 @@ struct agent_warpspeed_scan
     PhaseSumT& phaseSumThreadAndWarpW,
     int valid_items,
     bool is_first_tile,
-    bool is_last_tile,
+    bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
     int idxTile)
   {
