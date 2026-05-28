@@ -44,7 +44,7 @@ thrust::host_vector<T> make_iota(int n)
 template <typename SrcLayout, typename DstLayout, typename T, typename... Ints>
 void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>& expected, Ints... shape)
 {
-  constexpr size_t Rank = sizeof...(Ints);
+  [[maybe_unused]] constexpr size_t Rank = sizeof...(Ints); // msvc warns, only used in nttp
   using extents_t       = cuda::std::dextents<int, Rank>;
   extents_t ext(static_cast<int>(shape)...);
   typename SrcLayout::template mapping<extents_t> src_mapping(ext);

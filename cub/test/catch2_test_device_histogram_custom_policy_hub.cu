@@ -34,7 +34,7 @@ C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
   using level_t                     = int;
   using offset_t                    = int;
   constexpr int num_channels        = 1;
-  constexpr int num_active_channels = 1;
+  [[maybe_unused]] constexpr int num_active_channels = 1; // msvc warns, only used in nttp
   constexpr int num_bins            = 16;
   const offset_t num_row_pixels     = 256;
   const offset_t num_rows           = 1;
