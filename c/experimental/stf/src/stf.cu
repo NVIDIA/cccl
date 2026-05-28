@@ -444,8 +444,8 @@ stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts)
   const stf_ctx_options defaults{};
   const stf_ctx_options& o = opts ? *opts : defaults;
 
-  const bool has_stream     = (o.has_stream != 0);
-  async_resources_handle ah = o.handle ? *async_resources_from_opaque(o.handle) : async_resources_handle{nullptr};
+  const bool has_stream           = (o.has_stream != 0);
+  const async_resources_handle ah = o.handle ? *async_resources_from_opaque(o.handle) : async_resources_handle{nullptr};
 
   // C++ overloads distinguish "caller supplied a stream" from "use the
   // default constructor". `cudaStream_t` is pointer-like, so a separate flag is
