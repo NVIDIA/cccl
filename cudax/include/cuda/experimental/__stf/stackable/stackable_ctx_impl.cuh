@@ -37,6 +37,7 @@
 #include "cuda/experimental/__stf/stackable/stackable_node_hierarchy.cuh"
 #include "cuda/experimental/__stf/stackable/stackable_task_dep.cuh"
 #include "cuda/experimental/__stf/utility/hash.cuh"
+#include "cuda/experimental/__stf/utility/scope_guard.cuh"
 #include "cuda/experimental/__stf/utility/source_location.cuh"
 
 namespace cuda::experimental::stf
@@ -453,28 +454,63 @@ public:
           else
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
           {
-            cudaGraph_t dummy_graph;
-            cuda_safe_call(cudaGraphCreate(&dummy_graph, 0));
+            cudaGraph_t dummy_graph = nullptr;
+            cuda_try(cudaGraphCreate(&dummy_graph, 0));
 
-            // The dependencies to this child graph will be added later
+            // dummy_graph is intentionally destroyed below. Until that destroy
+            // succeeds, we own it; this guard releases it if any of the following
+            // calls throws. The handle itself carries the ownership bit -- we null
+            // it after the intentional destroy to disarm.
+            SCOPE(fail)
+            {
+              if (dummy_graph != nullptr)
+              {
+                cuda_safe_call(cudaGraphDestroy(dummy_graph));
+              }
+            };
+
+            // The dependencies to this child graph will be added later.
+            // NOTE: cudaGraphAddChildGraphNode adds `n` into parent_graph. If the
+            // constructor throws after this point, `n` remains as an orphaned child
+            // node inside parent_graph. Removing it cleanly would require
+            // cudaGraphDestroyNode plus careful dependency rewiring; we accept the
+            // orphan because parent_graph's lifetime extends well beyond this scope
+            // and the orphan is harmless until parent_graph is destroyed.
             cudaGraphNode_t n;
-            cuda_safe_call(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, dummy_graph));
+            cuda_try(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, dummy_graph));
 
             // cudaGraphAddChildGraphNode clones dummy_graph into the parent
-            cuda_safe_call(cudaGraphDestroy(dummy_graph));
+            cuda_try(cudaGraphDestroy(dummy_graph));
+            dummy_graph = nullptr;
 
             // Get the graph described by the child, not the graph that was
             // cloned into the child graph node so that changes are reflected
             // in it.
-            cuda_safe_call(cudaGraphChildGraphNodeGetGraph(n, &graph));
+            cuda_try(cudaGraphChildGraphNodeGetGraph(n, &graph));
             input_node  = n;
             output_node = n;
           }
         }
         else
         {
-          cuda_safe_call(cudaGraphCreate(&graph, 0));
+          cuda_try(cudaGraphCreate(&graph, 0));
         }
+
+        // We own `graph` (the raw cudaGraph_t member) only when we freshly allocated
+        // it above (the non-nested case). In the nested case, `graph` is either
+        // parent_graph itself or a child graph inside parent_graph, both owned by
+        // parent_graph -- destroying it would be incorrect. The graph_ctx built
+        // below (`gctx`) takes ownership when constructed successfully (see
+        // graph_ctx's ctor doc: "User code is not supposed to destroy the graph
+        // later."), so we disarm this guard right after that point.
+        bool graph_owned_by_us = !nested_graph;
+        SCOPE(fail)
+        {
+          if (graph_owned_by_us)
+          {
+            cuda_safe_call(cudaGraphDestroy(graph));
+          }
+        };
 
         // This is the graph which will be used by our STF context. If we need
         // to use a conditional node later, will will change that value.
@@ -483,8 +519,13 @@ public:
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
         if (config.conditional_handle != nullptr)
         {
-          // Create the conditional handle and store it in the provided pointer
-          cuda_safe_call(cudaGraphConditionalHandleCreate(
+          // Create the conditional handle and store it in the provided pointer.
+          // NOTE: on a thrown cuda_try below, *config.conditional_handle is left
+          // pointing at a handle whose backing graph will be destroyed by the
+          // SCOPE(fail) above. CUDA has no destroy API for conditional handles
+          // (they are tied to their graph), so the handle simply becomes invalid
+          // and the caller must not use it after catching the exception.
+          cuda_try(cudaGraphConditionalHandleCreate(
             config.conditional_handle, graph, config.default_launch_value, config.flags));
 
           // Create conditional node parameters
@@ -494,12 +535,14 @@ public:
           cParams.conditional.type    = config.conditional_type;
           cParams.conditional.size    = 1;
 
-          // Add conditional node to parent graph
+          // Add conditional node to parent graph. The node lives inside `graph`;
+          // if construction fails later, the SCOPE(fail) above destroys `graph`
+          // and the node is cleaned up implicitly.
           cudaGraphNode_t conditionalNode;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams));
+          cuda_try(cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams));
 #  else
-          cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams));
+          cuda_try(cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams));
 #  endif
 
           // Get the body graph from the conditional node
@@ -519,7 +562,7 @@ public:
           kconfig.sharedMemBytes = 0;
 
           cudaGraphNode_t reset_node;
-          cuda_safe_call(cudaGraphAddKernelNode(&reset_node, graph, &conditionalNode, 1, &kconfig));
+          cuda_try(cudaGraphAddKernelNode(&reset_node, graph, &conditionalNode, 1, &kconfig));
 
           input_node  = conditionalNode;
           output_node = reset_node;
@@ -540,6 +583,11 @@ public:
         }
 
         auto gctx = graph_ctx(sub_graph, support_stream, handle);
+        // graph_ctx's ctor took ownership of sub_graph (and, in the non-nested
+        // non-conditional case, of `graph` since sub_graph == graph). From here on,
+        // gctx's destructor handles cleanup, including if any of the following lines
+        // throws before `ctx = gctx`.
+        graph_owned_by_us = false;
 
         // Set up context properties
         gctx.set_parent_ctx(parent_ctx);
@@ -605,7 +653,7 @@ public:
         {
           static ::std::atomic<int> debug_graph_cnt{0};
           ::std::string filename = "instantiated_graph" + ::std::to_string(debug_graph_cnt++) + ".dot";
-          cuda_safe_call(cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
+          cuda_try(cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
           ::std::cout << "Debug: Stackable graph DOT output written to " << filename << '\n';
         }
       }
@@ -628,11 +676,11 @@ public:
 
         size_t nnodes;
         size_t nedges;
-        cuda_safe_call(cudaGraphGetNodes(graph, nullptr, &nnodes));
+        cuda_try(cudaGraphGetNodes(graph, nullptr, &nnodes));
 #if _CCCL_CTK_AT_LEAST(13, 0)
-        cuda_safe_call(cudaGraphGetEdges(graph, nullptr, nullptr, nullptr, &nedges));
+        cuda_try(cudaGraphGetEdges(graph, nullptr, nullptr, nullptr, &nedges));
 #else
-        cuda_safe_call(cudaGraphGetEdges(graph, nullptr, nullptr, &nedges));
+        cuda_try(cudaGraphGetEdges(graph, nullptr, nullptr, &nedges));
 #endif
 
         auto [cached_exec, cache_hit] = ctx.async_resources().cached_graphs_query(nnodes, nedges, graph);
@@ -680,7 +728,7 @@ public:
         _CCCL_ASSERT(exec_graph_, "launch_once called before ensure_instantiated");
         _CCCL_ASSERT(stream == support_stream, "launch_once only supports the node's support stream");
         ensure_prereqs_synced();
-        cuda_safe_call(cudaGraphLaunch(*exec_graph_, stream));
+        cuda_try(cudaGraphLaunch(*exec_graph_, stream));
       }
 
       // Release resources and build the finalize_prereqs event list that the
@@ -740,11 +788,11 @@ public:
         auto* cache_stat = ctx.graph_get_cache_stat();
         if (cache_stat)
         {
-          cuda_safe_call(cudaGraphGetNodes(body, nullptr, &cache_stat->nnodes));
+          cuda_try(cudaGraphGetNodes(body, nullptr, &cache_stat->nnodes));
 #if _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphGetEdges(body, nullptr, nullptr, nullptr, &cache_stat->nedges));
+          cuda_try(cudaGraphGetEdges(body, nullptr, nullptr, nullptr, &cache_stat->nedges));
 #else
-          cuda_safe_call(cudaGraphGetEdges(body, nullptr, nullptr, &cache_stat->nedges));
+          cuda_try(cudaGraphGetEdges(body, nullptr, nullptr, &cache_stat->nedges));
 #endif
         }
 
@@ -754,7 +802,7 @@ public:
         {
           static ::std::atomic<int> nested_cnt{0};
           ::std::string filename = "nested_graph" + ::std::to_string(nested_cnt++) + ".dot";
-          cuda_safe_call(cudaGraphDebugDotPrint(body, filename.c_str(), cudaGraphDebugDotFlags(0)));
+          cuda_try(cudaGraphDebugDotPrint(body, filename.c_str(), cudaGraphDebugDotFlags(0)));
         }
 
         cudaGraph_t support_graph = parent_ctx.graph();
@@ -773,10 +821,10 @@ public:
           // Create a vector of input_node repeated for each dependency
           ::std::vector<cudaGraphNode_t> to_nodes(ctx_ready_nodes.size(), input_node);
 #if _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphAddDependencies(
+          cuda_try(cudaGraphAddDependencies(
             support_graph, ctx_ready_nodes.data(), to_nodes.data(), nullptr, ctx_ready_nodes.size()));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(
+          cuda_try(
             cudaGraphAddDependencies(support_graph, ctx_ready_nodes.data(), to_nodes.data(), ctx_ready_nodes.size()));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
         }
