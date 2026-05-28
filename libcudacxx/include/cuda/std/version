@@ -203,6 +203,9 @@
 // # define __cccl_lib_syncbuf                              201803L
 // # define __cccl_lib_three_way_comparison                 201907L
 #  define __cccl_lib_unwrap_ref 201811L
+
+// todo(dabayer): Uncomment this once constant_wrapper is exposed.
+// #  define __cccl_lib_constant_wrapper 202603L
 #endif // _CCCL_STD_VER >= 2020
 
 #if _CCCL_STD_VER >= 2023
