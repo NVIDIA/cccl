@@ -47,7 +47,7 @@ TEST_FUNC constexpr void test()
     assert(!cuda::in_range(inf, T{0}, T{10}));
     assert(cuda::in_range(T{1}, T{-1}, inf));
   }
-#if !TEST_CUDA_COMPILER(NVCC, ==, 13, 3) // nvbug6235207
+#if !TEST_CUDA_COMPILER(NVCC, ==, 13, 3) && !TEST_COMPILER(NVRTC, ==, 13, 3) // nvbug6235207
   if constexpr (cuda::std::numeric_limits<T>::has_quiet_NaN)
   {
     constexpr auto nan = cuda::std::numeric_limits<T>::quiet_NaN();
@@ -69,7 +69,7 @@ TEST_FUNC constexpr void test()
       assert(!cuda::in_range(T{1}, inf, nan));
     }
   }
-#endif // !TEST_CUDA_COMPILER(NVCC, ==, 13, 3)
+#endif // !TEST_CUDA_COMPILER(NVCC, ==, 13, 3) && !TEST_COMPILER(NVRTC, ==, 13,3)
 }
 
 TEST_FUNC constexpr bool test()
