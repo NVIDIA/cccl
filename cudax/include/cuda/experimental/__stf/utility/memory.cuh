@@ -89,7 +89,13 @@ inline void* allocateHostMemory(size_t sz)
       cuda_try(cudaFreeHost(entry));
     }
   }
-  return cuda_try<cudaMallocHost>(sz);
+  // Note: cannot use the templated ``cuda_try<cudaMallocHost>(sz)`` form
+  // here -- ``cudaMallocHost`` is a C++ overload set in cuda_runtime.h
+  // (templated wrapper around the C API), so ``decltype(fun)`` cannot
+  // resolve it. Use the runtime-status form instead.
+  void* p = nullptr;
+  cuda_try(cudaMallocHost(&p, sz));
+  return p;
 }
 
 /**
@@ -121,7 +127,12 @@ inline void* allocateManagedMemory(size_t sz)
       cuda_try(cudaFree(entry));
     }
   }
-  return cuda_try<cudaMallocManaged>(sz);
+  // Same overload-set limitation as in allocateHostMemory above:
+  // ``cudaMallocManaged`` is a C++ overload set, so ``cuda_try<F>(...)``
+  // cannot deduce it. Use the runtime-status form.
+  void* p = nullptr;
+  cuda_try(cudaMallocManaged(&p, sz));
+  return p;
 }
 
 /**
