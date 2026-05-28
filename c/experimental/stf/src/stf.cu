@@ -436,9 +436,10 @@ cudaStream_t stf_fence(stf_ctx_handle ctx)
 
 int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size)
 {
-  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
-  _CCCL_ASSERT(out != nullptr, "output buffer must not be null");
+  if (ctx == nullptr || ld == nullptr || out == nullptr)
+  {
+    return 1;
+  }
 
   try
   {

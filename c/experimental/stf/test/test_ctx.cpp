@@ -72,3 +72,21 @@ C2H_TEST("stf_ctx_wait reads data without finalizing", "[context]")
   stf_logical_data_destroy(lVal);
   stf_ctx_finalize(ctx);
 }
+
+C2H_TEST("stf_ctx_wait rejects invalid arguments", "[context]")
+{
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  int h_value                  = 0;
+  stf_logical_data_handle lVal = stf_logical_data(ctx, &h_value, sizeof(int));
+  REQUIRE(lVal != nullptr);
+
+  int result = 0;
+  REQUIRE(stf_ctx_wait(nullptr, lVal, &result, sizeof(int)) != 0);
+  REQUIRE(stf_ctx_wait(ctx, nullptr, &result, sizeof(int)) != 0);
+  REQUIRE(stf_ctx_wait(ctx, lVal, nullptr, sizeof(int)) != 0);
+
+  stf_logical_data_destroy(lVal);
+  stf_ctx_finalize(ctx);
+}
