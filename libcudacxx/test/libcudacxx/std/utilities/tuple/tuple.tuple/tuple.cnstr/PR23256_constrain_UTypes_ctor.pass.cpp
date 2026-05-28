@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: msvc
+
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;
