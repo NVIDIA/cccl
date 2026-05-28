@@ -1253,9 +1253,8 @@ struct TilePrefixCallbackOp
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
 
-  // BlockScan prefix callback functor — non-deterministic overload.
-  template <bool D = RunToRunDeterministic, ::cuda::std::enable_if_t<!D, int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+  // Classic decoupled-lookback prefix computation.
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Lookback(T block_aggregate)
   {
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
@@ -1301,9 +1300,8 @@ struct TilePrefixCallbackOp
     return exclusive_prefix;
   }
 
-  // BlockScan prefix callback functor — run-to-run-deterministic overload.
-  template <bool D = RunToRunDeterministic, ::cuda::std::enable_if_t<D, int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+  // Run-to-run-deterministic K=1 32-batched lookback. Only anchor tiles publish INCLUSIVE.
+  _CCCL_DEVICE _CCCL_FORCEINLINE T LookbackRunToRunDeterministic(T block_aggregate)
   {
     if (threadIdx.x == 0)
     {
@@ -1349,6 +1347,19 @@ struct TilePrefixCallbackOp
     }
 
     return exclusive_prefix;
+  }
+
+  // BlockScan prefix callback functor.
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+  {
+    if constexpr (RunToRunDeterministic)
+    {
+      return LookbackRunToRunDeterministic(block_aggregate);
+    }
+    else
+    {
+      return Lookback(block_aggregate);
+    }
   }
 
   // Get the exclusive prefix stored in temporary storage
