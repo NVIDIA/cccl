@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -455,6 +456,17 @@ int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size
     builder->*[dst, cap](reserved::host_launch_deps& deps) {
       auto data      = deps.get<slice<char>>(0);
       size_t copy_sz = ::std::min(cap, static_cast<size_t>(data.extent(0)));
+      // The destination must not overlap the logical data range: in practice the
+      // logical data is backed by storage that is allocated independently from the
+      // caller's readback buffer, so use uintptr_t comparisons (relational pointer
+      // comparison across unrelated allocations is unspecified) to encode that
+      // contract.
+      const auto src_begin = reinterpret_cast<::std::uintptr_t>(data.data_handle());
+      const auto src_end   = src_begin + copy_sz;
+      const auto dst_begin = reinterpret_cast<::std::uintptr_t>(dst);
+      const auto dst_end   = dst_begin + copy_sz;
+      _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
+                   "stf_ctx_wait destination buffer must not overlap the logical data range");
       ::std::memcpy(dst, data.data_handle(), copy_sz);
     };
 
