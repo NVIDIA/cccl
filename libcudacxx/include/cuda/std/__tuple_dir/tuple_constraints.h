@@ -156,7 +156,7 @@ struct _TupleVariadicCopyConstructibleTraits
 {
   static constexpr bool __implicit_construction = (is_convertible_v<const _Types&, _Types> && ...);
   static constexpr bool __explicit_construction = !(is_convertible_v<const _Types&, _Types> && ...);
-  static constexpr bool __nothrow_construction  = __tuple_all_nothrow_copy_constructible_v<_Types...>;
+  static constexpr bool __nothrow_construction  = false; // unused because it breaks MSVC
 };
 
 template <class... _Types, enable_if_t<__tuple_all_copy_constructible_v<_Types...>, int> = 0>
