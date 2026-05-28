@@ -355,9 +355,21 @@ stf_ctx_handle stf_ctx_create_graph(void);
 //!
 //! Ownership: the handle is caller-allocated via
 //! stf_async_resources_create() and MUST be released with
-//! stf_async_resources_destroy(). Its lifetime must cover every context it
-//! was passed to (i.e. release it only after those contexts have been
-//! finalized).
+//! stf_async_resources_destroy().
+//!
+//! Lifetime: the handle owns CUDA resources (per-place stream pools, an
+//! executable-graph cache, etc.) that are torn down synchronously by
+//! stf_async_resources_destroy(). The caller must therefore not destroy the
+//! handle while any work that could reference those resources is still
+//! pending. Concretely:
+//!   - Every context constructed with the handle must have been finalized
+//!     via stf_ctx_finalize().
+//!   - For contexts created with `has_stream != 0`, stf_ctx_finalize() is
+//!     non-blocking (see stf_ctx_finalize()): each such caller stream must
+//!     reach the point at which finalize enqueued its resource-release work
+//!     (e.g. via cudaStreamSynchronize() on every caller stream that was
+//!     ever passed in `opts.stream`) before stf_async_resources_destroy()
+//!     is called.
 
 typedef struct stf_async_resources_opaque_t* stf_async_resources_handle;
 
@@ -367,8 +379,10 @@ typedef struct stf_async_resources_opaque_t* stf_async_resources_handle;
 //! \return Handle on success, NULL on allocation failure.
 //!
 //! \post Caller owns the handle and must release it with
-//!       stf_async_resources_destroy() after all contexts that received it
-//!       have been finalized.
+//!       stf_async_resources_destroy() after every context that received it
+//!       has been finalized and, for caller-stream contexts, after each such
+//!       caller stream has completed the work enqueued by
+//!       stf_ctx_finalize().
 
 stf_async_resources_handle stf_async_resources_create(void);
 
@@ -377,7 +391,13 @@ stf_async_resources_handle stf_async_resources_create(void);
 //!
 //! \param h Handle to destroy. NULL is accepted (no-op).
 //!
-//! \pre Every context created with this handle has already been finalized.
+//! \pre Every context created with this handle has already been finalized,
+//!      and every caller stream used by such contexts has completed the work
+//!      stf_ctx_finalize() enqueued on it (e.g. via cudaStreamSynchronize()).
+//!      Destroying the handle while caller-stream work is still pending is
+//!      undefined behavior: this call synchronously tears down the
+//!      underlying CUDA resources (stream pools, cached executable graphs)
+//!      and does not itself synchronize any caller stream.
 
 void stf_async_resources_destroy(stf_async_resources_handle h);
 
@@ -424,6 +444,7 @@ typedef struct stf_ctx_options
 //!
 //! \par Example (reuse one resources handle across many graph contexts):
 //! \code
+//! cudaStream_t user_stream = ...;          // caller-owned CUDA stream
 //! stf_async_resources_handle h = stf_async_resources_create();
 //! for (int i = 0; i < N; ++i) {
 //!   stf_ctx_options opts = {0};
@@ -433,8 +454,13 @@ typedef struct stf_ctx_options
 //!   opts.handle     = h;
 //!   stf_ctx_handle ctx = stf_ctx_create_ex(&opts);
 //!   // ... submit tasks ...
-//!   stf_ctx_finalize(ctx);
+//!   stf_ctx_finalize(ctx); // Non-blocking: see stf_ctx_finalize().
 //! }
+//! // Required before destroying `h`: stf_ctx_finalize() enqueued the
+//! // resource-release callbacks of every context on `user_stream`, and
+//! // stf_async_resources_destroy() tears down the underlying CUDA resources
+//! // synchronously. The same applies to the stream backend.
+//! cudaStreamSynchronize(user_stream);
 //! stf_async_resources_destroy(h);
 //! \endcode
 
@@ -443,24 +469,51 @@ stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts);
 //!
 //! \brief Finalize STF context
 //!
-//! Waits for all pending operations to complete, performs write-back
-//! of modified data to host, and releases all associated resources.
+//! Performs write-back of modified data to host and releases all resources
+//! associated with the context. Whether the call blocks until the underlying
+//! CUDA work has actually completed depends on how the context was created:
+//!
+//!   - Contexts created with stf_ctx_create(), stf_ctx_create_graph(), or
+//!     stf_ctx_create_ex() with `has_stream == 0` block until all pending
+//!     operations have completed before returning.
+//!   - Contexts created with stf_ctx_create_ex() and `has_stream != 0`
+//!     enqueue the remaining work and the context's resource-release callback
+//!     onto the caller-provided `opts.stream`, then return without
+//!     synchronizing that stream. The context handle itself is invalid as
+//!     soon as the call returns, but the queued CUDA work, and any
+//!     resources kept alive by it (including a shared
+//!     stf_async_resources_handle), only become idle once
+//!     `opts.stream` reaches that completion point. Use
+//!     cudaStreamSynchronize() (or an event/dependency on `opts.stream`)
+//!     before observing results on the host or releasing the shared handle.
 //!
 //! \param ctx Context handle to finalize
 //!
 //! \pre ctx must be valid context handle
-//! \post All pending operations completed, resources released, ctx becomes invalid
+//! \post All pending operations are either completed (blocking case) or
+//!       enqueued on the caller stream (non-blocking case); resources are
+//!       released; ctx becomes invalid.
 //!
-//! \note This function blocks until all asynchronous operations complete
-//!
-//! \par Example:
+//! \par Example (blocking, default-created context):
 //! \code
 //! stf_ctx_handle ctx = stf_ctx_create();
 //! // ... submit tasks ...
 //! stf_ctx_finalize(ctx);  // Blocks until completion
 //! \endcode
 //!
-//! \see stf_ctx_create(), stf_ctx_create_graph(), stf_fence()
+//! \par Example (non-blocking, caller-provided stream):
+//! \code
+//! stf_ctx_options opts = {0};
+//! opts.has_stream = 1;
+//! opts.stream     = user_stream;
+//! stf_ctx_handle ctx = stf_ctx_create_ex(&opts);
+//! // ... submit tasks ...
+//! stf_ctx_finalize(ctx); // Returns before user_stream drains.
+//! cudaStreamSynchronize(user_stream); // Required before observing results.
+//! \endcode
+//!
+//! \see stf_ctx_create(), stf_ctx_create_graph(), stf_ctx_create_ex(),
+//!      stf_fence()
 
 void stf_ctx_finalize(stf_ctx_handle ctx);
 

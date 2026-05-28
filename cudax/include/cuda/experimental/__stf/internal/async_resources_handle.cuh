@@ -48,6 +48,25 @@ namespace cuda::experimental::stf
  * This class relies on a PIMPL idiom and can be passed by value. Creating a
  * new object of this type does not initialize any resource, as these will be
  * set lazily.
+ *
+ * @par Lifetime
+ *
+ * The handle owns CUDA resources that are created lazily and torn down by
+ * its destructor (per-place stream pools and their cached `cudaStream_t`
+ * handles, the executable-graph cache, etc.). The destructor releases those
+ * resources synchronously and does not synchronize any external CUDA stream,
+ * so the caller must ensure no in-flight CUDA work can still reference them
+ * before the last `shared_ptr` to the impl is dropped.
+ *
+ * For typical use this is automatic: contexts built around the handle hold
+ * it by value and blocking finalize semantics guarantee completion. The
+ * non-trivial case is when a context is constructed with a caller-provided
+ * CUDA stream (`stream_ctx(user_stream, handle)` or
+ * `graph_ctx(user_stream, handle)`). In that case `finalize()` is
+ * non-blocking and only enqueues the resource-release callbacks on
+ * `user_stream`. Before destroying the only remaining handle reference,
+ * every such `user_stream` must reach that point (e.g. via
+ * `cudaStreamSynchronize(user_stream)`).
  */
 class async_resources_handle
 {
