@@ -176,19 +176,22 @@ __tuple_select_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
 }
 
 template <class... _Types>
-struct _TupleVariadicMoveConstructibleTraits
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
+__tuple_select_variadic_move_constructible(__tuple_types<_Types...>) noexcept
 {
-  static constexpr bool __implicit_construction = (is_convertible_v<_Types&&, _Types> && ...);
-  static constexpr bool __explicit_construction = !(is_convertible_v<_Types&&, _Types> && ...);
-  static constexpr bool __nothrow_construction  = __tuple_all_nothrow_move_constructible_v<_Types...>;
-};
-
-template <class... _Types, enable_if_t<__tuple_all_move_constructible_v<_Types...>, int> = 0>
-[[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_move_constructible(__tuple_types<_Types...>) noexcept
-  -> _TupleVariadicMoveConstructibleTraits<_Types...>;
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_move_constructible(...) noexcept
-  -> _InvalidTupleConstructor;
+  if constexpr (!(is_move_constructible_v<_Types> && ...))
+  {
+    return __select_constructible::__not_constructible;
+  }
+  else if constexpr ((is_convertible_v<_Types&&, _Types> && ...))
+  {
+    return __select_constructible::__implicit_constructible;
+  }
+  else
+  {
+    return __select_constructible::__explicit_constructible;
+  }
+}
 
 template <class, class>
 struct _TupleVariadicConstructibleTraits;
