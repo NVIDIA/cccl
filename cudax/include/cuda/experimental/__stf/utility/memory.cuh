@@ -28,9 +28,11 @@
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 
 namespace cuda::experimental::stf
 {
@@ -65,25 +67,29 @@ enum : size_t
  */
 inline void* allocateHostMemory(size_t sz)
 {
-  void* result;
   auto& pool = reserved::host_pool();
   if (auto i = pool.find(sz); i != pool.end())
   {
-    result = i->second;
+    void* const result = i->second;
     pool.erase(i);
     return result;
   }
   if (pool.size() > reserved::maxPoolEntries)
   {
     // Lots of unused slots, so wipe pooled memory and start anew.
-    for (auto& entry : pool)
+    // Transfer ownership of each pointer out of the pool before calling
+    // cudaFreeHost so that a thrown cuda_try leaks at most the in-flight
+    // pointer (already removed from the pool, so no double-free risk on
+    // the next call).
+    while (!pool.empty())
     {
-      cuda_safe_call(cudaFreeHost(entry.second));
+      const auto it     = pool.begin();
+      void* const entry = it->second;
+      pool.erase(it);
+      cuda_try(cudaFreeHost(entry));
     }
-    pool.clear();
   }
-  cuda_safe_call(cudaMallocHost(&result, sz));
-  return result;
+  return cuda_try<cudaMallocHost>(sz);
 }
 
 /**
@@ -94,26 +100,28 @@ inline void* allocateHostMemory(size_t sz)
  */
 inline void* allocateManagedMemory(size_t sz)
 {
-  void* result;
   auto& pool = reserved::managed_pool();
 
   if (auto i = pool.find(sz); i != pool.end())
   {
-    result = i->second;
+    void* const result = i->second;
     pool.erase(i);
     return result;
   }
   if (pool.size() > reserved::maxPoolEntries)
   {
     // Lots of unused slots, so wipe pooled memory and start anew.
-    for (auto& entry : pool)
+    // Same pop-then-free pattern as allocateHostMemory: a thrown cuda_try
+    // leaks at most the in-flight pointer, never causes a double-free.
+    while (!pool.empty())
     {
-      cuda_safe_call(cudaFree(entry.second));
+      const auto it     = pool.begin();
+      void* const entry = it->second;
+      pool.erase(it);
+      cuda_try(cudaFree(entry));
     }
-    pool.clear();
   }
-  cuda_safe_call(cudaMallocManaged(&result, sz));
-  return result;
+  return cuda_try<cudaMallocManaged>(sz);
 }
 
 /**
@@ -178,14 +186,19 @@ inline void deallocateManagedMemory(
  */
 inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
-  cuda_safe_call(cudaLaunchHostFunc(
+  // Own the heap pair until the launch succeeds; release ownership to the
+  // callback only after cuda_try returns without throwing, so a failed
+  // launch does not leak.
+  auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
+  cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
       auto args = static_cast<::std::pair<size_t, void*>*>(vp);
       deallocateHostMemory(args->second, args->first);
       delete args;
     },
-    new ::std::pair<size_t, void*>(sz, p)));
+    args.get()));
+  args.release();
 }
 
 /**
@@ -198,14 +211,17 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
  */
 inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
-  cuda_safe_call(cudaLaunchHostFunc(
+  // Same pattern as deallocateHostMemory(stream-ordered overload).
+  auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
+  cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
       auto args = static_cast<::std::pair<size_t, void*>*>(vp);
       deallocateManagedMemory(args->second, args->first);
       delete args;
     },
-    new ::std::pair<size_t, void*>(sz, p)));
+    args.get()));
+  args.release();
 }
 
 /**
@@ -222,6 +238,9 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 inline cudaGraphNode_t deallocateHostMemory(
   void* p, size_t sz, cudaGraph_t graph, const cudaGraphNode_t* pDependencies, size_t numDependencies)
 {
+  // Own the heap pair until the graph-node add succeeds; release to the
+  // graph callback only on success.
+  auto args                       = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
   const cudaHostNodeParams params = {
     .fn =
       [](void* vp) {
@@ -229,9 +248,9 @@ inline cudaGraphNode_t deallocateHostMemory(
         deallocateHostMemory(args->second, args->first);
         delete args;
       },
-    .userData = new ::std::pair<size_t, void*>(sz, p)};
-  cudaGraphNode_t result;
-  cuda_safe_call(cudaGraphAddHostNode(&result, graph, pDependencies, numDependencies, &params));
+    .userData = args.get()};
+  const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
+  args.release();
   return result;
 }
 
@@ -248,8 +267,7 @@ inline cudaGraphNode_t deallocateHostMemory(
 template <typename T>
 bool address_is_pinned(T* p)
 {
-  cudaPointerAttributes attr;
-  cuda_safe_call(cudaPointerGetAttributes(&attr, p));
+  const auto attr = cuda_try<cudaPointerGetAttributes>(p);
   EXPECT(attr.type != cudaMemoryTypeDevice);
   return attr.type != cudaMemoryTypeUnregistered;
 }
@@ -290,7 +308,7 @@ void unpin_memory(T* p)
   assert(p);
 
   // Make sure no one did a mistake before ignoring the one that may come !
-  cuda_safe_call(cudaGetLastError());
+  cuda_try(cudaGetLastError());
 
   // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...

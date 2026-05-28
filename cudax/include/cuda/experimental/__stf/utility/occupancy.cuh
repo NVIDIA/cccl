@@ -47,18 +47,20 @@ compute_occupancy_result compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 
     // Cache hit
     return i->second;
   }
-  // Miss
-  auto& result = occupancy_cache[key];
+  // Miss. Compute into a local first so a thrown cuda_try does not leave
+  // a default-initialized entry behind in the cache.
+  compute_occupancy_result result;
   if constexpr (::std::is_same_v<::std::decay_t<Kernel>, CUfunction>)
   {
-    cuda_safe_call(cuOccupancyMaxPotentialBlockSize(
+    cuda_try(cuOccupancyMaxPotentialBlockSize(
       &result.min_grid_size, &result.block_size, f, nullptr, dynamicSMemSize, blockSizeLimit));
   }
   else
   {
-    cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(
+    cuda_try(cudaOccupancyMaxPotentialBlockSize(
       &result.min_grid_size, &result.block_size, f, dynamicSMemSize, blockSizeLimit));
   }
+  occupancy_cache[key] = result;
   return result;
 }
 
@@ -104,8 +106,7 @@ cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem
   res.max_block_size = occupancy_res.block_size;
 
   /* Compute the maximum block size (not the optimal size) */
-  cudaFuncAttributes attrs;
-  cuda_safe_call(cudaFuncGetAttributes(&attrs, f));
+  const auto attrs     = cuda_try<cudaFuncGetAttributes>(f);
   res.block_size_limit = attrs.maxThreadsPerBlock;
 
   return res;

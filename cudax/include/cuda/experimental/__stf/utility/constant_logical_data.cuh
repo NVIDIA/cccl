@@ -29,6 +29,7 @@
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <unordered_map>
 
@@ -72,8 +73,16 @@ class constant_logical_data
       // Insert the new value and get the iterator to the newly inserted item
       it = cached.emplace(where, frozen_ld.get(where, stream)).first;
 
+      // If the sync below throws, the cache entry is partially-fetched and
+      // must not be reused on a subsequent get(). erase by iterator is
+      // noexcept, so the SCOPE(fail) body is safe.
+      SCOPE(fail)
+      {
+        cached.erase(it);
+      };
+
       // Wait for the cache entry to be available
-      cuda_safe_call(cudaStreamSynchronize(stream));
+      cuda_try(cudaStreamSynchronize(stream));
 
       return it->second;
     }
