@@ -203,14 +203,13 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
   }
 }
 
-template <bool is_last_tile, typename ScanOpT, typename Tp, size_t elemPerThread>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[elemPerThread], int valid_items)
+template <typename ScanOpT, typename Tp, size_t ElemPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[ElemPerThread], int valid_items)
 {
   // if we are in the last tile and have an identity, fill the invalid array items with it
-  constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
-  if constexpr (is_last_tile && have_identity)
+  if constexpr (::cuda::has_identity_element_v<ScanOpT, Tp>)
   {
-    for (int i = 0; i < elemPerThread; ++i)
+    for (int i = 0; i < ElemPerThread; ++i)
     {
       if (i >= valid_items)
       {
@@ -220,15 +219,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[
   }
 }
 
-template <bool isInclusive, bool is_last_tile, typename Tp, size_t elemPerThread, typename ScanOpT>
+template <bool IsInclusive, bool IsLastTile, typename Tp, size_t ElemPerThread, typename ScanOpT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-threadScanPartial(Tp (&regAggrInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
+threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
 {
   // skip the partial scan if we have an identity
-  constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
-  if constexpr (is_last_tile && !have_identity)
+  if constexpr (IsLastTile && !::cuda::has_identity_element_v<ScanOpT, Tp>)
   {
-    if constexpr (isInclusive)
+    if constexpr (IsInclusive)
     {
       __cub_detail::ThreadScanInclusivePartial(
         regAggrInclusive, regAggrInclusive, scan_op, valid_items, prefix, use_prefix);
@@ -241,7 +239,7 @@ threadScanPartial(Tp (&regAggrInclusive)[elemPerThread], ScanOpT& scan_op, Tp pr
   }
   else
   {
-    if constexpr (isInclusive)
+    if constexpr (IsInclusive)
     {
       __cub_detail::ThreadScanInclusive(regAggrInclusive, regAggrInclusive, scan_op, prefix, use_prefix);
     }
@@ -465,7 +463,10 @@ struct warpspeed_scan_closure
 
     // Fill the registers with the scan identity, if there is one, before acquiring/waiting on any resources
     AccumT regAggrInclusive[elemPerThread];
-    fillWithIdentity<IsLastTile, ScanOpT>(regAggrInclusive, valid_items_this_thread);
+    if constexpr (IsLastTile)
+    {
+      fillWithIdentity<ScanOpT>(regAggrInclusive, valid_items_this_thread);
+    }
 
     // Aggregate of all threads up to but not including this one
     AccumT aggrExclusive;
