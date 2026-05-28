@@ -62,14 +62,14 @@ struct scanKernelParams
   int numStages;
 };
 
-// Struct holding all scan kernel resources
+// holds all scan kernel resources
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
   static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
-  struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) InOutT
+  struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
   {
     // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
     static_assert(policy.tile_size() % 16 == 0, "tile_size must be multiple of 16");
@@ -77,21 +77,20 @@ struct ScanResources
     // therefore, unaligned inputs need exactly 16 bytes extra for overcopying (tail padding = 16 - head padding)
     ::cuda::std::byte inout[policy.tile_size() * sizeof(InputT) + 16];
   };
-  static_assert(alignof(InOutT) >= alignof(InputT));
-  static_assert(alignof(InOutT) >= alignof(OutputT));
-  using SumThreadAndWarpT = AccumT[squad_reduce(policy).threadCount() + squad_reduce(policy).warpCount()];
+  static_assert(alignof(in_out_t) >= alignof(InputT));
+  static_assert(alignof(in_out_t) >= alignof(OutputT));
+  using thread_and_warp_aggr_t = AccumT[squad_reduce(policy).threadCount() + squad_reduce(policy).warpCount()];
 
-  warpspeed::SmemResource<InOutT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
+  warpspeed::SmemResource<in_out_t> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
   warpspeed::SmemResource<uint4> smemNextBlockIdx;
   warpspeed::SmemResource<AccumT> smemSumExclusiveCta;
-  warpspeed::SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
+  warpspeed::SmemResource<thread_and_warp_aggr_t> smemSumThreadAndWarp;
 };
 
-// Function to allocate resources.
-
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ScanResources<PolicySelector, InputT, OutputT, AccumT>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& smemAllocator, int numStages)
+  -> ScanResources<PolicySelector, InputT, OutputT, AccumT>
 {
   using ScanResourcesT    = ScanResources<PolicySelector, InputT, OutputT, AccumT>;
   using InOutT            = typename ScanResourcesT::InOutT;
@@ -292,11 +291,15 @@ struct warpspeed_scan_closure
   static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
   static constexpr bool isInclusive = ForceInclusive || !hasInit;
 
+  using scan_resources_t       = ScanResources<PolicySelector, InputT, OutputT, AccumT>;
+  using in_out_t               = typename scan_resources_t::InOutT;
+  using thread_and_warp_aggr_t = typename scan_resources_t::SumThreadAndWarpT;
+
   const warpspeed::SpecialRegisters specialRegisters;
   const scanKernelParams<InputT, OutputT, AccumT> params;
   ScanOpT scan_op;
   const RealInitValueT real_init_value;
-  ScanResources<PolicySelector, InputT, OutputT, AccumT>& res;
+  scan_resources_t& res;
 
   template <typename PhaseT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_next_tile_index(const warpspeed::Squad& squad, PhaseT& phaseNextBlockIdxW)
@@ -305,20 +308,18 @@ struct warpspeed_scan_closure
     squadGetNextBlockIdx(squad, refNextBlockIdxW);
   }
 
-  template <typename InOutT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
     const warpspeed::Squad& squad,
-    warpspeed::SmemPhase<InOutT>& phaseInOutW,
+    warpspeed::SmemPhase<in_out_t>& phaseInOutW,
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo)
   {
     warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
     warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
   }
 
-  template <typename PhaseT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookback(
     const warpspeed::Squad& squad,
-    PhaseT& phaseSumExclusiveCtaW,
+    warpspeed::SmemPhase<AccumT>& phaseSumExclusiveCtaW,
     bool is_first_tile,
     int& idxTilePrev,
     AccumT& sumExclusiveCtaPrev,
@@ -339,11 +340,10 @@ struct warpspeed_scan_closure
     }
   }
 
-  template <typename PhaseInOutT, typename PhaseSumT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_tile(
     const warpspeed::Squad& squad,
-    PhaseInOutT& phaseInOutRW,
-    PhaseSumT& phaseSumThreadAndWarpW,
+    warpspeed::SmemPhase<in_out_t>& phaseInOutRW,
+    warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseSumThreadAndWarpW,
     int valid_items,
     bool is_first_tile,
     bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
@@ -453,12 +453,12 @@ struct warpspeed_scan_closure
     refSumThreadAndWarpW.data()[squad.threadRank()] = regThreadSum;
   }
 
-  template <bool IsLastTile, typename PhaseSumR, typename PhaseSumExR, typename PhaseInOutT>
+  template <bool IsLastTile>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_and_store_tile(
     const warpspeed::Squad& squad,
-    PhaseSumR& phaseSumThreadAndWarpR,
-    PhaseSumExR& phaseSumExclusiveCtaR,
-    PhaseInOutT& phaseInOutRW,
+    warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseSumThreadAndWarpR,
+    warpspeed::SmemPhase<AccumT>& phaseSumExclusiveCtaR,
+    warpspeed::SmemPhase<in_out_t>& phaseInOutRW,
     bool is_first_tile,
     int valid_items,
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
@@ -856,7 +856,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   static constexpr scan_warpspeed_policy policy = current_policy<PolicySelector>().warpspeed;
 
   // Set up the shared memory resources
-  ScanResources<PolicySelector, InputT, OutputT, AccumT> res = [&] {
+  auto res = [&] {
     warpspeed::SyncHandler syncHandler{};
     warpspeed::SmemAllocator smemAllocator{};
     auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
@@ -869,6 +869,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
     warpspeed_scan_closure<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>;
   warpspeed::squadDispatch(
     specialRegisters, closure_t::scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
+      // we load the initial value after the squad dispatch, so only the squads needing it emit an LDG
       closure_t{specialRegisters, params, scan_op, static_cast<RealInitValueT>(init_value), res}.dispatch_squad(squad);
     });
 #endif // __cccl_ptx_isa >= 860
