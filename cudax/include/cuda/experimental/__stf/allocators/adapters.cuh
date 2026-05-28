@@ -48,7 +48,7 @@ class stream_adapter
     raw_buffer(void* ptr_, size_t sz_, data_place memory_node_)
         : ptr(ptr_)
         , sz(sz_)
-        , memory_node(mv(memory_node_))
+        , memory_node(memory_node_)
     {}
 
     void* ptr;
