@@ -346,6 +346,101 @@ stf_ctx_handle stf_ctx_create(void);
 stf_ctx_handle stf_ctx_create_graph(void);
 
 //!
+//! \brief Opaque handle to a shared `async_resources_handle`
+//!
+//! Wraps the C++ `async_resources_handle` so callers can build one up front
+//! and share it across many `stf_ctx_create_ex` calls. Reusing a handle lets
+//! the graph backend amortize graph-instantiation cost across contexts, and
+//! lets every context share the same per-place stream pools.
+//!
+//! Ownership: the handle is caller-allocated via
+//! stf_async_resources_create() and MUST be released with
+//! stf_async_resources_destroy(). Its lifetime must cover every context it
+//! was passed to (i.e. release it only after those contexts have been
+//! finalized).
+
+typedef struct stf_async_resources_opaque_t* stf_async_resources_handle;
+
+//!
+//! \brief Create a shareable `async_resources_handle`
+//!
+//! \return Handle on success, NULL on allocation failure.
+//!
+//! \post Caller owns the handle and must release it with
+//!       stf_async_resources_destroy() after all contexts that received it
+//!       have been finalized.
+
+stf_async_resources_handle stf_async_resources_create(void);
+
+//!
+//! \brief Destroy a handle created by stf_async_resources_create()
+//!
+//! \param h Handle to destroy. NULL is accepted (no-op).
+//!
+//! \pre Every context created with this handle has already been finalized.
+
+void stf_async_resources_destroy(stf_async_resources_handle h);
+
+//! \brief Backend selector for stf_ctx_create_ex()
+typedef enum stf_backend_kind
+{
+  STF_BACKEND_STREAM = 0, //!< Default stream-backed backend (eager, same as stf_ctx_create())
+  STF_BACKEND_GRAPH  = 1, //!< CUDA-graph-backed backend (same as stf_ctx_create_graph())
+} stf_backend_kind;
+
+//!
+//! \brief Options for stf_ctx_create_ex()
+//!
+//! All fields are optional. Zero-initialize and set only what you need; the
+//! remaining fields keep their default meaning. Treat this struct as
+//! append-only: new knobs may be added at the end in future releases, so
+//! always zero the struct before populating it.
+
+typedef struct stf_ctx_options
+{
+  stf_backend_kind backend; //!< Backend selector (default: STF_BACKEND_STREAM)
+  int has_stream; //!< 0: no caller stream; non-zero: inherit `stream`
+  cudaStream_t stream; //!< Caller-owned stream (used iff `has_stream != 0`).
+                       //!< `cudaStream_t` is a pointer; `nullptr` is the NULL stream,
+                       //!< not a sentinel -- use `has_stream` to say "no stream".
+  stf_async_resources_handle handle; //!< Shared resources handle, or NULL for "create fresh"
+} stf_ctx_options;
+
+//!
+//! \brief Create an STF context with optional stream/handle/backend selection
+//!
+//! Unified factory covering every combination of:
+//!   - backend (stream vs CUDA graph),
+//!   - caller-provided `cudaStream_t` to inherit,
+//!   - caller-provided shared `stf_async_resources_handle`.
+//!
+//! Passing `opts == NULL` is equivalent to stf_ctx_create() (stream backend,
+//! default stream, fresh resources handle).
+//!
+//! \param opts Zero-initialized options struct, or NULL for all defaults.
+//! \return Context handle, or NULL if allocation failed.
+//!
+//! \post On success, caller must finalize with stf_ctx_finalize().
+//!
+//! \par Example (reuse one resources handle across many graph contexts):
+//! \code
+//! stf_async_resources_handle h = stf_async_resources_create();
+//! for (int i = 0; i < N; ++i) {
+//!   stf_ctx_options opts = {0};
+//!   opts.backend    = STF_BACKEND_GRAPH;
+//!   opts.has_stream = 1;           // opt-in to caller stream binding
+//!   opts.stream     = user_stream; // may be 0 for the default/NULL stream
+//!   opts.handle     = h;
+//!   stf_ctx_handle ctx = stf_ctx_create_ex(&opts);
+//!   // ... submit tasks ...
+//!   stf_ctx_finalize(ctx);
+//! }
+//! stf_async_resources_destroy(h);
+//! \endcode
+
+stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts);
+
+//!
 //! \brief Finalize STF context
 //!
 //! Waits for all pending operations to complete, performs write-back
