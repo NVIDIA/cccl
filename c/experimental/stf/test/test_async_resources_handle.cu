@@ -184,10 +184,10 @@ C2H_TEST("stf_async_resources_handle: lifetime smoke (no work, NULL destroy)",
   REQUIRE(h2 != nullptr);
   {
     stf_ctx_options opts{};
-    opts.backend    = STF_BACKEND_STREAM;
-    opts.has_stream = 1;
-    opts.stream     = s;
-    opts.handle     = h2;
+    opts.backend       = STF_BACKEND_STREAM;
+    opts.has_stream    = 1;
+    opts.stream        = s;
+    opts.handle        = h2;
     stf_ctx_handle ctx = stf_ctx_create_ex(&opts);
     REQUIRE(ctx != nullptr);
     stf_ctx_finalize(ctx);
