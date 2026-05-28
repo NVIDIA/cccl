@@ -149,6 +149,26 @@ public:
 };
 
 #ifdef UNITTESTED_FILE
+struct empty_tiled_mdspan_mock_shape
+{
+  using coords_t = pos4;
+
+  _CCCL_HOST_DEVICE static constexpr size_t rank()
+  {
+    return 1;
+  }
+
+  _CCCL_HOST_DEVICE size_t size() const
+  {
+    return 0;
+  }
+
+  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  {
+    return pos4(index);
+  }
+};
+
 UNITTEST("Composite data place equality")
 {
   auto all           = exec_place::all_devices();
@@ -190,27 +210,7 @@ UNITTEST("tiled partition with large 1D data")
 
 UNITTEST("tiled mdspan shape empty size is zero")
 {
-  struct mock_shape
-  {
-    using coords_t = pos4;
-
-    _CCCL_HOST_DEVICE static constexpr size_t rank()
-    {
-      return 1;
-    }
-
-    _CCCL_HOST_DEVICE size_t size() const
-    {
-      return 0;
-    }
-
-    _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
-    {
-      return pos4(index);
-    }
-  };
-
-  auto shape = reserved::tiled_mdspan_shape<4, mock_shape>(mock_shape{}, 0, 3);
+  auto shape = reserved::tiled_mdspan_shape<4, empty_tiled_mdspan_mock_shape>(empty_tiled_mdspan_mock_shape{}, 0, 3);
   EXPECT(shape.size() == 0);
 };
 
