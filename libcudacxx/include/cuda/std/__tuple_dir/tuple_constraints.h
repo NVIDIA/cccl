@@ -65,7 +65,13 @@ template <class... _Types>
 inline constexpr bool __tuple_all_copy_constructible_v = (is_copy_constructible_v<_Types> && ...);
 
 template <class... _Types>
+inline constexpr bool __tuple_all_nothrow_copy_constructible_v = (is_nothrow_copy_constructible_v<_Types> && ...);
+
+template <class... _Types>
 inline constexpr bool __tuple_all_move_constructible_v = (is_move_constructible_v<_Types> && ...);
+
+template <class... _Types>
+inline constexpr bool __tuple_all_nothrow_move_constructible_v = (is_nothrow_move_constructible_v<_Types> && ...);
 
 template <class... _Types>
 inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Types> && ...);
@@ -150,7 +156,7 @@ struct _TupleVariadicCopyConstructibleTraits
 {
   static constexpr bool __implicit_construction = (is_convertible_v<const _Types&, _Types> && ...);
   static constexpr bool __explicit_construction = !__implicit_construction;
-  static constexpr bool __nothrow_construction  = (is_nothrow_copy_constructible_v<_Types> && ...);
+  static constexpr bool __nothrow_construction  = __tuple_all_nothrow_copy_constructible_v<_Types...>;
 };
 
 template <class... _Types, enable_if_t<__tuple_all_copy_constructible_v<_Types...>, int> = 0>
@@ -165,7 +171,7 @@ struct _TupleVariadicMoveConstructibleTraits
 {
   static constexpr bool __implicit_construction = (is_convertible_v<_Types&&, _Types> && ...);
   static constexpr bool __explicit_construction = !__implicit_construction;
-  static constexpr bool __nothrow_construction  = (is_nothrow_move_constructible_v<_Types> && ...);
+  static constexpr bool __nothrow_construction  = __tuple_all_nothrow_move_constructible_v<_Types...>;
 };
 
 template <class... _Types, enable_if_t<__tuple_all_move_constructible_v<_Types...>, int> = 0>
