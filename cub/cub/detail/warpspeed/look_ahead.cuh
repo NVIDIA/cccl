@@ -123,7 +123,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
   return res;
 }
 
-// warpLoadLookback loads tmp states:
+// warpLoadLookahead loads tmp states:
 //   idxTileCur + [0; 32 * numTileStatesPerThread[
 //
 // The states are loaded in laneId order and warp-strided:
@@ -142,7 +142,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
 // If the index idxTileCur + ii of the loaded state is equal to or exceeds idxTileNext, i.e., idxTileCur + ii >=
 // idxTileNext, then the state is not loaded from memory and set to empty.
 template <int numTileStatesPerThread, typename AccumT>
-_CCCL_DEVICE_API void warpLoadLookback(
+_CCCL_DEVICE_API void warpLoadLookahead(
   int laneIdx,
   tile_state_t<AccumT> (&outTileStates)[numTileStatesPerThread],
   tile_state_t<AccumT>* ptrTileStates,
@@ -151,10 +151,10 @@ _CCCL_DEVICE_API void warpLoadLookback(
 {
   for (int i = 0; i < numTileStatesPerThread; ++i)
   {
-    const int idxTileLookback = idxTileCur + 32 * i + laneIdx;
-    if (idxTileLookback < idxTileNext)
+    const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
+    if (idxTileLookahead < idxTileNext)
     {
-      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookback);
+      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookahead);
     }
     else
     {
@@ -164,7 +164,7 @@ _CCCL_DEVICE_API void warpLoadLookback(
   }
 }
 
-// warpIncrementalLookback takes the latest known aggrExclusiveCtaPrev and its tile index, idxTilePrev (which's
+// warpIncrementalLookahead takes the latest known aggrExclusiveCtaPrev and its tile index, idxTilePrev (which's
 // aggregate is NOT included in aggrExclusiveCtaPrev), and computes the aggrExclusiveCta for the next tile of interest,
 // idxTileNext (where the returned value will NOT include the aggregate of idxTileNext).
 //
@@ -174,7 +174,7 @@ _CCCL_DEVICE_API void warpLoadLookback(
 //
 // The function must be called from a single warp. All passed arguments must be warp-uniform.
 template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookback(
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookahead(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
   const int idxTilePrev,
@@ -201,7 +201,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
-    warpLoadLookback(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
+    warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
 
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {

@@ -100,7 +100,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   const int num_block_idx_stages =
     policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, numStages + policy.block_idx_stages);
   const int num_aggr_exclusive_cta_stages =
-    policy.lookback_stages > 0 ? policy.lookback_stages : ::cuda::std::max(1, numStages + policy.lookback_stages);
+    policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, numStages + policy.lookahead_stages);
 
   ScanResourcesT res = {
     warpspeed::SmemResource<in_out_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
@@ -267,14 +267,14 @@ struct warpspeed_scan_closure
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
   static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
   static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
-  static constexpr warpspeed::SquadDesc squadLookback  = squad_lookback(policy);
+  static constexpr warpspeed::SquadDesc squadLookahead = squad_lookahead(policy);
 
   static constexpr ::cuda::std::array<warpspeed::SquadDesc, 5> scanSquads = {
     squad_reduce(policy),
     squad_scan_store(policy),
     squad_load(policy),
     squad_sched(policy),
-    squad_lookback(policy),
+    squad_lookahead(policy),
   };
 
   static constexpr int tile_size                   = policy.tile_size();
@@ -314,7 +314,7 @@ struct warpspeed_scan_closure
     warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
   }
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookback(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
     const warpspeed::Squad& squad,
     warpspeed::SmemPhase<AccumT>& phaseAggrExclusiveCtaW,
     bool is_first_tile,
@@ -326,7 +326,7 @@ struct warpspeed_scan_closure
 
     if (!is_first_tile)
     {
-      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
+      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<look_ahead_items_per_thread>(
         specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
       if (squad.isLeaderThread())
       {
@@ -427,7 +427,7 @@ struct warpspeed_scan_closure
       }
     }
 
-    // Store tile aggregate for lookback
+    // Store tile aggregate for lookahead
     if (squad.isLeaderThread())
     {
       warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadAggr, idxTile);
@@ -700,9 +700,9 @@ struct warpspeed_scan_closure
   {
     // Start with the tile indicated by blockIdx.x
     int idxTile = specialRegisters.blockIdxX;
-    // Lookback-specific variables:
+    // Lookahead-specific variables:
     int idxTilePrev = 0;
-    AccumT AggrExclusiveCtaPrev; // only valid in squadLookback lane_0
+    AccumT AggrExclusiveCtaPrev; // only valid in squadLookahead lane_0
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -760,9 +760,9 @@ struct warpspeed_scan_closure
           squad, phaseInOutRW, phaseThreadAndWarpAggrW, valid_items, is_first_tile, is_last_tile, loadInfo, idxTile);
       }
 
-      if (squad == squadLookback)
+      if (squad == squadLookahead)
       {
-        lookback(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile);
+        lookahead(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile);
       }
 
       if (squad == squadScanStore)
