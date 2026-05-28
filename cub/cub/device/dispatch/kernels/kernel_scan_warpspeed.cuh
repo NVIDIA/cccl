@@ -732,10 +732,10 @@ struct agent_warpspeed_scan
     {
       // Get stages. When these objects go out of scope, the stage of the resource
       // is automatically incremented.
-      warpspeed::SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.popStage();
-      warpspeed::SmemStage stageInOut            = res.smemInOut.popStage();
-      warpspeed::SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.popStage();
-      warpspeed::SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.popStage();
+      warpspeed::SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.nextStage();
+      warpspeed::SmemStage stageInOut            = res.smemInOut.nextStage();
+      warpspeed::SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.nextStage();
+      warpspeed::SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.nextStage();
 
       // Split the stages into phases. Each resource goes through phases where it
       // is writeable by a set of threads and readable by a set of threads. To
