@@ -43,8 +43,7 @@ struct has_simd_bit_ceil : cuda::std::false_type
 {};
 
 template <typename V>
-struct has_simd_bit_ceil<V, cuda::std::void_t<decltype(simd::bit_ceil(cuda::std::declval<V>()))>>
-    : cuda::std::true_type
+struct has_simd_bit_ceil<V, cuda::std::void_t<decltype(simd::bit_ceil(cuda::std::declval<V>()))>> : cuda::std::true_type
 {};
 
 TEST_FUNC constexpr void test_constraints()

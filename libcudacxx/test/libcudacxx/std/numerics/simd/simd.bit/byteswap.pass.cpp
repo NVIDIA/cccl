@@ -43,8 +43,7 @@ struct has_simd_byteswap : cuda::std::false_type
 {};
 
 template <typename V>
-struct has_simd_byteswap<V, cuda::std::void_t<decltype(simd::byteswap(cuda::std::declval<V>()))>>
-    : cuda::std::true_type
+struct has_simd_byteswap<V, cuda::std::void_t<decltype(simd::byteswap(cuda::std::declval<V>()))>> : cuda::std::true_type
 {};
 
 TEST_FUNC constexpr void test_constraints()
