@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
-
 // <mdspan>
 //
 // friend constexpr void swap(mdspan& x, mdspan& y) noexcept;

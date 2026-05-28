@@ -19,7 +19,7 @@
 
 // Blocked partition along first dimension: maps data coordinates to grid position.
 // Used to exercise composite data place with a grid of execution places.
-static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
+static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 {
   uint64_t extent    = data_dims.x;
   uint64_t nplaces   = grid_dims.x;
@@ -34,12 +34,10 @@ static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_
   {
     place_x = static_cast<int64_t>(nplaces) - 1;
   }
-  stf_pos4 result = {};
-  result.x        = place_x;
-  result.y        = 0;
-  result.z        = 0;
-  result.t        = 0;
-  return result;
+  result->x = place_x;
+  result->y = 0;
+  result->z = 0;
+  result->t = 0;
 }
 
 C2H_TEST("empty stf tasks", "[task]")
@@ -231,4 +229,62 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   {
     REQUIRE(X[i] == static_cast<float>(i));
   }
+}
+
+C2H_TEST("exec_place_pick_stream standalone resources", "[places][stream]")
+{
+  stf_exec_place_resources_handle res = stf_exec_place_resources_create();
+  REQUIRE(res != nullptr);
+
+  stf_exec_place_handle place = stf_exec_place_current_device();
+  REQUIRE(place != nullptr);
+
+  CUstream stream = stf_exec_place_pick_stream(res, place, /*for_computation=*/1);
+  REQUIRE(stream != nullptr);
+  REQUIRE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess);
+
+  stf_exec_place_destroy(place);
+  stf_exec_place_resources_destroy(res);
+}
+
+C2H_TEST("exec_place resources are independent", "[places][stream]")
+{
+  stf_exec_place_resources_handle res1 = stf_exec_place_resources_create();
+  stf_exec_place_resources_handle res2 = stf_exec_place_resources_create();
+  REQUIRE(res1 != nullptr);
+  REQUIRE(res2 != nullptr);
+
+  stf_exec_place_handle place = stf_exec_place_current_device();
+  REQUIRE(place != nullptr);
+
+  CUstream stream1 = stf_exec_place_pick_stream(res1, place, /*for_computation=*/1);
+  CUstream stream2 = stf_exec_place_pick_stream(res2, place, /*for_computation=*/1);
+  REQUIRE(stream1 != nullptr);
+  REQUIRE(stream2 != nullptr);
+  REQUIRE(stream1 != stream2);
+
+  stf_exec_place_destroy(place);
+  stf_exec_place_resources_destroy(res2);
+  stf_exec_place_resources_destroy(res1);
+}
+
+C2H_TEST("exec_place_pick_stream borrowed context resources", "[places][stream][ctx]")
+{
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  stf_exec_place_resources_handle res = stf_ctx_get_place_resources(ctx);
+  REQUIRE(res != nullptr);
+
+  stf_exec_place_handle place = stf_exec_place_current_device();
+  REQUIRE(place != nullptr);
+
+  CUstream stream = stf_exec_place_pick_stream(res, place, /*for_computation=*/1);
+  REQUIRE(stream != nullptr);
+  REQUIRE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess);
+
+  stf_exec_place_resources_destroy(res);
+
+  stf_exec_place_destroy(place);
+  stf_ctx_finalize(ctx);
 }

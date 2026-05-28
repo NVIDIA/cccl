@@ -52,18 +52,18 @@ int main(int, char**)
   //  test<long double, double>();
   //  test<long double, long double>();
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test<float, __half>();
   test<double, __half>();
   test<__half, float>();
   test<__half, double>();
-#  if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test<float, __nv_bfloat16>();
   test<double, __nv_bfloat16>();
   test<__nv_bfloat16, float>();
   test<__nv_bfloat16, double>();
-#  endif
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   static_assert(test<float, float>());
   static_assert(test<float, double>());

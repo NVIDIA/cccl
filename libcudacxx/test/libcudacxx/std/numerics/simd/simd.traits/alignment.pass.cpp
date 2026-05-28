@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/std/__simd_>
 
 // template<class T, class U = typename T::value_type>
@@ -23,27 +26,29 @@
 
 namespace simd = cuda::std::simd;
 
-template <typename T, int N, size_t ExpectedAlign = alignof(T) * N>
+inline constexpr size_t optimal_cuda_alignment = _CCCL_CTK_AT_LEAST(12, 9) ? 32 : 16;
+
+template <typename T, int N>
 TEST_FUNC void test_default_u()
 {
   using V = simd::basic_vec<T, simd::fixed_size<N>>;
-  static_assert(simd::alignment<V>::value == ExpectedAlign);
-  static_assert(simd::alignment_v<V> == ExpectedAlign);
+  static_assert(simd::alignment<V>::value == optimal_cuda_alignment);
+  static_assert(simd::alignment_v<V> == optimal_cuda_alignment);
 }
 
-template <typename T, int N, typename U, size_t ExpectedAlign = alignof(U) * N>
+template <typename T, int N, typename U>
 TEST_FUNC void test_explicit_u()
 {
   using V = simd::basic_vec<T, simd::fixed_size<N>>;
-  static_assert(simd::alignment<V, U>::value == ExpectedAlign);
-  static_assert(simd::alignment_v<V, U> == ExpectedAlign);
+  static_assert(simd::alignment<V, U>::value == optimal_cuda_alignment);
+  static_assert(simd::alignment_v<V, U> == optimal_cuda_alignment);
 }
 
 template <typename T>
 TEST_FUNC void test_type()
 {
   test_default_u<T, 1>();
-  test_default_u<T, 3, alignof(T)>();
+  test_default_u<T, 3>();
   test_default_u<T, 2>();
   test_default_u<T, 4>();
   test_default_u<T, 8>();
@@ -70,7 +75,7 @@ TEST_FUNC void test()
 
   // explicit U different from value_type
   test_explicit_u<int, 1, float>();
-  test_explicit_u<int, 3, float, alignof(float)>();
+  test_explicit_u<int, 3, float>();
   test_explicit_u<int, 4, char>();
   test_explicit_u<float, 2, double>();
   test_explicit_u<double, 4, int>();

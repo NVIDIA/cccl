@@ -114,7 +114,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
   constexpr scan_policy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)

@@ -51,29 +51,29 @@ enum class arch_id : int
     _OP) " is deprecated and will be deleted in the next major release. Compare cuda::compute_capabilities of the " \
          "given "                                                                                                   \
          "cuda::arch_id instead.")
-[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_API constexpr bool
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_HOST_DEVICE_API constexpr bool
 operator<(arch_id __lhs, arch_id __rhs) noexcept
 {
   return ::cuda::std::to_underlying(__lhs) < ::cuda::std::to_underlying(__rhs);
 }
-[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<=) _CCCL_API constexpr bool
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<=) _CCCL_HOST_DEVICE_API constexpr bool
 operator<=(arch_id __lhs, arch_id __rhs) noexcept
 {
   return ::cuda::std::to_underlying(__lhs) <= ::cuda::std::to_underlying(__rhs);
 }
-[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>) _CCCL_API constexpr bool
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>) _CCCL_HOST_DEVICE_API constexpr bool
 operator>(arch_id __lhs, arch_id __rhs) noexcept
 {
   return ::cuda::std::to_underlying(__lhs) > ::cuda::std::to_underlying(__rhs);
 }
-[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>=) _CCCL_API constexpr bool
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>=) _CCCL_HOST_DEVICE_API constexpr bool
 operator>=(arch_id __lhs, arch_id __rhs) noexcept
 {
   return ::cuda::std::to_underlying(__lhs) >= ::cuda::std::to_underlying(__rhs);
 }
 #undef _CCCL_DEPRECATED_ARCH_ID_COMPARISONS
 
-[[nodiscard]] _CCCL_API constexpr auto __all_arch_ids() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __all_arch_ids() noexcept
 {
   return ::cuda::std::array{
 #define _CCCL_MAKE_ARCH_ID(_CC)          arch_id::sm_##_CC,
@@ -85,12 +85,12 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
   };
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __is_specific_arch(arch_id __arch) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __is_specific_arch(arch_id __arch) noexcept
 {
   return ::cuda::std::to_underlying(__arch) > __arch_specific_id_multiplier;
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __has_known_arch(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __has_known_arch(compute_capability __cc) noexcept
 {
   switch (__cc.get())
   {
@@ -103,7 +103,7 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
   }
 }
 
-[[nodiscard]] _CCCL_API constexpr bool __has_known_specific_arch(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __has_known_specific_arch(compute_capability __cc) noexcept
 {
   switch (__cc.get())
   {
@@ -121,7 +121,7 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
 //! @param __cc The compute capability. Must have a corresponding architecture id.
 //!
 //! @returns The architecture id.
-[[nodiscard]] _CCCL_API constexpr arch_id to_arch_id(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_id to_arch_id(compute_capability __cc) noexcept
 {
   _CCCL_ASSERT(::cuda::__has_known_arch(__cc), "this compute capability cannot be converted to arch id");
   return static_cast<arch_id>(__cc.get());
@@ -132,7 +132,7 @@ operator>=(arch_id __lhs, arch_id __rhs) noexcept
 //! @param __cc The compute capability. Must have a corresponding architecture specific id.
 //!
 //! @returns The architecture specific id.
-[[nodiscard]] _CCCL_API constexpr arch_id to_arch_specific_id(compute_capability __cc) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_id to_arch_specific_id(compute_capability __cc) noexcept
 {
   _CCCL_ASSERT(::cuda::__has_known_specific_arch(__cc),
                "this compute capability cannot be converted to arch specific id");

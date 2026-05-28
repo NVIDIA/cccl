@@ -44,7 +44,7 @@ struct scan_by_key_policy
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  _CCCL_API constexpr friend bool operator==(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -52,7 +52,7 @@ struct scan_by_key_policy
         && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -1031,7 +1031,7 @@ struct policy_hub
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename ActivePolicyT>
-_CCCL_API constexpr auto convert_policy() -> scan_by_key_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> scan_by_key_policy
 {
   using policy_t = typename ActivePolicyT::ScanByKeyPolicyT;
   return {policy_t::BLOCK_THREADS,
@@ -1061,30 +1061,40 @@ struct policy_selector
   int accum_size;
   bool value_is_primitive;
   bool value_is_trivially_copyable;
+  bool accum_is_primitive;
+  bool accum_is_trivially_copyable;
   type_t key_type;
   type_t value_type;
   type_t accum_type;
   op_kind_t operation_t;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> scan_by_key_policy
   {
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
-    const bool primitive_accum =
-      accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128;
+    const bool accum_is_primitive_or_trivially_copyable = accum_is_primitive || accum_is_trivially_copyable;
     const bool primitive_value = value_is_primitive && value_type != type_t::int128 && value_type != type_t::uint128;
     const bool primitive_op    = operation_t != op_kind_t::other;
     const int max_input_bytes  = (::cuda::std::max) (key_size, accum_size);
     const int combined_input_bytes = key_size + accum_size;
 
-    const auto default_items =
-      max_input_bytes <= 8
-        ? 9
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
-
-    const auto policy500_items =
-      max_input_bytes <= 8
-        ? 6
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
+    auto default_policy =
+      [&](CacheLoadModifier load_modifier,
+          int delay_ctor_key_size,
+          bool delay_ctor_key_is_primitive_or_trivially_copyable) -> scan_by_key_policy {
+      const auto items_per_thread =
+        max_input_bytes <= 8
+          ? 9
+          : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
+      return {256,
+              items_per_thread,
+              BLOCK_LOAD_WARP_TRANSPOSE,
+              load_modifier,
+              BLOCK_STORE_WARP_TRANSPOSE,
+              BLOCK_SCAN_WARP_SCANS,
+              default_reduce_by_key_delay_constructor_policy(
+                delay_ctor_key_size, sizeof(int), delay_ctor_key_is_primitive_or_trivially_copyable, true)};
+    };
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -1510,7 +1520,7 @@ struct policy_selector
         }
 #endif
 
-        if (key_size == 16 && primitive_accum)
+        if (key_size == 16 && accum_is_primitive)
         {
           switch (value_size)
           {
@@ -1570,25 +1580,12 @@ struct policy_selector
 #endif
       }
 
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_DEFAULT, value_size, value_is_primitive_or_trivially_copyable);
     }
 
-    if (cc >= ::cuda::compute_capability{8, 6}) // && cc < ::cuda::compute_capability{9, 0}
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_CA,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
+      return default_policy(LOAD_CA, accum_size, accum_is_primitive_or_trivially_copyable);
     }
 
     if (cc >= ::cuda::compute_capability{8, 0})
@@ -1830,7 +1827,7 @@ struct policy_selector
         }
 #endif
 
-        if (key_size == 16 && primitive_accum)
+        if (key_size == 16 && accum_is_primitive)
         {
           switch (value_size)
           {
@@ -1890,41 +1887,35 @@ struct policy_selector
 #endif
       }
 
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_DEFAULT, value_size, value_is_primitive_or_trivially_copyable);
     }
 
-    if (cc >= ::cuda::compute_capability{6, 0})
+    if (cc >= ::cuda::compute_capability{5, 2})
     {
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_CA,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
+      return default_policy(LOAD_CA, accum_size, accum_is_primitive_or_trivially_copyable);
     }
 
+    // SM50
+    const auto items_per_thread =
+      max_input_bytes <= 8
+        ? 6
+        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
     return {128,
-            policy500_items,
+            items_per_thread,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_CA,
             BLOCK_STORE_WARP_TRANSPOSE,
             BLOCK_SCAN_WARP_SCANS,
-            default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
+            default_reduce_by_key_delay_constructor_policy(
+              accum_size, sizeof(int), accum_is_primitive_or_trivially_copyable, true)};
   }
 };
 
 template <typename KeyT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> scan_by_key_policy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),
@@ -1932,6 +1923,8 @@ struct policy_selector_from_types
       static_cast<int>(sizeof(AccumT)),
       is_primitive<ValueT>::value,
       ::cuda::is_trivially_copyable_v<ValueT>,
+      is_primitive<AccumT>::value,
+      ::cuda::is_trivially_copyable_v<AccumT>,
       classify_type<KeyT>,
       classify_type<ValueT>,
       classify_type<AccumT>,

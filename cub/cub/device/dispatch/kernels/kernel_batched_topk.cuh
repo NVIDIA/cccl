@@ -56,7 +56,7 @@ private:
 
       struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
       {
-        _CCCL_API constexpr auto operator()() const
+        _CCCL_HOST_DEVICE_API constexpr auto operator()() const
         {
           return policy_t{active_policy.worker_per_segment_policies[Index],
                           active_policy.multi_worker_per_segment_policy};
@@ -87,7 +87,7 @@ public:
 
   struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
   {
-    _CCCL_API constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
       return policy;
     }

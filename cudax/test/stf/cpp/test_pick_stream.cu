@@ -50,13 +50,13 @@ int main()
   }
 
   // ==========================================================================
-  // Test exec_place::getStream() - returns decorated_stream with metadata
+  // Test exec_place::getStream() - returns augmented_stream with metadata
   // ==========================================================================
   {
     exec_place place = exec_place::current_device();
 
-    // getStream() returns a decorated_stream with additional metadata
-    decorated_stream dstream = place.getStream(resources, true);
+    // getStream() returns a augmented_stream with additional metadata
+    augmented_stream dstream = place.getStream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
     EXPECT(get_device_from_stream(dstream.stream) == current_device);
@@ -100,7 +100,7 @@ int main()
       EXPECT(get_device_from_stream(stream) == test_device);
 
       // getStream returns more metadata
-      decorated_stream dstream = dev_place.getStream(resources, true);
+      augmented_stream dstream = dev_place.getStream(resources, true);
       EXPECT(dstream.stream != nullptr);
       EXPECT(dstream.dev_id == test_device);
     }
@@ -180,7 +180,7 @@ int main()
 
   // Test that host exec_place activate works (no-op in practice)
   {
-    exec_place host_place = exec_place::host;
+    exec_place host_place = exec_place::host();
     auto active           = host_place.activate();
   }
 
@@ -239,7 +239,7 @@ int main()
     context ctx;
 
     exec_place dev1_place = exec_place::device(1);
-    ctx.set_affinity({::std::make_shared<exec_place>(dev1_place)});
+    ctx.push_affinity(::std::make_shared<exec_place>(dev1_place));
 
     // Stream should now come from device 1's pool
     cudaStream_t affinity_stream = ctx.pick_stream();

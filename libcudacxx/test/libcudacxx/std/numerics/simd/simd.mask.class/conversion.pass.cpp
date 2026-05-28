@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/std/__simd_>
 
 // [simd.mask.conv], basic_mask conversions
@@ -31,8 +34,8 @@
 template <typename T, int N>
 TEST_FUNC constexpr void test_implicit_conv()
 {
-  using Mask = simd::basic_mask<sizeof(T), simd::fixed_size<N>>;
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
+  using Mask = typename Vec::mask_type;
   Mask mask(is_even{});
 
   static_assert(cuda::std::is_convertible_v<const Mask&, Vec>);

@@ -44,23 +44,23 @@ struct __atomic_ref_storage
 
   __atomic_ref_storage() = delete;
 
-  _CCCL_API constexpr explicit __atomic_ref_storage(_Tp* value) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __atomic_ref_storage(_Tp* value) noexcept
       : __a_value(value)
   {}
 
-  _CCCL_API auto get() noexcept -> __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() noexcept -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_API auto get() const noexcept -> __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() const noexcept -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_API auto get() volatile noexcept -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() volatile noexcept -> volatile __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_API auto get() const volatile noexcept -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() const volatile noexcept -> volatile __underlying_t*
   {
     return __a_value;
   }

@@ -65,10 +65,10 @@ template <auto _Mbr, auto _BoundMbr>
 struct __virtuals_map_element
 {
   // map ifoo<>::meow to itself
-  _CCCL_API auto operator()(__ctag<_Mbr>) const -> __virtual_fn<_Mbr>;
+  _CCCL_HOST_DEVICE_API auto operator()(__ctag<_Mbr>) const -> __virtual_fn<_Mbr>;
 
   // map ifoo<_Super>::meow to ifoo<>::meow
-  _CCCL_API auto operator()(__ctag<_BoundMbr>) const -> __virtual_fn<_Mbr>;
+  _CCCL_HOST_DEVICE_API auto operator()(__ctag<_BoundMbr>) const -> __virtual_fn<_Mbr>;
 };
 
 template <class, class>
@@ -106,7 +106,7 @@ template <auto _Mbr, class _Interface>
 inline constexpr bool __valid_virtcall<_Mbr, __ireference<_Interface const>> = __virtual_fn<_Mbr>::__const_fn;
 
 template <auto _Mbr, class _Interface, class _Super, class _Self, class... _Args>
-_CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
+_CCCL_HOST_DEVICE_API auto __virtcall(_Self* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {

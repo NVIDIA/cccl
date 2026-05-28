@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // XFAIL: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
+// error: a return statement inside a loop is not currently supported in a tile function
 
 // cuda::std::views::common
 

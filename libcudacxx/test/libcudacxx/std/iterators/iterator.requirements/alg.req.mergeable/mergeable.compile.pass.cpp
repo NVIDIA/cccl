@@ -50,13 +50,11 @@ using ProjFooToInt  = int (*)(Foo);
 using ProjFooToLong = long (*)(Foo);
 static_assert(cuda::std::indirect_strict_weak_order<CompDefault,
                                                     cuda::std::projected<Foo*, ProjFooToInt>,
-                                                    cuda::std::projected<Foo*, ProjFooToLong>>,
-              "");
+                                                    cuda::std::projected<Foo*, ProjFooToLong>>);
 static_assert(cuda::std::mergeable<Foo*, Foo*, Foo*, CompDefault, ProjFooToInt, ProjFooToLong>);
 static_assert(cuda::std::indirect_strict_weak_order<CompInt,
                                                     cuda::std::projected<Foo*, ProjFooToInt>,
-                                                    cuda::std::projected<Foo*, ProjFooToLong>>,
-              "");
+                                                    cuda::std::projected<Foo*, ProjFooToLong>>);
 static_assert(cuda::std::mergeable<Foo*, Foo*, Foo*, CompInt, ProjFooToInt, ProjFooToLong>);
 
 // I1 or I2 is not an input iterator.
@@ -116,8 +114,7 @@ struct ProjectionOnlyMutable
   TEST_FUNC int operator()(int&);
   int operator()(int&&) const = delete;
 };
-static_assert(cuda::std::mergeable<Input, Input, Output, CompDefault, ProjectionOnlyMutable, ProjectionOnlyMutable>,
-              "");
+static_assert(cuda::std::mergeable<Input, Input, Output, CompDefault, ProjectionOnlyMutable, ProjectionOnlyMutable>);
 
 // The output is weakly incrementable but not an output iterator.
 struct WeaklyIncrementable

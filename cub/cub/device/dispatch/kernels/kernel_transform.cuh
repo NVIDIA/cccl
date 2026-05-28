@@ -134,7 +134,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
 {
   const int tile_size   = ThreadsPerBlock * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
+  const int valid_items = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -246,7 +246,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = threads_per_block * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
+  const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
@@ -597,7 +597,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // constexpr int threads_per_block = Policy.async_copy.threads_per_block;
   const int tile_size   = threads_per_block * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
+  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, static_cast<Offset>(tile_size)));
 
   [[maybe_unused]] int smem_offset = 0;
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
@@ -792,7 +792,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   const int tile_size   = threads_per_block * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
+  const int valid_items = (::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size));
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -991,7 +991,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_threads_per_block_helper() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_threads_per_block_helper() noexcept
 {
   constexpr transform_policy policy = current_policy<PolicySelector>();
   if constexpr (policy.algorithm == Algorithm::prefetch)

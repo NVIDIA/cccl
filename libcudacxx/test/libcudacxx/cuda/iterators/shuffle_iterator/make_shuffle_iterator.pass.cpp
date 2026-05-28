@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
-
 // constexpr explicit shuffle_iterator(Bijection, index_type = 0);
 // template<class RGN> constexpr explicit shuffle_iterator(index_type, RNG, index_type = 0);
 

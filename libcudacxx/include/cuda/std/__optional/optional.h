@@ -130,25 +130,25 @@ public:
   _CCCL_TEMPLATE(class _In_place_t, class... _Args)
   _CCCL_REQUIRES(is_same_v<_In_place_t, in_place_t> _CCCL_AND is_constructible_v<value_type, _Args...>)
   _CCCL_API constexpr explicit optional(_In_place_t, _Args&&... __args)
-      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(is_constructible_v<value_type, initializer_list<_Up>&, _Args...>)
   _CCCL_API constexpr explicit optional(in_place_t, initializer_list<_Up> __il, _Args&&... __args)
-      : __base(in_place, __il, ::cuda::std::forward<_Args>(__args)...)
+      : __base(in_place_t{}, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up = value_type)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr optional(_Up&& __v)
-      : __base(in_place, ::cuda::std::forward<_Up>(__v))
+      : __base(in_place_t{}, ::cuda::std::forward<_Up>(__v))
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_explictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr explicit optional(_Up&& __v)
-      : __base(in_place, ::cuda::std::forward<_Up>(__v))
+      : __base(in_place_t{}, ::cuda::std::forward<_Up>(__v))
   {}
 
   _CCCL_TEMPLATE(class _Up)

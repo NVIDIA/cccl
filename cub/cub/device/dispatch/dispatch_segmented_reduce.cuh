@@ -70,7 +70,7 @@ struct policy_selector_from_hub
 {
 private:
   template <typename ActivePolicyT>
-  _CCCL_API static constexpr auto convert_policy() -> segmented_reduce_policy
+  _CCCL_HOST_DEVICE_API static constexpr auto convert_policy() -> segmented_reduce_policy
   {
     using rp  = typename ActivePolicyT::ReducePolicy;
     using srp = typename segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>::MaxPolicy;
@@ -87,7 +87,7 @@ private:
     segmented_reduce_policy& policy;
 
     template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
+    _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
       policy = convert_policy<ActivePolicyT>();
       return cudaSuccess;
@@ -95,7 +95,8 @@ private:
   };
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> segmented_reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> segmented_reduce_policy
   {
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
@@ -470,7 +471,7 @@ namespace detail::segmented_reduce
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C.
 template <typename InputIteratorT, typename InitT, typename ReductionOpT>
-_CCCL_API auto select_segmented_accum_t(use_default*)
+_CCCL_HOST_DEVICE_API auto select_segmented_accum_t(use_default*)
   -> ::cuda::std::__accumulator_t<ReductionOpT, ::cuda::std::iter_value_t<InputIteratorT>, InitT>;
 
 template <typename InputIteratorT,
@@ -478,7 +479,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename OverrideAccumT,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
-_CCCL_API auto select_segmented_accum_t(OverrideAccumT*) -> OverrideAccumT;
+_CCCL_HOST_DEVICE_API auto select_segmented_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
   typename OverrideAccumT  = use_default,

@@ -16,6 +16,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
@@ -34,14 +35,14 @@ struct merge_policy
   BlockStoreAlgorithm store_algorithm;
   bool use_block_load_to_shared;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const merge_policy& lhs, const merge_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const merge_policy& lhs, const merge_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm
         && lhs.use_block_load_to_shared == rhs.use_block_load_to_shared;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const merge_policy& lhs, const merge_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const merge_policy& lhs, const merge_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -63,21 +64,16 @@ template <typename T>
 concept merge_policy_selector = policy_selector<T, merge_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-_CCCL_HOST_DEVICE constexpr int nominal_4b_items_to_items(int nominal_4b_items_per_thread, int type_size)
-{
-  return ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / type_size, 1, nominal_4b_items_per_thread);
-}
-
 struct policy_selector
 {
   int key_size;
   int value_size; // if 0, then this is a keys-only policy
   int offset_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
   {
     const int tune_type_size = key_size + value_size;
-    const int ipt_800_plus   = nominal_4b_items_to_items(15, tune_type_size);
+    const int ipt_800_plus   = nominal_4B_items_to_items(15, tune_type_size);
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {
@@ -106,12 +102,12 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{6, 0})
     {
-      const int ipt_600 = nominal_4b_items_to_items(15, tune_type_size);
+      const int ipt_600 = nominal_4B_items_to_items(15, tune_type_size);
       return merge_policy{512, ipt_600, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, false};
     }
 
     // default is SM52
-    const int ipt_520 = nominal_4b_items_to_items(13, tune_type_size);
+    const int ipt_520 = nominal_4B_items_to_items(13, tune_type_size);
     return merge_policy{512, ipt_520, LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE, false};
   }
 };
@@ -123,7 +119,7 @@ static_assert(merge_policy_selector<policy_selector>);
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> merge_policy
   {
     return policy_selector{
       int{sizeof(KeyT)}, ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)}, int{sizeof(OffsetT)}}(cc);

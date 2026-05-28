@@ -156,7 +156,7 @@ struct __basic_interface<_Interface, __extends<_Bases...>, Size, Align>
 //! __is_interface
 //!
 template <template <class...> class _Interface, class _Extends, size_t _Size, size_t _Align>
-_CCCL_API auto __is_interface_test(__basic_interface<_Interface, _Extends, _Size, _Align> const&) -> void;
+_CCCL_HOST_DEVICE_API auto __is_interface_test(__basic_interface<_Interface, _Extends, _Size, _Align> const&) -> void;
 
 // clang-format off
 template <class _Tp>
@@ -181,7 +181,7 @@ using __unique_interfaces _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_apply<
 //!
 //! __index_of_base: find the index of an interface in a list of unique interfaces
 //!
-[[nodiscard]] _CCCL_API constexpr auto __find_index(::cuda::std::initializer_list<bool> __il) -> size_t
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __find_index(::cuda::std::initializer_list<bool> __il) -> size_t
 {
   auto __it = ::cuda::std::find(__il.begin(), __il.end(), true);
   return static_cast<size_t>(__it - __il.begin());

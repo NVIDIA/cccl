@@ -90,28 +90,20 @@ TEST_FUNC constexpr bool test()
 
   // Check operator constraint for number of arguments
   static_assert(check_operator_constraints(
-                  cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0),
-                "");
+    cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0));
   static_assert(!check_operator_constraints(
-                  cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0, 0),
-                "");
+    cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), 0, 0));
 
   // Check operator constraint for convertibility of arguments to index_type
-  static_assert(
-    check_operator_constraints(
-      cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), IntType(0)),
-    "");
+  static_assert(check_operator_constraints(
+    cuda::std::layout_right::mapping<cuda::std::extents<int, D>>(cuda::std::extents<int, D>(1)), IntType(0)));
   static_assert(!check_operator_constraints(
-                  cuda::std::layout_right::mapping<cuda::std::extents<unsigned, D>>(cuda::std::extents<unsigned, D>(1)),
-                  IntType(0)),
-                "");
+    cuda::std::layout_right::mapping<cuda::std::extents<unsigned, D>>(cuda::std::extents<unsigned, D>(1)), IntType(0)));
 
   // Check operator constraint for no-throw-constructibility of index_type from arguments
-  static_assert(
-    !check_operator_constraints(
-      cuda::std::layout_right::mapping<cuda::std::extents<unsigned char, D>>(cuda::std::extents<unsigned char, D>(1)),
-      IntType(0)),
-    "");
+  static_assert(!check_operator_constraints(
+    cuda::std::layout_right::mapping<cuda::std::extents<unsigned char, D>>(cuda::std::extents<unsigned char, D>(1)),
+    IntType(0)));
 
   return true;
 }

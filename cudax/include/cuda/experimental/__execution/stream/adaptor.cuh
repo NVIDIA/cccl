@@ -72,7 +72,7 @@ namespace __stream
 struct __complete_rcvr
 {
   template <class _Rcvr, class _Tag, class... _Args>
-  _CCCL_API void operator()(_Rcvr& __rcvr, _Tag, _Args&&... __args) const noexcept
+  _CCCL_HOST_DEVICE_API void operator()(_Rcvr& __rcvr, _Tag, _Args&&... __args) const noexcept
   {
     _Tag{}(static_cast<_Rcvr&&>(__rcvr), static_cast<_Args&&>(__args)...);
   }
@@ -81,7 +81,7 @@ struct __complete_rcvr
 struct __visit_results
 {
   template <class _Rcvr, class _Tuple>
-  _CCCL_API void operator()(_Rcvr& __rcvr, _Tuple&& __tuple) const noexcept
+  _CCCL_HOST_DEVICE_API void operator()(_Rcvr& __rcvr, _Tuple&& __tuple) const noexcept
   {
     ::cuda::std::__apply(__complete_rcvr{}, static_cast<_Tuple&&>(__tuple), __rcvr);
   }
@@ -106,7 +106,7 @@ struct __state_t : __state_base_t<_Rcvr, _Variant>
 // remove any exception_ptr error completion from the completion signatures, and replace it
 // with a cudaError_t error completion.
 template <class _Completions>
-_CCCL_API constexpr auto __with_cuda_error(_Completions __completions) noexcept
+_CCCL_HOST_DEVICE_API constexpr auto __with_cuda_error(_Completions __completions) noexcept
 {
   return __completions - __eptr_completion() + completion_signatures<set_error_t(cudaError_t)>{};
 }
@@ -132,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
 {
   _CCCL_TEMPLATE(class _Query, class... _As)
   _CCCL_REQUIRES(__queryable_with<_Env, _Query, _As...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _As&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _As&&... __args) const
     noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> __query_result_t<_Env, _Query, _As...>
   {
     return __env_.query(_Query{}, static_cast<_As&&>(__args)...);
@@ -140,12 +140,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
 
   // This query is used to tell transform_sender that the child sender has been adapted to
   // the stream domain.
-  [[nodiscard]] _CCCL_API constexpr auto query(__stream::__adapted_t) const noexcept -> ::cuda::std::__ignore_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(__stream::__adapted_t) const noexcept
+    -> ::cuda::std::__ignore_t
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(get_launch_config_t) const noexcept -> _Config
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_launch_config_t) const noexcept -> _Config
   {
     return __launch_config_;
   }
@@ -159,7 +160,7 @@ template <class _Rcvr, class _Config, class _Variant>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
 {
   template <class _Tag, class... _Args>
-  _CCCL_API void __complete(_Tag, _Args&&... __args) noexcept
+  _CCCL_HOST_DEVICE_API void __complete(_Tag, _Args&&... __args) noexcept
   {
     if (__state_->__complete_inline_) // TODO: untested
     {
@@ -173,13 +174,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   }
 
   template <class... _Args>
-  _CCCL_API constexpr void set_value(_Args&&... __args) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void set_value(_Args&&... __args) noexcept
   {
     __complete(execution::set_value, static_cast<_Args&&>(__args)...);
   }
 
   template <class _Error>
-  _CCCL_API constexpr void set_error(_Error&& __err) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
     if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, exception_ptr>)
@@ -192,12 +193,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     }
   }
 
-  _CCCL_API constexpr void set_stopped() noexcept
+  _CCCL_HOST_DEVICE_API constexpr void set_stopped() noexcept
   {
     __complete(execution::set_stopped);
   }
 
-  _CCCL_API constexpr auto get_env() const noexcept -> __env_t<env_of_t<_Rcvr>, _Config>
+  _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_t<env_of_t<_Rcvr>, _Config>
   {
     return {execution::get_env(__state_->__rcvr_), __state_->__launch_config_};
   }
@@ -210,7 +211,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
 {
   using operation_state_concept = operation_state_t;
 
-  _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _GetStream __get_stream)
+  _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _GetStream __get_stream)
       : __stream_{__get_stream(__sndr, execution::get_env(__rcvr))}
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -220,14 +221,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
 
   _CCCL_IMMOVABLE(__opstate_t);
 
-  _CCCL_API constexpr void start() noexcept
+  _CCCL_HOST_DEVICE_API constexpr void start() noexcept
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
   }
 
   // This is called by the continues_on adaptor after it has sync'ed the stream.
   template <class _Rcvr2>
-  _CCCL_API auto __set_results(_Rcvr2& __rcvr) noexcept
+  _CCCL_HOST_DEVICE_API auto __set_results(_Rcvr2& __rcvr) noexcept
   {
     __visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
   }
@@ -313,7 +314,7 @@ private:
   // This is the part of the operation state that is stored in managed memory.
   struct __state_t
   {
-    _CCCL_API constexpr explicit __state_t(_CvSndr&& __sndr, _Rcvr __rcvr)
+    _CCCL_HOST_DEVICE_API constexpr explicit __state_t(_CvSndr&& __sndr, _Rcvr __rcvr)
         : __state_{{static_cast<_Rcvr&&>(__rcvr), {}, false}, get_launch_config(execution::get_env(__sndr))}
         , __opstate_(execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{&__state_}))
     {}
@@ -324,7 +325,7 @@ private:
 
   // Return a reference to the state for this operation, whether it is stored in-situ or
   // in dyncamically-allocated managed memory.
-  [[nodiscard]] _CCCL_API constexpr auto __get_state() noexcept -> __state_t&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __get_state() noexcept -> __state_t&
   {
     return __state_.__index() == 0
            ? execution::__variant_get<0>(__state_)
@@ -345,13 +346,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   // adapter's attributes.
   _CCCL_TEMPLATE(class _GetStream2 = _GetStream)
   _CCCL_REQUIRES(__callable<_GetStream2, _Sndr, env<>>)
-  [[nodiscard]] _CCCL_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
   {
     return __sndr_.__get_stream_(__sndr_.__sndr_, env{});
   }
 
   // This sender executes asynchronously with respect to 'start()':
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_completion_behavior_t) const noexcept
   {
     return completion_behavior::asynchronous;
   }
@@ -362,7 +363,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   // possible.
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(_Query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
       -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
   {
@@ -379,7 +380,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   using sender_concept = sender_t;
 
   template <class _Self, class _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
     using __cv_sndr_t _CCCL_NODEBUG_ALIAS     = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
     using __sndr_config_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_launch_config_t, env_of_t<_Sndr>>;
@@ -391,19 +392,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr, _GetStream>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Rcvr, _GetStream>
   {
     return __opstate_t<_Sndr, _Rcvr, _GetStream>(
       static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), __get_stream_);
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr, _GetStream>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Rcvr, _GetStream>
   {
     return __opstate_t<const _Sndr&, _Rcvr, _GetStream>(__sndr_, static_cast<_Rcvr&&>(__rcvr), __get_stream_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr, _GetStream>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr, _GetStream>
   {
     return __attrs_t<_Sndr, _GetStream>{*this};
   }
@@ -414,7 +416,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
 };
 
 template <class _Sndr, class _GetStream>
-_CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexcept(__nothrow_decay_copyable<_Sndr>)
+_CCCL_HOST_DEVICE_API constexpr auto
+__adapt(_Sndr&& __sndr, _GetStream __get_stream) noexcept(__nothrow_decay_copyable<_Sndr>)
 {
   return __sndr_t<_Sndr, _GetStream>{{}, __get_stream, static_cast<_Sndr&&>(__sndr)};
 }

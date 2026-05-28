@@ -42,7 +42,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
   using __base       = __fixed_size_operations<float, _Np>;
   using _SimdStorage = __simd_storage<float, __fixed_size<_Np>>;
 
-  _CCCL_API static constexpr void __increment(_SimdStorage& __s) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr void __increment(_SimdStorage& __s) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -55,7 +55,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
     __base::__increment(__s);
   }
 
-  _CCCL_API static constexpr void __decrement(_SimdStorage& __s) noexcept
+  _CCCL_HOST_DEVICE_API static constexpr void __decrement(_SimdStorage& __s) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -68,7 +68,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
     __base::__decrement(__s);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage __unary_minus(const _SimdStorage& __s) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage __unary_minus(const _SimdStorage& __s) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -80,7 +80,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
     return __base::__unary_minus(__s);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
   __plus(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -90,7 +90,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
     return __base::__plus(__lhs, __rhs);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
   __minus(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -100,7 +100,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
     return __base::__minus(__lhs, __rhs);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
   __multiplies(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT

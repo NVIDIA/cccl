@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // basic_vec<T, Abi> requires T to be a vectorizable type.
 // bool is explicitly excluded by the standard.
 

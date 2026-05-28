@@ -177,8 +177,6 @@ struct DeviceCopy
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - This operation provides ``gpu_to_gpu`` determinism: results are identical across different GPU architectures.
-  //!
   //! .. note::
   //!
   //!    If any input range aliases any output range the behavior is undefined.
@@ -232,12 +230,14 @@ struct DeviceCopy
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceCopy::Batched");
 
-    using BlockOffsetT = uint32_t;
+    using BlockOffsetT            = uint32_t;
+    using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
-        storage, bytes, input_it, output_it, sizes, num_ranges, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
+          storage, bytes, input_it, output_it, sizes, num_ranges, stream, policy_selector);
+      });
   }
 
   //! @rst
@@ -360,16 +360,14 @@ struct DeviceCopy
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
+  //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
+  //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
+  //! transformations.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
-  //!
-  //! - This operation provides ``gpu_to_gpu`` determinism: results are identical across different GPU architectures.
-  //!
-  //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
-  //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
-  //! transformations.
   //!
   //! Preconditions
   //! +++++++++++++

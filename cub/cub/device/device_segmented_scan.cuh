@@ -224,6 +224,14 @@ public:
   //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
+  //! Preconditions
+  //! +++++++++++++
+  //!
+  //! - When ``d_in`` and ``d_out`` are equal, the segmented scan is performed in-place.
+  //!   The range ``[d_in, d_in + num_items_in)`` and ``[d_out, d_out + num_items_out)``
+  //!   shall not overlap in any other way.
+  //! - ``d_in`` and ``d_out`` must not be null pointers
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -506,13 +514,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -707,7 +729,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -964,6 +987,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1014,13 +1039,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -1440,6 +1479,8 @@ public:
   //!
   //! - Results are not deterministic for computation of prefix sum on floating-point types
   //!   and may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1484,13 +1525,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -1657,7 +1712,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1908,6 +1964,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -1955,13 +2013,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -2157,7 +2229,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -2204,10 +2277,20 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in`` and in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -2408,6 +2491,8 @@ public:
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
@@ -2458,13 +2543,27 @@ public:
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets in the input data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] d_out_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets in the output data of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_out_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_out``
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.

@@ -148,7 +148,7 @@ struct DeviceScanKernelSource
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> scan_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> scan_policy
 {
   // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
   // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
