@@ -284,8 +284,13 @@ fail_if_no_gpu() {
 
 function cccl_configure_preset_for_test() {
     local test_preset=$1
-    local presets_file="${BUILD_ROOT}/CMakePresets.json"
+    local presets_file="${BUILD_ROOT}/../CMakePresets.json"
     local configure_preset
+
+    if [[ ! -f "${presets_file}" ]]; then
+        echo "Error: CMakePresets.json not found: ${presets_file}" >&2
+        return 1
+    fi
 
     configure_preset=$(
         jq -r --arg t "${test_preset}" '

@@ -37,6 +37,9 @@ if ($CPU_ONLY) {
         @{ Preset = "thrust-gpu"; GpuRequired = $true }
     )
 } else {
+    if ($env:GITHUB_ACTIONS) {
+        throw "Error: test_thrust.ps1 requires -cpu-only or -gpu-only in CI"
+    }
     $artifactTag = ""
     $presetGpuPairs = @(
         @{ Preset = "thrust-cpu"; GpuRequired = $false },
@@ -58,7 +61,7 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
 foreach ($pair in $presetGpuPairs) {
-    test_preset "Thrust ($($pair.Preset))" $pair.Preset $pair.GpuRequired
+    test_preset "Thrust ($($pair.Preset))" $pair.Preset
 }
 
 If($CURRENT_PATH -ne "ci") {

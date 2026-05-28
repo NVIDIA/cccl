@@ -38,14 +38,18 @@ source "${ci_dir}/build_common.sh"
 
 print_environment_details
 
-if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
-  ./build_thrust.sh "$@"
-else
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+  if ! $CPU_ONLY && ! $GPU_ONLY; then
+    echo "Error: test_thrust.sh requires -cpu-only or -gpu-only in CI" >&2
+    exit 1
+  fi
   producer_id="$(util/workflow/get_producer_id.sh)"
   run_command "📦  Unpacking test artifacts" \
     "${ci_dir}/util/artifacts/download_packed.sh" \
       "z_thrust-test-artifacts-${DEVCONTAINER_NAME:?}-$producer_id-$ARTIFACT_TAG" \
       /home/coder/cccl/
+else
+  ./build_thrust.sh "$@"
 fi
 
 declare -a PRESET_GPU_PAIRS=()
