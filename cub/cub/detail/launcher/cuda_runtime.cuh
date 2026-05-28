@@ -29,10 +29,15 @@ struct TripleChevronFactory
   {
     if (dependent_launch)
     {
-      [[maybe_unused]] ::cuda::compute_capability cc;
-      _CCCL_ASSERT(PtxComputeCap(cc) == cudaSuccess, "Failed to query PTX compute capability");
-      _CCCL_ASSERT((cc >= ::cuda::compute_capability{9, 0}),
-                   "Enabling PDL for a kernel launch requires SM90+ PTX/SASS");
+      [[maybe_unused]] int sm_version = 0;
+      _CCCL_ASSERT(SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
+      if (sm_version >= 900)
+      {
+        [[maybe_unused]] ::cuda::compute_capability cc;
+        _CCCL_ASSERT(PtxComputeCap(cc) == cudaSuccess, "Failed to query PTX compute capability");
+        _CCCL_ASSERT((cc >= ::cuda::compute_capability{9, 0}),
+                     "Enabling PDL for a kernel launch requires CC 9.0+ PTX/SASS when running on SM90+");
+      }
     }
   }
 

@@ -79,8 +79,9 @@ struct CudaDriverLauncherFactory
   {
     if (dependent_launch)
     {
+      // note: assumes that cc_ holds the current device's AND the PTX's compute capability
       _CCCL_ASSERT((::cuda::compute_capability{cc_} >= ::cuda::compute_capability{9, 0}),
-                   "Enabling PDL for a kernel launch requires SM90+ PTX/SASS");
+                   "Enabling PDL for a kernel launch requires CC 9.0+ PTX/SASS when running on SM90+");
     }
   }
 
