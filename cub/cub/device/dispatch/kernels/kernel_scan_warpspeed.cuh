@@ -298,8 +298,8 @@ struct warpspeed_scan_closure
   const RealInitValueT real_init_value;
   scan_resources_t& res;
 
-  template <typename PhaseT>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_next_tile_index(const warpspeed::Squad& squad, PhaseT& phaseNextBlockIdxW)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  load_next_tile_index(const warpspeed::Squad& squad, warpspeed::SmemPhase<uint4>& phaseNextBlockIdxW)
   {
     warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
     squadGetNextBlockIdx(squad, refNextBlockIdxW);
