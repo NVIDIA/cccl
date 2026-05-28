@@ -35,7 +35,6 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
@@ -83,8 +82,8 @@ struct ScanResources
 
   warpspeed::SmemResource<in_out_t> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
   warpspeed::SmemResource<uint4> smemNextBlockIdx;
-  warpspeed::SmemResource<AccumT> smemSumExclusiveCta;
-  warpspeed::SmemResource<thread_and_warp_aggr_t> smemSumThreadAndWarp;
+  warpspeed::SmemResource<AccumT> smemAggrExclusiveCta;
+  warpspeed::SmemResource<thread_and_warp_aggr_t> smemThreadAndWarpAggr;
 };
 
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
@@ -92,22 +91,22 @@ template <typename PolicySelector, typename InputT, typename OutputT, typename A
 allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& smemAllocator, int numStages)
   -> ScanResources<PolicySelector, InputT, OutputT, AccumT>
 {
-  using ScanResourcesT    = ScanResources<PolicySelector, InputT, OutputT, AccumT>;
-  using InOutT            = typename ScanResourcesT::InOutT;
-  using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
+  using ScanResourcesT         = ScanResources<PolicySelector, InputT, OutputT, AccumT>;
+  using in_out_t               = typename ScanResourcesT::in_out_t;
+  using thread_and_warp_aggr_t = typename ScanResourcesT::thread_and_warp_aggr_t;
 
   constexpr auto policy = current_policy<PolicySelector>().warpspeed;
 
   const int num_block_idx_stages =
     policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, numStages + policy.block_idx_stages);
-  const int num_sum_exclusive_cta_stages =
+  const int num_aggr_exclusive_cta_stages =
     policy.lookback_stages > 0 ? policy.lookback_stages : ::cuda::std::max(1, numStages + policy.lookback_stages);
 
   ScanResourcesT res = {
-    warpspeed::SmemResource<InOutT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
+    warpspeed::SmemResource<in_out_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
     warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{num_block_idx_stages}),
-    warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{num_sum_exclusive_cta_stages}),
-    warpspeed::SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
+    warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{num_aggr_exclusive_cta_stages}),
+    warpspeed::SmemResource<thread_and_warp_aggr_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
 
   setup_scan_resources(
@@ -116,8 +115,8 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
     smemAllocator,
     res.smemInOut,
     res.smemNextBlockIdx,
-    res.smemSumExclusiveCta,
-    res.smemSumThreadAndWarp);
+    res.smemAggrExclusiveCta,
+    res.smemThreadAndWarpAggr);
 
   return res;
 }
@@ -205,7 +204,7 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
 }
 
 template <bool is_last_tile, typename ScanOpT, typename Tp, size_t elemPerThread>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regSumInclusive)[elemPerThread], int valid_items)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[elemPerThread], int valid_items)
 {
   // if we are in the last tile and have an identity, fill the invalid array items with it
   constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
@@ -215,7 +214,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regSumInclusive)[e
     {
       if (i >= valid_items)
       {
-        regSumInclusive[i] = ::cuda::identity_element<ScanOpT, Tp>();
+        regAggrInclusive[i] = ::cuda::identity_element<ScanOpT, Tp>();
       }
     }
   }
@@ -223,7 +222,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regSumInclusive)[e
 
 template <bool isInclusive, bool is_last_tile, typename Tp, size_t elemPerThread, typename ScanOpT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
+threadScanPartial(Tp (&regAggrInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
 {
   // skip the partial scan if we have an identity
   constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
@@ -232,23 +231,23 @@ threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp pre
     if constexpr (isInclusive)
     {
       __cub_detail::ThreadScanInclusivePartial(
-        regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+        regAggrInclusive, regAggrInclusive, scan_op, valid_items, prefix, use_prefix);
     }
     else
     {
       __cub_detail::ThreadScanExclusivePartial(
-        regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+        regAggrInclusive, regAggrInclusive, scan_op, valid_items, prefix, use_prefix);
     }
   }
   else
   {
     if constexpr (isInclusive)
     {
-      __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, prefix, use_prefix);
+      __cub_detail::ThreadScanInclusive(regAggrInclusive, regAggrInclusive, scan_op, prefix, use_prefix);
     }
     else
     {
-      __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, prefix, use_prefix);
+      __cub_detail::ThreadScanExclusive(regAggrInclusive, regAggrInclusive, scan_op, prefix, use_prefix);
     }
   }
 }
@@ -292,8 +291,8 @@ struct warpspeed_scan_closure
   static constexpr bool isInclusive = ForceInclusive || !hasInit;
 
   using scan_resources_t       = ScanResources<PolicySelector, InputT, OutputT, AccumT>;
-  using in_out_t               = typename scan_resources_t::InOutT;
-  using thread_and_warp_aggr_t = typename scan_resources_t::SumThreadAndWarpT;
+  using in_out_t               = typename scan_resources_t::in_out_t;
+  using thread_and_warp_aggr_t = typename scan_resources_t::thread_and_warp_aggr_t;
 
   const warpspeed::SpecialRegisters specialRegisters;
   const scanKernelParams<InputT, OutputT, AccumT> params;
@@ -319,31 +318,31 @@ struct warpspeed_scan_closure
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookback(
     const warpspeed::Squad& squad,
-    warpspeed::SmemPhase<AccumT>& phaseSumExclusiveCtaW,
+    warpspeed::SmemPhase<AccumT>& phaseAggrExclusiveCtaW,
     bool is_first_tile,
     int& idxTilePrev,
-    AccumT& sumExclusiveCtaPrev,
+    AccumT& AggrExclusiveCtaPrev,
     int idxTile)
   {
-    warpspeed::SmemRef refSumExclusiveCtaW = phaseSumExclusiveCtaW.acquireRef();
+    warpspeed::SmemRef refAggrExclusiveCtaW = phaseAggrExclusiveCtaW.acquireRef();
 
     if (!is_first_tile)
     {
-      AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
-        specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
+      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
+        specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
       if (squad.isLeaderThread())
       {
-        refSumExclusiveCtaW.data() = regSumExclusiveCta;
+        refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
       }
-      sumExclusiveCtaPrev = regSumExclusiveCta;
-      idxTilePrev         = idxTile;
+      AggrExclusiveCtaPrev = regAggrExclusiveCta;
+      idxTilePrev          = idxTile;
     }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_tile(
     const warpspeed::Squad& squad,
     warpspeed::SmemPhase<in_out_t>& phaseInOutRW,
-    warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseSumThreadAndWarpW,
+    warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseThreadAndWarpAggrW,
     int valid_items,
     bool is_first_tile,
     bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
@@ -357,67 +356,57 @@ struct warpspeed_scan_closure
     const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
     _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Load tile from shared memory
-    ////////////////////////////////////////////////////////////////////////////////
-    AccumT regThreadSum;
-    AccumT regWarpSum;
+    // Load tile from shared memory and reduce across thread and warp
+    AccumT regThreadAggr;
+    AccumT regWarpAggr;
     {
-      // Acquire phaseInOutRW in this short scope
+      // Acquire phaseInOutRW only in this short scope
       warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
-      // Load data
       AccumT regInput[elemPerThread];
-      // refInOutRW.data() + loadInfo.smemStartSkipBytes points to the first element of the tile.
+      const auto* smem_data_start =
+        reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes);
       // in the last tile, we load some invalid elements, but don't process them later
-      warpspeed::squadLoadSmem(
-        squad, regInput, reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
+      warpspeed::squadLoadSmem(squad, regInput, smem_data_start);
 
-      ////////////////////////////////////////////////////////////////////////////////
       // Reduce across thread and warp
-      ////////////////////////////////////////////////////////////////////////////////
       if (is_last_tile)
       {
-        // TODO(bgruber): for operators where we know the identity we can probably optimize further here
-        regThreadSum = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
-        regWarpSum   = __scan_detail::warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
+        // TODO(bgruber): for operators where we know the identity we can probably optimize this better
+        regThreadAggr = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
+        regWarpAggr   = __scan_detail::warpReducePartial(regThreadAggr, scan_op, valid_threads_this_warp);
       }
       else
       {
-        regThreadSum = CUB_NS_QUALIFIER::ThreadReduce(regInput, scan_op);
-        regWarpSum   = __scan_detail::warpReduce(regThreadSum, scan_op);
+        regThreadAggr = CUB_NS_QUALIFIER::ThreadReduce(regInput, scan_op);
+        regWarpAggr   = __scan_detail::warpReduce(regThreadAggr, scan_op);
       }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Store warp sum to shared memory
-    ////////////////////////////////////////////////////////////////////////////////
-    warpspeed::SmemRef refSumThreadAndWarpW = phaseSumThreadAndWarpW.acquireRef();
-
+    // Store warp aggregate to shared memory
+    warpspeed::SmemRef refThreadAndWarpAggrW = phaseThreadAndWarpAggrW.acquireRef();
     if (squad.isLeaderThreadOfWarp())
     {
-      refSumThreadAndWarpW.data()[squadReduce.threadCount() + squad.warpRank()] = regWarpSum;
+      refThreadAndWarpAggrW.data()[squadReduce.threadCount() + squad.warpRank()] = regWarpAggr;
     }
     squad.syncThreads();
 
-    ////////////////////////////////////////////////////////////////////////////////
     // Reduce across squad
-    ////////////////////////////////////////////////////////////////////////////////
     // We need to accumulate the first element by hand because of the potential initial element and partial tiles
-    AccumT regSquadSum;
+    AccumT regSquadAggr;
     if constexpr (hasInit)
     {
       if (is_first_tile)
       {
-        regSquadSum = scan_op(real_init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
+        regSquadAggr = scan_op(real_init_value, refThreadAndWarpAggrW.data()[squadReduce.threadCount()]);
       }
       else
       {
-        regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
+        regSquadAggr = refThreadAndWarpAggrW.data()[squadReduce.threadCount()];
       }
     }
     else
     {
-      regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
+      regSquadAggr = refThreadAndWarpAggrW.data()[squadReduce.threadCount()];
     }
 
     if (is_last_tile)
@@ -427,7 +416,7 @@ struct warpspeed_scan_closure
       {
         if (i < valid_warps)
         {
-          regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
+          regSquadAggr = scan_op(regSquadAggr, refThreadAndWarpAggrW.data()[squadReduce.threadCount() + i]);
         }
       }
     }
@@ -436,28 +425,25 @@ struct warpspeed_scan_closure
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 1; i < squadReduce.warpCount(); ++i)
       {
-        regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
+        regSquadAggr = scan_op(regSquadAggr, refThreadAndWarpAggrW.data()[squadReduce.threadCount() + i]);
       }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Store private sum for lookback
-    ////////////////////////////////////////////////////////////////////////////////
+    // Store tile aggregate for lookback
     if (squad.isLeaderThread())
     {
-      warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadSum, idxTile);
+      warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadAggr, idxTile);
     }
-    ////////////////////////////////////////////////////////////////////////////////
-    // Store thread sum
-    ////////////////////////////////////////////////////////////////////////////////
-    refSumThreadAndWarpW.data()[squad.threadRank()] = regThreadSum;
+
+    // Store thread aggregate
+    refThreadAndWarpAggrW.data()[squad.threadRank()] = regThreadAggr;
   }
 
   template <bool IsLastTile>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_and_store_tile(
     const warpspeed::Squad& squad,
-    warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseSumThreadAndWarpR,
-    warpspeed::SmemPhase<AccumT>& phaseSumExclusiveCtaR,
+    warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseThreadAndWarpAggrR,
+    warpspeed::SmemPhase<AccumT>& phaseAggrExclusiveCtaR,
     warpspeed::SmemPhase<in_out_t>& phaseInOutRW,
     bool is_first_tile,
     int valid_items,
@@ -478,24 +464,21 @@ struct warpspeed_scan_closure
     }
 
     // Fill the registers with the scan identity, if there is one, before acquiring/waiting on any resources
-    AccumT regSumInclusive[elemPerThread];
-    fillWithIdentity<IsLastTile, ScanOpT>(regSumInclusive, valid_items_this_thread);
+    AccumT regAggrInclusive[elemPerThread];
+    fillWithIdentity<IsLastTile, ScanOpT>(regAggrInclusive, valid_items_this_thread);
 
-    // Sum of all threads up to but not including this one
-    AccumT sumExclusive;
+    // Aggregate of all threads up to but not including this one
+    AccumT aggrExclusive;
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Include warp and thread sum of current tile
-    ////////////////////////////////////////////////////////////////////////////////
+    // Include warp and thread aggregates of current tile
     {
-      // Acquire refSumThread briefly
-      warpspeed::SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
-      // Add the sums of the preceding warps in this CTA to the cumulative
-      // sum. These sums have been calculated in reduce squad. We need
-      // the reduce and scan squads to be the same size to do this.
+      // acquire the thread and warp aggregates only for as long as we need them
+      warpspeed::SmemRef refThreadAndWarpAggrR = phaseThreadAndWarpAggrR.acquireRef();
+      // Add the aggregates of the preceding warps in this CTA to the cumulative aggregate. These have been calculated
+      // in reduce squad. We need the reduce and scan squads to be the same size to do this.
       static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
 
-      // Include warp sums
+      // Include warp aggregates
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < squadScanStore.warpCount(); ++i)
       {
@@ -509,98 +492,96 @@ struct warpspeed_scan_closure
         {
           if (i == 0)
           {
-            // The first iteration initializes sumExclusive
-            sumExclusive = refSumThreadAndWarpR.data()[squadReduce.threadCount()];
+            // The first iteration initializes aggrExclusive
+            aggrExclusive = refThreadAndWarpAggrR.data()[squadReduce.threadCount()];
           }
           else
           {
-            // If loaded value belongs to previous warp, include it in sumExclusive.
-            sumExclusive = scan_op(sumExclusive, refSumThreadAndWarpR.data()[squadReduce.threadCount() + i]);
+            // If loaded value belongs to previous warp, include it in aggrExclusive.
+            aggrExclusive = scan_op(aggrExclusive, refThreadAndWarpAggrR.data()[squadReduce.threadCount() + i]);
           }
         }
       }
-      // sumExclusive contains the sum of previous warps.
+      // aggrExclusive contains the aggregates of previous warps.
       // It has a valid value in
-      // - tile*::warp{1,2, ..}      (sum of previous warps)
+      // - tile*::warp{1,2, ..}      (aggregate of previous warps)
       //
       // It is not yet initialized in
       // - tile*::warp0
 
-      // Add the sums of preceding threads in this warp to the cumulative sum.
+      // Add the aggregates of preceding threads in this warp to the cumulative aggregate.
       // We perform an exclusive scan of:
       //
-      //   {sumT0, sumT1, ..., sumT30, sumT31 }
+      //   {aggrT0, aggrT1, ..., aggrT30, aggrT31 }
       //
       // As a result:
       // - lane0 has undefined value
-      // - lane1 has sumT0
+      // - lane1 has aggrT0
       // - ...
-      // - lane31 has sumT0 + ... + sumT30
+      // - lane31 has aggrT0 + ... + aggrT30
       //
-      // For lane1, ..., 31, we add the result to sumExclusive.
+      // For lane1, ..., 31, we add the result to aggrExclusive.
       //
       // If the warp contains partial data, we pass invalid elements to
-      // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
+      // scan_op, and aggrExclusiveIntraWarp is invalid when the inputs were
       // invalid.
-      AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
-      AccumT sumExclusiveIntraWarp;
+      AccumT regAggrThread = refThreadAndWarpAggrR.data()[squad.threadRank()];
+      AccumT aggrExclusiveIntraWarp;
       if constexpr (IsLastTile) // this branch would cost up to 4% BW for I8 and I16 if it were at
                                 // runtime
       {
-        sumExclusiveIntraWarp = __scan_detail::warpScanExclusivePartial(
-          regSumThread,
+        aggrExclusiveIntraWarp = __scan_detail::warpScanExclusivePartial(
+          regAggrThread,
           scan_op,
           valid_threads_this_warp,
           specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp));
       }
       else
       {
-        sumExclusiveIntraWarp = __scan_detail::warpScanExclusive(regSumThread, scan_op);
+        aggrExclusiveIntraWarp = __scan_detail::warpScanExclusive(regAggrThread, scan_op);
       }
 
       if (squad.warpRank() == 0)
       {
-        // Warp0 does not yet have a valid value for sumExclusive. We set it
+        // Warp0 does not yet have a valid value for aggrExclusive. We set it
         // here. This ensures that lane1,..,31 of tile0::warp0 have a valid
-        // value for sumExclusive.
-        sumExclusive = sumExclusiveIntraWarp;
+        // value for aggrExclusive.
+        aggrExclusive = aggrExclusiveIntraWarp;
       }
       else
       {
-        // lane0 has an undefined value for sumExclusiveIntraWarp, so skip it
-        bool includeIntraWarpSum = specialRegisters.laneIdx != 0;
+        // lane0 has an undefined value for aggrExclusiveIntraWarp, so skip it
+        bool includeIntraWarpAggr = specialRegisters.laneIdx != 0;
         if constexpr (IsLastTile)
         {
-          includeIntraWarpSum &= specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp);
+          includeIntraWarpAggr &= specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp);
         }
 
-        if (includeIntraWarpSum)
+        if (includeIntraWarpAggr)
         {
-          sumExclusive = scan_op(sumExclusive, sumExclusiveIntraWarp);
+          aggrExclusive = scan_op(aggrExclusive, aggrExclusiveIntraWarp);
         }
       }
     }
-    // sumExclusive contains the sum of previous warps and sum of previous threads.
+    // aggrExclusive contains the aggregates of previous warps and threads.
     //
-    // - tile*::warp0::lane{1, .., 31}  (sum of previous threads)
-    // - tile*::warp{1,2, ..}           (sum of previous warps + sum of previous threads)
+    // - tile*::warp0::lane{1, .., 31}  (aggr of previous threads)
+    // - tile*::warp{1,2, ..}           (aggr of previous warps + aggr of previous threads)
     //
     // It has an undefined value in
     // - tile*::warp0::lane0
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Include sum of previous tiles
-    ////////////////////////////////////////////////////////////////////////////////
+    // Include aggregate of previous tiles
     {
-      // Briefly acquire refSumExclusiveCtaR (we have to do this for the first tile as well to prevent a hang)
-      warpspeed::SmemRef refSumExclusiveCtaR = phaseSumExclusiveCtaR.acquireRef();
+      // important: we have to acquire the resource for the first tile as well to prevent a hang
+      warpspeed::SmemRef refAggrExclusiveCtaR = phaseAggrExclusiveCtaR.acquireRef();
 
       if (!is_first_tile)
       {
-        // Add the sums of preceding CTAs to the cumulative sum.
-        AccumT regSumExclusiveCta = refSumExclusiveCtaR.data();
-        // sumExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
-        sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(regSumExclusiveCta, sumExclusive);
+        // Add the aggregates of preceding CTAs to the cumulative aggregate.
+        AccumT regAggrExclusiveCta = refAggrExclusiveCtaR.data();
+        // aggrExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
+        aggrExclusive = squad.threadRank() == 0 ? regAggrExclusiveCta : scan_op(regAggrExclusiveCta, aggrExclusive);
       }
     }
 
@@ -608,33 +589,31 @@ struct warpspeed_scan_closure
     {
       if (is_first_tile)
       {
-        // The first thread cannot use scan_op because sumExclusive holds garbage data
+        // The first thread cannot use scan_op because aggrExclusive holds garbage data
         if (squad.threadRank() == 0)
         {
-          sumExclusive = static_cast<AccumT>(real_init_value);
+          aggrExclusive = static_cast<AccumT>(real_init_value);
         }
         else
         {
-          sumExclusive = scan_op(static_cast<AccumT>(real_init_value), sumExclusive);
+          aggrExclusive = scan_op(static_cast<AccumT>(real_init_value), aggrExclusive);
         }
       }
     }
-    // sumExclusive contains the following values:
+    // aggrExclusive contains the following values:
     //
     // - tile0::warp0::lane0            (init_value)
-    // - tile0::warp0::lane{1, .., 31}  (init_value + sum of previous threads)
-    // - tile0::warp{1,2, ..}           (init_value + sum of previous warps + sum of previous threads)
-    // - tile*::warp0::lane0            (sum of previous CTAs)
-    // - tile*::warp0::lane{1, .., 31}  (sum of previous CTAs + sum of previous threads)
-    // - tile*::warp{1,2, ..}           (sum of previous CTAs + sum of previous warps + sum of previous
+    // - tile0::warp0::lane{1, .., 31}  (init_value + aggr of previous threads)
+    // - tile0::warp{1,2, ..}           (init_value + aggr of previous warps + aggr of previous threads)
+    // - tile*::warp0::lane0            (aggr of previous CTAs)
+    // - tile*::warp0::lane{1, .., 31}  (aggr of previous CTAs + aggr of previous threads)
+    // - tile*::warp{1,2, ..}           (aggr of previous CTAs + aggr of previous warps + aggr of previous
     // threads)
     //
-    // If no init value is provided, then sumExclusive has an undefined value in
+    // If no init value is provided, then aggrExclusive has an undefined value in
     // - tile0::warp0::lane0
 
-    ////////////////////////////////////////////////////////////////////////////////
     // Scan across elements allocated to this thread
-    ////////////////////////////////////////////////////////////////////////////////
 
     // Acquire refInOut for remainder of scope.
     warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
@@ -642,36 +621,32 @@ struct warpspeed_scan_closure
     // We are always loading a full tile even for the last tile, so we are loading invalid data
     warpspeed::squadLoadSmem(
       squad,
-      regSumInclusive,
+      regAggrInclusive,
       reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
 
     // Perform inclusive scan of register array in current thread.
-    // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
+    // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
     const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
     threadScanPartial<isInclusive, IsLastTile>(
-      regSumInclusive, scan_op, sumExclusive, use_prefix, valid_items_this_thread);
+      regAggrInclusive, scan_op, aggrExclusive, use_prefix, valid_items_this_thread);
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Store result to shared memory
-    ////////////////////////////////////////////////////////////////////////////////
     // Sync before storing to avoid data races on SMEM
     squad.syncThreads();
 
+    // Store result to shared memory
     ::cuda::std::byte* smem_output_tile = refInOutRW.data().inout;
     if constexpr (sizeof(OutputT) <= sizeof(InputT))
     {
       warpspeed::CpAsyncOobInfo storeInfo = warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
 
       warpspeed::squadStoreSmem(
-        squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regSumInclusive);
+        squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regAggrInclusive);
       // We do *not* release refSmemInOut here, because we will issue a TMA
       // instruction below. Instead, we issue a squad-local syncthreads +
       // fence.proxy.async to sync the shared memory writes with the TMA store.
       squad.syncThreads();
 
-      ////////////////////////////////////////////////////////////////////////////////
       // Store result to global memory using TMA
-      ////////////////////////////////////////////////////////////////////////////////
       warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
     }
     else
@@ -692,7 +667,7 @@ struct warpspeed_scan_closure
           squad,
           reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), // different in each
                                                                                        // iteration
-          regSumInclusive,
+          regAggrInclusive,
           chunk_offset,
           chunk_offset + chunk_size);
 
@@ -701,9 +676,7 @@ struct warpspeed_scan_closure
         // fence.proxy.async to sync the shared memory writes with the TMA store.
         squad.syncThreads();
 
-        ////////////////////////////////////////////////////////////////////////////////
         // Store result to global memory using TMA
-        ////////////////////////////////////////////////////////////////////////////////
         warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
 
         squad.syncThreads();
@@ -728,7 +701,7 @@ struct warpspeed_scan_closure
     int idxTile = specialRegisters.blockIdxX;
     // Lookback-specific variables:
     int idxTilePrev = 0;
-    AccumT sumExclusiveCtaPrev; // only valid in squadLookback lane_0
+    AccumT AggrExclusiveCtaPrev; // only valid in squadLookback lane_0
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -737,18 +710,18 @@ struct warpspeed_scan_closure
     while (true)
     {
       // Get stages. When these objects go out of scope, the stage of the resource is automatically incremented.
-      warpspeed::SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.nextStage();
-      warpspeed::SmemStage stageInOut            = res.smemInOut.nextStage();
-      warpspeed::SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.nextStage();
-      warpspeed::SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.nextStage();
+      warpspeed::SmemStage stageNextBlockIdx      = res.smemNextBlockIdx.nextStage();
+      warpspeed::SmemStage stageInOut             = res.smemInOut.nextStage();
+      warpspeed::SmemStage stageThreadAndWarpAggr = res.smemThreadAndWarpAggr.nextStage();
+      warpspeed::SmemStage stageAggrExclusiveCta  = res.smemAggrExclusiveCta.nextStage();
 
       // Split the stages into phases. Each resource goes through phases where it is writeable by a set of threads and
       // readable by a set of threads. To acquire and release a phase, we need to arrive and wait on certain barriers.
       // The selection of the barriers is handled under the hood.
-      auto [phaseNextBlockIdxW, phaseNextBlockIdxR]         = warpspeed::bindPhases<2>(stageNextBlockIdx);
-      auto [phaseInOutW, phaseInOutRW]                      = warpspeed::bindPhases<2>(stageInOut);
-      auto [phaseSumThreadAndWarpW, phaseSumThreadAndWarpR] = warpspeed::bindPhases<2>(stageSumThreadAndWarp);
-      auto [phaseSumExclusiveCtaW, phaseSumExclusiveCtaR]   = warpspeed::bindPhases<2>(stageSumExclusiveCta);
+      auto [phaseNextBlockIdxW, phaseNextBlockIdxR]           = warpspeed::bindPhases<2>(stageNextBlockIdx);
+      auto [phaseInOutW, phaseInOutRW]                        = warpspeed::bindPhases<2>(stageInOut);
+      auto [phaseThreadAndWarpAggrW, phaseThreadAndWarpAggrR] = warpspeed::bindPhases<2>(stageThreadAndWarpAggr);
+      auto [phaseAggrExclusiveCtaW, phaseAggrExclusiveCtaR]   = warpspeed::bindPhases<2>(stageAggrExclusiveCta);
 
       // We need to handle the first and the last -partial- tile differently
       const bool is_first_tile = idxTile == 0;
@@ -783,12 +756,12 @@ struct warpspeed_scan_closure
       if (squad == squadReduce)
       {
         reduce_tile(
-          squad, phaseInOutRW, phaseSumThreadAndWarpW, valid_items, is_first_tile, is_last_tile, loadInfo, idxTile);
+          squad, phaseInOutRW, phaseThreadAndWarpAggrW, valid_items, is_first_tile, is_last_tile, loadInfo, idxTile);
       }
 
       if (squad == squadLookback)
       {
-        lookback(squad, phaseSumExclusiveCtaW, is_first_tile, idxTilePrev, sumExclusiveCtaPrev, idxTile);
+        lookback(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile);
       }
 
       if (squad == squadScanStore)
@@ -798,8 +771,8 @@ struct warpspeed_scan_closure
         {
           scan_and_store_tile<true>(
             squad,
-            phaseSumThreadAndWarpR,
-            phaseSumExclusiveCtaR,
+            phaseThreadAndWarpAggrR,
+            phaseAggrExclusiveCtaR,
             phaseInOutRW,
             is_first_tile,
             valid_items,
@@ -810,8 +783,8 @@ struct warpspeed_scan_closure
         {
           scan_and_store_tile<false>(
             squad,
-            phaseSumThreadAndWarpR,
-            phaseSumExclusiveCtaR,
+            phaseThreadAndWarpAggrR,
+            phaseAggrExclusiveCtaR,
             phaseInOutRW,
             is_first_tile,
             valid_items,
