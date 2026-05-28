@@ -25,12 +25,12 @@
 #  include <cuda/std/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
@@ -59,7 +59,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -631,28 +630,6 @@ _CCCL_API constexpr pair<unwrap_ref_decay_t<_T1>, unwrap_ref_decay_t<_T2>> make_
     ::cuda::std::forward<_T1>(__t1), ::cuda::std::forward<_T2>(__t2));
 }
 
-template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<pair<_T1, _T2>> : public integral_constant<size_t, 2>
-{};
-
-template <size_t _Ip, class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, pair<_T1, _T2>>
-{
-  static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<std::pair<T1, T2>>");
-};
-
-template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, pair<_T1, _T2>>
-{
-  using type _CCCL_NODEBUG_ALIAS = _T1;
-};
-
-template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, pair<_T1, _T2>>
-{
-  using type _CCCL_NODEBUG_ALIAS = _T2;
-};
-
 template <size_t _Ip>
 struct __get_pair;
 
@@ -784,7 +761,77 @@ template <class _T1, class _T2>
   return __get_pair<1>::get(::cuda::std::move(__p));
 }
 
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for std::pair and cuda::std::pair
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::pair<_Tp, _Up>> : integral_constant<size_t, 2>
+{};
+
+template <size_t _Ip, class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::pair<_Tp, _Up>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::pair<_Tp, _Up>>");
+};
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::std::pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::std::pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Up;
+};
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<pair<_Tp, _Up>> : integral_constant<size_t, 2>
+{};
+
+template <size_t _Ip, class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, pair<_Tp, _Up>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::std::pair<_Tp, _Up>>");
+};
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Up;
+};
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::pair
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Tp, class _Up>
+struct tuple_size<::cuda::std::pair<_Tp, _Up>> : ::cuda::std::integral_constant<::cuda::std::size_t, 2>
+{};
+
+template <::cuda::std::size_t _Ip, class _Tp, class _Up>
+struct tuple_element<_Ip, ::cuda::std::pair<_Tp, _Up>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<cuda::std::pair<_Tp, _Up>>");
+};
+template <class _Tp, class _Up>
+struct tuple_element<0, ::cuda::std::pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Tp;
+};
+template <class _Tp, class _Up>
+struct tuple_element<1, ::cuda::std::pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG_ALIAS = _Up;
+};
+
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

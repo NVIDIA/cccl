@@ -38,13 +38,11 @@ int main(int, char**)
 
   static_assert(testEquality(month_weekday_last{cuda::std::chrono::January, weekday_last{Tuesday}},
                              month_weekday_last{cuda::std::chrono::January, weekday_last{Tuesday}},
-                             true),
-                "");
+                             true));
 
   static_assert(testEquality(month_weekday_last{cuda::std::chrono::January, weekday_last{Tuesday}},
                              month_weekday_last{cuda::std::chrono::January, weekday_last{Wednesday}},
-                             false),
-                "");
+                             false));
 
   //  vary the months
   for (unsigned i = 1; i < 12; ++i)

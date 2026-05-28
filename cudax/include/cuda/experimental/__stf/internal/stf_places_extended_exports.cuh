@@ -46,6 +46,7 @@ using ::cuda::experimental::places::green_ctx_view;
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 using ::cuda::experimental::places::exec_place_resources;
 using ::cuda::experimental::places::get_device_from_stream;
+using ::cuda::experimental::places::is_stream_capturing;
 using ::cuda::experimental::places::k_no_stream_id;
 using ::cuda::experimental::places::localized_array;
 using ::cuda::experimental::places::partition_fn_t;
