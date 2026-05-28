@@ -31,7 +31,14 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const int num_levels_g = num_levels_r;
   const int num_levels_b = num_levels_g;
 
-  const SampleT lower_level = 0;
+  // Skip invalid configurations; see range.cu for rationale.
+  if (num_bins > max_representable_bins<SampleT>())
+  {
+    state.skip("Number of bins exceeds what SampleT can represent");
+    return;
+  }
+
+  const SampleT lower_level = get_lower_level<SampleT>();
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
   // Jittered uniform spacing keeps DispatchRange on the SearchTransform path

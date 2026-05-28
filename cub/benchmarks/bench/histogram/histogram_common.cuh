@@ -71,6 +71,22 @@ struct bench_policy_selector
 };
 #endif // !TUNE_BASE
 
+// Lower bound of the bench's level range. For signed integer SampleT we use
+// `numeric_limits<SampleT>::min()` so the level range spans the full type;
+// previously `lower_level = 0` clipped half the range, forcing a skip on
+// configurations like int8_t with bins > 127 even though the type can hold
+// 256 distinct values. For unsigned integer and floating-point SampleT,
+// `lower_level = 0` is the natural choice.
+template <class SampleT>
+SampleT get_lower_level()
+{
+  if constexpr (cuda::std::is_integral_v<SampleT> && cuda::std::is_signed_v<SampleT>)
+  {
+    return ::cuda::std::numeric_limits<SampleT>::min();
+  }
+  return SampleT{0};
+}
+
 template <class SampleT, class OffsetT>
 SampleT get_upper_level(OffsetT bins, OffsetT elements)
 {
@@ -93,6 +109,26 @@ SampleT get_upper_level(OffsetT bins, OffsetT elements)
   }
 
   return static_cast<SampleT>(elements);
+}
+
+// Maximum number of bins that can be represented by SampleT levels in this
+// bench's `[get_lower_level<SampleT>(), get_upper_level<SampleT>(...)]` range.
+// For integer SampleT this caps at the count of distinct values the type can
+// hold (`max - min`); strict-monotonic level construction needs `bins + 1`
+// distinct values. For floating-point SampleT it's effectively unbounded.
+template <class SampleT>
+int64_t max_representable_bins()
+{
+  if constexpr (cuda::std::is_integral_v<SampleT> && sizeof(SampleT) < sizeof(int64_t))
+  {
+    return static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max())
+         - static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::min());
+  }
+  // For int64_t (and any wider type that we may add later) the bins axis tops
+  // out at ~10^6, which is many orders of magnitude below the type's range, so
+  // the skip never triggers. Avoid the int64_t overflow that
+  // `max() - min() = 2^64 - 1` would produce.
+  return ::cuda::std::numeric_limits<int64_t>::max();
 }
 
 // Bench-side correctness checks that compare the CUB histogram result
