@@ -36,9 +36,9 @@ C2H_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DevicePartition::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
+  auto error =
+    cub::DevicePartition::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DevicePartition::If failed with status: " << error << '\n';
@@ -48,6 +48,7 @@ C2H_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]")
   thrust::device_vector<int> expected_output{1, 2, 3, 4, 8, 7, 6, 5};
   thrust::device_vector<int> expected_num_selected{4};
   // example-end partition-if-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected_output);
@@ -64,10 +65,9 @@ C2H_TEST("cub::DevicePartition::Flagged accepts env with stream", "[partition][e
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DevicePartition::Flagged(
-    input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), env);
+    input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DevicePartition::Flagged failed with status: " << error << '\n';
@@ -77,6 +77,7 @@ C2H_TEST("cub::DevicePartition::Flagged accepts env with stream", "[partition][e
   thrust::device_vector<int> expected_output{1, 4, 6, 7, 8, 5, 3, 2};
   thrust::device_vector<int> expected_num_selected{4};
   // example-end partition-flagged-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected_output);

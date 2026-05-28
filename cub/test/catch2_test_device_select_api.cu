@@ -178,3 +178,128 @@ C2H_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int dat
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
   REQUIRE(d_data == expected);
 }
+
+// Guard tests: each public DeviceSelect method must resolve unambiguously
+// to the legacy temp-storage overload when called in its minimal form
+// (no explicit stream, all defaults left implicit), even though the env
+// overloads are also in scope. If env-overload SFINAE drifts, these become
+// "ambiguous overload" compile errors.
+
+struct select_always_true_t
+{
+  __host__ __device__ bool operator()(int) const
+  {
+    return true;
+  }
+};
+
+C2H_TEST("DeviceSelect::Flagged legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_flags              = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected, n));
+}
+
+C2H_TEST("DeviceSelect::Flagged in-place legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_data               = nullptr;
+  int* d_flags              = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected, n));
+}
+
+C2H_TEST("DeviceSelect::If legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::If(
+            d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::If in-place legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_data               = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_data, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::FlaggedIf legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_flags              = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::FlaggedIf(
+            d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::FlaggedIf in-place legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_data               = nullptr;
+  int* d_flags              = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::FlaggedIf(
+            d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected, n, select_always_true_t{}));
+}
+
+C2H_TEST("DeviceSelect::Unique legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_in                 = nullptr;
+  int* d_out                = nullptr;
+  int* d_num_selected       = nullptr;
+  ::cuda::std::int64_t n    = 0;
+
+  REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected, n));
+}
+
+C2H_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select][device]")
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int* d_keys_in            = nullptr;
+  int* d_values_in          = nullptr;
+  int* d_keys_out           = nullptr;
+  int* d_values_out         = nullptr;
+  int* d_num_selected       = nullptr;
+  int n                     = 0;
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSelect::UniqueByKey(
+            d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected, n));
+}

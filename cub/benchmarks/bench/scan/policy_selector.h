@@ -22,7 +22,11 @@ struct policy_selector
     return {cub::detail::scan::scan_algorithm::warpspeed,
             cub::detail::scan::scan_lookback_policy{},
             cub::detail::scan::scan_warpspeed_policy{
-              TUNE_NUM_REDUCE_SCAN_WARPS, TUNE_NUM_LOOKBACK_ITEMS, TUNE_ITEMS_PLUS_ONE - 1}};
+              TUNE_NUM_REDUCE_SCAN_WARPS,
+              TUNE_NUM_LOOKBACK_ITEMS,
+              TUNE_ITEMS_PLUS_ONE - 1,
+              TUNE_LOOKBACK_STAGES,
+              TUNE_BLOCK_IDX_STAGES}};
 #  else
     return cub::detail::scan::make_mem_scaled_lookback_scan_policy(
       TUNE_THREADS,

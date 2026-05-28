@@ -43,8 +43,7 @@ struct NotConvertible
   TEST_FUNC explicit NotConvertible(int);
 };
 static_assert(cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, int>>);
-static_assert(!cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, NotConvertible>>,
-              "");
+static_assert(!cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, NotConvertible>>);
 
 struct MyInt
 {
