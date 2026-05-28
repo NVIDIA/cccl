@@ -147,14 +147,35 @@ struct DeviceHistogramKernelSource
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
-      // The unary plus promotes plain char to int, which cuda::std::cmp_greater requires
-      if (::cuda::std::cmp_greater(num_bins, +::cuda::std::numeric_limits<CommonT>::max()))
-      {
-        return true;
-      }
-      const auto upper_level_cast = static_cast<IntArithmeticT>(upper_level[channel]);
-      const auto lower_level_cast = static_cast<IntArithmeticT>(lower_level[channel]);
-      const auto range            = static_cast<IntArithmeticT>(upper_level_cast - lower_level_cast);
+      // Compute `upper - lower` without overflowing the level type. For
+      // signed integer level types with full range (e.g. int32_t with
+      // [INT_MIN, INT_MAX/4]), the signed difference overflows.
+      // Reinterpret-cast each operand through its unsigned counterpart and
+      // subtract in unsigned arithmetic; modular wrap-around produces the
+      // correct (non-negative) difference.
+      // Compute `upper - lower` without overflow. For signed integer
+      // level types, the signed difference can overflow (e.g. int32_t
+      // with [INT_MIN, INT_MAX]) and even narrow types are subject to
+      // C++ integer promotion to `int`, which then converts back to
+      // unsigned through sign-extension. We:
+      //   1. Cast each operand to its unsigned counterpart of the same
+      //      width (`make_unsigned_t<LevelT>`). This reinterprets the
+      //      bit pattern: int8_t(-128..127) -> uint8_t(128..255, 0..127).
+      //   2. Subtract through an unsigned-wraparound assignment. C++
+      //      integer promotion forces the operands up to `int` for the
+      //      subtraction, but assigning the result back to ULevelT
+      //      truncates via unsigned modular wrap-around, producing the
+      //      correct difference in [0, 2^N - 1]. Pre-promoting to the
+      //      destination integer arithmetic type before subtraction would
+      //      sign-extend the int promotion's negative result into the
+      //      wider type and yield a giant garbage value.
+      //   3. Widen the truncated unsigned difference to `IntArithmeticT`,
+      //      which holds it without overflow.
+      using ArrayLevelT = typename UpperLevelArrayT::value_type;
+      using ULevelT     = ::cuda::std::make_unsigned_t<ArrayLevelT>;
+      const ULevelT diff = static_cast<ULevelT>(static_cast<ULevelT>(upper_level[channel])
+                                                - static_cast<ULevelT>(lower_level[channel]));
+      const IntArithmeticT range = static_cast<IntArithmeticT>(diff);
       return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
     else
@@ -1005,7 +1026,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     {
       num_privatized_levels[channel] = 257;
 
-      const int num_levels = num_output_levels[channel];
+      int num_levels = num_output_levels[channel];
       if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
@@ -1071,7 +1092,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
-      const int num_levels = num_output_levels[channel];
+      int num_levels = num_output_levels[channel];
       if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
