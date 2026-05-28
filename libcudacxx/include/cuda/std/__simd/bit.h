@@ -234,33 +234,37 @@ struct __simd_popcount_generator
 //----------------------------------------------------------------------------------------------------------------------
 // [simd.bit], bit manipulation
 
-_CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vp = basic_vec<_Tp, _Abi>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vp byteswap(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto byteswap(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Vp{__simd_byteswap_generator<_Vp>{__v}};
+  using __vec_t = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_byteswap_generator<__vec_t>{__v}};
 }
 
-_CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vp = basic_vec<_Tp, _Abi>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vp bit_ceil(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto bit_ceil(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Vp{__simd_bit_ceil_generator<_Vp>{__v}};
+  using __vec_t = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_bit_ceil_generator<__vec_t>{__v}};
 }
 
-_CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vp = basic_vec<_Tp, _Abi>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vp bit_floor(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto bit_floor(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Vp{__simd_bit_floor_generator<_Vp>{__v}};
+  using __vec_t = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_bit_floor_generator<__vec_t>{__v}};
 }
 
-_CCCL_TEMPLATE(
-  typename _Tp, typename _Abi, typename _Vp = basic_vec<_Tp, _Abi>, typename _Result = typename _Vp::mask_type)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Result has_single_bit(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto has_single_bit(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Result{__simd_has_single_bit_generator<_Vp>{__v}};
+  using __vec_t    = basic_vec<_Tp, _Abi>;
+  using __result_t = typename __vec_t::mask_type;
+  return __result_t{__simd_has_single_bit_generator<__vec_t>{__v}};
 }
 
 template <typename _Tp0, typename _Abi0, typename _Tp1, typename _Abi1>
@@ -270,107 +274,97 @@ inline constexpr bool __simd_is_valid_rotate_v =
   && (__simd_size_v<_Tp0, _Abi0> == __simd_size_v<_Tp1, _Abi1>) //
   &&(sizeof(_Tp0) == sizeof(_Tp1));
 
-_CCCL_TEMPLATE(typename _Tp0,
-               typename _Abi0,
-               typename _Tp1,
-               typename _Abi1,
-               typename _Vp0 = basic_vec<_Tp0, _Abi0>,
-               typename _Vp1 = basic_vec<_Tp1, _Abi1>)
+_CCCL_TEMPLATE(typename _Tp0, typename _Abi0, typename _Tp1, typename _Abi1)
 _CCCL_REQUIRES(__simd_is_valid_rotate_v<_Tp0, _Abi0, _Tp1, _Abi1>)
-[[nodiscard]] _CCCL_API constexpr _Vp0
+[[nodiscard]] _CCCL_API constexpr auto
 rotl(const basic_vec<_Tp0, _Abi0>& __v0, const basic_vec<_Tp1, _Abi1>& __v1) noexcept
 {
-  return _Vp0{__simd_rotl_generator<_Vp0, _Vp1>{__v0, __v1}};
+  using __vec0_t = basic_vec<_Tp0, _Abi0>;
+  using __vec1_t = basic_vec<_Tp1, _Abi1>;
+  return __vec0_t{__simd_rotl_generator<__vec0_t, __vec1_t>{__v0, __v1}};
 }
 
-_CCCL_TEMPLATE(typename _Tp0,
-               typename _Abi0,
-               typename _Tp1,
-               typename _Abi1,
-               typename _Vp0 = basic_vec<_Tp0, _Abi0>,
-               typename _Vp1 = basic_vec<_Tp1, _Abi1>)
+_CCCL_TEMPLATE(typename _Tp0, typename _Abi0, typename _Tp1, typename _Abi1)
 _CCCL_REQUIRES(__simd_is_valid_rotate_v<_Tp0, _Abi0, _Tp1, _Abi1>)
-[[nodiscard]] _CCCL_API constexpr _Vp0
+[[nodiscard]] _CCCL_API constexpr auto
 rotr(const basic_vec<_Tp0, _Abi0>& __v0, const basic_vec<_Tp1, _Abi1>& __v1) noexcept
 {
-  return _Vp0{__simd_rotr_generator<_Vp0, _Vp1>{__v0, __v1}};
+  using __vec0_t = basic_vec<_Tp0, _Abi0>;
+  using __vec1_t = basic_vec<_Tp1, _Abi1>;
+  return __vec0_t{__simd_rotr_generator<__vec0_t, __vec1_t>{__v0, __v1}};
 }
 
-_CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vp = basic_vec<_Tp, _Abi>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vp rotl(const basic_vec<_Tp, _Abi>& __v, const int __s) noexcept
+[[nodiscard]] _CCCL_API constexpr auto rotl(const basic_vec<_Tp, _Abi>& __v, const int __s) noexcept
 {
-  return _Vp{__simd_rotl_scalar_generator<_Vp>{__v, __s}};
+  using __vec_t = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_rotl_scalar_generator<__vec_t>{__v, __s}};
 }
 
-_CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vp = basic_vec<_Tp, _Abi>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vp rotr(const basic_vec<_Tp, _Abi>& __v, const int __s) noexcept
+[[nodiscard]] _CCCL_API constexpr auto rotr(const basic_vec<_Tp, _Abi>& __v, const int __s) noexcept
 {
-  return _Vp{__simd_rotr_scalar_generator<_Vp>{__v, __s}};
+  using __vec_t = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_rotr_scalar_generator<__vec_t>{__v, __s}};
 }
 
 template <typename _Tp, typename _Vp>
 using __simd_bit_count_result_t = rebind_t<make_signed_t<_Tp>, _Vp>;
 
-_CCCL_TEMPLATE(typename _Tp,
-               typename _Abi,
-               typename _Vp     = basic_vec<_Tp, _Abi>,
-               typename _Result = __simd_bit_count_result_t<_Tp, _Vp>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Result bit_width(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto bit_width(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Result{__simd_bit_width_generator<_Vp, _Result>{__v}};
+  using __vec_t    = basic_vec<_Tp, _Abi>;
+  using __result_t = __simd_bit_count_result_t<_Tp, __vec_t>;
+  return __result_t{__simd_bit_width_generator<__vec_t, __result_t>{__v}};
 }
 
-_CCCL_TEMPLATE(typename _Tp,
-               typename _Abi,
-               typename _Vp     = basic_vec<_Tp, _Abi>,
-               typename _Result = __simd_bit_count_result_t<_Tp, _Vp>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Result countl_zero(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto countl_zero(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Result{__simd_countl_zero_generator<_Vp, _Result>{__v}};
+  using __vec_t    = basic_vec<_Tp, _Abi>;
+  using __result_t = __simd_bit_count_result_t<_Tp, __vec_t>;
+  return __result_t{__simd_countl_zero_generator<__vec_t, __result_t>{__v}};
 }
 
-_CCCL_TEMPLATE(typename _Tp,
-               typename _Abi,
-               typename _Vp     = basic_vec<_Tp, _Abi>,
-               typename _Result = __simd_bit_count_result_t<_Tp, _Vp>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Result countl_one(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto countl_one(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Result{__simd_countl_one_generator<_Vp, _Result>{__v}};
+  using __vec_t    = basic_vec<_Tp, _Abi>;
+  using __result_t = __simd_bit_count_result_t<_Tp, __vec_t>;
+  return __result_t{__simd_countl_one_generator<__vec_t, __result_t>{__v}};
 }
 
-_CCCL_TEMPLATE(typename _Tp,
-               typename _Abi,
-               typename _Vp     = basic_vec<_Tp, _Abi>,
-               typename _Result = __simd_bit_count_result_t<_Tp, _Vp>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Result countr_zero(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto countr_zero(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Result{__simd_countr_zero_generator<_Vp, _Result>{__v}};
+  using __vec_t    = basic_vec<_Tp, _Abi>;
+  using __result_t = __simd_bit_count_result_t<_Tp, __vec_t>;
+  return __result_t{__simd_countr_zero_generator<__vec_t, __result_t>{__v}};
 }
 
-_CCCL_TEMPLATE(typename _Tp,
-               typename _Abi,
-               typename _Vp     = basic_vec<_Tp, _Abi>,
-               typename _Result = __simd_bit_count_result_t<_Tp, _Vp>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Result countr_one(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto countr_one(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Result{__simd_countr_one_generator<_Vp, _Result>{__v}};
+  using __vec_t    = basic_vec<_Tp, _Abi>;
+  using __result_t = __simd_bit_count_result_t<_Tp, __vec_t>;
+  return __result_t{__simd_countr_one_generator<__vec_t, __result_t>{__v}};
 }
 
-_CCCL_TEMPLATE(typename _Tp,
-               typename _Abi,
-               typename _Vp     = basic_vec<_Tp, _Abi>,
-               typename _Result = __simd_bit_count_result_t<_Tp, _Vp>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Result popcount(const basic_vec<_Tp, _Abi>& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr auto popcount(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  return _Result{__simd_popcount_generator<_Vp, _Result>{__v}};
+  using __vec_t    = basic_vec<_Tp, _Abi>;
+  using __result_t = __simd_bit_count_result_t<_Tp, __vec_t>;
+  return __result_t{__simd_popcount_generator<__vec_t, __result_t>{__v}};
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
