@@ -38,6 +38,14 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     return;
   }
 
+  // Skip when row_stride_samples (= elements * num_channels) would overflow
+  // OffsetT. See multi/even.cu for the rationale.
+  if (static_cast<int64_t>(elements) * num_channels > static_cast<int64_t>(::cuda::std::numeric_limits<OffsetT>::max()))
+  {
+    state.skip("Row stride samples (elements * num_channels) overflows OffsetT");
+    return;
+  }
+
   const SampleT lower_level = get_lower_level<SampleT>();
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 

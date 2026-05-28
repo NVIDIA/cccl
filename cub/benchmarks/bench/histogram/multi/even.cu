@@ -35,6 +35,19 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     return;
   }
 
+  // Skip configurations whose row stride in samples (= elements * num_channels)
+  // overflows OffsetT. The MultiHistogramEven<NUM_CHANNELS> single-row
+  // overload internally computes `row_stride_samples = elements * num_channels`
+  // and stores it as OffsetT; the rectangular overload does the same. For
+  // OffsetT = int32_t and num_channels = 4 this caps at elements <= INT_MAX/4
+  // (~536M); above that the cast wraps to a negative value and the kernel
+  // produces zero output. Reported by autocuda matrix runs at elements=1G.
+  if (static_cast<int64_t>(elements) * num_channels > static_cast<int64_t>(::cuda::std::numeric_limits<OffsetT>::max()))
+  {
+    state.skip("Row stride samples (elements * num_channels) overflows OffsetT");
+    return;
+  }
+
   const SampleT lower_level_r = get_lower_level<SampleT>();
   const SampleT upper_level_r = get_upper_level<SampleT>(num_bins, elements);
   const SampleT lower_level_g = lower_level_r;
