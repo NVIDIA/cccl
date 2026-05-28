@@ -34,17 +34,14 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const int num_levels_g = num_levels_r;
   const int num_levels_b = num_levels_g;
 
-  // Skip invalid configurations where LevelT (= SampleT) cannot represent the number of bins
-  if constexpr (cuda::std::is_integral_v<SampleT>)
+  // Skip invalid configurations; see range.cu for rationale.
+  if (num_bins > max_representable_bins<SampleT>())
   {
-    if (num_bins > static_cast<int64_t>(cuda::std::numeric_limits<SampleT>::max()))
-    {
-      state.skip("Number of bins exceeds what LevelT (= SampleT) can represent");
-      return;
-    }
+    state.skip("Number of bins exceeds what SampleT can represent");
+    return;
   }
 
-  const SampleT lower_level = 0;
+  const SampleT lower_level = get_lower_level<SampleT>();
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
   // Jittered uniform spacing keeps DispatchRange on the SearchTransform path
