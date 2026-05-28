@@ -136,7 +136,7 @@ template <class... _Types>
 struct _TupleDefaultConstructibleTraits
 {
   static constexpr bool __implicit_construction = (__is_implicitly_default_constructible<_Types>::value && ...);
-  static constexpr bool __explicit_construction = !__implicit_construction;
+  static constexpr bool __explicit_construction = !(__is_implicitly_default_constructible<_Types>::value && ...);
   static constexpr bool __nothrow_construction  = (is_nothrow_default_constructible_v<_Types> && ...);
 };
 
@@ -155,7 +155,7 @@ template <class... _Types>
 struct _TupleVariadicCopyConstructibleTraits
 {
   static constexpr bool __implicit_construction = (is_convertible_v<const _Types&, _Types> && ...);
-  static constexpr bool __explicit_construction = !__implicit_construction;
+  static constexpr bool __explicit_construction = !(is_convertible_v<const _Types&, _Types> && ...);
   static constexpr bool __nothrow_construction  = __tuple_all_nothrow_copy_constructible_v<_Types...>;
 };
 
@@ -170,7 +170,7 @@ template <class... _Types>
 struct _TupleVariadicMoveConstructibleTraits
 {
   static constexpr bool __implicit_construction = (is_convertible_v<_Types&&, _Types> && ...);
-  static constexpr bool __explicit_construction = !__implicit_construction;
+  static constexpr bool __explicit_construction = !(is_convertible_v<_Types&&, _Types> && ...);
   static constexpr bool __nothrow_construction  = __tuple_all_nothrow_move_constructible_v<_Types...>;
 };
 
@@ -191,7 +191,7 @@ template <class _Type, class _UType>
 struct _TupleVariadicConstructibleTraits<__tuple_types<_Type>, __tuple_types<_UType>>
 { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
   static constexpr bool __implicit_construction = is_convertible<_UType, _Type>::value;
-  static constexpr bool __explicit_construction = !__implicit_construction;
+  static constexpr bool __explicit_construction = !is_convertible<_UType, _Type>::value;
 #if _CCCL_COMPILER(MSVC) // MSVC fails to determine `is_nothrow_constructible_v` for the convertible case
   static constexpr bool __nothrow_construction = false;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
@@ -203,7 +203,7 @@ template <class... _Types, class... _UTypes>
 struct _TupleVariadicConstructibleTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
 { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
   static constexpr bool __implicit_construction = (is_convertible_v<_UTypes, _Types> && ...);
-  static constexpr bool __explicit_construction = !__implicit_construction;
+  static constexpr bool __explicit_construction = !(is_convertible_v<_UTypes, _Types> && ...);
   static constexpr bool __nothrow_construction  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
 };
 
@@ -300,7 +300,7 @@ struct _TupleTupleLikeConstructibleTraits<_UTuple, __tuple_types<_Types...>, __t
   // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
   // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
   static constexpr bool __implicit_construction = (is_convertible_v<_UType<_Indices>, _Types> && ...);
-  static constexpr bool __explicit_construction = !__implicit_construction;
+  static constexpr bool __explicit_construction = !(is_convertible_v<_UType<_Indices>, _Types> && ...);
   static constexpr bool __nothrow_construction  = (is_nothrow_constructible_v<_Types, _UType<_Indices>> && ...);
 };
 
