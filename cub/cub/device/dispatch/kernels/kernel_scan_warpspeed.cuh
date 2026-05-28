@@ -458,15 +458,13 @@ struct agent_warpspeed_scan
     const warpspeed::CpAsyncOobInfo<OutputT>& loadInfo,
     ::cuda::std::size_t idxTileBase)
   {
-    static constexpr int elemPerThread = policy.items_per_thread;
-
     // need to init these to silence nvcc warning about reading uninitialized data
     [[maybe_unused]] int valid_items_this_thread = 0;
     [[maybe_unused]] int valid_threads_this_warp = 0;
     [[maybe_unused]] int valid_warps             = 0;
     if constexpr (is_last_tile)
     {
-      valid_items_this_thread = ::cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, elemPerThread);
+      valid_items_this_thread = ::cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
       valid_threads_this_warp =
         ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
       valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
