@@ -40,7 +40,11 @@ struct __simd_abs_generator
   [[nodiscard]] _CCCL_API constexpr __result_t operator()(_Ip) const noexcept
   {
     const auto __x = __x_[_Ip::value];
-    if constexpr (is_integral_v<__result_t>)
+    if constexpr (is_unsigned_v<__result_t>)
+    {
+      return __x;
+    }
+    else if constexpr (is_integral_v<__result_t>)
     {
       _CCCL_ASSERT(__x >= -numeric_limits<__result_t>::max(),
                    "cuda::std::simd::abs precondition: each element must be greater than the minimum value");
@@ -48,33 +52,36 @@ struct __simd_abs_generator
     }
     else
     {
-      return static_cast<__result_t>(::cuda::std::fabs(__x));
+      return ::cuda::std::fabs(__x);
     }
   }
 };
 
 // signed integral
-_CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vp = basic_vec<_Tp, _Abi>)
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(is_integral_v<_Tp> _CCCL_AND is_signed_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vp abs(const basic_vec<_Tp, _Abi>& __x) noexcept
+[[nodiscard]] _CCCL_API constexpr auto abs(const basic_vec<_Tp, _Abi>& __x) noexcept
 {
-  return _Vp{__simd_abs_generator<_Vp, _Vp>{__x}};
+  using __vec_t = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_abs_generator<__vec_t, __vec_t>{__x}};
 }
 
 // floating point
-_CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)
+_CCCL_TEMPLATE(typename _Vp)
 _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)
-[[nodiscard]] _CCCL_API constexpr _Result abs(const _Vp& __x) noexcept
+[[nodiscard]] _CCCL_API constexpr auto abs(const _Vp& __x) noexcept
 {
-  return _Result{__simd_abs_generator<_Result, _Vp>{__x}};
+  using __result_t = __deduced_vec_t<_Vp>;
+  return __result_t{__simd_abs_generator<__result_t, _Vp>{__x}};
 }
 
 // fabs
-_CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)
+_CCCL_TEMPLATE(typename _Vp)
 _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)
-[[nodiscard]] _CCCL_API constexpr _Result fabs(const _Vp& __x) noexcept
+[[nodiscard]] _CCCL_API constexpr auto fabs(const _Vp& __x) noexcept
 {
-  return _Result{__simd_abs_generator<_Result, _Vp>{__x}};
+  using __result_t = __deduced_vec_t<_Vp>;
+  return __result_t{__simd_abs_generator<__result_t, _Vp>{__x}};
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
