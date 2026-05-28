@@ -70,8 +70,7 @@ target_compile_options(
 
 target_include_directories(
   cccl.c.experimental.stf
-  PUBLIC #
-    "include"
+  PUBLIC "include"
   PRIVATE "src"
 )
 
