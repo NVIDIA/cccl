@@ -390,7 +390,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
               __tuple_types<_Tp...>{}, __tuple_types<_Up...>{})),
             enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
   _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag,
-                                            _Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
+                                            _Up&&... __u) noexcept(_Constraints::__nothrow_construction)
       : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<_Up>(__u))...
   {}
 
@@ -424,7 +424,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 
   template <class _Tuple, class _Constraints = _TupleLikeConstraints<_Tuple>>
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag,
-                                   _Tuple&& __t) noexcept(_Constraints::__nothrow_constructible)
+                                   _Tuple&& __t) noexcept(_Constraints::__nothrow_construction)
       : __tuple_leaf<_Indx, _Tp>(::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
