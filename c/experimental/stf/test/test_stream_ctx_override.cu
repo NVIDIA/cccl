@@ -22,6 +22,11 @@
 
 namespace
 {
+// A device sink that is written but never read. Publishing the busy-loop
+// result here gives the loop an observable side effect, so the compiler
+// cannot optimize it away, without perturbing the result buffer.
+__device__ unsigned g_busy_sink;
+
 // Writes `value` into every slot of `arr`. The inner busy loop widens the
 // kernel window so that a failure to chain ctx2-after-ctx1 is observable:
 // ctx1 is still running when ctx2's kernel races in.
@@ -32,15 +37,17 @@ __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
   {
     return;
   }
-  int acc = 0;
-  // Busy loop to keep the kernel resident on the SM for a while.
+  // Busy loop to keep the kernel resident on the SM for a while. `acc` is
+  // unsigned so the accumulation wraps with well-defined behavior.
+  unsigned acc = 0;
   for (int i = 0; i < iters; ++i)
   {
-    acc += (i * 1103515245 + 12345) & 0x7fffffff;
+    acc += (static_cast<unsigned>(i) * 1103515245u + 12345u) & 0x7fffffffu;
   }
-  // Side-effect: ensure the compiler does not elide the loop, then commit
-  // the intended `value` (independent of acc) to the buffer.
-  arr[tid] = value + (acc & 0);
+  // Publish `acc` via an atomic: an observable, race-free side effect that
+  // keeps the loop alive while the stored result stays exactly `value`.
+  atomicAdd(&g_busy_sink, acc);
+  arr[tid] = value;
 }
 
 void submit_set(stf_ctx_handle ctx, int* d_arr, int n, int value, int iters)
