@@ -139,6 +139,11 @@ enum class __select_constructible
   __explicit_constructible,
 };
 
+template <__select_constructible _Constraint>
+inline constexpr bool __select_implicit = _Constraint == __select_constructible::__implicit_constructible;
+template <__select_constructible _Constraint>
+inline constexpr bool __select_explicit = _Constraint == __select_constructible::__explicit_constructible;
+
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
 __tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
@@ -214,9 +219,9 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
     { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
       if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
       {
-        constexpr bool __is_implicit = (is_convertible_v<_UTypes, _Types> && ...);
-        return __is_implicit ? __select_constructible::__implicit_constructible
-                             : __select_constructible::__explicit_constructible;
+        constexpr bool __select_implicit = (is_convertible_v<_UTypes, _Types> && ...);
+        return __select_implicit ? __select_constructible::__implicit_constructible
+                                 : __select_constructible::__explicit_constructible;
       }
       else
       {
@@ -230,9 +235,9 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
   }
   else if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
   { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-    constexpr bool __is_implicit = (is_convertible_v<_UTypes, _Types> && ...);
-    return __is_implicit ? __select_constructible::__implicit_constructible
-                         : __select_constructible::__explicit_constructible;
+    constexpr bool __select_implicit = (is_convertible_v<_UTypes, _Types> && ...);
+    return __select_implicit ? __select_constructible::__implicit_constructible
+                             : __select_constructible::__explicit_constructible;
   }
   else
   {
