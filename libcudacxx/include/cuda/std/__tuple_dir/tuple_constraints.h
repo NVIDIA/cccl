@@ -260,28 +260,34 @@ __tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType
   }
 }
 
-template <class, class>
-struct _TupleVariadicConstructibleLessRankTraits;
-
 template <class... _Types, class... _UTypes>
-struct _TupleVariadicConstructibleLessRankTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
+__tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
 {
-  using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
-  using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-
-  // The constructor is always explicit.
-  static constexpr bool __is_arg_constructible =
-    ::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
-    != __select_constructible::__not_constructible;
-  static constexpr bool __rest_is_default_constructible =
-    ::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
-    != __select_constructible::__not_constructible;
-  static constexpr bool __is_nothrow = false;
-
-  static constexpr bool __implicit_construction = false;
-  static constexpr bool __explicit_construction = __is_arg_constructible && __rest_is_default_constructible;
-  static constexpr bool __nothrow_construction  = __is_nothrow;
-};
+  if constexpr (!(sizeof...(_UTypes) < sizeof...(_Types)))
+  {
+    return __select_constructible::__not_constructible;
+  }
+  else
+  {
+    using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
+    using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
+    if constexpr (::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
+                  == __select_constructible::__not_constructible)
+    {
+      return __select_constructible::__not_constructible;
+    }
+    else if constexpr (::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
+                       == __select_constructible::__not_constructible)
+    {
+      return __select_constructible::__not_constructible;
+    }
+    else
+    {
+      return __select_constructible::__explicit_constructible;
+    }
+  }
+}
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _UTuple, class... _Types, size_t... _Indices>
