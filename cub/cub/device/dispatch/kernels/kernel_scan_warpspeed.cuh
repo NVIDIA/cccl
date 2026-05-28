@@ -305,6 +305,30 @@ struct agent_warpspeed_scan
     warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
   }
 
+  template <typename PhaseT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookback(
+    const warpspeed::Squad& squad,
+    PhaseT& phaseSumExclusiveCtaW,
+    bool is_first_tile,
+    int& idxTilePrev,
+    AccumT& sumExclusiveCtaPrev,
+    int idxTile)
+  {
+    warpspeed::SmemRef refSumExclusiveCtaW = phaseSumExclusiveCtaW.acquireRef();
+
+    if (!is_first_tile)
+    {
+      AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
+        specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
+      if (squad.isLeaderThread())
+      {
+        refSumExclusiveCtaW.data() = regSumExclusiveCta;
+      }
+      sumExclusiveCtaPrev = regSumExclusiveCta;
+      idxTilePrev         = idxTile;
+    }
+  }
+
   // This function is a straight-line implementation of the warp-specialized kernel.
   //
   // It is called from the __global__ kernel body with a squad argument that is the active squad on the current thread.
@@ -489,22 +513,7 @@ struct agent_warpspeed_scan
 
       if (squad == squadLookback)
       {
-        ////////////////////////////////////////////////////////////////////////////////
-        // Perform lookback
-        ////////////////////////////////////////////////////////////////////////////////
-        warpspeed::SmemRef refSumExclusiveCtaW = phaseSumExclusiveCtaW.acquireRef();
-
-        if (!is_first_tile)
-        {
-          AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
-            specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
-          if (squad.isLeaderThread())
-          {
-            refSumExclusiveCtaW.data() = regSumExclusiveCta;
-          }
-          sumExclusiveCtaPrev = regSumExclusiveCta;
-          idxTilePrev         = idxTile;
-        }
+        lookback(squad, phaseSumExclusiveCtaW, is_first_tile, idxTilePrev, sumExclusiveCtaPrev, idxTile);
       }
 
       if (squad == squadScanStore)
