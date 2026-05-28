@@ -283,78 +283,57 @@ struct _TupleVariadicConstructibleLessRankTraits<__tuple_types<_Types...>, __tup
   static constexpr bool __nothrow_construction  = __is_nothrow;
 };
 
-template <class, class, class>
-struct _TupleTupleLikeConstructibleTraits;
-
-template <class _UTuple, class... _Types, size_t... _Indices>
-struct _TupleTupleLikeConstructibleTraits<_UTuple, __tuple_types<_Types...>, __tuple_indices<_Indices...>>
-{
-  template <size_t _Index>
-  using _UType = decltype(get<_Index>(::cuda::std::declval<_UTuple>()));
-
-  // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
-  // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
-  // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
-  static constexpr bool __implicit_construction = (is_convertible_v<_UType<_Indices>, _Types> && ...);
-  static constexpr bool __explicit_construction = !(is_convertible_v<_UType<_Indices>, _Types> && ...);
-  static constexpr bool __nothrow_construction  = (is_nothrow_constructible_v<_Types, _UType<_Indices>> && ...);
-};
-
 _CCCL_EXEC_CHECK_DISABLE
 template <class _UTuple, class... _Types, size_t... _Indices>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
-__tuple_tuple_like_constructible_constraint(__tuple_types<_Types...>, __tuple_indices<_Indices...>) noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
+__tuple_select_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indices<_Indices...>) noexcept
 {
   using ::cuda::std::get;
   if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
   { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
-    return false;
+    return __select_constructible::__not_constructible;
   }
   else if constexpr (sizeof...(_Types) == 0)
   { // Avoids issues with the size 1 constructor below
-    return false;
+    return __select_constructible::__not_constructible;
   }
   else if constexpr (!__tuple_like_with_size<_UTuple, sizeof...(_Types)>)
   { // [tuple#cnstr]-21.1: sizeof...(Types) equals sizeof...(UTypes), and
     // [tuple#cnstr]-25.1: sizeof...(Types) is 2,
     // [tuple#cnstr]-29.3: sizeof...(Types) equals sizeof...(UTypes), and
-    return false;
+    return __select_constructible::__not_constructible;
   }
   else if constexpr ((sizeof...(_Types) == 1) && __is_cuda_std_tuple<remove_cvref_t<_UTuple>>
                      && (is_same_v<_Types, tuple_element_t<_Indices, remove_cvref_t<_UTuple>>> && ...))
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1
     // [tuple#cnstr]-21.3: is_same_v<T, U> is false
-    return false;
+    return __select_constructible::__not_constructible;
   }
   else if constexpr ((sizeof...(_Types) == 1) && (is_constructible_v<_Types, _UTuple> && ...))
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
     // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
-    return false;
+    return __select_constructible::__not_constructible;
   }
   else if constexpr ((sizeof...(_Types) == 1) && (is_convertible_v<_UTuple, _Types> && ...))
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
     // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-    return false;
+    return __select_constructible::__not_constructible;
   }
-  else
+  else if constexpr (!(is_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...))
   { // [tuple.cnstr]-21.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
     // [tuple.cnstr]-25.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
     // [tuple.cnstr]-29.4: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
-    return (is_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+    return __select_constructible::__not_constructible;
+  }
+  else
+  { // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
+    // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
+    // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
+    return (is_convertible_v<decltype(get<_Indices>(::cuda::std::declval<_UTuple>())), _Types> && ...)
+           ? __select_constructible::__implicit_constructible
+           : __select_constructible::__explicit_constructible;
   }
 }
-
-template <class _UTuple, class... _Types>
-inline constexpr bool __tuple_is_tuple_like_constructible_v =
-  ::cuda::std::__tuple_tuple_like_constructible_constraint<_UTuple>(
-    __tuple_types<_Types...>{}, __make_tuple_indices_t<sizeof...(_Types)>{});
-
-template <class _UTuple, class... _Types, enable_if_t<__tuple_is_tuple_like_constructible_v<_UTuple, _Types...>, int> = 0>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_tuple_like_constructible(__tuple_types<_Types...>) noexcept
-  -> _TupleTupleLikeConstructibleTraits<_UTuple, __tuple_types<_Types...>, __make_tuple_indices_t<sizeof...(_Types)>>;
-template <class>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_tuple_like_constructible(...) noexcept
-  -> _InvalidTupleConstructor;
 
 struct _InvalidTupleComparison
 {

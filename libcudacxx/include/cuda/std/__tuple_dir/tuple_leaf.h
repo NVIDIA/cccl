@@ -415,17 +415,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   template <class _Tuple, size_t _Indx2>
   using __tuple_elem_at = tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
 
-  template <class _UTuple>
-  using _TupleLikeConstraints =
-    decltype(::cuda::std::__tuple_is_tuple_like_constructible<_UTuple>(__tuple_types<_Tp...>{}));
-
-  template <class _Tuple, class _Constraints = _TupleLikeConstraints<_Tuple>>
-  _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag,
-                                   _Tuple&& __t) noexcept(_Constraints::__nothrow_construction)
+  template <class _Tuple>
+  _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
-  template <class _Alloc, class _Tuple, class _Constraints = _TupleLikeConstraints<_Tuple>>
+  template <class _Alloc, class _Tuple>
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
                                  __a,
