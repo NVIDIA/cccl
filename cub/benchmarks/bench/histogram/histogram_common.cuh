@@ -76,15 +76,20 @@ SampleT get_upper_level(OffsetT bins, OffsetT elements)
 {
   if constexpr (cuda::std::is_integral_v<SampleT>)
   {
-    if constexpr (sizeof(SampleT) < sizeof(OffsetT))
-    {
-      const SampleT max_key = ::cuda::std::numeric_limits<SampleT>::max();
-      return static_cast<SampleT>(std::min(bins, static_cast<OffsetT>(max_key)));
-    }
-    else
-    {
-      return static_cast<SampleT>(bins);
-    }
+    // Widen the upper level to ~4 * num_bins so the range bench's
+    // jittered-uniform level construction (jitter amplitude is step / 4)
+    // produces genuinely non-uniform integer levels. With the previous
+    // upper_level == num_bins, step was exactly 1 for `int32_t` / `int64_t`,
+    // the integer cast in the level loop annihilated the jitter, and the
+    // dedup-by-1 step forced the array back to perfect uniform stride —
+    // which `DispatchHistogram`'s uniform-range detection (when present)
+    // would route through the fast EVEN classify path, defeating the
+    // purpose of the range bench. Clamp to the type max when 4 * bins
+    // overflows `SampleT`; those axes already have step < 1 and the level
+    // array is degenerate regardless of jitter.
+    const int64_t max_v = static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max());
+    const int64_t want  = static_cast<int64_t>(bins) * int64_t{4};
+    return static_cast<SampleT>(std::min(want, max_v));
   }
 
   return static_cast<SampleT>(elements);
