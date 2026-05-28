@@ -46,7 +46,7 @@ struct __min_generator
   const _Vec& __b;
 
   template <typename _Ip>
-  [[nodiscard]] _CCCL_API constexpr typename _Vec::value_type operator()(_Ip) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vec::value_type operator()(_Ip) const noexcept
   {
     return ::cuda::std::min(__a[_Ip::value], __b[_Ip::value]);
   }
@@ -59,7 +59,7 @@ struct __max_generator
   const _Vec& __b;
 
   template <typename _Ip>
-  [[nodiscard]] _CCCL_API constexpr typename _Vec::value_type operator()(_Ip) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vec::value_type operator()(_Ip) const noexcept
   {
     return ::cuda::std::max(__a[_Ip::value], __b[_Ip::value]);
   }
@@ -73,7 +73,7 @@ struct __clamp_generator
   const _Vec& __hi;
 
   template <typename _Ip>
-  [[nodiscard]] _CCCL_API constexpr typename _Vec::value_type operator()(_Ip) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vec::value_type operator()(_Ip) const noexcept
   {
     return ::cuda::std::clamp(__v[_Ip::value], __lo[_Ip::value], __hi[_Ip::value]);
   }
@@ -81,21 +81,21 @@ struct __clamp_generator
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vec = basic_vec<_Tp, _Abi>)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vec min(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec min(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcept
 {
   return _Vec{__min_generator<_Vec>{__a, __b}};
 }
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vec = basic_vec<_Tp, _Abi>)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vec max(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec max(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcept
 {
   return _Vec{__max_generator<_Vec>{__a, __b}};
 }
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vec = basic_vec<_Tp, _Abi>)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr pair<_Vec, _Vec>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr pair<_Vec, _Vec>
 minmax(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcept
 {
   return {::cuda::std::simd::min(__a, __b), ::cuda::std::simd::max(__a, __b)};
@@ -103,7 +103,7 @@ minmax(const basic_vec<_Tp, _Abi>& __a, const basic_vec<_Tp, _Abi>& __b) noexcep
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Vec = basic_vec<_Tp, _Abi>)
 _CCCL_REQUIRES(totally_ordered<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Vec
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec
 clamp(const basic_vec<_Tp, _Abi>& __v, const basic_vec<_Tp, _Abi>& __lo, const basic_vec<_Tp, _Abi>& __hi) noexcept
 {
   return _Vec{__clamp_generator<_Vec>{__v, __lo, __hi}};
@@ -111,7 +111,7 @@ clamp(const basic_vec<_Tp, _Abi>& __v, const basic_vec<_Tp, _Abi>& __lo, const b
 
 // Scalar select
 template <typename _Tp, typename _Up>
-[[nodiscard]] _CCCL_API constexpr auto select(const bool __c, const _Tp& __a, const _Up& __b)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto select(const bool __c, const _Tp& __a, const _Up& __b)
   -> remove_cvref_t<decltype(__c ? __a : __b)>
 {
   return __c ? __a : __b;
@@ -119,7 +119,7 @@ template <typename _Tp, typename _Up>
 
 // Mask-based select: dispatches to the hidden-friend __simd_select_impl via ADL
 template <size_t _Bytes, typename _Abi, typename _Tp, typename _Up>
-[[nodiscard]] _CCCL_API constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 select(const basic_mask<_Bytes, _Abi>& __c, const _Tp& __a, const _Up& __b) noexcept
   -> decltype(__simd_select_impl(__c, __a, __b))
 {
