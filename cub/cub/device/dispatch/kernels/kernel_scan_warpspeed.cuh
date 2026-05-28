@@ -455,7 +455,7 @@ struct agent_warpspeed_scan
     PhaseInOutT& phaseInOutRW,
     bool is_first_tile,
     int valid_items,
-    const warpspeed::CpAsyncOobInfo<OutputT>& loadInfo,
+    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
     ::cuda::std::size_t idxTileBase)
   {
     // need to init these to silence nvcc warning about reading uninitialized data
