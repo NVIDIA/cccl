@@ -79,7 +79,7 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(t).v == 2);
   }
 
-  // non const overload should be called
+  // const overload should be called
   {
     const cuda::std::pair<TracedCopyMove, TracedCopyMove> p;
     cuda::std::tuple<ConvertibleFrom<TracedCopyMove>, TracedCopyMove> t = cuda::std::move(p);
