@@ -447,7 +447,7 @@ struct agent_warpspeed_scan
     refSumThreadAndWarpW.data()[squad.threadRank()] = regThreadSum;
   }
 
-  template <bool is_last_tile, typename PhaseSumR, typename PhaseSumExR, typename PhaseInOutT>
+  template <bool IsLastTile, typename PhaseSumR, typename PhaseSumExR, typename PhaseInOutT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_and_store_tile(
     const warpspeed::Squad& squad,
     PhaseSumR& phaseSumThreadAndWarpR,
@@ -462,7 +462,7 @@ struct agent_warpspeed_scan
     [[maybe_unused]] int valid_items_this_thread = 0;
     [[maybe_unused]] int valid_threads_this_warp = 0;
     [[maybe_unused]] int valid_warps             = 0;
-    if constexpr (is_last_tile)
+    if constexpr (IsLastTile)
     {
       valid_items_this_thread = ::cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
       valid_threads_this_warp =
@@ -473,7 +473,7 @@ struct agent_warpspeed_scan
 
     // Fill the registers with the scan identity, if there is one, before acquiring/waiting on any resources
     AccumT regSumInclusive[elemPerThread];
-    fillWithIdentity<is_last_tile, ScanOpT>(regSumInclusive, valid_items_this_thread);
+    fillWithIdentity<IsLastTile, ScanOpT>(regSumInclusive, valid_items_this_thread);
 
     // Sum of all threads up to but not including this one
     AccumT sumExclusive;
@@ -495,7 +495,7 @@ struct agent_warpspeed_scan
       {
         // We want a predicated unrolled loop here.
         bool include_warp = i < squad.warpRank();
-        if constexpr (is_last_tile)
+        if constexpr (IsLastTile)
         {
           include_warp &= i < valid_warps;
         }
@@ -538,8 +538,8 @@ struct agent_warpspeed_scan
       // invalid.
       AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
       AccumT sumExclusiveIntraWarp;
-      if constexpr (is_last_tile) // this branch would cost up to 4% BW for I8 and I16 if it were at
-                                  // runtime
+      if constexpr (IsLastTile) // this branch would cost up to 4% BW for I8 and I16 if it were at
+                                // runtime
       {
         sumExclusiveIntraWarp = __scan_detail::warpScanExclusivePartial(
           regSumThread,
@@ -563,7 +563,7 @@ struct agent_warpspeed_scan
       {
         // lane0 has an undefined value for sumExclusiveIntraWarp, so skip it
         bool includeIntraWarpSum = specialRegisters.laneIdx != 0;
-        if constexpr (is_last_tile)
+        if constexpr (IsLastTile)
         {
           includeIntraWarpSum &= specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp);
         }
@@ -642,7 +642,7 @@ struct agent_warpspeed_scan
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
     const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-    threadScanPartial<isInclusive, is_last_tile>(
+    threadScanPartial<isInclusive, IsLastTile>(
       regSumInclusive, scan_op, sumExclusive, use_prefix, valid_items_this_thread);
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -718,20 +718,15 @@ struct agent_warpspeed_scan
   // hot loops (even if that may seem the case from a first glance at the code).
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void dispatch_squad(warpspeed::Squad squad)
   {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Pre-loop
-    ////////////////////////////////////////////////////////////////////////////////
-
     // Start with the tile indicated by blockIdx.x
     int idxTile = specialRegisters.blockIdxX;
     // Lookback-specific variables:
     int idxTilePrev = 0;
     AccumT sumExclusiveCtaPrev; // only valid in squadLookback lane_0
+
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
-    ////////////////////////////////////////////////////////////////////////////////
     // Loop over tiles
-    ////////////////////////////////////////////////////////////////////////////////
 #  pragma unroll 1
     while (true)
     {
@@ -764,7 +759,7 @@ struct agent_warpspeed_scan
       const int valid_items =
         static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
       const bool is_last_tile = valid_items < tile_size;
-      warpspeed::CpAsyncOobInfo loadInfo =
+      const warpspeed::CpAsyncOobInfo loadInfo =
         warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
 
       if (squad == squadLoad)
