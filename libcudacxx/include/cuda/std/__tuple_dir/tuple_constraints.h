@@ -193,55 +193,17 @@ __tuple_select_variadic_move_constructible(__tuple_types<_Types...>) noexcept
   }
 }
 
-template <class, class>
-struct _TupleVariadicConstructibleTraits;
-
-// NOTE: GCC cannot handle types that have conversion operators together with the is_convertible_v inline variable
-// We can work around this by reifying it into a type
-// sizeof...(Types) == 1 && is_convertible_v<decltype(u), T>
-template <class _Type, class _UType>
-struct _TupleVariadicConstructibleTraits<__tuple_types<_Type>, __tuple_types<_UType>>
-{ // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
-  static constexpr bool __implicit_construction = is_convertible<_UType, _Type>::value;
-  static constexpr bool __explicit_construction = !is_convertible<_UType, _Type>::value;
-#if _CCCL_COMPILER(MSVC) // MSVC fails to determine `is_nothrow_constructible_v` for the convertible case
-  static constexpr bool __nothrow_construction = false;
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  static constexpr bool __nothrow_construction = is_nothrow_constructible_v<_Type, _UType>;
-#endif // !_CCCL_COMPILER(MSVC)
-};
-
 template <class... _Types, class... _UTypes>
-struct _TupleVariadicConstructibleTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>
-{ // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
-  static constexpr bool __implicit_construction = (is_convertible_v<_UTypes, _Types> && ...);
-  static constexpr bool __explicit_construction = !(is_convertible_v<_UTypes, _Types> && ...);
-  static constexpr bool __nothrow_construction  = (is_nothrow_constructible_v<_Types, _UTypes> && ...);
-};
-
-template <class... _Types, class... _UTypes>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
-__tuple_variadic_constructible_constraints(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
+__tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
 {
   if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
   { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
-    return false;
+    return __select_constructible::__not_constructible;
   }
   else if constexpr (sizeof...(_Types) == 0)
   { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
-    return false;
-  }
-  else if constexpr (sizeof...(_Types) == 1)
-  { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
-    using _U0 = __type_index_c<0, _UTypes...>;
-    if constexpr (!is_same_v<remove_cvref_t<_U0>, tuple<_Types...>>)
-    { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-      return (is_constructible_v<_Types, _UTypes> && ...);
-    }
-    else
-    {
-      return false;
-    }
+    return __select_constructible::__not_constructible;
   }
   else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
   { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
@@ -250,28 +212,53 @@ __tuple_variadic_constructible_constraints(__tuple_types<_Types...>, __tuple_typ
     using _T0 = __type_index_c<0, _Types...>;
     if constexpr (!is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>)
     { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-      return (is_constructible_v<_Types, _UTypes> && ...);
+      if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
+      {
+        constexpr bool __is_implicit = (is_convertible_v<_UTypes, _Types> && ...);
+        return __is_implicit ? __select_constructible::__implicit_constructible
+                             : __select_constructible::__explicit_constructible;
+      }
+      else
+      {
+        return __select_constructible::__not_constructible;
+      }
     }
     else
     {
-      return false;
+      return __select_constructible::__not_constructible;
     }
   }
-  else
+  else if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
   { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-    return (is_constructible_v<_Types, _UTypes> && ...);
+    constexpr bool __is_implicit = (is_convertible_v<_UTypes, _Types> && ...);
+    return __is_implicit ? __select_constructible::__implicit_constructible
+                         : __select_constructible::__explicit_constructible;
+  }
+  else
+  {
+    return __select_constructible::__not_constructible;
   }
 }
 
-template <class _Types, class _UTypes>
-inline constexpr bool __tuple_variadic_constructible_constraints_v =
-  ::cuda::std::__tuple_variadic_constructible_constraints(_Types{}, _UTypes{});
-
-template <class _Types, class _UTypes, enable_if_t<__tuple_variadic_constructible_constraints_v<_Types, _UTypes>, int> = 0>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(_Types, _UTypes) noexcept
-  -> _TupleVariadicConstructibleTraits<_Types, _UTypes>;
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_constructible(...) noexcept
-  -> _InvalidTupleConstructor;
+template <class _Type, class _UType>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
+__tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType>) noexcept
+{
+  if constexpr (is_same_v<remove_cvref_t<_UType>, tuple<_Type>>)
+  { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
+    return __select_constructible::__not_constructible;
+  }
+  else if constexpr (!is_constructible_v<_Type, _UType>)
+  { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
+    return __select_constructible::__not_constructible;
+  }
+  else
+  { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
+    return is_convertible_v<_UType, _Type>
+           ? __select_constructible::__implicit_constructible
+           : __select_constructible::__explicit_constructible;
+  }
+}
 
 template <class, class>
 struct _TupleVariadicConstructibleLessRankTraits;
@@ -282,16 +269,14 @@ struct _TupleVariadicConstructibleLessRankTraits<__tuple_types<_Types...>, __tup
   using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
   using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
 
-  using __traits_with_arg =
-    decltype(::cuda::std::__tuple_is_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{}));
-
   // The constructor is always explicit.
   static constexpr bool __is_arg_constructible =
-    __traits_with_arg::__implicit_construction || __traits_with_arg::__explicit_construction;
+    ::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
+    != __select_constructible::__not_constructible;
   static constexpr bool __rest_is_default_constructible =
     ::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
     != __select_constructible::__not_constructible;
-  static constexpr bool __is_nothrow = __traits_with_arg::__nothrow_construction;
+  static constexpr bool __is_nothrow = false;
 
   static constexpr bool __implicit_construction = false;
   static constexpr bool __explicit_construction = __is_arg_constructible && __rest_is_default_constructible;
