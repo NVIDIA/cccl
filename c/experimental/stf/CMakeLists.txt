@@ -72,9 +72,6 @@ target_include_directories(
   cccl.c.experimental.stf
   PUBLIC #
     "include"
-    # Pulls in cccl/c/extern_c.h, the canonical CCCL_C_EXTERN_C_BEGIN/_END macros
-    # shared with cccl.c.parallel.
-    "${CCCL_SOURCE_DIR}/c/parallel/include"
   PRIVATE "src"
 )
 

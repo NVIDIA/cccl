@@ -72,9 +72,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <cccl/c/extern_c.h>
-
-CCCL_C_EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
 
 //! \defgroup AccessMode Data Access Modes
 //! \brief Specifies how tasks access logical data
@@ -1215,5 +1215,7 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps);
 
 //! \}
 
-CCCL_C_EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 // NOLINTEND(modernize-use-using)
