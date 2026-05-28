@@ -158,19 +158,22 @@ __tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
 }
 
 template <class... _Types>
-struct _TupleVariadicCopyConstructibleTraits
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
+__tuple_select_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
 {
-  static constexpr bool __implicit_construction = (is_convertible_v<const _Types&, _Types> && ...);
-  static constexpr bool __explicit_construction = !(is_convertible_v<const _Types&, _Types> && ...);
-  static constexpr bool __nothrow_construction  = false; // unused because it breaks MSVC
-};
-
-template <class... _Types, enable_if_t<__tuple_all_copy_constructible_v<_Types...>, int> = 0>
-[[nodiscard]]
-_CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
-  -> _TupleVariadicCopyConstructibleTraits<_Types...>;
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_variadic_copy_constructible(...) noexcept
-  -> _InvalidTupleConstructor;
+  if constexpr (!(is_copy_constructible_v<_Types> && ...))
+  {
+    return __select_constructible::__not_constructible;
+  }
+  else if constexpr ((is_convertible_v<const _Types&, _Types> && ...))
+  {
+    return __select_constructible::__implicit_constructible;
+  }
+  else
+  {
+    return __select_constructible::__explicit_constructible;
+  }
+}
 
 template <class... _Types>
 struct _TupleVariadicMoveConstructibleTraits
@@ -278,7 +281,6 @@ struct _TupleVariadicConstructibleLessRankTraits<__tuple_types<_Types...>, __tup
 
   using __traits_with_arg =
     decltype(::cuda::std::__tuple_is_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{}));
-  using __traits_defaulted = decltype(::cuda::std::__tuple_is_default_constructible(__defaulted_list{}));
 
   // The constructor is always explicit.
   static constexpr bool __is_arg_constructible =
