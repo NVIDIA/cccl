@@ -333,6 +333,120 @@ struct agent_warpspeed_scan
     }
   }
 
+  template <typename PhaseInOutT, typename PhaseSumT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_tile(
+    const warpspeed::Squad& squad,
+    PhaseInOutT& phaseInOutRW,
+    PhaseSumT& phaseSumThreadAndWarpW,
+    int valid_items,
+    bool is_first_tile,
+    bool is_last_tile,
+    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
+    int idxTile)
+  {
+    const int valid_items_this_thread =
+      cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
+    const int valid_threads_this_warp =
+      cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+    const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
+    _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Load tile from shared memory
+    ////////////////////////////////////////////////////////////////////////////////
+    AccumT regThreadSum;
+    AccumT regWarpSum;
+    {
+      // Acquire phaseInOutRW in this short scope
+      warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
+      // Load data
+      AccumT regInput[elemPerThread];
+      // refInOutRW.data() + loadInfo.smemStartSkipBytes points to the first element of the tile.
+      // in the last tile, we load some invalid elements, but don't process them later
+      warpspeed::squadLoadSmem(
+        squad, regInput, reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // Reduce across thread and warp
+      ////////////////////////////////////////////////////////////////////////////////
+      if (is_last_tile)
+      {
+        // TODO(bgruber): for operators where we know the identity we can probably optimize further here
+        regThreadSum = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
+        regWarpSum   = __scan_detail::warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
+      }
+      else
+      {
+        regThreadSum = CUB_NS_QUALIFIER::ThreadReduce(regInput, scan_op);
+        regWarpSum   = __scan_detail::warpReduce(regThreadSum, scan_op);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Store warp sump to shared memory
+    ////////////////////////////////////////////////////////////////////////////////
+    warpspeed::SmemRef refSumThreadAndWarpW = phaseSumThreadAndWarpW.acquireRef();
+
+    if (squad.isLeaderThreadOfWarp())
+    {
+      refSumThreadAndWarpW.data()[squadReduce.threadCount() + squad.warpRank()] = regWarpSum;
+    }
+    squad.syncThreads();
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Reduce across squad
+    ////////////////////////////////////////////////////////////////////////////////
+    // We need to accumulate the first element by hand because of the potential initial element and partial tiles
+    AccumT regSquadSum;
+    if constexpr (hasInit)
+    {
+      if (is_first_tile)
+      {
+        regSquadSum = scan_op(real_init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
+      }
+      else
+      {
+        regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
+      }
+    }
+    else
+    {
+      regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
+    }
+
+    if (is_last_tile)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 1; i < squadReduce.warpCount(); ++i)
+      {
+        if (i < valid_warps)
+        {
+          regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
+        }
+      }
+    }
+    else
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 1; i < squadReduce.warpCount(); ++i)
+      {
+        regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Store private sum for lookback
+    ////////////////////////////////////////////////////////////////////////////////
+    if (squad.isLeaderThread())
+    {
+      warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadSum, idxTile);
+    }
+    ////////////////////////////////////////////////////////////////////////////////
+    // Store thread sum
+    ////////////////////////////////////////////////////////////////////////////////
+    refSumThreadAndWarpW.data()[squad.threadRank()] = regThreadSum;
+  }
+
   template <bool is_last_tile, typename PhaseSumR, typename PhaseSumExR, typename PhaseInOutT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_and_store_tile(
     const warpspeed::Squad& squad,
@@ -671,108 +785,8 @@ struct agent_warpspeed_scan
 
       if (squad == squadReduce)
       {
-        const int valid_items_this_thread =
-          cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
-        const int valid_threads_this_warp =
-          cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
-        const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
-        _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Load tile from shared memory
-        ////////////////////////////////////////////////////////////////////////////////
-        AccumT regThreadSum;
-        AccumT regWarpSum;
-        {
-          // Acquire phaseInOutRW in this short scope
-          warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
-          // Load data
-          AccumT regInput[elemPerThread];
-          // refInOutRW.data() + loadInfo.smemStartSkipBytes points to the first element of the tile.
-          // in the last tile, we load some invalid elements, but don't process them later
-          warpspeed::squadLoadSmem(
-            squad, regInput, reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
-
-          ////////////////////////////////////////////////////////////////////////////////
-          // Reduce across thread and warp
-          ////////////////////////////////////////////////////////////////////////////////
-          if (is_last_tile)
-          {
-            // TODO(bgruber): for operators where we know the identity we can probably optimize further here
-            regThreadSum = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
-            regWarpSum   = __scan_detail::warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
-          }
-          else
-          {
-            regThreadSum = CUB_NS_QUALIFIER::ThreadReduce(regInput, scan_op);
-            regWarpSum   = __scan_detail::warpReduce(regThreadSum, scan_op);
-          }
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Store warp sump to shared memory
-        ////////////////////////////////////////////////////////////////////////////////
-        warpspeed::SmemRef refSumThreadAndWarpW = phaseSumThreadAndWarpW.acquireRef();
-
-        if (squad.isLeaderThreadOfWarp())
-        {
-          refSumThreadAndWarpW.data()[squadReduce.threadCount() + squad.warpRank()] = regWarpSum;
-        }
-        squad.syncThreads();
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Reduce across squad
-        ////////////////////////////////////////////////////////////////////////////////
-        // We need to accumulate the first element by hand because of the potential initial element and partial tiles
-        AccumT regSquadSum;
-        if constexpr (hasInit)
-        {
-          if (is_first_tile)
-          {
-            regSquadSum = scan_op(real_init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
-          }
-          else
-          {
-            regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
-          }
-        }
-        else
-        {
-          regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
-        }
-
-        if (is_last_tile)
-        {
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 1; i < squadReduce.warpCount(); ++i)
-          {
-            if (i < valid_warps)
-            {
-              regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
-            }
-          }
-        }
-        else
-        {
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int i = 1; i < squadReduce.warpCount(); ++i)
-          {
-            regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
-          }
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Store private sum for lookback
-        ////////////////////////////////////////////////////////////////////////////////
-        if (squad.isLeaderThread())
-        {
-          warpspeed::storeTileAggregate(
-            params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadSum, idxTile);
-        }
-        ////////////////////////////////////////////////////////////////////////////////
-        // Store thread sum
-        ////////////////////////////////////////////////////////////////////////////////
-        refSumThreadAndWarpW.data()[squad.threadRank()] = regThreadSum;
+        reduce_tile(
+          squad, phaseInOutRW, phaseSumThreadAndWarpW, valid_items, is_first_tile, is_last_tile, loadInfo, idxTile);
       }
 
       if (squad == squadLookback)
@@ -809,17 +823,15 @@ struct agent_warpspeed_scan
         }
       }
 
-      ////////////////////////////////////////////////////////////////////////////////
       // All squads: Check loop condition and update next tile index
-      ////////////////////////////////////////////////////////////////////////////////
       if (!nextIdxTileValid)
       {
         break;
       }
-      // Update idxTile
       idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
     }
 
+    // epilogue: after the load squad finished, we can start ramping up the next kernel
     if (squad == squadLoad)
     {
       _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
