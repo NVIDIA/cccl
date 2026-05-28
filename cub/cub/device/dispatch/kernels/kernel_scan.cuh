@@ -234,9 +234,6 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
                           policy.delay_constructor.delay,
                           policy.delay_constructor.l2_write_latency>>;
 
-    static constexpr bool is_lookback_deterministic =
-      (active_policy.algorithm == scan_algorithm::lookback_deterministic);
-
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<
       ScanPolicyT,
@@ -248,7 +245,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       AccumT,
       ForceInclusive,
       /* UsePDL */ true,
-      /* RunToRunDeterministic */ is_lookback_deterministic>;
+      RunToRunDeterministic>;
 
     // Shared memory for AgentScan
     __shared__ typename AgentScanT::TempStorage temp_storage;
