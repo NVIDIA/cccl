@@ -111,7 +111,7 @@ int main()
     }
 
     // getStream() provides additional metadata if needed
-    decorated_stream dstream = gc_place0.getStream(resources, true);
+    augmented_stream dstream = gc_place0.getStream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
   }

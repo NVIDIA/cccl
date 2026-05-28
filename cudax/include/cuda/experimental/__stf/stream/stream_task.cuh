@@ -107,7 +107,7 @@ public:
     // We don't need to find a stream from the pool in this case
     automatic_stream = false;
     // -1 identifies streams which are not from our internal pool
-    dstream = decorated_stream(s);
+    dstream = augmented_stream(s);
     return *this;
   }
 
@@ -154,11 +154,11 @@ public:
             if (e->outbound_deps == 0)
             {
               auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
-              decorated_stream candidate = se->get_decorated_stream();
+              augmented_stream candidate = se->get_augmented_stream();
 
               if (candidate.id != k_no_stream_id)
               {
-                for (const decorated_stream& pool_s : pool)
+                for (const augmented_stream& pool_s : pool)
                 {
                   if (candidate.id == pool_s.id)
                   {
@@ -385,7 +385,7 @@ public:
 
 private:
   // Make all streams depend on streams[0]
-  static void insert_dependencies(::std::vector<decorated_stream>& streams)
+  static void insert_dependencies(::std::vector<augmented_stream>& streams)
   {
     if (streams.size() < 2)
     {
@@ -443,8 +443,8 @@ private:
   bool automatic_stream = true; // `true` if the stream is automatically fetched from the internal pool
 
   // Stream and their unique id (if applicable)
-  decorated_stream dstream;
-  ::std::vector<decorated_stream> stream_grid;
+  augmented_stream dstream;
+  ::std::vector<augmented_stream> stream_grid;
 
   // TODO rename to submitted_ops
   stream_async_op submitted_events;

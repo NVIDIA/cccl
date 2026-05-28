@@ -136,8 +136,10 @@ typedef struct stf_dim4
 } stf_dim4;
 
 //! \brief Partition (mapper) function: data coordinates -> grid position.
-//! Can be implemented in C or provided from Python via ctypes/cffi.
-typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
+//! Writes the result into \p *result. The out-pointer convention is used
+//! instead of return-by-value so that the signature is trivially representable
+//! in FFI frameworks (ctypes, cffi, Rust) that cannot return C structs.
+typedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
 
 //! \brief Create host execution place (CPU).
 stf_exec_place_handle stf_exec_place_host(void);
