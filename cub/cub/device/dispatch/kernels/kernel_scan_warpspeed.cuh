@@ -36,6 +36,7 @@
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -259,6 +260,8 @@ threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp pre
   }
 }
 
+// Similar to CUB agents, this closure just aggregates common variables and constants so the device functions
+// implementing the warpspeed scan kernel can have lighter signatures
 template <typename PolicySelector,
           typename InputT,
           typename OutputT,
@@ -266,14 +269,23 @@ template <typename PolicySelector,
           typename ScanOpT,
           typename RealInitValueT,
           bool ForceInclusive>
-struct agent_warpspeed_scan
+struct warpspeed_scan_closure
 {
-  static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
+  static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
+
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
   static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
   static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
   static constexpr warpspeed::SquadDesc squadLookback  = squad_lookback(policy);
+
+  static constexpr ::cuda::std::array<warpspeed::SquadDesc, 5> scanSquads = {
+    squad_reduce(policy),
+    squad_scan_store(policy),
+    squad_load(policy),
+    squad_sched(policy),
+    squad_lookback(policy),
+  };
 
   static constexpr int tile_size                   = policy.tile_size();
   static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
@@ -841,23 +853,15 @@ template <typename PolicySelector,
           typename ScanOpT,
           typename InitValueT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
-  const scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, const InitValueT& init_value)
+  const scanKernelParams<InputT, OutputT, AccumT>& params, const ScanOpT& scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
-  // Cache special registers at start of kernel
+  // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
   static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
 
-  // Dispatch for warp-specialization
-  static constexpr warpspeed::SquadDesc scanSquads[] = {
-    squad_reduce(policy),
-    squad_scan_store(policy),
-    squad_load(policy),
-    squad_sched(policy),
-    squad_lookback(policy),
-  };
-
+  // Set up the shared memory resources
   ScanResources<PolicySelector, InputT, OutputT, AccumT> res = [&] {
     warpspeed::SyncHandler syncHandler{};
     warpspeed::SmemAllocator smemAllocator{};
@@ -866,11 +870,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
     return r;
   }();
 
-  warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
-    agent_warpspeed_scan<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>{
-      specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res}
-      .dispatch_squad(squad);
-  });
+  // Dispatch each warp to its respective squad
+  using closure_t =
+    warpspeed_scan_closure<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>;
+  warpspeed::squadDispatch(
+    specialRegisters, closure_t::scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
+      closure_t{specialRegisters, params, scan_op, static_cast<RealInitValueT>(init_value), res}.dispatch_squad(squad);
+    });
 #endif // __cccl_ptx_isa >= 860
 }
 
