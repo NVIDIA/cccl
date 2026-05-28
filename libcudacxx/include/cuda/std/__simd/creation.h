@@ -233,6 +233,7 @@ template <__simd_size_type _Ip, __simd_size_type... _Sizes>
   // this line is not reachable because _Ip is in the range [0, M), where M is the total size
   // of the concatenation of the V1, V2, ..., VN
   _CCCL_UNREACHABLE();
+  return 0; // MVSC workaround
 }
 
 // Compute the local prefix sum (number of elements before arg _Kp) for a given target arg index _Kp.
