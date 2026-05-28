@@ -61,9 +61,12 @@ jobs:
         env:
           CCCL_TAG: ${{ inputs.override_cccl_tag }}
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
-          # Retry intermittent failures
-          SCCACHE_DIST_MAX_RETRIES: "0"
+          # Only retry once if a build server shuts down while compiling,
+          # otherwise fallback to compiling locally
+          SCCACHE_DIST_MAX_RETRIES: "1"
         run: |
+          set -eo pipefail
+
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
@@ -92,6 +95,19 @@ jobs:
           chmod 0600 .aws/credentials
           chmod 0664 .aws/config
 
+          SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"
+
+          SCCACHE_DIST_AUTH_TOKEN="$(
+            curl -fsSL -H "Authorization: Bearer $(
+                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com"  |
+                jq -r '.value'
+              )" https://token.rapids.nvidia.com/gh/token/exchange |
+            jq -r '.token'
+          )"
+
+          echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
+
           .devcontainer/launch.sh \
             --docker \
             --cuda 13.2 \
@@ -111,15 +127,8 @@ jobs:
             --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-            --env "SCCACHE_RECACHE=1" \
-            --env "SCCACHE_DIST_URL=https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com" \
-            --env "SCCACHE_DIST_AUTH_TOKEN=$(
-              curl -fsSL -H "Authorization: Bearer $(
-                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
-              | jq -r '.value'
-              )" https://token.rapids.nvidia.com/gh/token/exchange \
-            | jq -r '.token')" \
+            --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL" \
+            --env "SCCACHE_DIST_AUTH_TOKEN=$SCCACHE_DIST_AUTH_TOKEN" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
 
