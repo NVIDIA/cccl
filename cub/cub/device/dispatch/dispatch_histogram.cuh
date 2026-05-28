@@ -118,13 +118,10 @@ static constexpr int hybrid_smem_split_bin_single_channel = 49152;
 // teach `select_algorithm` when to pick it, and add a `case` to
 // `dispatch_by_algorithm`.
 //
-// Centralising the choice has two purposes. (1) The dispatch trade-off
-// surface (single vs multi channel, EVEN vs RANGE classify cost, bin count,
-// element count, sample width) has grown to the point where ad-hoc cascades
-// across two dispatch entry points make it hard to reason about which kernel
-// runs for a given workload. (2) Per-algorithm ablation runs (forcing one
-// kernel on every cell of a sweep matrix) need a single override point;
-// the `CUB_HISTOGRAM_FORCE_ALGORITHM` macro below provides that.
+// Centralising the choice keeps the dispatch trade-off surface (single vs
+// multi channel, EVEN vs RANGE classify cost, bin count, element count,
+// sample width) in one place rather than scattered across cascades in two
+// dispatch entry points.
 enum class algorithm : unsigned char
 {
   // Tier-0: bins <= 256, fits in the legacy fixed-size privatized SMEM.
@@ -191,20 +188,6 @@ struct selector_features
 template <bool IsByteSample>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features const& f)
 {
-  // CUB_HISTOGRAM_FORCE_ALGORITHM: when defined to the unqualified name of
-  // an `algorithm` enumerator, override every selector decision to return
-  // that algorithm. Used by per-algorithm ablation builds.
-  //
-  // The byte-sample branch still bypasses to `smem_priv_256` because the
-  // other algorithms are not valid for byte-sample inputs.
-#ifdef CUB_HISTOGRAM_FORCE_ALGORITHM
-  if constexpr (IsByteSample)
-  {
-    return algorithm::smem_priv_256;
-  }
-  (void) f;
-  return algorithm::CUB_HISTOGRAM_FORCE_ALGORITHM;
-#else
   // Byte samples: 256-entry pass-thru privatized histograms, then a final
   // scale-transform combine. Bin counts above that are not legal for byte
   // samples (LevelT == SampleT and num_bins fits in [0, 255]).
@@ -289,7 +272,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
     return algorithm::gmem_priv_cuckoo;
   }
   return algorithm::hybrid_single_pass;
-#endif // CUB_HISTOGRAM_FORCE_ALGORITHM
 }
 
 template <int NUM_CHANNELS,
