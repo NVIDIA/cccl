@@ -132,24 +132,30 @@ struct _InvalidTupleConstructor
   static constexpr bool __nothrow_construction  = false;
 };
 
-template <class... _Types>
-struct _TupleDefaultConstructibleTraits
+enum class __select_constructible
 {
-  static constexpr bool __implicit_construction = (__is_implicitly_default_constructible<_Types>::value && ...);
-  static constexpr bool __explicit_construction = !(__is_implicitly_default_constructible<_Types>::value && ...);
-  static constexpr bool __nothrow_construction  = (is_nothrow_default_constructible_v<_Types> && ...);
+  __not_constructible,
+  __implicit_constructible,
+  __explicit_constructible,
 };
 
 template <class... _Types>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __tuple_default_constructible_constraint() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructible
+__tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
 {
-  return (is_default_constructible_v<_Types> && ...);
+  if constexpr (!(is_default_constructible_v<_Types> && ...))
+  {
+    return __select_constructible::__not_constructible;
+  }
+  else if constexpr ((__is_implicitly_default_constructible<_Types>::value && ...))
+  {
+    return __select_constructible::__implicit_constructible;
+  }
+  else
+  {
+    return __select_constructible::__explicit_constructible;
+  }
 }
-
-template <class... _Types, enable_if_t<::cuda::std::__tuple_default_constructible_constraint<_Types...>(), int> = 0>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_default_constructible(__tuple_types<_Types...>) noexcept
-  -> _TupleDefaultConstructibleTraits<_Types...>;
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_default_constructible(...) noexcept -> _InvalidTupleConstructor;
 
 template <class... _Types>
 struct _TupleVariadicCopyConstructibleTraits
@@ -278,9 +284,9 @@ struct _TupleVariadicConstructibleLessRankTraits<__tuple_types<_Types...>, __tup
   static constexpr bool __is_arg_constructible =
     __traits_with_arg::__implicit_construction || __traits_with_arg::__explicit_construction;
   static constexpr bool __rest_is_default_constructible =
-    __traits_defaulted::__implicit_construction || __traits_defaulted::__explicit_construction;
-  static constexpr bool __is_nothrow =
-    __traits_with_arg::__nothrow_construction && __traits_defaulted::__nothrow_construction;
+    ::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
+    != __select_constructible::__not_constructible;
+  static constexpr bool __is_nothrow = __traits_with_arg::__nothrow_construction;
 
   static constexpr bool __implicit_construction = false;
   static constexpr bool __explicit_construction = __is_arg_constructible && __rest_is_default_constructible;

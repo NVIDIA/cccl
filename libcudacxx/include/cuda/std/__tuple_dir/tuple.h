@@ -84,33 +84,36 @@ public:
     return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
-  template <class... _UTypes>
-  using _DefaultConstraints = decltype(::cuda::std::__tuple_is_default_constructible(__tuple_types<_UTypes...>{}));
-
-  template <class _Constraints                                      = _DefaultConstraints<_Tp...>,
-            enable_if_t<_Constraints::__implicit_construction, int> = 0>
-  _CCCL_API constexpr tuple() noexcept(_Constraints::__nothrow_construction)
+  template <
+    __select_constructible _Constructible = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
+    enable_if_t<_Constructible == __select_constructible::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
 
-  template <class _Constraints                                      = _DefaultConstraints<_Tp...>,
-            enable_if_t<_Constraints::__explicit_construction, int> = 0>
-  _CCCL_API explicit constexpr tuple() noexcept(_Constraints::__nothrow_construction)
+  template <
+    __select_constructible _Constructible = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
+    enable_if_t<_Constructible == __select_constructible::__explicit_constructible, int> = 0>
+  _CCCL_API explicit constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
 
   _CCCL_HIDE_FROM_ABI tuple(tuple const&) = default;
   _CCCL_HIDE_FROM_ABI tuple(tuple&&)      = default;
 
-  template <class _Alloc,
-            class _Constraints                                      = _DefaultConstraints<_Tp...>,
-            enable_if_t<_Constraints::__implicit_construction, int> = 0>
-  _CCCL_API constexpr tuple(allocator_arg_t, _Alloc const& __a) noexcept(_Constraints::__nothrow_construction)
+  template <
+    class _Alloc,
+    __select_constructible _Constructible = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
+    enable_if_t<_Constructible == __select_constructible::__implicit_constructible, int> = 0>
+  _CCCL_API constexpr tuple(allocator_arg_t,
+                            _Alloc const& __a) noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
       : __base_(allocator_arg_t(), __a)
   {}
 
-  template <class _Alloc,
-            class _Constraints                                      = _DefaultConstraints<_Tp...>,
-            enable_if_t<_Constraints::__explicit_construction, int> = 0>
-  _CCCL_API explicit constexpr tuple(allocator_arg_t, _Alloc const& __a) noexcept(_Constraints::__nothrow_construction)
+  template <
+    class _Alloc,
+    __select_constructible _Constructible = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
+    enable_if_t<_Constructible == __select_constructible::__explicit_constructible, int> = 0>
+  _CCCL_API explicit constexpr tuple(allocator_arg_t,
+                                     _Alloc const& __a) noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
       : __base_(allocator_arg_t(), __a)
   {}
 
