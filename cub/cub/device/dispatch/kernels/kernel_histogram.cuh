@@ -261,12 +261,44 @@ struct Transforms
     [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale) const noexcept
     {
-      if constexpr (is_integral_excl_int128<T>::value)
-      {
-        const auto offset = subtract_as_unsigned(sample, min_level);
-        return static_cast<int>(
-          (IntArithmeticT{offset} * IntArithmeticT{scale.fraction.bins}) / IntArithmeticT{scale.fraction.range});
-      }
+      return static_cast<int>((sample - min_level) * scale.reciprocal);
+    }
+
+    //! @brief Bin computation for custom types and __[u]int128
+    template <typename T>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
+    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */) const
+    {
+      return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
+    }
+
+    //! @brief Bin computation for integral types of up to 64-bit types.
+    //!
+    //! Compute `sample - min_level` via the unsigned representation of T,
+    //! mirroring `ComputeScale`. For signed integer T with negative
+    //! `min_level` (e.g. `min_level = INT_MIN`), the signed difference
+    //! `sample - min_level` overflows T and is undefined behaviour; the
+    //! resulting numerator on two's complement is a wildly wrong magnitude
+    //! and produces an incorrect bin (the sample is dropped from the output
+    //! histogram). The unsigned subtraction wraps modularly and yields the
+    //! correct non-negative difference exactly the way `ComputeScale`
+    //! computes `max_level - min_level`.
+    template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
+    {
+      using UT                  = ::cuda::std::make_unsigned_t<T>;
+      const IntArithmeticT diff = static_cast<IntArithmeticT>(
+        static_cast<UT>(static_cast<UT>(sample) - static_cast<UT>(min_level)));
+      return static_cast<int>(
+        (diff * static_cast<IntArithmeticT>(scale.fraction.bins)) / static_cast<IntArithmeticT>(scale.fraction.range));
+    }
+
+    template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
+    {
+      return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
+    }
+
 #if _CCCL_HAS_NVFP16()
       else if constexpr (::cuda::std::is_same_v<T, ::__half>)
       {
