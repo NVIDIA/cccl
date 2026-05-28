@@ -11,6 +11,7 @@
 #include <cuda/experimental/places.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -431,6 +432,39 @@ cudaStream_t stf_fence(stf_ctx_handle ctx)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   auto* context_ptr = from_opaque(ctx);
   return context_ptr->fence();
+}
+
+int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size)
+{
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
+  _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
+  _CCCL_ASSERT(out != nullptr, "output buffer must not be null");
+
+  try
+  {
+    auto* context_ptr = from_opaque(ctx);
+    auto* ld_ptr      = from_opaque(ld);
+
+    void* dst  = out;
+    size_t cap = size;
+
+    auto builder = context_ptr->host_launch();
+    builder.add_deps(task_dep_untyped(*ld_ptr, access_mode::read));
+    builder.set_symbol("wait");
+    builder->*[dst, cap](reserved::host_launch_deps& deps) {
+      auto data      = deps.get<slice<char>>(0);
+      size_t copy_sz = ::std::min(cap, static_cast<size_t>(data.extent(0)));
+      ::std::memcpy(dst, data.data_handle(), copy_sz);
+    };
+
+    cudaStream_t fence_stream = context_ptr->fence();
+    cuda_safe_call(cudaStreamSynchronize(fence_stream));
+    return 0;
+  }
+  catch (...)
+  {
+    return 1;
+  }
 }
 
 stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
