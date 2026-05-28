@@ -35,17 +35,17 @@ _CCCL_SIMD_MATH_BINARY_GENERATOR(islessequal, islessequal);
 _CCCL_SIMD_MATH_BINARY_GENERATOR(islessgreater, islessgreater);
 _CCCL_SIMD_MATH_BINARY_GENERATOR(isunordered, isunordered);
 
-#define _CCCL_SIMD_MATH_BINARY_MASK_FUNCTION(_NAME, _CONSTEXPR)                               \
-  _CCCL_TEMPLATE(typename _Vp0,                                                               \
-                 typename _Vp1,                                                               \
-                 typename _Vec    = __simd_math_result_t<_Vp0, _Vp1>,                         \
-                 typename _Result = typename _Vec::mask_type)                                 \
-  _CCCL_REQUIRES(__is_simd_math_v<_Vec, _Vp0, _Vp1>)                                          \
-  [[nodiscard]] _CCCL_API _CONSTEXPR _Result _NAME(const _Vp0& __x, const _Vp1& __y) noexcept \
-  {                                                                                           \
-    const _Vec __x_vec = __x;                                                                 \
-    const _Vec __y_vec = __y;                                                                 \
-    return _Result{__simd_##_NAME##_generator<_Result, _Vec, _Vec>{__x_vec, __y_vec}};        \
+#define _CCCL_SIMD_MATH_BINARY_MASK_FUNCTION(_NAME, _CONSTEXPR)                                           \
+  _CCCL_TEMPLATE(typename _Vp0,                                                                           \
+                 typename _Vp1,                                                                           \
+                 typename _Vec    = __simd_math_result_t<_Vp0, _Vp1>,                                     \
+                 typename _Result = typename _Vec::mask_type)                                             \
+  _CCCL_REQUIRES(__is_simd_math_v<_Vec, _Vp0, _Vp1>)                                                      \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp0& __x, const _Vp1& __y) noexcept \
+  {                                                                                                       \
+    const _Vec __x_vec = __x;                                                                             \
+    const _Vec __y_vec = __y;                                                                             \
+    return _Result{__simd_##_NAME##_generator<_Result, _Vec, _Vec>{__x_vec, __y_vec}};                    \
   }
 
 _CCCL_SIMD_MATH_BINARY_MASK_FUNCTION(isgreater, )

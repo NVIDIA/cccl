@@ -43,7 +43,7 @@ _CCCL_SIMD_MATH_UNARY_GENERATOR(signbit);
 #define _CCCL_SIMD_MATH_MASK_FUNCTION(_NAME, _CONSTEXPR)                                    \
   _CCCL_TEMPLATE(typename _Vp, typename _Result = typename __deduced_vec_t<_Vp>::mask_type) \
   _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                           \
-  [[nodiscard]] _CCCL_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept                 \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept     \
   {                                                                                         \
     return _Result{__simd_##_NAME##_generator<_Result, _Vp>{__x}};                          \
   }

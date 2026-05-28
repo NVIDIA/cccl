@@ -74,40 +74,40 @@ _CCCL_CONCEPT __is_math_floating_point_v = _CCCL_REQUIRES_EXPR(
 // unary macros
 
 // common macro to implement unary generator
-#define _CCCL_SIMD_MATH_UNARY_GENERATOR(_NAME)                                  \
-  template <typename _Result, typename _Vp>                                     \
-  struct __simd_##_NAME##_generator                                             \
-  {                                                                             \
-    using __result_t = typename _Result::value_type;                            \
-                                                                                \
-    const _Vp& __x_;                                                            \
-                                                                                \
-    template <typename _Ip>                                                     \
-    [[nodiscard]] _CCCL_API constexpr __result_t operator()(_Ip) const noexcept \
-    {                                                                           \
-      return static_cast<__result_t>(::cuda::std::_NAME(__x_[_Ip::value]));     \
-    }                                                                           \
+#define _CCCL_SIMD_MATH_UNARY_GENERATOR(_NAME)                                              \
+  template <typename _Result, typename _Vp>                                                 \
+  struct __simd_##_NAME##_generator                                                         \
+  {                                                                                         \
+    using __result_t = typename _Result::value_type;                                        \
+                                                                                            \
+    const _Vp& __x_;                                                                        \
+                                                                                            \
+    template <typename _Ip>                                                                 \
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept \
+    {                                                                                       \
+      return static_cast<__result_t>(::cuda::std::_NAME(__x_[_Ip::value]));                 \
+    }                                                                                       \
   }
 
 // common macro to implement unary function
-#define _CCCL_SIMD_MATH_UNARY_FUNCTION(_NAME, _CONSTEXPR)                   \
-  _CCCL_SIMD_MATH_UNARY_GENERATOR(_NAME);                                   \
-                                                                            \
-  _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)     \
-  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                           \
-  [[nodiscard]] _CCCL_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept \
-  {                                                                         \
-    return _Result{__simd_##_NAME##_generator<_Result, _Vp>{__x}};          \
+#define _CCCL_SIMD_MATH_UNARY_FUNCTION(_NAME, _CONSTEXPR)                               \
+  _CCCL_SIMD_MATH_UNARY_GENERATOR(_NAME);                                               \
+                                                                                        \
+  _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)                 \
+  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                       \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept \
+  {                                                                                     \
+    return _Result{__simd_##_NAME##_generator<_Result, _Vp>{__x}};                      \
   }
 
 // common macro to implement (unary) rebind function
-#define _CCCL_SIMD_MATH_UNARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)    \
-  _CCCL_TEMPLATE(typename _Vp)                                           \
-  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                        \
-  [[nodiscard]] _CCCL_API _CONSTEXPR auto _NAME(const _Vp& __x) noexcept \
-  {                                                                      \
-    using __result_t = rebind_t<_Tp, __deduced_vec_t<_Vp>>;              \
-    return __result_t{__simd_##_NAME##_generator<__result_t, _Vp>{__x}}; \
+#define _CCCL_SIMD_MATH_UNARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)                \
+  _CCCL_TEMPLATE(typename _Vp)                                                       \
+  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                    \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp& __x) noexcept \
+  {                                                                                  \
+    using __result_t = rebind_t<_Tp, __deduced_vec_t<_Vp>>;                          \
+    return __result_t{__simd_##_NAME##_generator<__result_t, _Vp>{__x}};             \
   }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ inline constexpr bool __is_simd_math_v =
     const _Vp1& __y_;                                                                         \
                                                                                               \
     template <typename _Ip>                                                                   \
-    [[nodiscard]] _CCCL_API constexpr __result_t operator()(_Ip) const noexcept               \
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept   \
     {                                                                                         \
       return static_cast<__result_t>(::cuda::std::_NAME(__x_[_Ip::value], __y_[_Ip::value])); \
     }                                                                                         \
@@ -174,7 +174,7 @@ inline constexpr bool __is_simd_math_v =
 #define _CCCL_SIMD_MATH_BINARY_FUNCTION(_NAME, _GENERATOR, _CONSTEXPR)                                        \
   _CCCL_TEMPLATE(typename _Vp0, typename _Vp1)                                                                \
   _CCCL_REQUIRES(__is_simd_math_v<__simd_math_result_t<_Vp0, _Vp1>, _Vp0, _Vp1>)                              \
-  [[nodiscard]] _CCCL_API _CONSTEXPR auto _NAME(const _Vp0& __x, const _Vp1& __y) noexcept                    \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp0& __x, const _Vp1& __y) noexcept        \
   {                                                                                                           \
     using __result_t         = __simd_math_result_t<_Vp0, _Vp1>;                                              \
     const __result_t __x_vec = __x;                                                                           \
@@ -196,23 +196,23 @@ inline constexpr bool __is_simd_math_v =
     const _Vp2& __z_;                                                                                           \
                                                                                                                 \
     template <typename _Ip>                                                                                     \
-    [[nodiscard]] _CCCL_API constexpr __result_t operator()(_Ip) const noexcept                                 \
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept                     \
     {                                                                                                           \
       return static_cast<__result_t>(::cuda::std::_NAME(__x_[_Ip::value], __y_[_Ip::value], __z_[_Ip::value])); \
     }                                                                                                           \
   }
 
-#define _CCCL_SIMD_MATH_TERNARY_FUNCTION(_NAME, _GENERATOR, _CONSTEXPR)                                            \
-  _CCCL_TEMPLATE(typename _Vp0, typename _Vp1, typename _Vp2)                                                      \
-  _CCCL_REQUIRES(__is_simd_math_v<__simd_math_result_t<_Vp0, _Vp1, _Vp2>, _Vp0, _Vp1, _Vp2>)                       \
-  [[nodiscard]] _CCCL_API _CONSTEXPR auto _NAME(const _Vp0& __x, const _Vp1& __y, const _Vp2& __z) noexcept        \
-  {                                                                                                                \
-    using __result_t         = __simd_math_result_t<_Vp0, _Vp1, _Vp2>;                                             \
-    const __result_t __x_vec = __x;                                                                                \
-    const __result_t __y_vec = __y;                                                                                \
-    const __result_t __z_vec = __z;                                                                                \
-    return __result_t{                                                                                             \
-      __simd_##_GENERATOR##_generator<__result_t, __result_t, __result_t, __result_t>{__x_vec, __y_vec, __z_vec}}; \
+#define _CCCL_SIMD_MATH_TERNARY_FUNCTION(_NAME, _GENERATOR, _CONSTEXPR)                                                 \
+  _CCCL_TEMPLATE(typename _Vp0, typename _Vp1, typename _Vp2)                                                           \
+  _CCCL_REQUIRES(__is_simd_math_v<__simd_math_result_t<_Vp0, _Vp1, _Vp2>, _Vp0, _Vp1, _Vp2>)                            \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp0& __x, const _Vp1& __y, const _Vp2& __z) noexcept \
+  {                                                                                                                     \
+    using __result_t         = __simd_math_result_t<_Vp0, _Vp1, _Vp2>;                                                  \
+    const __result_t __x_vec = __x;                                                                                     \
+    const __result_t __y_vec = __y;                                                                                     \
+    const __result_t __z_vec = __z;                                                                                     \
+    return __result_t{                                                                                                  \
+      __simd_##_GENERATOR##_generator<__result_t, __result_t, __result_t, __result_t>{__x_vec, __y_vec, __z_vec}};      \
   }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD

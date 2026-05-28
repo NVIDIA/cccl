@@ -49,12 +49,13 @@ _CCCL_SIMD_MATH_BINARY_FUNCTION(copysign, copysign, constexpr)
 //----------------------------------------------------------------------------------------------------------------------
 // ldexp, scalbn, scalbln
 
-#define _CCCL_SIMD_MATH_BINARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)                                         \
-  _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)                                        \
-  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                                              \
-  [[nodiscard]] _CCCL_API _CONSTEXPR _Result _NAME(const _Vp& __x, const rebind_t<_Tp, _Result>& __y) noexcept \
-  {                                                                                                            \
-    return _Result{__simd_##_NAME##_generator<_Result, _Vp, rebind_t<_Tp, _Result>>{__x, __y}};                \
+#define _CCCL_SIMD_MATH_BINARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)                          \
+  _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)                         \
+  _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)                                               \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(                                 \
+    const _Vp& __x, const rebind_t<_Tp, _Result>& __y) noexcept                                 \
+  {                                                                                             \
+    return _Result{__simd_##_NAME##_generator<_Result, _Vp, rebind_t<_Tp, _Result>>{__x, __y}}; \
   }
 
 _CCCL_SIMD_MATH_BINARY_REBIND_FUNCTION(ldexp, int, )
@@ -74,7 +75,7 @@ struct __simd_frexp_generator
   array<int, _Result::__usize>& __exponents_;
 
   template <typename _Ip>
-  [[nodiscard]] _CCCL_API constexpr __result_t operator()(_Ip) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept
   {
     int __exponent           = 0;
     const auto __result      = static_cast<__result_t>(::cuda::std::frexp(__x_[_Ip::value], &__exponent));
@@ -85,7 +86,7 @@ struct __simd_frexp_generator
 
 _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)
 _CCCL_REQUIRES(__is_math_floating_point_v<_Vp>)
-[[nodiscard]] _CCCL_API _Result frexp(const _Vp& __x, rebind_t<int, _Result>* __exp) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Result frexp(const _Vp& __x, rebind_t<int, _Result>* __exp) noexcept
 {
   using __exp_t = rebind_t<int, _Result>;
   array<int, _Result::__usize> __exponents{};

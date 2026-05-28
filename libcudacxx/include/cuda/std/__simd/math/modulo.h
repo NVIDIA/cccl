@@ -50,7 +50,7 @@ struct __simd_remquo_generator
   array<int, _Result::__usize>& __quotients_;
 
   template <typename _Ip>
-  [[nodiscard]] _CCCL_API constexpr __result_t operator()(_Ip) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept
   {
     int __quotient           = 0;
     const auto __remquo      = ::cuda::std::remquo(__x_[_Ip::value], __y_[_Ip::value], &__quotient);
@@ -61,7 +61,7 @@ struct __simd_remquo_generator
 };
 
 template <typename _Result, typename _Vp0, typename _Vp1>
-[[nodiscard]] _CCCL_API _Result
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Result
 __simd_remquo_impl(const _Vp0& __x, const _Vp1& __y, rebind_t<int, _Result>* __quo) noexcept
 {
   array<int, _Result::__usize> __quotients{};
@@ -72,7 +72,8 @@ __simd_remquo_impl(const _Vp0& __x, const _Vp1& __y, rebind_t<int, _Result>* __q
 
 _CCCL_TEMPLATE(typename _Vp0, typename _Vp1, typename _Result = __simd_math_result_t<_Vp0, _Vp1>)
 _CCCL_REQUIRES(__is_simd_math_v<_Result, _Vp0, _Vp1>)
-[[nodiscard]] _CCCL_API _Result remquo(const _Vp0& __x, const _Vp1& __y, rebind_t<int, _Result>* __quo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Result
+remquo(const _Vp0& __x, const _Vp1& __y, rebind_t<int, _Result>* __quo) noexcept
 {
   const _Result __x_vec = __x;
   const _Result __y_vec = __y;
@@ -91,7 +92,7 @@ struct __simd_modf_generator
   array<__result_t, _Vp::__usize>& __integrals_;
 
   template <typename _Ip>
-  [[nodiscard]] _CCCL_API constexpr __result_t operator()(_Ip) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Ip) const noexcept
   {
     __result_t __integral    = 0;
     auto __modf              = ::cuda::std::modf(__x_[_Ip::value], &__integral);
@@ -105,7 +106,7 @@ struct __simd_modf_generator
 // types.
 
 template <typename _Tp, typename _Abi>
-[[nodiscard]] _CCCL_API basic_vec<_Tp, _Abi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API basic_vec<_Tp, _Abi>
 modf(const type_identity_t<basic_vec<_Tp, _Abi>>& __x, basic_vec<_Tp, _Abi>* __iptr) noexcept
 {
   using _Vp = basic_vec<_Tp, _Abi>;
