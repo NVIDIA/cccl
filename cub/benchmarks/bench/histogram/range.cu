@@ -26,7 +26,18 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const auto num_bins  = state.get_int64("Bins");
   const int num_levels = static_cast<int>(num_bins) + 1;
 
-  const SampleT lower_level = 0;
+  // Skip invalid configurations where the SampleT range can't hold enough
+  // strictly-monotonic levels. The level-construction loop below uses
+  // `h_levels[i-1] + SampleT{1}` to enforce strict monotonicity; for narrow
+  // integer SampleT this overflows once bins exceed the count of distinct
+  // SampleT values, leaving a non-monotonic level array.
+  if (num_bins > max_representable_bins<SampleT>())
+  {
+    state.skip("Number of bins exceeds what SampleT can represent");
+    return;
+  }
+
+  const SampleT lower_level = get_lower_level<SampleT>();
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
   // Jittered uniform spacing keeps DispatchRange on the SearchTransform path

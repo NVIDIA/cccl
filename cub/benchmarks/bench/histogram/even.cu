@@ -22,17 +22,18 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   const auto num_bins  = state.get_int64("Bins");
   const int num_levels = static_cast<int>(num_bins) + 1;
 
-  // Skip invalid configurations where LevelT (= SampleT) cannot represent the number of bins
-  if constexpr (cuda::std::is_integral_v<SampleT>)
+  // Skip invalid configurations where the SampleT range can't hold enough
+  // strictly-monotonic levels: bins + 1 levels require bins + 1 distinct
+  // SampleT values, and the bench's `[get_lower_level, get_upper_level]`
+  // range spans at most `max_representable_bins<SampleT>() + 1` distinct
+  // values.
+  if (num_bins > max_representable_bins<SampleT>())
   {
-    if (num_bins > static_cast<int64_t>(cuda::std::numeric_limits<SampleT>::max()))
-    {
-      state.skip("Number of bins exceeds what LevelT (= SampleT) can represent");
-      return;
-    }
+    state.skip("Number of bins exceeds what SampleT can represent");
+    return;
   }
 
-  const SampleT lower_level = 0;
+  const SampleT lower_level = get_lower_level<SampleT>();
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
   thrust::device_vector<SampleT> input = generate(elements, entropy, lower_level, upper_level);
