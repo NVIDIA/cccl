@@ -45,20 +45,18 @@ using ::cuda::experimental::stf::mv;
 class exec_place;
 
 /**
- * @brief Is this stream currently in graph-capture mode?
+ * @brief Is @p stream currently participating in a CUDA graph capture?
  *
- * Most CUDA driver metadata queries (``cuStreamGetId``, ``cudaStreamGetDevice``,
- * ...) are not capture-safe: under ``cudaStreamCaptureModeThreadLocal`` /
- * ``Global`` the driver both rejects them with
- * ``cudaErrorStreamCaptureUnsupported`` *and* invalidates the in-progress
- * capture. We therefore gate such queries on this probe, which is itself
- * capture-safe.
+ * Returns `false` for `nullptr` (the legacy default stream is never
+ * capturing). `cudaStreamIsCapturing` is itself capture-safe, so this can be
+ * called from contexts where most other driver queries (`cuStreamGetId`,
+ * `cudaStreamGetDevice`, ...) would be rejected with
+ * `cudaErrorStreamCaptureUnsupported` and would *invalidate* the in-flight
+ * capture.
  */
-inline bool is_stream_capturing(cudaStream_t stream)
+[[nodiscard]] inline bool is_stream_capturing(cudaStream_t stream)
 {
-  cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-  cuda_try(cudaStreamIsCapturing(stream, &status));
-  return status != cudaStreamCaptureStatusNone;
+  return cuda_try<cudaStreamIsCapturing>(stream) != cudaStreamCaptureStatusNone;
 }
 
 /**
@@ -71,11 +69,9 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-  // If the stream is currently capturing, ``cudaStreamGetDevice`` /
-  // ``cuStreamGetCtx`` are not allowed and would invalidate the capture.
-  // Fall back to the current device: STF's own stream pool is allocated
-  // against the caller's active device context, and a user stream passed in
-  // while that context is captured is assumed to live on that same device.
+  // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
+  // participating in capture. Use the active device, which is the device on
+  // which the capture is being constructed.
   if (is_stream_capturing(stream))
   {
     return cuda_try<cudaGetDevice>();
