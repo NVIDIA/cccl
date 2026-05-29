@@ -158,52 +158,56 @@ public:
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::move(__t))
   {}
 
+  // Old MSVC chokes about a static constexpr variable needing an initializer. Work around by using a type
   template <class... _UTypes>
-  static constexpr __select_constructor _VariadicConstraints =
-    __tuple_select_variadic_constructible_v<__tuple_types<_Tp...>, __tuple_types<_UTypes...>>;
+  using _VariadicConstraints =
+    integral_constant<__select_constructor,
+                      __tuple_select_variadic_constructible_v<__tuple_types<_Tp...>, __tuple_types<_UTypes...>>>;
 
   template <class... _UTypes>
-  static constexpr bool _NothrowVariadic =
-    __tuple_all_nothrow_constructible_v<__tuple_types<_Tp...>, __tuple_types<_UTypes...>>;
+  using _NothrowVariadic =
+    bool_constant<__tuple_all_nothrow_constructible_v<__tuple_types<_Tp...>, __tuple_types<_UTypes...>>>;
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>,
+            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>::value,
             enable_if_t<__select_implicit<_Trait>, int> = 0>
-  _CCCL_API constexpr tuple(_UTypes&&... __u) noexcept(_NothrowVariadic<_UTypes...>)
+  _CCCL_API constexpr tuple(_UTypes&&... __u) noexcept(_NothrowVariadic<_UTypes...>::value)
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>,
+            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>::value,
             enable_if_t<__select_explicit<_Trait>, int> = 0>
-  _CCCL_API constexpr explicit tuple(_UTypes&&... __u) noexcept(_NothrowVariadic<_UTypes...>)
+  _CCCL_API constexpr explicit tuple(_UTypes&&... __u) noexcept(_NothrowVariadic<_UTypes...>::value)
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class _Alloc,
             class... _UTypes,
-            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>,
+            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>::value,
             enable_if_t<__select_implicit<_Trait>, int> = 0>
-  _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(_NothrowVariadic<_UTypes...>)
+  _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
+    _NothrowVariadic<_UTypes...>::value)
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class _Alloc,
             class... _UTypes,
-            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>,
+            __select_constructor _Trait                 = _VariadicConstraints<_UTypes...>::value,
             enable_if_t<__select_explicit<_Trait>, int> = 0>
   _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, _UTypes&&... __u) noexcept(
-    _NothrowVariadic<_UTypes...>)
+    _NothrowVariadic<_UTypes...>::value)
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
   template <class... _UTypes>
-  static constexpr __select_constructor _VariadicConstraintsLessRank =
-    __tuple_select_variadic_constructible_less_rank_v<__tuple_types<_Tp...>, __tuple_types<_UTypes...>>;
+  using _VariadicConstraintsLessRank = integral_constant<
+    __select_constructor,
+    __tuple_select_variadic_constructible_less_rank_v<__tuple_types<_Tp...>, __tuple_types<_UTypes...>>>;
 
   template <class... _UTypes,
             enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int> = 0,
-            __select_constructor _Trait                             = _VariadicConstraintsLessRank<_UTypes...>,
+            __select_constructor _Trait                             = _VariadicConstraintsLessRank<_UTypes...>::value,
             enable_if_t<__select_explicit<_Trait>, int>             = 0>
   _CCCL_API constexpr explicit tuple(_UTypes&&... __u)
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
@@ -231,105 +235,107 @@ private:
 
 public:
   template <class _UTuple>
-  static constexpr __select_constructor _TupleLikeConstraints =
-    __tuple_select_tuple_like_constructible_v<_UTuple, __tuple_types<_Tp...>, __make_tuple_indices_t<sizeof...(_Tp)>>;
+  using _TupleLikeConstraints = integral_constant<
+    __select_constructor,
+    __tuple_select_tuple_like_constructible_v<_UTuple, __tuple_types<_Tp...>, __make_tuple_indices_t<sizeof...(_Tp)>>>;
 
   template <class _UTuple>
-  static constexpr bool _NothrowTupleLike =
-    __tuple_nothrow_tuple_like_constructible_v<_UTuple, __tuple_types<_Tp...>, __make_tuple_indices_t<sizeof...(_Tp)>>;
+  using _NothrowTupleLike = bool_constant<
+    __tuple_nothrow_tuple_like_constructible_v<_UTuple, __tuple_types<_Tp...>, __make_tuple_indices_t<sizeof...(_Tp)>>>;
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&>::value,
             enable_if_t<__select_implicit<_Trait>, int> = 0>
-  _CCCL_API constexpr tuple(tuple<_UTypes...>& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&>)
+  _CCCL_API constexpr tuple(tuple<_UTypes...>& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&>::value,
             enable_if_t<__select_explicit<_Trait>, int> = 0>
-  _CCCL_API explicit constexpr tuple(tuple<_UTypes...>& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&>)
+  _CCCL_API explicit constexpr tuple(tuple<_UTypes...>& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&>::value,
             enable_if_t<__select_implicit<_Trait>, int> = 0>
-  _CCCL_API constexpr tuple(const tuple<_UTypes...>& __t) noexcept(_NothrowTupleLike<const tuple<_UTypes...>&>)
+  _CCCL_API constexpr tuple(const tuple<_UTypes...>& __t) noexcept(_NothrowTupleLike<const tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&>::value,
             enable_if_t<__select_explicit<_Trait>, int> = 0>
-  _CCCL_API explicit constexpr tuple(const tuple<_UTypes...>& __t) noexcept(_NothrowTupleLike<const tuple<_UTypes...>&>)
+  _CCCL_API explicit constexpr tuple(const tuple<_UTypes...>& __t) noexcept(
+    _NothrowTupleLike<const tuple<_UTypes...>&>::value)
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&&>::value,
             enable_if_t<__select_implicit<_Trait>, int> = 0>
-  _CCCL_API constexpr tuple(tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&&>)
+  _CCCL_API constexpr tuple(tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<tuple<_UTypes...>&&>::value,
             enable_if_t<__select_explicit<_Trait>, int> = 0>
-  _CCCL_API explicit constexpr tuple(tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&&>)
+  _CCCL_API explicit constexpr tuple(tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLike<tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&&>::value,
             enable_if_t<__select_implicit<_Trait>, int> = 0>
-  _CCCL_API constexpr tuple(const tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLike<const tuple<_UTypes...>&&>)
+  _CCCL_API constexpr tuple(const tuple<_UTypes...>&& __t) noexcept(_NothrowTupleLike<const tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
   template <class... _UTypes,
-            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&&>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<const tuple<_UTypes...>&&>::value,
             enable_if_t<__select_explicit<_Trait>, int> = 0>
   _CCCL_API explicit constexpr tuple(const tuple<_UTypes...>&& __t) noexcept(
-    _NothrowTupleLike<const tuple<_UTypes...>&&>)
+    _NothrowTupleLike<const tuple<_UTypes...>&&>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
   // We cannot instantiate _TupleLikeConstraints eagerly because the leads to recursive constraints
   // We need to SFINAE the constructor away before instantiating the traits
   template <class _Tuple>
-  static constexpr bool __disambiguate_tuple_like =
-    !is_same_v<remove_cvref_t<_Tuple>, tuple> && __tuple_like_with_size<_Tuple, sizeof...(_Tp)>;
+  using __disambiguate_tuple_like =
+    bool_constant<!is_same_v<remove_cvref_t<_Tuple>, tuple> && __tuple_like_with_size<_Tuple, sizeof...(_Tp)>>;
 
   template <class _Tuple,
-            enable_if_t<__disambiguate_tuple_like<_Tuple>, int> = 0,
-            __select_constructor _Trait                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<__select_implicit<_Trait>, int>         = 0>
-  _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>)
+            enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
+            __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
+            enable_if_t<__select_implicit<_Trait>, int>                = 0>
+  _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
-            enable_if_t<__disambiguate_tuple_like<_Tuple>, int> = 0,
-            __select_constructor _Trait                         = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<__select_explicit<_Trait>, int>         = 0>
-  _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>)
+            enable_if_t<__disambiguate_tuple_like<_Tuple>::value, int> = 0,
+            __select_constructor _Trait                                = _TupleLikeConstraints<_Tuple>::value,
+            enable_if_t<__select_explicit<_Trait>, int>                = 0>
+  _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Alloc,
             class _Tuple,
-            __select_constructor _Trait                 = _TupleLikeConstraints<_Tuple>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<_Tuple>::value,
             enable_if_t<__select_implicit<_Trait>, int> = 0>
-  _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>)
+  _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Alloc,
             class _Tuple,
-            __select_constructor _Trait                 = _TupleLikeConstraints<_Tuple>,
+            __select_constructor _Trait                 = _TupleLikeConstraints<_Tuple>::value,
             enable_if_t<__select_explicit<_Trait>, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t) noexcept(
-    _NothrowTupleLike<_Tuple>)
+    _NothrowTupleLike<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
 
