@@ -299,16 +299,22 @@ public:
 
   // We cannot instantiate _TupleLikeConstraints eagerly because the leads to recursive constraints
   // We need to SFINAE the constructor away before instantiating the traits
+  template <class _Tuple>
+  static constexpr bool __disambiguate_tuple_like =
+    !is_same_v<remove_cvref_t<_Tuple>, tuple> && __tuple_like_with_size<_Tuple, sizeof...(_Tp)>;
+
   template <class _Tuple,
-            __select_constructor _Trait                 = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<__select_implicit<_Trait>, int> = 0>
+            enable_if_t<__disambiguate_tuple_like<_Tuple>, int> = 0,
+            __select_constructor _Trait                         = _TupleLikeConstraints<_Tuple>,
+            enable_if_t<__select_implicit<_Trait>, int>         = 0>
   _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
-            __select_constructor _Trait                 = _TupleLikeConstraints<_Tuple>,
-            enable_if_t<__select_explicit<_Trait>, int> = 0>
+            enable_if_t<__disambiguate_tuple_like<_Tuple>, int> = 0,
+            __select_constructor _Trait                         = _TupleLikeConstraints<_Tuple>,
+            enable_if_t<__select_explicit<_Trait>, int>         = 0>
   _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLike<_Tuple>)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
