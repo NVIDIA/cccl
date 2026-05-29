@@ -173,12 +173,12 @@ struct __propagate_on_container_swap<_Alloc, true>
 };
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH // std::allocator::is_always_equal has been deprecated
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+  _CCCL_SUPPRESS_DEPRECATED_DIAG
 
-// __is_always_equal
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal,
-                                     is_always_equal) template <class _Alloc, bool = __has_is_always_equal_v<_Alloc>>
-struct __is_always_equal : is_empty<_Alloc>
+  // __is_always_equal
+  _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal,
+                                       is_always_equal) template <class _Alloc, bool = __has_is_always_equal_v<_Alloc>>
+  struct __is_always_equal : is_empty<_Alloc>
 {};
 template <class _Alloc>
 struct __is_always_equal<_Alloc, true>
