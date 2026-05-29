@@ -46,7 +46,7 @@ struct TripleChevronFactory
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 
-  CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
+  CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version) const
   {
     return cub::PtxVersion(version);
   }

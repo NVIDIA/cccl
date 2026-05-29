@@ -494,7 +494,7 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         policy_getter,
         kernel_source,
         launcher_factory,
-        cc);
+        ::cuda::compute_capability{arch_id});
     }
     else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy.algorithm)
     {
@@ -514,7 +514,7 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         policy_getter,
         kernel_source,
         launcher_factory,
-        cc);
+        ::cuda::compute_capability{arch_id});
     }
     else
     {
@@ -529,7 +529,7 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         policy_getter,
         kernel_source,
         launcher_factory,
-        cc);
+        ::cuda::compute_capability{arch_id});
     }
   }
 };
