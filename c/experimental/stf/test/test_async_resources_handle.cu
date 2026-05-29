@@ -26,8 +26,6 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
-namespace
-{
 // A device sink that is written but never read. Publishing the busy-loop
 // result here gives the loop an observable side effect, so the compiler
 // cannot optimize it away, without perturbing the result buffer.
@@ -57,34 +55,43 @@ __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
   arr[tid] = value;
 }
 
-// Submit one slow_set task into `ctx`, writing `value` everywhere in `d_arr`.
-void submit_set(stf_ctx_handle ctx, int* d_arr, int n, int value, int iters)
+namespace
 {
-  stf_logical_data_handle tok = stf_token(ctx);
-  REQUIRE(tok != nullptr);
-  stf_logical_data_set_symbol(tok, "tok");
+// Submit one slow_set kernel into `ctx`, writing `value` everywhere in
+// `d_arr`. Use stf_cuda_kernel_* instead of the generic task stream API so
+// this helper is valid for both stream and graph backends.
+void submit_set_kernel(stf_ctx_handle ctx, int* d_arr, int n, int value, int iters)
+{
+  int dev_id = 0;
+  REQUIRE(cudaGetDevice(&dev_id) == cudaSuccess);
+  stf_data_place_handle dev_place = stf_data_place_device(dev_id);
+  stf_logical_data_handle lD      = stf_logical_data_with_place(ctx, d_arr, n * sizeof(int), dev_place);
+  REQUIRE(lD != nullptr);
+  stf_data_place_destroy(dev_place);
+  stf_logical_data_set_symbol(lD, "device_buffer");
 
-  stf_task_handle t = stf_task_create(ctx);
-  REQUIRE(t != nullptr);
-  stf_task_set_symbol(t, "slow_set");
-  stf_task_add_dep(t, tok, STF_RW);
-  stf_task_start(t);
+  stf_cuda_kernel_handle k = stf_cuda_kernel_create(ctx);
+  REQUIRE(k != nullptr);
+  stf_cuda_kernel_set_symbol(k, "slow_set");
+  stf_cuda_kernel_add_dep(k, lD, STF_RW);
+  stf_cuda_kernel_start(k);
 
-  CUstream s = stf_task_get_custream(t);
-  REQUIRE(s != nullptr);
+  int* arg_ptr = static_cast<int*>(stf_cuda_kernel_get_arg(k, 0));
+  REQUIRE(arg_ptr == d_arr);
+  const int threads    = 128;
+  const int blocks     = (n + threads - 1) / threads;
+  const void* args[4] = {&arg_ptr, &n, &value, &iters};
+  cudaError_t err      = stf_cuda_kernel_add_desc(
+    k, reinterpret_cast<void*>(slow_set_kernel), dim3(blocks), dim3(threads), 0, 4, args);
+  REQUIRE(err == cudaSuccess);
+  stf_cuda_kernel_end(k);
+  stf_cuda_kernel_destroy(k);
 
-  const int threads = 128;
-  const int blocks  = (n + threads - 1) / threads;
-  slow_set_kernel<<<blocks, threads, 0, (cudaStream_t) s>>>(d_arr, n, value, iters);
-
-  stf_task_end(t);
-  stf_task_destroy(t);
-
-  stf_logical_data_destroy(tok);
+  stf_logical_data_destroy(lD);
 }
 
 // Run one ctx (created via stf_ctx_create_ex with a caller-provided stream
-// and a shared async_resources handle) that issues a single slow_set task.
+// and a shared async_resources handle) that issues a single slow_set kernel.
 void run_ctx_with_handle(
   stf_backend_kind backend, cudaStream_t s, stf_async_resources_handle h, int* d_arr, int N, int value, int iters)
 {
@@ -97,7 +104,7 @@ void run_ctx_with_handle(
   stf_ctx_handle ctx = stf_ctx_create_ex(&opts);
   REQUIRE(ctx != nullptr);
 
-  submit_set(ctx, d_arr, N, value, iters);
+  submit_set_kernel(ctx, d_arr, N, value, iters);
 
   // Non-blocking: this enqueues the remaining work and the resource-release
   // callback on `s`; it does not synchronize `s`.
