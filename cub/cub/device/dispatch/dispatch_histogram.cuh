@@ -821,7 +821,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // Caller may have already picked sweep over direct-atomic via the unified
   // algorithm selector; honour that. Otherwise fall back to the bin-count-
   // based heuristic for backwards compatibility.
-  constexpr int direct_atomic_bin_threshold_single = 1 << 20;
+  //
+  // Single-channel threshold lowered from 1<<20 to 1<<16 (65536): now that
+  // the cuckoo cache lives in dynamic SMEM and grows to use all free shared
+  // memory, the direct-atomic + per-block SMEM cache path is competitive
+  // with the gather-merge persistent kernel down to 65536 bins, and it
+  // avoids the gather-merge's O(num_blocks * num_bins) cross-block reduction.
+  // This routes the 262144-bin single-channel cells (the weakest high-bin
+  // cells, gather-merge-bound at ~110 GiB/s on uniform input) through the
+  // larger cache. Verified by measurement (see iteration log).
+  constexpr int direct_atomic_bin_threshold_single = 1 << 16;
   constexpr int direct_atomic_bin_threshold_multi  = 16384;
   const int direct_atomic_bin_threshold =
     (NUM_ACTIVE_CHANNELS > 1) ? direct_atomic_bin_threshold_multi : direct_atomic_bin_threshold_single;
