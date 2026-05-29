@@ -1228,7 +1228,7 @@ public:
 
 inline exec_place exec_place::device(int devid)
 {
-  static int ndevices = cuda_try<cudaGetDeviceCount>();
+  static const int ndevices = cuda_try<cudaGetDeviceCount>();
   // One process-global ``shared_ptr`` per device, created exactly once in this
   // function-local static initializer (guaranteed thread-safe init by the
   // compiler). We hand out *copies* below.
