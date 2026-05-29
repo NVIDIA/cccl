@@ -89,9 +89,10 @@ inline std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
   // TEST_CTK_PATH needed to include cuda_fp16.h
-  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", TEST_CTK_PATH};
+  const char* options[] = {
+    "--std=c++17", "-rdc=true", "-dlto", "-D__NV_NO_VECTOR_DEPRECATION_DIAG", TEST_CTK_PATH};
 
-  if (nvrtcCompileProgram(prog, 4, options) != NVRTC_SUCCESS)
+  if (nvrtcCompileProgram(prog, 5, options) != NVRTC_SUCCESS)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));

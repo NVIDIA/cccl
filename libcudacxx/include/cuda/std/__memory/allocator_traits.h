@@ -55,6 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Allocator::pointer is deprecated since C++17
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 // __pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer)
 template <class _Tp, class _Alloc, class _RawAlloc = remove_reference_t<_Alloc>, bool = __has_pointer_v<_RawAlloc>>
@@ -71,6 +72,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 // Allocator::const_pointer is deprecated since C++17
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 // __const_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_pointer, const_pointer)
 template <class _Tp, class _Ptr, class _Alloc, bool = __has_const_pointer_v<_Alloc>>
@@ -171,6 +173,7 @@ struct __propagate_on_container_swap<_Alloc, true>
 };
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH // std::allocator::is_always_equal has been deprecated
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 
 // __is_always_equal
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal,
@@ -187,6 +190,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 // Allocator::rebind is deprecated since C++17
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 
 // __allocator_traits_rebind
 template <class _Tp, class _Up>

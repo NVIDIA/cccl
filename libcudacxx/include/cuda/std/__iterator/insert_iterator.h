@@ -35,6 +35,7 @@ template <class _Container>
 using __insert_iterator_iter_t = typename _Container::iterator;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT insert_iterator
 {

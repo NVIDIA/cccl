@@ -92,6 +92,7 @@ public:
 };
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT back_insert_iterator
 {

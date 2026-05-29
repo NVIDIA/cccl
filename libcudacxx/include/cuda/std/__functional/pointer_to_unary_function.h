@@ -30,6 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 
 template <class _Arg, class _Result>
 class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg, _Result>

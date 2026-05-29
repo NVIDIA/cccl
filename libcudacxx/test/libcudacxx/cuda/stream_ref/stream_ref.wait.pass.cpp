@@ -20,6 +20,7 @@
 #include "test_macros.h"
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_DIAG
 
 void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
 {

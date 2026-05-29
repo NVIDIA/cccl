@@ -92,6 +92,7 @@
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-declarations") \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(GCC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                 \
@@ -99,6 +100,7 @@
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated")              \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-declarations") \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH                             \
@@ -106,18 +108,30 @@
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity)                     \
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity_with_custom_message) \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#  define _CCCL_SUPPRESS_DEPRECATED_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_MSVC(4996)       \
     _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444)
+#  define _CCCL_SUPPRESS_DEPRECATED_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP() _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(NVRTC)
-#  define _CCCL_SUPPRESS_DEPRECATED_PUSH _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
-#  define _CCCL_SUPPRESS_DEPRECATED_POP  _CCCL_NV_DIAG_POP()
+#  if _CCCL_COMPILER(NVRTC, >=, 13, 3) && defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#    define _CCCL_SUPPRESS_DEPRECATED_PUSH _CCCL_NV_DIAG_PUSH()
+// NVRTC 13.3 does not honor nv_diag_suppress when it is emitted in the same macro expansion as
+// nv_diagnostic push. Keep the suppression in a separate source-level macro invocation.
+// See https://github.com/NVIDIA/cccl/issues/9170 and nvbug 6239043.
+#    define _CCCL_SUPPRESS_DEPRECATED_DIAG _Pragma("nv_diag_suppress 1444,20199")
+#  else // ^^^ NVRTC >= 13.3 with __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^
+#    define _CCCL_SUPPRESS_DEPRECATED_PUSH _CCCL_BEGIN_NV_DIAG_SUPPRESS(1444, 20199)
+#    define _CCCL_SUPPRESS_DEPRECATED_DIAG
+#  endif // ^^^ NVRTC >= 13.3 with __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^
+#  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_NV_DIAG_POP()
 #else // unknown compiler
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH
+#  define _CCCL_SUPPRESS_DEPRECATED_DIAG
 #  define _CCCL_SUPPRESS_DEPRECATED_POP
 #endif // unknown compiler
 
