@@ -221,102 +221,100 @@ CUresult cccl_device_segmented_sort(
   bool is_overwrite_okay,
   int* selector,
   CUstream stream)
+try
 {
-  try
+  // Dispatch on is_overwrite_okay (see analogous comment in radix_sort.cu).
+  int status;
+  int local_selector = 0;
+  if (is_overwrite_okay)
   {
-    // Dispatch on is_overwrite_okay (see analogous comment in radix_sort.cu).
-    int status;
-    int local_selector = 0;
-    if (is_overwrite_okay)
+    if (!build.sort_fn_overwrite)
     {
-      if (!build.sort_fn_overwrite)
-      {
-        return CUDA_ERROR_INVALID_VALUE;
-      }
-      if (build.keys_only)
-      {
-        auto fn = reinterpret_cast<segmented_sort_keys_overwrite_fn_t>(build.sort_fn_overwrite);
-        status  = fn(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys_in.state,
-          d_keys_out.state,
-          static_cast<unsigned long long>(num_items),
-          static_cast<unsigned long long>(num_segments),
-          start_offset_in.state,
-          end_offset_in.state,
-          &local_selector,
-          reinterpret_cast<void*>(stream));
-      }
-      else
-      {
-        auto fn = reinterpret_cast<segmented_sort_pairs_overwrite_fn_t>(build.sort_fn_overwrite);
-        status  = fn(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys_in.state,
-          d_keys_out.state,
-          d_values_in.state,
-          d_values_out.state,
-          static_cast<unsigned long long>(num_items),
-          static_cast<unsigned long long>(num_segments),
-          start_offset_in.state,
-          end_offset_in.state,
-          &local_selector,
-          reinterpret_cast<void*>(stream));
-      }
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    if (build.keys_only)
+    {
+      auto fn = reinterpret_cast<segmented_sort_keys_overwrite_fn_t>(build.sort_fn_overwrite);
+      status  = fn(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in.state,
+        d_keys_out.state,
+        static_cast<unsigned long long>(num_items),
+        static_cast<unsigned long long>(num_segments),
+        start_offset_in.state,
+        end_offset_in.state,
+        &local_selector,
+        reinterpret_cast<void*>(stream));
     }
     else
     {
-      if (!build.sort_fn)
-      {
-        return CUDA_ERROR_INVALID_VALUE;
-      }
-      if (build.keys_only)
-      {
-        auto fn = reinterpret_cast<segmented_sort_keys_fn_t>(build.sort_fn);
-        status  = fn(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys_in.state,
-          d_keys_out.state,
-          static_cast<unsigned long long>(num_items),
-          static_cast<unsigned long long>(num_segments),
-          start_offset_in.state,
-          end_offset_in.state,
-          reinterpret_cast<void*>(stream));
-      }
-      else
-      {
-        auto fn = reinterpret_cast<segmented_sort_pairs_fn_t>(build.sort_fn);
-        status  = fn(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys_in.state,
-          d_keys_out.state,
-          d_values_in.state,
-          d_values_out.state,
-          static_cast<unsigned long long>(num_items),
-          static_cast<unsigned long long>(num_segments),
-          start_offset_in.state,
-          end_offset_in.state,
-          reinterpret_cast<void*>(stream));
-      }
-      local_selector = 0;
+      auto fn = reinterpret_cast<segmented_sort_pairs_overwrite_fn_t>(build.sort_fn_overwrite);
+      status  = fn(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in.state,
+        d_keys_out.state,
+        d_values_in.state,
+        d_values_out.state,
+        static_cast<unsigned long long>(num_items),
+        static_cast<unsigned long long>(num_segments),
+        start_offset_in.state,
+        end_offset_in.state,
+        &local_selector,
+        reinterpret_cast<void*>(stream));
     }
-
-    if (selector)
-    {
-      *selector = local_selector;
-    }
-
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
   }
-  catch (const std::exception& exc)
+  else
   {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_sort(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
+    if (!build.sort_fn)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    if (build.keys_only)
+    {
+      auto fn = reinterpret_cast<segmented_sort_keys_fn_t>(build.sort_fn);
+      status  = fn(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in.state,
+        d_keys_out.state,
+        static_cast<unsigned long long>(num_items),
+        static_cast<unsigned long long>(num_segments),
+        start_offset_in.state,
+        end_offset_in.state,
+        reinterpret_cast<void*>(stream));
+    }
+    else
+    {
+      auto fn = reinterpret_cast<segmented_sort_pairs_fn_t>(build.sort_fn);
+      status  = fn(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in.state,
+        d_keys_out.state,
+        d_values_in.state,
+        d_values_out.state,
+        static_cast<unsigned long long>(num_items),
+        static_cast<unsigned long long>(num_segments),
+        start_offset_in.state,
+        end_offset_in.state,
+        reinterpret_cast<void*>(stream));
+    }
+    local_selector = 0;
   }
+
+  if (selector)
+  {
+    *selector = local_selector;
+  }
+
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_sort(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_result_t* build_ptr)

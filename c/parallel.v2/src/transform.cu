@@ -158,22 +158,20 @@ CUresult cccl_device_unary_transform(
   uint64_t num_items,
   cccl_op_t op,
   CUstream stream)
+try
 {
-  try
+  if (!build.transform_fn)
   {
-    auto fn = reinterpret_cast<unary_transform_fn_t>(build.transform_fn);
-    if (!fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-    int status = fn(d_in.state, d_out.state, num_items, op.state, reinterpret_cast<void*>(stream));
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_unary_transform(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  auto fn          = reinterpret_cast<unary_transform_fn_t>(build.transform_fn);
+  const int status = fn(d_in.state, d_out.state, num_items, op.state, reinterpret_cast<void*>(stream));
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_unary_transform(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_binary_transform(
@@ -184,22 +182,20 @@ CUresult cccl_device_binary_transform(
   uint64_t num_items,
   cccl_op_t op,
   CUstream stream)
+try
 {
-  try
+  if (!build.transform_fn)
   {
-    auto fn = reinterpret_cast<binary_transform_fn_t>(build.transform_fn);
-    if (!fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-    int status = fn(d_in1.state, d_in2.state, d_out.state, num_items, op.state, reinterpret_cast<void*>(stream));
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_binary_transform(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  auto fn          = reinterpret_cast<binary_transform_fn_t>(build.transform_fn);
+  const int status = fn(d_in1.state, d_in2.state, d_out.state, num_items, op.state, reinterpret_cast<void*>(stream));
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_binary_transform(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 // ---------------------------------------------------------------------------

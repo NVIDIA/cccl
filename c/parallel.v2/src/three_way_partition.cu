@@ -136,35 +136,33 @@ CUresult cccl_device_three_way_partition(
   cccl_op_t select_second_part_op,
   uint64_t num_items,
   CUstream stream)
+try
 {
-  try
+  if (!build.three_way_partition_fn)
   {
-    if (!build.three_way_partition_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-
-    auto fn    = reinterpret_cast<three_way_partition_fn_t>(build.three_way_partition_fn);
-    int status = fn(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in.state,
-      d_first_part_out.state,
-      d_second_part_out.state,
-      d_unselected_out.state,
-      d_num_selected_out.state,
-      static_cast<unsigned long long>(num_items),
-      select_first_part_op.state,
-      select_second_part_op.state,
-      reinterpret_cast<void*>(stream));
-
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_three_way_partition(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+
+  auto fn          = reinterpret_cast<three_way_partition_fn_t>(build.three_way_partition_fn);
+  const int status = fn(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in.state,
+    d_first_part_out.state,
+    d_second_part_out.state,
+    d_unselected_out.state,
+    d_num_selected_out.state,
+    static_cast<unsigned long long>(num_items),
+    select_first_part_op.state,
+    select_second_part_op.state,
+    reinterpret_cast<void*>(stream));
+
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_three_way_partition(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 // ---------------------------------------------------------------------------

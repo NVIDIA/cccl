@@ -174,16 +174,14 @@ CUresult cccl_device_exclusive_scan(
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream)
+try
 {
-  try
-  {
-    return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
-  }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_exclusive_scan(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_exclusive_scan(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_inclusive_scan(
@@ -196,16 +194,14 @@ CUresult cccl_device_inclusive_scan(
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream)
+try
 {
-  try
-  {
-    return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
-  }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_inclusive_scan(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_inclusive_scan(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_exclusive_scan_future_value(
@@ -218,18 +214,16 @@ CUresult cccl_device_exclusive_scan_future_value(
   cccl_op_t op,
   cccl_iterator_t init,
   CUstream stream)
+try
 {
-  try
-  {
-    // init.state is the device pointer — passed as void* and wrapped in
-    // FutureValue<accum_t> inside the compiled CUDA function.
-    return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
-  }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_exclusive_scan_future_value(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  // init.state is the device pointer — passed as void* and wrapped in
+  // FutureValue<accum_t> inside the compiled CUDA function.
+  return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_exclusive_scan_future_value(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_inclusive_scan_future_value(
@@ -242,16 +236,14 @@ CUresult cccl_device_inclusive_scan_future_value(
   cccl_op_t op,
   cccl_iterator_t init,
   CUstream stream)
+try
 {
-  try
-  {
-    return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
-  }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_inclusive_scan_future_value(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  return call_scan_init(build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init.state, stream);
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_inclusive_scan_future_value(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_inclusive_scan_no_init(
@@ -263,29 +255,27 @@ CUresult cccl_device_inclusive_scan_no_init(
   uint64_t num_items,
   cccl_op_t op,
   CUstream stream)
+try
 {
-  try
+  if (!build.scan_fn)
   {
-    if (!build.scan_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-    auto fn = reinterpret_cast<scan_no_init_fn_t>(build.scan_fn);
-    const int status =
-      fn(d_temp_storage,
-         temp_storage_bytes,
-         d_in.state,
-         d_out.state,
-         op.state,
-         (unsigned long long) num_items,
-         reinterpret_cast<void*>(stream));
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_inclusive_scan_no_init(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  auto fn = reinterpret_cast<scan_no_init_fn_t>(build.scan_fn);
+  const int status =
+    fn(d_temp_storage,
+       temp_storage_bytes,
+       d_in.state,
+       d_out.state,
+       op.state,
+       (unsigned long long) num_items,
+       reinterpret_cast<void*>(stream));
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_inclusive_scan_no_init(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 // ---------------------------------------------------------------------------

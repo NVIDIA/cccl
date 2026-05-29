@@ -156,41 +156,39 @@ CUresult cccl_device_histogram_even(
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
+try
 {
-  try
+  if (!build.histogram_fn)
   {
-    if (!build.histogram_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-
-    // CUB takes row_stride_bytes (not samples). Pre-compute on the host so the
-    // JIT wrapper doesn't need a sizeof(sample_t) computation.
-    long long num_row_pixels_ll = static_cast<long long>(num_row_pixels);
-    long long num_rows_ll       = static_cast<long long>(num_rows);
-    size_t row_stride_bytes     = static_cast<size_t>(row_stride_samples) * build.sample_type.size;
-
-    auto fn    = reinterpret_cast<histogram_fn_t>(build.histogram_fn);
-    int status = fn(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples.state,
-      d_output_histograms.state,
-      num_output_levels.state,
-      lower_level.state,
-      upper_level.state,
-      &num_row_pixels_ll,
-      &num_rows_ll,
-      &row_stride_bytes,
-      reinterpret_cast<void*>(stream));
-
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_histogram_even(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+
+  // CUB takes row_stride_bytes (not samples). Pre-compute on the host so the
+  // JIT wrapper doesn't need a sizeof(sample_t) computation.
+  long long num_row_pixels_ll = static_cast<long long>(num_row_pixels);
+  long long num_rows_ll       = static_cast<long long>(num_rows);
+  size_t row_stride_bytes     = static_cast<size_t>(row_stride_samples) * build.sample_type.size;
+
+  auto fn          = reinterpret_cast<histogram_fn_t>(build.histogram_fn);
+  const int status = fn(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_samples.state,
+    d_output_histograms.state,
+    num_output_levels.state,
+    lower_level.state,
+    upper_level.state,
+    &num_row_pixels_ll,
+    &num_rows_ll,
+    &row_stride_bytes,
+    reinterpret_cast<void*>(stream));
+
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_histogram_even(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* build_ptr)

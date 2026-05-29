@@ -149,55 +149,53 @@ CUresult cccl_device_merge_sort(
   uint64_t num_items,
   cccl_op_t op,
   CUstream stream)
+try
 {
-  try
+  if (!build.sort_fn)
   {
-    if (!build.sort_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-
-    int status;
-    // Dispatch to the correct function arity. build.keys_only was set at
-    // build time, so we don't have to re-derive the pairs-vs-keys decision
-    // from the iterator arguments here (and they must match the build for
-    // the function-pointer types to be valid).
-    if (!build.keys_only)
-    {
-      // Pairs build: (temp, temp_bytes, in_keys, in_items, out_keys, out_items, num_items, cmp_state, stream)
-      auto fn = reinterpret_cast<pairs_fn_t>(build.sort_fn);
-      status  = fn(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in_keys.state,
-        d_in_items.state,
-        d_out_keys.state,
-        d_out_items.state,
-        num_items,
-        op.state,
-        reinterpret_cast<void*>(stream));
-    }
-    else
-    {
-      // Keys-only build: (temp, temp_bytes, in_keys, out_keys, num_items, cmp_state, stream)
-      auto fn = reinterpret_cast<keys_fn_t>(build.sort_fn);
-      status =
-        fn(d_temp_storage,
-           temp_storage_bytes,
-           d_in_keys.state,
-           d_out_keys.state,
-           num_items,
-           op.state,
-           reinterpret_cast<void*>(stream));
-    }
-
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
+
+  int status;
+  // Dispatch to the correct function arity. build.keys_only was set at
+  // build time, so we don't have to re-derive the pairs-vs-keys decision
+  // from the iterator arguments here (and they must match the build for
+  // the function-pointer types to be valid).
+  if (!build.keys_only)
   {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_merge_sort(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
+    // Pairs build: (temp, temp_bytes, in_keys, in_items, out_keys, out_items, num_items, cmp_state, stream)
+    auto fn = reinterpret_cast<pairs_fn_t>(build.sort_fn);
+    status  = fn(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in_keys.state,
+      d_in_items.state,
+      d_out_keys.state,
+      d_out_items.state,
+      num_items,
+      op.state,
+      reinterpret_cast<void*>(stream));
   }
+  else
+  {
+    // Keys-only build: (temp, temp_bytes, in_keys, out_keys, num_items, cmp_state, stream)
+    auto fn = reinterpret_cast<keys_fn_t>(build.sort_fn);
+    status =
+      fn(d_temp_storage,
+         temp_storage_bytes,
+         d_in_keys.state,
+         d_out_keys.state,
+         num_items,
+         op.state,
+         reinterpret_cast<void*>(stream));
+  }
+
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_merge_sort(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 // ---------------------------------------------------------------------------

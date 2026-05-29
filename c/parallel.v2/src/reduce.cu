@@ -76,33 +76,31 @@ CUresult cccl_device_reduce(
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream)
+try
 {
-  try
+  if (!build.reduce_fn)
   {
-    if (!build.reduce_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-    auto reduce_fn = reinterpret_cast<reduce_fn_t>(build.reduce_fn);
-
-    // Parameter order matches CubCall::with() order: ..., num_items, op.state, init.state, stream
-    const int status = reduce_fn(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in.state,
-      d_out.state,
-      num_items,
-      op.state,
-      init.state,
-      reinterpret_cast<void*>(stream));
-
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  auto reduce_fn = reinterpret_cast<reduce_fn_t>(build.reduce_fn);
+
+  // Parameter order matches CubCall::with() order: ..., num_items, op.state, init.state, stream
+  const int status = reduce_fn(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in.state,
+    d_out.state,
+    num_items,
+    op.state,
+    init.state,
+    reinterpret_cast<void*>(stream));
+
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_reduce_nondeterministic(

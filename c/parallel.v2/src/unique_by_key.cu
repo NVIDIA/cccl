@@ -128,34 +128,32 @@ CUresult cccl_device_unique_by_key(
   cccl_op_t op,
   uint64_t num_items,
   CUstream stream)
+try
 {
-  try
+  if (!build.unique_by_key_fn)
   {
-    if (!build.unique_by_key_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-
-    auto fn    = reinterpret_cast<unique_by_key_fn_t>(build.unique_by_key_fn);
-    int status = fn(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in.state,
-      d_values_in.state,
-      d_keys_out.state,
-      d_values_out.state,
-      d_num_selected_out.state,
-      static_cast<unsigned long long>(num_items),
-      op.state,
-      reinterpret_cast<void*>(stream));
-
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+
+  auto fn          = reinterpret_cast<unique_by_key_fn_t>(build.unique_by_key_fn);
+  const int status = fn(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in.state,
+    d_values_in.state,
+    d_keys_out.state,
+    d_values_out.state,
+    d_num_selected_out.state,
+    static_cast<unsigned long long>(num_items),
+    op.state,
+    reinterpret_cast<void*>(stream));
+
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_unique_by_key(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 // ---------------------------------------------------------------------------

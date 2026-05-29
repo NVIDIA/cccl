@@ -61,23 +61,21 @@ catch (const std::exception& exc)
 
 CUresult cccl_device_for(
   cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream stream)
+try
 {
-  try
+  if (!build.for_fn)
   {
-    if (!build.for_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-    auto fn = reinterpret_cast<for_fn_t>(build.for_fn);
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  auto fn = reinterpret_cast<for_fn_t>(build.for_fn);
 
-    const int status = fn(d_data.state, num_items, op.state, reinterpret_cast<void*>(stream));
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
-  }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_for(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  const int status = fn(d_data.state, num_items, op.state, reinterpret_cast<void*>(stream));
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_for(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_for_build(

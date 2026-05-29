@@ -87,36 +87,34 @@ CUresult cccl_device_segmented_reduce(
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream)
+try
 {
-  try
+  if (!build.segmented_reduce_fn)
   {
-    if (!build.segmented_reduce_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-    auto segmented_reduce_fn = reinterpret_cast<segmented_reduce_fn_t>(build.segmented_reduce_fn);
-
-    // Parameter order matches CubCall::with() order:
-    // temp_storage, temp_bytes, d_in, d_out, num_items, begin_offsets, end_offsets, op, init, stream
-    const int status = segmented_reduce_fn(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in.state,
-      d_out.state,
-      num_segments,
-      start_offset.state,
-      end_offset.state,
-      op.state,
-      init.state,
-      reinterpret_cast<void*>(stream));
-
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_reduce(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  auto segmented_reduce_fn = reinterpret_cast<segmented_reduce_fn_t>(build.segmented_reduce_fn);
+
+  // Parameter order matches CubCall::with() order:
+  // temp_storage, temp_bytes, d_in, d_out, num_items, begin_offsets, end_offsets, op, init, stream
+  const int status = segmented_reduce_fn(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in.state,
+    d_out.state,
+    num_segments,
+    start_offset.state,
+    end_offset.state,
+    op.state,
+    init.state,
+    reinterpret_cast<void*>(stream));
+
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_segmented_reduce(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_segmented_reduce_build(
