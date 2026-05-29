@@ -90,8 +90,6 @@ try
     cub_algo = ascending ? "cub::DeviceSegmentedSort::SortPairs" : "cub::DeviceSegmentedSort::SortPairsDescending";
   }
 
-  // Both CUB-overload wrappers in one TU via the multi-function CubCall::compile
-  // — see analogous comment in radix_sort.cu.
   auto cb_copy = [&] {
     if (keys_only)
     {
