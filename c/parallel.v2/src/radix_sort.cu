@@ -115,11 +115,6 @@ try
     cub_algo = ascending ? "cub::DeviceRadixSort::SortPairs" : "cub::DeviceRadixSort::SortPairsDescending";
   }
 
-  // Build both CUB-overload wrappers into one translation unit via the
-  // multi-function CubCall::compile — one Clang invocation, one cubin, one
-  // JITCompiler. The CubCall::compile overload wraps each wrapper's body in
-  // its own `namespace fn_<i> { ... }` so per-function preambles don't
-  // collide; the extern "C" EXPORT symbols stay globally dlsym-able.
   auto cb_copy = [&] {
     if (keys_only)
     {
