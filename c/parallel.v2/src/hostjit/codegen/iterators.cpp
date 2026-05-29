@@ -75,8 +75,10 @@ IteratorCode make_input_iterator(
     result.preamble  = std::format("using {} = {};\n", val_alias, input_val_type);
 
     result.preamble += std::format(
-      "extern \"C\" __device__ void {}(void* state, const void* offset);\n"
-      "extern \"C\" __device__ void {}(const void* state, {}* result);\n\n",
+      R"cpp(extern "C" __device__ void {}(void* state, const void* offset);
+extern "C" __device__ void {}(const void* state, {}* result);
+
+)cpp",
       adv_name,
       deref_name,
       val_alias);
@@ -92,42 +94,44 @@ IteratorCode make_input_iterator(
     // user-supplied advance/dereference (which casts state as a pointer/etc.)
     // sees properly-aligned memory.
     result.preamble += std::format(
-      "struct alignas({5}) {0} {{\n"
-      "  using value_type = {1};\n"
-      "  using difference_type = long long;\n"
-      "  using pointer = {1}*;\n"
-      "  using reference = {1};\n"
-      "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
-      "\n"
-      "  alignas({5}) char state[{2}];\n"
-      "  long long _delta = 0;\n"
-      "\n"
-      "  __host__ __device__ {0} operator+(difference_type n) const {{\n"
-      "    {0} copy = *this;\n"
-      "    copy._delta += n;\n"
-      "    return copy;\n"
-      "  }}\n"
-      "  __host__ __device__ {0}& operator+=(difference_type n) {{\n"
-      "    _delta += n;\n"
-      "    return *this;\n"
-      "  }}\n"
-      "  __host__ __device__ {0}& operator++() {{ return *this += 1; }}\n"
-      "  __host__ __device__ {0}  operator++(int) {{ {0} tmp = *this; ++(*this); return tmp; }}\n"
-      "  __host__ __device__ difference_type operator-(const {0}&) const {{ return 0; }}\n"
-      "  __device__ {1} operator*() const {{\n"
-      "    {0} copy = *this;\n"
-      "    if (copy._delta != 0) {{\n"
-      "      unsigned long long offset = static_cast<unsigned long long>(copy._delta);\n"
-      "      {3}(copy.state, &offset);\n"
-      "    }}\n"
-      "    {1} result;\n"
-      "    {4}(copy.state, &result);\n"
-      "    return result;\n"
-      "  }}\n"
-      "  __device__ {1} operator[](difference_type n) const {{ return *(*this + n); }}\n"
-      "  __host__ __device__ bool operator==(const {0}&) const {{ return false; }}\n"
-      "  __host__ __device__ bool operator!=(const {0}&) const {{ return true; }}\n"
-      "}};\n\n",
+      R"cpp(struct alignas({5}) {0} {{
+  using value_type = {1};
+  using difference_type = long long;
+  using pointer = {1}*;
+  using reference = {1};
+  using iterator_category = cuda::std::random_access_iterator_tag;
+
+  alignas({5}) char state[{2}];
+  long long _delta = 0;
+
+  __host__ __device__ {0} operator+(difference_type n) const {{
+    {0} copy = *this;
+    copy._delta += n;
+    return copy;
+  }}
+  __host__ __device__ {0}& operator+=(difference_type n) {{
+    _delta += n;
+    return *this;
+  }}
+  __host__ __device__ {0}& operator++() {{ return *this += 1; }}
+  __host__ __device__ {0}  operator++(int) {{ {0} tmp = *this; ++(*this); return tmp; }}
+  __host__ __device__ difference_type operator-(const {0}&) const {{ return 0; }}
+  __device__ {1} operator*() const {{
+    {0} copy = *this;
+    if (copy._delta != 0) {{
+      unsigned long long offset = static_cast<unsigned long long>(copy._delta);
+      {3}(copy.state, &offset);
+    }}
+    {1} result;
+    {4}(copy.state, &result);
+    return result;
+  }}
+  __device__ {1} operator[](difference_type n) const {{ return *(*this + n); }}
+  __host__ __device__ bool operator==(const {0}&) const {{ return false; }}
+  __host__ __device__ bool operator!=(const {0}&) const {{ return true; }}
+}};
+
+)cpp",
       struct_name, // {0}
       val_alias, // {1}
       it.size, // {2}
@@ -136,8 +140,8 @@ IteratorCode make_input_iterator(
       struct_alignas(it.alignment)); // {5}
 
     result.setup_code = std::format(
-      "{} {};\n"
-      "    __builtin_memcpy({}.state, {}, {});",
+      R"cpp({} {};
+    __builtin_memcpy({}.state, {}, {});)cpp",
       struct_name,
       var_name,
       var_name,
@@ -192,8 +196,10 @@ IteratorCode make_output_iterator(
 
     result.type_name = struct_name;
     result.preamble  = std::format(
-      "extern \"C\" __device__ void {}(void* state, const void* offset);\n"
-       "extern \"C\" __device__ void {}(void* state, const void* value);\n\n",
+      R"cpp(extern "C" __device__ void {}(void* state, const void* offset);
+extern "C" __device__ void {}(void* state, const void* value);
+
+)cpp",
       adv_name,
       deref_name);
 
@@ -207,12 +213,13 @@ IteratorCode make_output_iterator(
     // struct alignas is the bigger of the iterator's declared alignment and 1.
     const std::size_t proxy_align = it.alignment > 0 ? it.alignment : 1;
     result.preamble += std::format(
-      "struct alignas({1}) {0} {{\n"
-      "  alignas({1}) char state[{2}];\n"
-      "  __device__ void operator=(const {3}& val) {{\n"
-      "    {4}(state, &val);\n"
-      "  }}\n"
-      "}};\n",
+      R"cpp(struct alignas({1}) {0} {{
+  alignas({1}) char state[{2}];
+  __device__ void operator=(const {3}& val) {{
+    {4}(state, &val);
+  }}
+}};
+)cpp",
       proxy_name, // {0}
       proxy_align, // {1}
       it.size, // {2}
@@ -224,39 +231,41 @@ IteratorCode make_output_iterator(
     // device-only `advance` bitcode. operator* (device only) applies the
     // accumulated `_delta` before constructing the proxy.
     result.preamble += std::format(
-      "struct alignas({5}) {0} {{\n"
-      "  using value_type = {1};\n"
-      "  using difference_type = long long;\n"
-      "  using pointer = {1}*;\n"
-      "  using reference = {2};\n"
-      "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
-      "\n"
-      "  alignas({5}) char state[{3}];\n"
-      "  long long _delta = 0;\n"
-      "\n"
-      "  __host__ __device__ {0} operator+(difference_type n) const {{\n"
-      "    {0} copy = *this;\n"
-      "    copy._delta += n;\n"
-      "    return copy;\n"
-      "  }}\n"
-      "  __host__ __device__ {0}& operator+=(difference_type n) {{\n"
-      "    _delta += n;\n"
-      "    return *this;\n"
-      "  }}\n"
-      "  __host__ __device__ {0}& operator++() {{ return *this += 1; }}\n"
-      "  __host__ __device__ {0}  operator++(int) {{ {0} tmp = *this; ++(*this); return tmp; }}\n"
-      "  __host__ __device__ difference_type operator-(const {0}&) const {{ return 0; }}\n"
-      "  __device__ reference operator*() const {{\n"
-      "    {2} proxy;\n"
-      "    __builtin_memcpy(proxy.state, state, {3});\n"
-      "    if (_delta != 0) {{\n"
-      "      unsigned long long offset = static_cast<unsigned long long>(_delta);\n"
-      "      {4}(proxy.state, &offset);\n"
-      "    }}\n"
-      "    return proxy;\n"
-      "  }}\n"
-      "  __device__ reference operator[](difference_type n) const {{ return *(*this + n); }}\n"
-      "}};\n\n",
+      R"cpp(struct alignas({5}) {0} {{
+  using value_type = {1};
+  using difference_type = long long;
+  using pointer = {1}*;
+  using reference = {2};
+  using iterator_category = cuda::std::random_access_iterator_tag;
+
+  alignas({5}) char state[{3}];
+  long long _delta = 0;
+
+  __host__ __device__ {0} operator+(difference_type n) const {{
+    {0} copy = *this;
+    copy._delta += n;
+    return copy;
+  }}
+  __host__ __device__ {0}& operator+=(difference_type n) {{
+    _delta += n;
+    return *this;
+  }}
+  __host__ __device__ {0}& operator++() {{ return *this += 1; }}
+  __host__ __device__ {0}  operator++(int) {{ {0} tmp = *this; ++(*this); return tmp; }}
+  __host__ __device__ difference_type operator-(const {0}&) const {{ return 0; }}
+  __device__ reference operator*() const {{
+    {2} proxy;
+    __builtin_memcpy(proxy.state, state, {3});
+    if (_delta != 0) {{
+      unsigned long long offset = static_cast<unsigned long long>(_delta);
+      {4}(proxy.state, &offset);
+    }}
+    return proxy;
+  }}
+  __device__ reference operator[](difference_type n) const {{ return *(*this + n); }}
+}};
+
+)cpp",
       struct_name, // {0}
       elem_type, // {1}
       proxy_name, // {2}
@@ -265,8 +274,8 @@ IteratorCode make_output_iterator(
       struct_alignas(it.alignment)); // {5}
 
     result.setup_code = std::format(
-      "{} {};\n"
-      "    __builtin_memcpy({}.state, {}, {});",
+      R"cpp({} {};
+    __builtin_memcpy({}.state, {}, {});)cpp",
       struct_name,
       var_name,
       var_name,

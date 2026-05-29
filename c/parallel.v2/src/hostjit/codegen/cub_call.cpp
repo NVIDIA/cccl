@@ -464,7 +464,7 @@ std::string CubCall::body() const
     for (const auto& a : cub_args)
     {
       // Input vars are named "in_0", "in_1", etc.
-      if (a.size() >= 3 && a.substr(0, 3) == "in_" && std::isdigit(a[3]))
+      if (a.starts_with("in_") && a.size() >= 4 && std::isdigit(a[3]))
       {
         input_vars.push_back(a);
       }
@@ -546,14 +546,18 @@ std::string CubCall::body() const
   return src;
 }
 
-CubCallResult CubCall::compile(
-  int cc_major, int cc_minor, cccl_build_config* config, const char* ctk_path, const char* cccl_include_path) const
+hostjit::CompilerConfig CubCall::make_jit_config(
+  int cc_major,
+  int cc_minor,
+  cccl_build_config* config,
+  const char* ctk_path,
+  const char* cccl_include_path,
+  const std::string& entry_point_name)
 {
-  // 1. Configure compiler
   auto jit_config             = hostjit::detectDefaultConfig();
   jit_config.sm_version       = cc_major * 10 + cc_minor;
   jit_config.verbose          = false;
-  jit_config.entry_point_name = fn_name_;
+  jit_config.entry_point_name = entry_point_name;
 
   if (ctk_path && ctk_path[0] != '\0')
   {
@@ -589,7 +593,6 @@ CubCallResult CubCall::compile(
     }
   }
 
-  // Apply extra build configuration
   if (config)
   {
     for (size_t i = 0; i < config->num_extra_include_dirs; ++i)
@@ -598,23 +601,32 @@ CubCallResult CubCall::compile(
     }
     for (size_t i = 0; i < config->num_extra_compile_flags; ++i)
     {
-      std::string flag = config->extra_compile_flags[i];
-      if (flag.substr(0, 2) == "-D")
+      std::string_view flag = config->extra_compile_flags[i];
+      if (flag.starts_with("-D"))
       {
-        auto eq = flag.find('=', 2);
-        if (eq != std::string::npos)
+        flag.remove_prefix(2);
+        if (auto eq = flag.find('='); eq != std::string_view::npos)
         {
-          jit_config.macro_definitions[flag.substr(2, eq - 2)] = flag.substr(eq + 1);
+          jit_config.macro_definitions[std::string{flag.substr(0, eq)}] = std::string{flag.substr(eq + 1)};
         }
         else
         {
-          jit_config.macro_definitions[flag.substr(2)] = "";
+          jit_config.macro_definitions[std::string{flag}] = "";
         }
       }
     }
     jit_config.enable_pch = config->enable_pch != 0;
     jit_config.verbose    = config->verbose != 0;
   }
+
+  return jit_config;
+}
+
+CubCallResult CubCall::compile(
+  int cc_major, int cc_minor, cccl_build_config* config, const char* ctk_path, const char* cccl_include_path) const
+{
+  // 1. Configure compiler
+  auto jit_config = make_jit_config(cc_major, cc_minor, config, ctk_path, cccl_include_path, fn_name_);
 
   // 2. Auto-collect bitcode from ops and iterators
   uintptr_t unique_id = reinterpret_cast<uintptr_t>(this);
@@ -731,67 +743,10 @@ MultiCubCallResult CubCall::compile(
     any_env   = any_env || needs_env_include(cb.args_);
   }
 
-  // Build jit_config (mirrors the member compile's setup).
-  auto jit_config       = hostjit::detectDefaultConfig();
-  jit_config.sm_version = cc_major * 10 + cc_minor;
-  jit_config.verbose    = false;
   // entry_point_name is used to mark a single function as preserved during
   // internalization. Use the first CubCall's name as the primary entry; the
   // others will still be exported via extern "C" EXPORT so dlsym finds them.
-  jit_config.entry_point_name = calls.begin()->fn_name_;
-
-  if (ctk_path && ctk_path[0] != '\0')
-  {
-    jit_config.cuda_toolkit_path = ctk_path;
-    jit_config.library_paths.clear();
-    for (const char* subdir : {"lib64", "lib"})
-    {
-      auto candidate = std::filesystem::path(ctk_path) / subdir;
-      if (std::filesystem::exists(candidate))
-      {
-        jit_config.library_paths.push_back(candidate.string());
-      }
-    }
-  }
-  if (cccl_include_path && cccl_include_path[0] != '\0')
-  {
-    jit_config.cccl_include_path = cccl_include_path;
-    if (jit_config.hostjit_include_path.empty()
-        || !std::filesystem::exists(jit_config.hostjit_include_path + "/hostjit/cuda_minimal"))
-    {
-      auto parent = std::filesystem::path(cccl_include_path).parent_path().string();
-      if (std::filesystem::exists(parent + "/hostjit/cuda_minimal"))
-      {
-        jit_config.hostjit_include_path = parent;
-      }
-    }
-  }
-
-  if (config)
-  {
-    for (size_t i = 0; i < config->num_extra_include_dirs; ++i)
-    {
-      jit_config.include_paths.push_back(config->extra_include_dirs[i]);
-    }
-    for (size_t i = 0; i < config->num_extra_compile_flags; ++i)
-    {
-      std::string flag = config->extra_compile_flags[i];
-      if (flag.substr(0, 2) == "-D")
-      {
-        auto eq = flag.find('=', 2);
-        if (eq != std::string::npos)
-        {
-          jit_config.macro_definitions[flag.substr(2, eq - 2)] = flag.substr(eq + 1);
-        }
-        else
-        {
-          jit_config.macro_definitions[flag.substr(2)] = "";
-        }
-      }
-    }
-    jit_config.enable_pch = config->enable_pch != 0;
-    jit_config.verbose    = config->verbose != 0;
-  }
+  auto jit_config = make_jit_config(cc_major, cc_minor, config, ctk_path, cccl_include_path, calls.begin()->fn_name_);
 
   // Shared BitcodeCollector across all CubCalls — identical user-op or
   // iterator bitcode referenced from multiple wrappers gets deduplicated by

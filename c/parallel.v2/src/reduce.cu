@@ -38,97 +38,18 @@ CUresult cccl_device_reduce_build_ex(
   cccl_build_config* build_config)
 try
 {
-  // cub_path is an -I prefixed path to the CCCL headers directory;
-  // strip the -I prefix to get the bare path for the compiler config.
-  const char* cccl_include_path = nullptr;
-  std::string cccl_include_str;
-  if (libcudacxx_path && libcudacxx_path[0] != '\0')
-  {
-    cccl_include_str = libcudacxx_path;
-    if (cccl_include_str.substr(0, 2) == "-I")
-    {
-      cccl_include_str = cccl_include_str.substr(2);
-    }
-    cccl_include_path = cccl_include_str.c_str();
-  }
-
-  // ctk_path is an -I prefixed path to the CTK include directory;
-  // strip the -I prefix and /include suffix to get the toolkit root.
-  const char* ctk_root = nullptr;
-  std::string ctk_root_str;
-  if (ctk_path && ctk_path[0] != '\0')
-  {
-    ctk_root_str = ctk_path;
-    if (ctk_root_str.substr(0, 2) == "-I")
-    {
-      ctk_root_str = ctk_root_str.substr(2);
-    }
-    // The Python layer passes the include directory itself; the C++ config
-    // expects the toolkit root (parent of include/).
-    // Walk up from the include dir until we find the directory containing
-    // nvvm/libdevice/ — that is the real toolkit root.  This handles both
-    //   /usr/local/cuda/include           -> /usr/local/cuda
-    //   /usr/local/cuda/targets/.../include -> /usr/local/cuda
-    std::filesystem::path p(ctk_root_str);
-    if (p.filename() == "include")
-    {
-      p = p.parent_path();
-    }
-    for (auto candidate = p; candidate.has_parent_path() && candidate != candidate.parent_path();
-         candidate      = candidate.parent_path())
-    {
-      if (std::filesystem::exists(candidate / "nvvm" / "libdevice"))
-      {
-        p = candidate;
-        break;
-      }
-    }
-    ctk_root_str = p.string();
-    ctk_root     = ctk_root_str.c_str();
-  }
-
-  // Collect any extra -I paths from the legacy cub_path / thrust_path arguments.
-  std::vector<std::string> extra_include_strs;
-  std::vector<const char*> extra_include_ptrs;
-  for (const char* path : {cub_path, thrust_path})
-  {
-    if (path && path[0] != '\0')
-    {
-      std::string s = path;
-      if (s.substr(0, 2) == "-I")
-      {
-        s = s.substr(2);
-      }
-      extra_include_strs.push_back(std::move(s));
-    }
-  }
-  for (const auto& s : extra_include_strs)
-  {
-    extra_include_ptrs.push_back(s.c_str());
-  }
-
-  // Merge with any user-provided build config.
-  cccl_build_config merged_config{};
-  if (build_config)
-  {
-    merged_config = *build_config;
-  }
-  // Append legacy include dirs to any existing extra_include_dirs.
-  std::vector<const char*> all_include_ptrs;
-  for (size_t i = 0; i < merged_config.num_extra_include_dirs; ++i)
-  {
-    all_include_ptrs.push_back(merged_config.extra_include_dirs[i]);
-  }
-  all_include_ptrs.insert(all_include_ptrs.end(), extra_include_ptrs.begin(), extra_include_ptrs.end());
-  merged_config.extra_include_dirs     = all_include_ptrs.data();
-  merged_config.num_extra_include_dirs = all_include_ptrs.size();
+  std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
+  std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
+  const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
+  const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
+  cccl::detail::MergedBuildConfig merged(build_config, cub_path, thrust_path);
 
   auto result =
     CubCall::from("cub/device/device_reduce.cuh")
       .run("cub::DeviceReduce::Reduce")
       .name("cccl_jit_reduce")
       .with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init, stream)
-      .compile(cc_major, cc_minor, &merged_config, ctk_root, cccl_include_path);
+      .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build->cc = cc_major * 10 + cc_minor;
   cccl::detail::copy_cubin(result.cubin, build->cubin, build->cubin_size);
@@ -158,15 +79,14 @@ CUresult cccl_device_reduce(
 {
   try
   {
-    auto reduce_fn = reinterpret_cast<reduce_fn_t>(build.reduce_fn);
-
-    if (!reduce_fn)
+    if (!build.reduce_fn)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
+    auto reduce_fn = reinterpret_cast<reduce_fn_t>(build.reduce_fn);
 
     // Parameter order matches CubCall::with() order: ..., num_items, op.state, init.state, stream
-    int status = reduce_fn(
+    const int status = reduce_fn(
       d_temp_storage,
       temp_storage_bytes,
       d_in.state,

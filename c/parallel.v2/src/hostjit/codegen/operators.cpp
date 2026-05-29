@@ -62,16 +62,18 @@ std::string generate_binary_functor(cccl_op_t op, const std::string& accum_type,
     const size_t state_size  = op.size > 0 ? op.size : 1;
     const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     return std::format(
-      "struct {0} {{\n"
-      "  alignas({3}) unsigned char state_bytes[{4}];\n"
-      "  template <typename _A, typename _B>\n"
-      "  __host__ __device__ __forceinline__\n"
-      "  {1} operator()(const _A& a, const _B& b) const {{\n"
-      "    {1} result;\n"
-      "    {2}((void*)state_bytes, (void*)&a, (void*)&b, (void*)&result);\n"
-      "    return result;\n"
-      "  }}\n"
-      "}};\n\n",
+      R"cpp(struct {0} {{
+  alignas({3}) unsigned char state_bytes[{4}];
+  template <typename _A, typename _B>
+  __host__ __device__ __forceinline__
+  {1} operator()(const _A& a, const _B& b) const {{
+    {1} result;
+    {2}((void*)state_bytes, (void*)&a, (void*)&b, (void*)&result);
+    return result;
+  }}
+}};
+
+)cpp",
       functor_name,
       accum_type,
       op_name,
@@ -81,15 +83,17 @@ std::string generate_binary_functor(cccl_op_t op, const std::string& accum_type,
   else
   {
     return std::format(
-      "struct {0} {{\n"
-      "  template <typename _A, typename _B>\n"
-      "  __host__ __device__ __forceinline__\n"
-      "  {1} operator()(const _A& a, const _B& b) const {{\n"
-      "    {1} result;\n"
-      "    {2}((void*)&a, (void*)&b, (void*)&result);\n"
-      "    return result;\n"
-      "  }}\n"
-      "}};\n\n",
+      R"cpp(struct {0} {{
+  template <typename _A, typename _B>
+  __host__ __device__ __forceinline__
+  {1} operator()(const _A& a, const _B& b) const {{
+    {1} result;
+    {2}((void*)&a, (void*)&b, (void*)&result);
+    return result;
+  }}
+}};
+
+)cpp",
       functor_name,
       accum_type,
       op_name);
@@ -108,15 +112,17 @@ std::string generate_comparison_functor(cccl_op_t op, const std::string& key_typ
     const size_t state_size  = op.size > 0 ? op.size : 1;
     const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     return std::format(
-      "struct {0} {{\n"
-      "  alignas({3}) unsigned char state_bytes[{4}];\n"
-      "  __host__ __device__ __forceinline__\n"
-      "  bool operator()(const {1}& a, const {2}& b) const {{\n"
-      "    bool result;\n"
-      "    {5}((void*)state_bytes, (void*)&a, (void*)&b, (void*)&result);\n"
-      "    return result;\n"
-      "  }}\n"
-      "}};\n\n",
+      R"cpp(struct {0} {{
+  alignas({3}) unsigned char state_bytes[{4}];
+  __host__ __device__ __forceinline__
+  bool operator()(const {1}& a, const {2}& b) const {{
+    bool result;
+    {5}((void*)state_bytes, (void*)&a, (void*)&b, (void*)&result);
+    return result;
+  }}
+}};
+
+)cpp",
       functor_name,
       key_type,
       key_type,
@@ -127,14 +133,16 @@ std::string generate_comparison_functor(cccl_op_t op, const std::string& key_typ
   else
   {
     return std::format(
-      "struct {} {{\n"
-      "  __host__ __device__ __forceinline__\n"
-      "  bool operator()(const {}& a, const {}& b) const {{\n"
-      "    bool result;\n"
-      "    {}((void*)&a, (void*)&b, (void*)&result);\n"
-      "    return result;\n"
-      "  }}\n"
-      "}};\n\n",
+      R"cpp(struct {} {{
+  __host__ __device__ __forceinline__
+  bool operator()(const {}& a, const {}& b) const {{
+    bool result;
+    {}((void*)&a, (void*)&b, (void*)&result);
+    return result;
+  }}
+}};
+
+)cpp",
       functor_name,
       key_type,
       key_type,
@@ -259,11 +267,13 @@ generate_well_known_preamble(cccl_op_t op, const std::string& accum_type, bool h
   if (symbol)
   {
     src += std::format(
-      "__device__ {0} operator{1}(const {2}& lhs, const {2}& rhs) {{\n"
-      "    {0} ret;\n"
-      "    {3}((void*)&lhs, (void*)&rhs, (void*)&ret);\n"
-      "    return ret;\n"
-      "}}\n\n",
+      R"cpp(__device__ {0} operator{1}(const {2}& lhs, const {2}& rhs) {{
+    {0} ret;
+    {3}((void*)&lhs, (void*)&rhs, (void*)&ret);
+    return ret;
+}}
+
+)cpp",
       return_type,
       symbol,
       accum_type,
@@ -376,15 +386,17 @@ OperatorCode make_unary_op(
     const size_t state_size  = op.size > 0 ? op.size : 1;
     const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     result.preamble += std::format(
-      "struct {0} {{\n"
-      "  alignas({4}) unsigned char state_bytes[{5}];\n"
-      "  __host__ __device__ __forceinline__\n"
-      "  {1} operator()(const {2}& a) const {{\n"
-      "    {3} result;\n"
-      "    {6}((void*)state_bytes, (void*)&a, (void*)&result);\n"
-      "    return result;\n"
-      "  }}\n"
-      "}};\n\n",
+      R"cpp(struct {0} {{
+  alignas({4}) unsigned char state_bytes[{5}];
+  __host__ __device__ __forceinline__
+  {1} operator()(const {2}& a) const {{
+    {3} result;
+    {6}((void*)state_bytes, (void*)&a, (void*)&result);
+    return result;
+  }}
+}};
+
+)cpp",
       functor_name,
       out_type,
       in_type,
@@ -398,14 +410,16 @@ OperatorCode make_unary_op(
   else
   {
     result.preamble += std::format(
-      "struct {} {{\n"
-      "  __host__ __device__ __forceinline__\n"
-      "  {} operator()(const {}& a) const {{\n"
-      "    {} result;\n"
-      "    {}((void*)&a, (void*)&result);\n"
-      "    return result;\n"
-      "  }}\n"
-      "}};\n\n",
+      R"cpp(struct {} {{
+  __host__ __device__ __forceinline__
+  {} operator()(const {}& a) const {{
+    {} result;
+    {}((void*)&a, (void*)&result);
+    return result;
+  }}
+}};
+
+)cpp",
       functor_name,
       out_type,
       in_type,
@@ -493,11 +507,12 @@ OperatorCode make_for_each_op(
     const size_t state_size  = op.size > 0 ? op.size : 1;
     const size_t state_align = op.alignment > 0 ? op.alignment : 1;
     result.preamble += std::format(
-      "struct {0} {{\n"
-      "  alignas({3}) unsigned char state_bytes[{4}];\n"
-      "  __device__ __forceinline__ void operator()({1}& elem) const "
-      "{{ {2}((void*)state_bytes, &elem); }}\n"
-      "}};\n\n",
+      R"cpp(struct {0} {{
+  alignas({3}) unsigned char state_bytes[{4}];
+  __device__ __forceinline__ void operator()({1}& elem) const {{ {2}((void*)state_bytes, &elem); }}
+}};
+
+)cpp",
       functor_name,
       elem_type,
       op_name,
@@ -509,9 +524,11 @@ OperatorCode make_for_each_op(
   else
   {
     result.preamble += std::format(
-      "struct {0} {{\n"
-      "  __device__ __forceinline__ void operator()({1}& elem) const {{ {2}(&elem); }}\n"
-      "}};\n\n",
+      R"cpp(struct {0} {{
+  __device__ __forceinline__ void operator()({1}& elem) const {{ {2}(&elem); }}
+}};
+
+)cpp",
       functor_name,
       elem_type,
       op_name);

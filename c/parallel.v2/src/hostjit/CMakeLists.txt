@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.30)
 
 # --------------------------------------------------------------------------
 # LLVM/Clang/LLD — fetched via CPM as static libraries

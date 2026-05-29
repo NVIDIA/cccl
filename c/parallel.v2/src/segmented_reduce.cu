@@ -90,16 +90,15 @@ CUresult cccl_device_segmented_reduce(
 {
   try
   {
-    auto segmented_reduce_fn = reinterpret_cast<segmented_reduce_fn_t>(build.segmented_reduce_fn);
-
-    if (!segmented_reduce_fn)
+    if (!build.segmented_reduce_fn)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
+    auto segmented_reduce_fn = reinterpret_cast<segmented_reduce_fn_t>(build.segmented_reduce_fn);
 
     // Parameter order matches CubCall::with() order:
     // temp_storage, temp_bytes, d_in, d_out, num_items, begin_offsets, end_offsets, op, init, stream
-    int status = segmented_reduce_fn(
+    const int status = segmented_reduce_fn(
       d_temp_storage,
       temp_storage_bytes,
       d_in.state,

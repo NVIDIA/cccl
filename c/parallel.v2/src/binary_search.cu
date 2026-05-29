@@ -76,24 +76,22 @@ CUresult cccl_device_binary_search(
   cccl_iterator_t d_out,
   cccl_op_t op,
   CUstream stream)
+try
 {
-  try
+  if (!build.binary_search_fn)
   {
-    auto fn = reinterpret_cast<binary_search_fn_t>(build.binary_search_fn);
-    if (!fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  auto fn = reinterpret_cast<binary_search_fn_t>(build.binary_search_fn);
 
-    int status =
-      fn(d_data.state, num_items, d_values.state, num_values, d_out.state, op.state, reinterpret_cast<void*>(stream));
-    return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
-  }
-  catch (const std::exception& exc)
-  {
-    fprintf(stderr, "\nEXCEPTION in cccl_device_binary_search(): %s\n", exc.what());
-    return CUDA_ERROR_UNKNOWN;
-  }
+  const int status =
+    fn(d_data.state, num_items, d_values.state, num_values, d_out.state, op.state, reinterpret_cast<void*>(stream));
+  return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
+}
+catch (const std::exception& exc)
+{
+  fprintf(stderr, "\nEXCEPTION in cccl_device_binary_search(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_binary_search_build(

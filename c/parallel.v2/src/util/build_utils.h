@@ -12,8 +12,8 @@
 
 #include <cstring>
 #include <filesystem>
-#include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cccl/c/types.h>
@@ -22,45 +22,59 @@
 
 namespace cccl::detail
 {
+// Strip a leading "-I" prefix from `s`. Centralizes the prefix-handling used
+// by every entry point that accepts an `-I`-prefixed include path from the
+// Python layer (which speaks compile-flag syntax) and converts it to a bare
+// filesystem path (which hostjit's CompilerConfig wants).
+//
+// Returns an empty string for null / empty input — every caller treats that
+// as "no path supplied" so the bare check stays in one place.
+inline std::string strip_dash_i_prefix(const char* s)
+{
+  if (!s || s[0] == '\0')
+  {
+    return {};
+  }
+  std::string_view sv{s};
+  if (sv.starts_with("-I"))
+  {
+    sv.remove_prefix(2);
+  }
+  return std::string{sv};
+}
+
 // Parse path arguments from the Python layer for use with hostjit.
 // Returns the bare CCCL include path (strips "-I" prefix if present).
 inline std::string parse_cccl_include_path(const char* libcudacxx_path)
 {
-  if (!libcudacxx_path || libcudacxx_path[0] == '\0')
-  {
-    return {};
-  }
-  std::string p = libcudacxx_path;
-  if (p.substr(0, 2) == "-I")
-  {
-    p = p.substr(2);
-  }
-  return p;
+  return strip_dash_i_prefix(libcudacxx_path);
 }
 
-// Returns the CTK root directory (strips "-I" prefix and "/include" suffix if present).
-// On systems where the CUDA toolkit uses the `targets/<arch>/include` layout
-// (e.g. /usr/local/cuda/targets/x86_64-linux/include), backs up to the real
-// toolkit root so callers find `nvvm/libdevice/libdevice.10.bc`.
+// Returns the CTK root directory (strips "-I" prefix and "/include" suffix if
+// present, then walks up to the directory that contains `nvvm/libdevice/`).
+// Works for both the flat `/usr/local/cuda` layout and the
+// `/usr/local/cuda/targets/<arch>/include` layout (and any other arrangement)
+// because it locates the toolkit root by its `nvvm/libdevice/libdevice.10.bc`
+// marker rather than by hard-coded directory structure.
 inline std::string parse_ctk_root(const char* ctk_path)
 {
-  if (!ctk_path || ctk_path[0] == '\0')
+  std::string p = strip_dash_i_prefix(ctk_path);
+  if (p.empty())
   {
     return {};
-  }
-  std::string p = ctk_path;
-  if (p.substr(0, 2) == "-I")
-  {
-    p = p.substr(2);
   }
   std::filesystem::path fp(p);
   if (fp.filename() == "include")
   {
     fp = fp.parent_path();
   }
-  if (fp.parent_path().filename() == "targets")
+  for (auto candidate = fp; candidate.has_parent_path() && candidate != candidate.parent_path();
+       candidate      = candidate.parent_path())
   {
-    fp = fp.parent_path().parent_path();
+    if (std::filesystem::exists(candidate / "nvvm" / "libdevice"))
+    {
+      return candidate.string();
+    }
   }
   return fp.string();
 }
@@ -74,26 +88,14 @@ inline std::string parse_ctk_root(const char* ctk_path)
 inline void
 add_extra_cub_thrust_includes(hostjit::CompilerConfig& jit_config, const char* cub_path, const char* thrust_path)
 {
-  auto strip_dash_I = [](const char* in) -> std::string {
-    if (!in || in[0] == '\0')
-    {
-      return {};
-    }
-    std::string p = in;
-    if (p.size() >= 2 && p.substr(0, 2) == "-I")
-    {
-      p = p.substr(2);
-    }
-    return p;
-  };
   auto add_if_dir = [&](const std::string& p) {
     if (!p.empty() && std::filesystem::exists(p))
     {
       jit_config.include_paths.push_back(p);
     }
   };
-  add_if_dir(strip_dash_I(cub_path));
-  add_if_dir(strip_dash_I(thrust_path));
+  add_if_dir(strip_dash_i_prefix(cub_path));
+  add_if_dir(strip_dash_i_prefix(thrust_path));
 }
 
 // RAII helper for merging cub_path / thrust_path (`-I`-prefixed) into a
@@ -113,21 +115,22 @@ public:
     {
       merged_ = *base;
     }
+    // We append at most two paths (cub + thrust). Reserve up front so the
+    // owned_strs_/ptrs_ vectors don't reallocate — important because we
+    // capture pointers into owned_strs_ for `extra_include_dirs`.
+    owned_strs_.reserve(2);
+    ptrs_.reserve(merged_.num_extra_include_dirs + 2);
+
     for (size_t i = 0; i < merged_.num_extra_include_dirs; ++i)
     {
       ptrs_.push_back(merged_.extra_include_dirs[i]);
     }
     auto add = [&](const char* p) {
-      if (!p || p[0] == '\0')
+      auto s = strip_dash_i_prefix(p);
+      if (!s.empty())
       {
-        return;
+        owned_strs_.push_back(std::move(s));
       }
-      std::string s = p;
-      if (s.size() >= 2 && s.substr(0, 2) == "-I")
-      {
-        s = s.substr(2);
-      }
-      owned_strs_.push_back(std::move(s));
     };
     add(cub_path);
     add(thrust_path);
@@ -150,9 +153,10 @@ private:
   std::vector<const char*> ptrs_;
 };
 
-// Copy cubin data into a heap-allocated buffer the caller owns. std::make_unique
-// gives RAII between alloc and assign so a throw on the memcpy can't leak.
-// Caller eventually frees via release_jit_artifacts() (or delete[] on out_cubin).
+// Copy cubin data into a heap-allocated buffer the caller owns. Plain `new[]`
+// — memcpy is noexcept so there's no exception path between the allocation
+// and the assignment to out_cubin. The caller eventually frees via
+// release_jit_artifacts() (or delete[] on out_cubin).
 inline void copy_cubin(const std::vector<char>& cubin, void*& out_cubin, size_t& out_size)
 {
   if (cubin.empty())
@@ -161,9 +165,9 @@ inline void copy_cubin(const std::vector<char>& cubin, void*& out_cubin, size_t&
     out_size  = 0;
     return;
   }
-  auto buf = std::make_unique<char[]>(cubin.size());
-  std::memcpy(buf.get(), cubin.data(), cubin.size());
-  out_cubin = buf.release();
+  auto* buf = new char[cubin.size()];
+  std::memcpy(buf, cubin.data(), cubin.size());
+  out_cubin = buf;
   out_size  = cubin.size();
 }
 

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-cmake_minimum_required(VERSION 3.27...3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30...3.31 FATAL_ERROR)
 
 # Must be set before project() initializes the CUDA language; otherwise CMake
 # < 3.23 defaults to sm_52, which is below CCCL's minimum supported arch.

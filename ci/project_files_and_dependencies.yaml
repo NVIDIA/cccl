@@ -220,6 +220,7 @@ projects:
       - cudax_internal
       - cccl_c_parallel_public
       - cccl_c_parallel_internal
+      - cccl_c_parallel_v2
       - cccl_c_stf
       - stdpar
       - c2h

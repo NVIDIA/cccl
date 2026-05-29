@@ -64,13 +64,13 @@ CUresult cccl_device_for(
 {
   try
   {
-    auto fn = reinterpret_cast<for_fn_t>(build.for_fn);
-    if (!fn)
+    if (!build.for_fn)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
+    auto fn = reinterpret_cast<for_fn_t>(build.for_fn);
 
-    int status = fn(d_data.state, num_items, op.state, reinterpret_cast<void*>(stream));
+    const int status = fn(d_data.state, num_items, op.state, reinterpret_cast<void*>(stream));
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
   }
   catch (const std::exception& exc)

@@ -288,5 +288,17 @@ private:
   // the given collector. Factored out so the multi-compile path can share
   // one collector across several CubCalls.
   void collect_bitcode(class BitcodeCollector& bitcode, int& op_idx, int& in_idx, int& out_idx) const;
+
+  // Internal: builds a hostjit::CompilerConfig from the standard cc + paths +
+  // build_config inputs every compile entry point takes. Shared between the
+  // single-fn and multi-fn compile overloads so flag/path handling lives in
+  // one place.
+  static hostjit::CompilerConfig make_jit_config(
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config,
+    const char* ctk_path,
+    const char* cccl_include_path,
+    const std::string& entry_point_name);
 };
 } // namespace hostjit::codegen

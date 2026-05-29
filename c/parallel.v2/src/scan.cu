@@ -143,12 +143,12 @@ static CUresult call_scan_init(
   void* init_ptr, // value state or device pointer for FutureValue
   CUstream stream)
 {
-  auto fn = reinterpret_cast<scan_init_fn_t>(build.scan_fn);
-  if (!fn)
+  if (!build.scan_fn)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  int status = fn(
+  auto fn          = reinterpret_cast<scan_init_fn_t>(build.scan_fn);
+  const int status = fn(
     d_temp_storage,
     temp_storage_bytes,
     d_in.state,
@@ -266,12 +266,12 @@ CUresult cccl_device_inclusive_scan_no_init(
 {
   try
   {
-    auto fn = reinterpret_cast<scan_no_init_fn_t>(build.scan_fn);
-    if (!fn)
+    if (!build.scan_fn)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
-    int status =
+    auto fn = reinterpret_cast<scan_no_init_fn_t>(build.scan_fn);
+    const int status =
       fn(d_temp_storage,
          temp_storage_bytes,
          d_in.state,

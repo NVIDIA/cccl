@@ -50,9 +50,10 @@ std::string get_type_name(cccl_type_enum type)
 std::string make_storage_type(const char* name, size_t size, size_t alignment)
 {
   return std::format(
-    "struct __align__({}) {} {{\n"
-    "  char data[{}];\n"
-    "}};\n",
+    R"cpp(struct __align__({}) {} {{
+  char data[{}];
+}};
+)cpp",
     alignment,
     name,
     size);

@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.21)
+# 3.30 is required for FindCUDAToolkit's CUDA::nvfatbin / CUDA::nvfatbin_static
+# imported targets, which the HostJIT linker chain depends on.
+cmake_minimum_required(VERSION 3.30)
 
 project(CCCL_C_Parallel_V2 LANGUAGES CUDA CXX C)
 
