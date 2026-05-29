@@ -443,7 +443,7 @@ public:
     //
     if (!IS_LAST_TILE || ItemsPerThread * linear_tid < valid_items)
     {
-      StableOddEvenSort<_Unroll>(keys, items, compare_op);
+      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
     }
 
     // each thread has sorted keys
@@ -807,19 +807,21 @@ template <typename KeyT,
           int BlockDimZ   = 1,
           bool _Unroll    = true>
 class BlockMergeSort
-    : public BlockMergeSortStrategy<KeyT,
-                                    ValueT,
-                                    BlockDimX * BlockDimY * BlockDimZ,
-                                    ItemsPerThread,
-                                    BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>,
-                                    _Unroll>
+    : public BlockMergeSortStrategy<
+        KeyT,
+        ValueT,
+        BlockDimX * BlockDimY * BlockDimZ,
+        ItemsPerThread,
+        BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, _Unroll>,
+        _Unroll>
 {
 private:
   // The thread block size in threads
   static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
 
-  using BlockMergeSortStrategyT = BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort>;
+  using BlockMergeSortStrategyT =
+    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, _Unroll>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
