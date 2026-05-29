@@ -35,7 +35,7 @@ struct lower_bound_mode
     CompareOp comp;
 
     template <typename A, typename B>
-    _CCCL_API _CCCL_FORCEINLINE bool operator()(A&& a, B&& b) const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator()(A&& a, B&& b) const
     {
       return !comp(::cuda::std::forward<B>(b), ::cuda::std::forward<A>(a));
     }
@@ -165,7 +165,7 @@ struct agent_t
     int haystack_remaining = haystack_count - i0;
     int needles_remaining  = needles_count - j0;
 
-    const int steps = IsFullTile ? ItemsPerThread : (::cuda::std::min) (total_in_tile - d0_thread, ItemsPerThread);
+    const int steps = IsFullTile ? ItemsPerThread : ::cuda::std::min(total_in_tile - d0_thread, ItemsPerThread);
     _CCCL_PRAGMA_UNROLL(ItemsPerThread)
     for (int step = 0; step < steps; ++step)
     {
@@ -190,7 +190,7 @@ struct agent_t
   {
     const int tile_idx      = static_cast<int>(blockIdx.x);
     const Offset diag0      = static_cast<Offset>(tile_size) * tile_idx;
-    const Offset diag1      = (::cuda::std::min) (diag0 + static_cast<Offset>(tile_size), range_count + values_count);
+    const Offset diag1      = ::cuda::std::min(diag0 + static_cast<Offset>(tile_size), range_count + values_count);
     const int total_in_tile = static_cast<int>(diag1 - diag0);
 
     if (total_in_tile == tile_size)

@@ -685,7 +685,7 @@ struct DeviceFind
   //! iterator to the first element that is **not ordered before** ``value``.
   //!
   //! Because both sequences are sorted, the algorithm uses the Merge-Path
-  //! algorithm (Odeh et al., IPDPS 2012) to partition the combined traversal
+  //! algorithm (Oded et al., IPDPS 2012) to partition the combined traversal
   //! across thread blocks, achieving O(N+M) total device work rather than the
   //! O(M log N) of independent binary searches.
   //!
@@ -695,6 +695,7 @@ struct DeviceFind
   //! - @devicestorage
   //!
   //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! @endrst
   //!
@@ -925,7 +926,7 @@ struct DeviceFind
   //! iterator to the first element that is **ordered after** ``value``.
   //!
   //! Because both sequences are sorted, the algorithm uses the Merge-Path
-  //! algorithm (Odeh et al., IPDPS 2012) to partition the combined traversal
+  //! algorithm (Oded et al., IPDPS 2012) to partition the combined traversal
   //! across thread blocks, achieving O(N+M) total device work rather than the
   //! O(M log N) of independent binary searches.
   //!

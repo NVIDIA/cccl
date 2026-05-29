@@ -55,7 +55,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
   if (diagonal_idx < num_diagonals)
   {
     const Offset diagonal =
-      (::cuda::std::min) (diagonal_idx * static_cast<Offset>(tile_size), range_count + values_count);
+      ::cuda::std::min(diagonal_idx * static_cast<Offset>(tile_size), range_count + values_count);
     range_beg_offsets[diagonal_idx] =
       cub::MergePath(d_range, d_values, range_count, values_count, diagonal, partition_comp);
   }

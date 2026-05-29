@@ -150,7 +150,7 @@ C2H_TEST("DeviceFind::LowerBoundSortedValues really large input",
   try
   {
     using value_type            = char;
-    const auto range_num_items  = static_cast<std::size_t>(std::int64_t{1} << GENERATE(30, 31, 32, 33));
+    const auto range_num_items  = size_t{1} << GENERATE(30, 31, 32, 33));
     const auto values_num_items = range_num_items / 100;
     test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, range_num_items, values_num_items);
   }
@@ -167,7 +167,7 @@ C2H_TEST("DeviceFind::UpperBoundSortedValues really large input",
   try
   {
     using value_type            = char;
-    const auto range_num_items  = static_cast<std::size_t>(std::int64_t{1} << GENERATE(30, 31, 32, 33));
+    const auto range_num_items  = >size_t{1} << GENERATE(30, 31, 32, 33));
     const auto values_num_items = range_num_items / 100;
     test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, range_num_items, values_num_items);
   }
