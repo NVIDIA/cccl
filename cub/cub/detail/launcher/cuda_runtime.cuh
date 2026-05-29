@@ -25,7 +25,7 @@ namespace detail
 {
 struct TripleChevronFactory
 {
-  CUB_RUNTIME_FUNCTION inline void __assert_pdl_allowed(bool dependent_launch) const
+  CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
   {
     if (dependent_launch)
     {
