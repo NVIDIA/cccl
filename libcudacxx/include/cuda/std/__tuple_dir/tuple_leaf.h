@@ -139,25 +139,25 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
       : __value_(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
@@ -207,7 +207,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
@@ -217,7 +217,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
@@ -308,25 +308,25 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__tuple_leaf_can_forward<_Tp, _Hp, __tuple_leaf>, int> = 0>
-  _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
+  _CCCL_API explicit constexpr __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
       : _Hp(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
@@ -386,7 +386,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   // Handle non-allocator, full initialization
   // Old MSVC cannot handle the noexept specifier outside of template arguments
   template <class... _Up, enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
-  _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag,
+  _CCCL_API explicit constexpr __tuple_impl(__tuple_variadic_constructor_tag,
                                             _Up&&... __u) noexcept((is_nothrow_constructible_v<_Tp, _Up> && ...))
       : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<_Up>(__u))...
   {}
@@ -394,21 +394,21 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   // Handle non-allocator, partial default initialization
   // Recursively delegate until we have full rank
   template <class... _Up, enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0>
-  _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag __tag, _Up&&... __u) noexcept(
+  _CCCL_API explicit constexpr __tuple_impl(__tuple_variadic_constructor_tag __tag, _Up&&... __u) noexcept(
     noexcept(__tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})))
       : __tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})
   {}
 
   // Handle allocator aware, full initialization
   template <class _Alloc, class... _Up, enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
-  _CCCL_API inline explicit __tuple_impl(
+  _CCCL_API explicit constexpr __tuple_impl(
     allocator_arg_t, const _Alloc& __a, __tuple_variadic_constructor_tag, _Up&&... __u)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, _Up>(), __a, ::cuda::std::forward<_Up>(__u))...
   {}
 
   // Handle allocator aware, full default initialization
   template <class _Alloc>
-  _CCCL_API inline explicit __tuple_impl(allocator_arg_t, const _Alloc& __a)
+  _CCCL_API explicit constexpr __tuple_impl(allocator_arg_t, const _Alloc& __a)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc>(), __a)...
   {}
 
