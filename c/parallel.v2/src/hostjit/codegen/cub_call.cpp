@@ -95,7 +95,65 @@ cccl_type_info find_accum_type(const std::vector<Arg>& args)
 }
 } // anonymous namespace
 
+namespace
+{
+// Returns true if `args` contains an env_stream_t — used to decide whether the
+// shared-includes block needs to pull in <cuda/std/__execution/env.h>.
+bool needs_env_include(const std::vector<Arg>& args)
+{
+  for (const auto& arg : args)
+  {
+    if (std::holds_alternative<env_stream_t>(arg))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Emits the system #includes + the CUB header + EXPORT macro defn. Hoisted
+// from source() so multi-function compiles can emit this once and wrap N
+// function bodies in N namespaces below.
+std::string shared_includes(const std::string& cub_include, bool needs_tuple, bool needs_env)
+{
+  std::string src = R"(#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+#include <cuda/std/iterator>
+#include <cuda/std/functional>
+#include <cuda/functional>
+)";
+  if (needs_tuple)
+  {
+    src += "#include <cuda/std/tuple>\n";
+  }
+  if (needs_env)
+  {
+    // Use the narrow internal env.h header rather than <cuda/std/execution>
+    // — the umbrella header pulls in pstl machinery that depends on <vector>
+    // and exception types not available in the hostjit environment.
+    src += "#include <cuda/std/__execution/env.h>\n";
+    src += "#include <cuda/stream_ref>\n";
+  }
+  src += std::format("#include <{}>\n\n", cub_include);
+
+  src += R"(#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+
+)";
+  return src;
+}
+} // namespace
+
 std::string CubCall::source() const
+{
+  // Single-function source = shared includes/EXPORT + this CubCall's body.
+  return shared_includes(include_, tuple_inputs_, needs_env_include(args_)) + body();
+}
+
+std::string CubCall::body() const
 {
   // Pass 1: determine accumulator type
   cccl_type_info accum_info = find_accum_type(args_);
@@ -113,6 +171,10 @@ std::string CubCall::source() const
   std::vector<std::string> params;
   std::vector<std::string> setup_lines;
   std::vector<std::string> cub_args;
+  // Lines emitted after the cub::DeviceX::Y(...) call and before the return —
+  // populated by post-call tags (e.g. selector_out_t capturing a DoubleBuffer's
+  // selector member).
+  std::vector<std::string> post_call_lines;
 
   // Emit accum type
   if (!accum_preamble.empty())
@@ -293,6 +355,34 @@ std::string CubCall::source() const
           setup_lines.push_back(code.setup_code);
           cub_args.push_back(var_name);
         }
+        else if constexpr (std::is_same_v<T, double_buffer_t>)
+        {
+          // Emit two void* params (in/out buffer state pointers), construct a
+          // cub::DoubleBuffer<elem_t> local with the given var_name, and pass
+          // the buffer to the CUB call. iter_elem_type_name resolves the
+          // element type the same way input/output iterators do.
+          const std::string elem_type = iter_elem_type_name(a.in_it.value_type);
+          const std::string var_name  = a.var_name;
+          const auto in_param         = var_name + "_in_state";
+          const auto out_param        = var_name + "_out_state";
+
+          params.push_back(std::format("void* {}", in_param));
+          params.push_back(std::format("void* {}", out_param));
+          setup_lines.push_back(std::format(
+            "cub::DoubleBuffer<{0}> {1}(static_cast<{0}*>({2}), static_cast<{0}*>({3}));",
+            elem_type,
+            var_name,
+            in_param,
+            out_param));
+          cub_args.push_back(var_name);
+        }
+        else if constexpr (std::is_same_v<T, selector_out_t>)
+        {
+          // Emit a void* selector_out param and capture <buffer>.selector after
+          // the CUB call. Paired with a double_buffer_t whose var_name matches.
+          params.push_back("void* selector_out");
+          post_call_lines.push_back(std::format("*static_cast<int*>(selector_out) = {}.selector;", a.buffer_var_name));
+        }
         else if constexpr (std::is_same_v<T, unary_op_t>)
         {
           auto idx          = op_count++;
@@ -402,40 +492,10 @@ std::string CubCall::source() const
     }
   }
 
-  // Assemble the complete source
-  std::string src = R"(#include <cuda_runtime.h>
-#include <cuda_fp16.h>
-#include <cuda/std/iterator>
-#include <cuda/std/functional>
-#include <cuda/functional>
-)";
-  if (tuple_inputs_)
-  {
-    src += "#include <cuda/std/tuple>\n";
-  }
-  for (const auto& arg : args_)
-  {
-    if (std::holds_alternative<env_stream_t>(arg))
-    {
-      // Use the narrow internal env.h header rather than <cuda/std/execution>
-      // — the umbrella header pulls in pstl machinery that depends on <vector>
-      // and exception types not available in the hostjit environment.
-      src += "#include <cuda/std/__execution/env.h>\n";
-      src += "#include <cuda/stream_ref>\n";
-      break;
-    }
-  }
-  src += std::format("#include <{}>\n\n", include_);
-
-  src += preamble;
-
-  src += R"(#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-
-)";
+  // Assemble the per-function body: preamble + extern "C" function defn.
+  // System #includes and the EXPORT macro live in shared_includes(), emitted
+  // once at TU scope by either source() (single-fn) or compile() (multi-fn).
+  std::string src = preamble;
 
   // Function signature
   src += std::format("extern \"C\" EXPORT int {}(\n", fn_name_);
@@ -467,6 +527,16 @@ std::string CubCall::source() const
     }
   }
   src += ");\n\n";
+
+  // Post-call lines (e.g., capturing a DoubleBuffer's selector).
+  for (const auto& line : post_call_lines)
+  {
+    src += "    " + line + "\n";
+  }
+  if (!post_call_lines.empty())
+  {
+    src += "\n";
+  }
 
   // Error return
   src += R"(    return (int)err;
@@ -553,38 +623,7 @@ CubCallResult CubCall::compile(
   int op_idx  = 0;
   int in_idx  = 0;
   int out_idx = 0;
-  for (const auto& arg : args_)
-  {
-    std::visit(
-      [&](auto&& a) {
-        using T = std::decay_t<decltype(a)>;
-        if constexpr (std::is_same_v<T, cccl_op_t>)
-        {
-          bitcode.add_op(a, std::format("op_{}", op_idx++));
-        }
-        else if constexpr (std::is_same_v<T, cmp_t>)
-        {
-          bitcode.add_op(a.op, std::format("cmp_{}", op_idx++));
-        }
-        else if constexpr (std::is_same_v<T, unary_op_t>)
-        {
-          bitcode.add_op(a.op, std::format("op_{}", op_idx++));
-        }
-        else if constexpr (std::is_same_v<T, for_each_op_t>)
-        {
-          bitcode.add_op(a.op, std::format("op_{}", op_idx++));
-        }
-        else if constexpr (std::is_same_v<T, input_t>)
-        {
-          bitcode.add_iterator(a.it, std::format("in_{}", in_idx++));
-        }
-        else if constexpr (std::is_same_v<T, output_t>)
-        {
-          bitcode.add_iterator(a.it, std::format("out_{}", out_idx++));
-        }
-      },
-      arg);
-  }
+  collect_bitcode(bitcode, op_idx, in_idx, out_idx);
 
   // 3. Generate source
   std::string cuda_source = source();
@@ -618,5 +657,208 @@ CubCallResult CubCall::compile(
   auto cubin = compiler->getCubin();
 
   return CubCallResult{compiler.release(), reinterpret_cast<void*>(fn), std::move(cubin)};
+}
+
+void CubCall::collect_bitcode(BitcodeCollector& bitcode, int& op_idx, int& in_idx, int& out_idx) const
+{
+  for (const auto& arg : args_)
+  {
+    std::visit(
+      [&](auto&& a) {
+        using T = std::decay_t<decltype(a)>;
+        if constexpr (std::is_same_v<T, cccl_op_t>)
+        {
+          bitcode.add_op(a, std::format("op_{}", op_idx++));
+        }
+        else if constexpr (std::is_same_v<T, cmp_t>)
+        {
+          bitcode.add_op(a.op, std::format("cmp_{}", op_idx++));
+        }
+        else if constexpr (std::is_same_v<T, unary_op_t>)
+        {
+          bitcode.add_op(a.op, std::format("op_{}", op_idx++));
+        }
+        else if constexpr (std::is_same_v<T, for_each_op_t>)
+        {
+          bitcode.add_op(a.op, std::format("op_{}", op_idx++));
+        }
+        else if constexpr (std::is_same_v<T, input_t>)
+        {
+          bitcode.add_iterator(a.it, std::format("in_{}", in_idx++));
+        }
+        else if constexpr (std::is_same_v<T, output_t>)
+        {
+          bitcode.add_iterator(a.it, std::format("out_{}", out_idx++));
+        }
+      },
+      arg);
+  }
+}
+
+MultiCubCallResult CubCall::compile(
+  std::initializer_list<CubCall> calls,
+  int cc_major,
+  int cc_minor,
+  cccl_build_config* config,
+  const char* ctk_path,
+  const char* cccl_include_path)
+{
+  if (calls.size() == 0)
+  {
+    throw std::runtime_error("CubCall::compile: empty CubCall list");
+  }
+
+  // All CubCalls must share the same CUB header — we emit it once at the top
+  // of the merged TU. (If a future use case needs heterogeneous includes,
+  // extend this to union the set; for now keep it strict so silent mismatches
+  // can't slip through.)
+  const std::string& shared_include = calls.begin()->include_;
+  for (const auto& cb : calls)
+  {
+    if (cb.include_ != shared_include)
+    {
+      throw std::runtime_error("CubCall::compile: all CubCalls in a multi-compile must share the same .from(include) "
+                               "header");
+    }
+  }
+
+  // Detect whether any CubCall needs the env / tuple system includes.
+  bool any_tuple = false;
+  bool any_env   = false;
+  for (const auto& cb : calls)
+  {
+    any_tuple = any_tuple || cb.tuple_inputs_;
+    any_env   = any_env || needs_env_include(cb.args_);
+  }
+
+  // Build jit_config (mirrors the member compile's setup).
+  auto jit_config       = hostjit::detectDefaultConfig();
+  jit_config.sm_version = cc_major * 10 + cc_minor;
+  jit_config.verbose    = false;
+  // entry_point_name is used to mark a single function as preserved during
+  // internalization. Use the first CubCall's name as the primary entry; the
+  // others will still be exported via extern "C" EXPORT so dlsym finds them.
+  jit_config.entry_point_name = calls.begin()->fn_name_;
+
+  if (ctk_path && ctk_path[0] != '\0')
+  {
+    jit_config.cuda_toolkit_path = ctk_path;
+    jit_config.library_paths.clear();
+    for (const char* subdir : {"lib64", "lib"})
+    {
+      auto candidate = std::filesystem::path(ctk_path) / subdir;
+      if (std::filesystem::exists(candidate))
+      {
+        jit_config.library_paths.push_back(candidate.string());
+      }
+    }
+  }
+  if (cccl_include_path && cccl_include_path[0] != '\0')
+  {
+    jit_config.cccl_include_path = cccl_include_path;
+    if (jit_config.hostjit_include_path.empty()
+        || !std::filesystem::exists(jit_config.hostjit_include_path + "/hostjit/cuda_minimal"))
+    {
+      auto parent = std::filesystem::path(cccl_include_path).parent_path().string();
+      if (std::filesystem::exists(parent + "/hostjit/cuda_minimal"))
+      {
+        jit_config.hostjit_include_path = parent;
+      }
+    }
+  }
+
+  if (config)
+  {
+    for (size_t i = 0; i < config->num_extra_include_dirs; ++i)
+    {
+      jit_config.include_paths.push_back(config->extra_include_dirs[i]);
+    }
+    for (size_t i = 0; i < config->num_extra_compile_flags; ++i)
+    {
+      std::string flag = config->extra_compile_flags[i];
+      if (flag.substr(0, 2) == "-D")
+      {
+        auto eq = flag.find('=', 2);
+        if (eq != std::string::npos)
+        {
+          jit_config.macro_definitions[flag.substr(2, eq - 2)] = flag.substr(eq + 1);
+        }
+        else
+        {
+          jit_config.macro_definitions[flag.substr(2)] = "";
+        }
+      }
+    }
+    jit_config.enable_pch = config->enable_pch != 0;
+    jit_config.verbose    = config->verbose != 0;
+  }
+
+  // Shared BitcodeCollector across all CubCalls — identical user-op or
+  // iterator bitcode referenced from multiple wrappers gets deduplicated by
+  // content hash + symbol name inside the collector.
+  uintptr_t unique_id = reinterpret_cast<uintptr_t>(&*calls.begin());
+  BitcodeCollector bitcode(jit_config, unique_id);
+
+  int op_idx  = 0;
+  int in_idx  = 0;
+  int out_idx = 0;
+  for (const auto& cb : calls)
+  {
+    cb.collect_bitcode(bitcode, op_idx, in_idx, out_idx);
+  }
+
+  // Build the merged source: shared includes + EXPORT macro at TU scope,
+  // then one `namespace fn_<i> { ... body() }` per CubCall. The extern "C"
+  // EXPORT symbols defined inside each namespace export under the global
+  // C-linkage name (no mangling), so dlsym(handle, cb.fn_name_) finds them.
+  std::string cuda_source = shared_includes(shared_include, any_tuple, any_env);
+  int i                   = 0;
+  for (const auto& cb : calls)
+  {
+    cuda_source += std::format("namespace fn_{} {{\n", i);
+    cuda_source += cb.body();
+    cuda_source += std::format("}} // namespace fn_{}\n\n", i);
+    ++i;
+  }
+
+  if (const char* dump_path = std::getenv("CUBCALL_DUMP_SOURCE"))
+  {
+    std::ofstream f(dump_path);
+    f << cuda_source;
+  }
+  if (std::getenv("CUBCALL_PRINT_SOURCE"))
+  {
+    std::fprintf(stderr,
+                 "\n===== CubCall merged JIT source [%zu fns] =====\n%s\n===== end =====\n",
+                 calls.size(),
+                 cuda_source.c_str());
+  }
+
+  // Single Clang compile for the whole TU.
+  auto compiler = std::make_unique<JITCompiler>(jit_config);
+  if (!compiler->compile(cuda_source))
+  {
+    std::string err = compiler->getLastError();
+    bitcode.cleanup();
+    throw std::runtime_error("CubCall::compile (multi) compilation failed: " + err);
+  }
+  bitcode.cleanup();
+
+  // dlsym each function by its export name (positional order matches input).
+  using fn_t = int (*)(void*, ...);
+  std::vector<void*> fn_ptrs;
+  fn_ptrs.reserve(calls.size());
+  for (const auto& cb : calls)
+  {
+    auto fn = compiler->getFunction<fn_t>(cb.fn_name_);
+    if (!fn)
+    {
+      throw std::runtime_error("CubCall::compile (multi) function lookup failed: " + cb.fn_name_);
+    }
+    fn_ptrs.push_back(reinterpret_cast<void*>(fn));
+  }
+
+  auto cubin = compiler->getCubin();
+  return MultiCubCallResult{compiler.release(), std::move(cubin), std::move(fn_ptrs)};
 }
 } // namespace hostjit::codegen

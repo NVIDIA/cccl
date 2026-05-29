@@ -29,8 +29,9 @@ typedef struct cccl_device_segmented_sort_build_result_t
   int cc;
   void* cubin;
   size_t cubin_size;
-  void* jit_compiler;
-  void* sort_fn;
+  void* jit_compiler; /* Owns both wrappers below — one TU, one cubin */
+  void* sort_fn; /* Wrapper around CUB's copy-overload (selector always 0) */
+  void* sort_fn_overwrite; /* Wrapper around CUB's DoubleBuffer overload; reports selector */
   cccl_type_info key_type;
   cccl_type_info value_type;
   cccl_sort_order_t order;

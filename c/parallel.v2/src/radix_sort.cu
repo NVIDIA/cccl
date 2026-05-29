@@ -26,21 +26,37 @@ static bool is_null_op(cccl_op_t op)
   return op.name == nullptr || op.name[0] == '\0';
 }
 
-// JIT wrappers produced by CubCall:
-//   keys-only: fn(temp, temp_bytes, keys_in, keys_out, num_items,
-//                 &begin_bit, &end_bit, stream)
-//   pairs:     fn(temp, temp_bytes, keys_in, keys_out, values_in, values_out,
-//                 num_items, &begin_bit, &end_bit, stream)
+// Two JIT wrappers are produced by CubCall per build:
+//
+//   COPY variant — wraps cub::DeviceRadixSort::Sort{Keys,Pairs}{,Descending}'s
+//   copy-overload. Result is always in *_out; selector is implicitly 0. Used
+//   when the caller invokes the run-time API with is_overwrite_okay=false.
+//     keys-only: fn(temp, temp_bytes, keys_in, keys_out, num_items,
+//                   &begin_bit, &end_bit, stream)
+//     pairs:     fn(temp, temp_bytes, keys_in, keys_out, values_in, values_out,
+//                   num_items, &begin_bit, &end_bit, stream)
+//
+//   DOUBLE-BUFFER (overwrite) variant — wraps the DoubleBuffer overload.
+//   Constructs cub::DoubleBuffer<KeyT>(keys_in, keys_out) (and ValueT for
+//   pairs), runs the sort, then writes the buffer's `selector` (0 or 1) to a
+//   host-provided int*. Result may live in either keys_in or keys_out depending
+//   on the number of CUB passes — the selector tells the caller which.
+//     keys-only: fn(temp, temp_bytes, keys_in, keys_out, num_items,
+//                   &begin_bit, &end_bit, selector_out, stream)
+//     pairs:     fn(temp, temp_bytes, keys_in, keys_out, values_in, values_out,
+//                   num_items, &begin_bit, &end_bit, selector_out, stream)
 //
 // begin_bit/end_bit go through CubCall::typed_scalar (host-pointer + memcpy
-// onto the stack inside the JIT wrapper). The copy variant of CUB's
-// DeviceRadixSort is used: the result is always in *_out, selector=0.
-// is_overwrite_okay is accepted by the run API but ignored on this path.
+// onto the stack inside the JIT wrapper).
 //
 // Decomposer: only identity (null decomposer) is supported.
 using radix_sort_keys_fn_t = int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*);
 using radix_sort_pairs_fn_t =
   int (*)(void*, size_t*, void*, void*, void*, void*, unsigned long long, void*, void*, void*);
+using radix_sort_keys_overwrite_fn_t =
+  int (*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*, void*);
+using radix_sort_pairs_overwrite_fn_t =
+  int (*)(void*, size_t*, void*, void*, void*, void*, unsigned long long, void*, void*, void*, void*);
 
 // Type info for the begin_bit/end_bit int scalars passed to CubCall.
 static constexpr cccl_type_info k_int_type{sizeof(int), alignof(int), CCCL_INT32};
@@ -99,7 +115,12 @@ try
     cub_algo = ascending ? "cub::DeviceRadixSort::SortPairs" : "cub::DeviceRadixSort::SortPairsDescending";
   }
 
-  CubCallResult result = [&] {
+  // Build both CUB-overload wrappers into one translation unit via the
+  // multi-function CubCall::compile — one Clang invocation, one cubin, one
+  // JITCompiler. The CubCall::compile overload wraps each wrapper's body in
+  // its own `namespace fn_<i> { ... }` so per-function preambles don't
+  // collide; the extern "C" EXPORT symbols stay globally dlsym-able.
+  auto cb_copy = [&] {
     if (keys_only)
     {
       return CubCall::from("cub/device/device_radix_sort.cuh")
@@ -112,8 +133,7 @@ try
               num_items,
               typed_scalar(k_int_type, "begin_bit"),
               typed_scalar(k_int_type, "end_bit"),
-              stream)
-        .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+              stream);
     }
     return CubCall::from("cub/device/device_radix_sort.cuh")
       .run(cub_algo)
@@ -127,18 +147,50 @@ try
             num_items,
             typed_scalar(k_int_type, "begin_bit"),
             typed_scalar(k_int_type, "end_bit"),
-            stream)
-      .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+            stream);
   }();
+
+  auto cb_overwrite = [&] {
+    if (keys_only)
+    {
+      return CubCall::from("cub/device/device_radix_sort.cuh")
+        .run(cub_algo)
+        .name("cccl_jit_radix_sort_overwrite")
+        .with(temp_storage,
+              temp_bytes,
+              double_buffer(input_keys_it, output_keys_it, "d_keys_buffer"),
+              num_items,
+              typed_scalar(k_int_type, "begin_bit"),
+              typed_scalar(k_int_type, "end_bit"),
+              selector_out("d_keys_buffer"),
+              stream);
+    }
+    return CubCall::from("cub/device/device_radix_sort.cuh")
+      .run(cub_algo)
+      .name("cccl_jit_radix_sort_overwrite")
+      .with(temp_storage,
+            temp_bytes,
+            double_buffer(input_keys_it, output_keys_it, "d_keys_buffer"),
+            double_buffer(input_values_it, output_values_it, "d_values_buffer"),
+            num_items,
+            typed_scalar(k_int_type, "begin_bit"),
+            typed_scalar(k_int_type, "end_bit"),
+            selector_out("d_keys_buffer"),
+            stream);
+  }();
+
+  auto result =
+    CubCall::compile({cb_copy, cb_overwrite}, cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
   cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
-  build_ptr->jit_compiler = result.compiler;
-  build_ptr->sort_fn      = result.fn_ptr;
-  build_ptr->key_type     = input_keys_it.value_type;
-  build_ptr->value_type   = input_values_it.value_type;
-  build_ptr->order        = sort_order;
-  build_ptr->keys_only    = keys_only ? 1 : 0;
+  build_ptr->jit_compiler      = result.compiler;
+  build_ptr->sort_fn           = result.fn_ptrs[0];
+  build_ptr->sort_fn_overwrite = result.fn_ptrs[1];
+  build_ptr->key_type          = input_keys_it.value_type;
+  build_ptr->value_type        = input_values_it.value_type;
+  build_ptr->order             = sort_order;
+  build_ptr->keys_only         = keys_only ? 1 : 0;
 
   return CUDA_SUCCESS;
 }
@@ -196,45 +248,89 @@ CUresult cccl_device_radix_sort(
 {
   try
   {
-    if (!build.sort_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-
+    // Dispatch on is_overwrite_okay: the copy variant always lands the result
+    // in d_keys_out (selector = 0); the DoubleBuffer variant may land it in
+    // either buffer and reports which via its `selector` member, captured here
+    // by passing a pointer for the wrapper to write into.
     int status;
-    if (build.keys_only)
+    int local_selector = 0;
+    if (is_overwrite_okay)
     {
-      auto fn = reinterpret_cast<radix_sort_keys_fn_t>(build.sort_fn);
-      status  = fn(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in.state,
-        d_keys_out.state,
-        static_cast<unsigned long long>(num_items),
-        &begin_bit,
-        &end_bit,
-        reinterpret_cast<void*>(stream));
+      if (!build.sort_fn_overwrite)
+      {
+        return CUDA_ERROR_INVALID_VALUE;
+      }
+      if (build.keys_only)
+      {
+        auto fn = reinterpret_cast<radix_sort_keys_overwrite_fn_t>(build.sort_fn_overwrite);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          static_cast<unsigned long long>(num_items),
+          &begin_bit,
+          &end_bit,
+          &local_selector,
+          reinterpret_cast<void*>(stream));
+      }
+      else
+      {
+        auto fn = reinterpret_cast<radix_sort_pairs_overwrite_fn_t>(build.sort_fn_overwrite);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          d_values_in.state,
+          d_values_out.state,
+          static_cast<unsigned long long>(num_items),
+          &begin_bit,
+          &end_bit,
+          &local_selector,
+          reinterpret_cast<void*>(stream));
+      }
     }
     else
     {
-      auto fn = reinterpret_cast<radix_sort_pairs_fn_t>(build.sort_fn);
-      status  = fn(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in.state,
-        d_keys_out.state,
-        d_values_in.state,
-        d_values_out.state,
-        static_cast<unsigned long long>(num_items),
-        &begin_bit,
-        &end_bit,
-        reinterpret_cast<void*>(stream));
+      if (!build.sort_fn)
+      {
+        return CUDA_ERROR_INVALID_VALUE;
+      }
+      if (build.keys_only)
+      {
+        auto fn = reinterpret_cast<radix_sort_keys_fn_t>(build.sort_fn);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          static_cast<unsigned long long>(num_items),
+          &begin_bit,
+          &end_bit,
+          reinterpret_cast<void*>(stream));
+      }
+      else
+      {
+        auto fn = reinterpret_cast<radix_sort_pairs_fn_t>(build.sort_fn);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          d_values_in.state,
+          d_values_out.state,
+          static_cast<unsigned long long>(num_items),
+          &begin_bit,
+          &end_bit,
+          reinterpret_cast<void*>(stream));
+      }
+      local_selector = 0;
     }
 
     if (selector)
     {
-      // Copy variant always writes to d_keys_out (= d_buffers[1] in DoubleBuffer mode).
-      *selector = is_overwrite_okay ? 1 : 0;
+      *selector = local_selector;
     }
 
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
@@ -255,7 +351,8 @@ try
   }
 
   cccl::detail::release_jit_artifacts(build_ptr);
-  build_ptr->sort_fn = nullptr;
+  build_ptr->sort_fn           = nullptr;
+  build_ptr->sort_fn_overwrite = nullptr;
 
   return CUDA_SUCCESS;
 }

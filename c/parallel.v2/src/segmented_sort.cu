@@ -21,19 +21,28 @@ static bool is_null_it(cccl_iterator_t it)
   return it.type == CCCL_POINTER && it.state == nullptr;
 }
 
-// JIT wrappers produced by CubCall:
-//   keys-only:  fn(temp, temp_bytes, keys_in, keys_out, num_items, num_segments,
-//                  begin_offsets, end_offsets, stream)
-//   pairs:      fn(temp, temp_bytes, keys_in, keys_out, values_in, values_out,
-//                  num_items, num_segments, begin_offsets, end_offsets, stream)
+// Two JIT wrappers per build, one per cub::DeviceSegmentedSort overload:
 //
-// The copy variant of DeviceSegmentedSort is used, so the result is always in
-// d_keys_out / d_values_out (selector=0). is_overwrite_okay is accepted at the
-// run API but has no effect.
+//   COPY variant — result always lands in d_keys_out (and d_values_out for
+//   pairs); selector implicitly 0. Used when is_overwrite_okay=false.
+//     keys-only: fn(temp, temp_bytes, keys_in, keys_out, num_items, num_segments,
+//                   begin_offsets, end_offsets, stream)
+//     pairs:     fn(temp, temp_bytes, keys_in, keys_out, values_in, values_out,
+//                   num_items, num_segments, begin_offsets, end_offsets, stream)
+//
+//   DOUBLE-BUFFER (overwrite) variant — constructs cub::DoubleBuffer locals
+//   from the in/out pointers, runs the DoubleBuffer overload, writes the
+//   buffer's selector to a host-provided int*.
+//     keys-only: fn(..., num_segments, begin_offsets, end_offsets, selector_out, stream)
+//     pairs:     fn(..., num_segments, begin_offsets, end_offsets, selector_out, stream)
 using segmented_sort_keys_fn_t =
   int (*)(void*, size_t*, void*, void*, unsigned long long, unsigned long long, void*, void*, void*);
 using segmented_sort_pairs_fn_t =
   int (*)(void*, size_t*, void*, void*, void*, void*, unsigned long long, unsigned long long, void*, void*, void*);
+using segmented_sort_keys_overwrite_fn_t =
+  int (*)(void*, size_t*, void*, void*, unsigned long long, unsigned long long, void*, void*, void*, void*);
+using segmented_sort_pairs_overwrite_fn_t = int (*)(
+  void*, size_t*, void*, void*, void*, void*, unsigned long long, unsigned long long, void*, void*, void*, void*);
 
 CUresult cccl_device_segmented_sort_build_ex(
   cccl_device_segmented_sort_build_result_t* build_ptr,
@@ -81,7 +90,9 @@ try
     cub_algo = ascending ? "cub::DeviceSegmentedSort::SortPairs" : "cub::DeviceSegmentedSort::SortPairsDescending";
   }
 
-  CubCallResult result = [&] {
+  // Both CUB-overload wrappers in one TU via the multi-function CubCall::compile
+  // — see analogous comment in radix_sort.cu.
+  auto cb_copy = [&] {
     if (keys_only)
     {
       return CubCall::from("cub/device/device_segmented_sort.cuh")
@@ -95,8 +106,7 @@ try
               num_segments,
               in(begin_offset_in),
               in(end_offset_in),
-              stream)
-        .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+              stream);
     }
     return CubCall::from("cub/device/device_segmented_sort.cuh")
       .run(cub_algo)
@@ -111,18 +121,52 @@ try
             num_segments,
             in(begin_offset_in),
             in(end_offset_in),
-            stream)
-      .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+            stream);
   }();
+
+  auto cb_overwrite = [&] {
+    if (keys_only)
+    {
+      return CubCall::from("cub/device/device_segmented_sort.cuh")
+        .run(cub_algo)
+        .name("cccl_jit_segmented_sort_overwrite")
+        .with(temp_storage,
+              temp_bytes,
+              double_buffer(d_keys_in, d_keys_out, "d_keys_buffer"),
+              num_items,
+              num_segments,
+              in(begin_offset_in),
+              in(end_offset_in),
+              selector_out("d_keys_buffer"),
+              stream);
+    }
+    return CubCall::from("cub/device/device_segmented_sort.cuh")
+      .run(cub_algo)
+      .name("cccl_jit_segmented_sort_overwrite")
+      .with(temp_storage,
+            temp_bytes,
+            double_buffer(d_keys_in, d_keys_out, "d_keys_buffer"),
+            double_buffer(d_values_in, d_values_out, "d_values_buffer"),
+            num_items,
+            num_segments,
+            in(begin_offset_in),
+            in(end_offset_in),
+            selector_out("d_keys_buffer"),
+            stream);
+  }();
+
+  auto result =
+    CubCall::compile({cb_copy, cb_overwrite}, cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
   cccl::detail::copy_cubin(result.cubin, build_ptr->cubin, build_ptr->cubin_size);
-  build_ptr->jit_compiler = result.compiler;
-  build_ptr->sort_fn      = result.fn_ptr;
-  build_ptr->key_type     = d_keys_in.value_type;
-  build_ptr->value_type   = d_values_in.value_type;
-  build_ptr->order        = sort_order;
-  build_ptr->keys_only    = keys_only ? 1 : 0;
+  build_ptr->jit_compiler      = result.compiler;
+  build_ptr->sort_fn           = result.fn_ptrs[0];
+  build_ptr->sort_fn_overwrite = result.fn_ptrs[1];
+  build_ptr->key_type          = d_keys_in.value_type;
+  build_ptr->value_type        = d_values_in.value_type;
+  build_ptr->order             = sort_order;
+  build_ptr->keys_only         = keys_only ? 1 : 0;
 
   return CUDA_SUCCESS;
 }
@@ -180,47 +224,90 @@ CUresult cccl_device_segmented_sort(
 {
   try
   {
-    if (!build.sort_fn)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-
+    // Dispatch on is_overwrite_okay (see analogous comment in radix_sort.cu).
     int status;
-    if (build.keys_only)
+    int local_selector = 0;
+    if (is_overwrite_okay)
     {
-      auto fn = reinterpret_cast<segmented_sort_keys_fn_t>(build.sort_fn);
-      status  = fn(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in.state,
-        d_keys_out.state,
-        static_cast<unsigned long long>(num_items),
-        static_cast<unsigned long long>(num_segments),
-        start_offset_in.state,
-        end_offset_in.state,
-        reinterpret_cast<void*>(stream));
+      if (!build.sort_fn_overwrite)
+      {
+        return CUDA_ERROR_INVALID_VALUE;
+      }
+      if (build.keys_only)
+      {
+        auto fn = reinterpret_cast<segmented_sort_keys_overwrite_fn_t>(build.sort_fn_overwrite);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          static_cast<unsigned long long>(num_items),
+          static_cast<unsigned long long>(num_segments),
+          start_offset_in.state,
+          end_offset_in.state,
+          &local_selector,
+          reinterpret_cast<void*>(stream));
+      }
+      else
+      {
+        auto fn = reinterpret_cast<segmented_sort_pairs_overwrite_fn_t>(build.sort_fn_overwrite);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          d_values_in.state,
+          d_values_out.state,
+          static_cast<unsigned long long>(num_items),
+          static_cast<unsigned long long>(num_segments),
+          start_offset_in.state,
+          end_offset_in.state,
+          &local_selector,
+          reinterpret_cast<void*>(stream));
+      }
     }
     else
     {
-      auto fn = reinterpret_cast<segmented_sort_pairs_fn_t>(build.sort_fn);
-      status  = fn(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in.state,
-        d_keys_out.state,
-        d_values_in.state,
-        d_values_out.state,
-        static_cast<unsigned long long>(num_items),
-        static_cast<unsigned long long>(num_segments),
-        start_offset_in.state,
-        end_offset_in.state,
-        reinterpret_cast<void*>(stream));
+      if (!build.sort_fn)
+      {
+        return CUDA_ERROR_INVALID_VALUE;
+      }
+      if (build.keys_only)
+      {
+        auto fn = reinterpret_cast<segmented_sort_keys_fn_t>(build.sort_fn);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          static_cast<unsigned long long>(num_items),
+          static_cast<unsigned long long>(num_segments),
+          start_offset_in.state,
+          end_offset_in.state,
+          reinterpret_cast<void*>(stream));
+      }
+      else
+      {
+        auto fn = reinterpret_cast<segmented_sort_pairs_fn_t>(build.sort_fn);
+        status  = fn(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys_in.state,
+          d_keys_out.state,
+          d_values_in.state,
+          d_values_out.state,
+          static_cast<unsigned long long>(num_items),
+          static_cast<unsigned long long>(num_segments),
+          start_offset_in.state,
+          end_offset_in.state,
+          reinterpret_cast<void*>(stream));
+      }
+      local_selector = 0;
     }
 
     if (selector)
     {
-      // Copy variant always writes to d_keys_out (= d_buffers[1] in DoubleBuffer mode).
-      *selector = is_overwrite_okay ? 1 : 0;
+      *selector = local_selector;
     }
 
     return (status == 0) ? CUDA_SUCCESS : CUDA_ERROR_UNKNOWN;
@@ -241,7 +328,8 @@ try
   }
 
   cccl::detail::release_jit_artifacts(build_ptr);
-  build_ptr->sort_fn = nullptr;
+  build_ptr->sort_fn           = nullptr;
+  build_ptr->sort_fn_overwrite = nullptr;
 
   return CUDA_SUCCESS;
 }

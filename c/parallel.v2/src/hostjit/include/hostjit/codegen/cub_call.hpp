@@ -153,6 +153,36 @@ inline for_each_op_t for_each_op(cccl_op_t op)
   return {op};
 }
 
+// double_buffer_t: constructs a cub::DoubleBuffer<elem_t> from two host
+// pointers (one "in" buffer, one "out" buffer) and passes it to the CUB call.
+// Used by the DoubleBuffer overloads of DeviceRadixSort / DeviceSegmentedSort
+// where the caller is willing to let CUB swap buffers and report the final
+// location via the buffer's `selector` member. var_name controls the C++ name
+// of the generated local — pair a `selector_out_t` with the same name to read
+// `<var_name>.selector` after the call.
+struct double_buffer_t
+{
+  cccl_iterator_t in_it;
+  cccl_iterator_t out_it;
+  const char* var_name;
+};
+inline double_buffer_t double_buffer(cccl_iterator_t in_it, cccl_iterator_t out_it, const char* var_name = "d_buffer")
+{
+  return {in_it, out_it, var_name};
+}
+
+// selector_out_t: emits a `void* selector_out` parameter and, after the CUB
+// call, writes `<buffer_var_name>.selector` to it. Must be paired with a
+// double_buffer_t whose var_name matches.
+struct selector_out_t
+{
+  const char* buffer_var_name;
+};
+inline selector_out_t selector_out(const char* buffer_var_name = "d_buffer")
+{
+  return {buffer_var_name};
+}
+
 // Argument variant: everything that can appear in .with()
 using Arg = std::variant<
   temp_storage_t,
@@ -166,17 +196,27 @@ using Arg = std::variant<
   cmp_t,
   unary_op_t,
   for_each_op_t,
+  double_buffer_t,
+  selector_out_t,
   future_val_t,
   cccl_value_t,
   force_accum_type_t,
   typed_scalar_t>;
 
-// Result of a successful compilation.
+// Result of a successful single-function compilation.
 struct CubCallResult
 {
   JITCompiler* compiler; // caller takes ownership
   void* fn_ptr; // the exported function
   std::vector<char> cubin; // for SASS inspection
+};
+
+// Result of a successful multi-function compilation (one TU, N functions).
+struct MultiCubCallResult
+{
+  JITCompiler* compiler; // caller takes ownership; one compiler for the whole TU
+  std::vector<char> cubin; // single cubin for the whole TU
+  std::vector<void*> fn_ptrs; // exported functions in the same order as the input CubCalls
 };
 
 class CubCall
@@ -218,11 +258,35 @@ public:
     const char* ctk_path          = nullptr,
     const char* cccl_include_path = nullptr) const;
 
+  // Compile multiple CubCalls into a single translation unit. One Clang
+  // invocation, one cubin, one JITCompiler; each function is dlsym'd by its
+  // .name(...) and returned in the input order. All CubCalls must share the
+  // same CUB include header (.from(...)). Per-function preambles are isolated
+  // inside `namespace fn_<i> { ... }` blocks; extern "C" symbols escape the
+  // namespace and stay globally dlsym-able.
+  static MultiCubCallResult compile(
+    std::initializer_list<CubCall> calls,
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config     = nullptr,
+    const char* ctk_path          = nullptr,
+    const char* cccl_include_path = nullptr);
+
 private:
   std::string include_;
   std::string cub_function_;
   std::string fn_name_ = "cccl_jit_fn";
   std::vector<Arg> args_;
   bool tuple_inputs_ = false;
+
+  // Internal: just the per-function body (preamble + function defn), no
+  // shared #includes and no EXPORT macro. Used by the multi-compile path to
+  // wrap N bodies in N namespaces under a single shared include block.
+  std::string body() const;
+
+  // Internal: walk args_ and register any user-op / iterator bitcode with
+  // the given collector. Factored out so the multi-compile path can share
+  // one collector across several CubCalls.
+  void collect_bitcode(class BitcodeCollector& bitcode, int& op_idx, int& in_idx, int& out_idx) const;
 };
 } // namespace hostjit::codegen
