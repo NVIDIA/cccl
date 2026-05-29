@@ -44,6 +44,7 @@
 #include <cuda/std/__memory/uninitialized_algorithms.h>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__optional/optional_ref.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/from_range.h>
@@ -1406,34 +1407,33 @@ public:
   }
 
   template <class... _Args>
-  _CCCL_API constexpr pointer try_emplace_back(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr optional<reference>
+  try_emplace_back(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
   {
     if (this->size() == _Capacity)
     {
-      return nullptr;
+      return {};
     }
-
-    return ::cuda::std::addressof(this->unchecked_emplace_back(::cuda::std::forward<_Args>(__args)...));
+    return optional<reference>{in_place, this->unchecked_emplace_back(::cuda::std::forward<_Args>(__args)...)};
   }
 
-  _CCCL_API constexpr pointer try_push_back(const _Tp& __value) noexcept(is_nothrow_copy_constructible_v<_Tp>)
+  _CCCL_API constexpr optional<reference>
+  try_push_back(const _Tp& __value) noexcept(is_nothrow_copy_constructible_v<_Tp>)
   {
     if (this->size() == _Capacity)
     {
-      return nullptr;
+      return {};
     }
-
-    return ::cuda::std::addressof(this->unchecked_emplace_back(__value));
+    return optional<reference>{in_place, this->unchecked_emplace_back(__value)};
   }
 
-  _CCCL_API constexpr pointer try_push_back(_Tp&& __value) noexcept(is_nothrow_move_constructible_v<_Tp>)
+  _CCCL_API constexpr optional<reference> try_push_back(_Tp&& __value) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     if (this->size() == _Capacity)
     {
-      return nullptr;
+      return {};
     }
-
-    return ::cuda::std::addressof(this->unchecked_emplace_back(::cuda::std::move(__value)));
+    return optional<reference>{in_place, this->unchecked_emplace_back(::cuda::std::move(__value))};
   }
 
   _CCCL_TEMPLATE(class _Range)
@@ -2017,19 +2017,19 @@ public:
   }
 
   template <class... _Args>
-  _CCCL_API constexpr pointer try_emplace_back(_Args&&...) noexcept
+  _CCCL_API constexpr optional<reference> try_emplace_back(_Args&&...) noexcept
   {
-    return nullptr;
+    return {};
   }
 
-  _CCCL_API constexpr pointer try_push_back(const _Tp&) noexcept
+  _CCCL_API constexpr optional<reference> try_push_back(const _Tp&) noexcept
   {
-    return nullptr;
+    return {};
   }
 
-  _CCCL_API constexpr pointer try_push_back(_Tp&&) noexcept
+  _CCCL_API constexpr optional<reference> try_push_back(_Tp&&) noexcept
   {
-    return nullptr;
+    return {};
   }
 
   _CCCL_TEMPLATE(class _Range)

@@ -587,7 +587,7 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //!
 //! Schedules a host callback that reads the logical data, synchronizes
 //! to ensure the callback completes, and copies the data into the
-//! caller-provided buffer.  Unlike stf_ctx_finalize(), the context
+//! caller-provided buffer. Unlike stf_ctx_finalize(), the context
 //! remains usable after this call, enabling iterative patterns such as
 //! convergence checks.
 //!
@@ -598,6 +598,8 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //! \return 0 on success, non-zero on error
 //!
 //! \pre  ctx and ld must be valid handles; out must not be NULL
+//! \pre  The first min(size, data_size) bytes of out must not overlap the
+//!       logical data range associated with ld.
 //! \post The first min(size, data_size) bytes of the logical data are
 //!       written to out.
 //!

@@ -30,7 +30,6 @@ C2H_TEST("stf_ctx_wait reads data without finalizing", "[context]")
   REQUIRE(lVal != nullptr);
   stf_logical_data_set_symbol(lVal, "val");
 
-  // Task writes 42 into the logical data via host_launch
   int src_val = 42;
 
   stf_host_launch_handle h = stf_host_launch_create(ctx);
@@ -45,13 +44,12 @@ C2H_TEST("stf_ctx_wait reads data without finalizing", "[context]")
   });
   stf_host_launch_destroy(h);
 
-  // ctx.wait: read value without finalizing
   int result = 0;
   int rc     = stf_ctx_wait(ctx, lVal, &result, sizeof(int));
   REQUIRE(rc == 0);
   REQUIRE(result == 42);
 
-  // Context is still usable — submit another task
+  // The context remains usable after waiting.
   src_val = 99;
 
   stf_host_launch_handle h2 = stf_host_launch_create(ctx);
@@ -66,11 +64,28 @@ C2H_TEST("stf_ctx_wait reads data without finalizing", "[context]")
   });
   stf_host_launch_destroy(h2);
 
-  // Second wait
   result = 0;
   rc     = stf_ctx_wait(ctx, lVal, &result, sizeof(int));
   REQUIRE(rc == 0);
   REQUIRE(result == 99);
+
+  stf_logical_data_destroy(lVal);
+  stf_ctx_finalize(ctx);
+}
+
+C2H_TEST("stf_ctx_wait rejects invalid arguments", "[context]")
+{
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  int h_value                  = 0;
+  stf_logical_data_handle lVal = stf_logical_data(ctx, &h_value, sizeof(int));
+  REQUIRE(lVal != nullptr);
+
+  int result = 0;
+  REQUIRE(stf_ctx_wait(nullptr, lVal, &result, sizeof(int)) != 0);
+  REQUIRE(stf_ctx_wait(ctx, nullptr, &result, sizeof(int)) != 0);
+  REQUIRE(stf_ctx_wait(ctx, lVal, nullptr, sizeof(int)) != 0);
 
   stf_logical_data_destroy(lVal);
   stf_ctx_finalize(ctx);
