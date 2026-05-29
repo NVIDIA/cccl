@@ -114,7 +114,7 @@ inline constexpr bool __tuple_nothrow_assignable = false;
 
 template <class _From, class _To>
 inline constexpr bool __tuple_nothrow_assignable<_From, _To, true> =
-  __tuple_types_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
+  __tuple_types_nothrow_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
 
 // __tuple_like_with_size
 template <class _Tuple, size_t _ExpectedSize, bool = __tuple_like<_Tuple>>
