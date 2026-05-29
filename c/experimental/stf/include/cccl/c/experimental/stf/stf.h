@@ -551,6 +551,38 @@ stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx);
 
 cudaStream_t stf_fence(stf_ctx_handle ctx);
 
+//!
+//! \brief Synchronize and copy logical data contents to a host buffer
+//!
+//! Schedules a host callback that reads the logical data, synchronizes
+//! to ensure the callback completes, and copies the data into the
+//! caller-provided buffer. Unlike stf_ctx_finalize(), the context
+//! remains usable after this call, enabling iterative patterns such as
+//! convergence checks.
+//!
+//! \param ctx   Context handle
+//! \param ld    Logical data handle to read
+//! \param out   Destination host buffer
+//! \param size  Size of the destination buffer in bytes
+//! \return 0 on success, non-zero on error
+//!
+//! \pre  ctx and ld must be valid handles; out must not be NULL
+//! \pre  The first min(size, data_size) bytes of out must not overlap the
+//!       logical data range associated with ld.
+//! \post The first min(size, data_size) bytes of the logical data are
+//!       written to out.
+//!
+//! \par Example:
+//! \code
+//! int h_sum = 0;
+//! stf_ctx_wait(ctx, lSum, &h_sum, sizeof(h_sum));
+//! // h_sum now contains the result; context is still active
+//! \endcode
+//!
+//! \see stf_fence(), stf_ctx_finalize()
+
+int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size);
+
 //! \}
 
 //! \defgroup LogicalData Logical Data Management
