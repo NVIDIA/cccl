@@ -35,6 +35,7 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
+#include <mutex>
 #include <unordered_map>
 
 #include <cuda.h>
