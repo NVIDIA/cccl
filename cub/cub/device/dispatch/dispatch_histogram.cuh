@@ -976,6 +976,89 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                           OffsetT>;
       const void* direct_atomic_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_kernel_ptr);
+
+      int device_ordinal = 0;
+      if (cudaGetDevice(&device_ordinal) != cudaSuccess)
+      {
+        (void) cudaGetLastError();
+        device_ordinal = 0;
+      }
+
+      // Size the per-block SMEM cuckoo cache (now in DYNAMIC shared memory).
+      // We pick the largest power-of-two slot count per channel whose
+      // dynamic-SMEM footprint still lets the direct-atomic kernel hold the
+      // cooperative grid (occupancy * sm_count >= num_thread_blocks), capped
+      // so a single block never exceeds the device's opt-in dynamic-SMEM
+      // limit. More slots => higher cache hit rate => fewer scattered
+      // GMEM-atomic spills on the high-bin path (the measured bottleneck).
+      // The floor is the legacy static size (4096 single-channel / 1024
+      // multi-channel) so we never regress below the previous behaviour.
+      const int cache_bytes_per_slot = static_cast<int>(sizeof(int)) + static_cast<int>(kernel_source.CounterSize());
+      const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;
+      // Cap the per-CTA dynamic SMEM for the cache. B200/SM100 supports ~228
+      // KiB opt-in dynamic SMEM per CTA; query the device max and stay under
+      // it (leaving headroom for driver reserve). Fall back to 96 KiB if the
+      // query fails.
+      int max_optin_smem = 0;
+      if (cudaDeviceGetAttribute(&max_optin_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, device_ordinal) != cudaSuccess
+          || max_optin_smem <= 0)
+      {
+        (void) cudaGetLastError();
+        max_optin_smem = 96 * 1024;
+      }
+      // Reserve ~4 KiB for static/driver shared use; the rest is for the cache.
+      const int cache_smem_budget = (max_optin_smem > 4096) ? (max_optin_smem - 4096) : max_optin_smem;
+      const int max_slots_by_smem =
+        cache_smem_budget / (NUM_ACTIVE_CHANNELS * cache_bytes_per_slot);
+
+      // Occupancy-preserving sizing. We measured that simply "fitting the
+      // cooperative grid" lets the cache grow until occupancy collapses to
+      // 1 block/SM, which slows the latency-bound multi-channel cells. So we
+      // only spend SMEM that is FREE: pick the largest power-of-two slot
+      // count whose per-SM occupancy is no lower than the occupancy at the
+      // floor size. This keeps the single-channel 1M-bin gains (where the
+      // extra slots are free) without trading away occupancy on the
+      // multi-channel paths.
+      auto cuckoo_occupancy_for = [&](int slots) -> int {
+        const int bytes = NUM_ACTIVE_CHANNELS * slots * cache_bytes_per_slot;
+        if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_kernel_ptr, bytes) != cudaSuccess)
+        {
+          (void) cudaGetLastError();
+          return 0;
+        }
+        int occ = 0;
+        if (launcher_factory.MaxSmOccupancy(occ, direct_atomic_kernel_ptr, threads_per_block, bytes) != cudaSuccess)
+        {
+          (void) cudaGetLastError();
+          return 0;
+        }
+        return occ;
+      };
+
+      const int floor_occ = cuckoo_occupancy_for(cache_slots_floor);
+      int cache_slots_per_channel = cache_slots_floor;
+      // Grow while occupancy stays at the floor occupancy (free SMEM).
+      for (int cand = cache_slots_floor << 1; cand <= max_slots_by_smem; cand <<= 1)
+      {
+        const int occ = cuckoo_occupancy_for(cand);
+        if (floor_occ > 0 && occ >= floor_occ)
+        {
+          cache_slots_per_channel = cand;
+        }
+        else
+        {
+          break; // growth would cost occupancy; stop.
+        }
+      }
+      const int cuckoo_cache_smem_bytes = NUM_ACTIVE_CHANNELS * cache_slots_per_channel * cache_bytes_per_slot;
+      // Make sure the kernel attribute matches the final chosen size (the
+      // last probe in the loop may have set a larger size that we rejected).
+      if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_kernel_ptr, cuckoo_cache_smem_bytes)
+          != cudaSuccess)
+      {
+        (void) cudaGetLastError();
+      }
+
       if (false)
       {
         DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
@@ -987,21 +1070,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                          privatized_decode_op_t,
                                                          output_decode_op_t,
                                                          OffsetT>
-          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
+          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
             d_samples,
             num_output_bins_wrapper,
             d_output_histograms,
             second_level_array,
             num_row_pixels,
             num_rows,
-            row_stride_samples);
+            row_stride_samples,
+            cache_slots_per_channel);
       }
 
-      int device_ordinal        = 0;
       int cooperative_supported = 0;
-      const bool coop_query_ok = (cudaGetDevice(&device_ordinal) == cudaSuccess
-          && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
-          && cooperative_supported != 0);
+      const bool coop_query_ok =
+        (cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
+         && cooperative_supported != 0);
       // The persistent / direct-atomic kernels may have lower per-SM occupancy
       // than the staging sweep kernel that was used to size `num_thread_blocks`,
       // so we must verify the chosen kernel's occupancy fits the requested
@@ -1018,7 +1101,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         persistent_sm_occupancy = 0;
       }
       const auto direct_occ_err = launcher_factory.MaxSmOccupancy(
-        direct_atomic_sm_occupancy, direct_atomic_kernel_ptr, threads_per_block);
+        direct_atomic_sm_occupancy, direct_atomic_kernel_ptr, threads_per_block, cuckoo_cache_smem_bytes);
       if (direct_occ_err != cudaSuccess)
       {
         (void) cudaGetLastError();
@@ -1047,13 +1130,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             const_cast<void*>(static_cast<const void*>(&second_level_array)),
             const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
             const_cast<void*>(static_cast<const void*>(&num_rows)),
-            const_cast<void*>(static_cast<const void*>(&row_stride_samples))};
+            const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
+            const_cast<void*>(static_cast<const void*>(&cache_slots_per_channel))};
           coop_status = cudaLaunchCooperativeKernel(
             direct_atomic_kernel_ptr_void,
             persistent_grid_dims,
             dim3{static_cast<unsigned int>(threads_per_block)},
             direct_kernel_args,
-            /*sharedMem=*/0,
+            /*sharedMem=*/static_cast<size_t>(cuckoo_cache_smem_bytes),
             stream);
         }
         else

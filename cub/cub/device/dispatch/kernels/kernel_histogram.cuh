@@ -1447,7 +1447,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
     _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
     _CCCL_GRID_CONSTANT const OffsetT num_rows,
-    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples)
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int cache_slots_per_channel)
 {
   namespace cg = ::cooperative_groups;
 
@@ -1525,21 +1526,45 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // and claims the slot for its own bin. After the sweep ends, all slots
   // are flushed cooperatively to the global histogram.
   //
-  // Sizing: scale slots/channel inversely with NumActiveChannels so the
-  // total static SMEM footprint stays around 32 KiB across single- and
-  // multi-channel paths. This keeps occupancy unaffected (test builds
-  // also tolerate the smaller footprint). Direct-mapped with
-  // multiplicative hash (Knuth's 2654435761) so hot bins distribute
-  // across slots and cold bins evict gracefully.
-  constexpr int kCacheSlotsPerChannel = (NumActiveChannels == 1) ? 4096 : 1024;
-  __shared__ int s_cache_keys[NumActiveChannels][kCacheSlotsPerChannel];
-  __shared__ CounterT s_cache_counts[NumActiveChannels][kCacheSlotsPerChannel];
+  // Sizing: the cache lives in DYNAMIC shared memory so the dispatch layer
+  // can pick the largest power-of-two slot count per channel that still
+  // fits the cooperative grid's required per-SM occupancy (it queries
+  // `cudaOccupancyMaxActiveBlocksPerMultiprocessor` with the chosen dynamic
+  // SMEM size). Profiling showed the high-bin / high-entropy cells
+  // (e.g. Bins=262144, Entropy=1.0) are bound by scattered GMEM-atomic
+  // spills (DRAM ~17% of peak, latency-bound), and that neither packing
+  // the slot nor changing the probe count moves them -- the spill rate is
+  // fixed by how many distinct hot bins fit in cache. Growing the slot
+  // count is the one lever that raises the hit rate and pulls spills off
+  // the contended global histogram onto cheap block-scope SMEM atomics.
+  //
+  // `cache_slots_per_channel` is a runtime power of two (mask = slots-1).
+  // The extern __shared__ region holds, per channel, a key array (int)
+  // followed by a count array (CounterT): keys for all channels first,
+  // then counts for all channels. Two multiplicative-hash probes are
+  // retained (the single-probe variant was verified to collapse skewed
+  // distributions by 25-30%). Keys are write-once / immutable after a CAS
+  // claim, so the cache is race-free (no hit-vs-evict window).
+  const int cache_mask = cache_slots_per_channel - 1;
+  extern __shared__ unsigned char s_cuckoo_raw[];
+  int* const s_cache_keys_base       = reinterpret_cast<int*>(s_cuckoo_raw);
+  CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
+    s_cuckoo_raw + static_cast<size_t>(NumActiveChannels) * cache_slots_per_channel * sizeof(int));
+  // Per-channel slot bases.
+  int* s_cache_keys[NumActiveChannels];
+  CounterT* s_cache_counts[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * cache_slots_per_channel;
+    s_cache_counts[ch] = s_cache_counts_base + static_cast<size_t>(ch) * cache_slots_per_channel;
+  }
 
   // Initialize cache: keys = -1 (empty sentinel), counts = 0.
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
-    for (int slot = threadIdx.x; slot < kCacheSlotsPerChannel; slot += blockDim.x)
+    for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
     {
       s_cache_keys[ch][slot]   = -1;
       s_cache_counts[ch][slot] = CounterT{0};
@@ -1601,7 +1626,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
             // dominate but each thread is otherwise visiting random
             // bins.
             const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
-            const int slot1          = static_cast<int>(hash1 & (kCacheSlotsPerChannel - 1));
+            const int slot1          = static_cast<int>(hash1 & cache_mask);
             const int existing_key1  = s_cache_keys[ch][slot1];
             if (existing_key1 == bin)
             {
@@ -1620,7 +1645,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
               {
                 // Lost the race. Try secondary slot.
                 const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-                const int slot2          = static_cast<int>(hash2 & (kCacheSlotsPerChannel - 1));
+                const int slot2          = static_cast<int>(hash2 & cache_mask);
                 const int existing_key2  = s_cache_keys[ch][slot2];
                 if (existing_key2 == bin)
                 {
@@ -1648,7 +1673,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
             {
               // Primary occupied by a different bin: try the secondary slot.
               const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-              const int slot2          = static_cast<int>(hash2 & (kCacheSlotsPerChannel - 1));
+              const int slot2          = static_cast<int>(hash2 & cache_mask);
               const int existing_key2  = s_cache_keys[ch][slot2];
               if (existing_key2 == bin)
               {
@@ -1683,7 +1708,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      for (int slot = threadIdx.x; slot < kCacheSlotsPerChannel; slot += blockDim.x)
+      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
       {
         const int key       = s_cache_keys[ch][slot];
         const CounterT cnt  = s_cache_counts[ch][slot];
