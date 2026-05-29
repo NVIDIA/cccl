@@ -151,13 +151,13 @@ TEST_FUNC constexpr void is_fp_close(const T& a, const T& b)
 //----------------------------------------------------------------------------------------------------------------------
 // vec utilities
 
-template <typename T, int _Offset = 1>
+template <typename T, int Offset = 1>
 struct iota_generator
 {
   template <typename I>
   TEST_FUNC constexpr T operator()(I i) const noexcept
   {
-    return static_cast<T>(i + _Offset);
+    return static_cast<T>(i + Offset);
   }
 };
 
