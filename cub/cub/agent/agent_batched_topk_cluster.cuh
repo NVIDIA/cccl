@@ -62,23 +62,14 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <nv/target>
+
 #include <cooperative_groups.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk_cluster
 {
-// -----------------------------------------------------------------------------
-// Tuning policy
-// -----------------------------------------------------------------------------
-struct cluster_topk_policy
-{
-  int cluster_size;
-  int threads_per_block;
-  int items_per_thread;
-  int bits_per_pass;
-};
-
 // -----------------------------------------------------------------------------
 // Cluster-shared state. Lives in the leader block's shared memory and is
 // reached from every block of the cluster through DSMEM.
@@ -104,8 +95,10 @@ struct alignas(16) cluster_topk_state
 // -----------------------------------------------------------------------------
 // Cluster top-k agent
 // -----------------------------------------------------------------------------
-template <int ClusterSize,
-          int ThreadsPerBlock,
+// Cluster width is a runtime value (see `process_impl` for the readback), so
+// it is not a template parameter; per-block tile layout is still controlled
+// by the template parameters below.
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           int BitsPerPass,
           typename KeyInputItItT,
@@ -130,12 +123,10 @@ struct agent_batched_topk_cluster
   using state_t      = cluster_topk_state<key_t, offset_t, out_offset_t>;
   using key_prefix_t = typename state_t::key_prefix_t;
 
-  static constexpr int cluster_size      = ClusterSize;
   static constexpr int threads_per_block = ThreadsPerBlock;
   static constexpr int items_per_thread  = ItemsPerThread;
   static constexpr int bits_per_pass     = BitsPerPass;
   static constexpr int tile_items        = threads_per_block * items_per_thread;
-  static constexpr int cluster_tile      = cluster_size * tile_items;
   static constexpr int num_buckets       = 1 << bits_per_pass;
 
   using decomposer_t = detail::identity_decomposer_t;
@@ -213,11 +204,14 @@ struct agent_batched_topk_cluster
   // ---------------------------------------------------------------------------
   // Main entry point
   // ---------------------------------------------------------------------------
-  // Prototype targets SM 9.0+ only; older architectures are unsupported by the
-  // dispatch and never reach this kernel.
+  // SM 9.0+ only. `_CG_HAS_CLUSTER_GROUP` keeps the body and the
+  // `process_impl` definition consistent across NVCC and clang-cuda/clangd;
+  // `NV_IF_TARGET` strips the call from NVCC's sub-SM-9.0 device passes.
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
-    process_impl();
+#if defined(_CG_HAS_CLUSTER_GROUP)
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (process_impl();));
+#endif
   }
 
 private:
@@ -317,6 +311,9 @@ private:
   // -------------------------------------------------------------------------
   // Per-direction implementation
   // -------------------------------------------------------------------------
+  // Stripped on sub-SM-9.0 device passes; uses `cluster_group`, which is only
+  // declared when `_CG_HAS_CLUSTER_GROUP` is set.
+#if defined(_CG_HAS_CLUSTER_GROUP)
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   run(::cooperative_groups::cluster_group& cluster,
@@ -381,13 +378,13 @@ private:
         if (threadIdx.x == 0)
         {
           temp_storage.broadcast_kth = leader_state->kth_key_bits;
-#ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
+#  ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
           temp_storage.broadcast_early_stop = leader_state->early_stop;
-#endif
+#  endif
         }
         __syncthreads();
         kth_key_bits_local = temp_storage.broadcast_kth;
-#ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
+#  ifndef CUB_DISABLE_CLUSTER_TOPK_EARLY_STOP
         if (temp_storage.broadcast_early_stop != ::cuda::std::uint32_t{0})
         {
           last_pass = pass;
@@ -398,7 +395,7 @@ private:
           __syncthreads();
           break;
         }
-#endif
+#  endif
       }
 
       // Every block (including the leader) starts each pass with a fresh,
@@ -448,7 +445,7 @@ private:
         }
       }
 
-#ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
+#  ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
       // Step 1b (scan-then-reduce): in-place block-local `InclusiveSum`
       // over `hist[]`. The barrier publishes Step 1's atomic writes to
       // the scan's reads.
@@ -477,13 +474,13 @@ private:
       // interleaved with it, so every block must finish its write-back
       // before anyone starts the fold.
       cluster.sync();
-#else
+#  else
       // Local barrier is enough: all Step 1 / Step 2 writes to `hist[]`
       // are atomic at compatible scopes (see Step 1 dispatch). The
       // cluster-wide ordering before Step 3's leader read of `hist[]`
       // is supplied by the `cluster.sync()` further below.
       __syncthreads();
-#endif
+#  endif
 
       // Step 2: non-leader blocks fold their per-bucket values
       // (raw counts in the reduce-then-scan path, block-local inclusive
@@ -506,14 +503,14 @@ private:
         }
       }
 
-#ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
+#  ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
       // Hoist the leader's read of `state.k` above the upcoming
       // `cluster.sync()` so that barrier separates it from the write
       // `leader_identify_kth_bucket_from_inclusive` may issue to
       // `state.k`. Unconditional in every block to avoid predication;
       // safe because `process_impl` initializes `state` everywhere.
       const out_offset_t leader_target_k = temp_storage.state.k;
-#endif
+#  endif
 
       cluster.sync();
 
@@ -524,11 +521,11 @@ private:
       // these writes after the next cluster sync.
       if (cluster_rank == 0)
       {
-#ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
+#  ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
         leader_identify_kth_bucket_from_inclusive(pass, leader_target_k);
-#else
+#  else
         leader_identify_kth_bucket(pass);
-#endif
+#  endif
       }
       cluster.sync();
     }
@@ -540,14 +537,14 @@ private:
     if (threadIdx.x == 0)
     {
       temp_storage.broadcast_kth = leader_state->kth_key_bits;
-#ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
+#  ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
       // Piggyback the block-local output-counter init on the broadcast_kth
       // publish: the `__syncthreads()` below already orders these writes
       // against the per-thread `atomicAdd_block` calls in the first phase
       // of the block-aggregated path, so no dedicated init+sync is needed.
       temp_storage.block_out_cnt      = 0;
       temp_storage.block_out_back_cnt = 0;
-#endif
+#  endif
     }
     __syncthreads();
     kth_key_bits_local = temp_storage.broadcast_kth;
@@ -563,7 +560,7 @@ private:
     // identified prefix.
     identify_candidates_op_t identify_op(&kth_key_bits_local, last_pass, total_bits, decomposer_t{});
 
-#ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
+#  ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
     // Block-aggregated variant: each thread first reserves its slot in the
     // block's local counters via cheap `atomicAdd_block`, then thread 0 of
     // every block claims the block's contiguous range in the leader's
@@ -646,7 +643,7 @@ private:
         }
       }
     }
-#else
+#  else
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < items_per_thread; ++j)
     {
@@ -673,7 +670,7 @@ private:
         }
       }
     }
-#endif
+#  endif
 
     // Final cluster barrier: hold every block in the cluster until all DSMEM
     // atomics into the leader's state are complete. Without this, a fast
@@ -687,7 +684,10 @@ private:
   {
     ::cooperative_groups::cluster_group cluster = ::cooperative_groups::this_cluster();
     const unsigned int cluster_rank             = cluster.block_rank();
-    const auto segment_id                       = static_cast<num_segments_val_t>(blockIdx.x / cluster_size);
+    // Runtime cluster width matches the launch attribute the dispatch passed
+    // to `cudaLaunchKernelExC` (or the kernel's `__cluster_dims__` on CDP).
+    const unsigned int cluster_blocks = cluster.num_blocks();
+    const auto segment_id             = static_cast<num_segments_val_t>(blockIdx.x / cluster_blocks);
 
     if (segment_id >= num_segments.get_param(0))
     {
@@ -729,6 +729,7 @@ private:
     _CCCL_ASSERT(ok, "Unsupported select direction for cluster top-k");
     (void) ok;
   }
+#endif // _CG_HAS_CLUSTER_GROUP
 };
 } // namespace detail::batched_topk_cluster
 
