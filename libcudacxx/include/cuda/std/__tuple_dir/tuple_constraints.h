@@ -62,16 +62,17 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class... _Types>
-inline constexpr bool __tuple_all_copy_constructible_v = (is_copy_constructible_v<_Types> && ...);
-
-template <class... _Types>
 inline constexpr bool __tuple_all_nothrow_copy_constructible_v = (is_nothrow_copy_constructible_v<_Types> && ...);
 
 template <class... _Types>
-inline constexpr bool __tuple_all_move_constructible_v = (is_move_constructible_v<_Types> && ...);
-
-template <class... _Types>
 inline constexpr bool __tuple_all_nothrow_move_constructible_v = (is_nothrow_move_constructible_v<_Types> && ...);
+
+template <class, class>
+inline constexpr bool __tuple_all_nothrow_constructible_v = false;
+
+template <class... _Types, class... _UTypes>
+inline constexpr bool __tuple_all_nothrow_constructible_v<__tuple_types<_Types...>, __tuple_types<_UTypes...>> =
+  (is_nothrow_constructible_v<_Types, _UTypes> && ...);
 
 template <class... _Types>
 inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Types> && ...);
@@ -162,6 +163,10 @@ __tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
   }
 }
 
+template <class _TupleTypes>
+inline constexpr __select_constructor __tuple_select_default_constructible_v =
+  ::cuda::std::__tuple_select_default_constructible(_TupleTypes{});
+
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
 __tuple_select_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
@@ -180,6 +185,10 @@ __tuple_select_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
   }
 }
 
+template <class _TupleTypes>
+inline constexpr __select_constructor __tuple_select_variadic_copy_constructible_v =
+  ::cuda::std::__tuple_select_variadic_copy_constructible(_TupleTypes{});
+
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
 __tuple_select_variadic_move_constructible(__tuple_types<_Types...>) noexcept
@@ -197,6 +206,10 @@ __tuple_select_variadic_move_constructible(__tuple_types<_Types...>) noexcept
     return __select_constructor::__explicit_constructible;
   }
 }
+
+template <class _TupleTypes>
+inline constexpr __select_constructor __tuple_select_variadic_move_constructible_v =
+  ::cuda::std::__tuple_select_variadic_move_constructible(_TupleTypes{});
 
 template <class... _Types, class... _UTypes>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
@@ -265,6 +278,10 @@ __tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType
   }
 }
 
+template <class _TupleTypes, class _TupleUTypes>
+inline constexpr __select_constructor __tuple_select_variadic_constructible_v =
+  ::cuda::std::__tuple_select_variadic_constructible(_TupleTypes{}, _TupleUTypes{});
+
 template <class... _Types, class... _UTypes>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
 __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
@@ -293,6 +310,10 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
     }
   }
 }
+
+template <class _TupleTypes, class _TupleUTypes>
+inline constexpr __select_constructor __tuple_select_variadic_constructible_less_rank_v =
+  ::cuda::std::__tuple_select_variadic_constructible_less_rank(_TupleTypes{}, _TupleUTypes{});
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _UTuple, class... _Types, size_t... _Indices>
@@ -346,6 +367,10 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indice
   }
 }
 
+template <class _UTuple, class _TupleTypes, class _TupleIndices>
+inline constexpr __select_constructor __tuple_select_tuple_like_constructible_v =
+  ::cuda::std::__tuple_select_tuple_like_constructible<_UTuple>(_TupleTypes{}, _TupleIndices{});
+
 _CCCL_EXEC_CHECK_DISABLE
 template <class _UTuple, class... _Types, size_t... _Indices>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
@@ -354,6 +379,10 @@ __tuple_nothrow_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indic
   using ::cuda::std::get;
   return (is_nothrow_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
 }
+
+template <class _UTuple, class _TupleTypes, class _TupleIndices>
+inline constexpr bool __tuple_nothrow_tuple_like_constructible_v =
+  ::cuda::std::__tuple_nothrow_tuple_like_constructible<_UTuple>(_TupleTypes{}, _TupleIndices{});
 
 struct _InvalidTupleComparison
 {
