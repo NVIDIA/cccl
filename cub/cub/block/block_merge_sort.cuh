@@ -104,8 +104,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
 //! \param keys2_beg The index into \c keys_shared where the second sequence starts
 //! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
 //! used.
-//! \param keys2_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
-//! used.
+//! \param keys2_count The maximum number of keys to merge from the second sequence. One more item may be read but is
+//! not used.
 //! \param output The output array
 //! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
 template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
