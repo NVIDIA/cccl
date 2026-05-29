@@ -983,6 +983,144 @@ private:
   data_place dplace;
 };
 
+//! \brief Handle to a cudaGraphExec_t produced by stackable_ctx::pop_prologue().
+//!
+//! Returned by stackable_ctx::pop_prologue(), this handle exposes the
+//! executable graph instantiated from the nested context and lets the user
+//! launch it repeatedly before committing the pop via pop_epilogue().
+//!
+//! All public methods assert that the handle is still valid: copying is
+//! allowed but a copy does not prolong validity. Every outstanding handle
+//! (original or copy) becomes invalid the moment pop_epilogue() runs.
+//!
+//! Usage:
+//! \code
+//! stackable_ctx ctx;
+//! ctx.push();
+//! // ... build graph ...
+//! auto h = ctx.pop_prologue();
+//! for (int i = 0; i < N; ++i) h.launch();
+//! ctx.pop_epilogue();
+//! \endcode
+class launchable_graph_handle
+{
+public:
+  launchable_graph_handle() = default;
+
+  //! \brief Underlying executable graph. Aborts if the handle is invalid.
+  //!
+  //! On the first call, lazily instantiates the graph (cache lookup +
+  //! cudaGraphInstantiate if not cached) and orders `stream()` behind the
+  //! nested context's freeze/get events (dep A) so that callers can legally
+  //! drive the graph manually via `cudaGraphLaunch(exec(), stream())`.
+  //! Subsequent calls (and any calls after a prior `launch()`) skip both
+  //! steps.
+  //!
+  //! Note: unlike `graph()`, calling `exec()` *does* force instantiation.
+  //! Callers that only want to embed the graph as a child node in another
+  //! graph should use `graph()` and avoid `exec()` entirely.
+  cudaGraphExec_t exec() const
+  {
+    validate_("exec");
+    auto shared_exec = ctx_.pimpl->prepare_handle_for_exec(node_offset_);
+    _CCCL_ASSERT(shared_exec, "invalid executable graph");
+    return *shared_exec;
+  }
+
+  //! \brief Support stream the graph was prepared against. Aborts if invalid.
+  //!
+  //! Does NOT perform any stream synchronization - it is purely observational.
+  //! If you plan to drive the graph manually, call `exec()` first (it will
+  //! lazily sync), or use `launch()` which does both in one step.
+  cudaStream_t stream() const
+  {
+    validate_("stream");
+    return support_stream_;
+  }
+
+  //! \brief Launch the graph once on the support stream.
+  //!
+  //! On the first call, waits for the nested context's freeze/get events
+  //! (dep A). Subsequent calls skip the sync and issue the launch directly.
+  void launch()
+  {
+    validate_("launch");
+    ctx_.pimpl->launch_prepared_graph(node_offset_, support_stream_);
+  }
+
+  //! \brief Underlying (non-executable) CUDA graph topology.
+  //!
+  //! Returns the finalized `cudaGraph_t` built from the nested context, for
+  //! callers who want to embed it as a child node into another graph via
+  //! `cudaGraphAddChildGraphNode` instead of launching the pre-instantiated
+  //! executable graph returned by `exec()`.
+  //!
+  //! The graph is owned by the stackable_ctx and stays valid only until
+  //! `pop_epilogue()` is called. If you need it to outlive the epilogue,
+  //! clone it with `cudaGraphClone`.
+  //!
+  //! Unlike `exec()`, this accessor does NOT trigger `cudaGraphInstantiate`.
+  //! Callers that only need the graph topology (embedding as a child graph,
+  //! inspecting nodes, etc.) pay no instantiation cost as long as neither
+  //! `exec()` nor `launch()` is ever called on this handle.
+  //!
+  //! On the first call, `graph()` does perform the same lazy dep-A sync as
+  //! `exec()` / `launch()` (it orders `stream()` behind the nested
+  //! context's freeze events). This makes `handle.stream()` a valid event
+  //! source for ordering an outer launch stream: record an event on
+  //! `stream()` and wait on it from your launch stream before launching
+  //! the outer graph that embeds this child.
+  cudaGraph_t graph() const
+  {
+    validate_("graph");
+    ctx_.pimpl->prepare_handle_for_graph(node_offset_);
+    return graph_;
+  }
+
+  //! \brief True iff the owning stackable_ctx has not yet run pop_epilogue().
+  bool valid() const
+  {
+    return !token_.expired();
+  }
+
+private:
+  friend class stackable_ctx;
+
+  void validate_(const char* op) const
+  {
+    if (token_.expired())
+    {
+      fprintf(stderr, "Error: launchable_graph_handle::%s() called after pop_epilogue()\n", op);
+      abort();
+    }
+  }
+
+  // Kept alive by the stackable_ctx::impl while the pop is pending. We hold
+  // a weak_ptr so that pop_epilogue() can invalidate every outstanding
+  // handle simply by dropping its shared_ptr.
+  ::std::weak_ptr<int> token_;
+  // Copy of the ctx - shares its impl via shared_ptr. Keeps impl alive even
+  // if the original stackable_ctx goes out of scope between prologue and
+  // epilogue.
+  stackable_ctx ctx_;
+  int node_offset_             = -1;
+  cudaGraph_t graph_           = nullptr;
+  cudaStream_t support_stream_ = nullptr;
+};
+
+inline launchable_graph_handle stackable_ctx::pop_prologue()
+{
+  auto r = pimpl->pop_prologue_impl();
+
+  launchable_graph_handle h;
+  h.token_          = r.token;
+  h.ctx_            = *this;
+  h.node_offset_    = r.node_offset;
+  h.graph_          = r.graph;
+  h.support_stream_ = r.support_stream;
+  return h;
+}
+
 //! \brief RAII wrapper for automatic push/pop management (lock_guard style)
 //!
 //! This class provides automatic scope management for nested contexts,
@@ -1033,6 +1171,295 @@ private:
 inline stackable_ctx::graph_scope_guard stackable_ctx::graph_scope(const ::cuda::std::source_location& loc)
 {
   return graph_scope_guard(*this, loc);
+}
+
+//! \brief RAII wrapper for a re-launchable pop scope.
+//!
+//! On construction, calls ctx.push() and then ctx.pop_prologue(). The caller
+//! uses launch() as many times as desired; the destructor (or an explicit
+//! release()) runs ctx.pop_epilogue() and makes the handle invalid.
+//!
+//! Usage:
+//! \code
+//! stackable_ctx ctx;
+//! {
+//!   stackable_ctx::launchable_graph_scope scope{ctx};
+//!   // ... build graph contents as if inside ctx.push()/ctx.pop() ...
+//!   for (int i = 0; i < N; ++i) scope.launch();
+//! } // pop_epilogue() runs automatically here
+//! \endcode
+class stackable_ctx::launchable_graph_scope
+{
+public:
+  using context_type = stackable_ctx;
+
+  explicit launchable_graph_scope(stackable_ctx& ctx,
+                                  const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
+      : ctx_(ctx)
+  {
+    ctx_.push(loc);
+    // The graph body is built by the caller after construction. The handle
+    // is populated on release() / destructor by calling pop_prologue() only
+    // once we're ready - but the plan names this class a "scope" in the
+    // same spirit as graph_scope_guard, so we run pop_prologue() lazily on
+    // the first call to launch(). This matches the natural call order
+    // (push -> build -> launch -> pop_epilogue).
+  }
+
+  ~launchable_graph_scope() noexcept
+  {
+    release();
+  }
+
+  launchable_graph_scope(const launchable_graph_scope&)            = delete;
+  launchable_graph_scope& operator=(const launchable_graph_scope&) = delete;
+  launchable_graph_scope(launchable_graph_scope&&)                 = delete;
+  launchable_graph_scope& operator=(launchable_graph_scope&&)      = delete;
+
+  //! \brief Launch the graph once. The first call triggers pop_prologue().
+  void launch()
+  {
+    ensure_prepared_();
+    handle_.launch();
+  }
+
+  //! \brief Expose the executable graph. Triggers pop_prologue() on demand.
+  cudaGraphExec_t exec()
+  {
+    ensure_prepared_();
+    return handle_.exec();
+  }
+
+  //! \brief Expose the support stream. Triggers pop_prologue() on demand.
+  cudaStream_t stream()
+  {
+    ensure_prepared_();
+    return handle_.stream();
+  }
+
+  //! \brief Expose the underlying CUDA graph (for embedding into another
+  //! graph via cudaGraphAddChildGraphNode). Triggers pop_prologue() on
+  //! demand.
+  cudaGraph_t graph()
+  {
+    ensure_prepared_();
+    return handle_.graph();
+  }
+
+  //! \brief Explicitly commit the pop (idempotent).
+  //!
+  //! Runs pop_prologue() (if not already done) and pop_epilogue(). After
+  //! release(), further calls to launch()/exec()/stream()/graph() are invalid.
+  void release() noexcept
+  {
+    if (released_)
+    {
+      return;
+    }
+    released_ = true;
+
+    if (!prepared_)
+    {
+      // No one ever called launch()/exec()/stream()/graph(): we still ran push()
+      // in the constructor, so we must match it with a prologue+epilogue
+      // pair to tear the node down cleanly. finalize_after_launch handles
+      // the no-launch case correctly.
+      handle_   = ctx_.pop_prologue();
+      prepared_ = true;
+    }
+    ctx_.pop_epilogue();
+  }
+
+private:
+  void ensure_prepared_()
+  {
+    if (!prepared_)
+    {
+      handle_   = ctx_.pop_prologue();
+      prepared_ = true;
+    }
+  }
+
+  stackable_ctx& ctx_;
+  launchable_graph_handle handle_;
+  bool prepared_ = false;
+  bool released_ = false;
+};
+
+//! \brief Shared-ownership, storable handle for a re-launchable popped graph.
+//!
+//! Returned by `stackable_ctx::pop_prologue_shared()`. Copies share a single
+//! underlying state; when the last copy is destroyed (or the last copy is
+//! explicitly `reset()`), `pop_epilogue()` runs on the originating context.
+//!
+//! Unlike `launchable_graph_scope`, this type is copyable and movable, so it
+//! can be stored as a data member, placed in containers, or returned from a
+//! factory -- making it a natural fit for a classic "build once, launch many
+//! times, release later" cache.
+//!
+//! Example -- build once, store as a data member, launch repeatedly:
+//! \code
+//! class SimEngine {
+//! public:
+//!   void build(size_t N, double alpha) {
+//!     ctx_.push();
+//!     auto lx = ctx_.logical_data(shape_of<slice<double>>(N));
+//!     ctx_.parallel_for(lx.shape(), lx.write())->*[] __device__(size_t i, auto x) {
+//!       x(i) = 1.0;
+//!     };
+//!     ctx_.parallel_for(lx.shape(), lx.rw())->*[=] __device__(size_t i, auto x) {
+//!       x(i) += alpha;
+//!     };
+//!     step_graph_ = ctx_.pop_prologue_shared();
+//!   }
+//!
+//!   void step() { step_graph_.launch(); }
+//!
+//! private:
+//!   stackable_ctx ctx_;
+//!   stackable_ctx::launchable_graph step_graph_;
+//! };
+//! \endcode
+//!
+//! Example -- cache keyed by shape:
+//! \code
+//! std::unordered_map<size_t, stackable_ctx::launchable_graph> cache;
+//! if (auto it = cache.find(N); it == cache.end()) {
+//!   ctx.push();
+//!   // ... build graph ...
+//!   cache.emplace(N, ctx.pop_prologue_shared());
+//! }
+//! cache[N].launch();
+//! \endcode
+//!
+//! Example -- embed into a larger graph instead of launching:
+//! \code
+//! auto sub = ctx.pop_prologue_shared();
+//! cudaGraph_t outer = nullptr;
+//! cudaGraphCreate(&outer, 0);
+//! cudaGraphNode_t child{};
+//! // graph() does NOT instantiate; sub.stream() is a valid event source.
+//! cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, sub.graph());
+//! \endcode
+class stackable_ctx::launchable_graph
+{
+public:
+  launchable_graph()                                       = default;
+  launchable_graph(const launchable_graph&)                = default;
+  launchable_graph(launchable_graph&&) noexcept            = default;
+  launchable_graph& operator=(const launchable_graph&)     = default;
+  launchable_graph& operator=(launchable_graph&&) noexcept = default;
+  ~launchable_graph()                                      = default;
+
+  //! \brief Launch the graph once on its support stream.
+  void launch()
+  {
+    check_("launch");
+    state_->handle.launch();
+  }
+
+  //! \brief Underlying executable graph. Triggers lazy instantiation + dep-A
+  //! sync on the first call (same contract as `launchable_graph_handle::exec()`).
+  cudaGraphExec_t exec() const
+  {
+    check_("exec");
+    return state_->handle.exec();
+  }
+
+  //! \brief Support stream the graph was prepared against. Purely observational.
+  cudaStream_t stream() const
+  {
+    check_("stream");
+    return state_->handle.stream();
+  }
+
+  //! \brief Underlying cudaGraph_t topology (for embedding as a child graph).
+  //! Triggers lazy dep-A sync but does NOT call `cudaGraphInstantiate`.
+  cudaGraph_t graph() const
+  {
+    check_("graph");
+    return state_->handle.graph();
+  }
+
+  //! \brief True iff this copy still holds a shared reference and the
+  //! underlying pop has not been epiloged (e.g. manually via
+  //! `ctx.pop_epilogue()`).
+  bool valid() const noexcept
+  {
+    return state_ && state_->handle.valid();
+  }
+
+  explicit operator bool() const noexcept
+  {
+    return valid();
+  }
+
+  //! \brief Number of live shared copies referring to the same graph. Debug
+  //! introspection only. Returns 0 for a default-constructed / moved-from
+  //! instance.
+  long use_count() const noexcept
+  {
+    return state_ ? state_.use_count() : 0;
+  }
+
+  //! \brief Drop this shared reference eagerly. When this was the last copy,
+  //! `pop_epilogue()` runs now instead of at destruction time. Idempotent.
+  void reset() noexcept
+  {
+    state_.reset();
+  }
+
+private:
+  friend class stackable_ctx;
+
+  struct state
+  {
+    // Keep the ctx impl alive regardless of the originating stackable_ctx's
+    // lifetime - a shared launchable_graph copy can outlive the variable that
+    // created it.
+    stackable_ctx ctx;
+    launchable_graph_handle handle;
+
+    state(stackable_ctx c, launchable_graph_handle h)
+        : ctx(mv(c))
+        , handle(mv(h))
+    {}
+
+    ~state()
+    {
+      // Guard against users who manually called pop_epilogue() on the ctx
+      // while shared copies were still alive: the handle's token is expired
+      // and pop_epilogue has already run, so we must not call it again.
+      if (handle.valid())
+      {
+        ctx.pop_epilogue();
+      }
+    }
+
+    state(const state&)            = delete;
+    state& operator=(const state&) = delete;
+  };
+
+  void check_(const char* op) const
+  {
+    if (!state_)
+    {
+      fprintf(stderr, "Error: launchable_graph::%s() called on an empty handle\n", op);
+      abort();
+    }
+  }
+
+  ::std::shared_ptr<state> state_;
+};
+
+inline stackable_ctx::launchable_graph stackable_ctx::pop_prologue_shared()
+{
+  // pop_prologue() already performs the validity / state checks.
+  auto handle = pop_prologue();
+
+  launchable_graph g;
+  g.state_ = ::std::make_shared<launchable_graph::state>(*this, mv(handle));
+  return g;
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -1453,6 +1880,473 @@ UNITTEST("stackable task with set_symbol and set_exec_place")
   };
   ctx.finalize();
 };
+
+inline void test_pop_prologue_repeated_launch()
+{
+  constexpr int N = 16;
+
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  auto handle = ctx.pop_prologue();
+
+  // prepare_launch() instantiates the graph but does NOT launch it, so the
+  // graph actually runs exactly N times (once per handle.launch()).
+  for (int k = 0; k < N; ++k)
+  {
+    handle.launch();
+  }
+
+  ctx.pop_epilogue();
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == N, "pop_prologue: relaunched graph did not accumulate correctly");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue + repeated launch accumulates N times")
+{
+  test_pop_prologue_repeated_launch();
+};
+
+inline void test_pop_prologue_manual_exec_launch()
+{
+  // Same setup as test_pop_prologue_repeated_launch, but drive the graph
+  // manually via cudaGraphLaunch(handle.exec(), handle.stream()) as the
+  // *first* launch. exec() is responsible for lazily performing the
+  // prereq sync; stream() is purely observational.
+  constexpr int N = 8;
+
+  stackable_ctx ctx;
+
+  int array[512];
+  for (size_t i = 0; i < 512; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  auto handle = ctx.pop_prologue();
+
+  // Manual launches only: never call handle.launch(). exec() must be the
+  // one to lazily sync the support stream behind the freeze events.
+  cudaGraphExec_t ex = handle.exec();
+  cudaStream_t s     = handle.stream();
+  for (int k = 0; k < N; ++k)
+  {
+    cuda_safe_call(cudaGraphLaunch(ex, s));
+  }
+
+  ctx.pop_epilogue();
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == N, "pop_prologue: manual cudaGraphLaunch did not accumulate correctly");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue + manual cudaGraphLaunch via exec()/stream()")
+{
+  test_pop_prologue_manual_exec_launch();
+};
+
+inline void test_pop_prologue_zero_launches()
+{
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 7;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  // Prologue then epilogue without a single launch() call: the graph is
+  // instantiated, prereqs are synced, resources are released, and data is
+  // unfrozen. Device memory is unchanged since no launch ran.
+  auto handle = ctx.pop_prologue();
+  (void) handle;
+  ctx.pop_epilogue();
+
+  // After pop_epilogue the context is usable again for the next pop.
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 100;
+  };
+  ctx.pop();
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == 107, "post-epilogue ctx is not reusable");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue + pop_epilogue with zero launches")
+{
+  test_pop_prologue_zero_launches();
+};
+
+inline void test_pop_prologue_handle_invalidation()
+{
+  stackable_ctx ctx;
+
+  int array[4];
+  for (size_t i = 0; i < 4; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  auto handle = ctx.pop_prologue();
+  _CCCL_ASSERT(handle.valid(), "handle must be valid between prologue and epilogue");
+  handle.launch();
+  _CCCL_ASSERT(handle.valid(), "handle must still be valid after launch");
+  ctx.pop_epilogue();
+  _CCCL_ASSERT(!handle.valid(), "handle must be invalidated by pop_epilogue");
+
+  // Copy of the handle must share the same weak_ptr and therefore the same
+  // invalidation.
+  auto copy = handle;
+  _CCCL_ASSERT(!copy.valid(), "copied handle must also be invalid after pop_epilogue");
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue invalidates handle after pop_epilogue")
+{
+  test_pop_prologue_handle_invalidation();
+};
+
+inline void test_launchable_graph_scope_raii()
+{
+  constexpr int N = 5;
+
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  {
+    stackable_ctx::launchable_graph_scope scope{ctx};
+    lA.push(access_mode::rw, data_place::current_device());
+    ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+      a(i) += 2;
+    };
+
+    for (int k = 0; k < N; ++k)
+    {
+      scope.launch();
+    }
+    // pop_epilogue() runs here via the destructor
+  }
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == 2 * N, "launchable_graph_scope: relaunched graph did not accumulate correctly");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("launchable_graph_scope RAII")
+{
+  test_launchable_graph_scope_raii();
+};
+
+inline void test_pop_prologue_shared_basic()
+{
+  constexpr int N = 5;
+
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  {
+    auto g = ctx.pop_prologue_shared();
+    _CCCL_ASSERT(g.valid(), "fresh launchable_graph must be valid");
+    _CCCL_ASSERT(g.use_count() == 1, "single owner at creation");
+    for (int k = 0; k < N; ++k)
+    {
+      g.launch();
+    }
+    // g goes out of scope here -> pop_epilogue runs
+  }
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == N, "pop_prologue_shared: relaunched graph did not accumulate correctly");
+    }
+  };
+
+  // The ctx must be usable again after the shared owner released it.
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 7;
+  };
+  ctx.pop();
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == N + 7, "stackable_ctx must be reusable after shared launchable_graph released");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue_shared last copy triggers pop_epilogue")
+{
+  test_pop_prologue_shared_basic();
+};
+
+inline void test_pop_prologue_shared_copies()
+{
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  auto g1 = ctx.pop_prologue_shared();
+  auto g2 = g1; // shared copy
+  _CCCL_ASSERT(g1.use_count() == 2, "two shared owners");
+  _CCCL_ASSERT(g2.valid(), "copy must be valid");
+
+  g1.launch();
+  g2.launch();
+
+  // Drop one copy; the other must still drive the graph.
+  g1.reset();
+  _CCCL_ASSERT(!g1.valid(), "reset copy becomes invalid");
+  _CCCL_ASSERT(g2.valid(), "surviving copy remains valid");
+  _CCCL_ASSERT(g2.use_count() == 1, "use_count drops to one after reset");
+  g2.launch();
+
+  // Final reset fires pop_epilogue exactly once.
+  g2.reset();
+  _CCCL_ASSERT(!g2.valid(), "last copy is invalid after reset");
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == 3, "pop_prologue_shared: expected 3 accumulations (2 before reset + 1 after)");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue_shared multiple copies share a single graph")
+{
+  test_pop_prologue_shared_copies();
+};
+
+inline void test_pop_prologue_shared_stored_in_container()
+{
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  // Build a graph inside a helper lambda and stash the resulting shared
+  // handle in a std::vector that outlives the lambda scope - simulates the
+  // "factory returns a shared graph to caller" pattern.
+  ::std::vector<stackable_ctx::launchable_graph> cache;
+  auto build_one = [&] {
+    ctx.push();
+    lA.push(access_mode::rw, data_place::current_device());
+    ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+      a(i) += 1;
+    };
+    cache.push_back(ctx.pop_prologue_shared());
+  };
+  build_one();
+  _CCCL_ASSERT(!cache.empty() && cache.front().valid(), "stored handle must remain valid after helper returns");
+
+  for (int k = 0; k < 4; ++k)
+  {
+    cache.front().launch();
+  }
+
+  // Tear down via container clear; this drops the last shared copy and runs
+  // pop_epilogue.
+  cache.clear();
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == 4, "pop_prologue_shared: container-stored graph did not accumulate 4 launches");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue_shared storable across scopes / in containers")
+{
+  test_pop_prologue_shared_stored_in_container();
+};
+
+inline void test_pop_prologue_shared_manual_epilogue()
+{
+  // If the user manually calls ctx.pop_epilogue() after creating shared
+  // copies, outstanding copies must become invalid and the shared state
+  // destructor must skip the (already done) epilogue.
+  stackable_ctx ctx;
+
+  int array[4];
+  for (size_t i = 0; i < 4; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  auto g1 = ctx.pop_prologue_shared();
+  auto g2 = g1;
+  g1.launch();
+
+  ctx.pop_epilogue();
+  _CCCL_ASSERT(!g1.valid(), "shared copy must observe manual pop_epilogue");
+  _CCCL_ASSERT(!g2.valid(), "second shared copy must observe manual pop_epilogue");
+  // Letting g1, g2 fall out of scope must not double-epilogue.
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue_shared tolerates manual pop_epilogue")
+{
+  test_pop_prologue_shared_manual_epilogue();
+};
+
+#    if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION)
+inline void test_pop_prologue_with_while_graph_scope()
+{
+  constexpr int N              = 3; // re-launch the whole while-graph 3 times
+  constexpr size_t inner_iters = 4; // each launch runs the body 4 times
+
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  {
+    auto rg = ctx.repeat_graph_scope(inner_iters);
+    ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+      a(i) += 1;
+    };
+  }
+
+  auto handle = ctx.pop_prologue();
+  for (int k = 0; k < N; ++k)
+  {
+    handle.launch();
+  }
+  ctx.pop_epilogue();
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == int(N * inner_iters),
+                   "pop_prologue + while-loop: re-launched graph body did not run the expected number of times");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue with while_graph_scope re-launched multiple times")
+{
+  test_pop_prologue_with_while_graph_scope();
+};
+#    endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION)
 
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE

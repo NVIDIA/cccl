@@ -44,6 +44,10 @@ namespace cuda::experimental::stf
 template <typename T>
 class stackable_logical_data;
 
+// Forward declaration - defined in stackable_ctx.cuh so that it can be used
+// as the return type of stackable_ctx::pop_prologue().
+class launchable_graph_handle;
+
 //! \brief Base class with a virtual pop method to enable type erasure
 //!
 //! This is used to implement the automatic call to pop() on logical data when
@@ -558,69 +562,167 @@ public:
         // Use finalize_as_graph pattern for explicit graph management
         _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
 
-        ctx.to_graph_ctx().finalize_as_graph();
-
-        auto& parent_ctx = parent_ctx_node->ctx;
-
         // This was either a new graph (with a stream_ctx parent) or a nested
         // graph ctx node. If this was a nested context, we do not need to
         // instantiate and launch, but we need to enforce dependencies by
         // adding input deps
         if (nested_graph)
         {
-          cudaGraph_t support_graph = parent_ctx.graph();
-          size_t graph_stage        = parent_ctx.stage();
-
-          // Transfer resources from nested context to parent context
-          // This works because the completion of the parent context depends on the completion of the nested context
-          parent_ctx.import_resources_from(ctx);
-
-          // Add dependencies from the get operations to the graph node that
-          // corresponds to the child graph or conditional node
-          ::std::vector<cudaGraphNode_t> ctx_ready_nodes =
-            reserved::join_with_graph_nodes(parent_ctx.get_backend(), ctx_prereqs, graph_stage);
-          if (!ctx_ready_nodes.empty())
-          {
-            // Create a vector of input_node repeated for each dependency
-            ::std::vector<cudaGraphNode_t> to_nodes(ctx_ready_nodes.size(), input_node);
-#if _CCCL_CTK_AT_LEAST(13, 0)
-            cuda_safe_call(cudaGraphAddDependencies(
-              support_graph, ctx_ready_nodes.data(), to_nodes.data(), nullptr, ctx_ready_nodes.size()));
-#else // _CCCL_CTK_AT_LEAST(13, 0)
-            cuda_safe_call(
-              cudaGraphAddDependencies(support_graph, ctx_ready_nodes.data(), to_nodes.data(), ctx_ready_nodes.size()));
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
-          }
-
-          auto output_node_event = reserved::graph_event(output_node, graph_stage, support_graph);
-
-          return event_list(mv(output_node_event));
+          return finalize_nested();
         }
 
-        // Debug: Print DOT output of the finalized graph
-        static const bool debug_stackable_dot = (getenv("CUDASTF_DEBUG_STACKABLE_DOT") != nullptr);
-        if (debug_stackable_dot)
+        // Non-nested path: split into the four phases so that
+        // stackable_ctx::pop_prologue / pop_epilogue can drive them
+        // independently. The regular single-shot pop() keeps using this
+        // sequence verbatim.
+        prepare_graph();
+        ensure_instantiated();
+        launch_once(support_stream);
+        return finalize_after_launch();
+      }
+
+      // Phase 1: close the capture / finalize the nested graph. After this
+      // call, `graph` is a valid, finalized `cudaGraph_t` that can be
+      // consumed either for child-graph embedding (via handle::graph()) or
+      // for instantiation into an exec graph (via ensure_instantiated()).
+      // Cheap: no cudaGraphInstantiate is performed here.
+      void prepare_graph()
+      {
+        _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
+        _CCCL_ASSERT(!nested_graph, "prepare_graph requires a top-level graph context");
+        _CCCL_ASSERT(!graph_prepared_, "prepare_graph called twice on the same node");
+
+        ctx.to_graph_ctx().finalize_as_graph();
+        graph_prepared_ = true;
+
+        // Honour CUDASTF_DUMP_GRAPHS (same env var as graph_ctx::instantiate)
+        // and the stackable-specific CUDASTF_DEBUG_STACKABLE_DOT. Done here
+        // (not in ensure_instantiated) so the dump reflects the topology
+        // even for callers that only consume graph() and never instantiate.
+        static const bool dump_graphs =
+          (getenv("CUDASTF_DUMP_GRAPHS") != nullptr) || (getenv("CUDASTF_DEBUG_STACKABLE_DOT") != nullptr);
+        if (dump_graphs)
         {
           static ::std::atomic<int> debug_graph_cnt{0};
-          ::std::string filename = "stackable_graph_" + ::std::to_string(debug_graph_cnt++) + ".dot";
+          ::std::string filename = "instantiated_graph" + ::std::to_string(debug_graph_cnt++) + ".dot";
           cuda_safe_call(cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
           ::std::cout << "Debug: Stackable graph DOT output written to " << filename << '\n';
         }
+      }
 
-        auto [exec_graph, _] = ctx.async_resources().cached_graphs_query(graph);
+      // Phase 2: cache query + instantiation + stats. After this call,
+      // `exec_graph_` holds the executable graph that `launch_once` will
+      // dispatch. Idempotent: subsequent calls are no-ops.
+      //
+      // Only triggered by callers that actually need an exec graph
+      // (handle::launch() or handle::exec()). Callers that only consume
+      // graph() (e.g. embedding as a child-graph node) never pay this cost.
+      void ensure_instantiated()
+      {
+        _CCCL_ASSERT(graph_prepared_, "ensure_instantiated called before prepare_graph");
 
-        // Make sure we launch after the "get" operations are done
-        ctx_prereqs.sync_with_stream(ctx.get_backend(), support_stream);
+        if (exec_graph_)
+        {
+          return;
+        }
 
-        // Launch the graph
-        cuda_safe_call(cudaGraphLaunch(*exec_graph, support_stream));
+        size_t nnodes;
+        size_t nedges;
+        cuda_safe_call(cudaGraphGetNodes(graph, nullptr, &nnodes));
+#if _CCCL_CTK_AT_LEAST(13, 0)
+        cuda_safe_call(cudaGraphGetEdges(graph, nullptr, nullptr, nullptr, &nedges));
+#else
+        cuda_safe_call(cudaGraphGetEdges(graph, nullptr, nullptr, &nedges));
+#endif
+
+        auto [cached_exec, cache_hit] = ctx.async_resources().cached_graphs_query(nnodes, nedges, graph);
+        exec_graph_                   = mv(cached_exec);
+
+        auto* cache_stat = ctx.graph_get_cache_stat();
+        if (cache_stat)
+        {
+          cache_stat->nnodes = nnodes;
+          cache_stat->nedges = nedges;
+          if (cache_hit)
+          {
+            cache_stat->update_cnt++;
+          }
+          else
+          {
+            cache_stat->instantiate_cnt++;
+          }
+        }
+      }
+
+      // Idempotently order `support_stream` behind the prereq events that
+      // were recorded in the parent context (the "Dep A" sync). Called
+      // lazily by the first of {launch_once, handle::exec(),
+      // finalize_after_launch}; subsequent calls are no-ops.
+      //
+      // Note: only `support_stream` is ever synced here. If a user wants to
+      // drive the exec graph on a *different* stream, they must order that
+      // stream themselves (the public API does not expose the prereq events).
+      void ensure_prereqs_synced()
+      {
+        _CCCL_ASSERT(graph_prepared_, "ensure_prereqs_synced called before prepare_graph");
+        if (!synced_)
+        {
+          ctx_prereqs.sync_with_stream(ctx.get_backend(), support_stream);
+          synced_ = true;
+        }
+      }
+
+      // Launch the executable graph on `stream`. On the first call we
+      // sync `ctx_prereqs` into the target stream so the launch waits for
+      // the freeze/get operations in the parent context (dep A).
+      void launch_once(cudaStream_t stream)
+      {
+        _CCCL_ASSERT(exec_graph_, "launch_once called before ensure_instantiated");
+
+        if (!synced_)
+        {
+          ctx_prereqs.sync_with_stream(ctx.get_backend(), stream);
+          synced_ = true;
+        }
+
+        cuda_safe_call(cudaGraphLaunch(*exec_graph_, stream));
+        launched_ = true;
+      }
+
+      // Release resources and build the finalize_prereqs event list that the
+      // parent context uses to unfreeze data in pop_after_finalize.
+      event_list finalize_after_launch()
+      {
+        _CCCL_ASSERT(!nested_graph, "finalize_after_launch requires a top-level graph context");
+        _CCCL_ASSERT(graph_prepared_, "finalize_after_launch called before prepare_graph");
+
+        // Belt-and-suspenders: only meaningful in the zero-launch path.
+        //
+        // If launch() or exec() ran at least once, `synced_` is already true
+        // and this is a no-op. If neither ran (pop_prologue immediately
+        // followed by pop_epilogue with no handle use), `support_stream` has
+        // not been ordered behind the parent context's freeze events yet, so
+        // we must sync here before release_resources(support_stream) runs
+        // the unfreeze / finalize work on it. Otherwise the unfreeze would
+        // race with the frozen-get events from the parent.
+        ensure_prereqs_synced();
 
         // Release context resources after graph execution
         ctx.release_resources(support_stream);
 
         // Create an event that depends on the completion of previous operations in the stream
-        event_list finalize_prereqs = parent_ctx.stream_to_event_list(support_stream, "finalized");
-        return finalize_prereqs;
+        auto& parent_ctx = parent_ctx_node->ctx;
+        return parent_ctx.stream_to_event_list(support_stream, "finalized");
+      }
+
+      bool is_nested() const
+      {
+        return nested_graph;
+      }
+
+      const ::std::shared_ptr<cudaGraphExec_t>& exec_graph_shared() const
+      {
+        return exec_graph_;
       }
 
       cudaGraph_t get_graph() const override
@@ -629,12 +731,91 @@ public:
       }
 
     private:
+      // Nested graph finalization path - kept separate from the split
+      // prologue/launch/epilogue helpers to keep the non-nested path clean.
+      event_list finalize_nested()
+      {
+        ctx.to_graph_ctx().finalize_as_graph();
+
+        auto& parent_ctx = parent_ctx_node->ctx;
+
+        // Record body graph complexity for stats (nested graphs are not
+        // independently cached, so instantiate/update counts stay at 0).
+        cudaGraph_t body = ctx.to_graph_ctx().get_graph();
+
+        auto* cache_stat = ctx.graph_get_cache_stat();
+        if (cache_stat)
+        {
+          cuda_safe_call(cudaGraphGetNodes(body, nullptr, &cache_stat->nnodes));
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphGetEdges(body, nullptr, nullptr, nullptr, &cache_stat->nedges));
+#else
+          cuda_safe_call(cudaGraphGetEdges(body, nullptr, nullptr, &cache_stat->nedges));
+#endif
+        }
+
+        static const bool dump_nested =
+          (getenv("CUDASTF_DUMP_GRAPHS") != nullptr) || (getenv("CUDASTF_DEBUG_STACKABLE_DOT") != nullptr);
+        if (dump_nested)
+        {
+          static ::std::atomic<int> nested_cnt{0};
+          ::std::string filename = "nested_graph" + ::std::to_string(nested_cnt++) + ".dot";
+          cuda_safe_call(cudaGraphDebugDotPrint(body, filename.c_str(), cudaGraphDebugDotFlags(0)));
+        }
+
+        cudaGraph_t support_graph = parent_ctx.graph();
+        size_t graph_stage        = parent_ctx.stage();
+
+        // Transfer resources from nested context to parent context
+        // This works because the completion of the parent context depends on the completion of the nested context
+        parent_ctx.import_resources_from(ctx);
+
+        // Add dependencies from the get operations to the graph node that
+        // corresponds to the child graph or conditional node
+        ::std::vector<cudaGraphNode_t> ctx_ready_nodes =
+          reserved::join_with_graph_nodes(parent_ctx.get_backend(), ctx_prereqs, graph_stage);
+        if (!ctx_ready_nodes.empty())
+        {
+          // Create a vector of input_node repeated for each dependency
+          ::std::vector<cudaGraphNode_t> to_nodes(ctx_ready_nodes.size(), input_node);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphAddDependencies(
+            support_graph, ctx_ready_nodes.data(), to_nodes.data(), nullptr, ctx_ready_nodes.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(
+            cudaGraphAddDependencies(support_graph, ctx_ready_nodes.data(), to_nodes.data(), ctx_ready_nodes.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+        }
+
+        auto output_node_event = reserved::graph_event(output_node, graph_stage, support_graph);
+
+        return event_list(mv(output_node_event));
+      }
+
       cudaGraph_t graph = nullptr; // Graph containing conditional node (if conditional) or the entire graph otherwise
       bool nested_graph = false;
       // If we have a nested graph input and output node correspond to the nodes on which to enforce input or output
       // deps (they can be the same)
       cudaGraphNode_t input_node  = nullptr;
       cudaGraphNode_t output_node = nullptr;
+
+      // Non-nested-only: executable graph populated by ensure_instantiated()
+      // (called lazily from launch_once / handle::exec) and dispatched by
+      // launch_once(). Shared with the graph cache.
+      ::std::shared_ptr<cudaGraphExec_t> exec_graph_;
+
+      // Tracks whether the underlying cudaGraph_t has been finalized (phase
+      // 1 of the split pop): required before ensure_instantiated(),
+      // ensure_prereqs_synced(), or launch_once() can run.
+      bool graph_prepared_ = false;
+
+      // Tracks whether ctx_prereqs has been injected into a launch stream
+      // (dep A): guarantees we only sync once across many launches, and
+      // that finalize_after_launch can sync even if no launch happened.
+      bool synced_ = false;
+
+      // Tracks whether at least one cudaGraphLaunch has been issued.
+      bool launched_ = false;
     };
 
     // Grow the sparse context node vector to accommodate at least target_size entries.
@@ -704,6 +885,16 @@ public:
               [[maybe_unused]] const push_while_config& config = push_while_config{})
     {
       auto lock = acquire_exclusive_lock();
+
+      // Forbid push() while a pop_prologue is still waiting for its
+      // matching pop_epilogue - the head offset is in an "in flight" state
+      // and mutating the stack would leave launchable_graph_handles
+      // pointing at the wrong node.
+      if (!is_root && pending_epilogue_token_)
+      {
+        fprintf(stderr, "Error: push() cannot be called between pop_prologue() and pop_epilogue()\n");
+        abort();
+      }
 
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
@@ -905,6 +1096,14 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
+      if (pending_epilogue_token_)
+      {
+        fprintf(stderr,
+                "Error: pop() cannot be called between pop_prologue() and pop_epilogue(); "
+                "call pop_epilogue() to finish the re-launchable pop\n");
+        abort();
+      }
+
       _pop_prologue();
 
       // Polymorphic finalization - no conditionals needed!
@@ -916,6 +1115,197 @@ public:
 
       // Release all resources acquired for the push now that we have executed the graph
       _pop_epilogue(finalize_prereqs);
+    }
+
+    // Result of pop_prologue_impl() used by stackable_ctx::pop_prologue() to
+    // build a launchable_graph_handle.
+    struct pop_prologue_result
+    {
+      ::std::shared_ptr<int> token;
+      cudaGraph_t graph;
+      cudaStream_t support_stream;
+      int node_offset;
+    };
+
+    /**
+     * @brief First phase of a two-phase pop: runs _pop_prologue() and
+     * prepare_launch() so the caller can obtain the cudaGraphExec_t and
+     * launch it one or more times before calling pop_epilogue_impl().
+     *
+     * Only legal on a non-nested graph_ctx_node (top-level graph whose
+     * parent is the stream_ctx root).
+     */
+    pop_prologue_result pop_prologue_impl()
+    {
+      auto lock = acquire_exclusive_lock();
+
+      if (pending_epilogue_token_)
+      {
+        fprintf(stderr,
+                "Error: pop_prologue() called while a previous pop_prologue() is still pending pop_epilogue()\n");
+        abort();
+      }
+
+      int head_offset         = get_head_offset();
+      auto& current_node_base = *nodes[head_offset];
+      auto* gnode             = dynamic_cast<graph_ctx_node*>(&current_node_base);
+      if (gnode == nullptr)
+      {
+        fprintf(stderr, "Error: pop_prologue() requires a graph context (not the stream_ctx root)\n");
+        abort();
+      }
+      if (gnode->is_nested())
+      {
+        fprintf(stderr,
+                "Error: pop_prologue() requires a top-level graph context; "
+                "use pop() for nested pushes\n");
+        abort();
+      }
+
+      _pop_prologue();
+      // Phase 1 only: finalize the cudaGraph_t. Instantiation into an exec
+      // graph is deferred until handle::launch() or handle::exec() is
+      // called, so callers that only consume handle::graph() (e.g. to
+      // embed as a child graph) avoid the instantiation cost.
+      gnode->prepare_graph();
+
+      pending_epilogue_token_       = ::std::make_shared<int>(0);
+      pending_epilogue_node_offset_ = head_offset;
+
+      return pop_prologue_result{pending_epilogue_token_, gnode->get_graph(), gnode->support_stream, head_offset};
+    }
+
+    /**
+     * @brief Second phase of a two-phase pop: finalises resources and runs
+     * _pop_epilogue() to actually destroy the node. Invalidates every
+     * launchable_graph_handle that was produced by the matching
+     * pop_prologue().
+     */
+    void pop_epilogue_impl()
+    {
+      auto lock = acquire_exclusive_lock();
+
+      if (!pending_epilogue_token_)
+      {
+        fprintf(stderr, "Error: pop_epilogue() called without a matching pop_prologue()\n");
+        abort();
+      }
+
+      int node_offset = pending_epilogue_node_offset_;
+      _CCCL_ASSERT(node_offset != -1, "internal error: pending epilogue but no node offset");
+
+      auto* gnode = dynamic_cast<graph_ctx_node*>(nodes[node_offset].get());
+      _CCCL_ASSERT(gnode != nullptr, "internal error: pending epilogue node is not a graph ctx node");
+
+      event_list finalize_prereqs = gnode->finalize_after_launch();
+
+      // Head must still be the prepared node for _pop_epilogue to find the
+      // right children / parent.
+      _CCCL_ASSERT(get_head_offset() == node_offset, "pop_epilogue called from wrong thread or head was changed");
+
+      _pop_epilogue(finalize_prereqs);
+
+      // Drop the shared token - every outstanding launchable_graph_handle
+      // holds only a weak_ptr, so this invalidates them atomically.
+      pending_epilogue_token_.reset();
+      pending_epilogue_node_offset_ = -1;
+    }
+
+    /**
+     * @brief Dispatch one launch of the executable graph prepared by
+     * pop_prologue_impl(). Called from launchable_graph_handle::launch().
+     *
+     * Triggers cache lookup + instantiation on first call (idempotent
+     * afterwards). The prereq sync into `stream` is performed by
+     * `launch_once` on its first invocation.
+     */
+    void launch_prepared_graph(int node_offset, cudaStream_t stream)
+    {
+      auto lock = acquire_exclusive_lock();
+
+      if (!pending_epilogue_token_)
+      {
+        fprintf(stderr, "Error: launchable_graph_handle::launch() called after pop_epilogue()\n");
+        abort();
+      }
+      if (node_offset != pending_epilogue_node_offset_)
+      {
+        fprintf(stderr, "Error: launchable_graph_handle::launch() called on a stale handle\n");
+        abort();
+      }
+
+      auto* gnode = dynamic_cast<graph_ctx_node*>(nodes[node_offset].get());
+      _CCCL_ASSERT(gnode != nullptr, "internal error: launch target is not a graph ctx node");
+
+      gnode->ensure_instantiated();
+      gnode->launch_once(stream);
+    }
+
+    /**
+     * @brief Lazily instantiate the graph (cache query + cudaGraphInstantiate
+     * if not cached) and sync the support_stream behind the parent's freeze
+     * events, then return the shared executable graph. Called from
+     * `launchable_graph_handle::exec()`.
+     *
+     * Idempotent: subsequent calls skip both steps. The returned shared_ptr
+     * stays valid until `pop_epilogue()`.
+     */
+    ::std::shared_ptr<cudaGraphExec_t> prepare_handle_for_exec(int node_offset)
+    {
+      auto lock = acquire_exclusive_lock();
+
+      if (!pending_epilogue_token_)
+      {
+        fprintf(stderr, "Error: launchable_graph_handle::exec() called after pop_epilogue()\n");
+        abort();
+      }
+      if (node_offset != pending_epilogue_node_offset_)
+      {
+        fprintf(stderr, "Error: launchable_graph_handle::exec() called on a stale handle\n");
+        abort();
+      }
+
+      auto* gnode = dynamic_cast<graph_ctx_node*>(nodes[node_offset].get());
+      _CCCL_ASSERT(gnode != nullptr, "internal error: exec target is not a graph ctx node");
+
+      gnode->ensure_instantiated();
+      gnode->ensure_prereqs_synced();
+      return gnode->exec_graph_shared();
+    }
+
+    /**
+     * @brief Lazily sync the support stream behind the parent's freeze
+     * events without instantiating the exec graph. Called from
+     * `launchable_graph_handle::graph()` so that a caller embedding the
+     * nested graph as a child node can treat `handle.stream()` as a ready
+     * event source for dep-A ordering.
+     *
+     * Idempotent. Does NOT trigger `cudaGraphInstantiate`.
+     */
+    void prepare_handle_for_graph(int node_offset)
+    {
+      auto lock = acquire_exclusive_lock();
+
+      if (!pending_epilogue_token_)
+      {
+        fprintf(stderr, "Error: launchable_graph_handle::graph() called after pop_epilogue()\n");
+        abort();
+      }
+      if (node_offset != pending_epilogue_node_offset_)
+      {
+        fprintf(stderr, "Error: launchable_graph_handle::graph() called on a stale handle\n");
+        abort();
+      }
+
+      auto* gnode = dynamic_cast<graph_ctx_node*>(nodes[node_offset].get());
+      _CCCL_ASSERT(gnode != nullptr, "internal error: graph target is not a graph ctx node");
+
+      gnode->ensure_prereqs_synced();
+    }
+
+    bool has_pending_epilogue() const
+    {
+      return static_cast<bool>(pending_epilogue_token_);
     }
 
     // Offset of the root context
@@ -1054,6 +1444,13 @@ public:
 
     int root_offset = -1;
 
+    // When non-null, a pop_prologue() is in flight and the matching node is
+    // at `pending_epilogue_node_offset_`. Every launchable_graph_handle
+    // holds a weak_ptr to this token; reset by pop_epilogue() to invalidate
+    // all outstanding handles at once.
+    ::std::shared_ptr<int> pending_epilogue_token_;
+    int pending_epilogue_node_offset_ = -1;
+
     ::std::unordered_map<::std::thread::id, int> head_map;
 
     // Handles to retain some asynchronous states. This saves previously
@@ -1171,14 +1568,53 @@ public:
     pimpl->pop();
   }
 
+  //! \brief First phase of a re-launchable pop.
+  //!
+  //! Runs the same prologue as pop() and instantiates (or reuses from cache)
+  //! the underlying cudaGraphExec_t, but does NOT launch the graph and does
+  //! NOT release resources. Returns a launchable_graph_handle the caller can
+  //! use to launch the graph one or more times. pop_epilogue() must be called
+  //! exactly once afterwards to release resources and destroy the node.
+  //!
+  //! Only legal when the head context is a top-level graph (parent is the
+  //! stream_ctx root). Aborts otherwise.
+  //!
+  //! Defined out-of-line in stackable_ctx.cuh since the return type
+  //! (launchable_graph_handle) is only declared there.
+  inline launchable_graph_handle pop_prologue();
+
+  //! \brief Second phase of a re-launchable pop.
+  //!
+  //! Releases resources, unfreezes any data that was pushed into the nested
+  //! context, and destroys the node. Invalidates every launchable_graph_handle
+  //! that was produced by the matching pop_prologue().
+  void pop_epilogue()
+  {
+    pimpl->pop_epilogue_impl();
+  }
+
   // RAII guard classes are defined as standalone types after the stackable_ctx
   // class (in stackable_ctx.cuh) so that the class body stays focused on core
   // logic.  The using-declarations below preserve the stackable_ctx::guard
   // nested-name syntax for backward compatibility.
   class graph_scope_guard;
+  class launchable_graph_scope;
+  class launchable_graph;
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   class while_graph_scope_guard;
 #endif
+
+  //! \brief Shared-ownership flavor of pop_prologue().
+  //!
+  //! Runs pop_prologue() and wraps the resulting launchable_graph_handle into
+  //! a copyable / storable `launchable_graph` whose destructor runs
+  //! pop_epilogue() when the last shared copy dies. Use this when you want to
+  //! build a graph, stash it as a data member / in a container / return it
+  //! across function boundaries, and launch it many times before releasing.
+  //!
+  //! Defined out-of-line in stackable_ctx.cuh since the return type is only
+  //! declared there.
+  inline launchable_graph pop_prologue_shared();
 
   [[nodiscard]] graph_scope_guard
   graph_scope(const ::cuda::std::source_location& loc = ::cuda::std::source_location::current());
