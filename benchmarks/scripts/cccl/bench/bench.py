@@ -512,8 +512,11 @@ class ProcessRunner:
 
     def __init__(self):
         self.process = None
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        import threading
+
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGTERM, self.signal_handler)
 
     def new_process(self, cmd):
         self.process = subprocess.Popen(
