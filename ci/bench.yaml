@@ -34,6 +34,7 @@ benchmarks:
       # - '^cub\.bench\.reduce\.(sum|min)\.'
       - '^cub\.bench\.reduce\.block_reduce_warp_reductions_sum\.'
       - '^cub\.bench\.reduce\.warp_reduce_(sum|min)\.'
+      - '^cub\.bench\.reduce\.(sum|min)\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:

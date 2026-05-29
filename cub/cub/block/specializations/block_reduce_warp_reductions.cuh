@@ -155,9 +155,12 @@ struct BlockReduceWarpReductions
 
     // Below this number of warps the parallel warp-0 reduction is not worthwhile compared to a
     // single-thread sequential loop over the warp aggregates.
-    constexpr int small_block_warp_threshold = 8;
 
-    if constexpr (warps < small_block_warp_threshold)
+    constexpr int small_block_warp_threshold = 8;
+    constexpr bool use_parallel_reduction =
+      (warps >= small_block_warp_threshold) || is_redux_enabled_cuda_operator<ReductionOp, T>;
+
+    if constexpr (!use_parallel_reduction)
     {
       // Sequential reduction in linear_tid == 0 (legacy path for small blocks).
       if (linear_tid == 0)
