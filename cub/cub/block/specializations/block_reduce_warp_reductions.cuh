@@ -29,6 +29,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/integral.h>
 
@@ -100,6 +101,34 @@ struct BlockReduceWarpReductions
       , warp_id((warps == 1) ? 0 : linear_tid / warp_threads)
       , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
+
+  //! @rst
+  //! Returns block-wide aggregate in *thread*\ :sub:`0`.
+  //! @endrst
+  template <typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp /*reduction_op*/, T warp_aggregate)
+  {
+    if (linear_tid == 0)
+    {
+      detail::uninitialized_copy_single(temp_storage.warp_aggregates, warp_aggregate);
+    }
+
+    __syncthreads();
+
+    if (lane_id == 0 && warp_id != 0)
+    {
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_60,
+        ({
+          ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
+          atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);
+        }),
+        (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
+    }
+
+    __syncthreads();
+    return temp_storage.warp_aggregates[0];
+  }
 
   //! @rst
   //! Cooperatively reduces warp aggregates.
@@ -218,7 +247,14 @@ struct BlockReduceWarpReductions
                          .template Reduce<(FullTile && even_warp_multiple)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
+    if constexpr (IsDeterministic)
+    {
+      return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
+    }
+    else
+    {
+      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
+    }
   }
 
   //! @rst
@@ -255,7 +291,14 @@ struct BlockReduceWarpReductions
                                .template Reduce<(FullTile && even_warp_multiple)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
+    if constexpr (IsDeterministic)
+    {
+      return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
+    }
+    else
+    {
+      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
+    }
   }
 };
 } // namespace detail
