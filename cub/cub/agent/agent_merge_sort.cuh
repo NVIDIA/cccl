@@ -555,7 +555,7 @@ struct AgentMerge
     //
     int indices[ITEMS_PER_THREAD];
 
-    SerialMerge(
+    detail::serial_merge<policy.unroll>(
       &storage.keys_shared[0],
       keys1_beg_local,
       keys2_beg_local + num_keys1,

@@ -34,12 +34,13 @@ struct merge_policy
   CacheLoadModifier load_modifier;
   BlockStoreAlgorithm store_algorithm;
   bool use_block_load_to_shared;
+  bool unroll = true;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const merge_policy& lhs, const merge_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm
-        && lhs.use_block_load_to_shared == rhs.use_block_load_to_shared;
+        && lhs.use_block_load_to_shared == rhs.use_block_load_to_shared && lhs.unroll == rhs.unroll;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const merge_policy& lhs, const merge_policy& rhs)
@@ -54,7 +55,7 @@ struct merge_policy
         << "merge_policy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier
         << ", .store_algorithm = " << p.store_algorithm
-        << ", .use_block_load_to_shared = " << p.use_block_load_to_shared << " }";
+        << ", .use_block_load_to_shared = " << p.use_block_load_to_shared << ", .unroll = " << p.unroll << " }";
   }
 #endif // _CCCL_HOSTED()
 };
