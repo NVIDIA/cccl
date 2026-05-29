@@ -69,10 +69,10 @@ struct Squad : SquadDesc
     return mIsWarpLeader;
   }
 
-  _CCCL_DEVICE_API void syncThreads()
+  _CCCL_DEVICE_API void syncThreads() const
   {
     // barrier 0 is reserved for __syncthreads(). We use barrier ids 1, ...
-    int barrierIdx = (int) this->mSquadIdx + 1;
+    const int barrierIdx = this->mSquadIdx + 1;
 
     __barrier_sync_count(barrierIdx, this->threadCount());
   }
