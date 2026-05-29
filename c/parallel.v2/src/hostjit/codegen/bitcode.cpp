@@ -43,7 +43,7 @@ BitcodeCollector::BitcodeCollector(CompilerConfig& config, uintptr_t unique_id)
 
 bool BitcodeCollector::is_bitcode_op(cccl_op_t op)
 {
-  return (op.code_type == CCCL_OP_LLVM_IR || op.code_type == CCCL_OP_LTOIR) && op.code != nullptr && op.code_size > 0;
+  return op.code_type == CCCL_OP_LTOIR && op.code != nullptr && op.code_size > 0;
 }
 
 void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std::string& name)

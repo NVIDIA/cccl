@@ -91,8 +91,7 @@ typedef enum cccl_op_kind_t
 typedef enum cccl_op_code_type
 {
   CCCL_OP_LTOIR      = 0, // Pre-compiled LTO-IR (default for backward compatibility)
-  CCCL_OP_CPP_SOURCE = 1, // C++ source code
-  CCCL_OP_LLVM_IR    = 2 // LLVM bitcode (compiled by Clang)
+  CCCL_OP_CPP_SOURCE = 1 // C++ source code
 } cccl_op_code_type;
 
 typedef struct cccl_op_t

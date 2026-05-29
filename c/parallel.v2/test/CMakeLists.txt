@@ -28,6 +28,7 @@ function(cccl_c_parallel_v2_add_test target_name_var source)
       cccl.c.parallel.v2
       cccl.c.parallel.v2.hostjit_lib
       CUDA::cudart_static
+      CUDA::nvrtc
       cccl.c2h.main
   )
 
