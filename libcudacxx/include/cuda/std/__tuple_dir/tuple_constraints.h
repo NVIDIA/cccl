@@ -310,6 +310,10 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indice
   { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
     return __select_constructor::__none;
   }
+  else if constexpr (is_same_v<_UTuple, const tuple<_Types...>&> || is_same_v<_UTuple, tuple<_Types...>&&>)
+  { // Prefers the copy/move constructor
+    return __select_constructor::__none;
+  }
   else if constexpr (sizeof...(_Types) == 0)
   { // Avoids issues with the size 1 constructor below
     return __select_constructor::__none;

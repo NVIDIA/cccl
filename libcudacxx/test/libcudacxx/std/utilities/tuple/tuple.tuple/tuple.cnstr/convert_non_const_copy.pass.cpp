@@ -177,10 +177,6 @@ TEST_FUNC constexpr bool test()
     assert(nonConstCopyCtrCalled(cuda::std::get<0>(t2)));
   }
 
-  // These two test points cause gcc to ICE, because it cannot follow the (intentionally)
-  // pathological construction chains and ends up thinking that __tuple_constructible is
-  // self-referential.
-#if !TEST_COMPILER(GCC, <, 13)
   // sizeof...(Types) == 1 && is_convertible_v<decltype(u), T>
   {
     cuda::std::tuple<CvtFromTupleRef> t1{};
@@ -194,12 +190,12 @@ TEST_FUNC constexpr bool test()
     cuda::std::tuple<ConvertibleFrom<ExplicitCtrFromTupleRef>> t2{t1};
     assert(!nonConstCopyCtrCalled(cuda::std::get<0>(t2).v));
   }
-#endif // !TEST_COMPILER(GCC, <, 13)
   return true;
 }
 
 int main(int, char**)
 {
   test();
+  static_assert(test());
   return 0;
 }

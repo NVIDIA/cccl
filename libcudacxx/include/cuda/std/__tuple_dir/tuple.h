@@ -503,11 +503,11 @@ namespace __tuple_common_ref
 {
 // Equivalent to __type_pair in type_list.h, but reimplemented here because we don't want to
 // pull in 1k lines of templates just for this.
-template <typename _Tp, typename _Up>
+template <class _Tp, class _Up>
 struct __type_pair
 {
-  using __first  = _Tp;
-  using __second = _Up;
+  using __first _CCCL_NODEBUG_ALIAS  = _Tp;
+  using __second _CCCL_NODEBUG_ALIAS = _Up;
 };
 } // namespace __tuple_common_ref
 
@@ -523,7 +523,7 @@ struct basic_common_reference<
   _UQual,
   enable_if_t<__tuple_of_common_references<__tuple_common_ref::__type_pair<_TQual<_TTypes>, _UQual<_UTypes>>...>>>
 {
-  using type _CCCL_NODEBUG = tuple<common_reference_t<_TQual<_TTypes>, _UQual<_UTypes>>...>;
+  using type _CCCL_NODEBUG_ALIAS = tuple<common_reference_t<_TQual<_TTypes>, _UQual<_UTypes>>...>;
 };
 
 template <class... _TypePairs>
@@ -539,7 +539,7 @@ struct __tuple_common_type<tuple<_TTypes...>,
                            tuple<_UTypes...>,
                            enable_if_t<__tuple_of_common_types<__tuple_common_ref::__type_pair<_TTypes, _UTypes>...>>>
 {
-  using type _CCCL_NODEBUG = tuple<common_type_t<_TTypes, _UTypes>...>;
+  using type _CCCL_NODEBUG_ALIAS = tuple<common_type_t<_TTypes, _UTypes>...>;
 };
 
 template <class... _TTypes, class... _UTypes>
@@ -580,7 +580,7 @@ template <size_t _Ip, class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::tuple<_Tp...>>
 {
   static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in cuda::std::tuple_element<> (std::tuple)");
-  using type = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
+  using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
 };
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -592,7 +592,7 @@ template <size_t _Ip, class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
 {
   static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in cuda::std::tuple_element<> (cuda::std::tuple)");
-  using type = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
+  using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -609,7 +609,7 @@ template <::cuda::std::size_t _Ip, class... _Tp>
 struct tuple_element<_Ip, ::cuda::std::tuple<_Tp...>>
 {
   static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in std::tuple_element<> (cuda::std::tuple)");
-  using type = ::cuda::std::tuple_element_t<_Ip, ::cuda::std::__tuple_types<_Tp...>>;
+  using type _CCCL_NODEBUG_ALIAS = ::cuda::std::tuple_element_t<_Ip, ::cuda::std::__tuple_types<_Tp...>>;
 };
 
 _CCCL_END_NAMESPACE_STD
