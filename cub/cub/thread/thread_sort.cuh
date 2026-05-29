@@ -32,7 +32,7 @@ stable_odd_even_sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_T
   _CCCL_PRAGMA_UNROLL(Unroll ? ITEMS_PER_THREAD : 1)
   for (int i = 0; i < ITEMS_PER_THREAD; ++i)
   {
-    _CCCL_PRAGMA_UNROLL(Unroll ? ITEMS_PER_THREAD : 1)
+    _CCCL_PRAGMA_UNROLL(Unroll ? ITEMS_PER_THREAD : 1) // unroll count is higher than loop count, but that's fine
     for (int j = 1 & i; j < ITEMS_PER_THREAD - 1; j += 2)
     {
       if (compare_op(keys[j + 1], keys[j]))
