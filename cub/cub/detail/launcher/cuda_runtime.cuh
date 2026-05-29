@@ -23,9 +23,26 @@ namespace detail
 {
 struct TripleChevronFactory
 {
+  CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
+  {
+    if (dependent_launch)
+    {
+      [[maybe_unused]] int sm_version = 0;
+      _CCCL_ASSERT(SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
+      if (sm_version >= 900)
+      {
+        [[maybe_unused]] int ptx_version;
+        _CCCL_ASSERT(PtxVersion(ptx_version) == cudaSuccess, "Failed to query PTX compute capability");
+        _CCCL_ASSERT((ptx_version >= 900),
+                     "Enabling PDL for a kernel launch requires CC 9.0+ PTX/SASS when running on SM90+");
+      }
+    }
+  }
+
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
     dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
   {
+    __assert_pdl_allowed(dependent_launch);
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 

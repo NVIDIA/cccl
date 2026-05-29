@@ -195,6 +195,7 @@ struct dispatch_histogram
   cudaStream_t stream;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
+  int ptx_version;
 
   template <typename ActivePolicyT, typename DeviceHistogramInitKernelT, typename DeviceHistogramSweepKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -315,10 +316,15 @@ struct dispatch_histogram
 #endif // CUB_DEBUG_LOG
 
       // Invoke histogram_init_kernel
-      launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream, true)
+      launcher_factory(
+        histogram_init_grid_dims,
+        histogram_init_block_threads,
+        0,
+        stream,
+        /* dependent_launch */ ptx_version >= 900)
         .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue);
 
-      // Return if empty problem
+      // Return if empty problem`
       if ((blocks_per_row == 0) || (blocks_per_col == 0))
       {
         break;
@@ -337,7 +343,7 @@ struct dispatch_histogram
               histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-      launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
+      launcher_factory(sweep_grid_dims, block_threads, 0, stream, /* dependent_launch */ ptx_version >= 900)
         .doit(histogram_sweep_kernel,
               d_samples,
               num_output_bins_wrapper,
@@ -597,7 +603,8 @@ public:
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory};
+            launcher_factory,
+            ptx_version};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
