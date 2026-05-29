@@ -161,11 +161,26 @@ inline bool bench_correctness_checks_enabled()
   return enabled;
 }
 
+// A correctness-check failure MUST end the trial in a hard runtime failure, not
+// a silent skip. nvbench catches a thrown std::exception from the benchmark body
+// and merely marks the measurement `Skipped: Yes`, then exits 0 -- which lets an
+// incorrect kernel "pass" by having its failing cells silently dropped from any
+// downstream aggregation. To make a wrong result unambiguously fatal, we print
+// the diagnostic to stderr and `std::abort()`, which terminates the process with
+// a non-zero status that nvbench cannot swallow. Legitimate, expected skips
+// (e.g. row-stride overflow) use `state.skip(...)` instead and are unaffected.
+[[noreturn]] inline void bench_fatal(const std::string& msg)
+{
+  std::fprintf(stderr, "FATAL %s\n", msg.c_str());
+  std::fflush(stderr);
+  std::abort();
+}
+
 inline void bench_check_cuda(cudaError_t e, const char* what)
 {
   if (e != cudaSuccess)
   {
-    throw std::runtime_error(std::string{"bench correctness check: "} + what + " -> " + cudaGetErrorString(e));
+    bench_fatal(std::string{"bench correctness check: "} + what + " -> " + cudaGetErrorString(e));
   }
 }
 
@@ -264,9 +279,9 @@ void bench_compare_histograms(
     const auto& ref = ref_hists[c];
     if (opt.size() != ref.size())
     {
-      throw std::runtime_error(std::string{"bench correctness check ["} + bench_label + "]: channel "
-                               + std::to_string(c) + " size mismatch: opt=" + std::to_string(opt.size())
-                               + " ref=" + std::to_string(ref.size()));
+      bench_fatal(std::string{"bench correctness check ["} + bench_label + "]: channel "
+                  + std::to_string(c) + " size mismatch: opt=" + std::to_string(opt.size())
+                  + " ref=" + std::to_string(ref.size()));
     }
     long long opt_total = 0;
     long long ref_total = 0;
@@ -295,7 +310,7 @@ void bench_compare_histograms(
         first_mismatch,
         first_mismatch >= 0 ? static_cast<long long>(opt[first_mismatch]) : -1LL,
         first_mismatch >= 0 ? static_cast<long long>(ref[first_mismatch]) : -1LL);
-      throw std::runtime_error(msg);
+      bench_fatal(msg);
     }
   }
 }
