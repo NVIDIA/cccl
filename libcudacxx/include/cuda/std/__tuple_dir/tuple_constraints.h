@@ -135,6 +135,8 @@ template <__select_constructor _Trait>
 inline constexpr bool __select_implicit = _Trait == __select_constructor::__implicit;
 template <__select_constructor _Trait>
 inline constexpr bool __select_explicit = _Trait == __select_constructor::__explicit;
+template <__select_constructor _Trait>
+inline constexpr bool __select_constructible = _Trait != __select_constructor::__none;
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
