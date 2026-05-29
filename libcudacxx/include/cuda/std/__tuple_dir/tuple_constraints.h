@@ -124,13 +124,6 @@ template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
   _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
 
-struct _InvalidTupleConstructor
-{
-  static constexpr bool __implicit_construction = false;
-  static constexpr bool __explicit_construction = false;
-  static constexpr bool __nothrow_construction  = false;
-};
-
 enum class __select_constructor
 {
   __not_constructible,
