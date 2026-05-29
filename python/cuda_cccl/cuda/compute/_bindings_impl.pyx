@@ -1383,16 +1383,24 @@ cdef extern from "cccl/c/segmented_reduce.h":
         int, int, const char*, const char*, const char*, const char*
     ) nogil
 
+    cdef CUresult cccl_device_segmented_reduce(
+        cccl_device_segmented_reduce_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_op_t,
+        cccl_value_t,
+        size_t,
+        CUstream
+    ) nogil
+
     cdef CUresult cccl_device_segmented_reduce_cleanup(
         cccl_device_segmented_reduce_build_result_t* bld_ptr
     ) nogil
-
-
-# v1 and v2 disagree on whether `cccl_device_segmented_reduce` takes a
-# `size_t max_segment_size` argument. The .pxi pulled in here declares the
-# extern and a uniform `_call_segmented_reduce()` helper that hides the
-# difference; CMake configure_file picks the right backend variant.
-include "_bindings_segmented_reduce_backend.pxi"
 
 
 cdef class DeviceSegmentedReduceBuildResult:
@@ -1456,7 +1464,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         Iterator end_offsets,
         Op op,
         Value h_init,
-        size_t max_segment_size=0,  # accepted for v1 API compat; v2 ignores
+        size_t max_segment_size=0,
         stream=None
     ):
         cdef CUresult status = -1
@@ -1465,7 +1473,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
-            status = _call_segmented_reduce(
+            status = cccl_device_segmented_reduce(
                 self.build_data,
                 storage_ptr,
                 &storage_sz,
@@ -1477,7 +1485,7 @@ cdef class DeviceSegmentedReduceBuildResult:
                 op.op_data,
                 h_init.value_data,
                 max_segment_size,
-                c_stream,
+                c_stream
             )
         if status != 0:
             raise RuntimeError(
@@ -2243,10 +2251,11 @@ cdef class DeviceHistogramBuildResult:
 # -------------------
 #   DeviceBinarySearch
 # -------------------
-# Backend-specific struct decl + cubin-extract helper.
-include "_bindings_binary_search_backend.pxi"
-
 cdef extern from "cccl/c/binary_search.h":
+    cdef struct cccl_device_binary_search_build_result_t 'cccl_device_binary_search_build_result_t':
+        cccl_device_transform_build_result_t transform
+        size_t op_state_size
+        size_t op_state_alignment
 
     cdef CUresult cccl_device_binary_search_build(
         cccl_device_binary_search_build_result_t*,
@@ -2352,7 +2361,10 @@ cdef class DeviceBinarySearchBuildResult:
             )
 
     def _get_cubin(self):
-        return _binary_search_cubin_bytes(&self.build_data)
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.transform.cubin,
+            self.build_data.transform.cubin_size
+        )
 
 
 # ----------------------------------

@@ -123,42 +123,10 @@ def raise_on_numba_import(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", guarded_import)
 
 
-def _backend_uses_v2() -> bool:
-    """True iff cuda_cccl was built against cccl.c.parallel.v2 (HostJIT)."""
-    try:
-        from cuda.compute._build_info import USING_V2  # type: ignore[import-not-found]
-    except ImportError:
-        return False
-    return bool(USING_V2)
-
-
-# Individual tests known to crash on the v2 backend. Match is on `item.name`
-# (parametrized id, e.g. "test_foo[int32]") OR on the bare function name. Add
-# a one-line reason for each so it's clear why it's deferred rather than fixed.
-_V2_BROKEN_TESTS = {
-    "test_segmented_sort_op_kind": "cudaErrorMisalignedAddress at runtime; v2 segmented_sort path",
-}
-
-
 def pytest_collection_modifyitems(config, items):
-    using_v2 = _backend_uses_v2()
     for item in items:
         # Check if the 'no_numba' marker is present on the test item
         if item.get_closest_marker("no_numba"):
             # If the marker is present, add 'raise_on_numba_import' to the list of required fixtures
             if "raise_on_numba_import" not in item.fixturenames:
                 item.fixturenames.append("raise_on_numba_import")
-
-        if not using_v2:
-            continue
-
-        # Explicit per-test deferrals.
-        # `item.originalname` is the function name without parametrize suffix;
-        # `item.name` includes it. Either match defers the test.
-        bare = getattr(item, "originalname", item.name)
-        if bare in _V2_BROKEN_TESTS:
-            item.add_marker(
-                pytest.mark.skip(
-                    reason="v2 (HostJIT) backend: " + _V2_BROKEN_TESTS[bare]
-                )
-            )
