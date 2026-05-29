@@ -136,8 +136,10 @@ typedef struct stf_dim4
 } stf_dim4;
 
 //! \brief Partition (mapper) function: data coordinates -> grid position.
-//! Can be implemented in C or provided from Python via ctypes/cffi.
-typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
+//! Writes the result into \p *result. The out-pointer convention is used
+//! instead of return-by-value so that the signature is trivially representable
+//! in FFI frameworks (ctypes, cffi, Rust) that cannot return C structs.
+typedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
 
 //! \brief Create host execution place (CPU).
 stf_exec_place_handle stf_exec_place_host(void);
@@ -400,6 +402,38 @@ stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx);
 //! \see stf_ctx_finalize()
 
 cudaStream_t stf_fence(stf_ctx_handle ctx);
+
+//!
+//! \brief Synchronize and copy logical data contents to a host buffer
+//!
+//! Schedules a host callback that reads the logical data, synchronizes
+//! to ensure the callback completes, and copies the data into the
+//! caller-provided buffer. Unlike stf_ctx_finalize(), the context
+//! remains usable after this call, enabling iterative patterns such as
+//! convergence checks.
+//!
+//! \param ctx   Context handle
+//! \param ld    Logical data handle to read
+//! \param out   Destination host buffer
+//! \param size  Size of the destination buffer in bytes
+//! \return 0 on success, non-zero on error
+//!
+//! \pre  ctx and ld must be valid handles; out must not be NULL
+//! \pre  The first min(size, data_size) bytes of out must not overlap the
+//!       logical data range associated with ld.
+//! \post The first min(size, data_size) bytes of the logical data are
+//!       written to out.
+//!
+//! \par Example:
+//! \code
+//! int h_sum = 0;
+//! stf_ctx_wait(ctx, lSum, &h_sum, sizeof(h_sum));
+//! // h_sum now contains the result; context is still active
+//! \endcode
+//!
+//! \see stf_fence(), stf_ctx_finalize()
+
+int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size);
 
 //! \}
 

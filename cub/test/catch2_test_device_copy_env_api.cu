@@ -39,19 +39,19 @@ C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceCopy::Batched(
     thrust::raw_pointer_cast(d_input_ptrs.data()),
     thrust::raw_pointer_cast(d_output_ptrs.data()),
     thrust::raw_pointer_cast(d_sizes.data()),
     num_ranges,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceCopy::Batched failed with status: " << error << '\n';
   }
   // example-end copy-batched-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_dst == d_src);
@@ -78,14 +78,14 @@ C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceCopy::Copy(mdspan_in, mdspan_out, env);
+  auto error = cub::DeviceCopy::Copy(mdspan_in, mdspan_out, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceCopy::Copy failed with status: " << error << '\n';
   }
   // example-end copy-mdspan-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   // Verify the data was copied

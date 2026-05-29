@@ -114,6 +114,13 @@ if (CCCL_TOPLEVEL_PROJECT)
   cccl_build_compiler_targets()
 endif()
 
+option(
+  CCCL_ENABLE_CUDA_SMOKE_TESTS
+  "Build the CUDA runtime smoke test (cccl.test.cuda_runtime_smoke)."
+  OFF
+)
+set(CCCL_CUDA_SMOKE_TARGET cccl.test.cuda_runtime_smoke)
+
 add_subdirectory(libcudacxx)
 add_subdirectory(cub)
 add_subdirectory(thrust)
@@ -129,6 +136,10 @@ endif()
 if (CCCL_ENABLE_TESTING)
   add_subdirectory("ci")
   add_subdirectory("test")
+endif()
+
+if (CCCL_ENABLE_CUDA_SMOKE_TESTS AND CCCL_TOPLEVEL_PROJECT)
+  add_subdirectory(test/cuda_smoke)
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)
