@@ -64,13 +64,9 @@ struct to_offsets_functor
 template <size_t Wobble = 0, typename T, typename OffsetT>
 static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using init_t         = T;
-  using wrapped_init_t = cub::detail::InputValue<init_t>;
-  using accum_t        = cuda::std::__accumulator_t<op_t, init_t, T>;
-  using input_it_t     = const T*;
-  using output_it_t    = T*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
-  using offset_it      = const offset_t*;
+  using init_t    = T;
+  using offset_t  = cub::detail::choose_offset_t<OffsetT>;
+  using offset_it = const offset_t*;
 
 #if !TUNE_BASE
   using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
@@ -98,87 +94,28 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<offset_t>(num_segments + 1);
   state.add_global_memory_writes<T>(elements);
 
-  int num_segments_per_worker = static_cast<int>(state.get_int64("SegmentsPerWorker{io}"));
-
-  if (num_segments_per_worker < 1)
-  {
-    state.skip("Number of segments parameter is not positive");
-    return;
-  }
-
-  auto worker_choice = [](auto token) -> cub::detail::segmented_scan::worker {
-    if (token == "block")
-    {
-      return cub::detail::segmented_scan::worker::block;
-    }
-    else
-    {
-      throw std::runtime_error("Unrecognized value of Worker{io} axis value. Expected 'block'");
-    }
-  }(state.get_string("Worker{io}"));
-
-  size_t tmp_size;
-  cub::detail::segmented_scan::dispatch<
-    cub::ForceInclusive::No,
-    input_it_t,
-    output_it_t,
-    offset_it,
-    offset_it,
-    offset_it,
-    op_t,
-    wrapped_init_t,
-    accum_t,
-    offset_t
+  caching_allocator_t alloc;
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    auto env = cub_bench_env(
+      alloc,
+      launch
 #if !TUNE_BASE
-    ,
-    policy_t
-#endif
-    >(nullptr,
-      tmp_size,
+      ,
+      cuda::execution::tune(policy_t{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceSegmentedScan::ExclusiveSegmentedScan,
+      "ExclusiveSegmentedScan failed",
       d_input,
       d_output,
-      num_segments,
       d_offsets,
       d_offsets + 1,
       d_offsets,
+      num_segments,
       op_t{},
-      wrapped_init_t{T{}},
-      num_segments_per_worker,
-      worker_choice,
-      nullptr /* stream */);
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::segmented_scan::dispatch<
-      cub::ForceInclusive::No,
-      input_it_t,
-      output_it_t,
-      offset_it,
-      offset_it,
-      offset_it,
-      op_t,
-      wrapped_init_t,
-      accum_t,
-      offset_t
-#if !TUNE_BASE
-      ,
-      policy_t
-#endif
-      >(thrust::raw_pointer_cast(tmp.data()),
-        tmp_size,
-        d_input,
-        d_output,
-        num_segments,
-        d_offsets,
-        d_offsets + 1,
-        d_offsets,
-        op_t{},
-        wrapped_init_t{T{}},
-        num_segments_per_worker,
-        worker_choice,
-        launch.get_stream());
+      init_t{},
+      env);
   });
 }
 
@@ -210,14 +147,10 @@ NVBENCH_BENCH_TYPES(fixed_segment_size_bench, NVBENCH_TYPE_AXES(benched_value_ty
   .set_name("fixed_size_segments")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(18, 26, 4))
-  .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417})
-  .add_int64_axis("SegmentsPerWorker{io}", {1})
-  .add_string_axis("Worker{io}", {"block"});
+  .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417});
 
 NVBENCH_BENCH_TYPES(varying_segment_size_bench, NVBENCH_TYPE_AXES(benched_value_types, offset_types))
   .set_name("varying_size_segments")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(18, 26, 4))
-  .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417})
-  .add_int64_axis("SegmentsPerWorker{io}", {1})
-  .add_string_axis("Worker{io}", {"block"});
+  .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417});
