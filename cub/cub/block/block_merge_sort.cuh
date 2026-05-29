@@ -59,6 +59,44 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   return keys1_begin;
 }
 
+namespace detail
+{
+template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
+  CompareOp compare_op,
+  KeyT oob_default)
+{
+  const int keys1_end = keys1_beg + keys1_count;
+  const int keys2_end = keys2_beg + keys2_count;
+
+  KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
+  KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
+
+  _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
+  for (int item = 0; item < ItemsPerThread; ++item)
+  {
+    const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
+    output[item]  = p ? key2 : key1;
+    indices[item] = p ? keys2_beg++ : keys1_beg++;
+    if (p)
+    {
+      key2 = keys_shared[keys2_beg];
+    }
+    else
+    {
+      key1 = keys_shared[keys1_beg];
+    }
+  }
+}
+} // namespace detail
+
 //! Merges elements from two sorted sequences
 //! \tparam ItemsPerThread The number of elements to merge and write to \c output
 //! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
@@ -82,27 +120,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
-  const int keys1_end = keys1_beg + keys1_count;
-  const int keys2_end = keys2_beg + keys2_count;
-
-  KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
-  KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
-
-  _CCCL_SORT_MAYBE_UNROLL()
-  for (int item = 0; item < ItemsPerThread; ++item)
-  {
-    const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
-    output[item]  = p ? key2 : key1;
-    indices[item] = p ? keys2_beg++ : keys1_beg++;
-    if (p)
-    {
-      key2 = keys_shared[keys2_beg];
-    }
-    else
-    {
-      key1 = keys_shared[keys1_beg];
-    }
-  }
+  return detail::serial_merge(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, oob_default);
 }
 
 template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
@@ -171,7 +190,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
  *   Provides a way of synchronizing threads. Should be derived from
  *   `BlockMergeSortStrategy`.
  */
-template <typename KeyT, typename ValueT, int NumThreads, int ItemsPerThread, typename SynchronizationPolicy>
+template <typename KeyT,
+          typename ValueT,
+          int NumThreads,
+          int ItemsPerThread,
+          typename SynchronizationPolicy,
+          bool _Unroll = true>
 class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
@@ -401,7 +425,7 @@ public:
       //
       KeyT max_key = oob_default;
 
-      _CCCL_SORT_MAYBE_UNROLL()
+      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if (ItemsPerThread * linear_tid + item < valid_items)
@@ -419,7 +443,7 @@ public:
     //
     if (!IS_LAST_TILE || ItemsPerThread * linear_tid < valid_items)
     {
-      StableOddEvenSort(keys, items, compare_op);
+      StableOddEvenSort<_Unroll>(keys, items, compare_op);
     }
 
     // each thread has sorted keys
@@ -476,7 +500,7 @@ public:
       const int keys2_end_loc   = keys2_end;
       const int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
       const int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
-      SerialMerge(
+      detail::serial_merge<_Unroll>(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc,
@@ -775,13 +799,20 @@ private:
  *
  * This example can be easily adapted to the storage required by BlockMergeSort.
  */
-template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType, int BlockDimY = 1, int BlockDimZ = 1>
+template <typename KeyT,
+          int BlockDimX,
+          int ItemsPerThread,
+          typename ValueT = NullType,
+          int BlockDimY   = 1,
+          int BlockDimZ   = 1,
+          bool _Unroll    = true>
 class BlockMergeSort
     : public BlockMergeSortStrategy<KeyT,
                                     ValueT,
                                     BlockDimX * BlockDimY * BlockDimZ,
                                     ItemsPerThread,
-                                    BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>>
+                                    BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>,
+                                    _Unroll>
 {
 private:
   // The thread block size in threads
