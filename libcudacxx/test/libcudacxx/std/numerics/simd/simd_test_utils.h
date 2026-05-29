@@ -238,6 +238,59 @@ TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_vec()
   return simd::basic_vec<T, simd::fixed_size<N>>(arr);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// bit utilities
+
+template <typename T>
+struct bit_values
+{
+  template <typename I>
+  TEST_FUNC constexpr T operator()(I) const noexcept
+  {
+    return static_cast<T>((I::value + 1) * 3);
+  }
+};
+
+// Each simd.bit test file must define test_constraints() and a test functor template
+// clang-format off
+#define _SIMD_BIT_TEST_SIGNED_TYPES(_Test)                         \
+  _Test<int8_t, 1>{}();                                            \
+  _Test<int8_t, 4>{}();                                            \
+  _Test<int16_t, 1>{}();                                           \
+  _Test<int16_t, 4>{}();                                           \
+  _Test<int32_t, 1>{}();                                           \
+  _Test<int32_t, 4>{}();                                           \
+  _Test<int64_t, 1>{}();                                           \
+  _Test<int64_t, 4>{}();
+
+#define _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                       \
+  _Test<uint8_t, 1>{}();                                           \
+  _Test<uint8_t, 4>{}();                                           \
+  _Test<uint16_t, 1>{}();                                          \
+  _Test<uint16_t, 4>{}();                                          \
+  _Test<uint32_t, 1>{}();                                          \
+  _Test<uint32_t, 4>{}();                                          \
+  _Test<uint64_t, 1>{}();                                          \
+  _Test<uint64_t, 4>{}();
+
+#define DEFINE_SIMD_BIT_INTEGRAL_TEST(_Test)                      \
+  TEST_FUNC constexpr bool test()                                 \
+  {                                                               \
+    _SIMD_BIT_TEST_SIGNED_TYPES(_Test)                            \
+    _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                          \
+    test_constraints();                                           \
+    return true;                                                  \
+  }
+
+#define DEFINE_SIMD_BIT_UNSIGNED_TEST(_Test)                      \
+  TEST_FUNC constexpr bool test()                                 \
+  {                                                               \
+    _SIMD_BIT_TEST_UNSIGNED_TYPES(_Test)                          \
+    test_constraints();                                           \
+    return true;                                                  \
+  }
+// clang-format on
+
 // Each vec test file must define test_type<T, N>() and then define test() using this macro.
 // clang-format off
 #if defined(__cccl_lib_char8_t)
