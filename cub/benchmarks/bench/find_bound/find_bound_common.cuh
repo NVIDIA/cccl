@@ -58,4 +58,4 @@ struct bounds_bench_data
   }
 };
 
-using bounds_value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
+using bounds_value_types = nvbench::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t>;

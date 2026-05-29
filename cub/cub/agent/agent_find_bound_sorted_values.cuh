@@ -121,7 +121,7 @@ struct agent_t
     const int needles_count  = total_in_tile - haystack_count;
 
     {
-      const auto d_range_cm = try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
+      const auto d_range_cm = detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
@@ -134,7 +134,7 @@ struct agent_t
     }
 
     {
-      auto d_values_cm = try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
+      auto d_values_cm = detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
@@ -147,6 +147,19 @@ struct agent_t
     }
 
     __syncthreads();
+
+#ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      const int idx = BlockThreads * item + threadIdx.x;
+      if (idx < needles_count && (values_beg + idx) > 0)
+      {
+        const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];
+        _CCCL_ASSERT(!compare_op(storage.needles[idx], prev), "d_values must be sorted consistently with comp");
+      }
+    }
+#endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
     const auto partition_comp = Mode::make_partition_comp(compare_op);
 
