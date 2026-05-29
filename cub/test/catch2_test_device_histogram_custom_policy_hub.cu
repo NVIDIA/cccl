@@ -29,17 +29,17 @@ struct my_policy_hub
 
 C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]")
 {
-  using sample_t                    = cuda::std::uint8_t;
-  using counter_t                   = int;
-  using level_t                     = int;
-  using offset_t                    = int;
-  constexpr int num_channels        = 1;
+  using sample_t                                     = cuda::std::uint8_t;
+  using counter_t                                    = int;
+  using level_t                                      = int;
+  using offset_t                                     = int;
+  constexpr int num_channels                         = 1;
   [[maybe_unused]] constexpr int num_active_channels = 1; // msvc warns, only used in nttp
-  constexpr int num_bins            = 16;
-  const offset_t num_row_pixels     = 256;
-  const offset_t num_rows           = 1;
-  const offset_t row_stride_samples = num_row_pixels * num_channels;
-  const int num_output_levels       = num_bins + 1;
+  constexpr int num_bins                             = 16;
+  const offset_t num_row_pixels                      = 256;
+  const offset_t num_rows                            = 1;
+  const offset_t row_stride_samples                  = num_row_pixels * num_channels;
+  const int num_output_levels                        = num_bins + 1;
 
   c2h::host_vector<sample_t> h_samples(num_row_pixels);
   for (offset_t i = 0; i < num_row_pixels; ++i)

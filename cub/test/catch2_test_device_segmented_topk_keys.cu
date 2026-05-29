@@ -269,9 +269,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
 C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
 {
-  constexpr cuda::std::int64_t segment_size    = 8;
-  constexpr cuda::std::int64_t k               = 5;
-  constexpr cuda::std::int64_t num_segments    = 1;
+  constexpr cuda::std::int64_t segment_size                     = 8;
+  constexpr cuda::std::int64_t k                                = 5;
+  constexpr cuda::std::int64_t num_segments                     = 1;
   [[maybe_unused]] constexpr cuda::std::size_t max_segment_size = 64; // msvc warns, only used in nttp
 
   // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
