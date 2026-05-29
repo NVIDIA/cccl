@@ -95,6 +95,21 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
     }
   }
 }
+
+template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
+  CompareOp compare_op)
+{
+  serial_merge<Unroll>(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+}
 } // namespace detail
 
 //! Merges elements from two sorted sequences
@@ -120,7 +135,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
-  return detail::serial_merge(
+  detail::serial_merge(
     keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, oob_default);
 }
 
@@ -135,7 +150,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+  detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
 }
 
 /**
