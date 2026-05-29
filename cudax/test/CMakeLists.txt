@@ -101,9 +101,15 @@ cudax_add_catch2_test(test_target copy
     copy/copy_shared_memory.cu
 )
 
-cudax_add_catch2_test(test_target cuco
-    cuco/utility/test_hashers.cu
+# nvcc 12.0 fails to compile cuco hashers test
+if (
+  NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+  OR "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "12.1"
 )
+  cudax_add_catch2_test(test_target cuco
+    cuco/utility/test_hashers.cu
+  )
+endif()
 
 cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
