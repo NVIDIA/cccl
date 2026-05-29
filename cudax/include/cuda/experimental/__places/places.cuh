@@ -1228,7 +1228,7 @@ public:
 
 inline exec_place exec_place::device(int devid)
 {
-  static int ndevices;
+  static int ndevices = cuda_try<cudaGetDeviceCount>();
   // One process-global ``shared_ptr`` per device, created exactly once in this
   // function-local static initializer (guaranteed thread-safe init by the
   // compiler). We hand out *copies* below.
@@ -1240,8 +1240,7 @@ inline exec_place exec_place::device(int devid)
   // concurrent calls would race on that member (and on the freshly created
   // control blocks). Copying an existing ``shared_ptr`` only touches the atomic
   // reference count, which is thread-safe.
-  static ::std::shared_ptr<exec_place::impl>* impls = [] {
-    ndevices    = cuda_try<cudaGetDeviceCount>();
+  static ::std::shared_ptr<exec_place::impl>* impls = [ndevices] {
     auto result = new ::std::shared_ptr<exec_place::impl>[ndevices];
     for (int i : each(ndevices))
     {
