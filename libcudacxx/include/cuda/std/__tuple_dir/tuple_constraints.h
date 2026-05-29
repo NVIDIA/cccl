@@ -126,15 +126,15 @@ inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
 
 enum class __select_constructor
 {
-  __not_constructible,
-  __implicit_constructible,
-  __explicit_constructible,
+  __none,
+  __implicit,
+  __explicit,
 };
 
 template <__select_constructor _Trait>
-inline constexpr bool __select_implicit = _Trait == __select_constructor::__implicit_constructible;
+inline constexpr bool __select_implicit = _Trait == __select_constructor::__implicit;
 template <__select_constructor _Trait>
-inline constexpr bool __select_explicit = _Trait == __select_constructor::__explicit_constructible;
+inline constexpr bool __select_explicit = _Trait == __select_constructor::__explicit;
 
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
@@ -142,15 +142,15 @@ __tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_default_constructible_v<_Types> && ...))
   {
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr ((__is_implicitly_default_constructible<_Types>::value && ...))
   {
-    return __select_constructor::__implicit_constructible;
+    return __select_constructor::__implicit;
   }
   else
   {
-    return __select_constructor::__explicit_constructible;
+    return __select_constructor::__explicit;
   }
 }
 
@@ -160,15 +160,15 @@ __tuple_select_variadic_copy_constructible(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_copy_constructible_v<_Types> && ...))
   {
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr ((is_convertible_v<const _Types&, _Types> && ...))
   {
-    return __select_constructor::__implicit_constructible;
+    return __select_constructor::__implicit;
   }
   else
   {
-    return __select_constructor::__explicit_constructible;
+    return __select_constructor::__explicit;
   }
 }
 
@@ -182,15 +182,15 @@ __tuple_select_variadic_move_constructible(__tuple_types<_Types...>) noexcept
 {
   if constexpr (!(is_move_constructible_v<_Types> && ...))
   {
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr ((is_convertible_v<_Types&&, _Types> && ...))
   {
-    return __select_constructor::__implicit_constructible;
+    return __select_constructor::__implicit;
   }
   else
   {
-    return __select_constructor::__explicit_constructible;
+    return __select_constructor::__explicit;
   }
 }
 
@@ -204,11 +204,11 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
 {
   if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
   { // [tuple.cnstr]-13.1: sizeof...(Types) equals sizeof...(UTypes),
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr (sizeof...(_Types) == 0)
   { // [tuple.cnstr]-13.2: sizeof...(Types) >= 1,
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
   { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
@@ -220,28 +220,26 @@ __tuple_select_variadic_constructible(__tuple_types<_Types...>, __tuple_types<_U
       if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
       {
         constexpr bool __select_implicit = (is_convertible_v<_UTypes, _Types> && ...);
-        return __select_implicit ? __select_constructor::__implicit_constructible
-                                 : __select_constructor::__explicit_constructible;
+        return __select_implicit ? __select_constructor::__implicit : __select_constructor::__explicit;
       }
       else
       {
-        return __select_constructor::__not_constructible;
+        return __select_constructor::__none;
       }
     }
     else
     {
-      return __select_constructor::__not_constructible;
+      return __select_constructor::__none;
     }
   }
   else if constexpr ((is_constructible_v<_Types, _UTypes> && ...))
   { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
     constexpr bool __select_implicit = (is_convertible_v<_UTypes, _Types> && ...);
-    return __select_implicit ? __select_constructor::__implicit_constructible
-                             : __select_constructor::__explicit_constructible;
+    return __select_implicit ? __select_constructor::__implicit : __select_constructor::__explicit;
   }
   else
   {
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
 }
 
@@ -251,17 +249,15 @@ __tuple_select_variadic_constructible(__tuple_types<_Type>, __tuple_types<_UType
 {
   if constexpr (is_same_v<remove_cvref_t<_UType>, tuple<_Type>>)
   { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr (!is_constructible_v<_Type, _UType>)
   { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else
   { // [tuple.cnstr]-15: !conjunction_v<is_convertible<UTypes, Types>...>
-    return is_convertible_v<_UType, _Type>
-           ? __select_constructor::__implicit_constructible
-           : __select_constructor::__explicit_constructible;
+    return is_convertible_v<_UType, _Type> ? __select_constructor::__implicit : __select_constructor::__explicit;
   }
 }
 
@@ -275,25 +271,25 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
 {
   if constexpr (!(sizeof...(_UTypes) < sizeof...(_Types)))
   {
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else
   {
     using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
     using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
     if constexpr (::cuda::std::__tuple_select_variadic_constructible(__arg_list{}, __tuple_types<_UTypes...>{})
-                  == __select_constructor::__not_constructible)
+                  == __select_constructor::__none)
     {
-      return __select_constructor::__not_constructible;
+      return __select_constructor::__none;
     }
     else if constexpr (::cuda::std::__tuple_select_default_constructible(__defaulted_list{})
-                       == __select_constructor::__not_constructible)
+                       == __select_constructor::__none)
     {
-      return __select_constructor::__not_constructible;
+      return __select_constructor::__none;
     }
     else
     {
-      return __select_constructor::__explicit_constructible;
+      return __select_constructor::__explicit;
     }
   }
 }
@@ -310,47 +306,47 @@ __tuple_select_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indice
   using ::cuda::std::get;
   if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
   { // [tuple#cnstr]-29.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr (sizeof...(_Types) == 0)
   { // Avoids issues with the size 1 constructor below
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr (!__tuple_like_with_size<_UTuple, sizeof...(_Types)>)
   { // [tuple#cnstr]-21.1: sizeof...(Types) equals sizeof...(UTypes), and
     // [tuple#cnstr]-25.1: sizeof...(Types) is 2,
     // [tuple#cnstr]-29.3: sizeof...(Types) equals sizeof...(UTypes), and
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr ((sizeof...(_Types) == 1) && __is_cuda_std_tuple<remove_cvref_t<_UTuple>>
                      && (is_same_v<_Types, tuple_element_t<_Indices, remove_cvref_t<_UTuple>>> && ...))
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1
     // [tuple#cnstr]-21.3: is_same_v<T, U> is false
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr ((sizeof...(_Types) == 1) && (is_constructible_v<_Types, _UTuple> && ...))
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
     // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr ((sizeof...(_Types) == 1) && (is_convertible_v<_UTuple, _Types> && ...))
   { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
     // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else if constexpr (!(is_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...))
   { // [tuple.cnstr]-21.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
     // [tuple.cnstr]-25.2: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
     // [tuple.cnstr]-29.4: is_constructible<Types, decltype(get<I>(std​::​forward<UTuple>(u)))>... is true
-    return __select_constructor::__not_constructible;
+    return __select_constructor::__none;
   }
   else
   { // [tuple.cnstr]-15: The expression inside explicit is equivalent to:
     // [tuple.cnstr]-23: The expression inside explicit is equivalent to:
     // !(is_convertible_v<decltype(get<I>(FWD(u))), Types> && ...)
     return (is_convertible_v<decltype(get<_Indices>(::cuda::std::declval<_UTuple>())), _Types> && ...)
-           ? __select_constructor::__implicit_constructible
-           : __select_constructor::__explicit_constructible;
+           ? __select_constructor::__implicit
+           : __select_constructor::__explicit;
   }
 }
 

@@ -144,7 +144,7 @@ public:
 
   template <class _Alloc,
             __select_constructor _Trait = __tuple_select_variadic_copy_constructible_v<__tuple_types<_Tp...>>,
-            enable_if_t<_Trait != __select_constructor::__not_constructible, int> = 0>
+            enable_if_t<_Trait != __select_constructor::__none, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, const tuple& __t) noexcept(
     __tuple_all_nothrow_copy_constructible_v<_Tp...>)
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, __t)
@@ -152,7 +152,7 @@ public:
 
   template <class _Alloc,
             __select_constructor _Trait = __tuple_select_variadic_move_constructible_v<__tuple_types<_Tp...>>,
-            enable_if_t<_Trait != __select_constructor::__not_constructible, int> = 0>
+            enable_if_t<_Trait != __select_constructor::__none, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc& __a, tuple&& __t) noexcept(
     __tuple_all_nothrow_move_constructible_v<_Tp...>)
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::move(__t))
