@@ -163,10 +163,6 @@ __tuple_select_default_constructible(__tuple_types<_Types...>) noexcept
   }
 }
 
-template <class _TupleTypes>
-inline constexpr __select_constructor __tuple_select_default_constructible_v =
-  ::cuda::std::__tuple_select_default_constructible(_TupleTypes{});
-
 template <class... _Types>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_constructor
 __tuple_select_variadic_copy_constructible(__tuple_types<_Types...>) noexcept

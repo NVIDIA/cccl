@@ -84,12 +84,13 @@ public:
     return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
-  template <__select_constructor _Trait                 = __tuple_select_default_constructible_v<__tuple_types<_Tp...>>,
+  // Going through an inline variable forces instantiation of the default constructors of all _Tp fr old GCC
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
             enable_if_t<__select_implicit<_Trait>, int> = 0>
   _CCCL_API constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
 
-  template <__select_constructor _Trait                 = __tuple_select_default_constructible_v<__tuple_types<_Tp...>>,
+  template <__select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
             enable_if_t<__select_explicit<_Trait>, int> = 0>
   _CCCL_API explicit constexpr tuple() noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
   {}
@@ -98,7 +99,7 @@ public:
   _CCCL_HIDE_FROM_ABI tuple(tuple&&)      = default;
 
   template <class _Alloc,
-            __select_constructor _Trait                 = __tuple_select_default_constructible_v<__tuple_types<_Tp...>>,
+            __select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
             enable_if_t<__select_implicit<_Trait>, int> = 0>
   _CCCL_API constexpr tuple(allocator_arg_t,
                             _Alloc const& __a) noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
@@ -106,7 +107,7 @@ public:
   {}
 
   template <class _Alloc,
-            __select_constructor _Trait                 = __tuple_select_default_constructible_v<__tuple_types<_Tp...>>,
+            __select_constructor _Trait = ::cuda::std::__tuple_select_default_constructible(__tuple_types<_Tp...>{}),
             enable_if_t<__select_explicit<_Trait>, int> = 0>
   _CCCL_API explicit constexpr tuple(allocator_arg_t,
                                      _Alloc const& __a) noexcept((is_nothrow_default_constructible_v<_Tp> && ...))
