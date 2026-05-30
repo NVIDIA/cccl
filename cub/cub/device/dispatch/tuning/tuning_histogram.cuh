@@ -390,11 +390,26 @@ public:
         }
         else
         {
-          // EVEN: 1024 threads (sweep 384->512->768->1024 monotonic; the SMEM-priv
-          // even sweep is compute-bound and pinned to 1 block/SM by 59 regs + SMEM,
-          // so resident warps scale with block size). Probe LOAD_CA (cache-all),
-          // which the single-channel SM100 even tuning prefers over LDG.
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_CA, true, SMEM, false, 4, 0};
+          // EVEN: 1024 threads. The SMEM-priv even sweep was pinned to 1 block/SM
+          // (32 warps, 50% occ): at t_scale(16) the per-thread accumulate holds
+          // samples[pixels_per_thread][NumChannels] + bins[pixels_per_thread]
+          // (for I32, 3 active channels: 5*4 + 5 = 25 live ints) which compiles to
+          // ~58 registers => 58*2048 > 65536 regs/SM, so only one CTA is resident
+          // and there is no second block to hide the shared-memory atomicAdd
+          // latency this contention-bound sweep is dominated by.
+          //
+          // Halve the nominal items (t_scale(8): 2 pixels/thread for I32, 1 for
+          // F64). That shrinks the live samples/bins arrays enough for ptxas to
+          // hold the kernel in <= 32 registers WITHOUT spilling (forcing 32 regs
+          // at t_scale(16) instead spills ~88 B and nets a regression -- measured),
+          // which together with the DeviceHistogramSweepKernel __launch_bounds__
+          // min-blocks=2 hint admits a 2nd resident CTA (64 warps, 100% occ) on
+          // the register-limited low-bin even tiers (256/2048 bins, 4 KB/25 KB
+          // SMEM -- registers, not SMEM, gate occupancy here). rle=true is
+          // preserved (load-bearing: dropping the same-bin RLE coalescing
+          // collapses multi_even). LOAD_CA matches the single-channel SM100 even
+          // tuning.
+          return histogram_policy{1024, t_scale(8), BLOCK_LOAD_DIRECT, LOAD_CA, true, SMEM, false, 4, 0};
         }
       }
     }
