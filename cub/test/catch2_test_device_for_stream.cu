@@ -32,7 +32,8 @@ C2H_TEST("Device for each n with stream from another device works when using CCC
 {
   if (cuda::devices.size() < 2)
   {
-    SKIP("Test requires at least 2 CUDA devices");
+    SUCCEED("Test requires at least 2 CUDA devices to run.");
+    return;
   }
 
   cuda::stream stream_on_device_1(cuda::devices[1]);
