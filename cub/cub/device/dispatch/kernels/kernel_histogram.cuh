@@ -1854,25 +1854,19 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // global-load latency overlaps instead of serialising a
       // load -> classify -> match -> SMEM-read -> atomic chain per pixel;
       // then classify (Phase B); then coalesce/probe/atomic (Phase C). The
-      // staged register array is only `su` samples deep here
+      // staged register array is only `unroll` samples deep here
       // (NumActiveChannels==1), so the extra register footprint is small and
       // occupancy is preserved. Primary latency-hiding lever for this
-      // issue-bound / eligible-warp-scarce kernel. `su` (single-channel
-      // unroll) is decoupled from the multi-channel `unroll` so we can raise
-      // ILP (more independent in-flight loads/probes per thread) without
-      // touching the register-tight multi-channel path.
-      constexpr int su          = 8;
-      const OffsetT su_chunk     = static_cast<OffsetT>(su) * step;
-      const OffsetT su_iters_max = (total_pixels + su_chunk - 1) / su_chunk;
-      for (OffsetT it = 0; it < su_iters_max; ++it)
+      // issue-bound / eligible-warp-scarce kernel.
+      for (OffsetT it = 0; it < chunk_iters_max; ++it)
       {
-        const OffsetT pixel = start + it * su_chunk;
+        const OffsetT pixel = start + it * chunk;
 
         // Phase A: issue all of this chunk's loads up front.
-        SampleValueT staged[su];
-        bool valid[su];
+        SampleValueT staged[unroll];
+        bool valid[unroll];
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < su; ++u)
+        for (int u = 0; u < unroll; ++u)
         {
           const OffsetT this_pixel = pixel + u * step;
           valid[u]                 = this_pixel < total_pixels;
@@ -1881,9 +1875,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         }
 
         // Phase B: classify all staged samples into bins.
-        int bins[su];
+        int bins[unroll];
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < su; ++u)
+        for (int u = 0; u < unroll; ++u)
         {
           int bin = -1;
           if (valid[u])
@@ -1900,7 +1894,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 
         // Phase C: warp-coalesce, probe the SMEM cache, atomic-update.
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < su; ++u)
+        for (int u = 0; u < unroll; ++u)
         {
           probe_cuckoo(0, bins[u]);
         }
@@ -2191,23 +2185,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // then classify (Phase B); then coalesce/probe/atomic (Phase C). This
       // is the primary latency-hiding lever for this issue-bound /
       // eligible-warp-scarce kernel (No Eligible ~55%, eligible warps/sched
-      // ~0.8 in profiling). The staged register array is only `su`
+      // ~0.8 in profiling). The staged register array is only `unroll`
       // samples deep here (NumActiveChannels==1), so the extra register
-      // footprint is small and occupancy is preserved. `su` (single-channel
-      // unroll) is decoupled from the multi-channel `unroll` so we can raise
-      // ILP without touching the register-tight multi-channel path.
-      constexpr int su          = 8;
-      const OffsetT su_chunk     = static_cast<OffsetT>(su) * step;
-      const OffsetT su_iters_max = (total_pixels + su_chunk - 1) / su_chunk;
-      for (OffsetT it = 0; it < su_iters_max; ++it)
+      // footprint is small and occupancy is preserved.
+      for (OffsetT it = 0; it < chunk_iters_max; ++it)
       {
-        const OffsetT pixel = start + it * su_chunk;
+        const OffsetT pixel = start + it * chunk;
 
         // Phase A: issue all of this chunk's loads up front.
-        SampleValueT staged[su];
-        bool valid[su];
+        SampleValueT staged[unroll];
+        bool valid[unroll];
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < su; ++u)
+        for (int u = 0; u < unroll; ++u)
         {
           const OffsetT this_pixel = pixel + u * step;
           valid[u]                 = this_pixel < total_pixels;
@@ -2216,9 +2205,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         }
 
         // Phase B: classify all staged samples into bins.
-        int bins[su];
+        int bins[unroll];
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < su; ++u)
+        for (int u = 0; u < unroll; ++u)
         {
           int bin = -1;
           if (valid[u])
@@ -2235,7 +2224,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 
         // Phase C: warp-coalesce, probe the SMEM cache, atomic-update.
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < su; ++u)
+        for (int u = 0; u < unroll; ++u)
         {
           probe_single(0, bins[u]);
         }
