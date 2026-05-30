@@ -356,7 +356,37 @@ public:
         }
       }
 
-      // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
+      // SM100 single-channel NON-byte tuning (I32 sample_size==4, F64 sample_size==8).
+      //
+      // Before this arm, single-channel I32/F64 fell all the way through to the SM50
+      // Policy500 fallback {384 threads, t_scale(16) ipt, rle=true, LDG} -- a launch
+      // shape never tuned for SM100. (The byte-sample arm above only matches
+      // sample_size==1, and the SM90 arm below only matches sample_size 1/2; the
+      // sm100_tuning sample_size _4/_8 structs are read ONLY by
+      // policy_selector_from_max_policy, which DeviceHistogram's env API does not use --
+      // the benchmark drives policy_selector_from_types, i.e. THIS struct.)
+      //
+      // This non-byte single-channel policy drives the SMEM-priv sweep AND the high-bin
+      // direct-atomic (cuckoo / single-probe) kernels. A wider launch than 384 threads
+      // gives those kernels more resident warps to hide SMEM-atomic and SearchTransform
+      // latency, mirroring the multi-channel SM100 arm below. EVEN and RANGE are
+      // decoupled per transform (RANGE's per-sample binary search is latency-heavier).
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive
+          && (sample_size == 4 || sample_size == 8))
+      {
+        if (is_even)
+        {
+          // EVEN: 768 threads. I32 -> 12 ipt, F64 -> 6 ipt (t_scale(12)).
+          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048};
+        }
+        else
+        {
+          // RANGE: 512 threads. I32 -> 12 ipt, F64 -> 6 ipt (t_scale(12)).
+          return histogram_policy{512, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048};
+        }
+      }
+
+      // sample_size 2 showed no benefit over SM90 during verification benchmarks
 
       // SM100 multi-channel (num_channels >= 2) tuning, decoupled per transform.
       // Previously every multi-channel configuration fell through to the SM50
