@@ -109,9 +109,15 @@ cudax_add_catch2_test(test_target copy
     copy/copy_shared_memory.cu
 )
 
-cudax_add_catch2_test(test_target cuco
-    cuco/utility/test_hashers.cu
+# nvcc 12.0 fails to compile cuco hashers test
+if (
+  NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+  OR "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "12.1"
 )
+  cudax_add_catch2_test(test_target cuco
+    cuco/utility/test_hashers.cu
+  )
+endif()
 
 cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
@@ -141,57 +147,36 @@ cudax_add_catch2_test(test_target algorithm
 cudax_add_catch2_test(test_target group.mapping.composite_mapping
     group/mapping/composite_mapping.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.mapping.group_as
     group/mapping/group_as.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.mapping.group_by
     group/mapping/group_by.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.mapping.identity_mapping
     group/mapping/identity_mapping.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
     group/synchronizer/barrier_synchronizer.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.cooperative_algorithm
     group/cooperative_algorithm.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.group
     group/group.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.make_this_group
     group/make_this_group.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.segmented_algorithm
     group/segmented_algorithm.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes

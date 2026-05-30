@@ -11,7 +11,9 @@
 #include <cuda/experimental/places.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -358,9 +360,10 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
   auto* grid_ptr = from_opaque(grid);
-  // Distinct function pointer types (C typedef vs C++ alias); not convertible via static_cast under nvcc.
-  partition_fn_t cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp                  = stf_try_allocate([cpp_mapper, grid_ptr] {
+  // Distinct function pointer types (C typedef vs C++ alias) are not
+  // convertible via static_cast under nvcc.
+  const auto cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
+  auto* dp              = stf_try_allocate([cpp_mapper, grid_ptr] {
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);
@@ -430,6 +433,51 @@ cudaStream_t stf_fence(stf_ctx_handle ctx)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   auto* context_ptr = from_opaque(ctx);
   return context_ptr->fence();
+}
+
+int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size)
+{
+  if (ctx == nullptr || ld == nullptr || out == nullptr)
+  {
+    return 1;
+  }
+
+  try
+  {
+    auto* context_ptr = from_opaque(ctx);
+    auto* ld_ptr      = from_opaque(ld);
+
+    void* dst  = out;
+    size_t cap = size;
+
+    auto builder = context_ptr->host_launch();
+    builder.add_deps(task_dep_untyped(*ld_ptr, access_mode::read));
+    builder.set_symbol("wait");
+    builder->*[dst, cap](reserved::host_launch_deps& deps) {
+      auto data      = deps.get<slice<char>>(0);
+      size_t copy_sz = ::std::min(cap, static_cast<size_t>(data.extent(0)));
+      // The destination must not overlap the logical data range: in practice the
+      // logical data is backed by storage that is allocated independently from the
+      // caller's readback buffer, so use uintptr_t comparisons (relational pointer
+      // comparison across unrelated allocations is unspecified) to encode that
+      // contract.
+      const auto src_begin = reinterpret_cast<::std::uintptr_t>(data.data_handle());
+      const auto src_end   = src_begin + copy_sz;
+      const auto dst_begin = reinterpret_cast<::std::uintptr_t>(dst);
+      const auto dst_end   = dst_begin + copy_sz;
+      _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
+                   "stf_ctx_wait destination buffer must not overlap the logical data range");
+      ::std::memcpy(dst, data.data_handle(), copy_sz);
+    };
+
+    cudaStream_t fence_stream = context_ptr->fence();
+    cuda_safe_call(cudaStreamSynchronize(fence_stream));
+    return 0;
+  }
+  catch (...)
+  {
+    return 1;
+  }
 }
 
 stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
