@@ -40,7 +40,7 @@ struct __mask_storage<_Bytes, __fixed_size<_Np>>
 
   bool __data[_Np]{};
 
-  [[nodiscard]] _CCCL_API constexpr bool __get(const __simd_size_type __idx) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __get(const __simd_size_type __idx) const noexcept
   {
     _CCCL_ASSERT(::cuda::in_range(__idx, __simd_size_type{0}, _Np), "Index is out of bounds");
     return __data[__idx];
