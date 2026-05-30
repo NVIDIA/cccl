@@ -15,8 +15,13 @@ add_custom_target(libcudacxx.test.simd.sass)
 # SETUP: skip unsupported compilers, find tools, set up CUDA architectures
 
 # GCC < 9 do not produce vectorized PTX load/store for small integer types.
-if (CMAKE_CXX_COMPILER_ID STREQUAL GNU AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
-  message("-- Skipping simd codegen tests with GCC ${CMAKE_CXX_COMPILER_VERSION} host compiler")
+if (
+  CMAKE_CXX_COMPILER_ID STREQUAL GNU
+  AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9
+)
+  message(
+    "-- Skipping simd codegen tests with GCC ${CMAKE_CXX_COMPILER_VERSION} host compiler"
+  )
   return()
 endif()
 
