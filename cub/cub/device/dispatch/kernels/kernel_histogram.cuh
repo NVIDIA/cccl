@@ -1755,148 +1755,181 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // loads in registers across the unrolled chunk).
     using SampleValueT = it_value_t<SampleIteratorT>;
 
-    for (OffsetT it = 0; it < chunk_iters_max; ++it)
-    {
-      const OffsetT pixel = start + it * chunk;
-
-      // Phase A: issue ALL of this chunk's global loads up front. The loads
-      // are mutually independent, so the compiler can keep `unroll *
-      // NumActiveChannels` of them in flight at once -- overlapping the long
-      // global-load latency instead of serialising a load -> classify ->
-      // match -> SMEM-read -> atomic chain per pixel. This is the primary
-      // latency-hiding lever for this issue-bound / eligible-warp-scarce
-      // kernel (No Eligible ~55%, eligible warps/sched ~0.8 in profiling).
-      SampleValueT staged[unroll][NumActiveChannels];
-      bool valid[unroll];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int u = 0; u < unroll; ++u)
+    // Single-source the leader's warp-coalesce + 2-hash cuckoo cache update
+    // so the pipelined (single-channel) and interleaved (multi-channel) loops
+    // below share identical probe logic.
+    auto probe_cuckoo = [&](int ch, int bin) {
+      // Coalesce same-bin lanes into a single atomic add. All lanes in the
+      // warp must call `__match_any_sync` with the same mask; we use
+      // 0xffffffffu so the call is well-defined even when individual lanes
+      // have invalid bins (-1).
+      const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+      const int leader         = __ffs(static_cast<int>(peers)) - 1;
+      if (bin >= 0 && static_cast<int>(lane_id) == leader)
       {
-        const OffsetT this_pixel = pixel + u * step;
-        valid[u]                 = this_pixel < total_pixels;
-        const OffsetT pix_off    = valid[u] ? (this_pixel * NumChannels) : OffsetT{0};
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        const CounterT contribution = static_cast<CounterT>(__popc(peers));
+        // Two hash functions (cuckoo-style): on a primary slot collision, try
+        // a secondary slot before falling back to GMEM. This roughly doubles
+        // the effective cache hit rate for moderate-entropy distributions
+        // where a few bins dominate but each thread is otherwise visiting
+        // random bins.
+        const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
+        const int slot1          = static_cast<int>(hash1 & cache_mask);
+        const int existing_key1  = s_cache_keys[ch][slot1];
+        if (existing_key1 == bin)
         {
-          staged[u][ch] = d_samples[pix_off + ch];
+          // Primary hit: bump cache count.
+          atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
         }
-      }
-
-      // Phase B: classify all staged samples into bins.
-      int bins[unroll][NumActiveChannels];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int u = 0; u < unroll; ++u)
-      {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        else if (existing_key1 == -1)
         {
-          int bin = -1;
-          if (valid[u])
+          // Primary slot empty: try to claim it via CAS.
+          const int prev = atomicCAS(&s_cache_keys[ch][slot1], -1, bin);
+          if (prev == -1 || prev == bin)
           {
-            decode_op[ch].template BinSelect<LOAD_DEFAULT>(staged[u][ch], bin, true);
-            const int num_bins = num_output_bins_wrapper[ch];
-            if (bin >= num_bins)
-            {
-              bin = -1;
-            }
+            atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
           }
-          bins[u][ch] = bin;
-        }
-      }
-
-      // Phase C: warp-coalesce, probe the SMEM cache, and atomic-update.
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int u = 0; u < unroll; ++u)
-      {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ch = 0; ch < NumActiveChannels; ++ch)
-        {
-          const int bin = bins[u][ch];
-          // Coalesce same-bin lanes into a single atomic add. All
-          // lanes in the warp must call `__match_any_sync` with the
-          // same mask; we use 0xffffffffu so the call is well-defined
-          // even when individual lanes have invalid bins (-1).
-          const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-          const int leader         = __ffs(static_cast<int>(peers)) - 1;
-          if (bin >= 0 && static_cast<int>(lane_id) == leader)
+          else
           {
-            const CounterT contribution = static_cast<CounterT>(__popc(peers));
-            // Two hash functions (cuckoo-style): on a primary slot
-            // collision, try a secondary slot before falling back to
-            // GMEM. This roughly doubles the effective cache hit rate
-            // for moderate-entropy distributions where a few bins
-            // dominate but each thread is otherwise visiting random
-            // bins.
-            const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
-            const int slot1          = static_cast<int>(hash1 & cache_mask);
-            const int existing_key1  = s_cache_keys[ch][slot1];
-            if (existing_key1 == bin)
+            // Lost the race. Try secondary slot.
+            const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
+            const int slot2          = static_cast<int>(hash2 & cache_mask);
+            const int existing_key2  = s_cache_keys[ch][slot2];
+            if (existing_key2 == bin)
             {
-              // Primary hit: bump cache count.
-              atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
+              atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
             }
-            else if (existing_key1 == -1)
+            else if (existing_key2 == -1)
             {
-              // Primary slot empty: try to claim it via CAS.
-              const int prev = atomicCAS(&s_cache_keys[ch][slot1], -1, bin);
-              if (prev == -1 || prev == bin)
-              {
-                atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
-              }
-              else
-              {
-                // Lost the race. Try secondary slot.
-                const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-                const int slot2          = static_cast<int>(hash2 & cache_mask);
-                const int existing_key2  = s_cache_keys[ch][slot2];
-                if (existing_key2 == bin)
-                {
-                  atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-                }
-                else if (existing_key2 == -1)
-                {
-                  const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
-                  if (prev2 == -1 || prev2 == bin)
-                  {
-                    atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-                  }
-                  else
-                  {
-                    atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-                  }
-                }
-                else
-                {
-                  atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-                }
-              }
-            }
-            else
-            {
-              // Primary occupied by a different bin: try the secondary slot.
-              const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-              const int slot2          = static_cast<int>(hash2 & cache_mask);
-              const int existing_key2  = s_cache_keys[ch][slot2];
-              if (existing_key2 == bin)
+              const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
+              if (prev2 == -1 || prev2 == bin)
               {
                 atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-              }
-              else if (existing_key2 == -1)
-              {
-                const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
-                if (prev2 == -1 || prev2 == bin)
-                {
-                  atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-                }
-                else
-                {
-                  atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-                }
               }
               else
               {
                 atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
               }
             }
+            else
+            {
+              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+            }
+          }
+        }
+        else
+        {
+          // Primary occupied by a different bin: try the secondary slot.
+          const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
+          const int slot2          = static_cast<int>(hash2 & cache_mask);
+          const int existing_key2  = s_cache_keys[ch][slot2];
+          if (existing_key2 == bin)
+          {
+            atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
+          }
+          else if (existing_key2 == -1)
+          {
+            const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
+            if (prev2 == -1 || prev2 == bin)
+            {
+              atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
+            }
+            else
+            {
+              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+            }
+          }
+          else
+          {
+            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+          }
+        }
+      }
+    };
+
+    if constexpr (NumActiveChannels == 1)
+    {
+      // Single-channel: SOFTWARE-PIPELINE the unrolled chunk. Issue all
+      // `unroll` independent global loads up front (Phase A) so the long
+      // global-load latency overlaps instead of serialising a
+      // load -> classify -> match -> SMEM-read -> atomic chain per pixel;
+      // then classify (Phase B); then coalesce/probe/atomic (Phase C). The
+      // staged register array is only `unroll` samples deep here
+      // (NumActiveChannels==1), so the extra register footprint is small and
+      // occupancy is preserved. Primary latency-hiding lever for this
+      // issue-bound / eligible-warp-scarce kernel.
+      for (OffsetT it = 0; it < chunk_iters_max; ++it)
+      {
+        const OffsetT pixel = start + it * chunk;
+
+        // Phase A: issue all of this chunk's loads up front.
+        SampleValueT staged[unroll];
+        bool valid[unroll];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int u = 0; u < unroll; ++u)
+        {
+          const OffsetT this_pixel = pixel + u * step;
+          valid[u]                 = this_pixel < total_pixels;
+          const OffsetT pix_off    = valid[u] ? (this_pixel * NumChannels) : OffsetT{0};
+          staged[u]                = d_samples[pix_off];
+        }
+
+        // Phase B: classify all staged samples into bins.
+        int bins[unroll];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int u = 0; u < unroll; ++u)
+        {
+          int bin = -1;
+          if (valid[u])
+          {
+            decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true);
+            const int num_bins = num_output_bins_wrapper[0];
+            if (bin >= num_bins)
+            {
+              bin = -1;
+            }
+          }
+          bins[u] = bin;
+        }
+
+        // Phase C: warp-coalesce, probe the SMEM cache, atomic-update.
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int u = 0; u < unroll; ++u)
+        {
+          probe_cuckoo(0, bins[u]);
+        }
+      }
+    }
+    else
+    {
+      // Multi-channel: keep the interleaved load -> classify -> probe loop.
+      // Staging `unroll * NumActiveChannels` samples here would explode the
+      // register footprint of the already register-limited (2 blocks/SM)
+      // multi-channel kernel and collapse occupancy, so we do NOT pipeline.
+      for (OffsetT it = 0; it < chunk_iters_max; ++it)
+      {
+        const OffsetT pixel = start + it * chunk;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int u = 0; u < unroll; ++u)
+        {
+          const OffsetT this_pixel = pixel + u * step;
+          const bool valid_pixel   = this_pixel < total_pixels;
+          const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int ch = 0; ch < NumActiveChannels; ++ch)
+          {
+            int bin = -1;
+            if (valid_pixel)
+            {
+              auto sample = d_samples[pix_off + ch];
+              decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+              const int num_bins = num_output_bins_wrapper[ch];
+              if (bin >= num_bins)
+              {
+                bin = -1;
+              }
+            }
+            probe_cuckoo(ch, bin);
           }
         }
       }
@@ -2103,98 +2136,130 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // loads in registers across the unrolled chunk).
     using SampleValueT = it_value_t<SampleIteratorT>;
 
-    for (OffsetT it = 0; it < chunk_iters_max; ++it)
-    {
-      const OffsetT pixel = start + it * chunk;
-
-      // Phase A: issue ALL of this chunk's global loads up front. The loads
-      // are mutually independent, so the compiler can keep `unroll *
-      // NumActiveChannels` of them in flight at once -- overlapping the long
-      // global-load latency instead of serialising one load -> classify ->
-      // match -> SMEM-read -> atomic chain per pixel. This is the primary
-      // latency-hiding lever for this issue-bound / eligible-warp-scarce
-      // kernel (No Eligible ~55%, eligible warps/sched ~0.8 in profiling).
-      SampleValueT staged[unroll][NumActiveChannels];
-      bool valid[unroll];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int u = 0; u < unroll; ++u)
+    // Single-source the leader's warp-coalesce + single-probe cache update so
+    // the pipelined (single-channel) and interleaved (multi-channel) loops
+    // below share identical logic.
+    auto probe_single = [&](int ch, int bin) {
+      const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+      const int leader         = __ffs(static_cast<int>(peers)) - 1;
+      if (bin >= 0 && static_cast<int>(lane_id) == leader)
       {
-        const OffsetT this_pixel = pixel + u * step;
-        valid[u]                 = this_pixel < total_pixels;
-        const OffsetT pix_off    = valid[u] ? (this_pixel * NumChannels) : OffsetT{0};
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        const CounterT contribution = static_cast<CounterT>(__popc(peers));
+        // Single direct-mapped probe: hash bin to one slot.
+        const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
+        const int slot          = static_cast<int>(hash & cache_mask);
+        const int existing_key  = s_cache_keys[ch][slot];
+        if (existing_key == bin)
         {
-          staged[u][ch] = d_samples[pix_off + ch];
+          // Hit: bump cache count (block-scope atomic, ~10x cheaper).
+          atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+        }
+        else if (existing_key == -1)
+        {
+          // Empty: try to claim via CAS.
+          const int prev = atomicCAS(&s_cache_keys[ch][slot], -1, bin);
+          if (prev == -1 || prev == bin)
+          {
+            atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+          }
+          else
+          {
+            // Lost the claim race to a different bin: go straight to GMEM.
+            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+          }
+        }
+        else
+        {
+          // Collision (slot owned by another bin): single GMEM atomic.
+          atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
         }
       }
+    };
 
-      // Phase B: classify all staged samples into bins (depends on Phase A's
-      // loads, but those have been issued together so the data is arriving in
-      // parallel).
-      int bins[unroll][NumActiveChannels];
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int u = 0; u < unroll; ++u)
+    if constexpr (NumActiveChannels == 1)
+    {
+      // Single-channel: SOFTWARE-PIPELINE the unrolled chunk. Issue all
+      // `unroll` independent global loads up front (Phase A) so the long
+      // global-load latency overlaps instead of serialising one
+      // load -> classify -> match -> SMEM-read -> atomic chain per pixel;
+      // then classify (Phase B); then coalesce/probe/atomic (Phase C). This
+      // is the primary latency-hiding lever for this issue-bound /
+      // eligible-warp-scarce kernel (No Eligible ~55%, eligible warps/sched
+      // ~0.8 in profiling). The staged register array is only `unroll`
+      // samples deep here (NumActiveChannels==1), so the extra register
+      // footprint is small and occupancy is preserved.
+      for (OffsetT it = 0; it < chunk_iters_max; ++it)
       {
+        const OffsetT pixel = start + it * chunk;
+
+        // Phase A: issue all of this chunk's loads up front.
+        SampleValueT staged[unroll];
+        bool valid[unroll];
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        for (int u = 0; u < unroll; ++u)
+        {
+          const OffsetT this_pixel = pixel + u * step;
+          valid[u]                 = this_pixel < total_pixels;
+          const OffsetT pix_off    = valid[u] ? (this_pixel * NumChannels) : OffsetT{0};
+          staged[u]                = d_samples[pix_off];
+        }
+
+        // Phase B: classify all staged samples into bins.
+        int bins[unroll];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int u = 0; u < unroll; ++u)
         {
           int bin = -1;
           if (valid[u])
           {
-            decode_op[ch].template BinSelect<LOAD_DEFAULT>(staged[u][ch], bin, true);
-            const int num_bins = num_output_bins_wrapper[ch];
+            decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true);
+            const int num_bins = num_output_bins_wrapper[0];
             if (bin >= num_bins)
             {
               bin = -1;
             }
           }
-          bins[u][ch] = bin;
+          bins[u] = bin;
+        }
+
+        // Phase C: warp-coalesce, probe the SMEM cache, atomic-update.
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int u = 0; u < unroll; ++u)
+        {
+          probe_single(0, bins[u]);
         }
       }
-
-      // Phase C: warp-coalesce, probe the SMEM cache, and atomic-update.
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int u = 0; u < unroll; ++u)
+    }
+    else
+    {
+      // Multi-channel: keep the interleaved load -> classify -> probe loop.
+      // Staging `unroll * NumActiveChannels` samples here would explode the
+      // register footprint of the already register-limited (2 blocks/SM)
+      // multi-channel kernel and collapse occupancy, so we do NOT pipeline.
+      for (OffsetT it = 0; it < chunk_iters_max; ++it)
       {
+        const OffsetT pixel = start + it * chunk;
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        for (int u = 0; u < unroll; ++u)
         {
-          const int bin = bins[u][ch];
-          // Coalesce same-bin lanes into a single atomic add.
-          const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-          const int leader         = __ffs(static_cast<int>(peers)) - 1;
-          if (bin >= 0 && static_cast<int>(lane_id) == leader)
+          const OffsetT this_pixel = pixel + u * step;
+          const bool valid_pixel   = this_pixel < total_pixels;
+          const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int ch = 0; ch < NumActiveChannels; ++ch)
           {
-            const CounterT contribution = static_cast<CounterT>(__popc(peers));
-            // Single direct-mapped probe: hash bin to one slot.
-            const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
-            const int slot          = static_cast<int>(hash & cache_mask);
-            const int existing_key  = s_cache_keys[ch][slot];
-            if (existing_key == bin)
+            int bin = -1;
+            if (valid_pixel)
             {
-              // Hit: bump cache count (block-scope atomic, ~10x cheaper).
-              atomicAdd_block(&s_cache_counts[ch][slot], contribution);
-            }
-            else if (existing_key == -1)
-            {
-              // Empty: try to claim via CAS.
-              const int prev = atomicCAS(&s_cache_keys[ch][slot], -1, bin);
-              if (prev == -1 || prev == bin)
+              auto sample = d_samples[pix_off + ch];
+              decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+              const int num_bins = num_output_bins_wrapper[ch];
+              if (bin >= num_bins)
               {
-                atomicAdd_block(&s_cache_counts[ch][slot], contribution);
-              }
-              else
-              {
-                // Lost the claim race to a different bin: go straight to GMEM.
-                atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+                bin = -1;
               }
             }
-            else
-            {
-              // Collision (slot owned by another bin): single GMEM atomic.
-              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-            }
+            probe_single(ch, bin);
           }
         }
       }
