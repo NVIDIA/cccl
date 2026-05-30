@@ -1246,6 +1246,7 @@ class Configuration(object):
                 addIfHostSupports("-Wno-deprecated-declarations")
                 addIfHostSupports("-Wno-noexcept-type")
                 addIfHostSupports("-Wno-unused-function")
+                addIfHostSupports("-Wno-attributes")
 
                 if "gcc-4.8" in self.config.available_features:
                     # GCC pre-GCC5 spuriously generates these on reasonable aggregate initialization.
