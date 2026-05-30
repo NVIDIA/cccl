@@ -72,3 +72,37 @@ TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
   CUDART_REQUIRE(cudaFree(p));
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }
+
+TEST_CASE("cudaMalloc/cudaFree round-trip works", "[cuda_smoke][device_memory]")
+{
+  (void) cudaGetLastError();
+
+  constexpr int n = 256;
+
+  int* d_ptr = nullptr;
+  CUDART_REQUIRE(cudaMalloc(&d_ptr, n * sizeof(int)));
+  REQUIRE(d_ptr != nullptr);
+
+  int h_in[n];
+  for (int i = 0; i < n; ++i)
+  {
+    h_in[i] = i;
+  }
+  CUDART_REQUIRE(cudaMemcpy(d_ptr, h_in, n * sizeof(int), cudaMemcpyHostToDevice));
+
+  constexpr int block = 64;
+  const int grid      = (n + block - 1) / block;
+  increment_kernel<<<grid, block>>>(d_ptr, n);
+  CUDART_REQUIRE(cudaGetLastError());
+  CUDART_REQUIRE(cudaDeviceSynchronize());
+
+  int h_out[n];
+  CUDART_REQUIRE(cudaMemcpy(h_out, d_ptr, n * sizeof(int), cudaMemcpyDeviceToHost));
+  for (int i = 0; i < n; ++i)
+  {
+    REQUIRE(h_out[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaFree(d_ptr));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
