@@ -286,17 +286,18 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // the same route that won for single-channel wins at least as much for
   // multi-channel. The 262144-bin multi cell's intermediate is ~1.3 GB (3x the
   // single-channel 262144 ~445 MB, which was ~neutral for single-channel), so
-  // single-probe nets positive there for multi too. We route the 65536-bin
-  // multi cells too (threshold 65536): nsys after the 131072 route showed the
-  // 65536 multi RANGE cell at 256M uniform still runs DeviceHistogramSweepKernel
-  // at ~28 ms -- its per-channel intermediate is ~334 MB but the privatized
-  // gather merge is still DRAM-bound on the strided read at this scale, so
-  // single-probe (which atomic-adds directly to the output and caches the few
-  // hot bins) should win on the uniform/skewed cells. (worker-4 brief-3 left
-  // 65536 on sweep based on a four-metric geomean dominated by single-channel,
-  // where 65536 single-probe was a net loser; this brief is multi_range-scoped
-  // and measures the 65536-multi route directly.)
-  constexpr int kSingleProbeBinThresholdMulti = 65536;
+  // single-probe nets positive there for multi too; we set the multi threshold
+  // to 131072 (between the 65536 and 262144 axis points) to route both 262144
+  // and 1048576 multi cells. 65536 multi stays on sweep: an ablation lowering
+  // this threshold to 65536 REGRESSED multi_range -0.75% (488.82->485.17),
+  // because single-probe loses on the constant/skewed 65536 cells (one hot bin
+  // serialises through one direct-mapped slot; a skewed hot set thrashes it) and
+  // at 65536 the sweep's ~334 MB per-channel intermediate is not catastrophic
+  // enough for privatization to lose net. (Ported from worker-4 brief-3's
+  // validated multi single-probe routing, which measured multi_range +2.5%;
+  // never folded into the global best b87a6386 -- it carried only worker-3's
+  // multi EVEN policy.)
+  constexpr int kSingleProbeBinThresholdMulti = 131072;
 
   // Large-input cells.
   //
