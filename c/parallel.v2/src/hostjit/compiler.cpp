@@ -20,6 +20,7 @@
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Passes/OptimizationLevel.h>
 #include <llvm/Passes/PassBuilder.h>
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
@@ -589,6 +590,29 @@ public:
                     break;
                 }
 
+                // Raise LLVM's loop-unroll thresholds (once) so the user op's
+                // small, constant-trip-count loops -- e.g. Numba `local.array`
+                // loops -- get FULLY unrolled. Without full unroll the backing
+                // alloca keeps a dynamic index, SROA can't promote it, and it
+                // lands in local memory (a per-thread stack frame + LDL/STL
+                // traffic). ptxas does this promotion on the v1/LTO path; the
+                // LLVM-NVPTX path needs full-unroll-then-SROA at the IR level.
+                static const bool unroll_tuned = [] {
+                  auto& opts = llvm::cl::getRegisteredOptions();
+                  auto set_opt = [&](llvm::StringRef name, llvm::StringRef value) {
+                    auto it = opts.find(name);
+                    if (it != opts.end())
+                    {
+                      it->second->addOccurrence(0, name, value);
+                    }
+                  };
+                  set_opt("unroll-threshold", "4000");
+                  set_opt("unroll-full-max-count", "1024");
+                  set_opt("unroll-max-upperbound", "1024");
+                  return true;
+                }();
+                (void) unroll_tuned;
+
                 llvm::LoopAnalysisManager LAM;
                 llvm::FunctionAnalysisManager FAM;
                 llvm::CGSCCAnalysisManager CGAM;
@@ -603,6 +627,24 @@ public:
 
                 auto MPM = PB.buildPerModuleDefaultPipeline(opt_level);
                 MPM.run(*mod, MAM);
+
+                // Second optimization round with fresh analyses: now that the
+                // op's loops are fully unrolled (constant indices), the early
+                // SROA in the pipeline promotes the local arrays to registers.
+                llvm::LoopAnalysisManager LAM2;
+                llvm::FunctionAnalysisManager FAM2;
+                llvm::CGSCCAnalysisManager CGAM2;
+                llvm::ModuleAnalysisManager MAM2;
+
+                llvm::PassBuilder PB2(tm);
+                PB2.registerModuleAnalyses(MAM2);
+                PB2.registerCGSCCAnalyses(CGAM2);
+                PB2.registerFunctionAnalyses(FAM2);
+                PB2.registerLoopAnalyses(LAM2);
+                PB2.crossRegisterProxies(LAM2, FAM2, CGAM2, MAM2);
+
+                auto MPM2 = PB2.buildPerModuleDefaultPipeline(opt_level);
+                MPM2.run(*mod, MAM2);
               }
 
               std::error_code EC;
@@ -612,6 +654,28 @@ public:
                 llvm::legacy::PassManager pass;
                 tm->addPassesToEmitFile(pass, dest, nullptr, llvm::CodeGenFileType::AssemblyFile);
                 pass.run(*mod);
+                dest.flush();
+
+                // Debug: when CCCL_HOSTJIT_DUMP_DIR is set, dump the optimized IR
+                // and the PTX fed to ptxas, keyed by entry point name. Lets us
+                // inspect codegen (register pressure, launch bounds) post-inline.
+                if (const char* dump_dir = std::getenv("CCCL_HOSTJIT_DUMP_DIR"))
+                {
+                  std::error_code dec;
+                  std::filesystem::create_directories(dump_dir, dec);
+                  const std::string base =
+                    config.entry_point_name.empty() ? std::string("kernel") : config.entry_point_name;
+                  const std::string stem = (std::filesystem::path(dump_dir) / base).string();
+                  llvm::raw_fd_ostream ll_os(stem + ".opt.ll", dec);
+                  if (!dec)
+                  {
+                    mod->print(ll_os, nullptr);
+                  }
+                  std::error_code cec;
+                  std::filesystem::copy_file(
+                    output_ptx, stem + ".ptx", std::filesystem::copy_options::overwrite_existing, cec);
+                  llvm::errs() << "[hostjit] dumped " << stem << ".opt.ll and " << stem << ".ptx\n";
+                }
               }
               else
               {
