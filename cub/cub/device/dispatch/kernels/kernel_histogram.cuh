@@ -1020,7 +1020,21 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+// Request a minimum of 2 resident blocks/SM. This binds only for the wide
+// launch shapes: the register cap it imposes is 65536/(threads_per_block*2), so
+// it is loose (>= 64 regs) for the narrow single-channel policies (384/448
+// threads) -- leaving their bare-form register counts untouched -- and tight
+// (<= 32 regs) for the wide 1024-thread multi-channel EVEN policy. That EVEN
+// sweep is contention-bound on shared-memory atomicAdd and, with a bare launch
+// bound, ptxas left it at ~58 registers => only 1 block/SM (58*2048 > 65536),
+// with no second resident block to hide the atomic/scoreboard latency. At its
+// 256/2048-bin tiers the SMEM footprint is small (4 KB / 25 KB) so registers,
+// not SMEM, gate occupancy; the hint forces ptxas to fit 2 CTAs and doubles
+// resident warps. NB: a literal `,1` would *relax* the cap (it regressed the
+// 448/768-thread RANGE kernels), and `2048/threads_per_block` over-constrains
+// the 384-thread single-channel EVEN kernel into register spills -- `,2` is the
+// sweet spot that lifts the 1024-thread kernel without touching the narrow ones.
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
