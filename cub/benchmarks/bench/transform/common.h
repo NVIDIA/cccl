@@ -19,6 +19,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__numeric/narrow.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
@@ -75,11 +76,11 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
-template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
+template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
 void bench_transform(nvbench::state& state,
-                     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+                     cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
                      RandomAccessIteratorOut output,
-                     OffsetT num_items,
+                     ::cuda::std::int64_t num_items,
                      TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
