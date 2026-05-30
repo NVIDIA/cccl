@@ -244,6 +244,22 @@ struct Transforms
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
 
+    // Precomputed (loop-invariant) interpolation state, populated by
+    // `PrecomputeOnDevice()`. The interpolation slope `num_bins / (last -
+    // first)` and the boundary levels are uniform across all samples a thread
+    // classifies, but the original `BinSelect` recomputed them per sample
+    // (two cache loads for the endpoints plus a `__fdividef` MUFU.RCP on the
+    // critical dependency chain). Hoisting them out turns the per-sample
+    // first-guess into a single `(float)delta * m_inv_scale` FMA and removes
+    // the two endpoint loads, which is the dominant cost on the ALU/XU-bound
+    // RANGE classify. `m_have_precompute == false` keeps the original
+    // per-sample path so host-only initialization (no device pointer to
+    // dereference) and tiny bin counts remain correct.
+    float m_inv_scale; // num_bins / (float)(last - first); valid iff m_have_precompute
+    LevelT m_first; // cached d_levels[0]
+    LevelT m_last; // cached d_levels[num_bins]
+    bool m_have_precompute; // whether the fields above are valid
+
     //! @brief Initializer
     //!
     //! @param d_levels_ Pointer to levels array
@@ -252,6 +268,46 @@ struct Transforms
     {
       this->d_levels          = d_levels_;
       this->num_output_levels = num_output_levels_;
+      this->m_have_precompute = false;
+      this->m_inv_scale       = 0.0f;
+    }
+
+    //! @brief Hoist the loop-invariant interpolation state out of `BinSelect`.
+    //!
+    //! Must be called on the device (it dereferences the device level array)
+    //! once per thread before the sweep loop. Reads the first and last level,
+    //! validates strict monotonicity of the endpoints and a usable bin count,
+    //! and on success precomputes the float reciprocal slope so the hot path
+    //! avoids a per-sample `__fdividef` and two endpoint loads. On any
+    //! degenerate input it leaves `m_have_precompute == false`, so `BinSelect`
+    //! transparently falls back to the original (fully general) path.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice()
+    {
+      const int num_bins = num_output_levels - 1;
+      if (num_bins < 4)
+      {
+        m_have_precompute = false;
+        return;
+      }
+
+      using WrappedLevelIteratorT =
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
+                         CacheModifiedInputIterator<LOAD_LDG, LevelT, OffsetT>,
+                         LevelIteratorT>;
+      WrappedLevelIteratorT wrapped_levels(d_levels);
+
+      const LevelT first = wrapped_levels[0];
+      const LevelT last  = wrapped_levels[num_bins];
+      if (!(first < last))
+      {
+        m_have_precompute = false;
+        return;
+      }
+
+      m_first     = first;
+      m_last      = last;
+      m_inv_scale = static_cast<float>(num_bins) / static_cast<float>(last - first);
+      m_have_precompute = true;
     }
 
     // Method for converting samples to bin-ids
@@ -288,17 +344,23 @@ struct Transforms
         return;
       }
 
-      // Read first and last levels. These are warp/CTA-uniform and land in
-      // L1 / texture cache after the first read, so the per-thread cost is
-      // amortized across all subsequent samples.
-      const LevelT first_level = wrapped_levels[0];
-      const LevelT last_level  = wrapped_levels[num_bins];
+      // Read first and last levels. When `PrecomputeOnDevice()` has run we use
+      // the cached endpoints (and the precomputed reciprocal slope below),
+      // removing two per-sample endpoint loads and the per-sample
+      // `__fdividef`. Otherwise (host-only init, or a degenerate level array
+      // that PrecomputeOnDevice rejected) we read them per sample as before.
+      // These are warp/CTA-uniform and land in L1 / texture cache after the
+      // first read, so even the fallback amortizes across samples.
+      const LevelT first_level = m_have_precompute ? m_first : wrapped_levels[0];
+      const LevelT last_level  = m_have_precompute ? m_last : wrapped_levels[num_bins];
 
       // Defensive: if a user-supplied level array has non-monotonic endpoints
       // (e.g. `last_level <= first_level`), the boundary check below would
       // misclassify all samples as out-of-range. Fall back to UpperBound,
       // which uses ordered comparisons only and produces correct results
-      // regardless of endpoint ordering.
+      // regardless of endpoint ordering. (PrecomputeOnDevice already enforces
+      // `first < last` before setting m_have_precompute, so this only fires on
+      // the non-precomputed path.)
       if (!(first_level < last_level))
       {
         bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
@@ -323,15 +385,33 @@ struct Transforms
       // remaining mismatch from precision loss or non-uniform spacing.
       // For wide-ranged 64-bit types we still compute (sample - first) in
       // the level type to avoid float overflow on the difference itself.
+      //
+      // On the precomputed path the slope `num_bins / (last - first)` is a
+      // loop-invariant `m_inv_scale`, so the guess collapses to a single
+      // `(float)delta * m_inv_scale` FMA (no per-sample MUFU.RCP). The result
+      // is bit-identical in intent to `__fdividef(delta*num_bins, range)`:
+      // both are approximate first guesses validated by the bracket check
+      // below, so any rounding difference is absorbed by the same verify /
+      // 1-step / UpperBound correction ladder.
       const auto delta = (s - first_level);
-      const auto range = (last_level - first_level);
       int guess;
-      NV_IF_ELSE_TARGET(
-        NV_IS_DEVICE,
-        (guess = static_cast<int>(
-           __fdividef(static_cast<float>(delta) * static_cast<float>(num_bins), static_cast<float>(range)));),
-        (guess = static_cast<int>(
-           (static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));));
+      if (m_have_precompute)
+      {
+        NV_IF_ELSE_TARGET(
+          NV_IS_DEVICE,
+          (guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);),
+          (guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);));
+      }
+      else
+      {
+        const auto range = (last_level - first_level);
+        NV_IF_ELSE_TARGET(
+          NV_IS_DEVICE,
+          (guess = static_cast<int>(
+             __fdividef(static_cast<float>(delta) * static_cast<float>(num_bins), static_cast<float>(range)));),
+          (guess = static_cast<int>(
+             (static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));));
+      }
       if (guess < 0)
       {
         guess = 0;
@@ -663,6 +743,9 @@ struct Transforms
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
     }
 
+    // No-op for uniformity with SearchTransform::PrecomputeOnDevice.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice() {}
+
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
@@ -699,6 +782,9 @@ struct Transforms
     template <typename T>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(T, int)
     {}
+
+    // No-op for uniformity with SearchTransform::PrecomputeOnDevice.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice() {}
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
@@ -766,6 +852,13 @@ struct ChunkedDecodeOp
   {
     chunk_start = start;
     chunk_size  = size;
+  }
+
+  // Forward to inner so the RANGE SearchTransform's loop-invariant
+  // interpolation state is hoisted out of BinSelect on chunked paths too.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice()
+  {
+    inner.PrecomputeOnDevice();
   }
 
   template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
@@ -968,6 +1061,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // Shared memory for AgentHistogram
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
 
+  // This is the smem_priv_256 tier (privatized bins <= 256). The level array a
+  // RANGE SearchTransform searches here is tiny, so the classify is not the
+  // bottleneck and the per-thread cached-interpolation state would only add
+  // register pressure (ncu showed regs 52->76 and occupancy 51->37% when this
+  // kernel localized + precomputed the decode ops). Keep the lean path: use
+  // the grid-constant decode ops directly (read from constant memory) without
+  // the device-side precompute. The other (higher-bin) sweep kernels, where
+  // the classify dominates, still precompute.
   AgentHistogramT agent(
     temp_storage,
     d_samples,
@@ -1132,6 +1233,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       privatized_decode_op[channel].Init(levels, num_output_levels);
       output_decode_op[channel].Init(levels, num_output_levels);
     }
+  }
+
+  // Hoist the RANGE SearchTransform's loop-invariant interpolation slope and
+  // boundary levels out of the per-sample classify. No-op for EVEN
+  // (ScaleTransform) and byte-sample (PassThruTransform) decode ops.
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    privatized_decode_op[channel].PrecomputeOnDevice();
+    output_decode_op[channel].PrecomputeOnDevice();
   }
 
   // Thread block type for compositing input tiles
@@ -1321,6 +1432,20 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     d_privatized_base[ch] = d_privatized_histograms_wrapper[ch];
   }
 
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops.
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    output_decode_op[ch] = output_decode_op_wrapper[ch];
+    privatized_decode_op[ch] = privatized_decode_op_wrapper[ch];
+    output_decode_op[ch].PrecomputeOnDevice();
+    privatized_decode_op[ch].PrecomputeOnDevice();
+  }
+
   {
     AgentHistogramT agent(
       temp_storage,
@@ -1329,8 +1454,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       num_privatized_bins_wrapper.data(),
       d_output_histograms_wrapper.data(),
       d_privatized_histograms_wrapper.data(),
-      output_decode_op_wrapper.data(),
-      privatized_decode_op_wrapper.data());
+      output_decode_op,
+      privatized_decode_op);
 
     // Initialize per-block privatized counters
     agent.InitBinCounters();
@@ -1572,6 +1697,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   }
   __syncthreads();
 
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops. Used by both the num_rows==1 and the general
+  // sweep below.
+  PrivatizedDecodeOpT decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    decode_op[ch] = privatized_decode_op_wrapper[ch];
+    decode_op[ch].PrecomputeOnDevice();
+  }
+
   if (num_rows == 1)
   {
     // Pixel sweep parameters: every thread strides over the whole pixel
@@ -1603,7 +1740,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
           if (valid_pixel)
           {
             auto sample = d_samples[pix_off + ch];
-            privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+            decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
             const int num_bins = num_output_bins_wrapper[ch];
             if (bin >= num_bins)
             {
@@ -1735,7 +1872,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
       {
         auto sample = d_samples[pix_off + ch];
         int bin     = -1;
-        privatized_decode_op_wrapper[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
         const int num_bins = num_output_bins_wrapper[ch];
         if (bin >= 0 && bin < num_bins)
         {
@@ -1748,6 +1885,259 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // Emit the trigger so any PDL-launched downstream kernel in the stream
   // sees a completion signal. (Cooperative launches typically do not use
   // PDL, so this is a no-op in the common case.)
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+}
+
+//! Single-probe direct-mapped variant of the direct-atomic persistent sweep
+//! kernel.
+//!
+//! This kernel targets the very-high-bin / very-large-input regime
+//! (e.g. >=256M pixels with >16K bins, single channel) where the
+//! cooperative gather-merge `DeviceHistogramSweepPersistentKernel` is
+//! catastrophic: it materialises a per-block privatized histogram of size
+//! `num_blocks * num_bins * sizeof(CounterT)` in GMEM (e.g. ~1.9 GB at 444
+//! blocks x 1M bins x 4 B), writes it scattered, then reads it strided at a
+//! tiny L2 hit rate -- DRAM-bound, while privatization buys almost nothing
+//! because each output bin only receives a handful of counts (negligible
+//! cross-block contention).
+//!
+//! Like `DeviceHistogramSweepDirectAtomicPersistentKernel`, every thread
+//! reads samples directly and the warp-leader coalesces same-bin lanes with
+//! `__match_any_sync`. The difference is the per-block SMEM cache policy: this
+//! kernel uses a SINGLE-PROBE direct-mapped cache. Each warp-leader hashes its
+//! bin to exactly one slot and:
+//!   * hit  (slot key == bin)      -> `atomicAdd_block` into the slot count;
+//!   * empty (slot key == -1)      -> claim it with one `atomicCAS`, then
+//!                                     `atomicAdd_block` if the claim succeeds
+//!                                     (or if a peer concurrently claimed the
+//!                                     same bin), else fall back to GMEM;
+//!   * collision (key != bin)      -> a single device-scope `atomicAdd`
+//!                                     directly to the output histogram.
+//! After the sweep, every claimed slot is flushed once to GMEM. There is no
+//! secondary probe and no rehash chain, so the leader's hot path has far less
+//! branch divergence and issues at most one cache atomic before falling
+//! through to GMEM. This trades a lower cache hit rate (compared to the
+//! 2-hash cuckoo cache) for a much shorter, less divergent critical section --
+//! the right trade-off when bins greatly exceed the slot count and the cache
+//! mostly absorbs the few genuinely hot bins of skewed/constant inputs while
+//! the long uniform tail streams straight to GMEM atomics.
+//!
+//! Shares the cuckoo kernel's DYNAMIC-SMEM cache (the dispatch layer picks the
+//! largest power-of-two `cache_slots_per_channel` that preserves occupancy);
+//! the only difference from the cuckoo kernel is the single-probe policy in
+//! the leader's hot path.
+//!
+//! CORRECTNESS: each lane's contribution is added exactly once -- either to a
+//! cache slot (which is flushed to GMEM exactly once at the end) or directly
+//! to GMEM on a miss. Because counts are additive and every leader's atomic is
+//! independent, the result is identical regardless of how slots are claimed or
+//! evicted, so the kernel is race-free for the final counts.
+//!
+//! Must be launched cooperatively (`cudaLaunchCooperativeKernel`) so all
+//! blocks are co-resident, a precondition of `grid_group::sync()`.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int cache_slots_per_channel)
+{
+  namespace cg = ::cooperative_groups;
+
+  cg::grid_group grid = cg::this_grid();
+
+  // Phase 1: zero the output histograms via a grid-wide stride loop.
+  const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
+  const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
+  const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
+  const unsigned int total_threads   = blocks_per_grid * blockDim.x;
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    const int channel_bins = num_output_bins_wrapper[ch];
+    for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
+    {
+      d_output_histograms_wrapper[ch][bin] = 0;
+    }
+  }
+
+  // Phase 2: grid-wide sync so all output-histogram zeros are visible.
+  grid.sync();
+
+  // Phase 3: direct-atomic sweep with a single-probe direct-mapped SMEM cache.
+  constexpr int unroll       = 4;
+  const OffsetT total_pixels = num_rows * num_row_pixels;
+
+  // Single-probe direct-mapped cache, in DYNAMIC shared memory (same layout
+  // and dispatch-chosen `cache_slots_per_channel` as the cuckoo kernel: keys
+  // for all channels first, then counts). Only the probe policy differs.
+  const int cache_mask = cache_slots_per_channel - 1;
+  extern __shared__ unsigned char s_singleprobe_raw[];
+  int* const s_cache_keys_base = reinterpret_cast<int*>(s_singleprobe_raw);
+  CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
+    s_singleprobe_raw + static_cast<size_t>(NumActiveChannels) * cache_slots_per_channel * sizeof(int));
+  int* s_cache_keys[NumActiveChannels];
+  CounterT* s_cache_counts[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * cache_slots_per_channel;
+    s_cache_counts[ch] = s_cache_counts_base + static_cast<size_t>(ch) * cache_slots_per_channel;
+  }
+
+  // Initialize cache: keys = -1 (empty sentinel), counts = 0.
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+    {
+      s_cache_keys[ch][slot]   = -1;
+      s_cache_counts[ch][slot] = CounterT{0};
+    }
+  }
+  __syncthreads();
+
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops. Used by both the num_rows==1 and the general
+  // sweep below.
+  PrivatizedDecodeOpT decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    decode_op[ch] = privatized_decode_op_wrapper[ch];
+    decode_op[ch].PrecomputeOnDevice();
+  }
+
+  if (num_rows == 1)
+  {
+    const OffsetT step         = static_cast<OffsetT>(total_threads);
+    const OffsetT start        = static_cast<OffsetT>(tid_global);
+    const unsigned int lane_id = threadIdx.x & 0x1f;
+
+    const OffsetT chunk           = static_cast<OffsetT>(unroll) * step;
+    const OffsetT chunk_iters_max = (total_pixels + chunk - 1) / chunk;
+
+    for (OffsetT it = 0; it < chunk_iters_max; ++it)
+    {
+      const OffsetT pixel = start + it * chunk;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < unroll; ++u)
+      {
+        const OffsetT this_pixel = pixel + u * step;
+        const bool valid_pixel   = this_pixel < total_pixels;
+        const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        {
+          int bin = -1;
+          if (valid_pixel)
+          {
+            auto sample = d_samples[pix_off + ch];
+            decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+            const int num_bins = num_output_bins_wrapper[ch];
+            if (bin >= num_bins)
+            {
+              bin = -1;
+            }
+          }
+          // Coalesce same-bin lanes into a single atomic add.
+          const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+          const int leader         = __ffs(static_cast<int>(peers)) - 1;
+          if (bin >= 0 && static_cast<int>(lane_id) == leader)
+          {
+            const CounterT contribution = static_cast<CounterT>(__popc(peers));
+            // Single direct-mapped probe: hash bin to one slot.
+            const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
+            const int slot          = static_cast<int>(hash & cache_mask);
+            const int existing_key  = s_cache_keys[ch][slot];
+            if (existing_key == bin)
+            {
+              // Hit: bump cache count (block-scope atomic, ~10x cheaper).
+              atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+            }
+            else if (existing_key == -1)
+            {
+              // Empty: try to claim via CAS.
+              const int prev = atomicCAS(&s_cache_keys[ch][slot], -1, bin);
+              if (prev == -1 || prev == bin)
+              {
+                atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+              }
+              else
+              {
+                // Lost the claim race to a different bin: go straight to GMEM.
+                atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+              }
+            }
+            else
+            {
+              // Collision (slot owned by another bin): single GMEM atomic.
+              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+            }
+          }
+        }
+      }
+    }
+
+    // Flush every claimed cache slot to the global histogram.
+    __syncthreads();
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+      {
+        const int key      = s_cache_keys[ch][slot];
+        const CounterT cnt = s_cache_counts[ch][slot];
+        if (key >= 0 && cnt > CounterT{0})
+        {
+          atomicAdd(&d_output_histograms_wrapper[ch][key], cnt);
+        }
+      }
+    }
+  }
+  else
+  {
+    // Slow path: row-strided input that is not flattenable. No coalescing.
+    for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
+         pixel += static_cast<OffsetT>(total_threads))
+    {
+      const OffsetT row     = pixel / num_row_pixels;
+      const OffsetT col     = pixel - row * num_row_pixels;
+      const OffsetT pix_off = row * row_stride_samples + col * NumChannels;
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        auto sample = d_samples[pix_off + ch];
+        int bin     = -1;
+        decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        const int num_bins = num_output_bins_wrapper[ch];
+        if (bin >= 0 && bin < num_bins)
+        {
+          atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+        }
+      }
+    }
+  }
+
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
@@ -1806,6 +2196,20 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
 
   __shared__ typename AgentHistogramT::TempStorage temp_storage;
 
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops.
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    output_decode_op[channel] = output_decode_op_wrapper[channel];
+    privatized_decode_op[channel] = privatized_decode_op_wrapper[channel];
+    output_decode_op[channel].PrecomputeOnDevice();
+    privatized_decode_op[channel].PrecomputeOnDevice();
+  }
+
   AgentHistogramT agent(
     temp_storage,
     d_samples,
@@ -1813,8 +2217,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
     num_privatized_bins_wrapper.data(),
     d_output_histograms_wrapper.data(),
     d_privatized_histograms_wrapper.data(),
-    output_decode_op_wrapper.data(),
-    privatized_decode_op_wrapper.data());
+    output_decode_op,
+    privatized_decode_op);
 
   agent.InitBinCounters();
   agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
@@ -1897,6 +2301,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
       privatized_decode_op[channel].Init(levels, num_output_levels);
       output_decode_op[channel].Init(levels, num_output_levels);
     }
+  }
+
+  // Hoist the RANGE SearchTransform's loop-invariant interpolation slope and
+  // boundary levels out of the per-sample classify. No-op for EVEN
+  // (ScaleTransform) and byte-sample (PassThruTransform) decode ops.
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    privatized_decode_op[channel].PrecomputeOnDevice();
+    output_decode_op[channel].PrecomputeOnDevice();
   }
 
   // Thread block type for compositing input tiles
@@ -2034,6 +2448,20 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   extern __shared__ unsigned char dyn_smem_raw[];
   CounterT* dyn_smem_histograms = reinterpret_cast<CounterT*>(dyn_smem_raw);
 
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops.
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    output_decode_op[channel] = output_decode_op_wrapper[channel];
+    privatized_decode_op[channel] = privatized_decode_op_wrapper[channel];
+    output_decode_op[channel].PrecomputeOnDevice();
+    privatized_decode_op[channel].PrecomputeOnDevice();
+  }
+
   AgentHistogramT agent(
     temp_storage,
     d_samples,
@@ -2041,8 +2469,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
     num_privatized_bins_wrapper.data(),
     d_output_histograms_wrapper.data(),
     d_privatized_histograms_wrapper.data(),
-    output_decode_op_wrapper.data(),
-    privatized_decode_op_wrapper.data(),
+    output_decode_op,
+    privatized_decode_op,
     dyn_smem_histograms);
 
   agent.InitBinCounters();
@@ -2056,6 +2484,120 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
 
   // PDL trigger MUST be after `StoreSmemToStagingSlab`: the follow-on
   // combine kernel reads from the per-block GMEM staging slabs.
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+}
+
+//! Host-init dynamic-SMEM, NON-staging variant of the histogram sweep kernel.
+//!
+//! Identical to `DeviceHistogramSweepStagingHostInitDynSmemKernel` except it
+//! does NOT use per-block GMEM staging slabs and a follow-on combine kernel.
+//! Instead it merges each block's dyn-SMEM privatized histogram directly into
+//! the global output histogram via `agent.StoreOutput()` (per-block
+//! `atomicAdd`). The host must still launch `DeviceHistogramInitKernel` first to
+//! zero the output histogram (StoreOutput accumulates).
+//!
+//! Rationale (extends the 2K-tier finding to the dyn-SMEM tiers): for moderate
+//! bin counts the staging path's overhead -- a per-block SMEM->GMEM flush, then
+//! either a standalone combine launch or a cooperative grid.sync + cross-block
+//! gather -- is not always amortised. When the bin count is large enough that
+//! cross-block atomic contention on the output is spread thin (each output bin
+//! is hit by relatively few blocks), the direct atomic merge can win: it skips
+//! the GMEM round-trip of the staging slabs entirely and needs no grid.sync /
+//! cooperative launch (so occupancy is governed only by the kernel itself).
+//!
+//! Host requirements mirror the staging dyn-SMEM kernel:
+//!   - `cudaFuncSetAttribute(this_kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, dyn_smem_bytes)`
+//!     with `dyn_smem_bytes >= sum_ch num_privatized_bins[ch] * sizeof(CounterT)`.
+//!   - Pass `dyn_smem_bytes` as the third triple-chevron parameter at launch.
+template <typename PolicySelector,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename PrivatizedDecodeOpT,
+          typename OutputDecodeOpT,
+          typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+// minBlocks=2 hint mirrors the staging dyn-SMEM kernel; the dispatch sizes the
+// grid by this kernel's own sm_occupancy.
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepNonStagingDynSmemKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    GridQueue<int> tile_queue)
+{
+  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.threads_per_block,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
+  using AgentHistogramT =
+    AgentHistogram<AgentHistogramPolicyT,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
+                   SampleIteratorT,
+                   CounterT,
+                   PrivatizedDecodeOpT,
+                   OutputDecodeOpT,
+                   OffsetT,
+                   /* UseDynamicSmemHistogram = */ true>;
+
+  __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+  extern __shared__ unsigned char dyn_smem_raw[];
+  CounterT* dyn_smem_histograms = reinterpret_cast<CounterT*>(dyn_smem_raw);
+
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops.
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    output_decode_op[channel] = output_decode_op_wrapper[channel];
+    privatized_decode_op[channel] = privatized_decode_op_wrapper[channel];
+    output_decode_op[channel].PrecomputeOnDevice();
+    privatized_decode_op[channel].PrecomputeOnDevice();
+  }
+
+  AgentHistogramT agent(
+    temp_storage,
+    d_samples,
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op,
+    privatized_decode_op,
+    dyn_smem_histograms);
+
+  agent.InitBinCounters();
+  agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+  // Direct per-block atomic merge to the global output histogram (no staging
+  // slab, no combine kernel).
+  agent.StoreOutput();
+
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
@@ -2119,6 +2661,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
       privatized_decode_op[channel].Init(levels, num_output_levels);
       output_decode_op[channel].Init(levels, num_output_levels);
     }
+  }
+
+  // Hoist the RANGE SearchTransform's loop-invariant interpolation slope and
+  // boundary levels out of the per-sample classify. No-op for EVEN
+  // (ScaleTransform) and byte-sample (PassThruTransform) decode ops.
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    privatized_decode_op[channel].PrecomputeOnDevice();
+    output_decode_op[channel].PrecomputeOnDevice();
   }
 
   using AgentHistogramPolicyT =
@@ -2301,6 +2853,22 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   // grid.sync() so the drain reset is visible to every block before the sweep.
   grid.sync();
 
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops. (For chunked dispatch this also covers the
+  // ChunkedDecodeOp wrapper, which forwards PrecomputeOnDevice to its inner
+  // SearchTransform.)
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    output_decode_op[ch] = output_decode_op_wrapper[ch];
+    privatized_decode_op[ch] = privatized_decode_op_wrapper[ch];
+    output_decode_op[ch].PrecomputeOnDevice();
+    privatized_decode_op[ch].PrecomputeOnDevice();
+  }
+
   {
     AgentHistogramT agent(
       temp_storage,
@@ -2309,8 +2877,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
       num_privatized_bins_wrapper.data(),
       d_output_histograms_wrapper.data(),
       d_privatized_histograms_wrapper.data(),
-      output_decode_op_wrapper.data(),
-      privatized_decode_op_wrapper.data(),
+      output_decode_op,
+      privatized_decode_op,
       dyn_smem_histograms);
 
     agent.InitBinCounters();
@@ -2579,6 +3147,20 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 1)
     grid.sync();
   }
 
+  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
+  // interpolation state out of the per-sample classify. No-op for EVEN /
+  // byte-sample decode ops.
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    output_decode_op[ch] = output_decode_op_wrapper[ch];
+    privatized_decode_op[ch] = privatized_decode_op_wrapper[ch];
+    output_decode_op[ch].PrecomputeOnDevice();
+    privatized_decode_op[ch].PrecomputeOnDevice();
+  }
+
   // Single sweep with hybrid accumulation.
   {
     AgentHistogramT agent(
@@ -2589,8 +3171,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 1)
       d_output_histograms_wrapper.data(),
       d_primary_staging_wrapper.data(),
       d_secondary_staging_wrapper.data(),
-      output_decode_op_wrapper.data(),
-      privatized_decode_op_wrapper.data(),
+      output_decode_op,
+      privatized_decode_op,
       dyn_smem_histograms,
       hybrid_split_bin,
       hybrid_secondary_size);

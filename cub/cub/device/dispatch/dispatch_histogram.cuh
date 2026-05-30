@@ -148,6 +148,17 @@ enum class algorithm : unsigned char
   // grid.sync). Wins on bandwidth-bound large-input workloads where the
   // cuckoo cache's lookup chains stall.
   gmem_priv_sweep,
+
+  // High-bin GMEM-priv path with the persistent direct-atomic-to-output
+  // kernel + per-block SINGLE-PROBE direct-mapped SMEM cache. Identical to
+  // gmem_priv_cuckoo except the cache probes exactly one slot (miss -> GMEM
+  // atomic) instead of a 2-hash cuckoo chain. The shorter, less-divergent
+  // critical section wins at HUGE element counts with very high bin counts
+  // (single channel), where the cooperative sweep's per-block privatized
+  // intermediate is DRAM-bound and privatization buys ~nothing (only a
+  // handful of counts per bin), while the cuckoo chain's extra CAS/probe
+  // work is wasted because the bins vastly outnumber the cache slots.
+  gmem_priv_single_probe,
 };
 
 // Inputs to the selector. Every value used to make a dispatch decision must
@@ -243,11 +254,42 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // -----------------------------------------------------------------------
   constexpr long long kSweepPixelThreshold = 1LL << 28; // ~256M pixels
 
-  // Large-input cells route to sweep (gather-merge persistent) regardless of
-  // channel layout. Hybrid collapses here (geomean 0.21-1.49x with many
-  // regressions); cuckoo's cache lookup chains stall at this scale.
+  // Bin threshold above which the cooperative sweep's per-block privatized
+  // intermediate becomes catastrophic at large input. The intermediate is
+  // `num_blocks * num_bins * sizeof(CounterT)` bytes; on B200 num_blocks is
+  // grid-capped at ~444, so at 1M bins it is ~1.78 GB -- written scattered,
+  // read strided at a tiny L2 hit rate (DRAM-bound). At <=262144 bins the
+  // intermediate is <=~445 MB and the privatization still nets a win across
+  // the entropy mix (it absorbs the heavy hot-bin contention of constant /
+  // skewed inputs, which the single-probe cache cannot -- a single hot bin
+  // serialises through one cache slot, and a skewed hot set thrashes the
+  // direct-mapped cache). Only at the 1M-bin tier does the single-probe path
+  // win net: there the uniform case is ~5-6x faster (the catastrophic sweep
+  // is the baseline) and the constant/skewed losses are bounded because the
+  // 1.78 GB intermediate hurts the sweep too. Measured (same-conditions,
+  // single-channel EVEN, 180-cell geomean): routing only >= this threshold is
+  // +1.6%; routing all huge-N high-bin cells regresses -1.6% because the
+  // 65536/262144-bin constant/skewed cells lose more than the uniform cells
+  // gain. 524288 sits between the 262144 and 1048576 axis points.
+  constexpr int kSingleProbeBinThreshold = 524288;
+
+  // Large-input cells.
+  //
+  // Single channel: route only the 1M-bin tier (>= kSingleProbeBinThreshold)
+  // to the single-probe direct-mapped cache, which sidesteps the catastrophic
+  // privatized intermediate entirely (it atomic-adds directly to the output,
+  // absorbing the few genuinely hot bins in SMEM and streaming the rest to
+  // GMEM). Lower bin counts keep sweep, whose privatization still wins net.
+  //
+  // Multi channel: keep sweep (the per-channel privatized intermediate is far
+  // smaller and the multi-channel direct-atomic path has not been validated as
+  // a win at this scale; this brief is single-channel-scoped).
   if (f.num_pixels >= kSweepPixelThreshold)
   {
+    if (f.num_active_channels == 1 && f.num_bins >= kSingleProbeBinThreshold)
+    {
+      return algorithm::gmem_priv_single_probe;
+    }
     return algorithm::gmem_priv_sweep;
   }
 
@@ -444,6 +486,24 @@ struct DeviceHistogramKernelSource
       OffsetT>;
   }
 
+  /// Host-init dynamic-SMEM, NON-staging variant: merges each block's dyn-SMEM
+  /// privatized histogram directly into the global output via atomicAdd
+  /// (no staging slabs, no combine kernel). Host must launch the init kernel first.
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepNonStagingDynSmemKernel()
+  {
+    return &DeviceHistogramSweepNonStagingDynSmemKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT>;
+  }
+
   /// Host-init FUSED dynamic-SMEM staging+combine sweep kernel. Used for cooperative
   /// launch that fuses sweep+combine into one kernel via grid_group::sync().
   template <typename PolicyT,
@@ -612,7 +672,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // via the unified algorithm selector, this overrides the legacy
   // `direct_atomic_bin_threshold` heuristic. Set true to force the
   // SweepPersistent / Init+Sweep path regardless of bin count.
-  bool disable_direct_atomic = false)
+  bool disable_direct_atomic = false,
+  // Cache policy for the direct-atomic-to-output kernel (only consulted when
+  // the direct-atomic path is taken, i.e. !disable_direct_atomic):
+  //   0 -> 2-hash cuckoo cache (DeviceHistogramSweepDirectAtomicPersistentKernel)
+  //   1 -> single-probe direct-mapped cache
+  //        (DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel)
+  // Both kernels share the same dynamic-SMEM cache layout and the
+  // dispatch-chosen `cache_slots_per_channel`; only the probe policy differs.
+  int direct_atomic_cache_mode = 0)
 {
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
@@ -638,20 +706,37 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   // Whether this dispatch uses the dynamic-SMEM staging tier. The xlarge tier
   // (16384 bins, 64 KB SMEM/block) MUST use dyn-SMEM because static SMEM
-  // exceeds the ptxas 48 KB cap. The medium (2048 bins, 8 KB) and large (8192
-  // bins, 32 KB) tiers also use dyn-SMEM here so they can share the
-  // staging+fused-launch code path with the xlarge tier; static SMEM would
-  // also work but doubles the kernel-template instantiation surface for no
-  // performance gain (dyn-SMEM and static-SMEM histograms have the same
-  // ptxas-generated access patterns inside AgentHistogram).
+  // exceeds the ptxas 48 KB cap. The large (8192 bins, 32 KB) tier also uses
+  // dyn-SMEM here so it shares the staging+fused-launch code path with xlarge.
+  //
+  // The medium (2048 bins, 8 KB) tier instead uses the NON-staging path:
+  // static-SMEM privatization with a per-block atomicAdd StoreOutput merge to
+  // the global histogram. For only 2048 bins the staging path's overhead --
+  // a full grid.sync plus a GMEM round-trip (write each block's SMEM histogram
+  // to a per-block staging slab, then read it back in the cross-block gather) --
+  // is not amortised; the direct atomic merge touches half the GMEM traffic and
+  // avoids the cooperative-launch grid.sync. (The brief's "which tiers earn
+  // their place" question: at 2K bins, staging does not.)
   static constexpr bool kStagingUsesDynSmem =
     (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_xlarge)
-    || (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_large)
-    || (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel);
+    || (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_large);
   static constexpr bool kStagingChannelOk = (NUM_ACTIVE_CHANNELS >= 1 && NUM_ACTIVE_CHANNELS <= 4);
   static constexpr bool kStagingPrivOk    = kStagingUsesDynSmem;
-  // For all dyn-SMEM extended tiers we always run staging.
-  static constexpr bool kUseStagingPath = kStagingChannelOk && kStagingPrivOk;
+
+  // Non-staging dyn-SMEM merge for the xlarge (16384-bin) tier: keep the
+  // privatized histogram in dyn-SMEM (it exceeds the 48 KB static cap) but merge
+  // each block directly into the global output via atomicAdd in StoreOutput,
+  // skipping the per-block GMEM staging slab + grid.sync + cross-block gather.
+  // At 16384 bins cross-block atomic contention on the output is spread over
+  // 16384 distinct bins, so the direct merge avoids the staging GMEM round-trip
+  // without paying heavy contention. The 8192-bin tier keeps staging.
+  // (Extends the 2K-tier finding to the dyn-SMEM tier.)
+  static constexpr bool kUseNonStagingDynSmem =
+    kStagingUsesDynSmem && (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_xlarge);
+
+  // Use the staging path for dyn-SMEM tiers EXCEPT the ones routed to the
+  // non-staging dyn-SMEM merge above.
+  static constexpr bool kUseStagingPath = kStagingChannelOk && kStagingPrivOk && !kUseNonStagingDynSmem;
 
   // Build the staging sweep kernel pointer for the dyn-SMEM xlarge tier. For other tiers this is unused.
   auto staging_sweep_kernel = [&] {
@@ -701,8 +786,36 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   // For the dyn-SMEM xlarge tier, alias `sweep_kernel` to `staging_sweep_kernel` to avoid instantiating
   // the static-SMEM AgentHistogram (which would exceed the ptxas 48 KB cap for 16384 bins).
+  // For the non-staging dyn-SMEM tier, use the dedicated dyn-SMEM kernel that
+  // merges directly to the output via atomicAdd (StoreOutput) instead of staging.
   auto sweep_kernel = [&] {
-    if constexpr (kStagingUsesDynSmem)
+    if constexpr (kUseNonStagingDynSmem)
+    {
+      if constexpr (IsDeviceInit)
+      {
+        // Device-init non-staging dyn-SMEM is not used by the active paths; alias
+        // to the staging device-init kernel so decltype is well-defined. (The
+        // non-staging dyn-SMEM tier is only selected on the host-init path.)
+        return kernel_source.template HistogramSweepStagingDynSmemKernelDeviceInit<
+               PolicySelector,
+               PRIVATIZED_SMEM_BINS,
+               FirstLevelArrayT,
+               SecondLevelArrayT,
+               IsEven,
+               IsByteSample>();
+      }
+      else
+      {
+        using output_decode_op_t     = typename FirstLevelArrayT::value_type;
+        using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+        return kernel_source.template HistogramSweepNonStagingDynSmemKernel<
+               PolicySelector,
+               PRIVATIZED_SMEM_BINS,
+               privatized_decode_op_t,
+               output_decode_op_t>();
+      }
+    }
+    else if constexpr (kStagingUsesDynSmem)
     {
       return staging_sweep_kernel;
     }
@@ -834,10 +947,18 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   constexpr int direct_atomic_bin_threshold_multi  = 16384;
   const int direct_atomic_bin_threshold =
     (NUM_ACTIVE_CHANNELS > 1) ? direct_atomic_bin_threshold_multi : direct_atomic_bin_threshold_single;
+  // When the unified selector explicitly requested the single-probe
+  // direct-atomic cache (`direct_atomic_cache_mode == 1`), it has already
+  // decided the direct-atomic path is wanted; the legacy bin-count threshold
+  // (used by callers that don't route through the selector) must not veto it.
+  // The IsDeviceInit / PRIVATIZED_SMEM_BINS / disable_direct_atomic guards
+  // still apply (the single-probe kernel is a host-init, PRIVATIZED_SMEM_BINS==0
+  // cooperative kernel exactly like the cuckoo one).
+  const bool selector_forces_direct_atomic = (direct_atomic_cache_mode == 1);
   const bool use_direct_atomic_to_output =
 #if _CCCL_HOSTED()
     (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && !disable_direct_atomic
-     && max_num_output_bins >= direct_atomic_bin_threshold);
+     && (selector_forces_direct_atomic || max_num_output_bins >= direct_atomic_bin_threshold));
 #else
     false;
 #endif
@@ -986,6 +1107,35 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const void* direct_atomic_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_kernel_ptr);
 
+      // The single-probe direct-mapped variant of the direct-atomic kernel.
+      // It shares the cuckoo kernel's signature (including the runtime
+      // `cache_slots_per_channel` dynamic-SMEM cache), so the occupancy-
+      // preserving cache sizing, the dynamic-SMEM cap, and the cooperative
+      // launch args below are all common to both; only the leader's probe
+      // policy differs. Selected when the caller requests
+      // `direct_atomic_cache_mode == 1` (the huge-N single-channel high-bin
+      // route picked by the unified selector as gmem_priv_single_probe).
+      auto direct_atomic_single_probe_kernel_ptr =
+        &DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel<PolicySelector,
+                                                                     PRIVATIZED_SMEM_BINS,
+                                                                     NUM_CHANNELS,
+                                                                     NUM_ACTIVE_CHANNELS,
+                                                                     SampleIteratorT,
+                                                                     CounterT,
+                                                                     privatized_decode_op_t,
+                                                                     output_decode_op_t,
+                                                                     OffsetT>;
+      const void* direct_atomic_single_probe_kernel_ptr_void =
+        reinterpret_cast<const void*>(direct_atomic_single_probe_kernel_ptr);
+
+      // Pick the active direct-atomic kernel per the cache mode. Both kernels
+      // are PRIVATIZED_SMEM_BINS==0 host-init cooperative kernels with the same
+      // dynamic-SMEM cache layout; the rest of the launch path treats them
+      // uniformly through `active_direct_atomic_kernel_ptr(_void)`.
+      const bool use_single_probe_cache = (direct_atomic_cache_mode == 1);
+      const void* active_direct_atomic_kernel_ptr_void =
+        use_single_probe_cache ? direct_atomic_single_probe_kernel_ptr_void : direct_atomic_kernel_ptr_void;
+
       int device_ordinal = 0;
       if (cudaGetDevice(&device_ordinal) != cudaSuccess)
       {
@@ -1028,15 +1178,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // floor size. This keeps the single-channel 1M-bin gains (where the
       // extra slots are free) without trading away occupancy on the
       // multi-channel paths.
-      auto cuckoo_occupancy_for = [&](int slots) -> int {
+      //
+      // The query / attribute target is the ACTIVE direct-atomic kernel
+      // (cuckoo or single-probe per `direct_atomic_cache_mode`): they have the
+      // same dynamic-SMEM layout but can differ in register usage, so the
+      // free-SMEM occupancy budget must be measured against the kernel that
+      // will actually run.
+      auto cache_occupancy_for = [&](auto kernel_ptr, int slots) -> int {
         const int bytes = NUM_ACTIVE_CHANNELS * slots * cache_bytes_per_slot;
-        if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_kernel_ptr, bytes) != cudaSuccess)
+        if (launcher_factory.set_max_dynamic_smem_size_for(kernel_ptr, bytes) != cudaSuccess)
         {
           (void) cudaGetLastError();
           return 0;
         }
         int occ = 0;
-        if (launcher_factory.MaxSmOccupancy(occ, direct_atomic_kernel_ptr, threads_per_block, bytes) != cudaSuccess)
+        if (launcher_factory.MaxSmOccupancy(occ, kernel_ptr, threads_per_block, bytes) != cudaSuccess)
         {
           (void) cudaGetLastError();
           return 0;
@@ -1044,28 +1200,47 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         return occ;
       };
 
-      const int floor_occ = cuckoo_occupancy_for(cache_slots_floor);
-      int cache_slots_per_channel = cache_slots_floor;
-      // Grow while occupancy stays at the floor occupancy (free SMEM).
-      for (int cand = cache_slots_floor << 1; cand <= max_slots_by_smem; cand <<= 1)
-      {
-        const int occ = cuckoo_occupancy_for(cand);
-        if (floor_occ > 0 && occ >= floor_occ)
+      auto size_cache_for = [&](auto kernel_ptr) -> int {
+        const int floor_occ_local = cache_occupancy_for(kernel_ptr, cache_slots_floor);
+        int slots                 = cache_slots_floor;
+        // Grow while occupancy stays at the floor occupancy (free SMEM).
+        for (int cand = cache_slots_floor << 1; cand <= max_slots_by_smem; cand <<= 1)
         {
-          cache_slots_per_channel = cand;
+          const int occ = cache_occupancy_for(kernel_ptr, cand);
+          if (floor_occ_local > 0 && occ >= floor_occ_local)
+          {
+            slots = cand;
+          }
+          else
+          {
+            break; // growth would cost occupancy; stop.
+          }
         }
-        else
+        return slots;
+      };
+
+      const int cache_slots_per_channel =
+        use_single_probe_cache ? size_cache_for(direct_atomic_single_probe_kernel_ptr)
+                               : size_cache_for(direct_atomic_kernel_ptr);
+      const int cuckoo_cache_smem_bytes = NUM_ACTIVE_CHANNELS * cache_slots_per_channel * cache_bytes_per_slot;
+      // Make sure the active kernel's attribute matches the final chosen size
+      // (the last probe in the loop may have set a larger size that we
+      // rejected).
+      if (use_single_probe_cache)
+      {
+        if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_single_probe_kernel_ptr, cuckoo_cache_smem_bytes)
+            != cudaSuccess)
         {
-          break; // growth would cost occupancy; stop.
+          (void) cudaGetLastError();
         }
       }
-      const int cuckoo_cache_smem_bytes = NUM_ACTIVE_CHANNELS * cache_slots_per_channel * cache_bytes_per_slot;
-      // Make sure the kernel attribute matches the final chosen size (the
-      // last probe in the loop may have set a larger size that we rejected).
-      if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_kernel_ptr, cuckoo_cache_smem_bytes)
-          != cudaSuccess)
+      else
       {
-        (void) cudaGetLastError();
+        if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_kernel_ptr, cuckoo_cache_smem_bytes)
+            != cudaSuccess)
+        {
+          (void) cudaGetLastError();
+        }
       }
 
       if (false)
@@ -1079,6 +1254,24 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                                          privatized_decode_op_t,
                                                          output_decode_op_t,
                                                          OffsetT>
+          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
+            d_samples,
+            num_output_bins_wrapper,
+            d_output_histograms,
+            second_level_array,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            cache_slots_per_channel);
+        DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel<PolicySelector,
+                                                                    PRIVATIZED_SMEM_BINS,
+                                                                    NUM_CHANNELS,
+                                                                    NUM_ACTIVE_CHANNELS,
+                                                                    SampleIteratorT,
+                                                                    CounterT,
+                                                                    privatized_decode_op_t,
+                                                                    output_decode_op_t,
+                                                                    OffsetT>
           <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
             d_samples,
             num_output_bins_wrapper,
@@ -1109,8 +1302,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         (void) cudaGetLastError();
         persistent_sm_occupancy = 0;
       }
-      const auto direct_occ_err = launcher_factory.MaxSmOccupancy(
-        direct_atomic_sm_occupancy, direct_atomic_kernel_ptr, threads_per_block, cuckoo_cache_smem_bytes);
+      const auto direct_occ_err =
+        use_single_probe_cache
+          ? launcher_factory.MaxSmOccupancy(
+              direct_atomic_sm_occupancy, direct_atomic_single_probe_kernel_ptr, threads_per_block, cuckoo_cache_smem_bytes)
+          : launcher_factory.MaxSmOccupancy(
+              direct_atomic_sm_occupancy, direct_atomic_kernel_ptr, threads_per_block, cuckoo_cache_smem_bytes);
       if (direct_occ_err != cudaSuccess)
       {
         (void) cudaGetLastError();
@@ -1142,7 +1339,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
             const_cast<void*>(static_cast<const void*>(&cache_slots_per_channel))};
           coop_status = cudaLaunchCooperativeKernel(
-            direct_atomic_kernel_ptr_void,
+            active_direct_atomic_kernel_ptr_void,
             persistent_grid_dims,
             dim3{static_cast<unsigned int>(threads_per_block)},
             direct_kernel_args,
@@ -1439,10 +1636,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
     else
     {
+      // Non-staging launch. For the non-staging dyn-SMEM tier the per-block
+      // histogram lives in extern __shared__, so we must pass the dyn-SMEM byte
+      // budget (its cap was already raised in the occupancy-query branch above);
+      // the static-SMEM non-staging tiers pass 0.
+      const int non_staging_smem_bytes = kUseNonStagingDynSmem ? dyn_smem_bytes_for_staging : 0;
       if (const auto error = CubDebug(
             launcher_factory(sweep_grid_dims,
                              threads_per_block,
-                             0,
+                             non_staging_smem_bytes,
                              stream,
                              /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
               .doit(sweep_kernel,
@@ -2273,13 +2475,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       [[fallthrough]];
     }
     case algorithm::gmem_priv_cuckoo:
-    case algorithm::gmem_priv_sweep: {
-      // Both go through PRIVATIZED_SMEM_BINS=0 in the deeper `dispatch<>`,
-      // which chooses between the direct-atomic-to-output kernel (with
-      // cuckoo cache) and the SweepPersistent gather-merge kernel based on
-      // `disable_direct_atomic`. We pass that flag from the selector's pick.
+    case algorithm::gmem_priv_sweep:
+    case algorithm::gmem_priv_single_probe: {
+      // All three go through PRIVATIZED_SMEM_BINS=0 in the deeper `dispatch<>`,
+      // which chooses between the direct-atomic-to-output kernel and the
+      // SweepPersistent gather-merge kernel based on `disable_direct_atomic`,
+      // and (for the direct-atomic path) between the cuckoo and single-probe
+      // caches based on `direct_atomic_cache_mode`. We pass both from the
+      // selector's pick:
+      //   gmem_priv_sweep        -> disable_direct_atomic=true  (sweep)
+      //   gmem_priv_cuckoo       -> direct-atomic, cache_mode=0 (cuckoo)
+      //   gmem_priv_single_probe -> direct-atomic, cache_mode=1 (single-probe)
       constexpr int PRIVATIZED_SMEM_BINS  = 0;
       const bool disable_direct_atomic_io = (algo == algorithm::gmem_priv_sweep);
+      const int direct_atomic_cache_mode  = (algo == algorithm::gmem_priv_single_probe) ? 1 : 0;
       return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2297,7 +2506,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
         policy_selector,
         kernel_source,
         launcher_factory,
-        disable_direct_atomic_io);
+        disable_direct_atomic_io,
+        direct_atomic_cache_mode);
     }
   }
   return cudaErrorInvalidValue; // unreachable
