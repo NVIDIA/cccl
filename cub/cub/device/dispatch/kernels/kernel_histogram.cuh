@@ -22,7 +22,6 @@
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
@@ -1754,7 +1753,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 
     // Sample type produced by the input iterator (used to stage prefetched
     // loads in registers across the unrolled chunk).
-    using SampleValueT = ::cuda::std::remove_cvref_t<decltype(d_samples[OffsetT{0}])>;
+    using SampleValueT = it_value_t<SampleIteratorT>;
 
     for (OffsetT it = 0; it < chunk_iters_max; ++it)
     {
@@ -2102,7 +2101,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 
     // Sample type produced by the input iterator (used to stage prefetched
     // loads in registers across the unrolled chunk).
-    using SampleValueT = ::cuda::std::remove_cvref_t<decltype(d_samples[OffsetT{0}])>;
+    using SampleValueT = it_value_t<SampleIteratorT>;
 
     for (OffsetT it = 0; it < chunk_iters_max; ++it)
     {
