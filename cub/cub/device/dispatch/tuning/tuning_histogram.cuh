@@ -375,10 +375,15 @@ public:
       {
         if (!is_even)
         {
-          // RANGE: 768 threads (sweep peaked there; 768==1024 within noise but 768
-          // gets 2 blocks/SM = 48 warps/75% occ vs 1024's 1 block/32 warps/50%, so
-          // 768 is the more robust pick at equal throughput). rle=true is free.
-          return histogram_policy{768, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
+          // RANGE: 1024 threads. worker-3 found 768==1024 within noise on the
+          // SMEM-priv mid-bin sweep cells (where 768 gets better occupancy), but
+          // this policy ALSO drives the high-bin direct-atomic (cuckoo/single-probe)
+          // kernels, which atomic directly to the output and are GMEM-atomic/
+          // classify-latency bound rather than SMEM-priv occupancy bound. A wider
+          // 1024-thread launch gives those kernels more resident warps to hide that
+          // latency (matching EVEN's 1024 pick). Probe whether the high-bin gain
+          // outweighs any SMEM-priv loss net. rle=true is free.
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
         }
         else
         {
