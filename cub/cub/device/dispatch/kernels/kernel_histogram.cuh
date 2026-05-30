@@ -22,6 +22,7 @@
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
@@ -1751,29 +1752,66 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     const OffsetT chunk           = static_cast<OffsetT>(unroll) * step;
     const OffsetT chunk_iters_max = (total_pixels + chunk - 1) / chunk;
 
+    // Sample type produced by the input iterator (used to stage prefetched
+    // loads in registers across the unrolled chunk).
+    using SampleValueT = ::cuda::std::remove_cvref_t<decltype(d_samples[OffsetT{0}])>;
+
     for (OffsetT it = 0; it < chunk_iters_max; ++it)
     {
       const OffsetT pixel = start + it * chunk;
+
+      // Phase A: issue ALL of this chunk's global loads up front. The loads
+      // are mutually independent, so the compiler can keep `unroll *
+      // NumActiveChannels` of them in flight at once -- overlapping the long
+      // global-load latency instead of serialising a load -> classify ->
+      // match -> SMEM-read -> atomic chain per pixel. This is the primary
+      // latency-hiding lever for this issue-bound / eligible-warp-scarce
+      // kernel (No Eligible ~55%, eligible warps/sched ~0.8 in profiling).
+      SampleValueT staged[unroll][NumActiveChannels];
+      bool valid[unroll];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < unroll; ++u)
       {
         const OffsetT this_pixel = pixel + u * step;
-        const bool valid_pixel   = this_pixel < total_pixels;
-        const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+        valid[u]                 = this_pixel < total_pixels;
+        const OffsetT pix_off    = valid[u] ? (this_pixel * NumChannels) : OffsetT{0};
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        {
+          staged[u][ch] = d_samples[pix_off + ch];
+        }
+      }
+
+      // Phase B: classify all staged samples into bins.
+      int bins[unroll][NumActiveChannels];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < unroll; ++u)
+      {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ch = 0; ch < NumActiveChannels; ++ch)
         {
           int bin = -1;
-          if (valid_pixel)
+          if (valid[u])
           {
-            auto sample = d_samples[pix_off + ch];
-            decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+            decode_op[ch].template BinSelect<LOAD_DEFAULT>(staged[u][ch], bin, true);
             const int num_bins = num_output_bins_wrapper[ch];
             if (bin >= num_bins)
             {
               bin = -1;
             }
           }
+          bins[u][ch] = bin;
+        }
+      }
+
+      // Phase C: warp-coalesce, probe the SMEM cache, and atomic-update.
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < unroll; ++u)
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        {
+          const int bin = bins[u][ch];
           // Coalesce same-bin lanes into a single atomic add. All
           // lanes in the warp must call `__match_any_sync` with the
           // same mask; we use 0xffffffffu so the call is well-defined
@@ -2062,29 +2100,68 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     const OffsetT chunk           = static_cast<OffsetT>(unroll) * step;
     const OffsetT chunk_iters_max = (total_pixels + chunk - 1) / chunk;
 
+    // Sample type produced by the input iterator (used to stage prefetched
+    // loads in registers across the unrolled chunk).
+    using SampleValueT = ::cuda::std::remove_cvref_t<decltype(d_samples[OffsetT{0}])>;
+
     for (OffsetT it = 0; it < chunk_iters_max; ++it)
     {
       const OffsetT pixel = start + it * chunk;
+
+      // Phase A: issue ALL of this chunk's global loads up front. The loads
+      // are mutually independent, so the compiler can keep `unroll *
+      // NumActiveChannels` of them in flight at once -- overlapping the long
+      // global-load latency instead of serialising one load -> classify ->
+      // match -> SMEM-read -> atomic chain per pixel. This is the primary
+      // latency-hiding lever for this issue-bound / eligible-warp-scarce
+      // kernel (No Eligible ~55%, eligible warps/sched ~0.8 in profiling).
+      SampleValueT staged[unroll][NumActiveChannels];
+      bool valid[unroll];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < unroll; ++u)
       {
         const OffsetT this_pixel = pixel + u * step;
-        const bool valid_pixel   = this_pixel < total_pixels;
-        const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+        valid[u]                 = this_pixel < total_pixels;
+        const OffsetT pix_off    = valid[u] ? (this_pixel * NumChannels) : OffsetT{0};
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        {
+          staged[u][ch] = d_samples[pix_off + ch];
+        }
+      }
+
+      // Phase B: classify all staged samples into bins (depends on Phase A's
+      // loads, but those have been issued together so the data is arriving in
+      // parallel).
+      int bins[unroll][NumActiveChannels];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < unroll; ++u)
+      {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ch = 0; ch < NumActiveChannels; ++ch)
         {
           int bin = -1;
-          if (valid_pixel)
+          if (valid[u])
           {
-            auto sample = d_samples[pix_off + ch];
-            decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+            decode_op[ch].template BinSelect<LOAD_DEFAULT>(staged[u][ch], bin, true);
             const int num_bins = num_output_bins_wrapper[ch];
             if (bin >= num_bins)
             {
               bin = -1;
             }
           }
+          bins[u][ch] = bin;
+        }
+      }
+
+      // Phase C: warp-coalesce, probe the SMEM cache, and atomic-update.
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < unroll; ++u)
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int ch = 0; ch < NumActiveChannels; ++ch)
+        {
+          const int bin = bins[u][ch];
           // Coalesce same-bin lanes into a single atomic add.
           const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
           const int leader         = __ffs(static_cast<int>(peers)) - 1;
