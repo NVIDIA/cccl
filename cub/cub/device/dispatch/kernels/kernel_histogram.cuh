@@ -1020,21 +1020,34 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-// Request a minimum of 2 resident blocks/SM. This binds only for the wide
-// launch shapes: the register cap it imposes is 65536/(threads_per_block*2), so
-// it is loose (>= 64 regs) for the narrow single-channel policies (384/448
-// threads) -- leaving their bare-form register counts untouched -- and tight
-// (<= 32 regs) for the wide 1024-thread multi-channel EVEN policy. That EVEN
-// sweep is contention-bound on shared-memory atomicAdd and, with a bare launch
-// bound, ptxas left it at ~58 registers => only 1 block/SM (58*2048 > 65536),
-// with no second resident block to hide the atomic/scoreboard latency. At its
-// 256/2048-bin tiers the SMEM footprint is small (4 KB / 25 KB) so registers,
-// not SMEM, gate occupancy; the hint forces ptxas to fit 2 CTAs and doubles
-// resident warps. NB: a literal `,1` would *relax* the cap (it regressed the
-// 448/768-thread RANGE kernels), and `2048/threads_per_block` over-constrains
-// the 384-thread single-channel EVEN kernel into register spills -- `,2` is the
-// sweet spot that lifts the 1024-thread kernel without touching the narrow ones.
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
+// Request a minimum of 2 resident blocks/SM for the WIDE (>=512-thread) launch
+// shapes only. The min-2-blocks hint doubles resident warps on register-limited
+// SMEM-priv tiers (256/2048 bins: 4 KB / 25 KB SMEM, registers gate occupancy).
+// With a bare bound the wide multi-channel EVEN policy (1024 threads,
+// t_scale(8)) sat at 32 regs but only 1 block/SM (58 regs at t_scale(16) before
+// the policy was narrowed); the hint admits a 2nd CTA (1->2 blocks/SM, ~80%
+// occ) and lifts that contention-bound shared-memory atomicAdd sweep
+// (multi_even +4.6%). The 1024-thread multi RANGE policy benefits too
+// (multi_range +1.6%).
+//
+// But the hint must NOT touch the single-channel policies, which here resolve
+// to the 384-thread Policy500 fallback for both EVEN and RANGE (the SM100
+// single-channel I32/F64 cells the benchmark covers use it; the byte-sample
+// 928/448-thread arms are not exercised). A same-session A/B (parent rebuilt
+// back-to-back) showed an UNCONDITIONAL min-2-blocks bound REGRESSES
+// single-channel range -4.8% (446.7 -> 425): at 384 threads / 72 regs the
+// register cap (85) is loose so registers are unchanged, but the 2-block
+// scheduling target perturbs ptxas codegen for the latency-bound SearchTransform
+// binary search (DRAM 3%, SM 56% -- it is classify-latency bound, not occupancy
+// bound, so the extra resident block does not help and the reschedule hurts).
+// The same bound only marginally helps single-channel EVEN (+1.3%), and EVEN and
+// RANGE share the identical 384-thread fallback policy struct, so they cannot be
+// split on a policy field. Protecting the larger range loss wins: gate the hint
+// to threads_per_block >= 512 so it applies to the 1024-thread multi-channel
+// EVEN+RANGE policies (the real wins) and falls back to the unconstrained
+// default (minBlocks=0) for the 384-thread single-channel fallback.
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
+                  (current_policy<PolicySelector>().threads_per_block >= 512) ? 2 : 0)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
