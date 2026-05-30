@@ -389,8 +389,29 @@ public:
         }
         else
         {
-          // RANGE: 768 threads. I32 -> 12 ipt, F64 -> 6 ipt (t_scale(12)).
-          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048};
+          // RANGE: 768 threads for the SMEM-priv sweep tiers (bins 64/2000/16384).
+          //
+          // direct_atomic_threads_per_block=384: the high-bin direct-atomic
+          // (cuckoo / single-probe) single-channel RANGE cells run a SEPARATE
+          // kernel from the SMEM-priv sweep -- the cuckoo kernel for bins>65536
+          // (and all F64 high-bin) at <256M pixels, and the single-probe kernel
+          // for 1M bins at >=256M pixels. ncu on the 1M-bin/256M/uniform
+          // single-probe cell at 768 threads (this brief's iteration-0 capture)
+          // showed it is pinned to 2 blocks/SM (Block Limit Registers/SMEM/Warps
+          // all == 2) at 75% achieved occupancy yet only 17.9% issue-slot
+          // utilisation, with 79.9% of warp cycles stalled on the long-scoreboard
+          // SMEM-cache atomic dependency (44.8 GB/s, latency- not
+          // bandwidth-bound). This is the SAME signature as the multi-channel
+          // RANGE single-probe path, where worker-3 brief-4 found 384 threads
+          // peaks (+3.1%): a smaller block lets the SM hold more, smaller blocks,
+          // each with its own dynamic-SMEM cache partition and a shorter per-block
+          // CAS/atomicAdd_block dependency chain, spreading the scattered-atomic
+          // pressure that is the measured bottleneck. The sweep tiers keep the
+          // 768-thread shape (they are SMEM-priv occupancy-bound, not
+          // direct-atomic latency-bound). EVEN is left at its sweep thread count
+          // (it inherits, override stays 0) since its cheap ScaleTransform makes
+          // the high-bin direct-atomic cells throughput- not latency-bound.
+          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 384};
         }
       }
 
