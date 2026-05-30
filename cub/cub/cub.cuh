@@ -79,8 +79,12 @@
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_reduce.cuh>
+#include <cub/warp/warp_reduce_batched.cuh>
 #include <cub/warp/warp_scan.cuh>
 #include <cub/warp/warp_store.cuh>
+
+// Experimental
+#include <cub/experimental/coop_collectives.cuh>
 
 // Iterator
 #include <cub/iterator/arg_index_input_iterator.cuh>
