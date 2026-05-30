@@ -39,6 +39,12 @@ struct HistogramPolicy
   bool use_work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
+  int direct_atomic_threads_per_block = 0; //!< Thread count for direct-atomic kernels; 0 inherits threads_per_block
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int direct_atomic_threads() const
+  {
+    return direct_atomic_threads_per_block != 0 ? direct_atomic_threads_per_block : threads_per_block;
+  }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
@@ -47,7 +53,8 @@ struct HistogramPolicy
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
         && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
-        && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins;
+        && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
+        && lhs.direct_atomic_threads_per_block == rhs.direct_atomic_threads_per_block;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -64,7 +71,8 @@ struct HistogramPolicy
         << p.pixels_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
-        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << " }";
+        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins
+        << ", .direct_atomic_threads_per_block = " << p.direct_atomic_threads_per_block << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -416,6 +424,13 @@ public:
           // L1/L2 caching the SearchTransform level-array + sample loads across the
           // 3 active channels on the SMEM-priv mid-bin sweep cells; LDG's streaming
           // loads avoid the eviction churn).
+          //
+          // NOTE: the multi-channel direct-atomic RANGE decouple
+          // (direct_atomic_threads_per_block=384) lives on a separate branch in
+          // this run (worker-3 brief-4); it is intentionally NOT applied here so
+          // this branch's iteration-0 infra port stays metric-neutral on multi
+          // and isolates the single-channel RANGE direct-atomic sweep that this
+          // brief targets. The manager owns combining the multi win.
           return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
         }
         else

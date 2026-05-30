@@ -1591,7 +1591,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDirectAtomicPersistentKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -1974,7 +1974,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,

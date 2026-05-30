@@ -873,6 +873,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   const int threads_per_block = active_policy.threads_per_block;
   const int pixels_per_thread = active_policy.pixels_per_thread;
+  // Block size for the high-bin direct-atomic (cuckoo / single-probe) kernels.
+  // These atomic straight to the output via a pure grid-stride loop, so any
+  // block size is correct; a policy may decouple it from the SMEM-priv sweep's
+  // `threads_per_block` (0 => inherit). Used below ONLY for the direct-atomic
+  // launch's block dims and occupancy/cache-sizing queries; the SMEM-priv sweep
+  // grid sizing keeps using `threads_per_block`.
+  const int direct_atomic_threads_per_block = active_policy.direct_atomic_threads();
 
   // Get SM count
   int sm_count;
@@ -1225,7 +1232,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           return 0;
         }
         int occ = 0;
-        if (launcher_factory.MaxSmOccupancy(occ, kernel_ptr, threads_per_block, bytes) != cudaSuccess)
+        // Query at the direct-atomic block size: these lambdas only size the
+        // cuckoo / single-probe kernels' dynamic-SMEM cache against their own
+        // occupancy.
+        if (launcher_factory.MaxSmOccupancy(occ, kernel_ptr, direct_atomic_threads_per_block, bytes) != cudaSuccess)
         {
           (void) cudaGetLastError();
           return 0;
@@ -1337,10 +1347,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       }
       const auto direct_occ_err =
         use_single_probe_cache
-          ? launcher_factory.MaxSmOccupancy(
-              direct_atomic_sm_occupancy, direct_atomic_single_probe_kernel_ptr, threads_per_block, cuckoo_cache_smem_bytes)
-          : launcher_factory.MaxSmOccupancy(
-              direct_atomic_sm_occupancy, direct_atomic_kernel_ptr, threads_per_block, cuckoo_cache_smem_bytes);
+          ? launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,
+                                            direct_atomic_single_probe_kernel_ptr,
+                                            direct_atomic_threads_per_block,
+                                            cuckoo_cache_smem_bytes)
+          : launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,
+                                            direct_atomic_kernel_ptr,
+                                            direct_atomic_threads_per_block,
+                                            cuckoo_cache_smem_bytes);
       if (direct_occ_err != cudaSuccess)
       {
         (void) cudaGetLastError();
@@ -1372,10 +1386,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       dim3 direct_atomic_grid_dims = persistent_grid_dims;
       if (use_direct_atomic_to_output && direct_atomic_capacity > num_thread_blocks)
       {
-        // Upper bound on useful blocks: one block per pixel-tile across all
-        // rows (the same tile granularity the sweep grid uses). Beyond this,
-        // additional blocks would have no pixels to process.
-        const long long work_tiles = static_cast<long long>(tiles_per_row) * static_cast<long long>(num_rows);
+        // Upper bound on useful blocks for the grid-stride direct-atomic kernel:
+        // one thread per pixel needs ceil(total_pixels / block_size) blocks;
+        // beyond that, additional blocks would have no pixels to process. We use
+        // the DIRECT-ATOMIC block size here (not the sweep's), so a smaller
+        // direct-atomic block is not artificially capped below the sweep's
+        // tile-granularity work bound.
+        const long long total_pixels_ll =
+          static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
+        const long long work_tiles =
+          (total_pixels_ll + direct_atomic_threads_per_block - 1) / direct_atomic_threads_per_block;
         long long target = static_cast<long long>(direct_atomic_capacity);
         if (target > work_tiles)
         {
@@ -1409,7 +1429,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           coop_status = cudaLaunchCooperativeKernel(
             active_direct_atomic_kernel_ptr_void,
             direct_atomic_grid_dims,
-            dim3{static_cast<unsigned int>(threads_per_block)},
+            dim3{static_cast<unsigned int>(direct_atomic_threads_per_block)},
             direct_kernel_args,
             /*sharedMem=*/static_cast<size_t>(cuckoo_cache_smem_bytes),
             stream);
