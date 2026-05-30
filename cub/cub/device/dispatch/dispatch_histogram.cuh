@@ -273,6 +273,28 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // gain. 524288 sits between the 262144 and 1048576 axis points.
   constexpr int kSingleProbeBinThreshold = 524288;
 
+  // Multi-channel single-probe threshold. The cooperative sweep's per-channel
+  // privatized intermediate is `num_blocks * num_bins * NUM_ACTIVE_CHANNELS *
+  // sizeof(CounterT)` bytes -- a factor of NUM_ACTIVE_CHANNELS (3 here) LARGER
+  // than the single-channel intermediate at the same bin count. So at the
+  // 1M-bin tier the multi-channel intermediate is ~5.3 GB (444 blocks * 1M *
+  // 3 * 4 B), even more catastrophic for sweep than single-channel's 1.78 GB
+  // (nsys on the parent confirms: the 262144- and 1048576-bin RANGE cells at
+  // 256M pixels run DeviceHistogramSweepKernel at ~50/61 ms, ~5x the cuckoo
+  // cells, and dominate ~65% of high-bin multi_range GPU time). The
+  // single-probe direct-mapped cache sidesteps the intermediate entirely, so
+  // the same route that won for single-channel wins at least as much for
+  // multi-channel. The 262144-bin multi cell's intermediate is ~1.3 GB (3x the
+  // single-channel 262144 ~445 MB, which was ~neutral for single-channel), so
+  // single-probe nets positive there for multi too; we set the multi threshold
+  // to 131072 (between the 65536 and 262144 axis points) to route both 262144
+  // and 1048576 multi cells. 65536 multi stays on sweep (its ~334 MB
+  // intermediate is small enough that privatization wins). (Ported from
+  // worker-4 brief-3's validated multi single-probe routing, which measured
+  // multi_range +2.5%; never folded into the global best b87a6386 -- it carried
+  // only worker-3's multi EVEN policy.)
+  constexpr int kSingleProbeBinThresholdMulti = 131072;
+
   // Large-input cells.
   //
   // Single channel: route only the 1M-bin tier (>= kSingleProbeBinThreshold)
@@ -281,12 +303,19 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // absorbing the few genuinely hot bins in SMEM and streaming the rest to
   // GMEM). Lower bin counts keep sweep, whose privatization still wins net.
   //
-  // Multi channel: keep sweep (the per-channel privatized intermediate is far
-  // smaller and the multi-channel direct-atomic path has not been validated as
-  // a win at this scale; this brief is single-channel-scoped).
+  // Multi channel: route the 262144- and 1M-bin tiers (>=
+  // kSingleProbeBinThresholdMulti) to single-probe as well -- the per-channel
+  // intermediate is NUM_ACTIVE_CHANNELS-times larger, so sweep turns
+  // catastrophic at a lower bin count than single-channel. The single-probe
+  // kernel already loops over all active channels (1024 cache slots/channel
+  // for multi vs 4096 for single, so the static-SMEM footprint and occupancy
+  // are unchanged); dispatch verifies the kernel's cooperative co-residence
+  // and falls back to sweep if it does not fit. Lower bin counts keep sweep.
   if (f.num_pixels >= kSweepPixelThreshold)
   {
-    if (f.num_active_channels == 1 && f.num_bins >= kSingleProbeBinThreshold)
+    const int single_probe_threshold =
+      (f.num_active_channels == 1) ? kSingleProbeBinThreshold : kSingleProbeBinThresholdMulti;
+    if (f.num_bins >= single_probe_threshold)
     {
       return algorithm::gmem_priv_single_probe;
     }
