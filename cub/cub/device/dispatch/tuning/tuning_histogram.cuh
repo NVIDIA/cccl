@@ -357,7 +357,31 @@ public:
       }
 
       // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
-      // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
+
+      // SM100 multi-channel (num_channels >= 2) tuning, decoupled per transform.
+      // Previously every multi-channel configuration fell through to the SM50
+      // Policy500 fallback {384 threads, t_scale(16) ipt, rle=true} -- a launch
+      // shape never tuned for SM90/SM100. That shape is genuinely strong for the
+      // EVEN path (cheap ScaleTransform classify => the SMEM-priv tiers are
+      // contention-bound on shared-memory atomics, where intra-thread RLE
+      // compression of same-bin runs plus a modest 384-thread launch minimise
+      // atomic pressure), so EVEN keeps the fallback shape verbatim. The RANGE
+      // path is different: its per-sample SearchTransform binary search over the
+      // level boundaries is latency-heavy and paid per active channel, so the
+      // sweep is classify-bound rather than atomic-bound and a wider launch hides
+      // that latency. We therefore give RANGE a wider 768-thread shape while
+      // keeping rle=true (free when runs are absent, e.g. uniform entropy).
+      if (num_channels >= 2 && counter_size == 4 && sample_is_primitive && !is_even)
+      {
+        if (sample_size == 4) // I32, 3 active channels
+        {
+          return histogram_policy{768, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
+        }
+        else if (sample_size == 8) // F64, 3 active channels
+        {
+          return histogram_policy{768, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
+        }
+      }
     }
 
     if (cc >= ::cuda::compute_capability{9, 0})
