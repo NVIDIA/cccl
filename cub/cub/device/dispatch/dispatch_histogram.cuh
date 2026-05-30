@@ -1320,6 +1320,41 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const bool direct_atomic_fits = (direct_atomic_sm_occupancy > 0)
                                       && (num_thread_blocks <= direct_atomic_capacity);
       const bool selected_fits = use_direct_atomic_to_output ? direct_atomic_fits : persistent_fits;
+
+      // Grid size for the direct-atomic kernels. Unlike the gather-merge
+      // SweepPersistent kernel, the direct-atomic cuckoo / single-probe kernels
+      // distribute work via a pure grid-stride loop over `total_pixels` and use
+      // neither `tile_queue` nor `tiles_per_row`, so ANY block count produces
+      // correct counts -- more blocks simply means more resident warps. The
+      // shared `num_thread_blocks` above is sized off the SweepPersistent
+      // kernel's per-SM occupancy, which is lower (the gather-merge kernel is
+      // register-heavy). Profiling the 262144-bin single-channel cuckoo cell
+      // showed it launches only ~3 blocks/SM (0.6 waves) and is MIO-stall bound
+      // (SMEM-atomic scoreboard latency) at ~55% achieved occupancy while the
+      // cuckoo kernel itself admits 5 blocks/SM. Grow the grid to the
+      // direct-atomic kernel's OWN co-resident capacity so the extra warps hide
+      // that latency, capped by the available work (no point launching blocks
+      // that would process zero pixels) and never shrinking below the sweep
+      // grid.
+      dim3 direct_atomic_grid_dims = persistent_grid_dims;
+      if (use_direct_atomic_to_output && direct_atomic_capacity > num_thread_blocks)
+      {
+        // Upper bound on useful blocks: one block per pixel-tile across all
+        // rows (the same tile granularity the sweep grid uses). Beyond this,
+        // additional blocks would have no pixels to process.
+        const long long work_tiles = static_cast<long long>(tiles_per_row) * static_cast<long long>(num_rows);
+        long long target = static_cast<long long>(direct_atomic_capacity);
+        if (target > work_tiles)
+        {
+          target = work_tiles;
+        }
+        if (target < static_cast<long long>(num_thread_blocks))
+        {
+          target = static_cast<long long>(num_thread_blocks);
+        }
+        direct_atomic_grid_dims = dim3{static_cast<unsigned int>(target), 1u, 1u};
+      }
+
       if (coop_query_ok && selected_fits)
       {
         cudaError_t coop_status = cudaSuccess;
@@ -1340,7 +1375,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             const_cast<void*>(static_cast<const void*>(&cache_slots_per_channel))};
           coop_status = cudaLaunchCooperativeKernel(
             active_direct_atomic_kernel_ptr_void,
-            persistent_grid_dims,
+            direct_atomic_grid_dims,
             dim3{static_cast<unsigned int>(threads_per_block)},
             direct_kernel_args,
             /*sharedMem=*/static_cast<size_t>(cuckoo_cache_smem_bytes),
