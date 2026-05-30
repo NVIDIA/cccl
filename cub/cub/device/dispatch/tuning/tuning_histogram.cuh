@@ -391,27 +391,48 @@ public:
         {
           // RANGE: 768 threads for the SMEM-priv sweep tiers (bins 64/2000/16384).
           //
-          // direct_atomic_threads_per_block=384: the high-bin direct-atomic
+          // direct_atomic_threads_per_block=512: the high-bin direct-atomic
           // (cuckoo / single-probe) single-channel RANGE cells run a SEPARATE
           // kernel from the SMEM-priv sweep -- the cuckoo kernel for bins>65536
           // (and all F64 high-bin) at <256M pixels, and the single-probe kernel
-          // for 1M bins at >=256M pixels. ncu on the 1M-bin/256M/uniform
-          // single-probe cell at 768 threads (this brief's iteration-0 capture)
-          // showed it is pinned to 2 blocks/SM (Block Limit Registers/SMEM/Warps
-          // all == 2) at 75% achieved occupancy yet only 17.9% issue-slot
-          // utilisation, with 79.9% of warp cycles stalled on the long-scoreboard
-          // SMEM-cache atomic dependency (44.8 GB/s, latency- not
-          // bandwidth-bound). This is the SAME signature as the multi-channel
-          // RANGE single-probe path, where worker-3 brief-4 found 384 threads
-          // peaks (+3.1%): a smaller block lets the SM hold more, smaller blocks,
-          // each with its own dynamic-SMEM cache partition and a shorter per-block
-          // CAS/atomicAdd_block dependency chain, spreading the scattered-atomic
-          // pressure that is the measured bottleneck. The sweep tiers keep the
-          // 768-thread shape (they are SMEM-priv occupancy-bound, not
-          // direct-atomic latency-bound). EVEN is left at its sweep thread count
-          // (it inherits, override stays 0) since its cheap ScaleTransform makes
-          // the high-bin direct-atomic cells throughput- not latency-bound.
-          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 384};
+          // for 1M bins at >=256M pixels. These atomic straight to the output via
+          // a pure grid-stride loop, so their block size is decoupled from the
+          // sweep without affecting correctness.
+          //
+          // A structured thread sweep over the 57 direct-atomic cells (I32+F64,
+          // bins 65536/262144/1M, all entropy/input-size; per-cell GiB/s geomean,
+          // measured against an identical build differing only in this field so
+          // the ~140 unaffected cells stay fixed at ratio 1.000) is UNIMODAL with
+          // a clear peak at 512: 256=0.814, 384=0.971, 512=1.024, 768=1.000
+          // (relative to the 768-thread inherit). 512 beats the inherited 768 by
+          // +2.4% and 384 by +5.4%; both the cuckoo and single-probe sub-groups
+          // agree on 512.
+          //
+          // ncu on the 1M-bin/256M/uniform single-probe cell explains it: at 768
+          // threads (30 regs) the kernel is pinned to 2 blocks/SM (Block Limit
+          // Registers/SMEM/Warps all == 2) -> 75% achieved occupancy, 17.9%
+          // issue-slot utilisation, 79.9% of warp cycles stalled on the
+          // long-scoreboard SMEM-cache atomic dependency (44.8 GB/s, latency- not
+          // bandwidth-bound). At 512 threads (28 regs) all three limiters jump to
+          // 4 blocks/SM -> 100% achieved occupancy (63.9 warps), 47.1 GB/s, 23.0
+          // vs 24.2 ms: the extra co-resident blocks (each its own dynamic-SMEM
+          // cache partition + a shorter per-block CAS/atomicAdd_block dependency
+          // chain) hide the scoreboard-stall-dominated latency. 384/256 starve the
+          // issue pipeline (too few warps/block); 768 caps occupancy at 75%.
+          //
+          // Note this differs from the multi-channel RANGE single-probe path
+          // (worker-3 brief-4), which peaked at 384: there the 3-active-channel
+          // SearchTransform makes it latency-bound and the 1024-slot/channel cache
+          // is small, so the SM wanted even more, smaller blocks. Single-channel
+          // RANGE has one SearchTransform and a 4096-slot cache, so it is more
+          // throughput-bound and 512 (more warps/block) wins -- the per-transform
+          // decouple is itself per-channel-count.
+          //
+          // The sweep tiers keep the 768-thread shape (SMEM-priv occupancy-bound,
+          // not direct-atomic latency-bound). EVEN inherits its sweep thread count
+          // (override stays 0): its cheap ScaleTransform makes the high-bin
+          // direct-atomic cells throughput-bound, where the wider block is fine.
+          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 512};
         }
       }
 
