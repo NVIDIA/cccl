@@ -371,15 +371,22 @@ public:
       // sweep is classify-bound rather than atomic-bound and a wider launch hides
       // that latency. We therefore give RANGE a wider 768-thread shape while
       // keeping rle=true (free when runs are absent, e.g. uniform entropy).
-      if (num_channels >= 2 && counter_size == 4 && sample_is_primitive && !is_even)
+      if (num_channels >= 2 && counter_size == 4 && sample_is_primitive)
       {
-        if (sample_size == 4) // I32, 3 active channels
+        if (!is_even)
         {
+          // RANGE: 768 threads (sweep peaked there; 768==1024 within noise but 768
+          // gets 2 blocks/SM = 48 warps/75% occ vs 1024's 1 block/32 warps/50%, so
+          // 768 is the more robust pick at equal throughput). rle=true is free.
           return histogram_policy{768, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
         }
-        else if (sample_size == 8) // F64, 3 active channels
+        else
         {
-          return histogram_policy{768, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
+          // EVEN: 1024 threads (sweep 384->512->768->1024 monotonic; the SMEM-priv
+          // even sweep is compute-bound and pinned to 1 block/SM by 59 regs + SMEM,
+          // so resident warps scale with block size). Probe LOAD_CA (cache-all),
+          // which the single-channel SM100 even tuning prefers over LDG.
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_CA, true, SMEM, false, 4, 0};
         }
       }
     }
