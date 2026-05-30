@@ -376,8 +376,8 @@ public:
       {
         if (is_even)
         {
-          // EVEN: 1024 threads. I32 -> 12 ipt, F64 -> 6 ipt (t_scale(12)).
-          return histogram_policy{1024, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048};
+          // EVEN: 768 threads. I32 -> 12 ipt, F64 -> 6 ipt (t_scale(12)).
+          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048};
         }
         else
         {
