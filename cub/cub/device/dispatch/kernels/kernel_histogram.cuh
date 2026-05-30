@@ -2222,11 +2222,74 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
           bins[u] = bin;
         }
 
-        // Phase C: warp-coalesce, probe the SMEM cache, atomic-update.
+        // Phase C: warp-coalesce + HOISTED SMEM key-read. Profiling (ncu on
+        // single-channel even 1M-bin) showed the residual limiter after the
+        // load prefetch is the SHORT-scoreboard MIO stall (~62% of stalls):
+        // each leader's dependent chain is SMEM-key-read -> compare -> atomic,
+        // and the SMEM read latency is not hidden. We split it: Phase C1 does
+        // the warp-collective __match_any_sync for every probe and ISSUES all
+        // `unroll` leaders' SMEM key-reads up front (independent -> the short-
+        // scoreboard latency of the `unroll` reads overlaps); Phase C2 then
+        // resolves compare + atomic. __match_any_sync is warp-collective so it
+        // must stay in C1 (all lanes call it for each u, in order).
+        unsigned int peers_u[unroll];
+        int slot_u[unroll];
+        int existing_key_u[unroll];
+        bool is_leader_u[unroll];
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int u = 0; u < unroll; ++u)
         {
-          probe_single(0, bins[u]);
+          const int bin            = bins[u];
+          const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+          const int leader         = __ffs(static_cast<int>(peers)) - 1;
+          peers_u[u]               = peers;
+          const bool is_leader     = (bin >= 0 && static_cast<int>(lane_id) == leader);
+          is_leader_u[u]           = is_leader;
+          const unsigned int hash  = static_cast<unsigned int>(bin) * 2654435761u;
+          const int slot           = static_cast<int>(hash & cache_mask);
+          slot_u[u]                = slot;
+          // Issue the SMEM key-read now; only meaningful for leaders, but
+          // reading unconditionally for non-leaders would touch a stale slot,
+          // so guard it. The reads across u are independent and overlap.
+          existing_key_u[u] = is_leader ? s_cache_keys[0][slot] : -2;
+        }
+
+        // Phase C2: resolve each leader's probe with the prefetched key.
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int u = 0; u < unroll; ++u)
+        {
+          if (!is_leader_u[u])
+          {
+            continue;
+          }
+          const int bin               = bins[u];
+          const int slot              = slot_u[u];
+          const CounterT contribution = static_cast<CounterT>(__popc(peers_u[u]));
+          const int existing_key      = existing_key_u[u];
+          if (existing_key == bin)
+          {
+            // Hit: bump cache count (block-scope atomic, ~10x cheaper).
+            atomicAdd_block(&s_cache_counts[0][slot], contribution);
+          }
+          else if (existing_key == -1)
+          {
+            // Empty: try to claim via CAS.
+            const int prev = atomicCAS(&s_cache_keys[0][slot], -1, bin);
+            if (prev == -1 || prev == bin)
+            {
+              atomicAdd_block(&s_cache_counts[0][slot], contribution);
+            }
+            else
+            {
+              // Lost the claim race to a different bin: go straight to GMEM.
+              atomicAdd(&d_output_histograms_wrapper[0][bin], contribution);
+            }
+          }
+          else
+          {
+            // Collision (slot owned by another bin): single GMEM atomic.
+            atomicAdd(&d_output_histograms_wrapper[0][bin], contribution);
+          }
         }
       }
     }
