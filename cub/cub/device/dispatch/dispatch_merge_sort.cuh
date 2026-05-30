@@ -292,7 +292,8 @@ public:
         ValueT>::policy.threads_per_block;
 
     // Invoke DeviceMergeSortBlockSortKernel
-    launcher_factory(static_cast<int>(num_tiles), threads_per_block, 0, stream, true)
+    launcher_factory(
+      static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
       .doit(kernel_source.MergeSortBlockSortKernel(),
             ping,
             d_input_keys,
@@ -336,7 +337,8 @@ public:
       const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
 
       // Partition
-      launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream, true)
+      launcher_factory(
+        partition_grid_size, threads_per_partition_block, 0, stream, /* dependent launch */ ptx_version >= 900)
         .doit(kernel_source.MergeSortPartitionKernel(),
               ping,
               d_output_keys,
@@ -360,7 +362,8 @@ public:
       }
 
       // Merge
-      launcher_factory(static_cast<int>(num_tiles), threads_per_block, 0, stream, true)
+      launcher_factory(
+        static_cast<int>(num_tiles), threads_per_block, 0, stream, /* dependent launch */ ptx_version >= 900)
         .doit(kernel_source.MergeSortMergeKernel(),
               ping,
               d_output_keys,
@@ -558,7 +561,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
     if (const auto error = CubDebug(
-          launcher_factory(static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream, true)
+          launcher_factory(static_cast<int>(num_tiles),
+                           active_policy.threads_per_block,
+                           0,
+                           stream,
+                           /* dependent launch */ cc >= ::cuda::compute_capability{9, 0})
             .doit(kernel_source.MergeSortBlockSortKernel(),
                   ping,
                   d_input_keys,
@@ -600,7 +607,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
 
       if (const auto error = CubDebug(
-            launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream, true)
+            launcher_factory(partition_grid_size,
+                             threads_per_partition_block,
+                             0,
+                             stream,
+                             /* dependent launch */ cc >= ::cuda::compute_capability{9, 0})
               .doit(kernel_source.MergeSortPartitionKernel(),
                     ping,
                     d_output_keys,
@@ -623,7 +634,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return error;
       }
       if (const auto error = CubDebug(
-            launcher_factory(static_cast<int>(num_tiles), active_policy.threads_per_block, 0, stream, true)
+            launcher_factory(static_cast<int>(num_tiles),
+                             active_policy.threads_per_block,
+                             0,
+                             stream,
+                             /* dependent launch */ cc >= ::cuda::compute_capability{9, 0})
               .doit(kernel_source.MergeSortMergeKernel(),
                     ping,
                     d_output_keys,
