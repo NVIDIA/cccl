@@ -381,11 +381,12 @@ public:
           // kernels, which atomic directly to the output and are GMEM-atomic/
           // classify-latency bound rather than SMEM-priv occupancy bound. A wider
           // 1024-thread launch gives those kernels more resident warps to hide that
-          // latency (matching EVEN's 1024 pick). Probe whether the high-bin gain
-          // outweighs any SMEM-priv loss net. rle=true is free. Probe LOAD_CA
-          // (cache-all) for the level-array / sample reads, which the single-channel
-          // SM100 even tuning and the multi EVEN path both prefer over LDG.
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_CA, true, SMEM, false, 4, 0};
+          // latency (matching EVEN's 1024 pick). rle=true is free. Keep LOAD_LDG:
+          // an LOAD_CA ablation regressed multi_range -26.2% (cache-all thrashes
+          // L1/L2 caching the SearchTransform level-array + sample loads across the
+          // 3 active channels on the SMEM-priv mid-bin sweep cells; LDG's streaming
+          // loads avoid the eviction churn).
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
         }
         else
         {
