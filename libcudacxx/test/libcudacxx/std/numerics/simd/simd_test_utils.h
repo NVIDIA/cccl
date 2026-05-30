@@ -123,7 +123,8 @@ TEST_FUNC inline void is_fp_close_runtime(__half a, __half b)
 #if _LIBCUDACXX_HAS_NVBF16()
 TEST_FUNC inline void is_fp_close_runtime(__nv_bfloat16 a, __nv_bfloat16 b)
 {
-  assert(fptest_close_pct(static_cast<float>(a), static_cast<float>(b), 5.e-1f));
+  // bf16 has 7 mantissa bits; machine epsilon = 2^-7 = 0.78125%.
+  assert(fptest_close_pct(static_cast<float>(a), static_cast<float>(b), 7.9e-1f));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
