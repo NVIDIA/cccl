@@ -686,7 +686,6 @@ public:
         }
 
         cuda_safe_call(cudaGraphLaunch(*exec_graph_, stream));
-        launched_ = true;
       }
 
       // Release resources and build the finalize_prereqs event list that the
@@ -813,9 +812,6 @@ public:
       // (dep A): guarantees we only sync once across many launches, and
       // that finalize_after_launch can sync even if no launch happened.
       bool synced_ = false;
-
-      // Tracks whether at least one cudaGraphLaunch has been issued.
-      bool launched_ = false;
     };
 
     // Grow the sparse context node vector to accommodate at least target_size entries.
