@@ -23,6 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": true,
         "CCCL_SKIP_BUILD_CHECKS": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
@@ -35,6 +36,7 @@
       "displayName": "Installation / Packaging (only stable libraries)",
       "inherits": "base",
       "cacheVariables": {
+        "CCCL_ENABLE_CUDA_SMOKE_TESTS": false,
         "cudax_ENABLE_INSTALL_RULES": false,
         "CCCL_SKIP_BUILD_CHECKS": true
       }
@@ -517,6 +519,7 @@
       "name": "libcudacxx",
       "configurePreset": "libcudacxx",
       "targets": [
+        "cccl.test.cuda_runtime_smoke",
         "libcudacxx.test.internal_headers",
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
