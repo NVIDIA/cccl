@@ -481,7 +481,10 @@ public:
           // 1024-thread shape (threads_per_block stays 1024); only the
           // direct-atomic kernels see 384. Validated additive with the
           // count-replica split below under this routing.
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 384};
+          //
+          // iter2 (B-only decompose): direct_atomic_threads_per_block back to 0
+          // (inherit 1024) to isolate B's count-replica R=2 from C's 384.
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 0};
         }
         else
         {
