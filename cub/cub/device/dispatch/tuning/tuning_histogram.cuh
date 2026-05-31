@@ -479,12 +479,10 @@ public:
           // each with its own dynamic-SMEM cache partition and a shorter atomic
           // dependency chain. The SMEM-priv mid-bin sweep tiers keep the
           // 1024-thread shape (threads_per_block stays 1024); only the
-          // direct-atomic kernels see 384. Validated additive with the
-          // count-replica split below under this routing.
-          //
-          // iter2 (B-only decompose): direct_atomic_threads_per_block back to 0
-          // (inherit 1024) to isolate B's count-replica R=2 from C's 384.
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 0};
+          // direct-atomic kernels see 384. iter3 SELECTIVE KEEPER: C's 384 +
+          // B's R=2 gated to the CUCKOO kernel only (decompose found B's R=2
+          // helps multi_range on cuckoo but hurts multi_even on single_probe).
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 384};
         }
         else
         {
