@@ -21,6 +21,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/array>
@@ -88,6 +89,45 @@ cache_slot_from_hash(unsigned int product, int cache_mask, int cache_slot_log2)
   (void) cache_slot_log2;
   return static_cast<int>(product & static_cast<unsigned int>(cache_mask));
 #endif
+}
+
+//! @brief Return the underlying native sample pointer for the direct-atomic
+//! sweep kernels' VECTORIZED multi-channel load fast path, or `nullptr` when
+//! the input iterator is not a plain pointer.
+//!
+//! The multi-channel direct-atomic sweep loads each pixel's `NumChannels`
+//! interleaved samples. The scalar form issues `NumChannels` separate global
+//! loads per pixel; because consecutive threads read consecutive pixels and a
+//! pixel spans `NumChannels` samples, that pattern leaves a gap every
+//! `NumChannels`-th sample (e.g. the unhistogrammed alpha lane of an RGBA
+//! image) and under-fills global-load transactions. Issuing instead ONE wide
+//! `CubVector<SampleT, NumChannels>` (e.g. `int4`) load per pixel reads the
+//! whole pixel contiguously, so the warp's loads are perfectly packed and the
+//! global-load transaction count drops by up to `NumChannels`x.
+//!
+//! This only works when the samples live behind a real pointer (the common
+//! `DeviceHistogram::MultiHistogram*` case) and that pointer is suitably
+//! aligned for the vector type. For fancy iterators we return a typed null
+//! pointer; the caller then keeps the per-channel scalar path. The return type
+//! is always `const SampleValueT*` so the kernel's `auto*` binding and its
+//! `nullptr` guard are well-formed for every iterator instantiation.
+template <typename SampleValueT, typename SampleIteratorT>
+_CCCL_DEVICE _CCCL_FORCEINLINE const SampleValueT* SampleNativePointer(SampleIteratorT itr)
+{
+  if constexpr (::cuda::std::is_pointer_v<SampleIteratorT>)
+  {
+    return itr; // raw pointer: already native.
+  }
+  else
+  {
+    // CacheModifiedInputIterator (and anything else exposing a native `.ptr`
+    // member) fall through to the agent's NativePointer overloads; everything
+    // else yields nullptr and the scalar fallback is used. NativePointer
+    // returns `nullptr` (nullptr_t) for the generic case, which converts to a
+    // null `const SampleValueT*`.
+    return NativePointer(itr);
+  }
+  _CCCL_UNREACHABLE();
 }
 
 //! @brief Self-contained "round-up" / libdivide-style fast unsigned division
@@ -2015,34 +2055,86 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     }
     else
     {
-      // Multi-channel: keep the interleaved load -> classify -> probe loop.
-      // Staging `unroll * NumActiveChannels` samples here would explode the
-      // register footprint of the already register-limited (2 blocks/SM)
-      // multi-channel kernel and collapse occupancy, so we do NOT pipeline.
-      for (OffsetT it = 0; it < chunk_iters_max; ++it)
+      // Multi-channel: VECTORIZE the per-pixel load. The scalar form issues
+      // `NumActiveChannels` separate global loads per pixel; consecutive
+      // threads read consecutive pixels, so with `NumChannels` samples per
+      // pixel the access leaves a gap every `NumChannels`-th sample (the
+      // unhistogrammed alpha lane of an RGBA image) and under-fills the
+      // global-load transactions. Instead we issue ONE wide
+      // `CubVector<SampleT, NumChannels>` (e.g. `int4`) load per pixel that
+      // reads the whole pixel contiguously, then classify the active lanes
+      // straight out of registers -- the warp's loads are now perfectly
+      // packed, cutting the multi-channel global-load transaction count by up
+      // to `NumChannels`x. The vector path requires a native, suitably-aligned
+      // sample pointer; otherwise we fall back to the per-channel scalar loop.
+      using PixelT            = typename CubVector<SampleValueT, NumChannels>::Type;
+      const auto* native_base = SampleNativePointer<SampleValueT>(d_samples);
+      const bool vectorizable = (native_base != nullptr)
+                             && ((reinterpret_cast<size_t>(native_base) & (alignof(PixelT) - 1)) == 0);
+      if (vectorizable)
       {
-        const OffsetT pixel = start + it * chunk;
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < unroll; ++u)
+        const PixelT* const pixels = reinterpret_cast<const PixelT*>(native_base);
+        for (OffsetT it = 0; it < chunk_iters_max; ++it)
         {
-          const OffsetT this_pixel = pixel + u * step;
-          const bool valid_pixel   = this_pixel < total_pixels;
-          const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+          const OffsetT pixel = start + it * chunk;
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int ch = 0; ch < NumActiveChannels; ++ch)
+          for (int u = 0; u < unroll; ++u)
           {
-            int bin = -1;
-            if (valid_pixel)
+            const OffsetT this_pixel = pixel + u * step;
+            const bool valid_pixel   = this_pixel < total_pixels;
+            // Load the whole pixel (all NumChannels samples) in one transaction;
+            // index pixel 0 for past-the-end lanes (discarded via bin = -1).
+            const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
+            const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
-              auto sample = d_samples[pix_off + ch];
-              decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
-              const int num_bins = num_output_bins_wrapper[ch];
-              if (bin >= num_bins)
+              int bin = -1;
+              if (valid_pixel)
               {
-                bin = -1;
+                decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
+                const int num_bins = num_output_bins_wrapper[ch];
+                if (bin >= num_bins)
+                {
+                  bin = -1;
+                }
               }
+              probe_cuckoo(ch, bin);
             }
-            probe_cuckoo(ch, bin);
+          }
+        }
+      }
+      else
+      {
+        // Scalar fallback: interleaved load -> classify -> probe loop. Staging
+        // `unroll * NumActiveChannels` samples would explode the register
+        // footprint of this already register-limited kernel, so we do NOT
+        // pipeline here.
+        for (OffsetT it = 0; it < chunk_iters_max; ++it)
+        {
+          const OffsetT pixel = start + it * chunk;
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int u = 0; u < unroll; ++u)
+          {
+            const OffsetT this_pixel = pixel + u * step;
+            const bool valid_pixel   = this_pixel < total_pixels;
+            const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
+            {
+              int bin = -1;
+              if (valid_pixel)
+              {
+                auto sample = d_samples[pix_off + ch];
+                decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+                const int num_bins = num_output_bins_wrapper[ch];
+                if (bin >= num_bins)
+                {
+                  bin = -1;
+                }
+              }
+              probe_cuckoo(ch, bin);
+            }
           }
         }
       }
@@ -2385,34 +2477,77 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     }
     else
     {
-      // Multi-channel: keep the interleaved load -> classify -> probe loop.
-      // Staging `unroll * NumActiveChannels` samples here would explode the
-      // register footprint of the already register-limited (2 blocks/SM)
-      // multi-channel kernel and collapse occupancy, so we do NOT pipeline.
-      for (OffsetT it = 0; it < chunk_iters_max; ++it)
+      // Multi-channel: VECTORIZE the per-pixel load (see the cuckoo kernel for
+      // the full rationale). Issue ONE wide `CubVector<SampleT, NumChannels>`
+      // (e.g. `int4`) load per pixel, classify the active lanes from registers,
+      // and fall back to the per-channel scalar loop when no native, aligned
+      // sample pointer is available.
+      using PixelT            = typename CubVector<SampleValueT, NumChannels>::Type;
+      const auto* native_base = SampleNativePointer<SampleValueT>(d_samples);
+      const bool vectorizable = (native_base != nullptr)
+                             && ((reinterpret_cast<size_t>(native_base) & (alignof(PixelT) - 1)) == 0);
+      if (vectorizable)
       {
-        const OffsetT pixel = start + it * chunk;
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < unroll; ++u)
+        const PixelT* const pixels = reinterpret_cast<const PixelT*>(native_base);
+        for (OffsetT it = 0; it < chunk_iters_max; ++it)
         {
-          const OffsetT this_pixel = pixel + u * step;
-          const bool valid_pixel   = this_pixel < total_pixels;
-          const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+          const OffsetT pixel = start + it * chunk;
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int ch = 0; ch < NumActiveChannels; ++ch)
+          for (int u = 0; u < unroll; ++u)
           {
-            int bin = -1;
-            if (valid_pixel)
+            const OffsetT this_pixel = pixel + u * step;
+            const bool valid_pixel   = this_pixel < total_pixels;
+            const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
+            const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
-              auto sample = d_samples[pix_off + ch];
-              decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
-              const int num_bins = num_output_bins_wrapper[ch];
-              if (bin >= num_bins)
+              int bin = -1;
+              if (valid_pixel)
               {
-                bin = -1;
+                decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
+                const int num_bins = num_output_bins_wrapper[ch];
+                if (bin >= num_bins)
+                {
+                  bin = -1;
+                }
               }
+              probe_single(ch, bin);
             }
-            probe_single(ch, bin);
+          }
+        }
+      }
+      else
+      {
+        // Scalar fallback: interleaved load -> classify -> probe loop. Staging
+        // `unroll * NumActiveChannels` samples would explode the register
+        // footprint of this already register-limited kernel, so we do NOT
+        // pipeline here.
+        for (OffsetT it = 0; it < chunk_iters_max; ++it)
+        {
+          const OffsetT pixel = start + it * chunk;
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int u = 0; u < unroll; ++u)
+          {
+            const OffsetT this_pixel = pixel + u * step;
+            const bool valid_pixel   = this_pixel < total_pixels;
+            const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
+            {
+              int bin = -1;
+              if (valid_pixel)
+              {
+                auto sample = d_samples[pix_off + ch];
+                decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+                const int num_bins = num_output_bins_wrapper[ch];
+                if (bin >= num_bins)
+                {
+                  bin = -1;
+                }
+              }
+              probe_single(ch, bin);
+            }
           }
         }
       }
