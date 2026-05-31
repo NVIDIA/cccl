@@ -62,7 +62,14 @@ namespace detail::histogram
 // power-of-two `slots`. We pass it explicitly (computed once per launch) to keep
 // the hot path free of clz.
 #ifndef CUB_HISTO_CACHE_HASH_MODE
-#  define CUB_HISTO_CACHE_HASH_MODE 0
+// brief-12 iter1: default to Fibonacci high-bits hashing (mode 1). The historical
+// `& mask` (mode 0) took the LOW log2(slots) bits of the multiplicative product,
+// which for an odd multiplier depend ONLY on the low bits of `bin`; the SMEM bank
+// (slot & 31) was therefore the low 5 bits of `bin`, so clustered / skewed bin
+// distributions aliased onto few banks (ncu: ~4-way conflict on the key LDS, the
+// dominant cost on the SMEM-bound multi-channel RANGE cuckoo cell). Mode 1 uses
+// the well-mixed HIGH bits, breaking that aliasing.
+#  define CUB_HISTO_CACHE_HASH_MODE 1
 #endif
 
 _CCCL_DEVICE _CCCL_FORCEINLINE int
