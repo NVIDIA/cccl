@@ -1225,7 +1225,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `sizeof(int)` per slot; the replicated counts cost
       // `kCountReplicas * CounterSize()` per slot. This MUST match the kernels'
       // `kCountReplicas`.
-      constexpr int kCountReplicas = (NUM_ACTIVE_CHANNELS > 1) ? 2 : 1;
+      // iter1 (C-only decompose): R=1 everywhere collapses the count-replica to
+      // a no-op (single count word per slot, byte-identical to A's pre-replica
+      // layout) so this iteration isolates C's multi-RANGE=384 decouple.
+      constexpr int kCountReplicas = 1;
       const int cache_bytes_per_slot =
         static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
       const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;
