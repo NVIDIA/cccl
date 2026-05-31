@@ -9,6 +9,8 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/array>
+
 #include <c2h/catch2_test_helper.h>
 
 __global__ void WarpReduceBroadcastKernel(int* out)
@@ -36,6 +38,36 @@ C2H_TEST("experimental warp reduce broadcast returns aggregate to every lane", "
   for (int i = 0; i < 64; ++i)
   {
     expected[i] = i < 32 ? 496 : 1520;
+  }
+  REQUIRE(expected == d_out);
+}
+
+__global__ void WarpReduceBroadcastLogicalKernel(int* out)
+{
+  // example-begin warp-reduce-broadcast-logical
+  using warp_reduce_t = cub::experimental::WarpReduceBroadcast<int, 4>;
+  __shared__ typename warp_reduce_t::TempStorage temp_storage[2];
+
+  const int physical_warp_id = static_cast<int>(threadIdx.x) / 32;
+  const int result           = warp_reduce_t(temp_storage[physical_warp_id]).Sum(static_cast<int>(threadIdx.x));
+  // example-end warp-reduce-broadcast-logical
+
+  out[threadIdx.x] = result;
+}
+
+C2H_TEST("experimental warp reduce broadcast supports tiny logical warps", "[experimental][coop][warp][reduce]")
+{
+  c2h::device_vector<int> d_out(64);
+
+  WarpReduceBroadcastLogicalKernel<<<1, 64>>>(thrust::raw_pointer_cast(d_out.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::host_vector<int> expected(64);
+  for (int i = 0; i < 64; ++i)
+  {
+    const int group_start = (i / 4) * 4;
+    expected[i]           = group_start * 4 + 6;
   }
   REQUIRE(expected == d_out);
 }
@@ -70,6 +102,54 @@ C2H_TEST("warp reduce batched owner-lane layout returns one batch per lane", "[e
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
   c2h::host_vector<int> expected{496, 528, 560, 1520, 1552, 1584};
+  REQUIRE(expected == d_out);
+}
+
+__global__ void WarpReduceBatchedBroadcastKernel(int* out)
+{
+  // example-begin warp-reduce-batched-broadcast
+  constexpr int batches              = 5;
+  constexpr int logical_warp_threads = 4;
+  using warp_reduce_t = cub::experimental::WarpReduceBatchedBroadcast<int, batches, logical_warp_threads>;
+  __shared__ typename warp_reduce_t::TempStorage temp_storage[2];
+
+  const int physical_warp_id = static_cast<int>(threadIdx.x) / 32;
+  const int logical_lane     = static_cast<int>(threadIdx.x) % logical_warp_threads;
+
+  ::cuda::std::array<int, batches> inputs{};
+  for (int batch = 0; batch < batches; ++batch)
+  {
+    inputs[batch] = batch * 10 + logical_lane;
+  }
+
+  const auto outputs = warp_reduce_t(temp_storage[physical_warp_id]).Sum(inputs);
+  // example-end warp-reduce-batched-broadcast
+
+  for (int batch = 0; batch < batches; ++batch)
+  {
+    out[threadIdx.x * batches + batch] = outputs[batch];
+  }
+}
+
+C2H_TEST("experimental warp reduce batched broadcast returns every batch to every lane",
+         "[experimental][coop][warp][reduce]")
+{
+  constexpr int threads = 64;
+  constexpr int batches = 5;
+  c2h::device_vector<int> d_out(threads * batches);
+
+  WarpReduceBatchedBroadcastKernel<<<1, threads>>>(thrust::raw_pointer_cast(d_out.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::host_vector<int> expected(threads * batches);
+  for (int i = 0; i < threads; ++i)
+  {
+    for (int batch = 0; batch < batches; ++batch)
+    {
+      expected[i * batches + batch] = batch * 40 + 6;
+    }
+  }
   REQUIRE(expected == d_out);
 }
 

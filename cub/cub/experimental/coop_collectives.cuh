@@ -28,6 +28,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -35,7 +36,8 @@ namespace experimental
 {
 //! @rst
 //! Warp-wide reduction adapter that broadcasts the aggregate to every participating logical lane.
-//! This composes CUB's ``WarpReduce`` owner-lane reduction with a warp shuffle broadcast.
+//! Sum uses a shuffle allreduce fast path. Generic ``Reduce`` preserves CUB's non-commutative
+//! reduction semantics by using the owner-lane result and broadcasting it.
 //! @endrst
 template <typename T, int LogicalWarpThreads = detail::warp_threads>
 class WarpReduceBroadcast
@@ -46,7 +48,23 @@ class WarpReduceBroadcast
 
   typename WarpReduceT::TempStorage& temp_storage;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T BroadcastFromLane0(T aggregate) const
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T commutative_all_reduce(T input, ReductionOp reduction_op) const
+  {
+    const auto lane_id         = cub::detail::logical_lane_id<LogicalWarpThreads>();
+    const auto logical_warp_id = cub::detail::logical_warp_id<LogicalWarpThreads>();
+    const auto member_mask     = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int offset = LogicalWarpThreads / 2; offset > 0; offset >>= 1)
+    {
+      const T peer = cub::ShuffleIndex<LogicalWarpThreads>(input, lane_id ^ offset, member_mask);
+      input        = reduction_op(input, peer);
+    }
+    return input;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T broadcast_from_lane0(T aggregate) const
   {
     const auto logical_warp_id = cub::detail::logical_warp_id<LogicalWarpThreads>();
     const auto member_mask     = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
@@ -57,44 +75,131 @@ public:
   /// @smemstorage{WarpReduceBroadcast}
   using TempStorage = typename WarpReduceT::TempStorage;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE explicit WarpReduceBroadcast(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit WarpReduceBroadcast(TempStorage& temp_storage)
       : temp_storage(temp_storage)
   {}
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input)
   {
-    return BroadcastFromLane0(WarpReduceT(temp_storage).Sum(input));
+    return commutative_all_reduce(input, ::cuda::std::plus<>{});
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
-    return BroadcastFromLane0(WarpReduceT(temp_storage).Sum(input));
+    return commutative_all_reduce(cub::ThreadReduce(input, ::cuda::std::plus<>{}), ::cuda::std::plus<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int valid_items)
   {
-    return BroadcastFromLane0(WarpReduceT(temp_storage).Sum(input, valid_items));
+    return broadcast_from_lane0(WarpReduceT(temp_storage).Sum(input, valid_items));
   }
 
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
-    return BroadcastFromLane0(WarpReduceT(temp_storage).Reduce(input, reduction_op));
+    return broadcast_from_lane0(WarpReduceT(temp_storage).Reduce(input, reduction_op));
   }
 
   _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
-    return BroadcastFromLane0(WarpReduceT(temp_storage).Reduce(input, reduction_op));
+    return broadcast_from_lane0(WarpReduceT(temp_storage).Reduce(input, reduction_op));
   }
 
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
   {
-    return BroadcastFromLane0(WarpReduceT(temp_storage).Reduce(input, reduction_op, valid_items));
+    return broadcast_from_lane0(WarpReduceT(temp_storage).Reduce(input, reduction_op, valid_items));
+  }
+};
+
+//! @rst
+//! Batched warp-wide reduction adapter that broadcasts every batch aggregate to every participating logical lane.
+//! ``Sum`` and ``CommutativeReduce`` use a shuffle allreduce fast path and require commutative
+//! reduction operators. Use ``WarpReduceBatched`` directly when only owner lanes need the batch outputs.
+//! @endrst
+template <typename T, int Batches, int LogicalWarpThreads = detail::warp_threads, bool SyncPhysicalWarp = false>
+class WarpReduceBatchedBroadcast
+{
+  static_assert(Batches > 0, "Batches must be greater than zero");
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
+  static_assert(LogicalWarpThreads > 0 && LogicalWarpThreads <= detail::warp_threads,
+                "LogicalWarpThreads must be in the range [1, 32]");
+
+  template <typename InputType, typename OutputType, typename ReductionOp>
+  static _CCCL_DEVICE_API _CCCL_FORCEINLINE void check_constraints()
+  {
+    static_assert(detail::is_fixed_size_random_access_range_v<InputType>,
+                  "InputType must support operator[] and have a compile-time size");
+    static_assert(detail::is_fixed_size_random_access_range_v<OutputType>,
+                  "OutputType must support operator[] and have a compile-time size");
+    static_assert(detail::static_size_v<InputType> == Batches, "Input size must match Batches");
+    static_assert(detail::static_size_v<OutputType> == Batches, "Output size must match Batches");
+    static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
+                  "ReductionOp must have the binary call operator: operator(T, T)");
+  }
+
+  template <typename OutputType, typename ReductionOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void commutative_all_reduce_batches(OutputType& outputs, ReductionOp reduction_op)
+  {
+    const auto lane_id         = cub::detail::logical_lane_id<LogicalWarpThreads>();
+    const auto logical_warp_id = cub::detail::logical_warp_id<LogicalWarpThreads>();
+    const auto member_mask =
+      SyncPhysicalWarp ? 0xFFFFFFFFu : static_cast<unsigned int>(cub::WarpMask<LogicalWarpThreads>(logical_warp_id));
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int offset = LogicalWarpThreads / 2; offset > 0; offset >>= 1)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int batch = 0; batch < Batches; ++batch)
+      {
+        const T peer   = cub::ShuffleIndex<LogicalWarpThreads>(outputs[batch], lane_id ^ offset, member_mask);
+        outputs[batch] = reduction_op(outputs[batch], peer);
+      }
+    }
+  }
+
+public:
+  /// @smemstorage{WarpReduceBatchedBroadcast}
+  using TempStorage = cub::NullType;
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit WarpReduceBatchedBroadcast(TempStorage& /*temp_storage*/) {}
+
+  template <typename InputType, typename OutputType, typename ReductionOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  CommutativeReduce(const InputType& inputs, OutputType& outputs, ReductionOp reduction_op)
+  {
+    check_constraints<InputType, OutputType, ReductionOp>();
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int batch = 0; batch < Batches; ++batch)
+    {
+      outputs[batch] = inputs[batch];
+    }
+    commutative_all_reduce_batches(outputs, reduction_op);
+  }
+
+  template <typename InputType, typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::array<T, Batches>
+  CommutativeReduce(const InputType& inputs, ReductionOp reduction_op)
+  {
+    ::cuda::std::array<T, Batches> outputs{};
+    CommutativeReduce(inputs, outputs, reduction_op);
+    return outputs;
+  }
+
+  template <typename InputType, typename OutputType>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sum(const InputType& inputs, OutputType& outputs)
+  {
+    CommutativeReduce(inputs, outputs, ::cuda::std::plus<>{});
+  }
+
+  template <typename InputType>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::array<T, Batches> Sum(const InputType& inputs)
+  {
+    return CommutativeReduce(inputs, ::cuda::std::plus<>{});
   }
 };
 
@@ -110,8 +215,6 @@ template <typename T,
           int BlockDimZ                  = 1>
 class BlockReduceBroadcast
 {
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
-
   using BlockReduceT = cub::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>;
 
   struct _TempStorage
@@ -123,7 +226,7 @@ class BlockReduceBroadcast
   _TempStorage& temp_storage;
   unsigned int linear_tid;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T aggregate)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T broadcast(T aggregate)
   {
     if (linear_tid == 0)
     {
@@ -141,43 +244,43 @@ public:
   struct TempStorage : cub::Uninitialized<_TempStorage>
   {};
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockReduceBroadcast(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit BlockReduceBroadcast(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
-    return Broadcast(BlockReduceT(temp_storage.reduce).Reduce(input, reduction_op));
+    return broadcast(BlockReduceT(temp_storage.reduce).Reduce(input, reduction_op));
   }
 
   template <int ITEMS_PER_THREAD, typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
   {
-    return Broadcast(BlockReduceT(temp_storage.reduce).Reduce(inputs, reduction_op));
+    return broadcast(BlockReduceT(temp_storage.reduce).Reduce(inputs, reduction_op));
   }
 
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
   {
-    return Broadcast(BlockReduceT(temp_storage.reduce).Reduce(input, reduction_op, num_valid));
+    return broadcast(BlockReduceT(temp_storage.reduce).Reduce(input, reduction_op, num_valid));
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input)
   {
-    return Broadcast(BlockReduceT(temp_storage.reduce).Sum(input));
+    return broadcast(BlockReduceT(temp_storage.reduce).Sum(input));
   }
 
   template <int ITEMS_PER_THREAD>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
   {
-    return Broadcast(BlockReduceT(temp_storage.reduce).Sum(inputs));
+    return broadcast(BlockReduceT(temp_storage.reduce).Sum(inputs));
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
-    return Broadcast(BlockReduceT(temp_storage.reduce).Sum(input, num_valid));
+    return broadcast(BlockReduceT(temp_storage.reduce).Sum(input, num_valid));
   }
 };
 
@@ -215,12 +318,12 @@ public:
   struct TempStorage : cub::Uninitialized<_TempStorage>
   {};
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockRowReduce(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit BlockRowReduce(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(static_cast<int>(threadIdx.x))
   {}
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input)
   {
     const int warp_id     = linear_tid / WARP_THREADS;
     const int lane_id     = linear_tid % WARP_THREADS;

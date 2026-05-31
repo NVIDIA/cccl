@@ -59,6 +59,39 @@ struct warp_reduce_coop_broadcast_t
   }
 };
 
+template <typename T>
+struct warp_allreduce4_manual_t
+{
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
+  {
+    constexpr int logical_warp_threads = 4;
+    const int lane_id                  = cub::detail::logical_lane_id<logical_warp_threads>();
+    const int logical_warp_id          = cub::detail::logical_warp_id<logical_warp_threads>();
+    const auto member_mask             = cub::WarpMask<logical_warp_threads>(logical_warp_id);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int offset = 1; offset < logical_warp_threads; offset <<= 1)
+    {
+      const T peer = cub::ShuffleIndex<logical_warp_threads>(thread_data, lane_id ^ offset, member_mask);
+      thread_data += peer;
+    }
+    return thread_data;
+  }
+};
+
+template <typename T>
+struct warp_reduce_coop_broadcast4_t
+{
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
+  {
+    using warp_reduce_t = cub::experimental::WarpReduceBroadcast<T, 4>;
+    __shared__ typename warp_reduce_t::TempStorage temp_storage[32];
+
+    const int warp_id = static_cast<int>(threadIdx.x) / cub::detail::warp_threads;
+    return warp_reduce_t{temp_storage[warp_id]}.Sum(thread_data);
+  }
+};
+
 template <typename T, int Batches>
 struct warp_reduce_serial_batched_t
 {
@@ -104,6 +137,48 @@ struct warp_reduce_batched_t
 
     T result = warp_reduce_t{temp_storage[warp_id]}.Sum(inputs);
     return lane_id < Batches ? result : thread_data;
+  }
+};
+
+template <typename T, int Batches>
+struct warp_reduce_serial_batched_broadcast4_t
+{
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
+  {
+    using warp_reduce_t = cub::experimental::WarpReduceBroadcast<T, 4>;
+    __shared__ typename warp_reduce_t::TempStorage temp_storage[Batches][32];
+
+    const int warp_id = static_cast<int>(threadIdx.x) / cub::detail::warp_threads;
+
+    T result{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int batch = 0; batch < Batches; ++batch)
+    {
+      result += warp_reduce_t{temp_storage[batch][warp_id]}.Sum(thread_data + static_cast<T>(batch));
+    }
+    return result;
+  }
+};
+
+template <typename T, int Batches>
+struct warp_reduce_batched_broadcast4_t
+{
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
+  {
+    using warp_reduce_t = cub::experimental::WarpReduceBatchedBroadcast<T, Batches, 4>;
+    __shared__ typename warp_reduce_t::TempStorage temp_storage[32];
+
+    const int warp_id = static_cast<int>(threadIdx.x) / cub::detail::warp_threads;
+
+    ::cuda::std::array<T, Batches> inputs{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int batch = 0; batch < Batches; ++batch)
+    {
+      inputs[batch] = thread_data + static_cast<T>(batch);
+    }
+
+    const auto outputs = warp_reduce_t{temp_storage[warp_id]}.Sum(inputs);
+    return cub::ThreadReduce(outputs, ::cuda::std::plus<>{});
   }
 };
 
@@ -207,6 +282,12 @@ template <typename T>
 using warp_reduce_batched_4_t = warp_reduce_batched_t<T, 4>;
 
 template <typename T>
+using warp_reduce_serial_batched_broadcast4_4_t = warp_reduce_serial_batched_broadcast4_t<T, 4>;
+
+template <typename T>
+using warp_reduce_batched_broadcast4_4_t = warp_reduce_batched_broadcast4_t<T, 4>;
+
+template <typename T>
 void warp_reduce_owner(nvbench::state& state, nvbench::type_list<T> type)
 {
   bench_collective<256, 128, warp_reduce_owner_t>(state, type);
@@ -225,6 +306,18 @@ void warp_reduce_coop_broadcast(nvbench::state& state, nvbench::type_list<T> typ
 }
 
 template <typename T>
+void warp_allreduce4_manual(nvbench::state& state, nvbench::type_list<T> type)
+{
+  bench_collective<256, 128, warp_allreduce4_manual_t>(state, type);
+}
+
+template <typename T>
+void warp_reduce_coop_broadcast4(nvbench::state& state, nvbench::type_list<T> type)
+{
+  bench_collective<256, 128, warp_reduce_coop_broadcast4_t>(state, type);
+}
+
+template <typename T>
 void warp_reduce_serial_batched_4(nvbench::state& state, nvbench::type_list<T> type)
 {
   bench_collective<256, 128, warp_reduce_serial_batched_4_t>(state, type);
@@ -234,6 +327,18 @@ template <typename T>
 void warp_reduce_batched_4(nvbench::state& state, nvbench::type_list<T> type)
 {
   bench_collective<256, 128, warp_reduce_batched_4_t>(state, type);
+}
+
+template <typename T>
+void warp_reduce_serial_batched_broadcast4_4(nvbench::state& state, nvbench::type_list<T> type)
+{
+  bench_collective<256, 128, warp_reduce_serial_batched_broadcast4_4_t>(state, type);
+}
+
+template <typename T>
+void warp_reduce_batched_broadcast4_4(nvbench::state& state, nvbench::type_list<T> type)
+{
+  bench_collective<256, 128, warp_reduce_batched_broadcast4_4_t>(state, type);
 }
 
 template <typename T>
@@ -272,12 +377,28 @@ NVBENCH_BENCH_TYPES(warp_reduce_coop_broadcast, NVBENCH_TYPE_AXES(value_types))
   .set_name("warp_reduce_coop_broadcast")
   .set_type_axes_names({"T{ct}"});
 
+NVBENCH_BENCH_TYPES(warp_allreduce4_manual, NVBENCH_TYPE_AXES(value_types))
+  .set_name("warp_allreduce4_manual")
+  .set_type_axes_names({"T{ct}"});
+
+NVBENCH_BENCH_TYPES(warp_reduce_coop_broadcast4, NVBENCH_TYPE_AXES(value_types))
+  .set_name("warp_reduce_coop_broadcast4")
+  .set_type_axes_names({"T{ct}"});
+
 NVBENCH_BENCH_TYPES(warp_reduce_serial_batched_4, NVBENCH_TYPE_AXES(value_types))
   .set_name("warp_reduce_serial_batched_4")
   .set_type_axes_names({"T{ct}"});
 
 NVBENCH_BENCH_TYPES(warp_reduce_batched_4, NVBENCH_TYPE_AXES(value_types))
   .set_name("warp_reduce_batched_4")
+  .set_type_axes_names({"T{ct}"});
+
+NVBENCH_BENCH_TYPES(warp_reduce_serial_batched_broadcast4_4, NVBENCH_TYPE_AXES(value_types))
+  .set_name("warp_reduce_serial_batched_broadcast4_4")
+  .set_type_axes_names({"T{ct}"});
+
+NVBENCH_BENCH_TYPES(warp_reduce_batched_broadcast4_4, NVBENCH_TYPE_AXES(value_types))
+  .set_name("warp_reduce_batched_broadcast4_4")
   .set_type_axes_names({"T{ct}"});
 
 NVBENCH_BENCH_TYPES(block_reduce_manual_broadcast, NVBENCH_TYPE_AXES(value_types))
