@@ -241,6 +241,12 @@ struct Transforms
   template <typename LevelIteratorT>
   struct SearchTransform
   {
+    // Compile-time RANGE marker: the direct-atomic cuckoo sweep gates its
+    // SMEM count-replica factor on this (RANGE multi-channel high-bin cells
+    // benefit from de-serialized count atomics; EVEN cells do not -- see
+    // worker-3 brief-8). No runtime branch; resolved at instantiation.
+    static constexpr bool is_range_transform = true;
+
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
 
@@ -481,6 +487,10 @@ struct Transforms
   // Scales samples to evenly-spaced bins
   struct ScaleTransform
   {
+    // Compile-time RANGE marker (false: this is the EVEN transform). See
+    // SearchTransform::is_range_transform.
+    static constexpr bool is_range_transform = false;
+
     using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
                   "The common type of `LevelT` and `SampleT` must be "
@@ -762,6 +772,10 @@ struct Transforms
   // Pass-through bin transform operator
   struct PassThruTransform
   {
+    // Compile-time RANGE marker (false: byte-sample pass-through is not RANGE).
+    // See SearchTransform::is_range_transform.
+    static constexpr bool is_range_transform = false;
+
     // Tag for detecting the pass-through transform without depending on its template
     // parameters. Used by dispatch to decide whether the combine staging path is safe
     // (the combine kernel assumes output_decode_op is identity).
@@ -1718,11 +1732,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // occupancy/key-read-bound at 512 threads; R>1 halves the grid and regresses
   // it -- worker-3 brief-6). At R=1 the replica index is always 0 and the count
   // layout is byte-for-byte identical to the pre-replica single-channel cache.
-  // iter3 SELECTIVE KEEPER: the CUCKOO kernel takes R=2 for multi-channel
-  // (de-serializes the cross-warp atomicAdd_block; lifts multi_range, where 3
-  // channels contend the small cache), R=1 for single-channel (byte-identical).
-  // The single-probe kernel stays R=1 (R=2 there hurt multi_even -- see below).
-  constexpr int kCountReplicas = (NumActiveChannels > 1) ? 2 : 1;
+  // iter5 KEEPER: the CUCKOO kernel takes R=2 only for MULTI-channel RANGE
+  // (de-serializes the cross-warp atomicAdd_block; lifts multi_range +1.4%,
+  // where 3 channels contend the small cache and the per-sample SearchTransform
+  // makes the block classify-bound so the wider count fan-out is free). EVEN and
+  // single-channel stay R=1 (byte-identical count layout): R=2 on the multi
+  // EVEN-F64 cuckoo cells cost multi_even ~-0.8% for no multi_range gain
+  // (worker-3 brief-8 iter4). The single-probe kernel stays R=1 unconditionally
+  // (R=2 there hurt the multi EVEN-I32 cells -2% -- iter2). `is_range_transform`
+  // is a compile-time marker on the decode op, so this is no runtime branch.
+  constexpr int kCountReplicas = (NumActiveChannels > 1 && PrivatizedDecodeOpT::is_range_transform) ? 2 : 1;
   const int cache_mask  = cache_slots_per_channel - 1;
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
   const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;

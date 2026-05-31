@@ -1225,15 +1225,23 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `sizeof(int)` per slot; the replicated counts cost
       // `kCountReplicas * CounterSize()` per slot. This MUST match the kernels'
       // `kCountReplicas`.
-      // iter3 SELECTIVE KEEPER: R is gated per-channel-count AND per-kernel. The
+      // iter5 KEEPER: R is gated per-channel-count, per-transform, AND per-kernel
+      // -- all compile-time / dispatch-time, no runtime data branch. The
       // count-replica split helps multi_range on the CUCKOO kernel (3 channels
       // contend the small cache -> atomic serialization) but HURTS multi_even on
-      // the SINGLE-PROBE kernel (2x count footprint cuts its slots/occupancy --
-      // worker-3 brief-8 iter2 decompose). So R=2 only for multi-channel on the
-      // cuckoo path; single-probe and single-channel stay R=1 (byte-identical
-      // count layout). `use_single_probe_cache` selects the active kernel, so
-      // this sizes exactly the kernel that will launch.
-      const int kCountReplicas = (NUM_ACTIVE_CHANNELS > 1 && !use_single_probe_cache) ? 2 : 1;
+      // BOTH the single-probe kernel (EVEN-I32 cells, -2%) and the cuckoo kernel
+      // (EVEN-F64 cells, -0.8%) -- worker-3 brief-8 iter2/iter4. So R=2 only for
+      // multi-channel RANGE on the cuckoo path (`!use_single_probe_cache`);
+      // EVEN, single-probe, and single-channel stay R=1 (byte-identical count
+      // layout). The RANGE discriminator is `privatized_decode_op_t::is_range_transform`
+      // -- the SAME compile-time marker the cuckoo kernel reads off its
+      // `PrivatizedDecodeOpT` -- so dispatch sizing and the kernel's
+      // `kCountReplicas` are guaranteed to agree (the `IsEven` template param is
+      // vestigial here: both the even and range entry points pass IsEven=false).
+      // `use_single_probe_cache` selects the active kernel so this sizes exactly
+      // the kernel that will launch.
+      const int kCountReplicas =
+        (NUM_ACTIVE_CHANNELS > 1 && privatized_decode_op_t::is_range_transform && !use_single_probe_cache) ? 2 : 1;
       const int cache_bytes_per_slot =
         static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
       const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;
