@@ -1240,7 +1240,7 @@ inline exec_place exec_place::device(int devid)
   // concurrent calls would race on that member (and on the freshly created
   // control blocks). Copying an existing ``shared_ptr`` only touches the atomic
   // reference count, which is thread-safe.
-  static ::std::shared_ptr<exec_place::impl>* impls = [ndevices] {
+  static ::std::shared_ptr<exec_place::impl>* impls = [] {
     auto result = new ::std::shared_ptr<exec_place::impl>[ndevices];
     for (int i : each(ndevices))
     {
