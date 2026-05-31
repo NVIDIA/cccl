@@ -1225,9 +1225,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `sizeof(int)` per slot; the replicated counts cost
       // `kCountReplicas * CounterSize()` per slot. This MUST match the kernels'
       // `kCountReplicas`.
-      // iter2 (B-only decompose): R=2 multi / R=1 single, with C's 384 reverted
-      // to 0 above, isolates B's count-replica under A's routing.
-      constexpr int kCountReplicas = (NUM_ACTIVE_CHANNELS > 1) ? 2 : 1;
+      // iter3 SELECTIVE KEEPER: R is gated per-channel-count AND per-kernel. The
+      // count-replica split helps multi_range on the CUCKOO kernel (3 channels
+      // contend the small cache -> atomic serialization) but HURTS multi_even on
+      // the SINGLE-PROBE kernel (2x count footprint cuts its slots/occupancy --
+      // worker-3 brief-8 iter2 decompose). So R=2 only for multi-channel on the
+      // cuckoo path; single-probe and single-channel stay R=1 (byte-identical
+      // count layout). `use_single_probe_cache` selects the active kernel, so
+      // this sizes exactly the kernel that will launch.
+      const int kCountReplicas = (NUM_ACTIVE_CHANNELS > 1 && !use_single_probe_cache) ? 2 : 1;
       const int cache_bytes_per_slot =
         static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
       const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;

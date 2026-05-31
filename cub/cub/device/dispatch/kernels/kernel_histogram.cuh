@@ -1718,7 +1718,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // occupancy/key-read-bound at 512 threads; R>1 halves the grid and regresses
   // it -- worker-3 brief-6). At R=1 the replica index is always 0 and the count
   // layout is byte-for-byte identical to the pre-replica single-channel cache.
-  constexpr int kCountReplicas = (NumActiveChannels > 1) ? 2 : 1; // iter2 (B-only): R=2 multi / R=1 single
+  // iter3 SELECTIVE KEEPER: the CUCKOO kernel takes R=2 for multi-channel
+  // (de-serializes the cross-warp atomicAdd_block; lifts multi_range, where 3
+  // channels contend the small cache), R=1 for single-channel (byte-identical).
+  // The single-probe kernel stays R=1 (R=2 there hurt multi_even -- see below).
+  constexpr int kCountReplicas = (NumActiveChannels > 1) ? 2 : 1;
   const int cache_mask  = cache_slots_per_channel - 1;
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
   const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
@@ -2139,7 +2143,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // R is gated PER NUM_ACTIVE_CHANNELS: multi = 2, single = 1 (single-channel
   // is occupancy/key-read-bound -- worker-3 brief-6 -- so R>1 regresses it; at
   // R=1 the layout is byte-for-byte identical to the pre-replica cache).
-  constexpr int kCountReplicas = (NumActiveChannels > 1) ? 2 : 1; // iter2 (B-only): R=2 multi / R=1 single
+  //
+  // iter3 SELECTIVE KEEPER: the SINGLE-PROBE kernel stays R=1 for ALL channel
+  // counts. Decompose (brief-8 iter2) found multi-channel R=2 on single_probe
+  // HURTS multi_even -2% (the multi EVEN-I32 cells route here; the 2x count
+  // footprint cuts the single_probe cache slots / occupancy). Only the cuckoo
+  // kernel takes R=2 for multi.
+  constexpr int kCountReplicas = 1;
   const int cache_mask  = cache_slots_per_channel - 1;
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
   const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
