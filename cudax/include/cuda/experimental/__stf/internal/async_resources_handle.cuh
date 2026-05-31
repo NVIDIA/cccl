@@ -35,6 +35,7 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
+#include <mutex>
 #include <unordered_map>
 
 #include <cuda.h>
@@ -49,24 +50,26 @@ namespace cuda::experimental::stf
  * new object of this type does not initialize any resource, as these will be
  * set lazily.
  *
- * @par Lifetime
+ * @par Thread safety
+ * A single handle (and its copies, which share one PIMPL state) may be used
+ * concurrently by several host threads submitting work to the same context.
+ * The internal caches reached during task submission -- the cross-stream
+ * synchronization cache and the per-place stream-pool registry -- are
+ * mutex-guarded. This only makes the runtime's own bookkeeping race-free;
+ * conflicting accesses to the same logical data must still be ordered through
+ * the task dependency graph.
  *
- * The handle owns CUDA resources that are created lazily and torn down by
- * its destructor (per-place stream pools and their cached `cudaStream_t`
- * handles, the executable-graph cache, etc.). The destructor releases those
- * resources synchronously and does not synchronize any external CUDA stream,
- * so the caller must ensure no in-flight CUDA work can still reference them
- * before the last `shared_ptr` to the impl is dropped.
- *
- * For typical use this is automatic: contexts built around the handle hold
- * it by value and blocking finalize semantics guarantee completion. The
- * non-trivial case is when a context is constructed with a caller-provided
- * CUDA stream (`stream_ctx(user_stream, handle)` or
- * `graph_ctx(user_stream, handle)`). In that case `finalize()` is
- * non-blocking and only enqueues the resource-release callbacks on
- * `user_stream`. Before destroying the only remaining handle reference,
- * every such `user_stream` must reach that point (e.g. via
- * `cudaStreamSynchronize(user_stream)`).
+ * @par Lifetime and CUDA teardown
+ * The handle caches resources bound to a live CUDA context: pools of
+ * ``cudaStream_t``, cached ``cudaGraphExec_t``, and cross-stream
+ * synchronization state. Before destroying a handle that was shared across
+ * contexts, perform a blocking synchronization on all work that used it --
+ * otherwise it would release streams still carrying in-flight work. For the
+ * same reason a handle must not survive a CUDA context teardown such as
+ * ``cudaDeviceReset()`` (or primary-context destruction by an external
+ * framework): its cached ``cudaStream_t`` / ``cudaGraphExec_t`` would become
+ * dangling. Synchronize, destroy the handle, and create a fresh one once CUDA
+ * has been relaunched.
  */
 class async_resources_handle
 {
@@ -98,6 +101,13 @@ private:
       }
 
       const auto key = ::std::pair(src, dst);
+
+      // This cache is shared by all tasks submitted in the context, including
+      // tasks submitted concurrently from different user threads. Guard the
+      // map against concurrent lookups/insertions which would otherwise race
+      // (e.g. a rehash triggered by a new stream pair corrupting buckets being
+      // traversed by another thread).
+      ::std::lock_guard<::std::mutex> guard(mtx);
 
       if (auto i = interactions.find(key); i != interactions.end())
       {
