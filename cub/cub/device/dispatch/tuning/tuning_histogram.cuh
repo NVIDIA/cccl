@@ -479,10 +479,12 @@ public:
           // each with its own dynamic-SMEM cache partition and a shorter atomic
           // dependency chain. The SMEM-priv mid-bin sweep tiers keep the
           // 1024-thread shape (threads_per_block stays 1024); only the
-          // direct-atomic kernels see 384. iter3 SELECTIVE KEEPER: C's 384 +
-          // B's R=2 gated to the CUCKOO kernel only (decompose found B's R=2
-          // helps multi_range on cuckoo but hurts multi_even on single_probe).
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 384};
+          // direct-atomic kernels see 384. iter4: C's 384 REVERTED to 0 (inherit
+          // 1024) -- decompose found C's 384 and cuckoo R=2 are antagonistic on
+          // multi_range (the larger R=2 per-slot count footprint + a 384-thread
+          // launch together starve the cuckoo cache). Keep cuckoo R=2 at 1024 to
+          // capture B's multi_range gain without the antagonism.
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 0};
         }
         else
         {
