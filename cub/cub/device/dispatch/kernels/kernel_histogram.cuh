@@ -1697,29 +1697,60 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // retained (the single-probe variant was verified to collapse skewed
   // distributions by 25-30%). Keys are write-once / immutable after a CAS
   // claim, so the cache is race-free (no hit-vs-evict window).
-  const int cache_mask = cache_slots_per_channel - 1;
+  //
+  // SMEM-atomic SERIALIZATION relief (COMBINE / brief-8, parent B add8a909):
+  // the warp-leader's `atomicAdd_block` into a hot slot's count serialises
+  // across EVERY warp of the block that owns that bin. We split the count
+  // array into `kCountReplicas` independent replicas and route warp `w` to
+  // replica `w % kCountReplicas`, so at most ~ceil(num_warps/kCountReplicas)
+  // warps ever contend a given (replica, slot) word -- an R-fold reduction in
+  // the SMEM-atomic serialization on hot bins. Keys stay SHARED (one
+  // slot->bin assignment for the whole block); only the COUNT is replicated.
+  // Updates stay `atomicAdd_block` so warps sharing a replica are race-free by
+  // construction. At flush we sum the R replicas of each claimed slot and
+  // issue one GMEM atomic. Layout in dynamic SMEM: keys for all channels first
+  // (`NumActiveChannels * slots` ints), then replicated counts
+  // (`NumActiveChannels * kCountReplicas * slots` CounterT). Dispatch sizes the
+  // dynamic SMEM with the same replica factor.
+  //
+  // R is gated PER NUM_ACTIVE_CHANNELS: multi-channel = 2 (3 channels share one
+  // block's cache, atomic serialization dominates), single-channel = 1 (already
+  // occupancy/key-read-bound at 512 threads; R>1 halves the grid and regresses
+  // it -- worker-3 brief-6). At R=1 the replica index is always 0 and the count
+  // layout is byte-for-byte identical to the pre-replica single-channel cache.
+  constexpr int kCountReplicas = (NumActiveChannels > 1) ? 2 : 1;
+  const int cache_mask  = cache_slots_per_channel - 1;
+  const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
+  const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
   extern __shared__ unsigned char s_cuckoo_raw[];
   int* const s_cache_keys_base       = reinterpret_cast<int*>(s_cuckoo_raw);
   CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
-    s_cuckoo_raw + static_cast<size_t>(NumActiveChannels) * cache_slots_per_channel * sizeof(int));
-  // Per-channel slot bases.
+    s_cuckoo_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
+  // Per-channel shared key base and this warp's replica count base.
   int* s_cache_keys[NumActiveChannels];
   CounterT* s_cache_counts[NumActiveChannels];
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
-    s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * cache_slots_per_channel;
-    s_cache_counts[ch] = s_cache_counts_base + static_cast<size_t>(ch) * cache_slots_per_channel;
+    s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * slots_sz;
+    s_cache_counts[ch] =
+      s_cache_counts_base + (static_cast<size_t>(ch) * kCountReplicas + replica) * slots_sz;
   }
 
-  // Initialize cache: keys = -1 (empty sentinel), counts = 0.
+  // Initialize cache: keys = -1 (empty sentinel), all replica counts = 0.
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
     for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
     {
-      s_cache_keys[ch][slot]   = -1;
-      s_cache_counts[ch][slot] = CounterT{0};
+      s_cache_keys[ch][slot] = -1;
+    }
+  }
+  {
+    const size_t total_count_words = static_cast<size_t>(NumActiveChannels) * kCountReplicas * slots_sz;
+    for (size_t i = threadIdx.x; i < total_count_words; i += blockDim.x)
+    {
+      s_cache_counts_base[i] = CounterT{0};
     }
   }
   __syncthreads();
@@ -1935,20 +1966,30 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       }
     }
 
-    // After the sweep, flush every cache slot to the global histogram.
-    // Block barrier here ensures every leader's atomicAdd_block has
-    // finished against the cache before we read it for the flush.
+    // After the sweep, flush every cache slot to the global histogram. Each
+    // slot's total is the sum of its `kCountReplicas` replicas. The block
+    // barrier ensures every leader's atomicAdd_block has finished before the
+    // flush reads the replicas.
     __syncthreads();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
+      CounterT* const ch_counts_base = s_cache_counts_base + static_cast<size_t>(ch) * kCountReplicas * slots_sz;
       for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
       {
-        const int key       = s_cache_keys[ch][slot];
-        const CounterT cnt  = s_cache_counts[ch][slot];
-        if (key >= 0 && cnt > CounterT{0})
+        const int key = s_cache_keys[ch][slot];
+        if (key >= 0)
         {
-          atomicAdd(&d_output_histograms_wrapper[ch][key], cnt);
+          CounterT cnt = CounterT{0};
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int r = 0; r < kCountReplicas; ++r)
+          {
+            cnt += ch_counts_base[static_cast<size_t>(r) * slots_sz + slot];
+          }
+          if (cnt > CounterT{0})
+          {
+            atomicAdd(&d_output_histograms_wrapper[ch][key], cnt);
+          }
         }
       }
     }
@@ -2084,29 +2125,52 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 
   // Single-probe direct-mapped cache, in DYNAMIC shared memory (same layout
   // and dispatch-chosen `cache_slots_per_channel` as the cuckoo kernel: keys
-  // for all channels first, then counts). Only the probe policy differs.
-  const int cache_mask = cache_slots_per_channel - 1;
+  // for all channels first, then replicated counts). Only the probe policy
+  // differs.
+  //
+  // Same SMEM-atomic SERIALIZATION relief as the cuckoo kernel (COMBINE /
+  // brief-8, parent B add8a909): the count array is split into `kCountReplicas`
+  // replicas and warp `w` uses replica `w % kCountReplicas`, so at most
+  // ~ceil(num_warps/kCountReplicas) warps contend a given (replica, slot) word
+  // (R-fold less SMEM-atomic serialization on hot bins). Keys stay shared;
+  // updates stay atomicAdd_block (warps sharing a replica are race-free).
+  // Layout: keys for all channels (`NumActiveChannels * slots` ints), then
+  // replicated counts (`NumActiveChannels * kCountReplicas * slots` CounterT).
+  // R is gated PER NUM_ACTIVE_CHANNELS: multi = 2, single = 1 (single-channel
+  // is occupancy/key-read-bound -- worker-3 brief-6 -- so R>1 regresses it; at
+  // R=1 the layout is byte-for-byte identical to the pre-replica cache).
+  constexpr int kCountReplicas = (NumActiveChannels > 1) ? 2 : 1;
+  const int cache_mask  = cache_slots_per_channel - 1;
+  const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
+  const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
   extern __shared__ unsigned char s_singleprobe_raw[];
   int* const s_cache_keys_base = reinterpret_cast<int*>(s_singleprobe_raw);
   CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
-    s_singleprobe_raw + static_cast<size_t>(NumActiveChannels) * cache_slots_per_channel * sizeof(int));
+    s_singleprobe_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
   int* s_cache_keys[NumActiveChannels];
   CounterT* s_cache_counts[NumActiveChannels];
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
-    s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * cache_slots_per_channel;
-    s_cache_counts[ch] = s_cache_counts_base + static_cast<size_t>(ch) * cache_slots_per_channel;
+    s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * slots_sz;
+    s_cache_counts[ch] =
+      s_cache_counts_base + (static_cast<size_t>(ch) * kCountReplicas + replica) * slots_sz;
   }
 
-  // Initialize cache: keys = -1 (empty sentinel), counts = 0.
+  // Initialize cache: keys = -1 (empty sentinel), all replica counts = 0.
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
     for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
     {
-      s_cache_keys[ch][slot]   = -1;
-      s_cache_counts[ch][slot] = CounterT{0};
+      s_cache_keys[ch][slot] = -1;
+    }
+  }
+  {
+    const size_t total_count_words = static_cast<size_t>(NumActiveChannels) * kCountReplicas * slots_sz;
+    for (size_t i = threadIdx.x; i < total_count_words; i += blockDim.x)
+    {
+      s_cache_counts_base[i] = CounterT{0};
     }
   }
   __syncthreads();
@@ -2265,18 +2329,28 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       }
     }
 
-    // Flush every claimed cache slot to the global histogram.
+    // Flush every claimed cache slot to the global histogram. Each slot's
+    // total is the sum of its `kCountReplicas` replicas.
     __syncthreads();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
+      CounterT* const ch_counts_base = s_cache_counts_base + static_cast<size_t>(ch) * kCountReplicas * slots_sz;
       for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
       {
-        const int key      = s_cache_keys[ch][slot];
-        const CounterT cnt = s_cache_counts[ch][slot];
-        if (key >= 0 && cnt > CounterT{0})
+        const int key = s_cache_keys[ch][slot];
+        if (key >= 0)
         {
-          atomicAdd(&d_output_histograms_wrapper[ch][key], cnt);
+          CounterT cnt = CounterT{0};
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int r = 0; r < kCountReplicas; ++r)
+          {
+            cnt += ch_counts_base[static_cast<size_t>(r) * slots_sz + slot];
+          }
+          if (cnt > CounterT{0})
+          {
+            atomicAdd(&d_output_histograms_wrapper[ch][key], cnt);
+          }
         }
       }
     }

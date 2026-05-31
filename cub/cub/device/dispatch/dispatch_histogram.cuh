@@ -1210,7 +1210,24 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // GMEM-atomic spills on the high-bin path (the measured bottleneck).
       // The floor is the legacy static size (4096 single-channel / 1024
       // multi-channel) so we never regress below the previous behaviour.
-      const int cache_bytes_per_slot = static_cast<int>(sizeof(int)) + static_cast<int>(kernel_source.CounterSize());
+      //
+      // COMBINE / brief-8: the direct-atomic cache COUNT array is split into
+      // `kCountReplicas` warp-strided replicas (warp w -> replica
+      // w % kCountReplicas) to de-serialize the cross-warp atomicAdd_block on
+      // hot slots (parent B add8a909). This is gated PER NUM_ACTIVE_CHANNELS:
+      // multi-channel takes R=2 (3 active channels share one block's cache, so
+      // hot-slot atomic serialization dominates -- W1 brief-5 + worker-3
+      // brief-6); single-channel takes R=1 (already 100%-occupancy at 512
+      // threads, occupancy/key-read-bound NOT count-serialization-bound, so
+      // R>1's larger per-slot footprint halves the grid and REGRESSES it --
+      // worker-3 brief-6 ncu). R=1 leaves the single-channel cache byte-for-byte
+      // identical to the pre-replica layout. The shared key array costs
+      // `sizeof(int)` per slot; the replicated counts cost
+      // `kCountReplicas * CounterSize()` per slot. This MUST match the kernels'
+      // `kCountReplicas`.
+      constexpr int kCountReplicas = (NUM_ACTIVE_CHANNELS > 1) ? 2 : 1;
+      const int cache_bytes_per_slot =
+        static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
       const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;
       // Cap the per-CTA dynamic SMEM for the cache. B200/SM100 supports ~228
       // KiB opt-in dynamic SMEM per CTA; query the device max and stay under

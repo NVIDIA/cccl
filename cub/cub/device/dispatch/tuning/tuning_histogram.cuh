@@ -467,13 +467,21 @@ public:
           // 3 active channels on the SMEM-priv mid-bin sweep cells; LDG's streaming
           // loads avoid the eviction churn).
           //
-          // NOTE: the multi-channel direct-atomic RANGE decouple
-          // (direct_atomic_threads_per_block=384) lives on a separate branch in
-          // this run (worker-3 brief-4); it is intentionally NOT applied here so
-          // this branch's iteration-0 infra port stays metric-neutral on multi
-          // and isolates the single-channel RANGE direct-atomic sweep that this
-          // brief targets. The manager owns combining the multi win.
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
+          // direct_atomic_threads_per_block=384 (COMBINE / brief-8): the
+          // multi-channel direct-atomic RANGE decouple from worker-3 brief-4
+          // (parent C 614970dd). The high-bin direct-atomic cuckoo/single-probe
+          // kernels share this policy but run a SEPARATE grid-stride kernel from
+          // the SMEM-priv sweep. ncu on the 1M-bin/256M/uniform single-probe
+          // cell at 1024 threads showed ~100% achieved occupancy (2 blocks/SM,
+          // 64 warps) but 89.6%-of-cycles long-scoreboard SMEM-cache atomic
+          // stalls at 15% issue util: 64 warps hammer ONE block's single-probe
+          // cache. A 384-thread block lets the SM hold more, smaller blocks,
+          // each with its own dynamic-SMEM cache partition and a shorter atomic
+          // dependency chain. The SMEM-priv mid-bin sweep tiers keep the
+          // 1024-thread shape (threads_per_block stays 1024); only the
+          // direct-atomic kernels see 384. Validated additive with the
+          // count-replica split below under this routing.
+          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 384};
         }
         else
         {
