@@ -647,7 +647,8 @@ public:
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory};
+            launcher_factory,
+            ptx_version};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -797,7 +798,8 @@ public:
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory};
+          launcher_factory,
+          ptx_version};
 
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
@@ -964,7 +966,8 @@ public:
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory};
+            launcher_factory,
+            ptx_version};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -1007,7 +1010,8 @@ public:
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory};
+            launcher_factory,
+            ptx_version};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -1176,7 +1180,8 @@ public:
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory};
+          launcher_factory,
+          ptx_version};
 
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
@@ -1326,7 +1331,8 @@ public:
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory};
+          launcher_factory,
+          ptx_version};
 
       if (const auto error = CubDebug(max_policy.Invoke(ptx_version, dispatch)))
       {
@@ -1368,7 +1374,8 @@ public:
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory};
+          launcher_factory,
+          ptx_version};
 
       if (const auto error = CubDebug(max_policy.Invoke(ptx_version, dispatch)))
       {
@@ -1502,7 +1509,8 @@ public:
         row_stride_samples,
         stream,
         kernel_source,
-        launcher_factory};
+        launcher_factory,
+        ptx_version};
 
     if (const auto error = CubDebug(max_policy.Invoke(ptx_version, dispatch)))
     {
@@ -1650,7 +1658,8 @@ public:
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory};
+          launcher_factory,
+          ptx_version};
 
       if (const auto error = CubDebug(max_policy.Invoke(ptx_version, dispatch)))
       {
@@ -1692,7 +1701,8 @@ public:
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory};
+          launcher_factory,
+          ptx_version};
 
       if (const auto error = CubDebug(max_policy.Invoke(ptx_version, dispatch)))
       {
@@ -1842,7 +1852,8 @@ public:
         row_stride_samples,
         stream,
         kernel_source,
-        launcher_factory};
+        launcher_factory,
+        ptx_version};
 
     if (const auto error = CubDebug(max_policy.Invoke(ptx_version, dispatch)))
     {
