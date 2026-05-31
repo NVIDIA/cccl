@@ -34,6 +34,55 @@ CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
 
+// Cache-slot hashing for the direct-atomic SMEM cuckoo / single-probe caches.
+//
+// The slot index must be in [0, slots) where slots == mask + 1 is a power of
+// two. Two multiplicative hash constants are used (primary / secondary) for the
+// two cuckoo probes. The MODE controls how the hash maps to a slot:
+//
+//   CUB_HISTO_CACHE_HASH_MODE == 0 (default, historical): slot = (bin * M) & mask
+//       Uses the LOW log2(slots) bits of the multiplicative product. For an odd
+//       multiplier M, the low k bits of (bin * M) depend ONLY on the low k bits
+//       of `bin` -- multiplicative hashing does no mixing in its low bits. Since
+//       the SMEM bank is `slot & 31`, the bank is effectively the low 5 bits of
+//       `bin`, so structured / clustered bin ids alias onto few banks. ncu on the
+//       multi-channel RANGE cuckoo cell measured ~4-way bank conflicts on the key
+//       LDS dominating the (SMEM-bound) kernel.
+//
+//   CUB_HISTO_CACHE_HASH_MODE == 1 (Fibonacci / high-bits): slot = (bin * M) >> (32 - log2(slots))
+//       Uses the HIGH bits of the product, which ARE well mixed for a good
+//       multiplier (classic Fibonacci hashing). The bank `slot & 31` now comes
+//       from high-entropy bits, breaking the low-bit bank aliasing.
+//
+//   CUB_HISTO_CACHE_HASH_MODE == 2 (xor-fold): slot = ((h >> 15) ^ h) & mask
+//       Folds the high bits into the low bits before masking, so the masked
+//       slot (and its bank) sees mixed bits while keeping a cheap `& mask`.
+//
+// `cache_slot_log2` is log2(slots) == popcount(mask) == 32 - clz(mask) for a
+// power-of-two `slots`. We pass it explicitly (computed once per launch) to keep
+// the hot path free of clz.
+#ifndef CUB_HISTO_CACHE_HASH_MODE
+#  define CUB_HISTO_CACHE_HASH_MODE 0
+#endif
+
+_CCCL_DEVICE _CCCL_FORCEINLINE int
+cache_slot_from_hash(unsigned int product, int cache_mask, int cache_slot_log2)
+{
+#if CUB_HISTO_CACHE_HASH_MODE == 1
+  // High-bits (Fibonacci): shift the well-mixed top bits down to the slot range.
+  (void) cache_mask;
+  return static_cast<int>(product >> (32 - cache_slot_log2));
+#elif CUB_HISTO_CACHE_HASH_MODE == 2
+  // XOR-fold high bits into low, then mask.
+  (void) cache_slot_log2;
+  return static_cast<int>(((product >> 15) ^ product) & static_cast<unsigned int>(cache_mask));
+#else
+  // Historical: low bits of the multiplicative product.
+  (void) cache_slot_log2;
+  return static_cast<int>(product & static_cast<unsigned int>(cache_mask));
+#endif
+}
+
 //! @brief Self-contained "round-up" / libdivide-style fast unsigned division
 //! by a runtime constant divisor.
 //!
@@ -1743,6 +1792,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // is a compile-time marker on the decode op, so this is no runtime branch.
   constexpr int kCountReplicas = (NumActiveChannels > 1 && PrivatizedDecodeOpT::is_range_transform) ? 2 : 1;
   const int cache_mask  = cache_slots_per_channel - 1;
+  // log2(slots) for the high-bits hash mode; slots is a power of two so this is
+  // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
+  const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
   const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
   extern __shared__ unsigned char s_cuckoo_raw[];
@@ -1828,7 +1880,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         // where a few bins dominate but each thread is otherwise visiting
         // random bins.
         const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
-        const int slot1          = static_cast<int>(hash1 & cache_mask);
+        const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
         const int existing_key1  = s_cache_keys[ch][slot1];
         if (existing_key1 == bin)
         {
@@ -1875,7 +1927,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         {
           // Primary occupied by a different bin: try the secondary slot.
           const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-          const int slot2          = static_cast<int>(hash2 & cache_mask);
+          const int slot2          = cache_slot_from_hash(hash2, cache_mask, cache_slot_log2);
           const int existing_key2  = s_cache_keys[ch][slot2];
           if (existing_key2 == bin)
           {
@@ -2170,6 +2222,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // kernel takes R=2 for multi.
   constexpr int kCountReplicas = 1;
   const int cache_mask  = cache_slots_per_channel - 1;
+  const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
   const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
   extern __shared__ unsigned char s_singleprobe_raw[];
@@ -2240,7 +2293,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         const CounterT contribution = static_cast<CounterT>(__popc(peers));
         // Single direct-mapped probe: hash bin to one slot.
         const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
-        const int slot          = static_cast<int>(hash & cache_mask);
+        const int slot          = cache_slot_from_hash(hash, cache_mask, cache_slot_log2);
         const int existing_key  = s_cache_keys[ch][slot];
         if (existing_key == bin)
         {

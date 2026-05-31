@@ -48,6 +48,7 @@
 #include <cuda/std/tuple>
 
 #include <cstdio>
+#include <cstdlib>
 
 #include <nv/target>
 
@@ -1313,9 +1314,62 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         return slots;
       };
 
-      const int cache_slots_per_channel =
+      int cache_slots_per_channel =
         use_single_probe_cache ? size_cache_for(direct_atomic_single_probe_kernel_ptr)
                                : size_cache_for(direct_atomic_kernel_ptr);
+#if _CCCL_HOSTED()
+      // TEMP (worker-2 brief-12): host-side env hooks to (1) sweep the per-channel
+      // cache slot count against a SINGLE build, and (2) report the
+      // occupancy-sizer's auto-chosen value. CUB_HISTO_FORCE_SLOTS is a
+      // power-of-two slot count; it is clamped to [cache_slots_floor,
+      // max_slots_by_smem] so every forced value remains a legal dynamic-SMEM
+      // reservation that still admits >=1 block/SM. NOT a keeper: the winning
+      // value (if any beats the auto-sizer) is baked into cache_slots_floor /
+      // the sizer and re-measured. Single-channel and multi can be swept
+      // independently via the channel gate when needed; here we accept any
+      // direct-atomic invocation so the multi cuckoo path (the brief target) is
+      // covered. Debug print is one-shot per (channels, slots) to keep stderr
+      // readable across the 648-cell matrix.
+      NV_IF_TARGET(NV_IS_HOST, ({
+                     if (const char* env = ::std::getenv("CUB_HISTO_FORCE_SLOTS"))
+                     {
+                       const int forced = ::std::atoi(env);
+                       // power-of-two check + clamp into the legal window.
+                       if (forced > 0 && (forced & (forced - 1)) == 0)
+                       {
+                         int clamped = forced;
+                         if (clamped < cache_slots_floor)
+                         {
+                           clamped = cache_slots_floor;
+                         }
+                         if (clamped > max_slots_by_smem)
+                         {
+                           // round down to the largest power-of-two <= max_slots_by_smem
+                           int hi = cache_slots_floor;
+                           while ((hi << 1) <= max_slots_by_smem)
+                           {
+                             hi <<= 1;
+                           }
+                           clamped = hi;
+                         }
+                         cache_slots_per_channel = clamped;
+                       }
+                     }
+                     if (::std::getenv("CUB_HISTO_DEBUG_SLOTS"))
+                     {
+                       ::std::fprintf(stderr,
+                                      "[CUB_HISTO_DEBUG_SLOTS] active_ch=%d single_probe=%d R=%d "
+                                      "auto_or_forced_slots=%d floor=%d max_by_smem=%d bytes/slot=%d\n",
+                                      NUM_ACTIVE_CHANNELS,
+                                      static_cast<int>(use_single_probe_cache),
+                                      kCountReplicas,
+                                      cache_slots_per_channel,
+                                      cache_slots_floor,
+                                      max_slots_by_smem,
+                                      cache_bytes_per_slot);
+                     }
+                   }));
+#endif // _CCCL_HOSTED()
       const int cuckoo_cache_smem_bytes = NUM_ACTIVE_CHANNELS * cache_slots_per_channel * cache_bytes_per_slot;
       // Make sure the active kernel's attribute matches the final chosen size
       // (the last probe in the loop may have set a larger size that we
