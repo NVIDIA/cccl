@@ -73,6 +73,33 @@ namespace detail::histogram
 #  define CUB_HISTO_CACHE_HASH_MODE 1
 #endif
 
+// brief-15: set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
+//
+// The single-probe cache (DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel,
+// used for multi-channel EVEN-I32 + the F64 mid-tier) is direct-mapped: each bin
+// hashes to exactly ONE slot, and a slot collision (slot owned by another bin) is
+// an IMMEDIATE GMEM spill -- no second chance. With Fibonacci hashing (brief-12)
+// and vectorized loads (brief-14) already in place, that single-slot conflict miss
+// is the residual loss on the hit-rate-bound multi_even cells.
+//
+// CUB_HISTO_SINGLE_PROBE_WAYS sets the SET ASSOCIATIVITY of that cache WITHOUT
+// changing its SMEM footprint: the same `cache_slots_per_channel` budget is
+// reinterpreted as `slots / WAYS` SETS of `WAYS` contiguous slots. A bin hashes to
+// a set; the leader probes all WAYS slots of the set before spilling. The ways of a
+// set are ADJACENT in SMEM (base..base+WAYS-1) so the WAYS key reads land in one or
+// two banks (unlike the cuckoo kernel's two INDEPENDENT random hashes, which scatter
+// across banks) -- "like cuckoo's 2 candidate slots but without full eviction and
+// with bank locality". WAYS must be a power of two and must divide the (power-of-two)
+// slot count.
+//
+//   WAYS == 1 (default): direct-mapped, BYTE-IDENTICAL to the pre-brief-15 cache.
+//   WAYS == 2: 2-way set-associative (the brief's target -- a colliding bin gets a
+//              fallback way before spilling, roughly halving conflict misses).
+//   WAYS == 4: 4-way (swept; more ways = fewer conflict misses but more probes/set).
+#ifndef CUB_HISTO_SINGLE_PROBE_WAYS
+#  define CUB_HISTO_SINGLE_PROBE_WAYS 1
+#endif
+
 _CCCL_DEVICE _CCCL_FORCEINLINE int
 cache_slot_from_hash(unsigned int product, int cache_mask, int cache_slot_log2)
 {
@@ -2390,33 +2417,83 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       if (bin >= 0 && static_cast<int>(lane_id) == leader)
       {
         const CounterT contribution = static_cast<CounterT>(__popc(peers));
-        // Single direct-mapped probe: hash bin to one slot.
-        const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
-        const int slot          = cache_slot_from_hash(hash, cache_mask, cache_slot_log2);
-        const int existing_key  = s_cache_keys[ch][slot];
-        if (existing_key == bin)
+        const unsigned int hash     = static_cast<unsigned int>(bin) * 2654435761u;
+        if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
         {
-          // Hit: bump cache count (block-scope atomic, ~10x cheaper).
-          atomicAdd_block(&s_cache_counts[ch][slot], contribution);
-        }
-        else if (existing_key == -1)
-        {
-          // Empty: try to claim via CAS.
-          const int prev = atomicCAS(&s_cache_keys[ch][slot], -1, bin);
-          if (prev == -1 || prev == bin)
+          // Single direct-mapped probe: hash bin to one slot.
+          const int slot         = cache_slot_from_hash(hash, cache_mask, cache_slot_log2);
+          const int existing_key = s_cache_keys[ch][slot];
+          if (existing_key == bin)
           {
+            // Hit: bump cache count (block-scope atomic, ~10x cheaper).
             atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+          }
+          else if (existing_key == -1)
+          {
+            // Empty: try to claim via CAS.
+            const int prev = atomicCAS(&s_cache_keys[ch][slot], -1, bin);
+            if (prev == -1 || prev == bin)
+            {
+              atomicAdd_block(&s_cache_counts[ch][slot], contribution);
+            }
+            else
+            {
+              // Lost the claim race to a different bin: go straight to GMEM.
+              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+            }
           }
           else
           {
-            // Lost the claim race to a different bin: go straight to GMEM.
+            // Collision (slot owned by another bin): single GMEM atomic.
             atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
           }
         }
         else
         {
-          // Collision (slot owned by another bin): single GMEM atomic.
-          atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+          // WAYS-way set-associative probe (brief-15). Hash `bin` to a SET of
+          // `CUB_HISTO_SINGLE_PROBE_WAYS` ADJACENT slots [base, base+WAYS); the set
+          // budget is `cache_slots_per_channel / WAYS` sets. Probe the ways in two
+          // passes so a colliding bin gets a fallback slot before spilling:
+          //   pass 1: any way already holding `bin` -> hit (bump its count);
+          //   pass 2: first EMPTY way -> CAS-claim it;
+          //   neither: every way is owned by a different live bin -> GMEM spill.
+          // Adjacent ways keep the WAYS key reads in one/two SMEM banks (vs the
+          // cuckoo kernel's two independent random-hash slots).
+          constexpr int kWaysLog2  = (CUB_HISTO_SINGLE_PROBE_WAYS == 4) ? 2 : 1;
+          const int set            = cache_slot_from_hash(hash, cache_mask >> kWaysLog2, cache_slot_log2 - kWaysLog2);
+          const int base           = set << kWaysLog2;
+          bool done                = false;
+          // Pass 1: existing-key hit on any way.
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
+          {
+            if (!done && s_cache_keys[ch][base + w] == bin)
+            {
+              atomicAdd_block(&s_cache_counts[ch][base + w], contribution);
+              done = true;
+            }
+          }
+          // Pass 2: claim the first empty way (CAS); a lost race that resolves to
+          // `bin` is also a hit, a lost race to another bin moves to the next way.
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
+          {
+            if (!done && s_cache_keys[ch][base + w] == -1)
+            {
+              const int prev = atomicCAS(&s_cache_keys[ch][base + w], -1, bin);
+              if (prev == -1 || prev == bin)
+              {
+                atomicAdd_block(&s_cache_counts[ch][base + w], contribution);
+                done = true;
+              }
+            }
+          }
+          if (!done)
+          {
+            // All ways occupied by other live bins (or every empty way lost its
+            // CAS race): single GMEM atomic. Correctness: contribution added once.
+            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
+          }
         }
       }
     };
