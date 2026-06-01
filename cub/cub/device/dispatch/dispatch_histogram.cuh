@@ -1375,14 +1375,24 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // chain (ncu: 2-block/64-warp ceiling, 63.5% short-scoreboard SMEM-atomic
       // stall; >=65536-bin cache hit-rate ~0 so slot capacity is freely
       // tradeable for replicas). This factor MUST match the cuckoo kernels'
-      // `kMultiRangeCuckooReplicas` (including the brief-13 no-2nd-probe variant,
-      // which is the SAME kernel template specialized on `DisableSecondProbe`, so
-      // its `kCountReplicas` is identical).
-      constexpr int kMultiRangeCuckooReplicas = 4;
-      const int kCountReplicas =
-        (NUM_ACTIVE_CHANNELS > 1 && privatized_decode_op_t::is_range_transform && !use_single_probe_cache)
-          ? kMultiRangeCuckooReplicas
-          : 1;
+      // `kMultiChannelDirectAtomicReplicas` (including the brief-13 no-2nd-probe
+      // variant, which is the SAME kernel template specialized on
+      // `DisableSecondProbe`, so its `kCountReplicas` is identical).
+      //
+      // brief-25 COMBINE (worker-2): extend R=4 from multi-RANGE-cuckoo-only to
+      // ALL multi-channel direct-atomic cells (drop the `is_range_transform` and
+      // `!use_single_probe_cache` conditions), folding worker-2 brief-24's
+      // R=4-everywhere result onto this best to lift multi_even (its EVEN-I32
+      // cells route to single_probe and its EVEN-F64 cells to cuckoo, both were
+      // stuck at R=1). This R is used here ONLY to size the per-slot cache bytes
+      // (`cache_bytes_per_slot`); the kernels recompute the SAME constexpr R from
+      // their own `NumActiveChannels` template param (this best keeps R
+      // COMPILE-TIME, NOT a runtime kernel arg -- a runtime R regressed
+      // multi_range -1.5% on the register-pinned cuckoo kernel), so dispatch
+      // sizing and kernel accesses agree by the identical `(multi ? 4 : 1)`
+      // formula. The `kCountReplicas` below is the matching host-side mirror.
+      constexpr int kMultiChannelDirectAtomicReplicas = 4;
+      const int kCountReplicas = (NUM_ACTIVE_CHANNELS > 1) ? kMultiChannelDirectAtomicReplicas : 1;
       const int cache_bytes_per_slot =
         static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
       const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;

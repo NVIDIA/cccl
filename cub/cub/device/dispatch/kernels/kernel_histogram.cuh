@@ -2213,12 +2213,27 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // the hot-slot atomicAdd_block to land (Mem/L1 pipe ~82% busy, DRAM ~2%). At
   // >=65536-bin cells the cache hit-rate is ~0, so the slots are dead weight; we
   // TRADE slot capacity for more independent count replicas (warp w -> replica
-  // w % kMultiRangeCuckooReplicas) to shorten the per-replica atomic dependency
-  // chain. This factor MUST match dispatch_histogram.cuh's `kCountReplicas`.
-  // Applies to the brief-13 no-2nd-probe variant too (same kernel template).
-  constexpr int kMultiRangeCuckooReplicas = 4;
-  constexpr int kCountReplicas =
-    (NumActiveChannels > 1 && PrivatizedDecodeOpT::is_range_transform) ? kMultiRangeCuckooReplicas : 1;
+  // w % kMultiChannelDirectAtomicReplicas) to shorten the per-replica atomic
+  // dependency chain. This factor MUST match dispatch_histogram.cuh's
+  // `kCountReplicas`. Applies to the brief-13 no-2nd-probe variant too (same
+  // kernel template).
+  //
+  // brief-25 COMBINE (worker-2): extend R=4 from multi-RANGE-only to ALL
+  // multi-channel cuckoo cells (drop the `is_range_transform` condition), folding
+  // worker-2 brief-24's R=4-everywhere result onto this best. The win is on
+  // multi-EVEN: its F64 cells route to this cuckoo kernel and were stuck at R=1,
+  // so R=4 de-serialises their hot-slot atomicAdd_block exactly like multi-RANGE.
+  // KEPT COMPILE-TIME (constexpr), NOT a runtime kernel arg: a regime-matched
+  // 3-way measurement on this best showed that converting multi-RANGE cuckoo's R
+  // from this constexpr-4 to a runtime-4 arg (brief-24's mechanism) REGRESSES
+  // multi_range -1.5% (the runtime modulo `w % R` + runtime-bounded flush loop
+  // cost the register-pinned 2-block/SM kernel its issue throughput), while a
+  // constexpr-4 keeps the multi-RANGE cuckoo codegen BYTE-IDENTICAL to the parent
+  // (verified) and still lifts multi_even. `NumActiveChannels` is a compile-time
+  // template param, so the single-channel specialisation folds to constexpr 1
+  // (byte-identical pre-replica cache -- worker-3 brief-6).
+  constexpr int kMultiChannelDirectAtomicReplicas = 4;
+  constexpr int kCountReplicas = (NumActiveChannels > 1) ? kMultiChannelDirectAtomicReplicas : 1;
   const int cache_mask  = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
@@ -2797,12 +2812,24 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // is occupancy/key-read-bound -- worker-3 brief-6 -- so R>1 regresses it; at
   // R=1 the layout is byte-for-byte identical to the pre-replica cache).
   //
-  // iter3 SELECTIVE KEEPER: the SINGLE-PROBE kernel stays R=1 for ALL channel
-  // counts. Decompose (brief-8 iter2) found multi-channel R=2 on single_probe
-  // HURTS multi_even -2% (the multi EVEN-I32 cells route here; the 2x count
-  // footprint cuts the single_probe cache slots / occupancy). Only the cuckoo
-  // kernel takes R=2 for multi.
-  constexpr int kCountReplicas = 1;
+  // brief-25 COMBINE (worker-2): the SINGLE-PROBE kernel takes R=4 for
+  // multi-channel (constexpr; single-channel folds to 1), folding worker-2
+  // brief-24's R=4-everywhere result onto this best. The historical brief-8
+  // caveat ("multi R=2 on single_probe HURTS multi_even -2%") was R=2 on an
+  // OLDER baseline / different slot budget; on this best the brief-24 force-sweep
+  // and the regime-matched 3-way measurement here both show multi single_probe
+  // R=4 is net positive-to-neutral (multi_even 1539-1540 vs the parent's 1536),
+  // because R=4 de-serialises the hot-slot atomicAdd_block more than the halved
+  // slot count costs at the >=65536-bin cells where the cache hit-rate is ~0.
+  // KEPT COMPILE-TIME (constexpr), NOT a runtime arg -- a runtime R regressed the
+  // sibling cuckoo kernel's multi_range -1.5% (issue-throughput cost of the
+  // runtime modulo + runtime-bounded flush on the register-pinned kernel); the
+  // single-probe kernel is the same register-pinned shape, so constexpr is used
+  // here too for byte-stable codegen. `NumActiveChannels` is a compile-time
+  // template param so single-channel folds to constexpr 1 (byte-identical
+  // pre-replica cache -- worker-3 brief-6).
+  constexpr int kMultiChannelDirectAtomicReplicas = 4;
+  constexpr int kCountReplicas = (NumActiveChannels > 1) ? kMultiChannelDirectAtomicReplicas : 1;
   const int cache_mask  = cache_slots_per_channel - 1;
   const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
