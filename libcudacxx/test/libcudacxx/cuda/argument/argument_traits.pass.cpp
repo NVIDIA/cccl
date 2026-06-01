@@ -8,7 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/argument>
+#include <cuda/__argument_>
+#include <cuda/iterator>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/mdspan>
@@ -42,84 +43,140 @@ struct value_type_like
   using value_type = _Tp;
 };
 
+struct non_sequence_value
+{};
+
 TEST_FUNC void test()
 {
-  // --- __is_single_value_v ---
+  // --- __is_sequence_v / __is_single_value_v ---
 
-  static_assert(cuda::argument::__is_single_value_v<int>);
-  static_assert(cuda::argument::__is_single_value_v<float>);
-  static_assert(cuda::argument::__is_single_value_v<double>);
-  static_assert(cuda::argument::__is_single_value_v<const int>);
-  static_assert(cuda::argument::__is_single_value_v<color>);
-  static_assert(cuda::argument::__is_single_value_v<cuda::std::span<int, 1>>);
-  static_assert(cuda::argument::__is_single_value_v<const cuda::std::span<int, 1>&>);
-  static_assert(!cuda::argument::__is_single_value_v<int*>);
-  static_assert(!cuda::argument::__is_single_value_v<cuda::std::span<int>>);
-  static_assert(!cuda::argument::__is_single_value_v<cuda::std::span<int, 4>>);
-  static_assert(!cuda::argument::__is_single_value_v<cuda::std::array<int, 3>>);
+  static_assert(!cuda::__argument::__is_sequence_v<int>);
+  static_assert(!cuda::__argument::__is_sequence_v<color>);
+  static_assert(!cuda::__argument::__is_sequence_v<non_sequence_value>);
+  static_assert(cuda::__argument::__is_sequence_v<int*>);
+  static_assert(cuda::__argument::__is_sequence_v<cuda::counting_iterator<int>>);
+  static_assert(cuda::__argument::__is_sequence_v<cuda::std::span<int, 1>>);
+  static_assert(cuda::__argument::__is_sequence_v<const cuda::std::span<int, 1>&>);
+  static_assert(cuda::__argument::__is_sequence_v<cuda::std::span<int>>);
+  static_assert(cuda::__argument::__is_sequence_v<cuda::std::array<int, 3>>);
+  static_assert(cuda::__argument::__is_sequence_v<range_like<int>>);
+  static_assert(cuda::__argument::__is_sequence_v<element_type_like<int>>);
+  static_assert(cuda::__argument::__is_sequence_v<value_type_like<int>>);
+
+  static_assert(cuda::__argument::__is_single_value_v<int>);
+  static_assert(cuda::__argument::__is_single_value_v<float>);
+  static_assert(cuda::__argument::__is_single_value_v<double>);
+  static_assert(cuda::__argument::__is_single_value_v<const int>);
+  static_assert(cuda::__argument::__is_single_value_v<color>);
+  static_assert(cuda::__argument::__is_single_value_v<non_sequence_value>);
+  static_assert(!cuda::__argument::__is_single_value_v<int*>);
+  static_assert(!cuda::__argument::__is_single_value_v<cuda::counting_iterator<int>>);
+  static_assert(!cuda::__argument::__is_single_value_v<cuda::std::span<int, 1>>);
+  static_assert(!cuda::__argument::__is_single_value_v<const cuda::std::span<int, 1>&>);
+  static_assert(!cuda::__argument::__is_single_value_v<cuda::std::span<int>>);
+  static_assert(!cuda::__argument::__is_single_value_v<cuda::std::span<int, 4>>);
+  static_assert(!cuda::__argument::__is_single_value_v<cuda::std::array<int, 3>>);
 
   // --- __element_type_of_t ---
 
-  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<const cuda::std::span<int, 1>&>, int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<int*>, int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<cuda::std::array<int, 3>>, int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<range_like<int>>, int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<element_type_like<int>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__element_type_of_t<const cuda::std::span<int, 1>&>, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__element_type_of_t<int*>, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__element_type_of_t<cuda::counting_iterator<int>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__element_type_of_t<cuda::std::array<int, 3>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__element_type_of_t<range_like<int>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__element_type_of_t<element_type_like<int>>, int>);
   static_assert(
-    cuda::std::is_same_v<cuda::argument::__element_type_of_t<cuda::std::mdspan<const int, cuda::std::extents<int, 1>>>,
+    cuda::std::is_same_v<cuda::__argument::__element_type_of_t<cuda::std::mdspan<const int, cuda::std::extents<int, 1>>>,
                          int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__element_type_of_t<value_type_like<int>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__element_type_of_t<value_type_like<int>>, int>);
 
   // --- argument_traits: is_deferred ---
 
-  static_assert(!cuda::argument::__traits<int>::is_deferred);
-  static_assert(!cuda::argument::__traits<cuda::argument::__immediate<int>>::is_deferred);
-  static_assert(!cuda::argument::__traits<cuda::argument::__constant<42>>::is_deferred);
-  static_assert(cuda::argument::__traits<cuda::argument::__deferred_value<cuda::std::span<int, 1>>>::is_deferred);
-  static_assert(cuda::argument::__traits<cuda::argument::__deferred_sequence<cuda::std::span<int>>>::is_deferred);
+  static_assert(!cuda::__argument::__traits<int>::is_deferred);
+  static_assert(!cuda::__argument::__traits<cuda::__argument::__immediate<int>>::is_deferred);
+  static_assert(!cuda::__argument::__traits<cuda::__argument::__immediate_sequence<cuda::std::span<int>>>::is_deferred);
+  static_assert(!cuda::__argument::__traits<cuda::__argument::__constant<42>>::is_deferred);
+#if TEST_HAS_CLASS_NTTP
+  static_assert(
+    !cuda::__argument::__traits<cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_deferred);
+#endif // TEST_HAS_CLASS_NTTP
+  static_assert(cuda::__argument::__traits<cuda::__argument::__deferred<cuda::std::span<int, 1>>>::is_deferred);
+  static_assert(cuda::__argument::__traits<cuda::__argument::__deferred_sequence<cuda::std::span<int>>>::is_deferred);
 
   // --- argument_traits: is_single_value ---
 
-  static_assert(cuda::argument::__traits<int>::is_single_value);
-  static_assert(!cuda::argument::__traits<int*>::is_single_value);
-  static_assert(cuda::argument::__traits<cuda::argument::__immediate<int>>::is_single_value);
-  static_assert(cuda::argument::__traits<cuda::argument::__immediate<const cuda::std::span<int, 1>>>::is_single_value);
-  static_assert(!cuda::argument::__traits<cuda::argument::__immediate<cuda::std::span<int>>>::is_single_value);
-  static_assert(cuda::argument::__traits<cuda::argument::__constant<42>>::is_single_value);
-  static_assert(cuda::argument::__traits<cuda::argument::__deferred_value<int*>>::is_single_value);
-  static_assert(!cuda::argument::__traits<cuda::argument::__deferred_sequence<cuda::std::span<int>>>::is_single_value);
+  static_assert(cuda::__argument::__traits<int>::is_single_value);
+  static_assert(!cuda::__argument::__traits<int*>::is_single_value);
+  static_assert(cuda::__argument::__traits<cuda::__argument::__immediate<int>>::is_single_value);
+  static_assert(cuda::__argument::__traits<cuda::__argument::__immediate<int*>>::is_single_value);
+  static_assert(
+    cuda::__argument::__traits<cuda::__argument::__immediate<cuda::counting_iterator<int>>>::is_single_value);
+  static_assert(
+    !cuda::__argument::__traits<cuda::__argument::__immediate_sequence<cuda::std::span<int>>>::is_single_value);
+  static_assert(cuda::__argument::__traits<cuda::__argument::__constant<42>>::is_single_value);
+#if TEST_HAS_CLASS_NTTP
+  static_assert(!cuda::__argument::__traits<
+                cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_single_value);
+#endif // TEST_HAS_CLASS_NTTP
+  static_assert(cuda::__argument::__traits<cuda::__argument::__deferred<int*>>::is_single_value);
+  static_assert(
+    !cuda::__argument::__traits<cuda::__argument::__deferred_sequence<cuda::std::span<int>>>::is_single_value);
 
   // --- argument_traits: value_type ---
 
-  static_assert(cuda::std::is_same_v<cuda::argument::__traits<int>::value_type, int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__traits<cuda::argument::__immediate<int>>::value_type, int>);
-  static_assert(cuda::std::is_same_v<cuda::argument::__traits<cuda::argument::__constant<42>>::value_type, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__traits<int>::value_type, int>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__traits<cuda::__argument::__immediate<int>>::value_type, int>);
+  static_assert(cuda::std::is_same_v<
+                cuda::__argument::__traits<cuda::__argument::__immediate_sequence<cuda::std::span<int>>>::value_type,
+                cuda::std::span<int>>);
+  static_assert(cuda::std::is_same_v<cuda::__argument::__traits<cuda::__argument::__constant<42>>::value_type, int>);
+#if TEST_HAS_CLASS_NTTP
+  static_assert(
+    cuda::std::is_same_v<
+      cuda::__argument::__traits<cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::value_type,
+      cuda::std::array<int, 3>>);
+#endif // TEST_HAS_CLASS_NTTP
 
   // --- argument_traits: lowest / max ---
 
-  static_assert(cuda::argument::__traits<int>::lowest == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::argument::__traits<int>::max == cuda::std::numeric_limits<int>::max());
-  static_assert(cuda::argument::__traits<const int>::lowest == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::argument::__traits<int&>::max == cuda::std::numeric_limits<int>::max());
-  static_assert(cuda::argument::__traits<float>::lowest == cuda::std::numeric_limits<float>::lowest());
-  static_assert(cuda::argument::__traits<float>::max == cuda::std::numeric_limits<float>::max());
+  static_assert(cuda::__argument::__traits<int>::lowest == cuda::std::numeric_limits<int>::lowest());
+  static_assert(cuda::__argument::__traits<int>::max == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::__argument::__traits<const int>::lowest == cuda::std::numeric_limits<int>::lowest());
+  static_assert(cuda::__argument::__traits<int&>::max == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::__argument::__traits<float>::lowest == cuda::std::numeric_limits<float>::lowest());
+  static_assert(cuda::__argument::__traits<float>::max == cuda::std::numeric_limits<float>::max());
   static_assert(
-    cuda::argument::__traits<const cuda::argument::__immediate<int, cuda::argument::__static_bounds<1, 8>>>::lowest
+    cuda::__argument::__traits<const cuda::__argument::__immediate<int, cuda::__argument::__static_bounds<1, 8>>>::lowest
     == 1);
   static_assert(
-    cuda::argument::__traits<cuda::argument::__immediate<int, cuda::argument::__static_bounds<1, 8>>&>::max == 8);
+    cuda::__argument::__traits<cuda::__argument::__immediate<int, cuda::__argument::__static_bounds<1, 8>>&>::max == 8);
+  static_assert(
+    cuda::__argument::__traits<
+      cuda::__argument::__immediate_sequence<cuda::std::span<int>, cuda::__argument::__static_bounds<1, 8>>>::max
+    == 8);
+#if TEST_HAS_CLASS_NTTP
+  static_assert(
+    cuda::__argument::__traits<cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{3, 1, 2}>>::lowest == 1);
+  static_assert(
+    cuda::__argument::__traits<cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{3, 1, 2}>>::max == 3);
+#endif // TEST_HAS_CLASS_NTTP
 
   // --- Free function bounds on plain values ---
 
-  static_assert(cuda::argument::__lowest_(42) == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::argument::__max_(42) == cuda::std::numeric_limits<int>::max());
-  static_assert(cuda::argument::__lowest_(1.0f) == cuda::std::numeric_limits<float>::lowest());
-  static_assert(cuda::argument::__max_(1.0f) == cuda::std::numeric_limits<float>::max());
+  static_assert(cuda::__argument::__lowest_(42) == cuda::std::numeric_limits<int>::lowest());
+  static_assert(cuda::__argument::__max_(42) == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::__argument::__lowest_(1.0f) == cuda::std::numeric_limits<float>::lowest());
+  static_assert(cuda::__argument::__max_(1.0f) == cuda::std::numeric_limits<float>::max());
 
+  // --- Scalar and sequence wrappers expose distinct single-value traits ---
+
+  static_assert(cuda::__argument::__traits<cuda::__argument::__constant<42>>::is_single_value);
+  static_assert(cuda::__argument::__traits<cuda::__argument::__immediate<int>>::is_single_value);
+  static_assert(
+    !cuda::__argument::__traits<cuda::__argument::__immediate_sequence<cuda::std::span<int>>>::is_single_value);
 #if TEST_HAS_CLASS_NTTP
-  // --- is_single_value with array constant ---
-  using arr_t = cuda::std::array<int, 3>;
-  static_assert(!cuda::argument::__traits<cuda::argument::__constant<arr_t{1, 2, 3}>>::is_single_value);
+  static_assert(!cuda::__argument::__traits<
+                cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{1, 2, 3}>>::is_single_value);
 #endif // TEST_HAS_CLASS_NTTP
 }
 

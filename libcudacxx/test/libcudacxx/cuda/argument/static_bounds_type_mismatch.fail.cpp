@@ -10,9 +10,7 @@
 
 #include <cuda/__argument_>
 
-using arg_t = cuda::__argument::__immediate<unsigned char, cuda::__argument::__static_bounds<0, 1000>>;
-
-[[maybe_unused]] constexpr auto invalid_max = cuda::__argument::__traits<arg_t>::max;
+[[maybe_unused]] constexpr auto invalid_bounds = cuda::__argument::__static_bounds<0, 1L>{};
 
 int main(int, char**)
 {

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_ARGUMENT
-#define _CUDA_ARGUMENT
+#ifndef _CUDA___ARGUMENT_
+#define _CUDA___ARGUMENT_
 
 #include <cuda/std/detail/__config>
 
@@ -23,4 +23,4 @@
 
 #include <cuda/__argument/argument.h>
 
-#endif // _CUDA_ARGUMENT
+#endif // _CUDA___ARGUMENT_

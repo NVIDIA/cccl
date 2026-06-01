@@ -13,7 +13,7 @@
 // All argument types (plain values, static, dynamic, deferred) work uniformly
 // through the free functions.
 
-#include <cuda/argument>
+#include <cuda/__argument_>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -34,7 +34,7 @@ enum class algorithm_variant
 template <class _SegSizeArg>
 TEST_FUNC constexpr algorithm_variant select_variant(_SegSizeArg)
 {
-  if constexpr (cuda::argument::__traits<_SegSizeArg>::max <= shared_memory_capacity)
+  if constexpr (cuda::__argument::__traits<_SegSizeArg>::max <= shared_memory_capacity)
   {
     return algorithm_variant::shared_memory;
   }
@@ -48,7 +48,7 @@ TEST_FUNC constexpr algorithm_variant select_variant(_SegSizeArg)
 template <class _SegSizeArg>
 TEST_FUNC constexpr int compute_buffer_size(_SegSizeArg __seg_size, int __num_segments)
 {
-  auto __max = cuda::std::min(default_max_segment_size, static_cast<int>(cuda::argument::__max_(__seg_size)));
+  auto __max = cuda::std::min(default_max_segment_size, static_cast<int>(cuda::__argument::__max_(__seg_size)));
   return __max * __num_segments;
 }
 
@@ -56,9 +56,9 @@ TEST_FUNC constexpr int compute_buffer_size(_SegSizeArg __seg_size, int __num_se
 template <class _SegSizeArg>
 TEST_FUNC constexpr int process_segments(_SegSizeArg __seg_size)
 {
-  const auto& __val = cuda::argument::__unwrap(__seg_size);
+  const auto& __val = cuda::__argument::__unwrap(__seg_size);
 
-  if constexpr (cuda::argument::__traits<_SegSizeArg>::is_single_value)
+  if constexpr (cuda::__argument::__traits<_SegSizeArg>::is_single_value)
   {
     return static_cast<int>(__val);
   }
@@ -93,58 +93,59 @@ TEST_FUNC constexpr bool test()
 
   // static_argument: scalar, fits in shared memory, buffer = value
   {
-    constexpr auto seg_size = cuda::argument::__constant<128>{};
+    constexpr auto seg_size = cuda::__argument::__constant<128>{};
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(compute_buffer_size(seg_size, 4) == 128 * 4);
     assert(process_segments(seg_size) == 128);
   }
 
 #if TEST_HAS_CLASS_NTTP
-  // static_argument: array, max fits in shared memory
+  // static_argument: array sequence, max fits in shared memory
   {
-    constexpr auto seg_sizes = cuda::argument::__constant<cuda::std::array{64, 128, 256}>{};
+    constexpr auto seg_sizes = cuda::__argument::__constant_sequence<cuda::std::array{64, 128, 256}>{};
     static_assert(select_variant(seg_sizes) == algorithm_variant::shared_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 256 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 256);
   }
 
-  // static_argument: array, max exceeds shared memory, buffer clamped
+  // static_argument: array sequence, max exceeds shared memory, buffer clamped
   {
-    constexpr auto seg_sizes = cuda::argument::__constant<cuda::std::array{64, 128, 512}>{};
+    constexpr auto seg_sizes = cuda::__argument::__constant_sequence<cuda::std::array{64, 128, 512}>{};
     static_assert(select_variant(seg_sizes) == algorithm_variant::global_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 512 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 512);
   }
 #endif // TEST_HAS_CLASS_NTTP
 
-  // dynamic_argument: tight static bounds, shared memory, buffer = static max
+  // dynamic_argument: tight static bounds, shared memory, buffer = value
   {
-    constexpr auto seg_size = cuda::argument::__immediate{100, cuda::argument::__bounds<1, 256>()};
+    constexpr auto seg_size = cuda::__argument::__immediate{100, cuda::__argument::__bounds<1, 256>()};
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
-    assert(compute_buffer_size(seg_size, 4) == 256 * 4);
+    assert(compute_buffer_size(seg_size, 4) == 100 * 4);
     assert(process_segments(seg_size) == 100);
   }
 
-  // dynamic_argument: wide static bounds, global memory, buffer clamped to default
+  // dynamic_argument: wide static bounds, global memory, buffer = value
   {
-    constexpr auto seg_size = cuda::argument::__immediate{100, cuda::argument::__bounds<1, 4096>()};
+    constexpr auto seg_size = cuda::__argument::__immediate{100, cuda::__argument::__bounds<1, 4096>()};
     static_assert(select_variant(seg_size) == algorithm_variant::global_memory);
-    assert(compute_buffer_size(seg_size, 4) == default_max_segment_size * 4);
+    assert(compute_buffer_size(seg_size, 4) == 100 * 4);
     assert(process_segments(seg_size) == 100);
   }
 
-  // dynamic_argument: no bounds, global memory, buffer clamped
+  // dynamic_argument: no bounds, global memory, buffer = value
   {
-    constexpr auto seg_size = cuda::argument::__immediate{100};
+    constexpr auto seg_size = cuda::__argument::__immediate{100};
     static_assert(select_variant(seg_size) == algorithm_variant::global_memory);
-    assert(compute_buffer_size(seg_size, 4) == default_max_segment_size * 4);
+    assert(compute_buffer_size(seg_size, 4) == 100 * 4);
     assert(process_segments(seg_size) == 100);
   }
 
   // dynamic_argument: per-segment span with runtime bounds only
   {
-    int sizes[3]   = {64, 128, 96};
-    auto seg_sizes = cuda::argument::__immediate{cuda::std::span<int>{sizes, 3}, cuda::argument::__bounds(1, 200)};
+    int sizes[3] = {64, 128, 96};
+    auto seg_sizes =
+      cuda::__argument::__immediate_sequence{cuda::std::span<int>{sizes, 3}, cuda::__argument::__bounds(1, 200)};
     assert(select_variant(seg_sizes) == algorithm_variant::global_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 200 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 96);
@@ -153,9 +154,9 @@ TEST_FUNC constexpr bool test()
   // dynamic_argument: per-segment span with both bounds
   {
     int sizes[3]   = {64, 128, 96};
-    auto seg_sizes = cuda::argument::__immediate{
-      cuda::std::span<int>{sizes, 3}, cuda::argument::__bounds<1, 256>(), cuda::argument::__bounds(1, 200)};
-    static_assert(cuda::argument::__traits<decltype(seg_sizes)>::max <= shared_memory_capacity);
+    auto seg_sizes = cuda::__argument::__immediate_sequence{
+      cuda::std::span<int>{sizes, 3}, cuda::__argument::__bounds<1, 256>(), cuda::__argument::__bounds(1, 200)};
+    static_assert(cuda::__argument::__traits<decltype(seg_sizes)>::max <= shared_memory_capacity);
     assert(select_variant(seg_sizes) == algorithm_variant::shared_memory);
     assert(compute_buffer_size(seg_sizes, 3) == 200 * 3);
     assert(process_segments(seg_sizes) == 64 + 128 + 96);
@@ -164,9 +165,9 @@ TEST_FUNC constexpr bool test()
   // deferred_argument: uniform, bounds for decisions only
   {
     int val       = 100;
-    auto seg_size = cuda::argument::__deferred_value{
-      cuda::std::span<int, 1>{&val, 1}, cuda::argument::__bounds<1, 256>(), cuda::argument::__bounds(1, 200)};
-    static_assert(cuda::argument::__traits<decltype(seg_size)>::max <= shared_memory_capacity);
+    auto seg_size = cuda::__argument::__deferred{
+      cuda::std::span<int, 1>{&val, 1}, cuda::__argument::__bounds<1, 256>(), cuda::__argument::__bounds(1, 200)};
+    static_assert(cuda::__argument::__traits<decltype(seg_size)>::max <= shared_memory_capacity);
     assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(compute_buffer_size(seg_size, 4) == 200 * 4);
   }
@@ -182,14 +183,14 @@ TEST_FUNC constexpr bool test()
 #if TEST_HAS_CLASS_NTTP
   // static_argument float (float NTTPs require C++20)
   {
-    constexpr auto seg_size = cuda::argument::__constant<128.0f>{};
+    constexpr auto seg_size = cuda::__argument::__constant<128.0f>{};
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(process_segments(seg_size) == 128);
   }
 
   // dynamic_argument float with static bounds
   {
-    constexpr auto seg_size = cuda::argument::__immediate{100.0f, cuda::argument::__bounds<1.0f, 256>()};
+    constexpr auto seg_size = cuda::__argument::__immediate{100.0f, cuda::__argument::__bounds<1.0f, 256.0f>()};
     static_assert(select_variant(seg_size) == algorithm_variant::shared_memory);
     assert(process_segments(seg_size) == 100);
   }
