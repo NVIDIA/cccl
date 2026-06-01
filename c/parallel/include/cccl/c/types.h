@@ -107,6 +107,10 @@ typedef struct cccl_op_t
   const char** extra_ltoirs;
   size_t* extra_ltoir_sizes;
   size_t num_extra_ltoirs;
+  // Parallel array to extra_ltoirs giving each extra its own code_type. NULL
+  // means "treat every extra as CCCL_OP_LTOIR" — preserves zero-init behavior
+  // for callers that pre-date this field.
+  cccl_op_code_type* extra_code_types;
 } cccl_op_t;
 
 typedef struct cccl_build_config

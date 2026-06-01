@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <functional>
+#include <string_view>
 
 #include <hostjit/codegen/bitcode.hpp>
 #include <hostjit/compiler.hpp>
@@ -43,7 +45,7 @@ BitcodeCollector::BitcodeCollector(CompilerConfig& config, uintptr_t unique_id)
 
 bool BitcodeCollector::is_bitcode_op(cccl_op_t op)
 {
-  return op.code_type == CCCL_OP_LTOIR && op.code != nullptr && op.code_size > 0;
+  return (op.code_type == CCCL_OP_LLVM_IR || op.code_type == CCCL_OP_LTOIR) && op.code != nullptr && op.code_size > 0;
 }
 
 void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std::string& name)
@@ -55,23 +57,22 @@ void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std:
   // Dedup by content hash: identical bitcode bytes define identical symbols
   // (e.g. two PointerIterator<int>s sharing the same advance LTOIR). Adding
   // both would make nvJitLink fail with "symbol multiply defined".
-  // FNV-1a 64-bit — cheap, no allocations, good enough for byte-stream dedup.
-  std::uint64_t hash = 1469598103934665603ULL; // FNV offset basis
-  for (size_t i = 0; i < size; ++i)
-  {
-    hash ^= static_cast<std::uint64_t>(static_cast<unsigned char>(data[i]));
-    hash *= 1099511628211ULL; // FNV prime
-  }
+  const auto hash = std::hash<std::string_view>{}(std::string_view(data, size));
   if (!added_content_hashes_.insert(hash).second)
   {
     return; // exact same bytes already added
   }
 
-  // LLVM bitcode starts with magic "BC" (0x42 0x43). Anything else (typical
-  // case: NVRTC LTOIR wrapper produced by Numba) is routed to the nvJitLink
-  // link stage instead of LLVM's bitcode linker, which can only parse raw BC.
+  // Magic-byte routing: LLVM bitcode starts with "BC" (0x42 0x43) and goes to
+  // LLVM's bitcode linker so it can be inlined into the CUB module at the IR
+  // level. Anything else is treated as LTO-IR (binary fatbin container) and
+  // fed to nvJitLink.  CPP_SOURCE never reaches here: main ops are dispatched
+  // by code_type in add_op_code, and per-extra C++ source is dispatched by
+  // extra_code_types[i] in the extras loop below — both call compile_and_add
+  // directly.
   const bool is_llvm_bitcode =
     size >= 2 && static_cast<unsigned char>(data[0]) == 0x42 && static_cast<unsigned char>(data[1]) == 0x43;
+
   const char* ext = is_llvm_bitcode ? ".bc" : ".ltoir";
   auto path       = make_temp_path("cccl_" + name + "_", unique_id_, ext);
   if (!write_file(data, size, path))
@@ -91,6 +92,15 @@ void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std:
 
 bool BitcodeCollector::compile_and_add(const char* source, size_t source_size, const std::string& name)
 {
+  // Dedup by source-content hash: two PointerIterator<int> children in the
+  // same zip produce identical CPP source that defines the same symbol; without
+  // this guard the LLVM linker fails with "symbol multiply defined".
+  const auto hash = std::hash<std::string_view>{}(std::string_view(source, source_size));
+  if (!added_content_hashes_.insert(hash).second)
+  {
+    return true;
+  }
+
   hostjit::CUDACompiler compiler;
   std::string src(source, source_size);
   auto result = compiler.compileToDeviceBitcode(src, config_);
@@ -144,9 +154,17 @@ void BitcodeCollector::add_op_code(cccl_op_t& op, const std::string& name)
       auto extra_name    = name + "_extra" + std::to_string(extra_counter++);
       const auto* data   = op.extra_ltoirs[i];
       const auto data_sz = op.extra_ltoir_sizes[i];
-      // add_raw_bitcode routes by magic bytes: raw LLVM bitcode goes through
-      // LLVM's linker; LTOIR or any other format goes through nvJitLink.
-      add_raw_bitcode(data, data_sz, extra_name);
+      // Dispatch on the caller-declared extra type. NULL extra_code_types means
+      // "all extras are LTO-IR" (zero-init compat for callers pre-dating the field).
+      const cccl_op_code_type t = op.extra_code_types ? op.extra_code_types[i] : CCCL_OP_LTOIR;
+      if (t == CCCL_OP_CPP_SOURCE)
+      {
+        compile_and_add(data, data_sz, extra_name);
+      }
+      else
+      {
+        add_raw_bitcode(data, data_sz, extra_name);
+      }
     }
   }
 }
@@ -159,16 +177,24 @@ void BitcodeCollector::add_op(cccl_op_t op, const std::string& label)
     add_raw_bitcode(op.code, op.code_size, label);
   }
 
-  // Always process extra ltoirs
+  // Always process extras with per-entry dispatch.
   int extra_counter = 0;
   for (size_t i = 0; i < op.num_extra_ltoirs; ++i)
   {
     if (op.extra_ltoirs[i] && op.extra_ltoir_sizes[i] > 0)
     {
-      auto extra_name    = label + "_extra" + std::to_string(extra_counter++);
-      const auto* data   = op.extra_ltoirs[i];
-      const auto data_sz = op.extra_ltoir_sizes[i];
-      add_raw_bitcode(data, data_sz, extra_name);
+      auto extra_name           = label + "_extra" + std::to_string(extra_counter++);
+      const auto* data          = op.extra_ltoirs[i];
+      const auto data_sz        = op.extra_ltoir_sizes[i];
+      const cccl_op_code_type t = op.extra_code_types ? op.extra_code_types[i] : CCCL_OP_LTOIR;
+      if (t == CCCL_OP_CPP_SOURCE)
+      {
+        compile_and_add(data, data_sz, extra_name);
+      }
+      else
+      {
+        add_raw_bitcode(data, data_sz, extra_name);
+      }
     }
   }
 }
