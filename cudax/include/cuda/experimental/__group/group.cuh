@@ -27,6 +27,7 @@
 #include <cuda/__hierarchy/queries/rank.h>
 #include <cuda/barrier>
 #include <cuda/hierarchy>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -71,7 +72,8 @@ class group
       1,
       0,
       ::cuda::experimental::__count_query_group<unsigned, _Unit>(__parent),
-      ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__parent)};
+      ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__parent),
+      __parent.__mapping_result().lane_mask()};
   }
 
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
@@ -96,6 +98,11 @@ class group
     {
       _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
       _CCCL_ASSERT(__mapping_result.rank() < __mapping_result.count(), "invalid rank");
+      _CCCL_ASSERT(
+        (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
+        "invalid lane mask - this lane must be contained in the lane mask");
+      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.count(),
+                   "invalid lane mask - too many lanes are set in the lane mask");
     }
     return __mapping_result;
   }
@@ -113,7 +120,7 @@ class group
     {
       if (!__parent.__mapping_result().is_valid())
       {
-        return _MappingResult::invalid();
+        return _SynchronizerInstance::invalid();
       }
     }
     return __synchronizer.make_instance(_Unit{}, __parent, __mapping, __mapping_result);
