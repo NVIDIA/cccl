@@ -159,7 +159,7 @@ std::string get_scan_kernel_name(
     offset_t, // 6
     accum_cpp_t, // 7
     force_inclusive ? "true" : "false", // 8
-    init_t); // 9 (RealInitValueT) — RunToRunDeterministic=false is hard-coded ahead of it
+    init_t); // 9 (RealInitValueT) — StableReductionOrder=false is hard-coded ahead of it
 }
 
 struct scan_kernel_source

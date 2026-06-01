@@ -623,7 +623,6 @@ enum class scan_algorithm
 {
   lookback,
   warpspeed,
-  lookback_deterministic,
 };
 
 #if _CCCL_HOSTED()
@@ -635,8 +634,6 @@ inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
       return os << "scan_algorithm::lookback";
     case scan_algorithm::warpspeed:
       return os << "scan_algorithm::warpspeed";
-    case scan_algorithm::lookback_deterministic:
-      return os << "scan_algorithm::lookback_deterministic";
     default:
       return os << "scan_algorithm::<unknown>";
   }
@@ -877,7 +874,7 @@ struct policy_selector
   bool accum_is_primitive_or_trivially_copy_constructible;
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
-  bool require_run_to_run_determinism = false;
+  bool require_stable_reduction_order = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_warpspeed_policy() const -> scan_warpspeed_policy
   {
@@ -934,9 +931,8 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr auto get_warpspeed_policy(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<scan_warpspeed_policy>
   {
-    // Force fall-through to lookback so the lookback_deterministic upgrade can route
-    // run_to_run determinism for non-associative (accum, op) (fp + plus)
-    if (require_run_to_run_determinism && accum_op_is_non_associative())
+    // fallback to lookback when we require a stable reduction order
+    if (require_stable_reduction_order)
     {
       return {};
     }
@@ -1426,20 +1422,9 @@ struct policy_selector
       default_delay);
   }
 
-  _CCCL_API constexpr bool accum_op_is_non_associative() const
-  {
-    return operation_t == op_kind_t::plus && (accum_type == type_t::float32 || accum_type == type_t::float64);
-  }
-
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
-    auto policy = select_base_policy(cc);
-    // Upgrade classic lookback to the 32-tile batched variant only for non-associative (accum, op).
-    if (require_run_to_run_determinism && policy.algorithm == scan_algorithm::lookback && accum_op_is_non_associative())
-    {
-      policy.algorithm = scan_algorithm::lookback_deterministic;
-    }
-    return policy;
+    return select_base_policy(cc);
   }
 };
 
@@ -1472,7 +1457,7 @@ template <typename InputIteratorT,
           typename AccumT,
           typename OffsetT,
           typename ScanOpT,
-          bool RunToRunDeterministic = false>
+          bool StableReductionOrder = false>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
@@ -1504,7 +1489,7 @@ struct policy_selector_from_types
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match,
-      RunToRunDeterministic};
+      StableReductionOrder};
     return policies(cc);
   }
 };

@@ -88,13 +88,13 @@ struct DeviceScan
 {
   //! @cond
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
+            bool StableReductionOrder       = false,
             typename PolicySelectorT,
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename NumItemsT,
-            typename Determinism>
+            typename NumItemsT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -103,15 +103,12 @@ struct DeviceScan
     ScanOpT scan_op,
     InitValueT init,
     NumItemsT num_items,
-    Determinism /*determinism*/,
     cudaStream_t stream,
     PolicySelectorT policy_selector)
   {
-    constexpr bool RunToRunDeterministic =
-      !::cuda::std::is_same_v<Determinism, ::cuda::execution::determinism::not_guaranteed_t>;
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::scan::dispatch<EnforceInclusive, RunToRunDeterministic>(
+    return detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -152,13 +149,10 @@ struct DeviceScan
                                                     typename InitValueT::value_type>>;
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    constexpr bool is_determinism_required =
-      !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+    constexpr bool is_run_to_run_required =
+      ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::run_to_run_t>;
     constexpr bool is_gpu_to_gpu_required =
       ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    using default_policy_selector_t = detail::scan::
-      policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT, is_determinism_required>;
     constexpr bool is_safe_integral_op =
       ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
     constexpr bool is_fp_plus_op =
@@ -166,7 +160,7 @@ struct DeviceScan
 
     // run_to_run determinism is supported only with integral types with known operators, or floating-point types with
     // plus operator
-    static_assert(!is_determinism_required || is_safe_integral_op || is_fp_plus_op,
+    static_assert(!is_run_to_run_required || is_safe_integral_op || is_fp_plus_op,
                   "run_to_run deterministic scan requires either integral types with known operators, "
                   "or floating-point types with plus operator");
 
@@ -175,10 +169,15 @@ struct DeviceScan
                   "gpu_to_gpu deterministic scan requires integral types with known operators; "
                   "floating-point scan can only guarantee run_to_run determinism");
 
+    constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
+
+    using default_policy_selector_t = detail::scan::
+      policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT, stable_reduction_order>;
+
     return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return scan_impl_determinism<EnforceInclusive>(
-          storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream, policy_selector);
+        return scan_impl_determinism<EnforceInclusive, stable_reduction_order>(
+          storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
       });
   }
 

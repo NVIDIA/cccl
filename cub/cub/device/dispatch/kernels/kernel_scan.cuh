@@ -185,8 +185,8 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           bool ForceInclusive,
-          bool RunToRunDeterministic = false,
-          typename RealInitValueT    = typename InitValueT::value_type>
+          bool StableReductionOrder = false,
+          typename RealInitValueT   = typename InitValueT::value_type>
 __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATTRIBUTES void DeviceScanKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -245,7 +245,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       AccumT,
       ForceInclusive,
       /* UsePDL */ true,
-      RunToRunDeterministic>;
+      StableReductionOrder>;
 
     // Shared memory for AgentScan
     __shared__ typename AgentScanT::TempStorage temp_storage;

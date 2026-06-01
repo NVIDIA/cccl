@@ -1178,7 +1178,7 @@ template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
           typename DelayConstructorT = detail::default_delay_constructor_t<T>,
-          bool RunToRunDeterministic = false>
+          bool StableReductionOrder  = false>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
@@ -1254,7 +1254,7 @@ struct TilePrefixCallbackOp
   }
 
   // Classic decoupled-lookback prefix computation.
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Lookback(T block_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T lookback(T block_aggregate)
   {
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
@@ -1301,7 +1301,7 @@ struct TilePrefixCallbackOp
   }
 
   // Run-to-run-deterministic K=1 32-batched lookback. Only anchor tiles publish INCLUSIVE.
-  _CCCL_DEVICE _CCCL_FORCEINLINE T LookbackRunToRunDeterministic(T block_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T lookback_stable_reduction_order(T block_aggregate)
   {
     if (threadIdx.x == 0)
     {
@@ -1352,13 +1352,13 @@ struct TilePrefixCallbackOp
   // BlockScan prefix callback functor.
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
   {
-    if constexpr (RunToRunDeterministic)
+    if constexpr (StableReductionOrder)
     {
-      return LookbackRunToRunDeterministic(block_aggregate);
+      return lookback_stable_reduction_order(block_aggregate);
     }
     else
     {
-      return Lookback(block_aggregate);
+      return lookback(block_aggregate);
     }
   }
 
