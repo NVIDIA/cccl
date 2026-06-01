@@ -370,6 +370,29 @@ struct Transforms
     // worker-3 brief-8). No runtime branch; resolved at instantiation.
     static constexpr bool is_range_transform = true;
 
+    //! @brief Per-thread most-recently-used (MRU) bin-bracket cache.
+    //!
+    //! Carries the last successfully-resolved bin and its two boundary level
+    //! values across consecutive `BinSelect` calls so a new sample that falls in
+    //! the same `[lo, hi)` bracket is classified with ZERO level-array loads (a
+    //! handful of register compares), skipping the interpolated first-guess, the
+    //! clamp, and -- crucially -- both verify `LDG`s on the dependent
+    //! `IMAD.WIDE -> LDG` level-load chain that profiling found binds the
+    //! multi-channel high-bin RANGE cuckoo kernel (~80% L1/TEX-pipe,
+    //! short-scoreboard). Low-entropy inputs (the benchmark's e=0 constant and
+    //! e=0.337 heavily-skewed cells) have high consecutive-sample locality, so
+    //! the bracket hits dominate. A `bin < 0` sentinel marks the cache empty.
+    //! This is per-thread mutable state, so it is only sound on a per-thread
+    //! `SearchTransform` copy (the direct-atomic cuckoo/single-probe kernels'
+    //! `decode_op[ch]`), never on the shared `__grid_constant__` decode op that
+    //! the SMEM-privatized agent path reads through a const pointer.
+    struct BracketCacheT
+    {
+      LevelT lo; // cached d_levels[bin]
+      LevelT hi; // cached d_levels[bin + 1]
+      int bin = -1; // cached bin; < 0 means empty
+    };
+
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
 
@@ -657,6 +680,187 @@ struct Transforms
       if (bin >= num_bins)
       {
         bin = -1;
+      }
+    }
+
+    //! @brief MRU-bracket-cached `BinSelect`.
+    //!
+    //! Same contract and result as the plain `BinSelect` above, but threads a
+    //! per-thread `BracketCacheT` across calls to exploit consecutive-sample
+    //! temporal locality. The fast path tests the cached `[lo, hi)` bracket with
+    //! register compares only -- on a hit it returns the cached bin without ANY
+    //! level-array load, cutting the dependent `IMAD.WIDE -> LDG` chain that
+    //! binds the high-bin RANGE classify. On a miss it runs the identical
+    //! interpolated-guess / verify / 1-step / `UpperBound` ladder as the plain
+    //! path (so correctness, including the non-uniform-level fallback, is
+    //! unchanged) and then records the resolved bracket -- reusing the bracket
+    //! levels the ladder already loaded in the common verify/1-step cases, and
+    //! reloading only on the rare `UpperBound` fallback.
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+    BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT& mru) const
+    {
+      using WrappedLevelIteratorT =
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
+                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         LevelIteratorT>;
+
+      const int num_bins = num_output_levels - 1;
+      if (!valid)
+      {
+        return;
+      }
+
+      const LevelT s = static_cast<LevelT>(sample);
+
+      // Fast path: the cached bracket holds the answer with no level loads.
+      // `mru.bin >= 0` guarantees the bracket is populated and in-range.
+      if (mru.bin >= 0 && !(s < mru.lo) && (s < mru.hi))
+      {
+        bin = mru.bin;
+        return;
+      }
+
+      // Tiny bin counts: the interpolation/bracket machinery is not worth it.
+      if (num_bins < 4)
+      {
+        WrappedLevelIteratorT wrapped_levels(d_levels);
+        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+        return;
+      }
+
+      WrappedLevelIteratorT wrapped_levels(d_levels);
+
+      const LevelT first_level = m_have_precompute ? m_first : wrapped_levels[0];
+      const LevelT last_level  = m_have_precompute ? m_last : wrapped_levels[num_bins];
+
+      if (!(first_level < last_level))
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+        return;
+      }
+
+      // Out-of-range samples map to bin -1 (and do not update the cache).
+      if (s < first_level || !(s < last_level))
+      {
+        bin = -1;
+        return;
+      }
+
+      // Identical first-guess ladder to the plain BinSelect above: on a cache
+      // MISS we must reproduce the parent's tuned three-point piecewise-linear
+      // first guess so miss-heavy cells (uniform e=1.0, and the irregular
+      // fallback) keep the parent's convergence. Only the hit fast path and the
+      // cache writebacks differ.
+      const auto delta = (s - first_level);
+      int guess;
+      if (m_have_precompute)
+      {
+        if (m_mid_bin > 0)
+        {
+          if (s < m_mid)
+          {
+            guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale_lo);
+          }
+          else
+          {
+            const auto delta_hi = (s - m_mid);
+            guess               = m_mid_bin + static_cast<int>(static_cast<float>(delta_hi) * m_inv_scale_hi);
+          }
+        }
+        else
+        {
+          guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);
+        }
+      }
+      else
+      {
+        const auto range = (last_level - first_level);
+        NV_IF_ELSE_TARGET(
+          NV_IS_DEVICE,
+          (guess = static_cast<int>(
+             __fdividef(static_cast<float>(delta) * static_cast<float>(num_bins), static_cast<float>(range)));),
+          (guess = static_cast<int>(
+             (static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));));
+      }
+      if (guess < 0)
+      {
+        guess = 0;
+      }
+      else if (guess > num_bins - 1)
+      {
+        guess = num_bins - 1;
+      }
+
+      const LevelT lvl_lo = wrapped_levels[guess];
+      const LevelT lvl_hi = wrapped_levels[guess + 1];
+
+      if (!(s < lvl_lo) && (s < lvl_hi))
+      {
+        bin     = guess;
+        mru.lo  = lvl_lo;
+        mru.hi  = lvl_hi;
+        mru.bin = guess;
+        return;
+      }
+
+      // One-step linear correction.
+      if (s < lvl_lo)
+      {
+        const int g2 = guess - 1;
+        if (g2 >= 0)
+        {
+          const LevelT lvl2_lo = wrapped_levels[g2];
+          if (!(s < lvl2_lo))
+          {
+            bin     = g2;
+            mru.lo  = lvl2_lo;
+            mru.hi  = lvl_lo; // lvl2_hi == lvl_lo (already loaded)
+            mru.bin = g2;
+            return;
+          }
+        }
+      }
+      else
+      {
+        const int g2 = guess + 1;
+        if (g2 <= num_bins - 1)
+        {
+          const LevelT lvl2_hi = wrapped_levels[g2 + 1];
+          if (s < lvl2_hi)
+          {
+            bin     = g2;
+            mru.lo  = lvl_hi; // lvl2_lo == lvl_hi (already loaded)
+            mru.hi  = lvl2_hi;
+            mru.bin = g2;
+            return;
+          }
+        }
+      }
+
+      // Fall back to binary search for irregular level distributions. This is
+      // the rare path, so the two extra bracket loads needed to refresh the MRU
+      // cache are amortized; they keep subsequent in-bracket samples on the
+      // zero-load fast path.
+      bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
+      if (bin >= num_bins)
+      {
+        bin = -1;
+        return;
+      }
+      if (bin >= 0)
+      {
+        mru.lo  = wrapped_levels[bin];
+        mru.hi  = wrapped_levels[bin + 1];
+        mru.bin = bin;
       }
     }
   };
@@ -989,6 +1193,20 @@ struct Transforms
         bin = this->ComputeBin(common_sample, m_min, m_scale);
       }
     }
+
+    // Empty MRU cache type so direct-atomic kernels can declare a uniform
+    // per-channel cache array regardless of transform; EVEN classify is pure
+    // register arithmetic with no level loads, so there is nothing to cache.
+    struct BracketCacheT
+    {};
+
+    // MRU-cache overload for call-site uniformity: ignores the cache and
+    // forwards to the plain `BinSelect` (no level loads to elide for EVEN).
+    template <CacheLoadModifier LOAD_MODIFIER>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid, BracketCacheT&) const
+    {
+      this->template BinSelect<LOAD_MODIFIER>(sample, bin, valid);
+    }
   };
 
   // Pass-through bin transform operator
@@ -1043,6 +1261,17 @@ struct Transforms
           bin = static_cast<int>(sample);
         }
       }
+    }
+
+    // Empty MRU cache type + ignoring overload for call-site uniformity with
+    // SearchTransform (byte-sample pass-through has no level loads to elide).
+    struct BracketCacheT
+    {};
+
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT&) const
+    {
+      this->template BinSelect<LOAD_MODIFIER>(sample, bin, valid);
     }
   };
 };
@@ -1103,6 +1332,19 @@ struct ChunkedDecodeOp
     int full_bin = -1;
     inner.template BinSelect<LOAD_MODIFIER>(sample, full_bin, valid);
     // Map to chunk-local bin if in window, else -1 so the agent's accumulate path skips it.
+    const int local_bin = full_bin - chunk_start;
+    bin                 = (full_bin >= 0 && local_bin >= 0 && local_bin < chunk_size) ? local_bin : -1;
+  }
+
+  // MRU cache delegates to the inner op (the chunk window mapping is applied to
+  // the inner's full-domain bin afterwards). Used for call-site uniformity.
+  using BracketCacheT = typename Inner::BracketCacheT;
+
+  template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT& mru) const
+  {
+    int full_bin = -1;
+    inner.template BinSelect<LOAD_MODIFIER>(sample, full_bin, valid, mru);
     const int local_bin = full_bin - chunk_start;
     bin                 = (full_bin >= 0 && local_bin >= 0 && local_bin < chunk_size) ? local_bin : -1;
   }
@@ -2028,6 +2270,25 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     decode_op[ch].PrecomputeOnDevice();
   }
 
+  // Per-thread, per-channel MRU bin-bracket cache (empty for non-RANGE
+  // transforms). Exploits consecutive-sample temporal locality so an in-bracket
+  // RANGE sample classifies with no level-array loads; see BracketCacheT.
+  //
+  // GATED TO SINGLE-CHANNEL (brief-18 iter0 ncu finding): this direct-atomic
+  // kernel sits at exactly 32 registers / 100% occupancy (2 blocks x 1024
+  // threads). One per-thread cache (single-channel, mru[1] = 12 B) fits in
+  // registers and lifts histogram_range +4.4%. But NumActiveChannels caches
+  // (multi-channel, mru[3] = 36 B) do NOT fit: the allocator pins regs at 32 to
+  // hold the occupancy tier and SPILLS the cache to local memory (ncu: Stack
+  // Size 0 -> 1024 B, achieved occ 99.8% -> 82%), and the per-sample LMEM
+  // round-trips for the cache cost more than the L1-cached level loads they
+  // replace -- multi_range cratered -52% (669 -> 321). So multi-channel keeps
+  // the parent's plain (cacheless) BinSelect, which is byte-identical to the
+  // parent's spill-free 32-reg/100%-occ codegen. is_range_transform guards EVEN
+  // (no level loads to cache); NumActiveChannels == 1 guards the spill.
+  constexpr bool kUseMruCache = (NumActiveChannels == 1) && PrivatizedDecodeOpT::is_range_transform;
+  typename PrivatizedDecodeOpT::BracketCacheT mru[NumActiveChannels];
+
   if (num_rows == 1)
   {
     // Pixel sweep parameters: every thread strides over the whole pixel
@@ -2200,7 +2461,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
           int bin = -1;
           if (valid[u])
           {
-            decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true);
+            if constexpr (kUseMruCache)
+            {
+              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true, mru[0]);
+            }
+            else
+            {
+              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true);
+            }
             const int num_bins = num_output_bins_wrapper[0];
             if (bin >= num_bins)
             {
@@ -2251,30 +2519,60 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             // index pixel 0 for past-the-end lanes (discarded via bin = -1).
             const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
             const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
+
+            // CHANNEL-LEVEL PARALLELISM (brief-21): classify ALL C channels
+            // first, THEN probe all C. The per-channel RANGE SearchTransform
+            // classify is L1/TEX-LEVEL-LOAD-LATENCY bound (W1/W3 ncu: L1/TEX
+            // ~81% busy, SM-compute ~18%, DRAM ~1%, 100% achieved occ -- the
+            // occupancy lever is exhausted, so the only way to hide the
+            // dependent `wrapped_levels[guess]` LDG latency is more INDEPENDENT
+            // loads in flight). The old interleaved `for ch { BinSelect;
+            // probe_cuckoo }` put `probe_cuckoo`'s `__match_any_sync` (a warp
+            // convergence point) BETWEEN consecutive channels, which prevented
+            // the compiler from issuing channel ch+1's level loads before
+            // channel ch's classify retired -- serialising C otherwise
+            // independent dependent-LDG chains per pixel. Splitting the loop so
+            // every channel's `BinSelect` runs back-to-back (no intervening
+            // warp sync) lets the C chains OVERLAP (C-way memory-level
+            // parallelism), then the probe phase coalesces+atomics each bin.
+            int bins[NumActiveChannels];
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
               int bin = -1;
               if (valid_pixel)
               {
-                decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
+                if constexpr (kUseMruCache)
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true, mru[ch]);
+                }
+                else
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
+                }
                 const int num_bins = num_output_bins_wrapper[ch];
                 if (bin >= num_bins)
                 {
                   bin = -1;
                 }
               }
-              probe_cuckoo(ch, bin);
+              bins[ch] = bin;
+            }
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
+            {
+              probe_cuckoo(ch, bins[ch]);
             }
           }
         }
       }
       else
       {
-        // Scalar fallback: interleaved load -> classify -> probe loop. Staging
-        // `unroll * NumActiveChannels` samples would explode the register
-        // footprint of this already register-limited kernel, so we do NOT
-        // pipeline here.
+        // Scalar fallback: per-channel global loads (non-native / unaligned
+        // pointer). Same CHANNEL-LEVEL PARALLELISM split as the vectorized path
+        // (brief-21): classify all C channels back-to-back (overlapping the C
+        // independent dependent-LDG SearchTransform chains, no intervening
+        // `__match_any_sync` from probe_cuckoo), then probe all C.
         for (OffsetT it = 0; it < chunk_iters_max; ++it)
         {
           const OffsetT pixel = start + it * chunk;
@@ -2284,6 +2582,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             const OffsetT this_pixel = pixel + u * step;
             const bool valid_pixel   = this_pixel < total_pixels;
             const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+            int bins[NumActiveChannels];
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
@@ -2291,14 +2590,26 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
               if (valid_pixel)
               {
                 auto sample = d_samples[pix_off + ch];
-                decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+                if constexpr (kUseMruCache)
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true, mru[ch]);
+                }
+                else
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+                }
                 const int num_bins = num_output_bins_wrapper[ch];
                 if (bin >= num_bins)
                 {
                   bin = -1;
                 }
               }
-              probe_cuckoo(ch, bin);
+              bins[ch] = bin;
+            }
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
+            {
+              probe_cuckoo(ch, bins[ch]);
             }
           }
         }
@@ -2349,7 +2660,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       {
         auto sample = d_samples[pix_off + ch];
         int bin     = -1;
-        decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        if constexpr (kUseMruCache)
+        {
+          decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true, mru[ch]);
+        }
+        else
+        {
+          decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        }
         const int num_bins = num_output_bins_wrapper[ch];
         if (bin >= 0 && bin < num_bins)
         {
@@ -2533,6 +2851,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     decode_op[ch].PrecomputeOnDevice();
   }
 
+  // Per-thread, per-channel MRU bin-bracket cache. GATED TO SINGLE-CHANNEL: see
+  // the matching comment in DeviceHistogramSweepDirectAtomicPersistentKernel --
+  // multi-channel mru[NumActiveChannels] spills to local memory (Stack 1024 B)
+  // and craters multi_range; single-channel mru[1] fits in registers and lifts
+  // histogram_range. Multi-channel keeps the parent's cacheless BinSelect.
+  constexpr bool kUseMruCache = (NumActiveChannels == 1) && PrivatizedDecodeOpT::is_range_transform;
+  typename PrivatizedDecodeOpT::BracketCacheT mru[NumActiveChannels];
+
   if (num_rows == 1)
   {
     const OffsetT step         = static_cast<OffsetT>(total_threads);
@@ -2672,7 +2998,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
           int bin = -1;
           if (valid[u])
           {
-            decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true);
+            if constexpr (kUseMruCache)
+            {
+              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true, mru[0]);
+            }
+            else
+            {
+              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true);
+            }
             const int num_bins = num_output_bins_wrapper[0];
             if (bin >= num_bins)
             {
@@ -2720,7 +3053,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
               int bin = -1;
               if (valid_pixel)
               {
-                decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
+                if constexpr (kUseMruCache)
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true, mru[ch]);
+                }
+                else
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
+                }
                 const int num_bins = num_output_bins_wrapper[ch];
                 if (bin >= num_bins)
                 {
@@ -2754,7 +3094,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
               if (valid_pixel)
               {
                 auto sample = d_samples[pix_off + ch];
-                decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+                if constexpr (kUseMruCache)
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true, mru[ch]);
+                }
+                else
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+                }
                 const int num_bins = num_output_bins_wrapper[ch];
                 if (bin >= num_bins)
                 {
@@ -2809,7 +3156,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       {
         auto sample = d_samples[pix_off + ch];
         int bin     = -1;
-        decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        if constexpr (kUseMruCache)
+        {
+          decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true, mru[ch]);
+        }
+        else
+        {
+          decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
+        }
         const int num_bins = num_output_bins_wrapper[ch];
         if (bin >= 0 && bin < num_bins)
         {
