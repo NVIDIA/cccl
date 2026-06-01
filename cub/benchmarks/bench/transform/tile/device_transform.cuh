@@ -1,14 +1,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// tile port of cub::DeviceTransform - tile-size policy picker.
-// Mirrors the bytes-in-flight target used by cub's transform policy so
-// the tile launches land at comparable occupancy.
+// tile port of cub::DeviceTransform.
+// Public surface mirrors cub::DeviceTransform::{Transform, Fill}; the
+// kernels themselves are written against the tile DSL (cuda::tiles).
 
 #pragma once
 
 #include <cuda_runtime.h>
 #include <cstdint>
+#include <cuda/std/tuple>
+#include <cuda/std/utility>
+
+#include "cuda_tile.h"
 
 namespace cub_tile::detail {
 
@@ -63,4 +67,95 @@ constexpr int pick_tile_size(bool mufu_heavy = false, int cc_x10 = 1000) {
     return items * threads_per_block;
 }
 
+template <int TileSize, typename Fn, typename Out, typename... Ins>
+__tile_global__ void transform_kernel(int64_t num_items_, Out* __restrict__ out_,
+                                      const Ins* __restrict__... ins_) {
+    namespace ct = cuda::tiles;
+
+    const auto bx = ct::bid().x;
+    Fn fn{};
+
+    auto num_items = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items_));
+    auto out       = ct::assume_aligned<16>(out_);
+
+    auto out_span = ct::tensor_span{out, ct::extents{num_items}};
+    auto out_view = ct::partition_view{out_span, ct::shape<TileSize>{}};
+
+    auto load_one = [bx, num_items](auto* ptr_) {
+        auto ptr  = ct::assume_aligned<16>(ptr_);
+        auto span = ct::tensor_span{ptr, ct::extents{num_items}};
+        auto view = ct::partition_view{span, ct::shape<TileSize>{}};
+        return view.load_masked(bx);
+    };
+
+    out_view.store_masked(fn(load_one(ins_)...), bx);
+}
+
+template <int TileSize, typename Fn, typename Out, typename... Ins,
+          ::cuda::std::size_t... Idx>
+cudaError_t launch_impl(
+    ::cuda::std::tuple<Ins*...> inputs,
+    Out* output,
+    int64_t num_items,
+    cudaStream_t stream,
+    ::cuda::std::index_sequence<Idx...>) {
+
+    if (num_items <= 0) return cudaSuccess;
+
+    const int64_t num_blocks = (num_items + TileSize - 1) / TileSize;
+
+    transform_kernel<TileSize, Fn><<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(
+        num_items, output, ::cuda::std::get<Idx>(inputs)...);
+
+    return cudaGetLastError();
+}
+
+template <int TileSize, typename T>
+__tile_global__ void fill_kernel(int64_t num_items_, T* __restrict__ out_, T value) {
+    namespace ct = cuda::tiles;
+    const auto bx = ct::bid().x;
+
+    auto num_items = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items_));
+    auto out       = ct::assume_aligned<16>(out_);
+
+    auto out_span = ct::tensor_span{out, ct::extents{num_items}};
+    auto out_view = ct::partition_view{out_span, ct::shape<TileSize>{}};
+    using tile_t  = ct::tile<T, ct::shape<TileSize>>;
+    out_view.store_masked(ct::full<tile_t>(value), bx);
+}
+
 } // namespace cub_tile::detail
+
+namespace cub_tile {
+
+struct DeviceTransform {
+    template <int TileSize = 0,
+              bool MufuHeavy = false,
+              typename Fn, typename Out, typename... Ins>
+    static cudaError_t Transform(
+        ::cuda::std::tuple<Ins*...> inputs,
+        Out* output,
+        int64_t num_items,
+        Fn,
+        cudaStream_t stream = 0) {
+        constexpr int chosen = (TileSize > 0)
+            ? TileSize
+            : detail::pick_tile_size<Out, Ins...>(MufuHeavy);
+        return detail::launch_impl<chosen, Fn>(
+            inputs, output, num_items, stream,
+            ::cuda::std::index_sequence_for<Ins...>{});
+    }
+
+    // Fill
+    template <int TileSize = 0, typename T>
+    static cudaError_t Fill(T* output, int64_t num_items, T value, cudaStream_t stream = 0) {
+        if (num_items <= 0) return cudaSuccess;
+        constexpr int chosen = (TileSize > 0) ? TileSize : detail::pick_tile_size<T>();
+        const int64_t num_blocks = (num_items + chosen - 1) / chosen;
+        detail::fill_kernel<chosen, T><<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(
+            num_items, output, value);
+        return cudaGetLastError();
+    }
+};
+
+} // namespace cub_tile
