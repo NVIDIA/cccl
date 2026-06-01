@@ -171,7 +171,8 @@ struct dispatch_t
 
     // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
     // output iterator.
-    if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+    if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+                                      1, 1, 0, stream, /* dependent_launch */ ptx_version > 900)
                                       .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
     {
       return error;
@@ -182,9 +183,14 @@ struct dispatch_t
     auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
     // Invoke FindIfKernel with transformed iterator
-    if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                                      findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream, true)
-                                      .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+    if (const auto error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+            findif_grid_size,
+            ActivePolicyT::FindPolicy::BLOCK_THREADS,
+            0,
+            stream,
+            /* dependent_launch */ ptx_version > 900)
+            .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
     {
       return error;
     }
@@ -192,7 +198,8 @@ struct dispatch_t
     if constexpr (!can_write_to_output_direclty)
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+              1, 1, 0, stream, /* dependent_launch */ ptx_version > 900)
               .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out)))
       {
         return error;

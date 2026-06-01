@@ -283,7 +283,7 @@ struct DispatchMergeSort
       ValueT>(wrapped_policy.MergeSort());
 
     // Invoke DeviceMergeSortBlockSortKernel
-    launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, true)
+    launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, /* dependent launch */ ptx_version >= 900)
       .doit(kernel_source.MergeSortBlockSortKernel(),
             ping,
             d_input_keys,
@@ -327,7 +327,8 @@ struct DispatchMergeSort
       const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
 
       // Partition
-      launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream, true)
+      launcher_factory(
+        partition_grid_size, threads_per_partition_block, 0, stream, /* dependent launch */ ptx_version >= 900)
         .doit(kernel_source.MergeSortPartitionKernel(),
               ping,
               d_output_keys,
@@ -351,7 +352,7 @@ struct DispatchMergeSort
       }
 
       // Merge
-      launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, true)
+      launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, /* dependent launch */ ptx_version >= 900)
         .doit(kernel_source.MergeSortMergeKernel(),
               ping,
               d_output_keys,
