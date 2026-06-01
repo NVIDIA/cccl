@@ -58,7 +58,7 @@ template <class T, T... Vs>
 TEST_FUNC constexpr void test()
 {
   cuda::static_for<sizeof...(Vs)>([](auto i) {
-    constexpr T values[]{Vs...};
+    constexpr T values[(sizeof...(Vs) > 0) ? sizeof...(Vs) : 1]{Vs...};
     test<cuda::std::integer_sequence<T, Vs...>, i()>(values[i()]);
   });
 }
