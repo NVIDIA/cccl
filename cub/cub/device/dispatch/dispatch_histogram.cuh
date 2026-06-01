@@ -301,73 +301,89 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // (hybrid / sweep / cuckoo) are dominated by their PER-BLOCK FIXED COST rather
   // than data movement. ncu on the 16384-bin smem_priv cell at 1M pixels shows
   // DRAM ~3.6% -- the kernel spends its time zeroing a wide SMEM histogram and
-  // scan-merging it, doing almost no useful memory work. For the high-bin
-  // single-channel cells (>16384 bins) the direct-mapped single-probe cache wins
-  // this regime: it has NO per-block privatized-histogram zero+scan (threads
+  // scan-merging it, doing almost no useful memory work. For the 65536-bin
+  // single-channel cap tier the direct-mapped single-probe cache wins this
+  // regime: it has NO per-block privatized-histogram zero+scan (threads
   // atomicAdd straight to GMEM, the small SMEM cache only absorbs hot bins), so
   // it pays no fixed cost. A controlled force-compare (worker-0 brief-10) over
   // the high-bin x {constant,skewed,uniform} entropy mix at 1M pixels confirmed
   // single_probe wins the entropy-geomean on every >16384-bin single-channel
   // cell -- biggest at the 65536-bin EVEN tier (+25% F64 / +9% I32 over the
-  // hybrid default), and +2-5% over cuckoo at 262144/1M bins. The 16384-bin tier
-  // is NOT included (smem_priv_16k's privatization genuinely wins there at
-  // moderate/high entropy); the cascade below already claimed it.
+  // hybrid default), and +2-5% over cuckoo at 262144/1M bins. The >65536-bin
+  // tiers (262144 / 1M) now take single_probe at EVERY N (handled first in the
+  // single-channel branch below), so this 4M-pixel gate only governs the 65536
+  // cap tier. The 16384-bin tier is NOT included here (smem_priv_16k's
+  // privatization genuinely wins there at moderate/high entropy); the cascade
+  // above already claimed it.
   constexpr long long kSmallNHighBinPixels = 1LL << 22;
 
   if (f.num_active_channels == 1)
   {
     // ---- Single-channel high-bin (every cell here already has bins > 16384, so
     // bins is one of 65536 / 262144 / 1048576). ----
-    //
-    // brief-10 (worker-0): small-N (fixed-cost-bound) cells route to
-    // single_probe. The SMEM-priv cascade above already claimed the 16384-bin
-    // tier, so this only redirects the bins>16384 tiers, exactly where the
-    // force-compare showed single_probe wins the entropy-geomean at <=4M pixels.
-    // This is a dispatch-routing decision and is independent of the brief-13
-    // second-probe gate downstream: cells routed here select the SINGLE-PROBE
-    // kernel (cache_mode=1), so `use_single_probe_cache` is true and the cuckoo
-    // 2nd-probe gate never fires on them.
+
+    // Bins above the hybrid cap (262144 and 1M): single_probe at every pixel
+    // count (brief-18 COMBINE: fold in worker-0 brief-10's broader routing,
+    // which strictly generalizes the prior <=4M-pixel single-probe arm for
+    // these tiers). A controlled per-cell force-compare (worker-0 brief-10) over
+    // the full {1M,16M,64M,256M,1G} x {const,skewed,uniform} matrix showed
+    // single_probe wins the entropy-geomean on EVERY one of these cells:
+    //   * 262144 EVEN-F64: +2.6% (1M) .. +71.5% (256M) / +61.1% (1G)
+    //   * 262144 RANGE-F64: +3.9% (1M) .. +39.1% (256M) / +31.9% (1G)
+    //   * 262144 I32 and the whole 1M-bin tier: +0.3%..+4.8% across N.
+    // The two large-input "privatized" routes the selector used to take here
+    // (cooperative sweep at the 262144-F64 mid-tier, cuckoo elsewhere) were
+    // BOTH stale: at 256M+ pixels the sweep's per-block privatized intermediate
+    // (~445 MB) is pure DRAM-bound dead weight (sweep 1135 vs single_probe 1869
+    // at 1G EVEN-F64), and at every N single_probe's shorter, less-divergent
+    // direct-atomic critical section edges cuckoo's 2-hash chain. The 1M-bin
+    // tier vastly out-counts the SMEM cache slots, so neither cache helps -- it
+    // is effectively a pure direct GMEM atomic, and single_probe's leaner inner
+    // loop is the right one. These cells select the SINGLE-PROBE kernel
+    // (cache_mode=1), so `use_single_probe_cache` is true and the downstream
+    // brief-13 cuckoo 2nd-probe gate never fires on them.
+    if (f.num_bins > chunked_smem_bins_max_single_channel)
+    {
+      return algorithm::gmem_priv_single_probe;
+    }
+
+    // Cap-bin tier (65536). Small-N (fixed-cost-bound) cells route to
+    // single_probe: at <=4M pixels the privatized paths (hybrid / sweep) are
+    // dominated by their per-block FIXED COST (zero a wide SMEM histogram +
+    // scan-merge) rather than data movement -- ncu shows DRAM ~3.6% on the
+    // small-N privatized cell -- and single_probe (threads atomicAdd straight
+    // out, no per-block histogram to zero+scan) wins the entropy-geomean here
+    // (65536 EVEN-F64 +25%, EVEN-I32 +9%, RANGE +0.8-3%).
     if (f.num_pixels <= kSmallNHighBinPixels)
     {
       return algorithm::gmem_priv_single_probe;
     }
-    if (f.num_bins <= chunked_smem_bins_max_single_channel)
+    // Cap-bin tier at moderate/large N: the SMEM+GMEM single-pass hybrid keeps
+    // the whole (modest) histogram on-chip and dominates here -- up to ~2x over
+    // the privatized sweep at large input for EVEN, and the force-compare
+    // confirmed hybrid still wins by 30-49% at >=16M pixels for EVEN. RANGE's
+    // expensive SearchTransform classify changes the trade-off by sample width:
+    //   * EVEN (cheap scale classify): hybrid at every (moderate/large) N.
+    //   * RANGE F64: hybrid only at small/medium input; once the classify is
+    //     amortized over enough pixels (>= ~64M) the cooperative sweep's
+    //     privatization wins, and at the smallest input cuckoo's direct
+    //     atomics beat both.
+    //   * RANGE I32: cuckoo -- hybrid and sweep both lose to direct atomics.
+    if (f.is_even)
     {
-      // Cap-bin tier (65536): the SMEM+GMEM single-pass hybrid keeps the whole
-      // (modest) histogram on-chip and dominates here -- up to ~2x over the
-      // privatized sweep at large input for EVEN. RANGE's expensive
-      // SearchTransform classify changes the trade-off by sample width:
-      //   * EVEN (cheap scale classify): hybrid at every pixel count.
-      //   * RANGE F64: hybrid only at small/medium input; once the classify is
-      //     amortized over enough pixels (>= ~64M) the cooperative sweep's
-      //     privatization wins, and at the smallest input cuckoo's direct
-      //     atomics beat both.
-      //   * RANGE I32: cuckoo -- hybrid and sweep both lose to direct atomics.
-      if (f.is_even)
+      return algorithm::hybrid_single_pass;
+    }
+    if (f.sample_bytes >= 8)
+    {
+      if (f.num_pixels >= kRangeF64SweepPixelThreshold)
+      {
+        return algorithm::gmem_priv_sweep;
+      }
+      if (f.num_pixels >= (1LL << 24)) // ~16M pixels
       {
         return algorithm::hybrid_single_pass;
       }
-      if (f.sample_bytes >= 8)
-      {
-        if (f.num_pixels >= kRangeF64SweepPixelThreshold)
-        {
-          return algorithm::gmem_priv_sweep;
-        }
-        if (f.num_pixels >= (1LL << 24)) // ~16M pixels
-        {
-          return algorithm::hybrid_single_pass;
-        }
-        return algorithm::gmem_priv_cuckoo;
-      }
       return algorithm::gmem_priv_cuckoo;
-    }
-    // Bins above the hybrid cap (262144, 1M). The privatized sweep only pays
-    // off at the 262144 mid-tier under large F64 input (expensive classify +
-    // still-affordable intermediate); the 1M tier and all I32 / small-input
-    // cells go to cuckoo's direct atomics.
-    if (f.sample_bytes >= 8 && f.num_bins <= kMidHighBinTier && f.num_pixels >= kSweepPixelThreshold)
-    {
-      return algorithm::gmem_priv_sweep;
     }
     return algorithm::gmem_priv_cuckoo;
   }
