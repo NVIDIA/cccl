@@ -9,6 +9,7 @@ import cupy as cp
 import numba.cuda
 import numpy as np
 import pytest
+from cupy.cuda import runtime
 
 import cuda.compute
 from cuda.compute import (
@@ -21,7 +22,6 @@ from cuda.compute import (
     TransformOutputIterator,
     gpu_struct,
 )
-from cupy.cuda import runtime
 
 
 def random_int(shape, dtype):
@@ -959,6 +959,7 @@ def test_reduce_bool():
     expected = True
     assert d_output.get()[0] == expected
 
+
 def test_reduce_input_and_accumulator_type_mismatch():
     @gpu_struct
     class AccumulatorType:
@@ -973,8 +974,12 @@ def test_reduce_input_and_accumulator_type_mismatch():
         # into a cupy array. The cupy `asarray` function doesn't
         # work for record types.
         d_array = cp.empty(h_array.nbytes, dtype=np.uint8)
-        runtime.memcpy(d_array.data.ptr, h_array.ctypes.data, h_array.nbytes,
-                    runtime.memcpyHostToDevice)
+        runtime.memcpy(
+            d_array.data.ptr,
+            h_array.ctypes.data,
+            h_array.nbytes,
+            runtime.memcpyHostToDevice,
+        )
         return d_array.view(h_array.dtype).reshape(h_array.shape)
 
     # input data is {int32, int64}
@@ -986,13 +991,7 @@ def test_reduce_input_and_accumulator_type_mismatch():
     d_out = cp.empty(1, AccumulatorType.dtype)
     h_init = AccumulatorType(0, 0)  # Init is AccumulatorType
 
-    with pytest.raises(
-        TypeError, match="reduce_into dtype mismatch: input dtype"
-    ):
+    with pytest.raises(TypeError, match="reduce_into dtype mismatch: input dtype"):
         cuda.compute.reduce_into(
-            d_in=d_data,
-            d_out=d_out,
-            op=op,
-            num_items=d_data.size,
-            h_init=h_init
+            d_in=d_data, d_out=d_out, op=op, num_items=d_data.size, h_init=h_init
         )

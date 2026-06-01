@@ -39,7 +39,7 @@ class _Reduce:
     def __init__(
         self,
         d_in: DeviceArrayLike | IteratorT,
-        d_out: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
@@ -115,7 +115,7 @@ class _Reduce:
 def make_reduce_into(
     *,
     d_in: DeviceArrayLike | IteratorT,
-    d_out: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
@@ -154,7 +154,8 @@ def make_reduce_into(
         in_dtype = get_dtype(d_in)
         if not np.can_cast(in_dtype, accum_dtype):
             raise TypeError(
-                f"reduce_into dtype mismatch: input dtype {in_dtype} != accumulator dtype {accum_dtype}. "
+                f"reduce_into dtype mismatch: input dtype {in_dtype} != accumulator dtype {accum_dtype}, "
+                "which could result in value truncation. "
                 "Ensure d_in elements and h_init have identical dtype to avoid truncation or misinterpretation."
             )
 
@@ -162,7 +163,8 @@ def make_reduce_into(
     out_dtype = get_dtype(d_out)
     if not np.can_cast(accum_dtype, out_dtype):
         raise TypeError(
-            f"reduce_into dtype mismatch: output dtype {out_dtype} != accumulator dtype {accum_dtype}. "
+            f"reduce_into dtype mismatch: output dtype {out_dtype} != accumulator dtype {accum_dtype}, "
+            "which could result in value truncation. "
             "Ensure d_out and h_init have identical dtype."
         )
 
@@ -179,7 +181,7 @@ def make_reduce_into(
 def reduce_into(
     *,
     d_in: DeviceArrayLike | IteratorT,
-    d_out: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike,
     num_items: int,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
