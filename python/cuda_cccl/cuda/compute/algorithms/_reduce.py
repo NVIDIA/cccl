@@ -152,7 +152,7 @@ def make_reduce_into(
     # Validate d_in if it is a device array (iterators may not expose dtype reliably here):
     if not isinstance(d_in, IteratorBase):
         in_dtype = get_dtype(d_in)
-        if not np.can_cast(in_dtype, accum_dtype):
+        if in_dtype != accum_dtype:
             raise TypeError(
                 f"reduce_into dtype mismatch: input dtype {in_dtype} != accumulator dtype {accum_dtype}. "
                 "Ensure d_in elements and h_init have identical dtype to avoid truncation or misinterpretation."
@@ -161,7 +161,7 @@ def make_reduce_into(
     # Validate d_out dtype as well (should hold a single accumulator value):
     if not isinstance(d_out, IteratorBase):
         out_dtype = get_dtype(d_out)
-        if not np.can_cast(accum_dtype, out_dtype):
+        if accum_dtype != out_dtype:
             raise TypeError(
                 f"reduce_into dtype mismatch: output dtype {out_dtype} != accumulator dtype {accum_dtype}. "
                 "Ensure d_out and h_init have identical dtype."
