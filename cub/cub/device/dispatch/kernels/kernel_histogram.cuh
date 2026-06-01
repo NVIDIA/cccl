@@ -3047,6 +3047,23 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             const bool valid_pixel   = this_pixel < total_pixels;
             const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
             const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
+
+            // CHANNEL-LEVEL PARALLELISM (brief-15): classify ALL C channels
+            // first, THEN probe all C -- the identical split parent A applied to
+            // the CUCKOO kernel's multi-channel loop. The per-channel RANGE
+            // SearchTransform classify is L1/TEX-level-load-latency bound
+            // (dependent `wrapped_levels[guess]` LDG chain) at exhausted
+            // occupancy, so the only lever left is more INDEPENDENT loads in
+            // flight. The old interleaved `for ch { BinSelect; probe_single }`
+            // put `probe_single`'s `__match_any_sync` (a warp convergence point)
+            // BETWEEN consecutive channels, serialising the C otherwise-
+            // independent dependent-LDG chains per pixel. Splitting so every
+            // channel's `BinSelect` runs back-to-back (no intervening warp sync)
+            // lets the C chains OVERLAP (C-way memory-level parallelism); the
+            // probe phase then coalesces+atomics each bin. The staged state is
+            // only `bins[NumActiveChannels]` ints (3 ints, multi), which the
+            // cuckoo kernel confirmed holds at 32 regs / 100% occ.
+            int bins[NumActiveChannels];
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
@@ -3067,17 +3084,26 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
                   bin = -1;
                 }
               }
-              probe_single(ch, bin);
+              bins[ch] = bin;
+            }
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
+            {
+              probe_single(ch, bins[ch]);
             }
           }
         }
       }
       else
       {
-        // Scalar fallback: interleaved load -> classify -> probe loop. Staging
-        // `unroll * NumActiveChannels` samples would explode the register
-        // footprint of this already register-limited kernel, so we do NOT
-        // pipeline here.
+        // Scalar fallback: per-channel global loads (non-native / unaligned
+        // pointer). Same CHANNEL-LEVEL PARALLELISM split as the vectorized path
+        // (brief-15): classify all C channels back-to-back (overlapping the C
+        // independent dependent-LDG SearchTransform chains, no intervening
+        // `__match_any_sync` from probe_single), then probe all C. The staged
+        // `bins[NumActiveChannels]` is only `unroll`-independent of the sample
+        // values, so unlike staging `unroll * NumActiveChannels` SAMPLES this
+        // does not explode the register footprint.
         for (OffsetT it = 0; it < chunk_iters_max; ++it)
         {
           const OffsetT pixel = start + it * chunk;
@@ -3087,6 +3113,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             const OffsetT this_pixel = pixel + u * step;
             const bool valid_pixel   = this_pixel < total_pixels;
             const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
+            int bins[NumActiveChannels];
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
@@ -3108,7 +3135,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
                   bin = -1;
                 }
               }
-              probe_single(ch, bin);
+              bins[ch] = bin;
+            }
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int ch = 0; ch < NumActiveChannels; ++ch)
+            {
+              probe_single(ch, bins[ch]);
             }
           }
         }
