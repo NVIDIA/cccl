@@ -13,6 +13,7 @@
 // template <class Alloc>
 //   tuple(allocator_arg_t, const Alloc& a, const Types&...);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -27,33 +28,29 @@ struct ImplicitCopy
   TEST_FUNC ImplicitCopy(ImplicitCopy const&) {}
 };
 
-// cuda::std::allocator not supported
-/*
 // Test that tuple(cuda::std::allocator_arg, Alloc, Types const&...) allows implicit
 // copy conversions in return value expressions.
-cuda::std::tuple<ImplicitCopy> testImplicitCopy1() {
-    ImplicitCopy i(42);
-    return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
+cuda::std::tuple<ImplicitCopy> testImplicitCopy1()
+{
+  ImplicitCopy i(42);
+  return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
 }
 
-cuda::std::tuple<ImplicitCopy> testImplicitCopy2() {
-    const ImplicitCopy i(42);
-    return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
+cuda::std::tuple<ImplicitCopy> testImplicitCopy2()
+{
+  const ImplicitCopy i(42);
+  return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
 }
-*/
 
 int main(int, char**)
 {
   // Static initialization not supported on GPUs
   alloc_first::allocator_constructed() = false;
   alloc_last::allocator_constructed()  = false;
-  // cuda::std::allocator not supported
-  /*
   {
-      // check that the literal '0' can implicitly initialize a stored pointer.
-      cuda::std::tuple<int*> t = {cuda::std::allocator_arg, cuda::std::allocator<void>{}, 0};
+    // check that the literal '0' can implicitly initialize a stored pointer.
+    [[maybe_unused]] cuda::std::tuple<int*> t = {cuda::std::allocator_arg, cuda::std::allocator<void>{}, 0};
   }
-  */
   {
     cuda::std::tuple<int> t(cuda::std::allocator_arg, A1<int>(), 3);
     assert(cuda::std::get<0>(t) == 3);

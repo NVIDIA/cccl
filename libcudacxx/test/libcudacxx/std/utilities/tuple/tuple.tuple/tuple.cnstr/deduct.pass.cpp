@@ -12,6 +12,7 @@
 // so they're compatible with implicit deduction guides, or if that's not
 // possible that they provide explicit guides to make it work.
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -34,8 +35,7 @@
 // (10) tuple(AT, A const&, tuple&& t) -> decltype(t)
 TEST_FUNC void test_primary_template()
 {
-  // cuda::std::allocator not supported
-  // const cuda::std::allocator<int> A;
+  const cuda::std::allocator<int> A;
   const auto AT = cuda::std::allocator_arg;
   unused(AT);
   { // Testing (1)
@@ -83,8 +83,6 @@ TEST_FUNC void test_primary_template()
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
 #endif // TEST_COMPILER(GCC, <, 11)
   }
-  // cuda::std::allocator not supported
-  /*
   { // Testing (4)
     int x = 101;
     cuda::std::tuple t1(AT, A, 42);
@@ -100,18 +98,21 @@ TEST_FUNC void test_primary_template()
     cuda::std::tuple t1(AT, A, T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
 
+#if !TEST_COMPILER(GCC) // GCC has issues deducting this
     const T v{};
     cuda::std::tuple t2(AT, A, T{}, 101l, v);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
+#endif // !TEST_COMPILER(GCC)
   }
   { // Testing (6)
     cuda::std::pair<int, char> p1(1, 'c');
     cuda::std::tuple t1(AT, A, p1);
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int, char>>);
 
-    cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(1, cuda::std::tuple<char, long, void*>('c', 3l,
-  nullptr)); cuda::std::tuple t2(AT, A, p2); static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int,
-  cuda::std::tuple<char, long, void*>>>);
+    cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(
+      1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
+    cuda::std::tuple t2(AT, A, p2);
+    static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>>);
 
     int i = 3;
     cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(cuda::std::ref(i), 'c');
@@ -122,10 +123,9 @@ TEST_FUNC void test_primary_template()
     cuda::std::tuple t4(AT, A, p4);
     static_assert(cuda::std::is_same_v<decltype(t4), cuda::std::tuple<int&, char>>);
 
-    cuda::std::tuple t5(AT, A, cuda::std::pair<int, char>(1, 'c'));
+    [[maybe_unused]] cuda::std::tuple t5(AT, A, cuda::std::pair<int, char>(1, 'c'));
     static_assert(cuda::std::is_same_v<decltype(t5), cuda::std::tuple<int, char>>);
   }
-  */
   { // Testing (7)
     using Tup = cuda::std::tuple<int, decltype(nullptr)>;
     const Tup t(42, nullptr);
@@ -142,8 +142,6 @@ TEST_FUNC void test_primary_template()
     unused(t1);
   }
 #endif // !TEST_CUDA_COMPILER(NVCC, >, 13, 2)
-  // cuda::std::allocator not supported
-  /*
   { // Testing (9)
     using Tup = cuda::std::tuple<int, decltype(nullptr)>;
     const Tup t(42, nullptr);
@@ -158,7 +156,6 @@ TEST_FUNC void test_primary_template()
     static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
     unused(t1);
   }
-  */
 }
 
 // Overloads
@@ -173,8 +170,7 @@ TEST_FUNC void test_primary_template()
 // (6)  tuple(AT, A const&, tuple&&) -> tuple<>
 TEST_FUNC void test_empty_specialization()
 {
-  // cuda::std::allocator not supported
-  // cuda::std::allocator<int> A;
+  cuda::std::allocator<int> A;
   const auto AT = cuda::std::allocator_arg;
   unused(AT);
   { // Testing (1)
@@ -182,13 +178,10 @@ TEST_FUNC void test_empty_specialization()
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
     unused(t1);
   }
-  // cuda::std::allocator not supported
-  /*
   { // Testing (2)
     cuda::std::tuple t1{AT, A};
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
-  */
   { // Testing (3)
     const cuda::std::tuple<> t{};
     cuda::std::tuple t1(t);
@@ -200,8 +193,6 @@ TEST_FUNC void test_empty_specialization()
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
     unused(t1);
   }
-  // cuda::std::allocator not supported
-  /*
   { // Testing (5)
     const cuda::std::tuple<> t{};
     cuda::std::tuple t1(AT, A, t);
@@ -211,7 +202,6 @@ TEST_FUNC void test_empty_specialization()
     cuda::std::tuple t1(AT, A, cuda::std::tuple<>{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
-  */
 }
 
 int main(int, char**)
