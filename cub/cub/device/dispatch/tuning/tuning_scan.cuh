@@ -595,9 +595,9 @@ struct scan_warpspeed_policy
   // Therefore, a value of 0 just takes the number of stages.
   // TODO(bgruber): should we rather have two values? A stage bias (additive) and a stage scale (multiplicative)?
 
-  // We do not need too many stages for lookback since the lookback warp is the bottleneck. As soon as it produces a new
-  // value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
-  int lookback_stages = 2;
+  // We do not need too many stages for lookahead since the lookahead warp is the bottleneck. As soon as it produces a
+  // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
+  int lookahead_stages = 2;
 
   // If one less than the number of stages, we find a small speedup compared to setting it equal to num_stages. Not sure
   // why.
@@ -613,7 +613,7 @@ struct scan_warpspeed_policy
   {
     return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
         && lhs.look_ahead_items_per_thread == rhs.look_ahead_items_per_thread
-        && lhs.items_per_thread == rhs.items_per_thread && lhs.lookback_stages == rhs.lookback_stages
+        && lhs.items_per_thread == rhs.items_per_thread && lhs.lookahead_stages == rhs.lookahead_stages
         && lhs.block_idx_stages == rhs.block_idx_stages;
   }
 
@@ -629,7 +629,7 @@ struct scan_warpspeed_policy
     return os
         << "scan_warpspeed_policy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
         << ", .look_ahead_items_per_thread = " << p.look_ahead_items_per_thread
-        << ", .items_per_thread = " << p.items_per_thread << ", .lookback_stages = " << p.lookback_stages
+        << ", .items_per_thread = " << p.items_per_thread << ", .lookahead_stages = " << p.lookahead_stages
         << ", .block_idx_stages = " << p.block_idx_stages << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -730,7 +730,7 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_sched(const scan_warp
   return warpspeed::SquadDesc{3, 1}; // no point in being more than 1 warp
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookback(const scan_warpspeed_policy&)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookahead(const scan_warpspeed_policy&)
 {
   return warpspeed::SquadDesc{4, 1}; // must have 1 warp
 }
@@ -784,7 +784,7 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
     squad_scan_store(policy),
     squad_load(policy),
     squad_sched(policy),
-    squad_lookback(policy),
+    squad_lookahead(policy),
   };
 
   smemInOut.addPhase(syncHandler, smemAllocator, squad_load(policy));
@@ -793,7 +793,7 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_sched(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookback(policy));
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
   smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
 
   smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_reduce(policy));
@@ -822,7 +822,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const int num_block_idx_stages =
     policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, num_stages + policy.block_idx_stages);
   const int num_sum_exclusive_cta_stages =
-    policy.lookback_stages > 0 ? policy.lookback_stages : ::cuda::std::max(1, num_stages + policy.lookback_stages);
+    policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, num_stages + policy.lookahead_stages);
 
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
   void* next_block_idx_base =

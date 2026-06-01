@@ -16,6 +16,7 @@
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -145,6 +146,13 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
       squadDispatch(sr, squadsRight, f, warpIdxStartMid);
     }
   }
+}
+
+template <::cuda::std::size_t numSquads, typename F>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+squadDispatch(SpecialRegisters sr, ::cuda::std::array<SquadDesc, numSquads> squads, F f, int warpIdxStart = 0)
+{
+  squadDispatch<numSquads>(sr, squads.__elems_, f, warpIdxStart);
 }
 } // namespace detail::warpspeed
 
