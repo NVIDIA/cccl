@@ -51,16 +51,27 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/block/block_load_to_shared.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_topk.cuh>
+#include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/is_trivially_relocatable.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/limits>
+#include <cuda/std/span>
+#include <cuda/std/utility>
 
 #include <nv/target>
 
@@ -92,6 +103,39 @@ struct alignas(16) cluster_topk_state
   ::cuda::std::uint32_t early_stop;
 };
 
+// Dynamic-SMEM layout shared by dispatch and the agent. `tile_capacity` is the physical per-CTA resident capacity
+// passed to the kernel; `cluster_coverage` reserves one chunk of logical coverage for a possible unaligned head chunk.
+template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
+struct smem_tile_layout
+{
+  static constexpr int chunk_items = ChunkBytes / int{sizeof(KeyT)};
+  static constexpr int slot_alignment =
+    (::cuda::std::max) (LoadAlignBytes, detail::LoadToSharedBufferAlignBytes<KeyT>());
+  static constexpr int slot_stride_bytes =
+    ::cuda::round_up(detail::LoadToSharedBufferSizeBytes<KeyT>(chunk_items) + slot_alignment, slot_alignment);
+  static constexpr int base_padding_bytes = (alignof(KeyT) > 16) ? slot_alignment : 0;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint32_t tile_capacity(int dynamic_smem_bytes) noexcept
+  {
+    const int usable_bytes = dynamic_smem_bytes - base_padding_bytes;
+    if (usable_bytes <= 0)
+    {
+      return 0;
+    }
+    const int slots = usable_bytes / slot_stride_bytes;
+    return static_cast<::cuda::std::uint32_t>(slots * chunk_items);
+  }
+
+  template <typename SizeT>
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr SizeT
+  cluster_coverage(int cluster_blocks, ::cuda::std::uint32_t physical_tile_capacity) noexcept
+  {
+    const auto physical_coverage  = static_cast<SizeT>(cluster_blocks) * static_cast<SizeT>(physical_tile_capacity);
+    const auto head_chunk_reserve = static_cast<SizeT>(chunk_items);
+    return (physical_coverage > head_chunk_reserve) ? physical_coverage - head_chunk_reserve : SizeT{0};
+  }
+};
+
 // -----------------------------------------------------------------------------
 // Cluster top-k agent
 // -----------------------------------------------------------------------------
@@ -99,7 +143,10 @@ struct alignas(16) cluster_topk_state
 // it is not a template parameter; per-block tile layout is still controlled
 // by the template parameters below.
 template <int ThreadsPerBlock,
-          int ItemsPerThread,
+          int UnrollFactor,
+          int PipelineStages,
+          int ChunkBytes,
+          int LoadAlignBytes,
           int BitsPerPass,
           typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -124,12 +171,26 @@ struct agent_batched_topk_cluster
   using key_prefix_t = typename state_t::key_prefix_t;
 
   static constexpr int threads_per_block = ThreadsPerBlock;
-  static constexpr int items_per_thread  = ItemsPerThread;
+  static constexpr int load_align_bytes  = LoadAlignBytes;
   static constexpr int bits_per_pass     = BitsPerPass;
-  static constexpr int tile_items        = threads_per_block * items_per_thread;
   static constexpr int num_buckets       = 1 << bits_per_pass;
+  using smem_layout_t                    = smem_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
+  static constexpr int chunk_items       = smem_layout_t::chunk_items;
+  static constexpr int slot_alignment    = smem_layout_t::slot_alignment;
+  static constexpr int slot_stride_bytes = smem_layout_t::slot_stride_bytes;
+
+  static_assert(PipelineStages > 0);
+  static_assert(ChunkBytes > 0);
+  static_assert(LoadAlignBytes > 0);
+  static_assert(ChunkBytes % LoadAlignBytes == 0);
+  static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
+  static_assert(chunk_items > 0);
 
   using decomposer_t = detail::identity_decomposer_t;
+  using block_load_t = BlockLoadToShared<threads_per_block>;
+
+  static constexpr bool use_block_load_to_shared =
+    THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<key_it_t>;
 
   // ---------------------------------------------------------------------------
   // Block-scan used by the leader block to prefix-sum its merged histogram
@@ -159,6 +220,7 @@ struct agent_batched_topk_cluster
     key_prefix_t broadcast_kth;
     ::cuda::std::uint32_t broadcast_early_stop;
     typename block_scan_t::TempStorage scan_storage;
+    typename block_load_t::TempStorage load_storage[PipelineStages];
 #ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
     // Final-filter block-aggregation slots. First populated by per-thread
     // `atomicAdd_block` calls that count the block's selected / candidate
@@ -169,6 +231,137 @@ struct agent_batched_topk_cluster
     out_offset_t block_out_back_cnt;
 #endif
   };
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char> key_tile_buffer() const
+  {
+    const int slots = static_cast<int>(tile_capacity / chunk_items);
+    return {key_slots, static_cast<::cuda::std::size_t>(slots * slot_stride_bytes)};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE key_t* slot_keys_unpadded(int slot) const
+  {
+    return reinterpret_cast<key_t*>(key_slots + slot * slot_stride_bytes);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char>
+  available_key_tile_buffer(char* buffer_begin) const
+  {
+    const auto buffer = key_tile_buffer();
+    char* const end   = ::cuda::std::data(buffer) + static_cast<int>(::cuda::std::size(buffer));
+    _CCCL_ASSERT(buffer_begin >= ::cuda::std::data(buffer) && buffer_begin <= end, "Invalid key tile buffer cursor");
+    _CCCL_ASSERT(::cuda::is_aligned(buffer_begin, detail::LoadToSharedBufferAlignBytes<key_t>()),
+                 "Key tile buffer cursor must satisfy BlockLoadToShared's shared-memory alignment");
+    return {buffer_begin, static_cast<::cuda::std::size_t>(end - buffer_begin)};
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  append_contiguous_span(::cuda::std::span<key_t>& merged, ::cuda::std::span<key_t> next) const
+  {
+    const int next_count = static_cast<int>(::cuda::std::size(next));
+    _CCCL_ASSERT(static_cast<::cuda::std::size_t>(next_count) == ::cuda::std::size(next),
+                 "Resident key span length must fit in int");
+    if (next_count == 0)
+    {
+      return;
+    }
+
+    const int merged_count = static_cast<int>(::cuda::std::size(merged));
+    _CCCL_ASSERT(static_cast<::cuda::std::size_t>(merged_count) == ::cuda::std::size(merged),
+                 "Resident key span length must fit in int");
+    if (merged_count == 0)
+    {
+      merged = next;
+      return;
+    }
+
+    _CCCL_ASSERT(::cuda::std::data(merged) + merged_count == ::cuda::std::data(next),
+                 "BlockLoadToShared returned non-contiguous resident key spans");
+    merged = {::cuda::std::data(merged), static_cast<::cuda::std::size_t>(merged_count + next_count)};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int span_size(::cuda::std::span<key_t> keys) const
+  {
+    const int count = static_cast<int>(::cuda::std::size(keys));
+    _CCCL_ASSERT(static_cast<::cuda::std::size_t>(count) == ::cuda::std::size(keys),
+                 "Resident key span length must fit in int");
+    return count;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE char* span_end(::cuda::std::span<key_t> keys) const
+  {
+    return reinterpret_cast<char*>(::cuda::std::data(keys) + span_size(keys));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
+  aligned_head_items(const key_t* base, offset_t segment_size) const
+  {
+    const auto base_addr = reinterpret_cast<::cuda::std::uintptr_t>(base);
+    const auto rem       = base_addr % static_cast<::cuda::std::uintptr_t>(load_align_bytes);
+    const auto bytes =
+      (rem == 0) ? ::cuda::std::uintptr_t{0} : static_cast<::cuda::std::uintptr_t>(load_align_bytes) - rem;
+    const auto items = static_cast<offset_t>(bytes / static_cast<::cuda::std::uintptr_t>(sizeof(key_t)));
+    return (::cuda::std::min) (items, segment_size);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t num_chunks(offset_t segment_size, offset_t head_items) const
+  {
+    const offset_t remaining = segment_size - head_items;
+    return ((head_items != 0) ? offset_t{1} : offset_t{0})
+         + static_cast<offset_t>(::cuda::ceil_div(remaining, offset_t{chunk_items}));
+  }
+
+  struct chunk_desc
+  {
+    offset_t offset;
+    int count;
+  };
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE chunk_desc
+  get_chunk(offset_t chunk_idx, offset_t segment_size, offset_t head_items) const
+  {
+    offset_t offset = chunk_idx * offset_t{chunk_items};
+    if (head_items != 0)
+    {
+      if (chunk_idx == 0)
+      {
+        return {offset_t{0}, static_cast<int>(head_items)};
+      }
+      offset = head_items + (chunk_idx - 1) * offset_t{chunk_items};
+    }
+    const offset_t remaining = segment_size - offset;
+    return {offset, static_cast<int>((::cuda::std::min) (remaining, offset_t{chunk_items}))};
+  }
+
+  template <typename PtrT>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_chunk(PtrT base, const chunk_desc chunk) const
+  {
+    const auto begin = reinterpret_cast<::cuda::std::uintptr_t>(base + chunk.offset);
+    const auto end   = begin + static_cast<::cuda::std::uintptr_t>(chunk.count) * sizeof(key_t);
+    return (begin % static_cast<::cuda::std::uintptr_t>(load_align_bytes) == 0)
+        && (end % static_cast<::cuda::std::uintptr_t>(load_align_bytes) == 0);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t
+  num_rank_chunks(offset_t chunks, unsigned int cluster_rank, unsigned int cluster_blocks) const
+  {
+    return (cluster_rank < chunks)
+           ? static_cast<offset_t>((chunks - 1 - cluster_rank) / cluster_blocks + 1)
+           : offset_t{0};
+  }
+
+  template <typename F>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void for_each_chunk_key(::cuda::std::span<key_t> chunk_keys, F&& f) const
+  {
+    const int chunk_count = span_size(chunk_keys);
+    const int iterations  = ::cuda::ceil_div(chunk_count, threads_per_block);
+    detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+      const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
+      if (local < chunk_count)
+      {
+        f(::cuda::std::data(chunk_keys)[local]);
+      }
+    });
+  }
 
   struct TempStorage : Uninitialized<_TempStorage>
   {};
@@ -183,6 +376,8 @@ struct agent_batched_topk_cluster
   KParameterT k_param;
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
+  char* key_slots;
+  offset_t tile_capacity;
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_batched_topk_cluster(
     TempStorage& temp_storage_,
@@ -191,7 +386,9 @@ struct agent_batched_topk_cluster
     SegmentSizeParameterT segment_sizes_,
     KParameterT k_param_,
     SelectDirectionParameterT select_directions_,
-    NumSegmentsParameterT num_segments_)
+    NumSegmentsParameterT num_segments_,
+    char* key_slots_,
+    offset_t tile_capacity_)
       : temp_storage(temp_storage_.Alias())
       , d_key_segments_it(d_key_segments_it_)
       , d_key_segments_out_it(d_key_segments_out_it_)
@@ -199,6 +396,8 @@ struct agent_batched_topk_cluster
       , k_param(k_param_)
       , select_directions(select_directions_)
       , num_segments(num_segments_)
+      , key_slots(key_slots_)
+      , tile_capacity(tile_capacity_)
   {}
 
   // ---------------------------------------------------------------------------
@@ -329,27 +528,9 @@ private:
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(bits_per_pass);
 
-    // Sentinel key used to pad partial tiles. Worst-possible value for the
-    // requested direction so the sentinel can't land in the selected set.
-    const key_t pad_key =
-      (SelectDirection == detail::topk::select::max)
-        ? ::cuda::std::numeric_limits<key_t>::lowest()
-        : ::cuda::std::numeric_limits<key_t>::max();
-
-    auto block_keys_in                 = d_key_segments_it[segment_id];
-    const auto block_offset_in_cluster = static_cast<segment_size_val_t>(static_cast<int>(cluster_rank) * tile_items);
-
-    // Striped load into per-thread registers. Each thread holds
-    // `items_per_thread` keys spanning the block's tile within the cluster
-    // tile. Out-of-segment slots receive sentinel padding.
-    key_t thread_keys[items_per_thread];
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 0; j < items_per_thread; ++j)
-    {
-      const segment_size_val_t local_idx  = static_cast<segment_size_val_t>(j * threads_per_block + threadIdx.x);
-      const segment_size_val_t global_idx = block_offset_in_cluster + local_idx;
-      thread_keys[j]                      = (global_idx < segment_size) ? block_keys_in[global_idx] : pad_key;
-    }
+    auto block_keys_in              = d_key_segments_it[segment_id];
+    const auto segment_size_u32     = static_cast<offset_t>(segment_size);
+    const unsigned int cluster_size = cluster.num_blocks();
 
     // DSMEM pointers into the leader block's shared memory.
     offset_t* leader_hist = cluster.map_shared_rank(temp_storage.hist, 0);
@@ -364,6 +545,128 @@ private:
     // at which we broke out so the final filter can construct its identify
     // operator at the matching radix level.
     int last_pass = num_passes;
+
+    offset_t head_items = 0;
+    if constexpr (use_block_load_to_shared)
+    {
+      auto* block_keys_base = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(block_keys_in);
+      head_items            = aligned_head_items(block_keys_base, segment_size_u32);
+    }
+    // The generic fallback does not use BlockLoadToShared's alignment hint or peeling path, so it can keep a simple
+    // uniform chunking (`head_items == 0`). The two chunkings may assign keys to CTAs differently, but top-k only
+    // depends on the multiset of keys covered by the cluster.
+    const offset_t chunks    = num_chunks(segment_size_u32, head_items);
+    const offset_t my_chunks = num_rank_chunks(chunks, cluster_rank, cluster_size);
+    // The launch coverage check reserves one extra chunk for the possible unaligned head, so every local chunk remains
+    // resident for later radix passes while only the BlockLoadToShared instances are reused round-robin.
+    _CCCL_ASSERT(my_chunks * offset_t{chunk_items} <= tile_capacity, "Dynamic shared memory tile is too small");
+
+    ::cuda::std::span<key_t> resident_keys;
+
+    reset_hist();
+    __syncthreads();
+
+    {
+      extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
+      auto add_first_pass = [&](const key_t& key) {
+        const int bucket = extract_op(key);
+        if (cluster_rank == 0)
+        {
+          atomicAdd(&temp_storage.hist[bucket], offset_t{1});
+        }
+        else
+        {
+          atomicAdd_block(&temp_storage.hist[bucket], offset_t{1});
+        }
+      };
+
+      if constexpr (use_block_load_to_shared)
+      {
+        auto* block_keys_base = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(block_keys_in);
+        // BlockLoadToShared is non-copyable and non-movable; keep the active pipeline local and emplace-only.
+        ::cuda::std::inplace_vector<block_load_t, PipelineStages> loaders;
+        ::cuda::std::inplace_vector<typename block_load_t::CommitToken, PipelineStages> tokens;
+        ::cuda::std::inplace_vector<::cuda::std::span<key_t>, PipelineStages> pending_spans;
+        const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_chunks));
+        char* next_dst     = key_slots;
+
+        for (int stage = 0; stage < prologue; ++stage)
+        {
+          const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + static_cast<offset_t>(stage * cluster_size);
+          const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+          const bool aligned_chunk = is_aligned_chunk(block_keys_base, chunk);
+          auto& loader             = loaders.emplace_back(temp_storage.load_storage[stage]);
+          const ::cuda::std::span<const key_t> src{
+            block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(chunk.count)};
+          if (aligned_chunk)
+          {
+            pending_spans.emplace_back(
+              loader.template CopyAsync<key_t, load_align_bytes>(available_key_tile_buffer(next_dst), src));
+          }
+          else
+          {
+            pending_spans.emplace_back(loader.template CopyAsync<key_t>(available_key_tile_buffer(next_dst), src));
+          }
+          next_dst = span_end(pending_spans[stage]);
+          tokens.emplace_back(loader.Commit());
+        }
+
+        for (offset_t p = 0; p < my_chunks; ++p)
+        {
+          const int stage          = static_cast<int>(p % static_cast<offset_t>(prologue));
+          const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+          const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+          loaders[stage].Wait(::cuda::std::move(tokens[stage]));
+          append_contiguous_span(resident_keys, pending_spans[stage]);
+          for_each_chunk_key(pending_spans[stage], add_first_pass);
+
+          if (p + static_cast<offset_t>(prologue) < my_chunks)
+          {
+            const offset_t next_chunk_idx = static_cast<offset_t>(cluster_rank)
+                                          + (p + static_cast<offset_t>(prologue)) * static_cast<offset_t>(cluster_size);
+            const auto next_chunk         = get_chunk(next_chunk_idx, segment_size_u32, head_items);
+            const bool next_aligned_chunk = is_aligned_chunk(block_keys_base, next_chunk);
+            const ::cuda::std::span<const key_t> src{
+              block_keys_base + next_chunk.offset, static_cast<::cuda::std::size_t>(next_chunk.count)};
+            if (next_aligned_chunk)
+            {
+              pending_spans[stage] =
+                loaders[stage].template CopyAsync<key_t, load_align_bytes>(available_key_tile_buffer(next_dst), src);
+            }
+            else
+            {
+              pending_spans[stage] = loaders[stage].template CopyAsync<key_t>(available_key_tile_buffer(next_dst), src);
+            }
+            next_dst      = span_end(pending_spans[stage]);
+            tokens[stage] = loaders[stage].Commit();
+          }
+        }
+      }
+      else
+      {
+        for (offset_t p = 0; p < my_chunks; ++p)
+        {
+          const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+          const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+          key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
+          const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
+          detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+            const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
+            if (local < chunk.count)
+            {
+              const key_t key =
+                block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))];
+              chunk_keys[local] = key;
+              add_first_pass(key);
+            }
+          });
+        }
+      }
+      const int resident_count = span_size(resident_keys);
+      _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= tile_capacity,
+                   "Dynamic shared memory tile is too small");
+      __syncthreads();
+    }
 
     for (int pass = 0; pass < num_passes; ++pass)
     {
@@ -398,49 +701,51 @@ private:
 #  endif
       }
 
-      // Every block (including the leader) starts each pass with a fresh,
-      // empty `hist`. For pass 0 the leader's initial reset in process_impl()
-      // covered the leader's slot, but every non-leader block must also
-      // reset its own. We just always reset here for symmetry.
-      reset_hist();
-      __syncthreads();
-
-      identify_candidates_op_t identify_op(&kth_key_bits_local, pass, total_bits, decomposer_t{});
-      extract_bin_op_t extract_op(pass, total_bits, decomposer_t{});
-
-      // Step 1: block-private histogram. The leader uses device-scope
-      // `atomicAdd` so it is mutually atomic per the PTX ISA with the
-      // remote device-scope `atomicAdd`s that non-leaders issue against
-      // the same SMEM through DSMEM in Step 2. Non-leaders only write to
-      // their own `hist[]` and keep the cheaper `atomicAdd_block`.
-      // TODO(https://github.com/NVIDIA/cccl/issues/73): collapse both
-      // branches onto cluster-scope atomics once
-      // `cuda::thread_scope_cluster` is exposed in libcudacxx.
-      if (cluster_rank == 0)
+      if (!is_first_pass)
       {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int j = 0; j < items_per_thread; ++j)
-        {
-          const key_t key = thread_keys[j];
-          const bool keep = is_first_pass || (identify_op(key) == detail::topk::candidate_class::candidate);
-          if (keep)
+        // Every block (including the leader) starts each non-first pass with
+        // a fresh, empty `hist`. Pass 0 was fused with the load pipeline above.
+        reset_hist();
+        __syncthreads();
+
+        identify_candidates_op_t identify_op(&kth_key_bits_local, pass, total_bits, decomposer_t{});
+        extract_bin_op_t extract_op(pass, total_bits, decomposer_t{});
+
+        // Step 1: block-private histogram. The leader uses device-scope
+        // `atomicAdd` so it is mutually atomic per the PTX ISA with the
+        // remote device-scope `atomicAdd`s that non-leaders issue against
+        // the same SMEM through DSMEM in Step 2. Non-leaders only write to
+        // their own `hist[]` and keep the cheaper `atomicAdd_block`.
+        // TODO(https://github.com/NVIDIA/cccl/issues/73): collapse both
+        // branches onto cluster-scope atomics once
+        // `cuda::thread_scope_cluster` is exposed in libcudacxx.
+        auto add_hist = [&](const key_t& key) {
+          if (identify_op(key) == detail::topk::candidate_class::candidate)
           {
             const int bucket = extract_op(key);
-            atomicAdd(&temp_storage.hist[bucket], offset_t{1});
+            if (cluster_rank == 0)
+            {
+              atomicAdd(&temp_storage.hist[bucket], offset_t{1});
+            }
+            else
+            {
+              atomicAdd_block(&temp_storage.hist[bucket], offset_t{1});
+            }
           }
-        }
-      }
-      else
-      {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int j = 0; j < items_per_thread; ++j)
+        };
+
+        if constexpr (use_block_load_to_shared)
         {
-          const key_t key = thread_keys[j];
-          const bool keep = is_first_pass || (identify_op(key) == detail::topk::candidate_class::candidate);
-          if (keep)
+          for_each_chunk_key(resident_keys, add_hist);
+        }
+        else
+        {
+          for (offset_t p = 0; p < my_chunks; ++p)
           {
-            const int bucket = extract_op(key);
-            atomicAdd_block(&temp_storage.hist[bucket], offset_t{1});
+            const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+            const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+            key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
+            for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
           }
         }
       }
@@ -565,36 +870,35 @@ private:
     // block's local counters via cheap `atomicAdd_block`, then thread 0 of
     // every block claims the block's contiguous range in the leader's
     // counters with a single DSMEM `atomicAdd` per counter. This collapses
-    // up to `threads_per_block * items_per_thread` DSMEM atomics per block
+    // up to the block's resident key count DSMEM atomics per block
     // down to two, at the cost of one extra block-wide barrier (the local
     // counters are zeroed inside the pre-existing broadcast_kth publish)
     // and one additional pass over the per-thread keys to materialize the
     // writes.
 
-    // Per-thread, per-item local slot index within the block. Only the
-    // entries corresponding to `selected` / `candidate` keys are written and
-    // later read; the rest stay undefined because the write loop below
-    // re-runs `identify_op` and reproduces the same control flow.
-    out_offset_t local_pos[items_per_thread];
-
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 0; j < items_per_thread; ++j)
-    {
-      const segment_size_val_t local_idx  = static_cast<segment_size_val_t>(j * threads_per_block + threadIdx.x);
-      const segment_size_val_t global_idx = block_offset_in_cluster + local_idx;
-      if (global_idx >= segment_size)
-      {
-        continue;
-      }
-      const key_t key = thread_keys[j];
-      const auto res  = identify_op(key);
+    auto count_selected = [&](const key_t& key) {
+      const auto res = identify_op(key);
       if (res == detail::topk::candidate_class::selected)
       {
-        local_pos[j] = atomicAdd_block(&temp_storage.block_out_cnt, out_offset_t{1});
+        atomicAdd_block(&temp_storage.block_out_cnt, out_offset_t{1});
       }
       else if (res == detail::topk::candidate_class::candidate)
       {
-        local_pos[j] = atomicAdd_block(&temp_storage.block_out_back_cnt, out_offset_t{1});
+        atomicAdd_block(&temp_storage.block_out_back_cnt, out_offset_t{1});
+      }
+    };
+    if constexpr (use_block_load_to_shared)
+    {
+      for_each_chunk_key(resident_keys, count_selected);
+    }
+    else
+    {
+      for (offset_t p = 0; p < my_chunks; ++p)
+      {
+        const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+        const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+        key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
+        for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, count_selected);
       }
     }
     __syncthreads();
@@ -617,44 +921,47 @@ private:
     const out_offset_t fwd_base  = temp_storage.block_out_cnt;
     const out_offset_t back_base = temp_storage.block_out_back_cnt;
 
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 0; j < items_per_thread; ++j)
+    if (threadIdx.x == 0)
     {
-      const segment_size_val_t local_idx  = static_cast<segment_size_val_t>(j * threads_per_block + threadIdx.x);
-      const segment_size_val_t global_idx = block_offset_in_cluster + local_idx;
-      if (global_idx >= segment_size)
-      {
-        continue;
-      }
-      const key_t key = thread_keys[j];
-      const auto res  = identify_op(key);
+      temp_storage.block_out_cnt      = 0;
+      temp_storage.block_out_back_cnt = 0;
+    }
+    __syncthreads();
+
+    auto write_selected = [&](const key_t& key) {
+      const auto res = identify_op(key);
       if (res == detail::topk::candidate_class::selected)
       {
-        const out_offset_t pos = fwd_base + local_pos[j];
+        const out_offset_t pos = fwd_base + atomicAdd_block(&temp_storage.block_out_cnt, out_offset_t{1});
         block_keys_out[pos]    = key;
       }
       else if (res == detail::topk::candidate_class::candidate)
       {
-        const out_offset_t back_pos = back_base + local_pos[j];
+        const out_offset_t back_pos = back_base + atomicAdd_block(&temp_storage.block_out_back_cnt, out_offset_t{1});
         if (back_pos < num_kth)
         {
           const out_offset_t pos = k - 1 - back_pos;
           block_keys_out[pos]    = key;
         }
       }
+    };
+    if constexpr (use_block_load_to_shared)
+    {
+      for_each_chunk_key(resident_keys, write_selected);
+    }
+    else
+    {
+      for (offset_t p = 0; p < my_chunks; ++p)
+      {
+        const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+        const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+        key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
+        for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
+      }
     }
 #  else
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 0; j < items_per_thread; ++j)
-    {
-      const segment_size_val_t local_idx  = static_cast<segment_size_val_t>(j * threads_per_block + threadIdx.x);
-      const segment_size_val_t global_idx = block_offset_in_cluster + local_idx;
-      if (global_idx >= segment_size)
-      {
-        continue;
-      }
-      const key_t key = thread_keys[j];
-      const auto res  = identify_op(key);
+    auto write_selected = [&](const key_t& key) {
+      const auto res = identify_op(key);
       if (res == detail::topk::candidate_class::selected)
       {
         const out_offset_t pos = atomicAdd(&leader_state->out_cnt, out_offset_t{1});
@@ -668,6 +975,20 @@ private:
           const out_offset_t pos = k - 1 - back_pos;
           block_keys_out[pos]    = key;
         }
+      }
+    };
+    if constexpr (use_block_load_to_shared)
+    {
+      for_each_chunk_key(resident_keys, write_selected);
+    }
+    else
+    {
+      for (offset_t p = 0; p < my_chunks; ++p)
+      {
+        const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
+        const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
+        key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
+        for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
       }
     }
 #  endif
@@ -704,6 +1025,20 @@ private:
       return;
     }
 
+    bool segment_fits_offset = true;
+    if constexpr (sizeof(segment_size_val_t) > sizeof(offset_t))
+    {
+      segment_fits_offset =
+        segment_size <= static_cast<segment_size_val_t>(::cuda::std::numeric_limits<offset_t>::max());
+    }
+    const auto max_cluster_coverage =
+      smem_layout_t::template cluster_coverage<segment_size_val_t>(static_cast<int>(cluster_blocks), tile_capacity);
+    if (!segment_fits_offset || segment_size > max_cluster_coverage)
+    {
+      _CCCL_ASSERT(false, "Segment exceeds the selected cluster top-k tile capacity");
+      return;
+    }
+
     // Every block's thread 0 initializes its local `state`. Only the
     // leader's copy is semantically read (non-leaders reach the cluster
     // state through `leader_state`), but mirroring the writes everywhere
@@ -721,13 +1056,12 @@ private:
     }
     cluster.sync();
 
-    const bool ok = detail::params::dispatch_discrete(
+    [[maybe_unused]] const bool ok = detail::params::dispatch_discrete(
       select_directions, segment_id, [this, &cluster, segment_id, cluster_rank, segment_size, k](auto direction_tag) {
         constexpr detail::topk::select Direction = decltype(direction_tag)::value;
         this->template run<Direction>(cluster, segment_id, cluster_rank, segment_size, k);
       });
     _CCCL_ASSERT(ok, "Unsupported select direction for cluster top-k");
-    (void) ok;
   }
 #endif // _CG_HAS_CLUSTER_GROUP
 };

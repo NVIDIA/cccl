@@ -18,23 +18,32 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk_cluster
 {
-// Per-block tile shape; the dispatch picks `cluster_blocks` at runtime.
+// Per-block execution shape; the dispatch picks `cluster_blocks` and the
+// dynamic shared-memory tile capacity at runtime.
 struct cluster_topk_policy
 {
   int threads_per_block;
-  int items_per_thread;
+  int unroll_factor;
+  int pipeline_stages;
+  int chunk_bytes;
+  int load_align_bytes;
   int bits_per_pass;
 };
 
 inline constexpr cluster_topk_policy default_policy{
   /*threads_per_block=*/256,
-  /*items_per_thread=*/16,
+  /*unroll_factor=*/8,
+  /*pipeline_stages=*/3,
+  /*chunk_bytes=*/8 * 1024,
+  /*load_align_bytes=*/128,
   /*bits_per_pass=*/8,
 };
+static_assert(default_policy.chunk_bytes % default_policy.load_align_bytes == 0);
 
 // Default selector: one policy for every cluster-capable architecture
-// (SM 9.0+). New tunings can be wired in by passing a custom selector to
-// `dispatch` without changing the kernel signatures.
+// (SM 9.0+). `unroll_factor` only controls ILP in runtime-sized chunk loops;
+// it no longer defines the tile size. New tunings can be wired in by passing a
+// custom selector to `dispatch` without changing the kernel signatures.
 struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cluster_topk_policy

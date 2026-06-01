@@ -7,6 +7,7 @@
 #include <cub/device/dispatch/dispatch_batched_topk_cluster.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/scan.h>
@@ -197,6 +198,57 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
+#if TEST_LAUNCH != 1
+TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned segments",
+          "[keys][segmented][topk][device][cluster]")
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr segment_size_t static_max_segment_size = 128 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+  constexpr segment_index_t num_segments           = 3;
+
+  const auto direction = cub::detail::topk::select::max;
+  const int pad        = GENERATE(0, 1, 3, 7);
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 1, static_max_segment_size - 31}));
+  const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k     = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+
+  CAPTURE(pad, static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
+
+  c2h::device_vector<key_t> keys_in_buffer(pad + num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data()) + pad;
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(num_segments * segment_size, thrust::no_init);
+  thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
+
+  batched_topk_keys(
+    d_keys_in,
+    d_keys_out,
+    cub::detail::batched_topk::segment_size_uniform<1, static_max_segment_size>{segment_size},
+    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
+    cub::detail::batched_topk::select_direction_uniform{direction},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+#endif // TEST_LAUNCH != 1
+
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segments",
          "[keys][segmented][topk][device]",
          key_types,
@@ -297,6 +349,79 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
+
+#if TEST_LAUNCH != 1
+TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unaligned segments",
+          "[keys][segmented][topk][device][cluster]")
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr segment_size_t static_max_segment_size = 128 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+
+  const auto direction   = cub::detail::topk::select::max;
+  const int pad          = GENERATE(1, 3, 7);
+  const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, static_max_k / 2, static_max_k}));
+
+  c2h::host_vector<segment_size_t> h_segment_offsets{
+    0,
+    static_max_segment_size,
+    static_max_segment_size + (static_max_segment_size - 31),
+    static_max_segment_size + (static_max_segment_size - 31) + (96 * 1024 + 17),
+    static_max_segment_size + (static_max_segment_size - 31) + (96 * 1024 + 17) + 257};
+  c2h::device_vector<segment_size_t> segment_offsets = h_segment_offsets;
+  const segment_index_t num_segments                 = static_cast<segment_index_t>(h_segment_offsets.size() - 1);
+  const segment_size_t num_items                     = h_segment_offsets.back();
+
+  auto segment_offsets_it = thrust::raw_pointer_cast(segment_offsets.data());
+  auto segment_size_it    = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>{segment_offsets_it});
+
+  CAPTURE(pad, static_max_segment_size, static_max_k, k, num_segments, num_items, direction);
+
+  auto compacted_output_sizes_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}),
+    get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k)});
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
+  thrust::exclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  segment_size_t total_output_size = compacted_offsets.back();
+
+  c2h::device_vector<key_t> keys_in_buffer(pad + num_items, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(total_output_size, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data()) + pad;
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_offsets.cbegin());
+  auto d_keys_out =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_out_ptr), compacted_offsets.cbegin());
+
+  c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
+  thrust::copy(keys_in_buffer.cbegin() + pad, keys_in_buffer.cend(), expected_keys.begin());
+
+  batched_topk_keys(
+    d_keys_in,
+    d_keys_out,
+    cub::detail::batched_topk::segment_size_per_segment<decltype(segment_size_it), 1, static_max_segment_size>{
+      segment_size_it},
+    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
+    cub::detail::batched_topk::select_direction_uniform{direction},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_items});
+
+  segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
+  expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, k);
+
+  segmented_sort_keys(
+    keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+#endif // TEST_LAUNCH != 1
 
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
 C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
