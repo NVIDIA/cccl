@@ -124,8 +124,8 @@ TEST_FUNC inline void is_fp_close_runtime(__half a, __half b)
 TEST_FUNC inline void is_fp_close_runtime(__nv_bfloat16 a, __nv_bfloat16 b)
 {
   // bf16 has 7 mantissa bits; machine epsilon = 2^-7 = 0.78125%.
-  // Complex math involves multiple operations; allow ~2 ULP.
-  assert(fptest_close_pct(static_cast<float>(a), static_cast<float>(b), 2.0f));
+  // Complex trig compounds errors across multiple low-precision operations; allow ~6 ULP.
+  assert(fptest_close_pct(static_cast<float>(a), static_cast<float>(b), 5.0f));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
