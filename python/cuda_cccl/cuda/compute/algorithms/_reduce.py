@@ -143,7 +143,7 @@ def make_reduce_into(
     """
     try:
         accum_dtype = get_dtype(h_init)
-    except AttributeError:
+    except Exception:
         raise TypeError(
             "Could not determine accumulator dtype from h_init; "
             "expected numpy array or object with .dtype"
