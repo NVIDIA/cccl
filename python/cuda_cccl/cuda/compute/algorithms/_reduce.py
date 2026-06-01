@@ -18,11 +18,11 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
 from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
+from ..typing import DeviceArrayLike, GpuStruct, IteratorBase, IteratorT, Operator
 
 
 class _Reduce:
@@ -141,6 +141,29 @@ def make_reduce_into(
     Returns:
         A callable object that can be used to perform the reduction
     """
+    accum_dtype = getattr(h_init, "dtype", None)
+    if accum_dtype is None:
+        raise TypeError(
+            "Could not determine accumulator dtype from h_init; expected numpy array or object with .dtype"
+        ) from e
+
+    # Validate d_in if it is a device array (iterators may not expose dtype reliably here):
+    if not isinstance(d_in, IteratorBase):
+        in_dtype = get_dtype(d_in)
+        if in_dtype != accum_dtype:
+            raise TypeError(
+                f"reduce_into dtype mismatch: input dtype {in_dtype} != accumulator dtype {accum_dtype}. "
+                "Ensure d_in elements and h_init have identical dtype to avoid truncation or misinterpretation."
+            )
+
+    # Validate d_out dtype as well (should hold a single accumulator value):
+    out_dtype = get_dtype(d_out)
+    if out_dtype != accum_dtype:
+        raise TypeError(
+            f"reduce_into dtype mismatch: output dtype {out_dtype} != accumulator dtype {accum_dtype}. "
+            "Ensure d_out and h_init have identical dtype."
+        )
+
     op_adapter = make_op_adapter(op)
     return _Reduce(
         d_in,
