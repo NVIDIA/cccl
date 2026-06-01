@@ -67,7 +67,7 @@ template <typename Derived,
           typename ValOutputIt,
           typename BinaryPred,
           typename OffsetT>
-THRUST_RUNTIME_FUNCTION cudaError_t THRUST_RUNTIME_FUNCTION unique_by_key_impl(
+THRUST_RUNTIME_FUNCTION cudaError_t unique_by_key_impl(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   ValInputIt values_first,
