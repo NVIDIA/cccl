@@ -297,10 +297,40 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // sweep / multi single-probe) edge out cuckoo by ~8-10% on the geomean; at
   // the 1M-bin tier the intermediate turns catastrophic and cuckoo wins again.
   constexpr int kMidHighBinTier = 262144;
+  // ~4M pixels (brief-10, worker-0): at/below this the privatized high-bin paths
+  // (hybrid / sweep / cuckoo) are dominated by their PER-BLOCK FIXED COST rather
+  // than data movement. ncu on the 16384-bin smem_priv cell at 1M pixels shows
+  // DRAM ~3.6% -- the kernel spends its time zeroing a wide SMEM histogram and
+  // scan-merging it, doing almost no useful memory work. For the high-bin
+  // single-channel cells (>16384 bins) the direct-mapped single-probe cache wins
+  // this regime: it has NO per-block privatized-histogram zero+scan (threads
+  // atomicAdd straight to GMEM, the small SMEM cache only absorbs hot bins), so
+  // it pays no fixed cost. A controlled force-compare (worker-0 brief-10) over
+  // the high-bin x {constant,skewed,uniform} entropy mix at 1M pixels confirmed
+  // single_probe wins the entropy-geomean on every >16384-bin single-channel
+  // cell -- biggest at the 65536-bin EVEN tier (+25% F64 / +9% I32 over the
+  // hybrid default), and +2-5% over cuckoo at 262144/1M bins. The 16384-bin tier
+  // is NOT included (smem_priv_16k's privatization genuinely wins there at
+  // moderate/high entropy); the cascade below already claimed it.
+  constexpr long long kSmallNHighBinPixels = 1LL << 22;
 
   if (f.num_active_channels == 1)
   {
-    // ---- Single-channel high-bin ----
+    // ---- Single-channel high-bin (every cell here already has bins > 16384, so
+    // bins is one of 65536 / 262144 / 1048576). ----
+    //
+    // brief-10 (worker-0): small-N (fixed-cost-bound) cells route to
+    // single_probe. The SMEM-priv cascade above already claimed the 16384-bin
+    // tier, so this only redirects the bins>16384 tiers, exactly where the
+    // force-compare showed single_probe wins the entropy-geomean at <=4M pixels.
+    // This is a dispatch-routing decision and is independent of the brief-13
+    // second-probe gate downstream: cells routed here select the SINGLE-PROBE
+    // kernel (cache_mode=1), so `use_single_probe_cache` is true and the cuckoo
+    // 2nd-probe gate never fires on them.
+    if (f.num_pixels <= kSmallNHighBinPixels)
+    {
+      return algorithm::gmem_priv_single_probe;
+    }
     if (f.num_bins <= chunked_smem_bins_max_single_channel)
     {
       // Cap-bin tier (65536): the SMEM+GMEM single-pass hybrid keeps the whole
@@ -1282,8 +1312,20 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // vestigial here: both the even and range entry points pass IsEven=false).
       // `use_single_probe_cache` selects the active kernel so this sizes exactly
       // the kernel that will launch.
+      //
+      // brief-11 (worker-3) / brief-17 COMBINE: raise the multi-RANGE cuckoo
+      // replica factor to 4 to shorten the hot-slot atomicAdd_block dependency
+      // chain (ncu: 2-block/64-warp ceiling, 63.5% short-scoreboard SMEM-atomic
+      // stall; >=65536-bin cache hit-rate ~0 so slot capacity is freely
+      // tradeable for replicas). This factor MUST match the cuckoo kernels'
+      // `kMultiRangeCuckooReplicas` (including the brief-13 no-2nd-probe variant,
+      // which is the SAME kernel template specialized on `DisableSecondProbe`, so
+      // its `kCountReplicas` is identical).
+      constexpr int kMultiRangeCuckooReplicas = 4;
       const int kCountReplicas =
-        (NUM_ACTIVE_CHANNELS > 1 && privatized_decode_op_t::is_range_transform && !use_single_probe_cache) ? 2 : 1;
+        (NUM_ACTIVE_CHANNELS > 1 && privatized_decode_op_t::is_range_transform && !use_single_probe_cache)
+          ? kMultiRangeCuckooReplicas
+          : 1;
       const int cache_bytes_per_slot =
         static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
       const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;

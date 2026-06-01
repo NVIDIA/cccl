@@ -1865,7 +1865,19 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // (worker-3 brief-8 iter4). The single-probe kernel stays R=1 unconditionally
   // (R=2 there hurt the multi EVEN-I32 cells -2% -- iter2). `is_range_transform`
   // is a compile-time marker on the decode op, so this is no runtime branch.
-  constexpr int kCountReplicas = (NumActiveChannels > 1 && PrivatizedDecodeOpT::is_range_transform) ? 2 : 1;
+  //
+  // brief-11 (worker-3) / brief-17 COMBINE: the multi-RANGE cuckoo kernel is at
+  // the 2-block/64-warp occupancy ceiling (ncu: 99.8% achieved, Issued/sched
+  // 0.49) and 63.5% of its warp cycles are short-scoreboard stalls waiting on
+  // the hot-slot atomicAdd_block to land (Mem/L1 pipe ~82% busy, DRAM ~2%). At
+  // >=65536-bin cells the cache hit-rate is ~0, so the slots are dead weight; we
+  // TRADE slot capacity for more independent count replicas (warp w -> replica
+  // w % kMultiRangeCuckooReplicas) to shorten the per-replica atomic dependency
+  // chain. This factor MUST match dispatch_histogram.cuh's `kCountReplicas`.
+  // Applies to the brief-13 no-2nd-probe variant too (same kernel template).
+  constexpr int kMultiRangeCuckooReplicas = 4;
+  constexpr int kCountReplicas =
+    (NumActiveChannels > 1 && PrivatizedDecodeOpT::is_range_transform) ? kMultiRangeCuckooReplicas : 1;
   const int cache_mask  = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
