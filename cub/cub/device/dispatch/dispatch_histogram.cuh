@@ -390,19 +390,39 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
 
   // ---- Multi-channel high-bin (hybrid is single-channel-only) ----
   // EVEN I32 favours the single-probe direct-mapped cache broadly (~+2-5% over
-  // cuckoo across the pixel range). RANGE I32 keeps the cooperative sweep at
-  // the cap-bin tier for moderate/large input (its privatized intermediate is
-  // small enough to win the low-entropy cells). The F64 mid-tier at large
+  // cuckoo across the pixel range). RANGE I32 at the 16384/65536-bin tiers also
+  // favours single-probe (see brief-12 re-eval below). The F64 mid-tier at large
   // input keeps single-probe (its ~1.3 GB intermediate makes the sweep too
   // costly, while cuckoo loses ~9% on the geomean). Everything else -> cuckoo.
   if (f.is_even && f.sample_bytes < 8)
   {
     return algorithm::gmem_priv_single_probe;
   }
+  // RANGE I32 at the 16384/65536-bin tiers, moderate/large input (16M..256M).
+  //
+  // brief-12 (worker-0) re-eval after the RANGE SearchTransform 3-point first-
+  // guess landed (which sped up the RANGE classify ~38% and made the direct-
+  // atomic cache paths viable on RANGE): a controlled force-compare (forcing
+  // cuckoo vs sweep vs single_probe on exactly these cells in one build, env-
+  // gated, over the full {16M,64M,256M} x {const,skewed,uniform} box, two runs,
+  // CoV<0.2%) showed the previously-routed COOPERATIVE SWEEP is ~2-3x SLOWER
+  // here than either direct-atomic cache (sweep ~185-370 GiB/s vs single_probe
+  // ~582-655). The privatized sweep's per-block 3-channel intermediate is dead
+  // DRAM weight at these bin counts (cache hit-rate ~0 on the uniform tail that
+  // dominates the geomean), while the direct-atomic single-probe path pays no
+  // privatization cost. single_probe wins the entropy-geomean over cuckoo on
+  // every one of these 6 cells (101.3-103.3%, both runs) -- it edges cuckoo on
+  // the low/skewed-entropy cells (where its shorter, branch-free 1-probe
+  // critical section beats the cuckoo's 2-probe chain) and only just loses the
+  // uniform cell -- so the entropy-blind pick is single_probe. This ALSO unifies
+  // the multi-channel I32 routing: EVEN and RANGE both take single_probe at
+  // these tiers. (cuckoo would also be a ~2-3x win over sweep, but single_probe
+  // is strictly faster and matches the EVEN-I32 route, so it is the simpler and
+  // better choice -- "keep dispatch simple".)
   if (!f.is_even && f.sample_bytes < 8 && f.num_bins <= chunked_smem_bins_max_single_channel
       && f.num_pixels >= (1LL << 24) && f.num_pixels <= kSweepPixelThreshold)
   {
-    return algorithm::gmem_priv_sweep;
+    return algorithm::gmem_priv_single_probe;
   }
   // Strictly the 262144 mid-tier (above the cap, at/below kMidHighBinTier): the
   // 65536 cap-bin F64 cells favour cuckoo here, not single-probe.
