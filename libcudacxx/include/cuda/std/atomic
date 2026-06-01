@@ -558,6 +558,118 @@ atomic_fetch_xor_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
   return __o->fetch_xor(__op, __m);
 }
 
+// atomic_fetch_max
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_max(volatile atomic<_Tp>* __o, _Tp __op) noexcept
+{
+  return __o->fetch_max(__op);
+}
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_max(atomic<_Tp>* __o, _Tp __op) noexcept
+{
+  return __o->fetch_max(__op);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_max(volatile atomic<_Tp*>* __o, _Tp* __op) noexcept
+{
+  return __o->fetch_max(__op);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_max(atomic<_Tp*>* __o, _Tp* __op) noexcept
+{
+  return __o->fetch_max(__op);
+}
+
+// atomic_fetch_max_explicit
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_max_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+{
+  return __o->fetch_max(__op, __m);
+}
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_max_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+{
+  return __o->fetch_max(__op, __m);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_max_explicit(volatile atomic<_Tp*>* __o, _Tp* __op, memory_order __m) noexcept
+{
+  return __o->fetch_max(__op, __m);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_max_explicit(atomic<_Tp*>* __o, _Tp* __op, memory_order __m) noexcept
+{
+  return __o->fetch_max(__op, __m);
+}
+
+// atomic_fetch_min
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_min(volatile atomic<_Tp>* __o, _Tp __op) noexcept
+{
+  return __o->fetch_min(__op);
+}
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_min(atomic<_Tp>* __o, _Tp __op) noexcept
+{
+  return __o->fetch_min(__op);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_min(volatile atomic<_Tp*>* __o, _Tp* __op) noexcept
+{
+  return __o->fetch_min(__op);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_min(atomic<_Tp*>* __o, _Tp* __op) noexcept
+{
+  return __o->fetch_min(__op);
+}
+
+// atomic_fetch_min_explicit
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_min_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+{
+  return __o->fetch_min(__op, __m);
+}
+
+template <class _Tp>
+_CCCL_API inline enable_if_t<is_integral_v<_Tp> && !is_same_v<_Tp, bool>, _Tp>
+atomic_fetch_min_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+{
+  return __o->fetch_min(__op, __m);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_min_explicit(volatile atomic<_Tp*>* __o, _Tp* __op, memory_order __m) noexcept
+{
+  return __o->fetch_min(__op, __m);
+}
+
+template <class _Tp>
+_CCCL_API inline _Tp* atomic_fetch_min_explicit(atomic<_Tp*>* __o, _Tp* __op, memory_order __m) noexcept
+{
+  return __o->fetch_min(__op, __m);
+}
+
 // flag type and operations
 
 struct atomic_flag

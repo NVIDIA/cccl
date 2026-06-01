@@ -82,6 +82,7 @@ struct __atomic_ref_bitwise
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(const, )
 };
 
 template <typename _Tp, typename _Sco>
@@ -99,6 +100,7 @@ struct __atomic_ref_pointer
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_POINTER_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(const, )
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
