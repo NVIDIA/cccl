@@ -202,7 +202,8 @@ struct selector_features
 //
 //      Multi-channel (hybrid is single-channel-only):
 //        * EVEN I32                            -> single_probe
-//        * RANGE I32, bins<=65536, 16M<=N<=256M-> sweep
+//        * RANGE (I32 or F64), bins<=65536,
+//                              16M<=N<=256M    -> single_probe
 //        * bins == 262144, F64, N>=256M        -> single_probe
 //        * else                                -> cuckoo
 template <bool IsByteSample>
@@ -398,7 +399,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   {
     return algorithm::gmem_priv_single_probe;
   }
-  // RANGE I32 at the 16384/65536-bin tiers, moderate/large input (16M..256M).
+  // RANGE at the 16384/65536-bin tiers, moderate/large input (16M..256M):
+  // single_probe, BOTH sample widths (I32 and F64).
   //
   // brief-12 (worker-0) re-eval after the RANGE SearchTransform 3-point first-
   // guess landed (which sped up the RANGE classify ~38% and made the direct-
@@ -410,16 +412,35 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // ~582-655). The privatized sweep's per-block 3-channel intermediate is dead
   // DRAM weight at these bin counts (cache hit-rate ~0 on the uniform tail that
   // dominates the geomean), while the direct-atomic single-probe path pays no
-  // privatization cost. single_probe wins the entropy-geomean over cuckoo on
-  // every one of these 6 cells (101.3-103.3%, both runs) -- it edges cuckoo on
-  // the low/skewed-entropy cells (where its shorter, branch-free 1-probe
-  // critical section beats the cuckoo's 2-probe chain) and only just loses the
-  // uniform cell -- so the entropy-blind pick is single_probe. This ALSO unifies
-  // the multi-channel I32 routing: EVEN and RANGE both take single_probe at
-  // these tiers. (cuckoo would also be a ~2-3x win over sweep, but single_probe
-  // is strictly faster and matches the EVEN-I32 route, so it is the simpler and
-  // better choice -- "keep dispatch simple".)
-  if (!f.is_even && f.sample_bytes < 8 && f.num_bins <= chunked_smem_bins_max_single_channel
+  // privatization cost. single_probe won the entropy-geomean over cuckoo on
+  // every one of the 6 I32 cells (101.3-103.3%) -- it edges cuckoo on the
+  // low/skewed-entropy cells (where its shorter, branch-free 1-probe critical
+  // section beats the cuckoo's 2-probe chain) and only just loses the uniform
+  // cell -- so the entropy-blind pick was single_probe.
+  //
+  // brief-16 (worker-0) re-eval after channel-parallel classify landed in BOTH
+  // the cuckoo and single_probe kernels (6c1ddaef -- the C per-channel classify
+  // chains now overlap, so the per-cell critical-section cost shifted): the same
+  // env-gated force-compare (now over both sample widths) found the F64 65536
+  // cap-tier cells, previously routed to cuckoo, are a clean BROAD single_probe
+  // win at every entropy across the whole 16M..256M window -- entropy-geomean
+  // sp/cuckoo = 105.0% (16M) / 108.5% (64M) / 106.6% (256M), with single_probe
+  // ahead at e=0, e=0.337 AND e=1.0 (min per-entropy margin 101.1-102.8%). With
+  // the overlapped classify the kernel is L1/TEX-load-latency bound on the
+  // dependent SearchTransform LDG chain (parent ncu: 76% SM, 4.4% DRAM, 17.9-cyc
+  // scoreboard-MIO stall), the regime where single_probe's shorter, branch-free
+  // 1-probe leader section wins over cuckoo's 2-probe + R=4 replica machinery
+  // (whose hot-slot de-serialization buys nothing on the cache-missing tail that
+  // dominates this geomean). Dropping the `sample_bytes < 8` guard captures this
+  // and UNIFIES the multi-channel RANGE cap-tier route across I32 and F64 (one
+  // rule, "keep dispatch simple"). The F64 16384 cells caught by the same rule
+  // are a measured tie (single_probe within +-0.4% of cuckoo at every entropy),
+  // so they do not regress. The >65536-bin F64 tiers (262144/1M) are NOT covered
+  // (num_bins > chunked_max) and stay cuckoo: there single_probe LOSES the
+  // uniform (e=1.0) cell to cuckoo's R=4 replica de-serialization (sp/ck e=1.0
+  // ~98-99%), so the entropy-blind pick there remains cuckoo. The small-N (1M)
+  // F64 65536 cell is excluded by the >=16M gate (single_probe loses there too).
+  if (!f.is_even && f.num_bins <= chunked_smem_bins_max_single_channel
       && f.num_pixels >= (1LL << 24) && f.num_pixels <= kSweepPixelThreshold)
   {
     return algorithm::gmem_priv_single_probe;
