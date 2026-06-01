@@ -166,8 +166,7 @@ struct DeviceScan
 
     // gpu_to_gpu determinism is only supported with integral types with known operators
     static_assert(!is_gpu_to_gpu_required || is_safe_integral_op,
-                  "gpu_to_gpu deterministic scan requires integral types with known operators; "
-                  "floating-point scan can only guarantee run_to_run determinism");
+                  "gpu_to_gpu deterministic scan requires integral types with known operators");
 
     constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
 
