@@ -16,6 +16,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -133,6 +134,10 @@ __device__ void test_group_as(Config config)
       CHECK(result.count() == ns[group_rank_ref]);
       CHECK(result.rank() == rank_ref);
 
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
+
       CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
@@ -229,6 +234,10 @@ __device__ void test_group_as(Config config)
       static_assert(Result::static_count() == cuda::std::dynamic_extent);
       CHECK(result.count() == ns[group_rank_ref]);
       CHECK(result.rank() == rank_ref);
+
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
 
       CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
@@ -356,6 +365,10 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
         CHECK(result.count() == ns[group_rank_ref]);
         CHECK(result.rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }
@@ -458,6 +471,10 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
         CHECK(result.count() == ns[group_rank_ref]);
         CHECK(result.rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }

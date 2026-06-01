@@ -387,7 +387,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.06'
+devcontainer_version: '26.08'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 15
@@ -407,7 +407,7 @@ ctk_versions:
   12.9: { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda'] }
   13.0: { stds: [17, 20] }
   13.1: { stds: [17, 20], alias: ['nvhpc-prev', 'nvhpc']}
-  13.2: { stds: [17, 20], alias: ['13.X'] }
+  13.3: { stds: [17, 20], alias: ['13.X'] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
