@@ -886,11 +886,8 @@ public:
       // matching pop_epilogue - the head offset is in an "in flight" state
       // and mutating the stack would leave launchable_graph_handles
       // pointing at the wrong node.
-      if (!is_root && pending_epilogue_token_)
-      {
-        fprintf(stderr, "Error: push() cannot be called between pop_prologue() and pop_epilogue()\n");
-        abort();
-      }
+      _CCCL_VERIFY(is_root || !pending_epilogue_token_,
+                   "push() cannot be called between pop_prologue() and pop_epilogue()");
 
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
@@ -1092,13 +1089,9 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
-      if (pending_epilogue_token_)
-      {
-        fprintf(stderr,
-                "Error: pop() cannot be called between pop_prologue() and pop_epilogue(); "
-                "call pop_epilogue() to finish the re-launchable pop\n");
-        abort();
-      }
+      _CCCL_VERIFY(!pending_epilogue_token_,
+                   "pop() cannot be called between pop_prologue() and pop_epilogue(); "
+                   "call pop_epilogue() to finish the re-launchable pop");
 
       _pop_prologue();
 
@@ -1125,8 +1118,10 @@ public:
 
     /**
      * @brief First phase of a two-phase pop: runs _pop_prologue() and
-     * prepare_launch() so the caller can obtain the cudaGraphExec_t and
-     * launch it one or more times before calling pop_epilogue_impl().
+     * prepare_graph() so the caller can obtain the finalized graph and launch
+     * it one or more times before calling pop_epilogue_impl(). The
+     * cudaGraphExec_t is instantiated lazily on the first exec()/launch(), not
+     * here.
      *
      * Only legal on a non-nested graph_ctx_node (top-level graph whose
      * parent is the stream_ctx root).
@@ -1135,28 +1130,15 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
-      if (pending_epilogue_token_)
-      {
-        fprintf(stderr,
-                "Error: pop_prologue() called while a previous pop_prologue() is still pending pop_epilogue()\n");
-        abort();
-      }
+      _CCCL_VERIFY(!pending_epilogue_token_,
+                   "pop_prologue() called while a previous pop_prologue() is still pending pop_epilogue()");
 
       int head_offset         = get_head_offset();
       auto& current_node_base = *nodes[head_offset];
       auto* gnode             = dynamic_cast<graph_ctx_node*>(&current_node_base);
-      if (gnode == nullptr)
-      {
-        fprintf(stderr, "Error: pop_prologue() requires a graph context (not the stream_ctx root)\n");
-        abort();
-      }
-      if (gnode->is_nested())
-      {
-        fprintf(stderr,
-                "Error: pop_prologue() requires a top-level graph context; "
-                "use pop() for nested pushes\n");
-        abort();
-      }
+      _CCCL_VERIFY(gnode != nullptr, "pop_prologue() requires a graph context (not the stream_ctx root)");
+      _CCCL_VERIFY(!gnode->is_nested(),
+                   "pop_prologue() requires a top-level graph context; use pop() for nested pushes");
 
       _pop_prologue();
       // Phase 1 only: finalize the cudaGraph_t. Instantiation into an exec
@@ -1181,11 +1163,7 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
-      if (!pending_epilogue_token_)
-      {
-        fprintf(stderr, "Error: pop_epilogue() called without a matching pop_prologue()\n");
-        abort();
-      }
+      _CCCL_VERIFY(pending_epilogue_token_, "pop_epilogue() called without a matching pop_prologue()");
 
       int node_offset = pending_epilogue_node_offset_;
       _CCCL_ASSERT(node_offset != -1, "internal error: pending epilogue but no node offset");
@@ -1219,16 +1197,9 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
-      if (!pending_epilogue_token_)
-      {
-        fprintf(stderr, "Error: launchable_graph_handle::launch() called after pop_epilogue()\n");
-        abort();
-      }
-      if (node_offset != pending_epilogue_node_offset_)
-      {
-        fprintf(stderr, "Error: launchable_graph_handle::launch() called on a stale handle\n");
-        abort();
-      }
+      _CCCL_VERIFY(pending_epilogue_token_, "launchable_graph_handle::launch() called after pop_epilogue()");
+      _CCCL_VERIFY(node_offset == pending_epilogue_node_offset_,
+                   "launchable_graph_handle::launch() called on a stale handle");
 
       auto* gnode = dynamic_cast<graph_ctx_node*>(nodes[node_offset].get());
       _CCCL_ASSERT(gnode != nullptr, "internal error: launch target is not a graph ctx node");
@@ -1250,16 +1221,9 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
-      if (!pending_epilogue_token_)
-      {
-        fprintf(stderr, "Error: launchable_graph_handle::exec() called after pop_epilogue()\n");
-        abort();
-      }
-      if (node_offset != pending_epilogue_node_offset_)
-      {
-        fprintf(stderr, "Error: launchable_graph_handle::exec() called on a stale handle\n");
-        abort();
-      }
+      _CCCL_VERIFY(pending_epilogue_token_, "launchable_graph_handle::exec() called after pop_epilogue()");
+      _CCCL_VERIFY(node_offset == pending_epilogue_node_offset_,
+                   "launchable_graph_handle::exec() called on a stale handle");
 
       auto* gnode = dynamic_cast<graph_ctx_node*>(nodes[node_offset].get());
       _CCCL_ASSERT(gnode != nullptr, "internal error: exec target is not a graph ctx node");
@@ -1282,16 +1246,9 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
-      if (!pending_epilogue_token_)
-      {
-        fprintf(stderr, "Error: launchable_graph_handle::graph() called after pop_epilogue()\n");
-        abort();
-      }
-      if (node_offset != pending_epilogue_node_offset_)
-      {
-        fprintf(stderr, "Error: launchable_graph_handle::graph() called on a stale handle\n");
-        abort();
-      }
+      _CCCL_VERIFY(pending_epilogue_token_, "launchable_graph_handle::graph() called after pop_epilogue()");
+      _CCCL_VERIFY(node_offset == pending_epilogue_node_offset_,
+                   "launchable_graph_handle::graph() called on a stale handle");
 
       auto* gnode = dynamic_cast<graph_ctx_node*>(nodes[node_offset].get());
       _CCCL_ASSERT(gnode != nullptr, "internal error: graph target is not a graph ctx node");
@@ -1566,11 +1523,14 @@ public:
 
   //! \brief First phase of a re-launchable pop.
   //!
-  //! Runs the same prologue as pop() and instantiates (or reuses from cache)
-  //! the underlying cudaGraphExec_t, but does NOT launch the graph and does
-  //! NOT release resources. Returns a launchable_graph_handle the caller can
-  //! use to launch the graph one or more times. pop_epilogue() must be called
-  //! exactly once afterwards to release resources and destroy the node.
+  //! Runs the same prologue as pop() and finalizes the nested cudaGraph_t, but
+  //! does NOT instantiate the cudaGraphExec_t, does NOT launch the graph, and
+  //! does NOT release resources. Instantiation (cache lookup +
+  //! cudaGraphInstantiate) is deferred to the first launchable_graph_handle
+  //! exec()/launch() call, so callers that only consume handle.graph() never
+  //! pay the instantiation cost. Returns a launchable_graph_handle the caller
+  //! can use to launch the graph one or more times. pop_epilogue() must be
+  //! called exactly once afterwards to release resources and destroy the node.
   //!
   //! Only legal when the head context is a top-level graph (parent is the
   //! stream_ctx root). Aborts otherwise.
@@ -1589,6 +1549,29 @@ public:
     pimpl->pop_epilogue_impl();
   }
 
+private:
+  // launchable_graph_handle drives the prepared graph through these thin
+  // forwarders rather than reaching into `pimpl` directly. This mirrors the
+  // pop_prologue()/pop_epilogue() surface and keeps the impl access in one
+  // place. The handle is befriended so it can call them.
+  friend class launchable_graph_handle;
+
+  void launch_prepared_graph(int node_offset, cudaStream_t stream) const
+  {
+    pimpl->launch_prepared_graph(node_offset, stream);
+  }
+
+  ::std::shared_ptr<cudaGraphExec_t> prepare_handle_for_exec(int node_offset) const
+  {
+    return pimpl->prepare_handle_for_exec(node_offset);
+  }
+
+  void prepare_handle_for_graph(int node_offset) const
+  {
+    pimpl->prepare_handle_for_graph(node_offset);
+  }
+
+public:
   // RAII guard classes are defined as standalone types after the stackable_ctx
   // class (in stackable_ctx.cuh) so that the class body stays focused on core
   // logic.  The using-declarations below preserve the stackable_ctx::guard

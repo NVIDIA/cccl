@@ -985,9 +985,10 @@ private:
 
 //! \brief Handle to a cudaGraphExec_t produced by stackable_ctx::pop_prologue().
 //!
-//! Returned by stackable_ctx::pop_prologue(), this handle exposes the
-//! executable graph instantiated from the nested context and lets the user
-//! launch it repeatedly before committing the pop via pop_epilogue().
+//! Returned by stackable_ctx::pop_prologue(), this handle exposes the graph
+//! built from the nested context and lets the user launch it repeatedly before
+//! committing the pop via pop_epilogue(). The underlying cudaGraphExec_t is
+//! instantiated lazily on the first exec()/launch() call.
 //!
 //! All public methods assert that the handle is still valid: copying is
 //! allowed but a copy does not prolong validity. Every outstanding handle
@@ -1021,8 +1022,8 @@ public:
   //! graph should use `graph()` and avoid `exec()` entirely.
   cudaGraphExec_t exec() const
   {
-    validate_("exec");
-    auto shared_exec = ctx_.pimpl->prepare_handle_for_exec(node_offset_);
+    _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::exec() called after pop_epilogue()");
+    auto shared_exec = ctx_.prepare_handle_for_exec(node_offset_);
     _CCCL_ASSERT(shared_exec, "invalid executable graph");
     return *shared_exec;
   }
@@ -1034,7 +1035,7 @@ public:
   //! lazily sync), or use `launch()` which does both in one step.
   cudaStream_t stream() const
   {
-    validate_("stream");
+    _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::stream() called after pop_epilogue()");
     return support_stream_;
   }
 
@@ -1044,8 +1045,8 @@ public:
   //! (dep A). Subsequent calls skip the sync and issue the launch directly.
   void launch()
   {
-    validate_("launch");
-    ctx_.pimpl->launch_prepared_graph(node_offset_, support_stream_);
+    _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::launch() called after pop_epilogue()");
+    ctx_.launch_prepared_graph(node_offset_, support_stream_);
   }
 
   //! \brief Underlying (non-executable) CUDA graph topology.
@@ -1070,10 +1071,17 @@ public:
   //! source for ordering an outer launch stream: record an event on
   //! `stream()` and wait on it from your launch stream before launching
   //! the outer graph that embeds this child.
+  //!
+  //! Ordering caveat: `pop_epilogue()` only synchronizes the support stream
+  //! (dep A); it does NOT wait on whatever stream you launch the embedding
+  //! outer graph on. You are therefore responsible for ensuring the embedded
+  //! work has completed (e.g. via `cudaStreamSynchronize` on your launch
+  //! stream) before calling `pop_epilogue()`, otherwise the unfreeze of the
+  //! pushed data will race the child graph.
   cudaGraph_t graph() const
   {
-    validate_("graph");
-    ctx_.pimpl->prepare_handle_for_graph(node_offset_);
+    _CCCL_VERIFY(!token_.expired(), "launchable_graph_handle::graph() called after pop_epilogue()");
+    ctx_.prepare_handle_for_graph(node_offset_);
     return graph_;
   }
 
@@ -1085,15 +1093,6 @@ public:
 
 private:
   friend class stackable_ctx;
-
-  void validate_(const char* op) const
-  {
-    if (token_.expired())
-    {
-      fprintf(stderr, "Error: launchable_graph_handle::%s() called after pop_epilogue()\n", op);
-      abort();
-    }
-  }
 
   // Kept alive by the stackable_ctx::impl while the pop is pending. We hold
   // a weak_ptr so that pop_epilogue() can invalidate every outstanding
@@ -1354,7 +1353,7 @@ public:
   //! \brief Launch the graph once on its support stream.
   void launch()
   {
-    check_("launch");
+    _CCCL_VERIFY(state_, "launchable_graph::launch() called on an empty/moved-from handle");
     state_->handle.launch();
   }
 
@@ -1362,14 +1361,14 @@ public:
   //! sync on the first call (same contract as `launchable_graph_handle::exec()`).
   cudaGraphExec_t exec() const
   {
-    check_("exec");
+    _CCCL_VERIFY(state_, "launchable_graph::exec() called on an empty/moved-from handle");
     return state_->handle.exec();
   }
 
   //! \brief Support stream the graph was prepared against. Purely observational.
   cudaStream_t stream() const
   {
-    check_("stream");
+    _CCCL_VERIFY(state_, "launchable_graph::stream() called on an empty/moved-from handle");
     return state_->handle.stream();
   }
 
@@ -1377,7 +1376,7 @@ public:
   //! Triggers lazy dep-A sync but does NOT call `cudaGraphInstantiate`.
   cudaGraph_t graph() const
   {
-    check_("graph");
+    _CCCL_VERIFY(state_, "launchable_graph::graph() called on an empty/moved-from handle");
     return state_->handle.graph();
   }
 
@@ -1439,15 +1438,6 @@ private:
     state(const state&)            = delete;
     state& operator=(const state&) = delete;
   };
-
-  void check_(const char* op) const
-  {
-    if (!state_)
-    {
-      fprintf(stderr, "Error: launchable_graph::%s() called on an empty handle\n", op);
-      abort();
-    }
-  }
 
   ::std::shared_ptr<state> state_;
 };
@@ -1902,8 +1892,9 @@ inline void test_pop_prologue_repeated_launch()
 
   auto handle = ctx.pop_prologue();
 
-  // prepare_launch() instantiates the graph but does NOT launch it, so the
-  // graph actually runs exactly N times (once per handle.launch()).
+  // pop_prologue() finalizes the graph but does NOT instantiate or launch it;
+  // instantiation happens lazily on the first handle.launch(), so the graph
+  // actually runs exactly N times (once per handle.launch()).
   for (int k = 0; k < N; ++k)
   {
     handle.launch();
@@ -2059,6 +2050,86 @@ inline void test_pop_prologue_handle_invalidation()
 UNITTEST("pop_prologue invalidates handle after pop_epilogue")
 {
   test_pop_prologue_handle_invalidation();
+};
+
+inline void test_pop_prologue_graph_child_embed()
+{
+  // Exercise launchable_graph_handle::graph(): embed the popped graph as a
+  // child node in an outer, user-built graph instead of launching it through
+  // the handle. graph() does NOT instantiate an exec graph; it only performs
+  // the lazy dep-A sync so that handle.stream() becomes a valid event source
+  // for ordering the outer launch.
+  //
+  // Ordering caveat exercised here: pop_epilogue() only synchronizes the
+  // support stream (dep A), NOT the caller's outer launch stream. The caller
+  // is therefore responsible for ensuring the embedded work has completed
+  // before pop_epilogue() runs, otherwise the unfreeze would race the child
+  // graph. We make that explicit with the cudaStreamSynchronize() below.
+  stackable_ctx ctx;
+
+  int array[1024];
+  for (size_t i = 0; i < 1024; ++i)
+  {
+    array[i] = 0;
+  }
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  ctx.push();
+  lA.push(access_mode::rw, data_place::current_device());
+  ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 1;
+  };
+
+  auto handle = ctx.pop_prologue();
+
+  // graph() returns the finalized cudaGraph_t without instantiating an exec
+  // graph, and performs the lazy dep-A sync on handle.stream().
+  cudaGraph_t body = handle.graph();
+
+  // Build an outer graph that embeds `body` as a child node.
+  cudaGraph_t outer = nullptr;
+  cuda_safe_call(cudaGraphCreate(&outer, 0));
+  cudaGraphNode_t child{};
+  cuda_safe_call(cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, body));
+
+  cudaGraphExec_t outer_exec = nullptr;
+  cuda_safe_call(cudaGraphInstantiateWithFlags(&outer_exec, outer, 0));
+
+  // Order the outer launch behind the nested context's freeze/get events:
+  // record an event on handle.stream() (where graph() injected dep A) and make
+  // our launch stream wait on it before launching the embedded child.
+  cudaStream_t launch_stream = nullptr;
+  cuda_safe_call(cudaStreamCreate(&launch_stream));
+  cudaEvent_t dep_a = nullptr;
+  cuda_safe_call(cudaEventCreate(&dep_a));
+  cuda_safe_call(cudaEventRecord(dep_a, handle.stream()));
+  cuda_safe_call(cudaStreamWaitEvent(launch_stream, dep_a, 0));
+
+  cuda_safe_call(cudaGraphLaunch(outer_exec, launch_stream));
+
+  // The embedded child must finish before pop_epilogue() unfreezes the data.
+  cuda_safe_call(cudaStreamSynchronize(launch_stream));
+
+  ctx.pop_epilogue();
+
+  cuda_safe_call(cudaGraphExecDestroy(outer_exec));
+  cuda_safe_call(cudaGraphDestroy(outer));
+  cuda_safe_call(cudaEventDestroy(dep_a));
+  cuda_safe_call(cudaStreamDestroy(launch_stream));
+
+  ctx.host_launch(lA.read())->*[](auto a) {
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      _CCCL_ASSERT(a(i) == 1, "pop_prologue: graph() child-embed did not run the body exactly once");
+    }
+  };
+
+  ctx.finalize();
+}
+
+UNITTEST("pop_prologue graph() embedded as a child graph node")
+{
+  test_pop_prologue_graph_child_embed();
 };
 
 inline void test_launchable_graph_scope_raii()
