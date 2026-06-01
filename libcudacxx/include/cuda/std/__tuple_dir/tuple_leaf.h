@@ -415,25 +415,26 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   template <class _Tuple, size_t _Indx2>
   using __tuple_elem_at = tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, _Tuple&& __t)
-      : __tuple_leaf<_Indx, _Tp>(::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
+      : __tuple_leaf<_Indx, _Tp>(get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc, class _Tuple>
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
                                  __a,
-                                 ::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
+                                 get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, __tuple_types<_Tp...>>, int> = 0>
   _CCCL_API inline __tuple_impl&
   operator=(_Tuple&& __t) noexcept(__tuple_nothrow_assignable<_Tuple, __tuple_types<_Tp...>>)
   {
-    (__tuple_leaf<_Indx, _Tp>::operator=(
-       ::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t))),
-     ...);
+    (__tuple_leaf<_Indx, _Tp>::operator=(::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(get<_Indx>(__t))), ...);
     return *this;
   }
 
