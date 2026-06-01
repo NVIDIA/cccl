@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__warp/lane_mask.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
@@ -78,6 +79,7 @@ _CCCL_DEVICE_API void __cluster_sync() noexcept
 }
 #  endif // _CCCL_CUDA_COMPILATION()
 
+template <class _Level>
 struct __this_mapping_result
 {
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
@@ -110,6 +112,18 @@ struct __this_mapping_result
     return 0;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
+    {
+      return ::cuda::device::lane_mask::this_lane();
+    }
+    else
+    {
+      return ::cuda::device::lane_mask::all();
+    }
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
   {
     return true;
@@ -136,7 +150,7 @@ class __this_group_base
   static_assert(__is_hierarchy_v<_Hierarchy>);
 
 protected:
-  using __mapping_result_type = __this_mapping_result;
+  using __mapping_result_type = __this_mapping_result<_Level>;
 
   _Hierarchy __hier_;
 
@@ -194,7 +208,8 @@ public:
   using level_type   = thread_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -246,7 +261,8 @@ public:
   using level_type   = warp_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -305,7 +321,8 @@ public:
   using level_type   = block_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -362,7 +379,8 @@ public:
   using level_type   = cluster_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -501,7 +519,8 @@ public:
   using level_type   = grid_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
 
