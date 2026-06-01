@@ -31,7 +31,7 @@ struct TripleChevronFactory
       _CCCL_ASSERT(SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
       if (sm_version >= 900)
       {
-        [[maybe_unused]] int ptx_version;
+        [[maybe_unused]] int ptx_version = 0;
         _CCCL_ASSERT(PtxVersion(ptx_version) == cudaSuccess, "Failed to query PTX compute capability");
         _CCCL_ASSERT((ptx_version >= 900),
                      "Enabling PDL for a kernel launch requires CC 9.0+ PTX/SASS when running on SM90+");
