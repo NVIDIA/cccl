@@ -599,8 +599,8 @@ struct warpspeed_scan_closure
     {
       if (is_first_tile)
       {
-        // The first thread cannot use scan_op because aggrExclusive holds garbage data. Also skip sumExclusive when this
-        // thread has no valid items to process in the last tile.
+        // The first thread cannot use scan_op because aggrExclusive holds garbage data. Also skip sumExclusive when
+        // this thread has no valid items to process in the last tile.
         if (squad.threadRank() == 0 || (IsLastTile && valid_items_this_thread == 0))
         {
           aggrExclusive = static_cast<AccumT>(real_init_value);
