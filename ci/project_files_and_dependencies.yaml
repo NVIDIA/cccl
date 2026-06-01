@@ -114,15 +114,16 @@ projects:
     include_regexes: ["c/parallel/"]
     exclude_project_files: [cccl_c_parallel_public]
 
-  cccl_c_parallel_hostjit:
-    name: "CCCL C Parallel Library (HostJIT)"
-    matrix_project: "cccl_c_parallel_hostjit"
-    lite_dependencies: [libcudacxx_public]
-    full_dependencies: [cccl_c_parallel_public]
+  cccl_c_parallel_v2:
+    name: "CCCL C Parallel Library v2 (HostJIT)"
+    matrix_project: "cccl_c_parallel_v2"
+    # v2 depends on libcudacxx, cub, and thrust headers (it JIT-compiles
+    # CUB's host+device code via HostJIT). Any change to those should trigger
+    # v2 to run.
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public, c2h]
+    full_dependencies: []
     include_regexes:
-      - "c/parallel/src/hostjit/"
-      - "ci/build_cccl_c_parallel_hostjit\\.sh"
-      - "ci/test_cccl_c_parallel_hostjit\\.sh"
+      - "c/parallel\\.v2/"
 
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
@@ -207,6 +208,7 @@ projects:
       - cudax_internal
       - cccl_c_parallel_public
       - cccl_c_parallel_internal
+      - cccl_c_parallel_v2
       - cccl_c_stf
       - stdpar
       - c2h

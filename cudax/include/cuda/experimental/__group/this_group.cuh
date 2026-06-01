@@ -208,7 +208,8 @@ public:
   using level_type   = thread_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -260,7 +261,8 @@ public:
   using level_type   = warp_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -319,7 +321,8 @@ public:
   using level_type   = block_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -376,7 +379,8 @@ public:
   using level_type   = cluster_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
   using __base_type::count;
@@ -515,7 +519,8 @@ public:
   using level_type   = grid_level;
   using mapping_type = void;
   using typename __base_type::__mapping_result_type;
-  using hierarchy_type = _Hierarchy;
+  using hierarchy_type    = _Hierarchy;
+  using synchronizer_type = void;
 
   using __base_type::__base_type;
 

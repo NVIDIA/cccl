@@ -8,11 +8,6 @@ option(
   "Build cccl.c.parallel standalone headers."
   OFF
 )
-option(
-  CCCL_C_Parallel_ENABLE_HOSTJIT
-  "Build HostJIT testing infrastructure (requires LLVM fetch, ~20 min first build)."
-  OFF
-)
 
 # FIXME Ideally this would be handled by presets and install rules, but for now
 # consumers may override this to control the target location of cccl.c.parallel.
@@ -55,10 +50,6 @@ cccl_get_cudatoolkit()
 cccl_get_thrust()
 
 add_subdirectory(src/jit_templates)
-
-if (CCCL_C_Parallel_ENABLE_HOSTJIT)
-  add_subdirectory(src/hostjit)
-endif()
 
 set_target_properties(cccl.c.parallel PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
 target_link_libraries(
