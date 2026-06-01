@@ -21,7 +21,95 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-
+    # Full nightly matrix copied here to test GH UI loading with reduced job count.
+    # CTK 12.0 full matrix build: default projects
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['clang14']}
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['msvc2019', 'msvc14.39']}
+    # CTK 12.X full matrix build: default projects
+    - {jobs: ['build'], std: 'all', ctk: '12.X', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12', 'gcc13', 'gcc14']}
+    - {jobs: ['build'], std: 'all', ctk: '12.X', cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18', 'clang19']}
+    - {jobs: ['build'], std: 'all', ctk: '12.X', cxx: ['msvc2019', 'msvc2022']}
+    # CTK 13.0 full matrix build: default projects
+    - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
+    - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
+    - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['msvc2019', 'msvc2022']}
+    # CTK '13.X' full matrix build: default projects
+    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
+    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
+    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['msvc2019', 'msvc2022', 'msvc2026']}
+    # CTK 12.0 full matrix build: cudax
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['gcc9', 'gcc10', 'gcc11', 'gcc12']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['clang14']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['msvc14.39']}
+    # CTK 12.X full matrix build: cudax
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.X', cxx: ['gcc9', 'gcc10', 'gcc11', 'gcc12', 'gcc13', 'gcc14']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.X', cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18', 'clang19']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.X', cxx: ['msvc2022']}
+    # CTK 13.0 full matrix build: cudax
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.0', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.0', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.0', cxx: ['msvc2022']}
+    # CTK '13.X' full matrix build: cudax
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['msvc2022', 'msvc2026']}
+    # CTK 12.X testing:
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'thrust',     ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx4090'}
+    - {jobs: ['test'], project: 'cudax',      ctk: '12.X', std: 'max', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'max', cxx: 'gcc14', gpu: 'h100' }
+    # CTK '13.X' testing:
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'cub',        ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'thrust',     ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
+    - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'max', gpu: 'h100' }
+    # RTX PRO 6000 coverage (limited due to small number of runners):
+    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
+    # Misc:
+    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
+    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
+    - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
+    - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
+    - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
+    # NVRTC tests don't currently support 12.0:
+    - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
+    - {jobs: ['verify_codegen'], project: 'libcudacxx'}
+    # c.parallel -- pinned to gcc13 / msvc2022 to match python
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
+    # RTX PRO 6000 coverage (limited due to small number of runners):
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
+    # c.experimental.stf -- pinned to gcc13 to match python
+    - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    # Python -- pinned to gcc13 / msvc2022 on Linux for consistency across CTK images
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13', '3.14'], gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
+    # CCCL packaging:
+    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc15', 'clang20'], gpu: 'rtx2080', args: '-min-cmake'}
+    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['install'], project: 'packaging'}
+    # NVBench Helper testing:
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: ['gcc15', 'clang20'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    # NVHPC build
+    - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
+    - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
+    # clang-cuda
+    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100;120'}
+    - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
+    # clang-tidy
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
+    # arch-specific and family-specific arch builds
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
