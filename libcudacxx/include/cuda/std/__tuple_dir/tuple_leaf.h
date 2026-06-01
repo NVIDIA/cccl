@@ -79,7 +79,7 @@ template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 _CCCL_API inline void swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x,
                            __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<_Hp>)
 {
-  swap(__x.get(), __y.get());
+  swap(__x.__get(), __y.__get());
 }
 
 _CCCL_DIAG_PUSH
@@ -174,11 +174,11 @@ public:
     ::cuda::std::swap(*this, __t);
   }
 
-  [[nodiscard]] _CCCL_API constexpr _Hp& get() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Hp& __get() noexcept
   {
     return __value_;
   }
-  [[nodiscard]] _CCCL_API constexpr const _Hp& get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Hp& __get() const noexcept
   {
     return __value_;
   }
@@ -261,11 +261,11 @@ public:
     ::cuda::std::swap(*this, __t);
   }
 
-  [[nodiscard]] _CCCL_API constexpr _Hp& get() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Hp& __get() noexcept
   {
     return __value_;
   }
-  [[nodiscard]] _CCCL_API constexpr const _Hp& get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Hp& __get() const noexcept
   {
     return __value_;
   }
@@ -352,11 +352,11 @@ public:
     ::cuda::std::swap(*this, __t);
   }
 
-  [[nodiscard]] _CCCL_API constexpr _Hp& get() noexcept
+  [[nodiscard]] _CCCL_API constexpr _Hp& __get() noexcept
   {
     return static_cast<_Hp&>(*this);
   }
-  [[nodiscard]] _CCCL_API constexpr const _Hp& get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Hp& __get() const noexcept
   {
     return static_cast<const _Hp&>(*this);
   }

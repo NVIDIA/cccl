@@ -60,28 +60,28 @@ public:
   _CCCL_API constexpr tuple_element_t<_Ip, tuple>& __get_impl() & noexcept
   {
     using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
-    return static_cast<__tuple_leaf<_Ip, type>&>(__base_).get();
+    return static_cast<__tuple_leaf<_Ip, type>&>(__base_).__get();
   }
 
   template <size_t _Ip>
   _CCCL_API constexpr const tuple_element_t<_Ip, tuple>& __get_impl() const& noexcept
   {
     using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
-    return static_cast<const __tuple_leaf<_Ip, type>&>(__base_).get();
+    return static_cast<const __tuple_leaf<_Ip, type>&>(__base_).__get();
   }
 
   template <size_t _Ip>
   _CCCL_API constexpr tuple_element_t<_Ip, tuple>&& __get_impl() && noexcept
   {
     using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
-    return static_cast<type&&>(static_cast<__tuple_leaf<_Ip, type>&&>(__base_).get());
+    return static_cast<type&&>(static_cast<__tuple_leaf<_Ip, type>&&>(__base_).__get());
   }
 
   template <size_t _Ip>
   _CCCL_API constexpr const tuple_element_t<_Ip, tuple>&& __get_impl() const&& noexcept
   {
     using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
-    return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).get());
+    return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).__get());
   }
 
   // Going through an inline variable forces instantiation of the default constructors of all _Tp fr old GCC

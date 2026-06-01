@@ -36,15 +36,14 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(t).v == 2);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB()
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(NV_IS_HOST, ({
                  const std::pair<ConstMove, int> p{1, 2};
                  cuda::std::tuple<ConvertibleFrom<ConstMove>, ConvertibleFrom<int>> t = cuda::std::move(p);
                  assert(cuda::std::get<0>(t).v.val == 1);
                  assert(cuda::std::get<1>(t).v == 2);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
-
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   {
     const cuda::std::array<ConstMove, 1> p{1};
     cuda::std::tuple<ConvertibleFrom<ConstMove>> t = cuda::std::move(p);
@@ -67,7 +66,7 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<2>(t).v.val == 1337);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB()
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(
     NV_IS_HOST,
     (
@@ -92,7 +91,7 @@ TEST_FUNC constexpr bool test()
         assert(cuda::std::get<1>(t).v.val == 42);
         assert(cuda::std::get<2>(t).v.val == 1337);
       }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
 
   {
     const cuda::std::complex<float> p{1.0f, 42.0f};
@@ -118,7 +117,7 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(t).v == 2);
   }
 
-#if _CCCL_HAS_HOST_STD_LIB()
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
   NV_IF_TARGET(NV_IS_HOST, ({
                  const std::pair<ConstMove, int> p{1, 2};
                  cuda::std::tuple<ExplicitConstructibleFrom<ConstMove>, ExplicitConstructibleFrom<int>> t{
@@ -126,7 +125,7 @@ TEST_FUNC constexpr bool test()
                  assert(cuda::std::get<0>(t).v.val == 1);
                  assert(cuda::std::get<1>(t).v == 2);
                }))
-#endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
 
   {
     const cuda::std::array<ConstMove, 1> p{1};
@@ -149,6 +148,33 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(t).v.val == 42);
     assert(cuda::std::get<2>(t).v.val == 1337);
   }
+
+#if _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    (
+      {
+        const std::array<ConstMove, 1> p{1};
+        cuda::std::tuple<ExplicitConstructibleFrom<ConstMove>> t{cuda::std::move(p)};
+        assert(cuda::std::get<0>(t).v.val == 1);
+      }
+
+      {
+        const std::array<ConstMove, 2> p{1, 42};
+        cuda::std::tuple<ExplicitConstructibleFrom<ConstMove>, ConvertibleFrom<ConstMove>> t{cuda::std::move(p)};
+        assert(cuda::std::get<0>(t).v.val == 1);
+        assert(cuda::std::get<1>(t).v.val == 42);
+      }
+
+      {
+        const std::array<ConstMove, 3> p{1, 42, 1337};
+        cuda::std::tuple<ExplicitConstructibleFrom<ConstMove>, ConvertibleFrom<ConstMove>, ConvertibleFrom<ConstMove>> t{
+          cuda::std::move(p)};
+        assert(cuda::std::get<0>(t).v.val == 1);
+        assert(cuda::std::get<1>(t).v.val == 42);
+        assert(cuda::std::get<2>(t).v.val == 1337);
+      }))
+#endif // _CCCL_HAS_HOST_STD_LIB() && !TEST_COMPILER(GCC, <, 9)
 
   {
     const cuda::std::complex<float> p{1.0f, 42.0f};

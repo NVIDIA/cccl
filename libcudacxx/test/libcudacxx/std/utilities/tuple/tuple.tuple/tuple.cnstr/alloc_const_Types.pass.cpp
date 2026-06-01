@@ -30,13 +30,13 @@ struct ImplicitCopy
 
 // Test that tuple(cuda::std::allocator_arg, Alloc, Types const&...) allows implicit
 // copy conversions in return value expressions.
-cuda::std::tuple<ImplicitCopy> testImplicitCopy1()
+TEST_FUNC cuda::std::tuple<ImplicitCopy> testImplicitCopy1()
 {
   ImplicitCopy i(42);
   return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
 }
 
-cuda::std::tuple<ImplicitCopy> testImplicitCopy2()
+TEST_FUNC cuda::std::tuple<ImplicitCopy> testImplicitCopy2()
 {
   const ImplicitCopy i(42);
   return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
