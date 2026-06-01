@@ -250,8 +250,9 @@ threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp pr
   }
 }
 
-// Similar to CUB agents, this closure just aggregates common variables and constants so the device functions
-// implementing the warpspeed scan kernel can have lighter signatures
+// Similar to CUB agents, this closure just aggregates common constants so the device functions implementing the
+// warpspeed scan kernel can have lighter signatures. Each squad uses an instance of this to provide its context. In
+// principle, it does not hold any mutable state. But it refers to the shared scan resources (SMEM + barriers etc.).
 template <typename PolicySelector,
           typename InputT,
           typename OutputT,
@@ -296,10 +297,10 @@ struct warpspeed_scan_closure
   const scanKernelParams<InputT, OutputT, AccumT> params;
   ScanOpT scan_op;
   const RealInitValueT real_init_value;
-  scan_resources_t& res;
+  scan_resources_t& res; // this is the only shared mutable state
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  load_next_tile_index(const warpspeed::Squad& squad, warpspeed::SmemPhase<uint4>& phaseNextBlockIdxW)
+  load_next_tile_index(const warpspeed::Squad& squad, warpspeed::SmemPhase<uint4>& phaseNextBlockIdxW) const
   {
     warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
     squadGetNextBlockIdx(squad, refNextBlockIdxW);
@@ -308,7 +309,7 @@ struct warpspeed_scan_closure
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
     const warpspeed::Squad& squad,
     warpspeed::SmemPhase<in_out_t>& phaseInOutW,
-    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo)
+    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
   {
     warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
     warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
@@ -320,7 +321,7 @@ struct warpspeed_scan_closure
     bool is_first_tile,
     int& idxTilePrev,
     AccumT& AggrExclusiveCtaPrev,
-    int idxTile)
+    int idxTile) /*const*/ // FIXME(bgruber): this const causes a large SASS diff
   {
     warpspeed::SmemRef refAggrExclusiveCtaW = phaseAggrExclusiveCtaW.acquireRef();
 
@@ -345,7 +346,7 @@ struct warpspeed_scan_closure
     bool is_first_tile,
     bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
-    int idxTile)
+    int idxTile) const
   {
     const int valid_items_this_thread =
       cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, +elemPerThread);
@@ -446,7 +447,7 @@ struct warpspeed_scan_closure
     bool is_first_tile,
     int valid_items,
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
-    ::cuda::std::size_t idxTileBase)
+    ::cuda::std::size_t idxTileBase) /*const*/ // FIXME(bgruber): this const causes a large SASS diff
   {
     // need to init these to silence nvcc warning about reading uninitialized data
     [[maybe_unused]] int valid_items_this_thread = 0;
@@ -696,7 +697,7 @@ struct warpspeed_scan_closure
   // Using this structure, all code that is not executed by the current squad is DCE (dead-code-eliminated) by the
   // compiler and all warp-specialization dispatch is performed once at the start of the kernel and not in any of the
   // hot loops (even if that may seem the case from a first glance at the code).
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void dispatch_squad(warpspeed::Squad squad)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void dispatch_squad(warpspeed::Squad squad) // const // TODO(bgruber): enable const
   {
     // Start with the tile indicated by blockIdx.x
     int idxTile = specialRegisters.blockIdxX;
