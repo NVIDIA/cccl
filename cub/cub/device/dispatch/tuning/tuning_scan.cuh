@@ -622,7 +622,7 @@ struct scan_warpspeed_policy
 enum class scan_algorithm
 {
   lookback,
-  warpspeed,
+  warpspeed
 };
 
 #if _CCCL_HOSTED()
