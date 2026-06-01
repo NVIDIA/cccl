@@ -15,6 +15,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -57,6 +58,8 @@ __device__ void test_identity_mapping(Config config)
     static_assert(Result::static_count() == ThreadsInWarpMappingResult::static_count());
     CHECK(result.count() == prev_mapping_result.count());
     CHECK(result.rank() == prev_mapping_result.rank());
+
+    CHECK(result.lane_mask() == prev_mapping_result.lane_mask());
 
     CHECK(result.is_valid() == prev_mapping_result.is_valid());
     static_assert(Result::is_always_exhaustive() == ThreadsInWarpMappingResult::is_always_exhaustive());
