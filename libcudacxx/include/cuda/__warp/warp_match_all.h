@@ -24,14 +24,12 @@
 #if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__type_traits/is_bitwise_comparable.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/__warp/lane_mask.h>
 #  include <cuda/std/__cstring/memcpy.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/cstdint>
-#  if !defined(_CCCL_BUILTIN_CLEAR_PADDING)
-#    include <cuda/__type_traits/is_bitwise_comparable.h>
-#  endif // _CCCL_BUILTIN_CLEAR_PADDING
 
 #  include <cuda/std/__cccl/prologue.h>
 
