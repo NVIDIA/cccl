@@ -143,11 +143,11 @@ def make_reduce_into(
     """
     try:
         accum_dtype = get_dtype(h_init)
-    except Exception:
+    except (AttributeError, TypeError) as e:
         raise TypeError(
             "Could not determine accumulator dtype from h_init; "
             "expected numpy array or object with .dtype"
-        )
+        ) from e
 
     # Validate d_in if it is a device array (iterators may not expose dtype reliably here):
     if not isinstance(d_in, IteratorBase):
