@@ -1166,6 +1166,32 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const void* direct_atomic_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_kernel_ptr);
 
+      // brief-13: high-bin variant of the cuckoo kernel with the SECOND PROBE
+      // compile-time-gated OFF (`DisableSecondProbe=true`). On the high-bin tier
+      // (bins >> cache slots) the cache hit rate is ~0, so the cuckoo's secondary
+      // slot almost never holds a useful key: it just reads a second SMEM key (the
+      // binding MIO/LSU pipe's largest waste -- brief-12 ncu: 76% LSU-bound,
+      // 3.4-way bank-conflicted, 12.8M key loads) before spilling to GMEM anyway,
+      // DOUBLING the SMEM key transactions per miss. This variant spills on the
+      // first primary collision (one key-read + spill, like the single-probe
+      // kernel) WHILE retaining the cuckoo kernel's R=2 multi-RANGE count-replica
+      // de-serialization (routing the cells to the single-probe kernel would lose
+      // it). The 2-probe kernel above is kept for the moderate-bin tier where the
+      // secondary slot raises the hit rate.
+      auto direct_atomic_noprobe2_kernel_ptr =
+        &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                          PRIVATIZED_SMEM_BINS,
+                                                          NUM_CHANNELS,
+                                                          NUM_ACTIVE_CHANNELS,
+                                                          SampleIteratorT,
+                                                          CounterT,
+                                                          privatized_decode_op_t,
+                                                          output_decode_op_t,
+                                                          OffsetT,
+                                                          /*DisableSecondProbe=*/true>;
+      const void* direct_atomic_noprobe2_kernel_ptr_void =
+        reinterpret_cast<const void*>(direct_atomic_noprobe2_kernel_ptr);
+
       // The single-probe direct-mapped variant of the direct-atomic kernel.
       // It shares the cuckoo kernel's signature (including the runtime
       // `cache_slots_per_channel` dynamic-SMEM cache), so the occupancy-
@@ -1187,13 +1213,28 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const void* direct_atomic_single_probe_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_single_probe_kernel_ptr);
 
-      // Pick the active direct-atomic kernel per the cache mode. Both kernels
-      // are PRIVATIZED_SMEM_BINS==0 host-init cooperative kernels with the same
+      // Pick the active direct-atomic kernel per the cache mode. The three
+      // variants (single-probe, 2-probe cuckoo, 2-probe-gated cuckoo) are all
+      // PRIVATIZED_SMEM_BINS==0 host-init cooperative kernels with the same
       // dynamic-SMEM cache layout; the rest of the launch path treats them
       // uniformly through `active_direct_atomic_kernel_ptr(_void)`.
       const bool use_single_probe_cache = (direct_atomic_cache_mode == 1);
+      // brief-13: when the CUCKOO kernel is selected, drop its second probe on
+      // the high-bin tier (bins >> any achievable cache slot count, where the
+      // secondary slot can't raise the hit rate -- it just doubles the SMEM key
+      // transactions per miss). The cache floor is 1024 (multi) / 4096 (single)
+      // slots and only grows from there, so a bin count at/above
+      // `kSecondProbeBinThreshold` is already >> the floor; the gate is decided
+      // up front (no dependence on the final auto-sized slot count) and is a
+      // pure pointer swap. The single-probe kernel already does one probe, so
+      // the gate only applies to the cuckoo selection.
+      constexpr int kSecondProbeBinThreshold = 262144;
+      const bool use_gated_cuckoo =
+        (!use_single_probe_cache) && (max_num_output_bins >= kSecondProbeBinThreshold);
       const void* active_direct_atomic_kernel_ptr_void =
-        use_single_probe_cache ? direct_atomic_single_probe_kernel_ptr_void : direct_atomic_kernel_ptr_void;
+        use_single_probe_cache ? direct_atomic_single_probe_kernel_ptr_void
+        : use_gated_cuckoo     ? direct_atomic_noprobe2_kernel_ptr_void
+                               : direct_atomic_kernel_ptr_void;
 
       int device_ordinal = 0;
       if (cudaGetDevice(&device_ordinal) != cudaSuccess)
@@ -1316,6 +1357,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
       int cache_slots_per_channel =
         use_single_probe_cache ? size_cache_for(direct_atomic_single_probe_kernel_ptr)
+        : use_gated_cuckoo     ? size_cache_for(direct_atomic_noprobe2_kernel_ptr)
                                : size_cache_for(direct_atomic_kernel_ptr);
 #if _CCCL_HOSTED()
       // TEMP (worker-2 brief-12): host-side env hooks to (1) sweep the per-channel
@@ -1382,6 +1424,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           (void) cudaGetLastError();
         }
       }
+      else if (use_gated_cuckoo)
+      {
+        if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_noprobe2_kernel_ptr, cuckoo_cache_smem_bytes)
+            != cudaSuccess)
+        {
+          (void) cudaGetLastError();
+        }
+      }
       else
       {
         if (launcher_factory.set_max_dynamic_smem_size_for(direct_atomic_kernel_ptr, cuckoo_cache_smem_bytes)
@@ -1429,6 +1479,27 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_rows,
             row_stride_samples,
             cache_slots_per_channel);
+        // brief-13: force device-side emission of the second-probe-gated cuckoo
+        // variant so `cudaLaunchCooperativeKernel` can resolve its device entry.
+        DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+                                                         PRIVATIZED_SMEM_BINS,
+                                                         NUM_CHANNELS,
+                                                         NUM_ACTIVE_CHANNELS,
+                                                         SampleIteratorT,
+                                                         CounterT,
+                                                         privatized_decode_op_t,
+                                                         output_decode_op_t,
+                                                         OffsetT,
+                                                         /*DisableSecondProbe=*/true>
+          <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
+            d_samples,
+            num_output_bins_wrapper,
+            d_output_histograms,
+            second_level_array,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            cache_slots_per_channel);
       }
 
       int cooperative_supported = 0;
@@ -1454,6 +1525,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         use_single_probe_cache
           ? launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,
                                             direct_atomic_single_probe_kernel_ptr,
+                                            direct_atomic_threads_per_block,
+                                            cuckoo_cache_smem_bytes)
+          : use_gated_cuckoo
+          ? launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,
+                                            direct_atomic_noprobe2_kernel_ptr,
                                             direct_atomic_threads_per_block,
                                             cuckoo_cache_smem_bytes)
           : launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,

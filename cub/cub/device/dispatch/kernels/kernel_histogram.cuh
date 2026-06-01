@@ -1724,7 +1724,8 @@ template <typename PolicySelector,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          bool DisableSecondProbe = false>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -1953,6 +1954,21 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         // the effective cache hit rate for moderate-entropy distributions
         // where a few bins dominate but each thread is otherwise visiting
         // random bins.
+        //
+        // brief-13: the second probe is COMPILE-TIME-GATED off for the high-bin
+        // tier (bins >> cache slots). There the cache hit rate is ~0 (every bin
+        // is essentially unique on the uniform tail that dominates the geomean),
+        // so the secondary slot almost never holds a useful key -- it just reads
+        // a second SMEM key (the binding MIO/LSU pipe's largest waste: brief-12
+        // ncu measured 76% LSU-bound, 81% short-scoreboard, 3.4-way bank-
+        // conflicted over 12.8M key loads on the multi RANGE cuckoo cell) before
+        // spilling to GMEM anyway -- DOUBLING the SMEM key transactions per miss.
+        // With `DisableSecondProbe`, a primary collision spills directly to GMEM
+        // (one key-read + spill, exactly like the single-probe kernel) while the
+        // CUCKOO kernel's other properties (the multi-RANGE R=2 count-replica
+        // de-serialization, etc.) are RETAINED -- which routing the cells to the
+        // single-probe kernel would lose. The 2-probe path is kept for the
+        // moderate-bin tier where the secondary slot raises the hit rate.
         const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
         const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
         const int existing_key1  = s_cache_keys[ch][slot1];
@@ -1968,6 +1984,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
           if (prev == -1 || prev == bin)
           {
             atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
+          }
+          else if constexpr (DisableSecondProbe)
+          {
+            // High-bin tier: no secondary probe -- spill directly to GMEM.
+            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
           }
           else
           {
@@ -1996,6 +2017,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
               atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
             }
           }
+        }
+        else if constexpr (DisableSecondProbe)
+        {
+          // High-bin tier: primary occupied by a different bin -> spill to GMEM
+          // without a secondary probe.
+          atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
         }
         else
         {
