@@ -295,7 +295,7 @@ struct warpspeed_scan_closure
 
   const warpspeed::SpecialRegisters specialRegisters;
   const scanKernelParams<InputT, OutputT, AccumT> params;
-  ScanOpT scan_op;
+  mutable ScanOpT scan_op; // mutable, so we can support non-const operator()
   const RealInitValueT real_init_value;
   scan_resources_t& res; // this is the only shared mutable state
 
