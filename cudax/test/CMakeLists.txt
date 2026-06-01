@@ -179,6 +179,9 @@ cudax_add_catch2_test(test_target coop.reduce.this_warp
 cudax_add_catch2_test(test_target coop.reduce.this_block
     coop/reduce/this_block.cu
 )
+cudax_add_catch2_test(test_target coop.reduce.this_cluster
+    coop/reduce/this_cluster.cu
+)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
