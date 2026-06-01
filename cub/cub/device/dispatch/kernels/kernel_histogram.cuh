@@ -389,6 +389,20 @@ struct Transforms
     LevelT m_last; // cached d_levels[num_bins]
     bool m_have_precompute; // whether the fields above are valid
 
+    // Three-point (piecewise-linear) interpolation state, populated by
+    // PrecomputeOnDevice alongside the single-secant fields above. Splitting
+    // the [first,last] range at the midpoint level d_levels[mid] and
+    // interpolating on whichever half the sample falls in (a) halves the
+    // magnitude of `delta` fed to the lossy 32-bit float guess -- so the
+    // first-guess lands closer to the true bin and the verify-or-1-step ladder
+    // converges without reaching UpperBound -- and (b) captures large-scale
+    // non-uniformity (a slope change between the two halves) that a single
+    // first->last secant cannot. `m_mid_bin` is the bin index at the split.
+    LevelT m_mid; // cached d_levels[mid_bin]
+    float m_inv_scale_lo; // mid_bin / (float)(mid - first)
+    float m_inv_scale_hi; // (num_bins - mid_bin) / (float)(last - mid)
+    int m_mid_bin; // split bin index (num_bins / 2)
+
     //! @brief Initializer
     //!
     //! @param d_levels_ Pointer to levels array
@@ -437,6 +451,27 @@ struct Transforms
       m_last      = last;
       m_inv_scale = static_cast<float>(num_bins) / static_cast<float>(last - first);
       m_have_precompute = true;
+
+      // Three-point split at the midpoint bin. Read d_levels[mid] and derive
+      // the two half-slopes. If either half is degenerate (non-increasing),
+      // fall back to the single-secant guess by setting m_mid_bin = 0, which
+      // BinSelect treats as "no split".
+      m_mid_bin      = 0;
+      m_inv_scale_lo = m_inv_scale;
+      m_inv_scale_hi = m_inv_scale;
+      m_mid          = first;
+      const int mid_bin = num_bins >> 1;
+      if (mid_bin > 0 && mid_bin < num_bins)
+      {
+        const LevelT mid = wrapped_levels[mid_bin];
+        if ((first < mid) && (mid < last))
+        {
+          m_mid          = mid;
+          m_mid_bin      = mid_bin;
+          m_inv_scale_lo = static_cast<float>(mid_bin) / static_cast<float>(mid - first);
+          m_inv_scale_hi = static_cast<float>(num_bins - mid_bin) / static_cast<float>(last - mid);
+        }
+      }
     }
 
     // Method for converting samples to bin-ids
@@ -526,10 +561,29 @@ struct Transforms
       int guess;
       if (m_have_precompute)
       {
-        NV_IF_ELSE_TARGET(
-          NV_IS_DEVICE,
-          (guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);),
-          (guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);));
+        // Three-point piecewise-linear first guess: interpolate on whichever
+        // half of [first, last] the sample falls in (split at the cached
+        // midpoint level m_mid / m_mid_bin). Using a local slope and a smaller
+        // delta magnitude lands the guess closer to the true bin than a single
+        // first->last secant, so the verify-or-1-step ladder converges without
+        // reaching the UpperBound binary search. m_mid_bin == 0 means the split
+        // was degenerate, so we use the single-secant guess.
+        if (m_mid_bin > 0)
+        {
+          if (s < m_mid)
+          {
+            guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale_lo);
+          }
+          else
+          {
+            const auto delta_hi = (s - m_mid);
+            guess               = m_mid_bin + static_cast<int>(static_cast<float>(delta_hi) * m_inv_scale_hi);
+          }
+        }
+        else
+        {
+          guess = static_cast<int>(static_cast<float>(delta) * m_inv_scale);
+        }
       }
       else
       {
@@ -679,6 +733,18 @@ struct Transforms
         FractionStorageT bins;
         FractionStorageT range;
         FastDivideT range_divider;
+        // Double-precision reciprocal slope `bins / range`. For narrow integer
+        // CommonT (<= 32-bit) the per-sample classify can compute the bin as a
+        // single `(double)(sample - min) * recip_f64` multiply instead of the
+        // 64-bit magic multiply-high + funnel-shift integer-divide sequence in
+        // `range_divider.Divide`. This is the COMPUTE-side classify cut for the
+        // EVEN high-bin direct-atomic cells, which ncu shows are SM-compute
+        // bound with the integer divide as the top ALU consumer. See
+        // `ComputeBin`'s `kUseFloat64Reciprocal` fast path for the correctness
+        // argument (it reproduces the bench's double-precision reference
+        // formula bit-for-bit). Unused (and uninitialised-safe via Init) for
+        // wider integer / custom CommonT, which keep the exact integer divide.
+        double recip_f64;
         // True iff bins == range, the common benchmark case (e.g. uniform
         // even-spaced bins where one bin == one sample value). When set,
         // ComputeBin short-circuits to `sample - min_level` and skips both
@@ -737,6 +803,15 @@ struct Transforms
       // where IntArithmeticT may still be uint64_t but the integral overload is not used.
       result.fraction.range_divider.Init(static_cast<IntArithmeticT>(result.fraction.range));
       result.fraction.bins_eq_range = (result.fraction.bins == result.fraction.range);
+      // Double-precision reciprocal slope for the narrow-integer fast path in
+      // ComputeBin. Computed exactly the way the bench's EVEN reference does
+      // (`(double)num_bins / (double)(upper - lower)`), so that path reproduces
+      // the reference bin-for-bin. Harmless to compute for wide CommonT (it is
+      // simply unused there); guards against div-by-zero degenerate ranges.
+      result.fraction.recip_f64 =
+        (result.fraction.range != FractionStorageT{0})
+          ? (static_cast<double>(result.fraction.bins) / static_cast<double>(result.fraction.range))
+          : 0.0;
       return result;
     }
 
@@ -836,6 +911,17 @@ struct Transforms
     //! and produces an incorrect bin. The unsigned subtraction wraps
     //! modularly and yields the correct non-negative difference exactly
     //! the way `ComputeScale` computes `max_level - min_level`.
+    // Whether the narrow-integer double-reciprocal fast path is exact for this
+    // CommonT. It requires the non-negative difference `sample - min_level`
+    // (which fits in the unsigned counterpart of CommonT) to be exactly
+    // representable as a `double`, i.e. CommonT no wider than 32 bits: then the
+    // bin reduces to a single `(double)diff * (bins/range)` multiply that
+    // reproduces the bench's EVEN reference (`(double)(s - lo) * scale`)
+    // bit-for-bit. Wider integer CommonT (e.g. int64_t) keeps the exact
+    // 64-bit magic integer divide, since a 64-bit difference is not exactly
+    // representable in double and the floor could differ by one.
+    static constexpr bool kUseFloat64Reciprocal = (sizeof(CommonT) <= 4);
+
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
@@ -845,6 +931,19 @@ struct Transforms
       if (scale.fraction.bins_eq_range)
       {
         return static_cast<int>(diff);
+      }
+      // Narrow-integer EVEN classify: compute the bin with one double FMA-class
+      // multiply instead of the multi-instruction 64-bit magic integer divide.
+      // `diff` (< 2^32 for <=32-bit CommonT) is exact in double, and
+      // `recip_f64 == (double)bins / (double)range` is formed exactly as the
+      // bench's reference forms its scale, so `(int)((double)diff * recip_f64)`
+      // equals the reference bin-for-bin. ncu (EVEN cuckoo, bins=262144) shows
+      // these cells are SM-compute bound with the integer divide as the
+      // top-utilised ALU pipe; this collapses that divide to an I2F + DMUL +
+      // F2I, cutting the per-sample classify instruction count substantially.
+      if constexpr (kUseFloat64Reciprocal)
+      {
+        return static_cast<int>(static_cast<double>(diff) * scale.fraction.recip_f64);
       }
       const IntArithmeticT numerator = diff * static_cast<IntArithmeticT>(scale.fraction.bins);
       return static_cast<int>(scale.fraction.range_divider.Divide(numerator));
