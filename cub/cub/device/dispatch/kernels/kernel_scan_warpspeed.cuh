@@ -582,8 +582,16 @@ struct warpspeed_scan_closure
       {
         // Add the aggregates of preceding CTAs to the cumulative aggregate.
         AccumT regAggrExclusiveCta = refAggrExclusiveCtaR.data();
-        // aggrExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
-        aggrExclusive = squad.threadRank() == 0 ? regAggrExclusiveCta : scan_op(regAggrExclusiveCta, aggrExclusive);
+        // aggrExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps. Skip it, when this
+        // thread has no valid items to process in the last tile.
+        if (squad.threadRank() == 0 || (IsLastTile && valid_items_this_thread == 0))
+        {
+          aggrExclusive = regAggrExclusiveCta;
+        }
+        else
+        {
+          aggrExclusive = scan_op(regAggrExclusiveCta, aggrExclusive);
+        }
       }
     }
 
@@ -591,8 +599,9 @@ struct warpspeed_scan_closure
     {
       if (is_first_tile)
       {
-        // The first thread cannot use scan_op because aggrExclusive holds garbage data
-        if (squad.threadRank() == 0)
+        // The first thread cannot use scan_op because aggrExclusive holds garbage data. Also skip sumExclusive when
+        // this thread has no valid items to process in the last tile.
+        if (squad.threadRank() == 0 || (IsLastTile && valid_items_this_thread == 0))
         {
           aggrExclusive = static_cast<AccumT>(real_init_value);
         }
