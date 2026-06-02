@@ -139,8 +139,10 @@ enum class algorithm : unsigned char
   direct_atomic_single_probe,
 
   // Per-block privatized histograms in GMEM, combined by an atomic-free
-  // gather-merge after a grid sync (one cooperative launch). Wins on
-  // bandwidth-bound large inputs where the direct-atomic cache thrashes.
+  // gather-merge after a grid sync (one cooperative launch). A distinct
+  // algorithm that the current tuning does not select (the direct-atomic caches
+  // win or tie it across the measured matrix); kept selectable through
+  // dispatch_by_algorithm for workloads or architectures where it pays off.
   gmem_priv_gather,
 };
 
