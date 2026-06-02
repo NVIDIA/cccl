@@ -36,12 +36,12 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproduci
       max_items,
     }));
 
-  const int num_runs = GENERATE(2, 5, 10);
+  const int num_runs = 10;
   CAPTURE(num_items, num_runs);
 
   // use reasonable magnitude to avoid overflow
   constexpr type max_mag = type{100};
-  c2h::device_vector<type> d_input(num_items);
+  c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), d_input, -max_mag, max_mag);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
@@ -51,7 +51,7 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproduci
   REQUIRE(
     cub::DeviceScan::ExclusiveScan(d_input.begin(), d_reference.begin(), op, type{}, num_items, env) == cudaSuccess);
 
-  c2h::device_vector<type> d_output(num_items);
+  c2h::device_vector<type> d_output(num_items, thrust::no_init);
   for (int run = 1; run < num_runs; ++run)
   {
     REQUIRE(
@@ -84,7 +84,7 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism matches host ref
   CAPTURE(num_items);
 
   constexpr type max_mag = type{100};
-  c2h::device_vector<type> d_input(num_items);
+  c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), d_input, type{0}, max_mag);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);

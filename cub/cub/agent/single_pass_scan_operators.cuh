@@ -1253,6 +1253,7 @@ struct TilePrefixCallbackOp
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
 
+private:
   // Classic decoupled-lookback prefix computation.
   _CCCL_DEVICE _CCCL_FORCEINLINE T lookback(T block_aggregate)
   {
@@ -1349,6 +1350,7 @@ struct TilePrefixCallbackOp
     return exclusive_prefix;
   }
 
+public:
   // BlockScan prefix callback functor.
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
   {

@@ -223,17 +223,15 @@ template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename PolicyHub              = detail::scan::
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
-  bool StableReductionOrder = false,
-  typename KernelSource     = detail::scan::DeviceScanKernelSource<
-        detail::scan::policy_selector_from_hub<PolicyHub>,
-        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-        ScanOpT,
-        InitValueT,
-        OffsetT,
-        AccumT,
-        EnforceInclusive,
-        StableReductionOrder>,
+  typename KernelSource = detail::scan::DeviceScanKernelSource<
+    detail::scan::policy_selector_from_hub<PolicyHub>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchScan
 {
@@ -970,7 +968,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                         AccumT,
                         EnforceInclusive,
                         fake_policy,
-                        StableReductionOrder,
                         KernelSource,
                         KernelLauncherFactory>{
       d_temp_storage,

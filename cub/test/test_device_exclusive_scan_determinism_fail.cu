@@ -14,8 +14,9 @@ int main()
   float* ptr{};
 
 #if TEST_ERR == 0
-  // expected-error-0 {{"run_to_run deterministic scan requires either integral types with known operators, or
-  // floating-point types with plus operator"}}
+  // clang-format off
+  // expected-error-0 {{"run_to_run deterministic scan requires either integral types with known operators, or floating-point types with plus operator"}}
+  // clang-format on
   auto error = cub::DeviceScan::ExclusiveScan(
     ptr, ptr, cuda::std::multiplies<>{}, 0.0f, 0, cuda::execution::require(cuda::execution::determinism::run_to_run));
 #elif TEST_ERR == 1
@@ -23,8 +24,9 @@ int main()
   auto error = cub::DeviceScan::ExclusiveScan(
     ptr, ptr, cuda::std::plus<>{}, 0.0f, 0, cuda::execution::require(cuda::execution::determinism::gpu_to_gpu));
 #elif TEST_ERR == 2
-  // expected-error-2 {{"run_to_run deterministic scan requires either integral types with known operators, or
-  // floating-point types with plus operator"}}
+  // clang-format off
+  // expected-error-2 {{"run_to_run deterministic scan requires either integral types with known operators, or floating-point types with plus operator"}}
+  // clang-format on
   auto future_init = cub::FutureValue<float>(ptr);
   auto error       = cub::DeviceScan::ExclusiveScan(
     ptr,

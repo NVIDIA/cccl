@@ -931,11 +931,6 @@ struct policy_selector
   _CCCL_HOST_DEVICE_API constexpr auto get_warpspeed_policy(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<scan_warpspeed_policy>
   {
-    // fallback to lookback when we require a stable reduction order
-    if (require_stable_reduction_order)
-    {
-      return {};
-    }
     if (cc >= ::cuda::compute_capability{12, 0})
     {
       return get_sm120_fallback_warpspeed_policy();
@@ -1035,10 +1030,10 @@ struct policy_selector
 #endif
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto select_base_policy(::cuda::compute_capability cc) const
-    -> scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
+    if (!require_stable_reduction_order)
     {
       const auto warpspeed_policy_opt = get_warpspeed_policy(cc);
       if (warpspeed_policy_opt && can_use_warpspeed(cc, *warpspeed_policy_opt))
@@ -1420,11 +1415,6 @@ struct policy_selector
       BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
       BLOCK_SCAN_RAKING,
       default_delay);
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
-  {
-    return select_base_policy(cc);
   }
 };
 
