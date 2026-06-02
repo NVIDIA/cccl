@@ -90,6 +90,10 @@ cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
 )
 
+cudax_add_catch2_test(test_target fill_bytes
+    fill_bytes/fill_bytes_mdspan.cu
+)
+
 cudax_add_catch2_test(test_target copy
     copy/copy.cu
     copy/copy_edge_cases.cu
