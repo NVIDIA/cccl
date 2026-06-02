@@ -420,7 +420,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]"
 #if _CCCL_STD_VER >= 2020
 
 // example-begin exclusive-sum-policy-selector
-struct MyPolicySelector
+struct ScanPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
   {
@@ -448,7 +448,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum env-based API with tuning", "[scan][env]
   auto output = thrust::device_vector<int>(4);
 
   const auto error = cub::DeviceScan::ExclusiveSum(
-    input.begin(), output.begin(), input.size(), cuda::execution::tune(MyPolicySelector{}));
+    input.begin(), output.begin(), input.size(), cuda::execution::tune(ScanPolicySelector{}));
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << '\n';
