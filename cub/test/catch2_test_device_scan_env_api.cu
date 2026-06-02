@@ -445,7 +445,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum env-based API with tuning", "[scan][env]
 {
   // example-begin exclusive-sum-tuning
   auto input  = thrust::device_vector<int>{1, 2, 3, 4};
-  auto output = thrust::device_vector<int>(4);
+  auto output = thrust::device_vector<int>(4, thrust::no_init);
 
   const auto error = cub::DeviceScan::ExclusiveSum(
     input.begin(), output.begin(), input.size(), cuda::execution::tune(ScanPolicySelector{}));
