@@ -120,6 +120,20 @@ public:
  *   CUDA events are used as synchronization primitives.
  *
  * This class is copyable, movable, and can be passed by value
+ *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `stream_ctx` instances synchronize the submission
+ * stream from `finalize()` and only return once all queued work has
+ * completed. Instances constructed with `stream_ctx(user_stream, handle)`
+ * instead bind the context to the caller-provided CUDA stream, set
+ * `blocking_finalize = false`, and make `finalize()` non-blocking: the
+ * remaining work and the context's resource-release callback are enqueued on
+ * `user_stream` and `finalize()` returns without synchronizing it. The
+ * caller must therefore drive `user_stream` to completion (e.g. via
+ * `cudaStreamSynchronize(user_stream)`) before observing results on the
+ * host or destroying any shared `async_resources_handle` that was passed
+ * to the context.
  */
 class stream_ctx : public backend_ctx<stream_ctx>
 {

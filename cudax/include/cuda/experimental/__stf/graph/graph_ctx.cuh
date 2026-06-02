@@ -175,6 +175,21 @@ private:
 /**
  * @brief A graph context, which is a CUDA graph that we can automatically built using tasks.
  *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `graph_ctx` instances launch their CUDA graph on an
+ * internal stream and block in `finalize()` until that stream drains.
+ * Instances constructed with `graph_ctx(user_stream, handle)` (or the
+ * matching explicit-graph constructor) instead launch every graph on the
+ * caller-provided `user_stream`, set `blocking_finalize = false`, and make
+ * `finalize()` non-blocking: the graph launch and the context's
+ * resource-release callback are enqueued on `user_stream` and `finalize()`
+ * returns without synchronizing it. The caller must therefore drive
+ * `user_stream` to completion (e.g. via `cudaStreamSynchronize(user_stream)`)
+ * before observing results on the host or destroying any shared
+ * `async_resources_handle` that was passed to the context (which is
+ * particularly relevant for graph contexts because the handle also owns the
+ * executable-graph cache).
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
