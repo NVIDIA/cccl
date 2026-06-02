@@ -85,23 +85,23 @@ template <class T, template <typename, typename> class Selector>
 TEST_FUNC void testp()
 {
   using X = typename cuda::std::remove_pointer<T>::type;
+  // Pointers into the same array have a well-defined ordering.
+  X arr[8] = {};
   {
     using A = cuda::std::atomic<T>;
     Selector<A, constructor_initializer> sel;
     A& t = *sel.construct();
-    cuda::std::atomic_init(&t, T(5 * sizeof(X)));
-    assert(cuda::std::atomic_fetch_min_explicit(&t, T(2 * sizeof(X)), cuda::std::memory_order_seq_cst)
-           == T(5 * sizeof(X)));
-    assert(t == T(2 * sizeof(X)));
+    cuda::std::atomic_init(&t, arr + 5);
+    assert(cuda::std::atomic_fetch_min_explicit(&t, arr + 2, cuda::std::memory_order_seq_cst) == arr + 5);
+    assert(t == arr + 2);
   }
   {
     using A = cuda::std::atomic<T>;
     Selector<volatile A, constructor_initializer> sel;
     volatile A& t = *sel.construct();
-    cuda::std::atomic_init(&t, T(2 * sizeof(X)));
-    assert(cuda::std::atomic_fetch_min_explicit(&t, T(5 * sizeof(X)), cuda::std::memory_order_seq_cst)
-           == T(2 * sizeof(X)));
-    assert(t == T(2 * sizeof(X)));
+    cuda::std::atomic_init(&t, arr + 2);
+    assert(cuda::std::atomic_fetch_min_explicit(&t, arr + 5, cuda::std::memory_order_seq_cst) == arr + 2);
+    assert(t == arr + 2);
   }
 }
 
