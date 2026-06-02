@@ -85,17 +85,11 @@ static constexpr int multi_channel_smem_bins_even  = 8192;
 // for `num_chunks` x SMEM atomicAdd_block (instead of 1x GMEM atomicAdd_block on the
 // legacy persistent-kernel GMEM-priv path).
 //
-// Single-channel chunk_size choice (per worker-1 brief-6 empirical sweep): 2 chunks
-// of 30000 (2-chunk) wins for the 60000-bin EVEN axis. 3-chunk of 20000 (-4.7% on
-// even.base vs 2-chunk) and 4-chunk of 15000 (-6.3% vs 2-chunk) lose: more launches
-// and more wasted classify+sample-read passes dominate the SMEM atomicAdd_block savings.
-// Per-block dyn-SMEM at 32768 bins is 131 KB single-channel, well within B200's
-// ~228 KiB per-CTA cap.
-//
-// Iteration 2: bumped from 30000 to 32768 (a clean power-of-2). Only the first chunk
-// changes effective size when bins=60000 (32768 vs 30000); the second chunk drops from
-// 30000 used to 27232 used. Slightly larger first-chunk SMEM atomic surface should
-// reduce per-bin contention probability.
+// Single-channel chunk_size choice: 2 chunks of 32768 wins for the 60000-bin EVEN
+// axis. More, smaller chunks (3 x 20000, 4 x 15000) lose: the extra launches and
+// the extra wasted classify + sample-read passes dominate the SMEM atomicAdd_block
+// savings. 32768 is a clean power of two; per-block dyn-SMEM at 32768 bins is 131 KB
+// single-channel, well within B200's ~228 KiB per-CTA cap.
 static constexpr int chunked_smem_chunk_size_single_channel = 32768;
 static constexpr int chunked_smem_num_chunks_single_channel = 2;
 static constexpr int chunked_smem_bins_max_single_channel =
@@ -831,14 +825,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // algorithm selector; honour that. Otherwise fall back to the bin-count-
   // based heuristic for backwards compatibility.
   //
-  // Single-channel threshold lowered from 1<<20 to 1<<16 (65536): now that
-  // the cuckoo cache lives in dynamic SMEM and grows to use all free shared
-  // memory, the direct-atomic + per-block SMEM cache path is competitive
-  // with the gather-merge persistent kernel down to 65536 bins, and it
-  // avoids the gather-merge's O(num_blocks * num_bins) cross-block reduction.
-  // This routes the 262144-bin single-channel cells (the weakest high-bin
-  // cells, gather-merge-bound at ~110 GiB/s on uniform input) through the
-  // larger cache. Verified by measurement (see iteration log).
+  // Single-channel threshold is 1<<16 (65536): because the cuckoo cache lives in
+  // dynamic SMEM and grows to use all free shared memory, the direct-atomic +
+  // per-block SMEM cache path is competitive with the gather-merge persistent
+  // kernel down to 65536 bins, and it avoids the gather-merge's
+  // O(num_blocks * num_bins) cross-block reduction. This routes the 262144-bin
+  // single-channel cells (the weakest high-bin cells, gather-merge-bound on
+  // uniform input) through the larger cache.
   constexpr int direct_atomic_bin_threshold_single = 1 << 16;
   constexpr int direct_atomic_bin_threshold_multi  = 16384;
   const int direct_atomic_bin_threshold =
@@ -1003,15 +996,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const void* direct_atomic_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_kernel_ptr);
 
-      // brief-13: high-bin variant of the cuckoo kernel with the SECOND PROBE
+      // High-bin variant of the cuckoo kernel with the SECOND PROBE
       // compile-time-gated OFF (`DisableSecondProbe=true`). On the high-bin tier
-      // (bins >> cache slots) the cache hit rate is ~0, so the cuckoo's secondary
-      // slot almost never holds a useful key: it just reads a second SMEM key (the
-      // binding MIO/LSU pipe's largest waste -- brief-12 ncu: 76% LSU-bound,
-      // 3.4-way bank-conflicted, 12.8M key loads) before spilling to GMEM anyway,
-      // DOUBLING the SMEM key transactions per miss. This variant spills on the
-      // first primary collision (one key-read + spill, like the single-probe
-      // kernel) WHILE retaining the cuckoo kernel's R=2 multi-RANGE count-replica
+      // (bins >> cache slots) the cache hit rate is near zero, so the cuckoo's
+      // secondary slot rarely holds a useful key: it just reads a second SMEM key
+      // -- the largest waste on this SMEM-bound kernel -- before spilling to GMEM
+      // anyway, DOUBLING the SMEM key transactions per miss. This variant spills
+      // on the first primary collision (one key-read + spill, like the
+      // single-probe kernel) WHILE retaining the cuckoo kernel's count-replica
       // de-serialization (routing the cells to the single-probe kernel would lose
       // it). The 2-probe kernel above is kept for the moderate-bin tier where the
       // secondary slot raises the hit rate.
@@ -1056,10 +1048,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // dynamic-SMEM cache layout; the rest of the launch path treats them
       // uniformly through `active_direct_atomic_kernel_ptr(_void)`.
       const bool use_single_probe_cache = (direct_atomic_cache_mode == 1);
-      // brief-13: when the CUCKOO kernel is selected, drop its second probe on
-      // the high-bin tier (bins >> any achievable cache slot count, where the
-      // secondary slot can't raise the hit rate -- it just doubles the SMEM key
-      // transactions per miss). The cache floor is 1024 (multi) / 4096 (single)
+      // When the CUCKOO kernel is selected, drop its second probe on the high-bin
+      // tier (bins >> any achievable cache slot count, where the secondary slot
+      // can't raise the hit rate -- it just doubles the SMEM key transactions per
+      // miss). The cache floor is 1024 (multi) / 4096 (single)
       // slots and only grows from there, so a bin count at/above
       // `kSecondProbeBinThreshold` is already >> the floor; the gate is decided
       // up front (no dependence on the final auto-sized slot count) and is a
@@ -1086,63 +1078,18 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // cooperative grid (occupancy * sm_count >= num_thread_blocks), capped
       // so a single block never exceeds the device's opt-in dynamic-SMEM
       // limit. More slots => higher cache hit rate => fewer scattered
-      // GMEM-atomic spills on the high-bin path (the measured bottleneck).
-      // The floor is the legacy static size (4096 single-channel / 1024
+      // GMEM-atomic spills on the high-bin path (the bottleneck there). The
+      // floor is the legacy static size (4096 single-channel / 1024
       // multi-channel) so we never regress below the previous behaviour.
       //
-      // COMBINE / brief-8: the direct-atomic cache COUNT array is split into
-      // `kCountReplicas` warp-strided replicas (warp w -> replica
-      // w % kCountReplicas) to de-serialize the cross-warp atomicAdd_block on
-      // hot slots (parent B add8a909). This is gated PER NUM_ACTIVE_CHANNELS:
-      // multi-channel takes R=2 (3 active channels share one block's cache, so
-      // hot-slot atomic serialization dominates -- W1 brief-5 + worker-3
-      // brief-6); single-channel takes R=1 (already 100%-occupancy at 512
-      // threads, occupancy/key-read-bound NOT count-serialization-bound, so
-      // R>1's larger per-slot footprint halves the grid and REGRESSES it --
-      // worker-3 brief-6 ncu). R=1 leaves the single-channel cache byte-for-byte
-      // identical to the pre-replica layout. The shared key array costs
-      // `sizeof(int)` per slot; the replicated counts cost
-      // `kCountReplicas * CounterSize()` per slot. This MUST match the kernels'
-      // `kCountReplicas`.
-      // iter5 KEEPER: R is gated per-channel-count, per-transform, AND per-kernel
-      // -- all compile-time / dispatch-time, no runtime data branch. The
-      // count-replica split helps multi_range on the CUCKOO kernel (3 channels
-      // contend the small cache -> atomic serialization) but HURTS multi_even on
-      // BOTH the single-probe kernel (EVEN-I32 cells, -2%) and the cuckoo kernel
-      // (EVEN-F64 cells, -0.8%) -- worker-3 brief-8 iter2/iter4. So R=2 only for
-      // multi-channel RANGE on the cuckoo path (`!use_single_probe_cache`);
-      // EVEN, single-probe, and single-channel stay R=1 (byte-identical count
-      // layout). The RANGE discriminator is `privatized_decode_op_t::is_range_transform`
-      // -- the SAME compile-time marker the cuckoo kernel reads off its
-      // `PrivatizedDecodeOpT` -- so dispatch sizing and the kernel's
-      // `kCountReplicas` are guaranteed to agree (the `IsEven` template param is
-      // vestigial here: both the even and range entry points pass IsEven=false).
-      // `use_single_probe_cache` selects the active kernel so this sizes exactly
-      // the kernel that will launch.
-      //
-      // brief-11 (worker-3) / brief-17 COMBINE: raise the multi-RANGE cuckoo
-      // replica factor to 4 to shorten the hot-slot atomicAdd_block dependency
-      // chain (ncu: 2-block/64-warp ceiling, 63.5% short-scoreboard SMEM-atomic
-      // stall; >=65536-bin cache hit-rate ~0 so slot capacity is freely
-      // tradeable for replicas). This factor MUST match the cuckoo kernels'
-      // `kMultiChannelDirectAtomicReplicas` (including the brief-13 no-2nd-probe
-      // variant, which is the SAME kernel template specialized on
-      // `DisableSecondProbe`, so its `kCountReplicas` is identical).
-      //
-      // brief-25 COMBINE (worker-2): extend R=4 from multi-RANGE-cuckoo-only to
-      // ALL multi-channel direct-atomic cells (drop the `is_range_transform` and
-      // `!use_single_probe_cache` conditions), folding worker-2 brief-24's
-      // R=4-everywhere result onto this best to lift multi_even (its EVEN-I32
-      // cells route to single_probe and its EVEN-F64 cells to cuckoo, both were
-      // stuck at R=1). This R is used here ONLY to size the per-slot cache bytes
-      // (`cache_bytes_per_slot`); the kernels recompute the SAME constexpr R from
-      // their own `NumActiveChannels` template param (this best keeps R
-      // COMPILE-TIME, NOT a runtime kernel arg -- a runtime R regressed
-      // multi_range -1.5% on the register-pinned cuckoo kernel), so dispatch
-      // sizing and kernel accesses agree by the identical `(multi ? 4 : 1)`
-      // formula. The `kCountReplicas` below is the matching host-side mirror.
-      // Count-replica factor and slot floor come from the tuning header so the
-      // host sizer and the kernels agree on one definition. R stays compile-time.
+      // The cache COUNT array is split into `kCountReplicas` warp-strided replicas
+      // to de-serialize the cross-warp atomicAdd_block on hot slots (see the
+      // kernel-side rationale). The per-slot footprint is therefore one shared int
+      // key plus `kCountReplicas * CounterSize()` count bytes. The replica factor
+      // and the slot floor come from `cache_tuning` so this host-side sizing and
+      // the kernels' compile-time `kCountReplicas` are guaranteed to agree on one
+      // definition; R stays compile-time (a runtime R regressed the
+      // register-pinned cuckoo kernel).
       const int kCountReplicas = cache_tuning::replicas(NUM_ACTIVE_CHANNELS);
       const int cache_bytes_per_slot =
         static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
@@ -1163,14 +1110,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const int max_slots_by_smem =
         cache_smem_budget / (NUM_ACTIVE_CHANNELS * cache_bytes_per_slot);
 
-      // Occupancy-preserving sizing. We measured that simply "fitting the
-      // cooperative grid" lets the cache grow until occupancy collapses to
-      // 1 block/SM, which slows the latency-bound multi-channel cells. So we
-      // only spend SMEM that is FREE: pick the largest power-of-two slot
-      // count whose per-SM occupancy is no lower than the occupancy at the
-      // floor size. This keeps the single-channel 1M-bin gains (where the
-      // extra slots are free) without trading away occupancy on the
-      // multi-channel paths.
+      // Occupancy-preserving sizing. Simply "fitting the cooperative grid" lets
+      // the cache grow until occupancy collapses to 1 block/SM, which slows the
+      // latency-bound multi-channel paths. So we only spend SMEM that is FREE:
+      // pick the largest power-of-two slot count whose per-SM occupancy is no
+      // lower than the occupancy at the floor size. This grows the cache on
+      // single-channel high-bin paths (where the extra slots are free) without
+      // trading away occupancy on the multi-channel paths.
       //
       // The query / attribute target is the ACTIVE direct-atomic kernel
       // (cuckoo or single-probe per `direct_atomic_cache_mode`): they have the
@@ -1220,18 +1166,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         : use_gated_cuckoo     ? size_cache_for(direct_atomic_noprobe2_kernel_ptr)
                                : size_cache_for(direct_atomic_kernel_ptr);
 #if _CCCL_HOSTED()
-      // TEMP (worker-2 brief-12): host-side env hooks to (1) sweep the per-channel
-      // cache slot count against a SINGLE build, and (2) report the
-      // occupancy-sizer's auto-chosen value. CUB_HISTO_FORCE_SLOTS is a
-      // power-of-two slot count; it is clamped to [cache_slots_floor,
-      // max_slots_by_smem] so every forced value remains a legal dynamic-SMEM
-      // reservation that still admits >=1 block/SM. NOT a keeper: the winning
-      // value (if any beats the auto-sizer) is baked into cache_slots_floor /
-      // the sizer and re-measured. Single-channel and multi can be swept
-      // independently via the channel gate when needed; here we accept any
-      // direct-atomic invocation so the multi cuckoo path (the brief target) is
-      // covered. Debug print is one-shot per (channels, slots) to keep stderr
-      // readable across the 648-cell matrix.
+      // Tuning/debug env hooks (host only): (1) CUB_HISTO_FORCE_SLOTS overrides
+      // the occupancy-sizer's per-channel slot count with a fixed power-of-two
+      // value, clamped to [cache_slots_floor, max_slots_by_smem] so every forced
+      // value remains a legal dynamic-SMEM reservation that still admits >=1
+      // block/SM; (2) CUB_HISTO_DEBUG_SLOTS prints the chosen (auto or forced)
+      // slot count and the sizing inputs to stderr. These let the cache slot
+      // count be swept against a single build without recompiling.
       NV_IF_TARGET(NV_IS_HOST, ({
                      if (const char* env = ::std::getenv("CUB_HISTO_FORCE_SLOTS"))
                      {
@@ -1339,8 +1280,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_rows,
             row_stride_samples,
             cache_slots_per_channel);
-        // brief-13: force device-side emission of the second-probe-gated cuckoo
-        // variant so `cudaLaunchCooperativeKernel` can resolve its device entry.
+        // Force device-side emission of the second-probe-gated cuckoo variant so
+        // `cudaLaunchCooperativeKernel` can resolve its device entry.
         DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
                                                          PRIVATIZED_SMEM_BINS,
                                                          NUM_CHANNELS,
@@ -1416,10 +1357,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // correct counts -- more blocks simply means more resident warps. The
       // shared `num_thread_blocks` above is sized off the SweepPersistent
       // kernel's per-SM occupancy, which is lower (the gather-merge kernel is
-      // register-heavy). Profiling the 262144-bin single-channel cuckoo cell
-      // showed it launches only ~3 blocks/SM (0.6 waves) and is MIO-stall bound
-      // (SMEM-atomic scoreboard latency) at ~55% achieved occupancy while the
-      // cuckoo kernel itself admits 5 blocks/SM. Grow the grid to the
+      // register-heavy). The direct-atomic kernel admits more blocks/SM and is
+      // bound by SMEM-atomic scoreboard latency, so grow the grid to the
       // direct-atomic kernel's OWN co-resident capacity so the extra warps hide
       // that latency, capped by the available work (no point launching blocks
       // that would process zero pixels) and never shrinking below the sweep
@@ -1937,7 +1876,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 // privatized decode op and routing the resulting bin to either SMEM or per-block
 // GMEM based on the bin value.
 // Falls back to the chunked dispatch on any setup or launch failure (the chunked
-// path covers the same axis range and is verified-correct).
+// path covers the same bin range and is the known-correct fallback).
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           int kSplitBin,

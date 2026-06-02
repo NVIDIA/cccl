@@ -41,14 +41,13 @@ namespace detail::histogram
 // two. Two multiplicative hash constants are used (primary / secondary) for the
 // two cuckoo probes. The MODE controls how the hash maps to a slot:
 //
-//   CUB_HISTO_CACHE_HASH_MODE == 0 (default, historical): slot = (bin * M) & mask
+//   CUB_HISTO_CACHE_HASH_MODE == 0 (low-bits): slot = (bin * M) & mask
 //       Uses the LOW log2(slots) bits of the multiplicative product. For an odd
 //       multiplier M, the low k bits of (bin * M) depend ONLY on the low k bits
 //       of `bin` -- multiplicative hashing does no mixing in its low bits. Since
 //       the SMEM bank is `slot & 31`, the bank is effectively the low 5 bits of
-//       `bin`, so structured / clustered bin ids alias onto few banks. ncu on the
-//       multi-channel RANGE cuckoo cell measured ~4-way bank conflicts on the key
-//       LDS dominating the (SMEM-bound) kernel.
+//       `bin`, so structured / clustered bin ids alias onto few banks and the key
+//       loads bank-conflict on the SMEM-bound cache.
 //
 //   CUB_HISTO_CACHE_HASH_MODE == 1 (Fibonacci / high-bits): slot = (bin * M) >> (32 - log2(slots))
 //       Uses the HIGH bits of the product, which ARE well mixed for a good
@@ -63,24 +62,22 @@ namespace detail::histogram
 // power-of-two `slots`. We pass it explicitly (computed once per launch) to keep
 // the hot path free of clz.
 #ifndef CUB_HISTO_CACHE_HASH_MODE
-// brief-12 iter1: default to Fibonacci high-bits hashing (mode 1). The historical
-// `& mask` (mode 0) took the LOW log2(slots) bits of the multiplicative product,
-// which for an odd multiplier depend ONLY on the low bits of `bin`; the SMEM bank
-// (slot & 31) was therefore the low 5 bits of `bin`, so clustered / skewed bin
-// distributions aliased onto few banks (ncu: ~4-way conflict on the key LDS, the
-// dominant cost on the SMEM-bound multi-channel RANGE cuckoo cell). Mode 1 uses
-// the well-mixed HIGH bits, breaking that aliasing.
+// Default to Fibonacci high-bits hashing (mode 1). The low-bits `& mask` (mode 0)
+// takes the low log2(slots) bits of the multiplicative product, which for an odd
+// multiplier depend ONLY on the low bits of `bin`; the SMEM bank (slot & 31) is
+// therefore the low 5 bits of `bin`, so clustered / skewed bin distributions alias
+// onto few banks and bank-conflict on the SMEM-bound multi-channel cache. Mode 1
+// uses the well-mixed HIGH bits, breaking that aliasing.
 #  define CUB_HISTO_CACHE_HASH_MODE 1
 #endif
 
-// brief-15: set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
+// Set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
 //
-// The single-probe cache (DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel,
-// used for multi-channel EVEN-I32 + the F64 mid-tier) is direct-mapped: each bin
-// hashes to exactly ONE slot, and a slot collision (slot owned by another bin) is
-// an IMMEDIATE GMEM spill -- no second chance. With Fibonacci hashing (brief-12)
-// and vectorized loads (brief-14) already in place, that single-slot conflict miss
-// is the residual loss on the hit-rate-bound multi_even cells.
+// The single-probe cache (DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel)
+// is direct-mapped: each bin hashes to exactly ONE slot, and a slot collision (slot
+// owned by another bin) is an IMMEDIATE GMEM spill -- no second chance. That
+// single-slot conflict miss is the residual loss once Fibonacci hashing and
+// vectorized loads are in place.
 //
 // CUB_HISTO_SINGLE_PROBE_WAYS sets the SET ASSOCIATIVITY of that cache WITHOUT
 // changing its SMEM footprint: the same `cache_slots_per_channel` budget is
@@ -88,14 +85,14 @@ namespace detail::histogram
 // a set; the leader probes all WAYS slots of the set before spilling. The ways of a
 // set are ADJACENT in SMEM (base..base+WAYS-1) so the WAYS key reads land in one or
 // two banks (unlike the cuckoo kernel's two INDEPENDENT random hashes, which scatter
-// across banks) -- "like cuckoo's 2 candidate slots but without full eviction and
-// with bank locality". WAYS must be a power of two and must divide the (power-of-two)
+// across banks) -- like cuckoo's two candidate slots but without full eviction and
+// with bank locality. WAYS must be a power of two and must divide the (power-of-two)
 // slot count.
 //
-//   WAYS == 1 (default): direct-mapped, BYTE-IDENTICAL to the pre-brief-15 cache.
-//   WAYS == 2: 2-way set-associative (the brief's target -- a colliding bin gets a
-//              fallback way before spilling, roughly halving conflict misses).
-//   WAYS == 4: 4-way (swept; more ways = fewer conflict misses but more probes/set).
+//   WAYS == 1 (default): direct-mapped, BYTE-IDENTICAL to an unassociative cache.
+//   WAYS == 2: 2-way set-associative (a colliding bin gets a fallback way before
+//              spilling, roughly halving conflict misses).
+//   WAYS == 4: 4-way (more ways = fewer conflict misses but more probes/set).
 #ifndef CUB_HISTO_SINGLE_PROBE_WAYS
 #  define CUB_HISTO_SINGLE_PROBE_WAYS 1
 #endif
@@ -364,10 +361,9 @@ struct Transforms
   template <typename LevelIteratorT>
   struct SearchTransform
   {
-    // Compile-time RANGE marker: the direct-atomic cuckoo sweep gates its
-    // SMEM count-replica factor on this (RANGE multi-channel high-bin cells
-    // benefit from de-serialized count atomics; EVEN cells do not -- see
-    // worker-3 brief-8). No runtime branch; resolved at instantiation.
+    // Compile-time RANGE marker, resolved at instantiation (no runtime branch).
+    // The direct-atomic kernels read this to specialize behavior that only helps
+    // the RANGE (SearchTransform) classify, e.g. the per-thread bracket cache.
     static constexpr bool is_range_transform = true;
 
     //! @brief Per-thread most-recently-used (MRU) bin-bracket cache.
@@ -376,12 +372,11 @@ struct Transforms
     //! values across consecutive `BinSelect` calls so a new sample that falls in
     //! the same `[lo, hi)` bracket is classified with ZERO level-array loads (a
     //! handful of register compares), skipping the interpolated first-guess, the
-    //! clamp, and -- crucially -- both verify `LDG`s on the dependent
-    //! `IMAD.WIDE -> LDG` level-load chain that profiling found binds the
-    //! multi-channel high-bin RANGE cuckoo kernel (~80% L1/TEX-pipe,
-    //! short-scoreboard). Low-entropy inputs (the benchmark's e=0 constant and
-    //! e=0.337 heavily-skewed cells) have high consecutive-sample locality, so
-    //! the bracket hits dominate. A `bin < 0` sentinel marks the cache empty.
+    //! clamp, and -- crucially -- both verify loads on the dependent
+    //! `IMAD.WIDE -> LDG` level-load chain that binds the latency-bound RANGE
+    //! classify. Low-entropy inputs (constant or heavily-skewed samples) have high
+    //! consecutive-sample locality, so the bracket hits dominate. A `bin < 0`
+    //! sentinel marks the cache empty.
     //! This is per-thread mutable state, so it is only sound on a per-thread
     //! `SearchTransform` copy (the direct-atomic cuckoo/single-probe kernels'
     //! `decode_op[ch]`), never on the shared `__grid_constant__` decode op that
@@ -756,10 +751,10 @@ struct Transforms
       }
 
       // Identical first-guess ladder to the plain BinSelect above: on a cache
-      // MISS we must reproduce the parent's tuned three-point piecewise-linear
-      // first guess so miss-heavy cells (uniform e=1.0, and the irregular
-      // fallback) keep the parent's convergence. Only the hit fast path and the
-      // cache writebacks differ.
+      // MISS we reproduce the same three-point piecewise-linear first guess so
+      // miss-heavy inputs (high-entropy samples, and the irregular-level
+      // fallback) converge exactly as the uncached path does. Only the hit fast
+      // path and the cache writebacks differ.
       const auto delta = (s - first_level);
       int guess;
       if (m_have_precompute)
@@ -941,18 +936,18 @@ struct Transforms
         // CommonT (<= 32-bit) the per-sample classify can compute the bin as a
         // single `(double)(sample - min) * recip_f64` multiply instead of the
         // 64-bit magic multiply-high + funnel-shift integer-divide sequence in
-        // `range_divider.Divide`. This is the COMPUTE-side classify cut for the
-        // EVEN high-bin direct-atomic cells, which ncu shows are SM-compute
-        // bound with the integer divide as the top ALU consumer. See
-        // `ComputeBin`'s `kUseFloat64Reciprocal` fast path for the correctness
-        // argument (it reproduces the bench's double-precision reference
-        // formula bit-for-bit). Unused (and uninitialised-safe via Init) for
-        // wider integer / custom CommonT, which keep the exact integer divide.
+        // `range_divider.Divide`. This trades the integer divide (the top ALU
+        // consumer on the SM-compute-bound EVEN high-bin classify) for one DMUL.
+        // See `ComputeBin`'s `kUseFloat64Reciprocal` fast path for the
+        // correctness argument (it reproduces the IEEE-754 double reference
+        // `(double)(sample - min) * (bins / range)` bit-for-bit). Unused (and
+        // uninitialised-safe via Init) for wider integer / custom CommonT, which
+        // keep the exact integer divide.
         double recip_f64;
-        // True iff bins == range, the common benchmark case (e.g. uniform
-        // even-spaced bins where one bin == one sample value). When set,
-        // ComputeBin short-circuits to `sample - min_level` and skips both
-        // the multiply by `bins` and the divide-by-range.
+        // True iff bins == range, a common case (e.g. uniform even-spaced bins
+        // where one bin == one sample value). When set, ComputeBin
+        // short-circuits to `sample - min_level` and skips both the multiply by
+        // `bins` and the divide-by-range.
         bool bins_eq_range;
       } fraction;
 
@@ -1008,10 +1003,11 @@ struct Transforms
       result.fraction.range_divider.Init(static_cast<IntArithmeticT>(result.fraction.range));
       result.fraction.bins_eq_range = (result.fraction.bins == result.fraction.range);
       // Double-precision reciprocal slope for the narrow-integer fast path in
-      // ComputeBin. Computed exactly the way the bench's EVEN reference does
-      // (`(double)num_bins / (double)(upper - lower)`), so that path reproduces
-      // the reference bin-for-bin. Harmless to compute for wide CommonT (it is
-      // simply unused there); guards against div-by-zero degenerate ranges.
+      // ComputeBin. Formed as `(double)num_bins / (double)(upper - lower)`, the
+      // same way the IEEE-754 double reference forms its scale, so that path
+      // reproduces the reference bin-for-bin. Harmless to compute for wide
+      // CommonT (it is simply unused there); guards against div-by-zero
+      // degenerate ranges.
       result.fraction.recip_f64 =
         (result.fraction.range != FractionStorageT{0})
           ? (static_cast<double>(result.fraction.bins) / static_cast<double>(result.fraction.range))
@@ -1120,7 +1116,7 @@ struct Transforms
     // (which fits in the unsigned counterpart of CommonT) to be exactly
     // representable as a `double`, i.e. CommonT no wider than 32 bits: then the
     // bin reduces to a single `(double)diff * (bins/range)` multiply that
-    // reproduces the bench's EVEN reference (`(double)(s - lo) * scale`)
+    // reproduces the IEEE-754 double reference `(double)(s - lo) * scale`
     // bit-for-bit. Wider integer CommonT (e.g. int64_t) keeps the exact
     // 64-bit magic integer divide, since a 64-bit difference is not exactly
     // representable in double and the floor could differ by one.
@@ -1140,11 +1136,10 @@ struct Transforms
       // multiply instead of the multi-instruction 64-bit magic integer divide.
       // `diff` (< 2^32 for <=32-bit CommonT) is exact in double, and
       // `recip_f64 == (double)bins / (double)range` is formed exactly as the
-      // bench's reference forms its scale, so `(int)((double)diff * recip_f64)`
-      // equals the reference bin-for-bin. ncu (EVEN cuckoo, bins=262144) shows
-      // these cells are SM-compute bound with the integer divide as the
-      // top-utilised ALU pipe; this collapses that divide to an I2F + DMUL +
-      // F2I, cutting the per-sample classify instruction count substantially.
+      // reference forms its scale, so `(int)((double)diff * recip_f64)` equals
+      // the reference bin-for-bin. The integer divide is the top ALU consumer on
+      // the SM-compute-bound high-bin EVEN classify; this collapses it to an
+      // I2F + DMUL + F2I, cutting the per-sample instruction count substantially.
       if constexpr (kUseFloat64Reciprocal)
       {
         return static_cast<int>(static_cast<double>(diff) * scale.fraction.recip_f64);
@@ -1425,31 +1420,19 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 // Request a minimum of 2 resident blocks/SM for the WIDE (>=512-thread) launch
-// shapes only. The min-2-blocks hint doubles resident warps on register-limited
-// SMEM-priv tiers (256/2048 bins: 4 KB / 25 KB SMEM, registers gate occupancy).
-// With a bare bound the wide multi-channel EVEN policy (1024 threads,
-// t_scale(8)) sat at 32 regs but only 1 block/SM (58 regs at t_scale(16) before
-// the policy was narrowed); the hint admits a 2nd CTA (1->2 blocks/SM, ~80%
-// occ) and lifts that contention-bound shared-memory atomicAdd sweep
-// (multi_even +4.6%). The 1024-thread multi RANGE policy benefits too
-// (multi_range +1.6%).
+// shapes only. On the wide multi-channel policies the SMEM-privatized sweep is
+// register-limited to 1 block/SM, and the sweep is bound by shared-memory
+// atomicAdd contention; admitting a 2nd resident CTA doubles the warps available
+// to hide that latency.
 //
-// But the hint must NOT touch the single-channel policies, which here resolve
-// to the 384-thread Policy500 fallback for both EVEN and RANGE (the SM100
-// single-channel I32/F64 cells the benchmark covers use it; the byte-sample
-// 928/448-thread arms are not exercised). A same-session A/B (parent rebuilt
-// back-to-back) showed an UNCONDITIONAL min-2-blocks bound REGRESSES
-// single-channel range -4.8% (446.7 -> 425): at 384 threads / 72 regs the
-// register cap (85) is loose so registers are unchanged, but the 2-block
-// scheduling target perturbs ptxas codegen for the latency-bound SearchTransform
-// binary search (DRAM 3%, SM 56% -- it is classify-latency bound, not occupancy
-// bound, so the extra resident block does not help and the reschedule hurts).
-// The same bound only marginally helps single-channel EVEN (+1.3%), and EVEN and
-// RANGE share the identical 384-thread fallback policy struct, so they cannot be
-// split on a policy field. Protecting the larger range loss wins: gate the hint
-// to threads_per_block >= 512 so it applies to the 1024-thread multi-channel
-// EVEN+RANGE policies (the real wins) and falls back to the unconstrained
-// default (minBlocks=0) for the 384-thread single-channel fallback.
+// The hint must NOT touch the narrow single-channel policies (the 384-thread
+// fallback used for both EVEN and RANGE). There the register cap is loose, so the
+// bound changes no occupancy but does perturb ptxas codegen, and the
+// latency-bound SearchTransform path is hurt by the reschedule rather than helped
+// (it is classify-latency bound, not occupancy bound). Since EVEN and RANGE share
+// the same 384-thread fallback policy struct they cannot be split on a policy
+// field, so gate the hint on threads_per_block >= 512: it applies to the wide
+// multi-channel policies and falls back to minBlocks=0 for the narrow fallback.
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
                   (current_policy<PolicySelector>().threads_per_block >= 512) ? 2 : 0)
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
@@ -1495,11 +1478,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
   // This is the smem_priv_256 tier (privatized bins <= 256). The level array a
   // RANGE SearchTransform searches here is tiny, so the classify is not the
   // bottleneck and the per-thread cached-interpolation state would only add
-  // register pressure (ncu showed regs 52->76 and occupancy 51->37% when this
-  // kernel localized + precomputed the decode ops). Keep the lean path: use
-  // the grid-constant decode ops directly (read from constant memory) without
-  // the device-side precompute. The other (higher-bin) sweep kernels, where
-  // the classify dominates, still precompute.
+  // register pressure and cost occupancy. Keep the lean path: use the
+  // grid-constant decode ops directly (read from constant memory) without the
+  // device-side precompute. The other (higher-bin) sweep kernels, where the
+  // classify dominates, still precompute.
   AgentHistogramT agent(
     temp_storage,
     d_samples,
@@ -2051,8 +2033,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // We also unroll the sweep so that each thread holds several samples
   // and several `atomicAdd` operations in flight at once. This is the
   // primary mechanism for hiding atomic latency on the very-high-bin
-  // path: with one atomic per iteration the kernel was bottlenecked on
-  // L1TEX scoreboard dependencies (~94% CPI stall in profiling).
+  // path: with one atomic per iteration the kernel is bottlenecked on
+  // L1TEX scoreboard dependencies (the atomic-latency stall dominates CPI).
   // ---------------------------------------------------------------------
   constexpr int unroll = 4;
   const OffsetT total_pixels = num_rows * num_row_pixels;
@@ -2087,76 +2069,45 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // can pick the largest power-of-two slot count per channel that still
   // fits the cooperative grid's required per-SM occupancy (it queries
   // `cudaOccupancyMaxActiveBlocksPerMultiprocessor` with the chosen dynamic
-  // SMEM size). Profiling showed the high-bin / high-entropy cells
-  // (e.g. Bins=262144, Entropy=1.0) are bound by scattered GMEM-atomic
-  // spills (DRAM ~17% of peak, latency-bound), and that neither packing
-  // the slot nor changing the probe count moves them -- the spill rate is
-  // fixed by how many distinct hot bins fit in cache. Growing the slot
-  // count is the one lever that raises the hit rate and pulls spills off
-  // the contended global histogram onto cheap block-scope SMEM atomics.
+  // SMEM size). On the high-bin path the kernel is bound by scattered
+  // GMEM-atomic spills, and the spill rate is fixed by how many distinct hot
+  // bins fit in cache -- neither packing the slot nor changing the probe count
+  // moves it. Growing the slot count is the one lever that raises the hit rate
+  // and pulls spills off the contended global histogram onto cheap block-scope
+  // SMEM atomics.
   //
   // `cache_slots_per_channel` is a runtime power of two (mask = slots-1).
   // The extern __shared__ region holds, per channel, a key array (int)
   // followed by a count array (CounterT): keys for all channels first,
   // then counts for all channels. Two multiplicative-hash probes are
-  // retained (the single-probe variant was verified to collapse skewed
-  // distributions by 25-30%). Keys are write-once / immutable after a CAS
-  // claim, so the cache is race-free (no hit-vs-evict window).
+  // retained because the secondary slot raises the hit rate on skewed
+  // distributions at moderate bin counts. Keys are write-once / immutable
+  // after a CAS claim, so the cache is race-free (no hit-vs-evict window).
   //
-  // SMEM-atomic SERIALIZATION relief (COMBINE / brief-8, parent B add8a909):
-  // the warp-leader's `atomicAdd_block` into a hot slot's count serialises
-  // across EVERY warp of the block that owns that bin. We split the count
-  // array into `kCountReplicas` independent replicas and route warp `w` to
-  // replica `w % kCountReplicas`, so at most ~ceil(num_warps/kCountReplicas)
-  // warps ever contend a given (replica, slot) word -- an R-fold reduction in
-  // the SMEM-atomic serialization on hot bins. Keys stay SHARED (one
-  // slot->bin assignment for the whole block); only the COUNT is replicated.
-  // Updates stay `atomicAdd_block` so warps sharing a replica are race-free by
-  // construction. At flush we sum the R replicas of each claimed slot and
-  // issue one GMEM atomic. Layout in dynamic SMEM: keys for all channels first
-  // (`NumActiveChannels * slots` ints), then replicated counts
-  // (`NumActiveChannels * kCountReplicas * slots` CounterT). Dispatch sizes the
-  // dynamic SMEM with the same replica factor.
+  // SMEM-atomic SERIALIZATION relief: the warp-leader's `atomicAdd_block` into a
+  // hot slot's count serialises across EVERY warp of the block that owns that
+  // bin. We split the count array into `kCountReplicas` independent replicas and
+  // route warp `w` to replica `w % kCountReplicas`, so at most
+  // ~ceil(num_warps/kCountReplicas) warps ever contend a given (replica, slot)
+  // word -- an R-fold reduction in the SMEM-atomic serialization on hot bins.
+  // Keys stay SHARED (one slot->bin assignment for the whole block); only the
+  // COUNT is replicated. Updates stay `atomicAdd_block` so warps sharing a
+  // replica are race-free by construction. At flush we sum the R replicas of
+  // each claimed slot and issue one GMEM atomic. Layout in dynamic SMEM: keys
+  // for all channels first (`NumActiveChannels * slots` ints), then replicated
+  // counts (`NumActiveChannels * kCountReplicas * slots` CounterT). Dispatch
+  // sizes the dynamic SMEM with the same replica factor.
   //
-  // R is gated PER NUM_ACTIVE_CHANNELS: multi-channel = 2 (3 channels share one
-  // block's cache, atomic serialization dominates), single-channel = 1 (already
-  // occupancy/key-read-bound at 512 threads; R>1 halves the grid and regresses
-  // it -- worker-3 brief-6). At R=1 the replica index is always 0 and the count
-  // layout is byte-for-byte identical to the pre-replica single-channel cache.
-  // iter5 KEEPER: the CUCKOO kernel takes R=2 only for MULTI-channel RANGE
-  // (de-serializes the cross-warp atomicAdd_block; lifts multi_range +1.4%,
-  // where 3 channels contend the small cache and the per-sample SearchTransform
-  // makes the block classify-bound so the wider count fan-out is free). EVEN and
-  // single-channel stay R=1 (byte-identical count layout): R=2 on the multi
-  // EVEN-F64 cuckoo cells cost multi_even ~-0.8% for no multi_range gain
-  // (worker-3 brief-8 iter4). The single-probe kernel stays R=1 unconditionally
-  // (R=2 there hurt the multi EVEN-I32 cells -2% -- iter2). `is_range_transform`
-  // is a compile-time marker on the decode op, so this is no runtime branch.
-  //
-  // brief-11 (worker-3) / brief-17 COMBINE: the multi-RANGE cuckoo kernel is at
-  // the 2-block/64-warp occupancy ceiling (ncu: 99.8% achieved, Issued/sched
-  // 0.49) and 63.5% of its warp cycles are short-scoreboard stalls waiting on
-  // the hot-slot atomicAdd_block to land (Mem/L1 pipe ~82% busy, DRAM ~2%). At
-  // >=65536-bin cells the cache hit-rate is ~0, so the slots are dead weight; we
-  // TRADE slot capacity for more independent count replicas (warp w -> replica
-  // w % kCountReplicas) to shorten the per-replica atomic dependency chain. The
-  // replica factor comes from cache_tuning::replicas() so the kernels and the
-  // host cache sizer agree on one definition.
-  //
-  // brief-25 COMBINE (worker-2): extend R=4 from multi-RANGE-only to ALL
-  // multi-channel cuckoo cells (drop the `is_range_transform` condition), folding
-  // worker-2 brief-24's R=4-everywhere result onto this best. The win is on
-  // multi-EVEN: its F64 cells route to this cuckoo kernel and were stuck at R=1,
-  // so R=4 de-serialises their hot-slot atomicAdd_block exactly like multi-RANGE.
-  // KEPT COMPILE-TIME (constexpr), NOT a runtime kernel arg: a regime-matched
-  // 3-way measurement on this best showed that converting multi-RANGE cuckoo's R
-  // from this constexpr-4 to a runtime-4 arg (brief-24's mechanism) REGRESSES
-  // multi_range -1.5% (the runtime modulo `w % R` + runtime-bounded flush loop
-  // cost the register-pinned 2-block/SM kernel its issue throughput), while a
-  // constexpr-4 keeps the multi-RANGE cuckoo codegen BYTE-IDENTICAL to the parent
-  // (verified) and still lifts multi_even. `NumActiveChannels` is a compile-time
-  // template param, so the single-channel specialisation folds to constexpr 1
-  // (byte-identical pre-replica cache -- worker-3 brief-6).
+  // R is gated PER NUM_ACTIVE_CHANNELS (compile-time, via cache_tuning::replicas
+  // so the kernel and the host sizer share one definition): multi-channel uses
+  // R>1 because several channels share one block's cache and hot-slot atomic
+  // serialization dominates -- and at the high bin counts that reach this kernel
+  // the cache hit rate is near zero, so slot capacity is dead weight that is
+  // freely traded for more independent count replicas. Single-channel uses R=1:
+  // it is occupancy/key-read-bound rather than count-serialization-bound, so a
+  // larger per-slot footprint would only halve the grid and regress it. At R=1
+  // the replica index is always 0 and the count layout is byte-for-byte
+  // identical to an unreplicated cache.
   constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
   constexpr bool kWarpCoalesce = current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask  = cache_slots_per_channel - 1;
@@ -2214,18 +2165,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // transforms). Exploits consecutive-sample temporal locality so an in-bracket
   // RANGE sample classifies with no level-array loads; see BracketCacheT.
   //
-  // GATED TO SINGLE-CHANNEL (brief-18 iter0 ncu finding): this direct-atomic
-  // kernel sits at exactly 32 registers / 100% occupancy (2 blocks x 1024
-  // threads). One per-thread cache (single-channel, mru[1] = 12 B) fits in
-  // registers and lifts histogram_range +4.4%. But NumActiveChannels caches
-  // (multi-channel, mru[3] = 36 B) do NOT fit: the allocator pins regs at 32 to
-  // hold the occupancy tier and SPILLS the cache to local memory (ncu: Stack
-  // Size 0 -> 1024 B, achieved occ 99.8% -> 82%), and the per-sample LMEM
-  // round-trips for the cache cost more than the L1-cached level loads they
-  // replace -- multi_range cratered -52% (669 -> 321). So multi-channel keeps
-  // the parent's plain (cacheless) BinSelect, which is byte-identical to the
-  // parent's spill-free 32-reg/100%-occ codegen. is_range_transform guards EVEN
-  // (no level loads to cache); NumActiveChannels == 1 guards the spill.
+  // GATED TO SINGLE-CHANNEL: this direct-atomic kernel runs at its register /
+  // occupancy ceiling. One per-thread bracket cache (single-channel, mru[1])
+  // fits in registers and speeds the RANGE classify. But NumActiveChannels
+  // caches (multi-channel, mru[NumActiveChannels]) do NOT fit: holding the
+  // occupancy tier forces the cache to SPILL to local memory, and the per-sample
+  // LMEM round-trips cost more than the L1-cached level loads they would replace.
+  // So multi-channel keeps the plain (cacheless) BinSelect. `is_range_transform`
+  // guards EVEN (no level loads to cache); NumActiveChannels == 1 guards the
+  // spill.
   constexpr bool kUseMruCache = (NumActiveChannels == 1) && PrivatizedDecodeOpT::is_range_transform;
   typename PrivatizedDecodeOpT::BracketCacheT mru[NumActiveChannels];
 
@@ -2262,20 +2210,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         // where a few bins dominate but each thread is otherwise visiting
         // random bins.
         //
-        // brief-13: the second probe is COMPILE-TIME-GATED off for the high-bin
-        // tier (bins >> cache slots). There the cache hit rate is ~0 (every bin
-        // is essentially unique on the uniform tail that dominates the geomean),
-        // so the secondary slot almost never holds a useful key -- it just reads
-        // a second SMEM key (the binding MIO/LSU pipe's largest waste: brief-12
-        // ncu measured 76% LSU-bound, 81% short-scoreboard, 3.4-way bank-
-        // conflicted over 12.8M key loads on the multi RANGE cuckoo cell) before
-        // spilling to GMEM anyway -- DOUBLING the SMEM key transactions per miss.
-        // With `DisableSecondProbe`, a primary collision spills directly to GMEM
-        // (one key-read + spill, exactly like the single-probe kernel) while the
-        // CUCKOO kernel's other properties (the multi-RANGE R=2 count-replica
-        // de-serialization, etc.) are RETAINED -- which routing the cells to the
-        // single-probe kernel would lose. The 2-probe path is kept for the
-        // moderate-bin tier where the secondary slot raises the hit rate.
+        // The second probe is COMPILE-TIME-GATED off for the high-bin tier
+        // (bins >> cache slots). There the cache hit rate is near zero (almost
+        // every bin is unique), so the secondary slot rarely holds a useful key:
+        // it just reads a second SMEM key -- the largest waste on this SMEM-bound
+        // kernel -- before spilling to GMEM anyway, DOUBLING the SMEM key
+        // transactions per miss. With `DisableSecondProbe`, a primary collision
+        // spills directly to GMEM (one key-read + spill, exactly like the
+        // single-probe kernel) while the cuckoo kernel's other properties (the
+        // multi-channel count-replica de-serialization, etc.) are RETAINED --
+        // which routing the cells to the single-probe kernel would lose. The
+        // 2-probe path is kept for the moderate-bin tier where the secondary slot
+        // raises the hit rate.
         const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
         const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
         const int existing_key1  = s_cache_keys[ch][slot1];
@@ -2474,21 +2420,20 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
             const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
 
-            // CHANNEL-LEVEL PARALLELISM (brief-21): classify ALL C channels
-            // first, THEN probe all C. The per-channel RANGE SearchTransform
-            // classify is L1/TEX-LEVEL-LOAD-LATENCY bound (W1/W3 ncu: L1/TEX
-            // ~81% busy, SM-compute ~18%, DRAM ~1%, 100% achieved occ -- the
-            // occupancy lever is exhausted, so the only way to hide the
-            // dependent `wrapped_levels[guess]` LDG latency is more INDEPENDENT
-            // loads in flight). The old interleaved `for ch { BinSelect;
-            // probe_cuckoo }` put `probe_cuckoo`'s `__match_any_sync` (a warp
-            // convergence point) BETWEEN consecutive channels, which prevented
-            // the compiler from issuing channel ch+1's level loads before
-            // channel ch's classify retired -- serialising C otherwise
-            // independent dependent-LDG chains per pixel. Splitting the loop so
-            // every channel's `BinSelect` runs back-to-back (no intervening
-            // warp sync) lets the C chains OVERLAP (C-way memory-level
-            // parallelism), then the probe phase coalesces+atomics each bin.
+            // CHANNEL-LEVEL PARALLELISM: classify ALL C channels first, THEN
+            // probe all C. The per-channel RANGE SearchTransform classify is
+            // bound by the dependent `wrapped_levels[guess]` LDG latency, and
+            // occupancy is already exhausted, so the only remaining way to hide
+            // that latency is more INDEPENDENT loads in flight. An interleaved
+            // `for ch { BinSelect; probe_cuckoo }` puts `probe_cuckoo`'s
+            // `__match_any_sync` (a warp convergence point) BETWEEN consecutive
+            // channels, which prevents the compiler from issuing channel ch+1's
+            // level loads before channel ch's classify retires -- serialising the
+            // C otherwise-independent dependent-LDG chains per pixel. Splitting
+            // the loop so every channel's `BinSelect` runs back-to-back (no
+            // intervening warp sync) lets the C chains OVERLAP (C-way
+            // memory-level parallelism), then the probe phase coalesces+atomics
+            // each bin.
             int bins[NumActiveChannels];
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -2523,10 +2468,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       else
       {
         // Scalar fallback: per-channel global loads (non-native / unaligned
-        // pointer). Same CHANNEL-LEVEL PARALLELISM split as the vectorized path
-        // (brief-21): classify all C channels back-to-back (overlapping the C
-        // independent dependent-LDG SearchTransform chains, no intervening
-        // `__match_any_sync` from probe_cuckoo), then probe all C.
+        // pointer). Same CHANNEL-LEVEL PARALLELISM split as the vectorized path:
+        // classify all C channels back-to-back (overlapping the C independent
+        // dependent-LDG SearchTransform chains, no intervening `__match_any_sync`
+        // from probe_cuckoo), then probe all C.
         for (OffsetT it = 0; it < chunk_iters_max; ++it)
         {
           const OffsetT pixel = start + it * chunk;
@@ -2739,34 +2684,23 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // for all channels first, then replicated counts). Only the probe policy
   // differs.
   //
-  // Same SMEM-atomic SERIALIZATION relief as the cuckoo kernel (COMBINE /
-  // brief-8, parent B add8a909): the count array is split into `kCountReplicas`
-  // replicas and warp `w` uses replica `w % kCountReplicas`, so at most
-  // ~ceil(num_warps/kCountReplicas) warps contend a given (replica, slot) word
-  // (R-fold less SMEM-atomic serialization on hot bins). Keys stay shared;
-  // updates stay atomicAdd_block (warps sharing a replica are race-free).
-  // Layout: keys for all channels (`NumActiveChannels * slots` ints), then
-  // replicated counts (`NumActiveChannels * kCountReplicas * slots` CounterT).
-  // R is gated PER NUM_ACTIVE_CHANNELS: multi = 2, single = 1 (single-channel
-  // is occupancy/key-read-bound -- worker-3 brief-6 -- so R>1 regresses it; at
-  // R=1 the layout is byte-for-byte identical to the pre-replica cache).
+  // Same SMEM-atomic SERIALIZATION relief as the cuckoo kernel: the count array
+  // is split into `kCountReplicas` replicas and warp `w` uses replica
+  // `w % kCountReplicas`, so at most ~ceil(num_warps/kCountReplicas) warps
+  // contend a given (replica, slot) word. Keys stay shared; updates stay
+  // atomicAdd_block (warps sharing a replica are race-free). Layout: keys for
+  // all channels (`NumActiveChannels * slots` ints), then replicated counts
+  // (`NumActiveChannels * kCountReplicas * slots` CounterT).
   //
-  // brief-25 COMBINE (worker-2): the SINGLE-PROBE kernel takes R=4 for
-  // multi-channel (constexpr; single-channel folds to 1), folding worker-2
-  // brief-24's R=4-everywhere result onto this best. The historical brief-8
-  // caveat ("multi R=2 on single_probe HURTS multi_even -2%") was R=2 on an
-  // OLDER baseline / different slot budget; on this best the brief-24 force-sweep
-  // and the regime-matched 3-way measurement here both show multi single_probe
-  // R=4 is net positive-to-neutral (multi_even 1539-1540 vs the parent's 1536),
-  // because R=4 de-serialises the hot-slot atomicAdd_block more than the halved
-  // slot count costs at the >=65536-bin cells where the cache hit-rate is ~0.
-  // KEPT COMPILE-TIME (constexpr), NOT a runtime arg -- a runtime R regressed the
-  // sibling cuckoo kernel's multi_range -1.5% (issue-throughput cost of the
-  // runtime modulo + runtime-bounded flush on the register-pinned kernel); the
-  // single-probe kernel is the same register-pinned shape, so constexpr is used
-  // here too for byte-stable codegen. `NumActiveChannels` is a compile-time
-  // template param so single-channel folds to constexpr 1 (byte-identical
-  // pre-replica cache -- worker-3 brief-6).
+  // R is gated PER NUM_ACTIVE_CHANNELS (compile-time, via cache_tuning::replicas,
+  // matching the cuckoo kernel and the host sizer): multi-channel uses R>1 to
+  // de-serialise the hot-slot atomicAdd_block -- worth more than the halved slot
+  // count at the high bin counts that reach this kernel, where the cache hit rate
+  // is near zero -- while single-channel uses R=1 because it is occupancy /
+  // key-read-bound, leaving its count layout byte-for-byte identical to an
+  // unreplicated cache. R is kept compile-time (not a runtime arg) so the
+  // register-pinned kernel keeps stable codegen; `NumActiveChannels` is a
+  // template param so single-channel folds to constexpr 1.
   constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
   constexpr bool kWarpCoalesce = current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask  = cache_slots_per_channel - 1;
@@ -2819,9 +2753,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 
   // Per-thread, per-channel MRU bin-bracket cache. GATED TO SINGLE-CHANNEL: see
   // the matching comment in DeviceHistogramSweepDirectAtomicPersistentKernel --
-  // multi-channel mru[NumActiveChannels] spills to local memory (Stack 1024 B)
-  // and craters multi_range; single-channel mru[1] fits in registers and lifts
-  // histogram_range. Multi-channel keeps the parent's cacheless BinSelect.
+  // multi-channel mru[NumActiveChannels] spills to local memory and the per-sample
+  // LMEM round-trips cost more than the level loads they would replace; single-
+  // channel mru[1] fits in registers and speeds the RANGE classify. Multi-channel
+  // keeps the cacheless BinSelect.
   constexpr bool kUseMruCache = (NumActiveChannels == 1) && PrivatizedDecodeOpT::is_range_transform;
   typename PrivatizedDecodeOpT::BracketCacheT mru[NumActiveChannels];
 
@@ -2879,7 +2814,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         }
         else
         {
-          // WAYS-way set-associative probe (brief-15). Hash `bin` to a SET of
+          // WAYS-way set-associative probe. Hash `bin` to a SET of
           // `CUB_HISTO_SINGLE_PROBE_WAYS` ADJACENT slots [base, base+WAYS); the set
           // budget is `cache_slots_per_channel / WAYS` sets. Probe the ways in two
           // passes so a colliding bin gets a fallback slot before spilling:
@@ -2952,8 +2887,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // load -> classify -> match -> SMEM-read -> atomic chain per pixel;
       // then classify (Phase B); then coalesce/probe/atomic (Phase C). This
       // is the primary latency-hiding lever for this issue-bound /
-      // eligible-warp-scarce kernel (No Eligible ~55%, eligible warps/sched
-      // ~0.8 in profiling). The staged register array is only `unroll`
+      // eligible-warp-scarce kernel. The staged register array is only `unroll`
       // samples deep here (NumActiveChannels==1), so the extra register
       // footprint is small and occupancy is preserved.
       for (OffsetT it = 0; it < chunk_iters_max; ++it)
@@ -3030,21 +2964,20 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
             const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
 
-            // CHANNEL-LEVEL PARALLELISM (brief-15): classify ALL C channels
-            // first, THEN probe all C -- the identical split parent A applied to
-            // the CUCKOO kernel's multi-channel loop. The per-channel RANGE
-            // SearchTransform classify is L1/TEX-level-load-latency bound
-            // (dependent `wrapped_levels[guess]` LDG chain) at exhausted
+            // CHANNEL-LEVEL PARALLELISM: classify ALL C channels first, THEN
+            // probe all C -- the same split the cuckoo kernel's multi-channel
+            // loop uses. The per-channel RANGE SearchTransform classify is bound
+            // by the dependent `wrapped_levels[guess]` LDG chain at exhausted
             // occupancy, so the only lever left is more INDEPENDENT loads in
-            // flight. The old interleaved `for ch { BinSelect; probe_single }`
-            // put `probe_single`'s `__match_any_sync` (a warp convergence point)
+            // flight. An interleaved `for ch { BinSelect; probe_single }` puts
+            // `probe_single`'s `__match_any_sync` (a warp convergence point)
             // BETWEEN consecutive channels, serialising the C otherwise-
             // independent dependent-LDG chains per pixel. Splitting so every
             // channel's `BinSelect` runs back-to-back (no intervening warp sync)
             // lets the C chains OVERLAP (C-way memory-level parallelism); the
             // probe phase then coalesces+atomics each bin. The staged state is
-            // only `bins[NumActiveChannels]` ints (3 ints, multi), which the
-            // cuckoo kernel confirmed holds at 32 regs / 100% occ.
+            // only `bins[NumActiveChannels]` ints, which holds within the
+            // kernel's register budget.
             int bins[NumActiveChannels];
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -3079,13 +3012,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       else
       {
         // Scalar fallback: per-channel global loads (non-native / unaligned
-        // pointer). Same CHANNEL-LEVEL PARALLELISM split as the vectorized path
-        // (brief-15): classify all C channels back-to-back (overlapping the C
-        // independent dependent-LDG SearchTransform chains, no intervening
-        // `__match_any_sync` from probe_single), then probe all C. The staged
-        // `bins[NumActiveChannels]` is only `unroll`-independent of the sample
-        // values, so unlike staging `unroll * NumActiveChannels` SAMPLES this
-        // does not explode the register footprint.
+        // pointer). Same CHANNEL-LEVEL PARALLELISM split as the vectorized path:
+        // classify all C channels back-to-back (overlapping the C independent
+        // dependent-LDG SearchTransform chains, no intervening `__match_any_sync`
+        // from probe_single), then probe all C. Staging only the resulting
+        // `bins[NumActiveChannels]` (rather than `unroll * NumActiveChannels`
+        // SAMPLES) keeps the register footprint small.
         for (OffsetT it = 0; it < chunk_iters_max; ++it)
         {
           const OffsetT pixel = start + it * chunk;
