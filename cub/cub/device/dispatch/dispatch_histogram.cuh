@@ -1143,24 +1143,25 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // multi_range -1.5% on the register-pinned cuckoo kernel), so dispatch
       // sizing and kernel accesses agree by the identical `(multi ? 4 : 1)`
       // formula. The `kCountReplicas` below is the matching host-side mirror.
-      constexpr int kMultiChannelDirectAtomicReplicas = 4;
-      const int kCountReplicas = (NUM_ACTIVE_CHANNELS > 1) ? kMultiChannelDirectAtomicReplicas : 1;
+      // Count-replica factor and slot floor come from the tuning header so the
+      // host sizer and the kernels agree on one definition. R stays compile-time.
+      const int kCountReplicas = cache_tuning::replicas(NUM_ACTIVE_CHANNELS);
       const int cache_bytes_per_slot =
         static_cast<int>(sizeof(int)) + kCountReplicas * static_cast<int>(kernel_source.CounterSize());
-      const int cache_slots_floor    = (NUM_ACTIVE_CHANNELS == 1) ? 4096 : 1024;
-      // Cap the per-CTA dynamic SMEM for the cache. B200/SM100 supports ~228
-      // KiB opt-in dynamic SMEM per CTA; query the device max and stay under
-      // it (leaving headroom for driver reserve). Fall back to 96 KiB if the
-      // query fails.
+      const int cache_slots_floor = cache_tuning::slots_floor(NUM_ACTIVE_CHANNELS);
+      // Cap the per-CTA dynamic SMEM for the cache: query the device opt-in max
+      // (B200/SM100 ~228 KiB) and stay under it, falling back if the query fails.
       int max_optin_smem = 0;
       if (cudaDeviceGetAttribute(&max_optin_smem, cudaDevAttrMaxSharedMemoryPerBlockOptin, device_ordinal) != cudaSuccess
           || max_optin_smem <= 0)
       {
         (void) cudaGetLastError();
-        max_optin_smem = 96 * 1024;
+        max_optin_smem = cache_tuning::smem_fallback_bytes;
       }
-      // Reserve ~4 KiB for static/driver shared use; the rest is for the cache.
-      const int cache_smem_budget = (max_optin_smem > 4096) ? (max_optin_smem - 4096) : max_optin_smem;
+      // Reserve some SMEM for static/driver shared use; the rest is for the cache.
+      const int cache_smem_budget =
+        (max_optin_smem > cache_tuning::smem_reserve_bytes) ? (max_optin_smem - cache_tuning::smem_reserve_bytes)
+                                                            : max_optin_smem;
       const int max_slots_by_smem =
         cache_smem_budget / (NUM_ACTIVE_CHANNELS * cache_bytes_per_slot);
 

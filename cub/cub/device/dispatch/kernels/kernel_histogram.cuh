@@ -2139,10 +2139,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // the hot-slot atomicAdd_block to land (Mem/L1 pipe ~82% busy, DRAM ~2%). At
   // >=65536-bin cells the cache hit-rate is ~0, so the slots are dead weight; we
   // TRADE slot capacity for more independent count replicas (warp w -> replica
-  // w % kMultiChannelDirectAtomicReplicas) to shorten the per-replica atomic
-  // dependency chain. This factor MUST match dispatch_histogram.cuh's
-  // `kCountReplicas`. Applies to the brief-13 no-2nd-probe variant too (same
-  // kernel template).
+  // w % kCountReplicas) to shorten the per-replica atomic dependency chain. The
+  // replica factor comes from cache_tuning::replicas() so the kernels and the
+  // host cache sizer agree on one definition.
   //
   // brief-25 COMBINE (worker-2): extend R=4 from multi-RANGE-only to ALL
   // multi-channel cuckoo cells (drop the `is_range_transform` condition), folding
@@ -2158,8 +2157,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // (verified) and still lifts multi_even. `NumActiveChannels` is a compile-time
   // template param, so the single-channel specialisation folds to constexpr 1
   // (byte-identical pre-replica cache -- worker-3 brief-6).
-  constexpr int kMultiChannelDirectAtomicReplicas = 4;
-  constexpr int kCountReplicas = (NumActiveChannels > 1) ? kMultiChannelDirectAtomicReplicas : 1;
+  constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
   const int cache_mask  = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
@@ -2754,8 +2752,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // here too for byte-stable codegen. `NumActiveChannels` is a compile-time
   // template param so single-channel folds to constexpr 1 (byte-identical
   // pre-replica cache -- worker-3 brief-6).
-  constexpr int kMultiChannelDirectAtomicReplicas = 4;
-  constexpr int kCountReplicas = (NumActiveChannels > 1) ? kMultiChannelDirectAtomicReplicas : 1;
+  constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
   const int cache_mask  = cache_slots_per_channel - 1;
   const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
