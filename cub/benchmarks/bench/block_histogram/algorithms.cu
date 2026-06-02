@@ -14,7 +14,6 @@ enum class block_histogram_algorithm
 {
   atomic,
   warp_aggregated,
-  warp_aggregated_cg,
   sort,
 };
 
@@ -27,10 +26,6 @@ block_histogram_algorithm parse_algorithm(const std::string& name)
   if (name == "warp_aggregated")
   {
     return block_histogram_algorithm::warp_aggregated;
-  }
-  if (name == "warp_aggregated_cg")
-  {
-    return block_histogram_algorithm::warp_aggregated_cg;
   }
   if (name == "sort")
   {
@@ -53,7 +48,7 @@ __global__ void block_histogram_kernel(const SampleT* input, CounterT* histogram
   __shared__ typename block_histogram_t::TempStorage temp_storage;
 
   SampleT items[ItemsPerThread];
-  const int tile_base = static_cast<int>(blockIdx.x) * BlockThreads * ItemsPerThread;
+  const auto tile_base = static_cast<std::size_t>(blockIdx.x) * BlockThreads * ItemsPerThread;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ItemsPerThread; ++item)
@@ -91,10 +86,6 @@ void dispatch_algorithm(
       return;
     case block_histogram_algorithm::warp_aggregated:
       run_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, Bins, cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED>(
-        state, input, histograms, num_blocks);
-      return;
-    case block_histogram_algorithm::warp_aggregated_cg:
-      run_algorithm<SampleT, CounterT, BlockThreads, ItemsPerThread, Bins, cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED_CG>(
         state, input, histograms, num_blocks);
       return;
     case block_histogram_algorithm::sort:
@@ -192,7 +183,7 @@ using counter_types = nvbench::type_list<std::int32_t>;
 NVBENCH_BENCH_TYPES(block_histogram_algorithms, NVBENCH_TYPE_AXES(sample_types, counter_types))
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}"})
-  .add_string_axis("Algorithm", {"atomic", "warp_aggregated", "warp_aggregated_cg", "sort"})
+  .add_string_axis("Algorithm", {"atomic", "warp_aggregated", "sort"})
   .add_int64_axis("ItemsPerThread{io}", {1, 4, 8})
   .add_int64_axis("Bins", {32, 128, 2048})
   .add_int64_axis("Blocks", {4096, 16384})

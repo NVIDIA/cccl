@@ -57,8 +57,7 @@ using algorithms =
   c2h::enum_type_list<cub::BlockHistogramAlgorithm,
                       cub::BLOCK_HISTO_SORT,
                       cub::BLOCK_HISTO_ATOMIC,
-                      cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED,
-                      cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED_CG>;
+                      cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED>;
 
 template <class TestType>
 struct params_t

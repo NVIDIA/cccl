@@ -88,24 +88,6 @@ enum BlockHistogramAlgorithm
   //!
   //! @endrst
   BLOCK_HISTO_ATOMIC_WARP_AGGREGATED,
-
-  //! @rst
-  //!
-  //! Overview
-  //! ++++++++++++++++++++++++++
-  //!
-  //! Use cooperative groups in conjunction with warp-aggregated atomic
-  //! addition to update counts directly.
-  //!
-  //! Performance Considerations
-  //! ++++++++++++++++++++++++++
-  //!
-  //! This algorithm performs the same aggregation as
-  //! :cpp:enumerator:`cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED`, but uses
-  //! cooperative groups instead of raw warp-level intrinsics.
-  //!
-  //! @endrst
-  BLOCK_HISTO_ATOMIC_WARP_AGGREGATED_CG,
 };
 
 //! @rst
@@ -125,8 +107,6 @@ enum BlockHistogramAlgorithm
 //!   #. :cpp:enumerator:`cub::BLOCK_HISTO_SORT`: Sorting followed by differentiation.
 //!   #. :cpp:enumerator:`cub::BLOCK_HISTO_ATOMIC`: Use atomic addition to update byte counts directly.
 //!   #. :cpp:enumerator:`cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED`: Use raw warp primitives to aggregate
-//!      atomic updates by bin.
-//!   #. :cpp:enumerator:`cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED_CG`: Use cooperative groups to aggregate
 //!      atomic updates by bin.
 //!
 //! A Simple Example
@@ -217,9 +197,7 @@ private:
                      detail::BlockHistogramSort<T, BlockDimX, ItemsPerThread, Bins, BlockDimY, BlockDimZ>,
                      ::cuda::std::_If<Algorithm == BLOCK_HISTO_ATOMIC,
                                       detail::BlockHistogramAtomic<Bins>,
-                                      ::cuda::std::_If<Algorithm == BLOCK_HISTO_ATOMIC_WARP_AGGREGATED_CG,
-                                                       detail::BlockHistogramAtomicWarpAggregatedCg<Bins>,
-                                                       detail::BlockHistogramAtomicWarpAggregated<Bins>>>>;
+                                      detail::BlockHistogramAtomicWarpAggregated<Bins>>>;
 
   /// Shared memory storage layout type for BlockHistogram
   using _TempStorage = typename InternalBlockHistogram::TempStorage;
