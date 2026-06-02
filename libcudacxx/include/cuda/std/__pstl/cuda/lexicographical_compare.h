@@ -80,7 +80,7 @@ struct __lex_state_fn
 {
   _Compare __comp_;
 
-  _CCCL_API explicit constexpr __lex_state_fn(_Compare __comp)
+  _CCCL_API explicit constexpr __lex_state_fn(_Compare __comp) noexcept(is_nothrow_move_constructible_v<_Compare>)
       : __comp_(::cuda::std::move(__comp))
   {}
 
