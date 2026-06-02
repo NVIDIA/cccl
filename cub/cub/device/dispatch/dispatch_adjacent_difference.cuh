@@ -63,7 +63,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
-  static constexpr adjacent_difference_policy policy = current_policy<PolicySelector>();
+  static constexpr AdjacentDifferencePolicy policy = current_policy<PolicySelector>();
   using AdjacentDifferencePolicyT =
     AgentAdjacentDifferencePolicy<policy.threads_per_block,
                                   policy.items_per_thread,
@@ -100,10 +100,10 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   // this is only called in device code, so we can ignore the cc parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> adjacent_difference_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> AdjacentDifferencePolicy
   {
     using p = typename PolicyHub::MaxPolicy::ActivePolicy::AdjacentDifferencePolicy;
-    return adjacent_difference_policy{
+    return AdjacentDifferencePolicy{
       p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::LOAD_ALGORITHM, p::LOAD_MODIFIER, p::STORE_ALGORITHM};
   }
 };
@@ -344,7 +344,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const adjacent_difference_policy active_policy = policy_selector(cc);
+  const AdjacentDifferencePolicy active_policy = policy_selector(cc);
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
