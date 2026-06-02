@@ -502,21 +502,5 @@ struct policy_selector_from_types<RequiresStableAddress,
     return policies(cc);
   }
 };
-
-struct always_true_predicate
-{
-  template <typename... Ts>
-  _CCCL_HOST_DEVICE constexpr bool operator()(Ts&&...) const
-  {
-    return true;
-  }
-};
 } // namespace detail::transform
 CUB_NAMESPACE_END
-
-namespace cuda
-{
-template <>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
-{};
-} // namespace cuda
