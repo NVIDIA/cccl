@@ -843,13 +843,13 @@ struct DispatchSelectIf
     OffsetT num_items,
     cudaStream_t stream)
   {
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    int ptx_version = 0;
+    if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
     {
       return error;
     }
 
-    int ptx_version = 0;
-    if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
     {
       return error;
     }
@@ -1106,13 +1106,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

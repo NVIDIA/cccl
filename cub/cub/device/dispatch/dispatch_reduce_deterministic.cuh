@@ -339,14 +339,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  // Get CC
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  // Get CC
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

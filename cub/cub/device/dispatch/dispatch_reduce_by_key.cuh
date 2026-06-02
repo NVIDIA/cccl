@@ -606,11 +606,6 @@ struct DispatchReduceByKey
     OffsetT num_items,
     cudaStream_t stream)
   {
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-    {
-      return error;
-    }
-
     cudaError error = cudaSuccess;
 
     do
@@ -621,6 +616,11 @@ struct DispatchReduceByKey
       if (cudaSuccess != error)
       {
         break;
+      }
+
+      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      {
+        return error;
       }
 
       DispatchReduceByKey dispatch(
@@ -699,17 +699,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-  {
-    return error;
-  }
-
   using streaming_context_t = NullType; // streaming context not used for ReduceByKey yet
   using ScanTileStateT      = ReduceByKeyScanTileState<AccumT, OffsetT>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

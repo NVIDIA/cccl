@@ -421,11 +421,6 @@ struct DispatchSegmentedReduce
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-    {
-      return error;
-    }
-
     if (num_segments <= 0)
     {
       return cudaSuccess;
@@ -441,6 +436,11 @@ struct DispatchSegmentedReduce
       if (cudaSuccess != error)
       {
         break;
+      }
+
+      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      {
+        return error;
       }
 
       // Create dispatch functor
@@ -532,11 +532,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-  {
-    return error;
-  }
-
   if (num_segments <= 0)
   {
     return cudaSuccess;
@@ -545,6 +540,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // Get CC
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }
@@ -735,11 +735,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-  {
-    return error;
-  }
-
   if (num_segments <= 0)
   {
     if (d_temp_storage == nullptr)
@@ -752,6 +747,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   // Get CC
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

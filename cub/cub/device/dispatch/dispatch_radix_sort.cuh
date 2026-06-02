@@ -1138,14 +1138,14 @@ public:
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    // Get PTX version
+    int ptx_version = 0;
+    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
     {
       return error;
     }
 
-    // Get PTX version
-    int ptx_version = 0;
-    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
     {
       return error;
     }
@@ -1207,13 +1207,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

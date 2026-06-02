@@ -596,13 +596,13 @@ struct DispatchScanByKey
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {})
   {
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    int ptx_version = 0;
+    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
     {
       return error;
     }
 
-    int ptx_version = 0;
-    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
     {
       return error;
     }
@@ -641,13 +641,13 @@ struct DispatchScanByKey
     KernelSourceT kernel_source            = {},
     KernelLauncherFactory launcher_factory = {})
   {
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {
       return error;
     }
 
-    ::cuda::compute_capability cc{};
-    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
     {
       return error;
     }
@@ -743,16 +743,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-  {
-    return error;
-  }
-
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
                 "DispatchScan only supports unsigned offset types of at least 4-bytes");
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

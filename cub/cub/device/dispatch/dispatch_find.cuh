@@ -97,11 +97,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-  {
-    return error;
-  }
-
   using output_t = it_value_t<OutputIteratorT>;
 
   // if the output iterator can be turned into a pointer, the value type is integral, and has the same size as OffsetT
@@ -113,6 +108,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

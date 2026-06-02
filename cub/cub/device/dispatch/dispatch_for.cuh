@@ -115,11 +115,6 @@ template <class OffsetT, class OpT, class PolicySelector = policy_selector>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_selector = {})
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-  {
-    return error;
-  }
-
   if (num_items == 0)
   {
     return cudaSuccess;
@@ -127,6 +122,11 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

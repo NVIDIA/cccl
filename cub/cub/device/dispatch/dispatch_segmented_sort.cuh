@@ -689,14 +689,14 @@ struct DispatchSegmentedSort
     MaxPolicyT max_policy                         = {},
     PartitionMaxPolicyT partition_max_policy      = {})
   {
-    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    // Get PTX version
+    int ptx_version = 0;
+    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
     {
       return error;
     }
 
-    // Get PTX version
-    int ptx_version = 0;
-    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
     {
       return error;
     }
@@ -1286,11 +1286,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   PartitionKernelSource partition_kernel_source     = {},
   KernelLauncherFactory launcher_factory            = {}) -> cudaError_t
 {
-  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
-  {
-    return error;
-  }
-
   [[maybe_unused]] static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
   const auto get_num_passes = [&](int radix_bits) {
@@ -1314,6 +1309,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }
