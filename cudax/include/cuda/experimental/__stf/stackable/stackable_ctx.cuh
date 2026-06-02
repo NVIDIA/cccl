@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <atomic>
 #include <iostream>
+#include <memory>
 #include <shared_mutex>
 #include <stack>
 #include <thread>
@@ -88,6 +89,11 @@ inline bool access_mode_permits(access_mode granted, access_mode requested)
 //!
 //! It should behaves exactly like a logical_data with additional API to import
 //! it across nested contexts.
+//!
+//! The public class (shell) owns user-handle lifetime and import/adoption logic.
+//! The nested `state` type holds the data-node tree and virtual pop hooks; it
+//! is shared with graph nodes via `shared_ptr`. Shell copies alias an `owner`
+//! control block that pins orphaned state when the last handle dies.
 template <typename T>
 class stackable_logical_data
 {
@@ -95,629 +101,254 @@ public:
   /// @brief Alias for `T` - matches logical_data<T> convention
   using element_type = T;
 
-private:
-  class impl
+  //! @brief Retained payload stored type-erased in graph nodes (`pushed_data` /
+  //! `retained_data`). Pop hooks are virtual; everything else lives in the shell.
+  class state : public stackable_logical_data_impl_state_base
   {
-    // We separate the impl and the state so that if the stackable logical data
-    // gets destroyed before the stackable context gets destroyed, we can save
-    // this state in the context, in a vector of type-erased retained states
-    class state : public stackable_logical_data_impl_state_base
-    {
-    public:
-      state(stackable_ctx _sctx)
-          : sctx(mv(_sctx))
-      {}
-
-      // This method is called when we pop the stackable_logical_data before we
-      // have called finalize() on the nested context. This destroys the
-      // logical data that was created in the nested context.
-      void pop_before_finalize(int ctx_offset) override
-      {
-        // either data node is valid at the same offset (if the logical data
-        // wasn't destroyed), or its parent must be valid.
-        // int parent_offset = node_tree.parent[ctx_offset];
-        int parent_offset = sctx.get_parent_offset(ctx_offset);
-        _CCCL_ASSERT(parent_offset != -1, "");
-
-        // check the parent data is valid
-        _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
-
-        auto& parent_dnode = data_nodes[parent_offset].value();
-
-        // Maybe the logical data was already destroyed if the stackable
-        // logical data was destroyed before ctx pop, and that the data state
-        // was retained. In this case, the data_node object was already
-        // cleared and there is no need to do it here.
-        if (data_nodes[ctx_offset].has_value())
-        {
-          access_mode frozen_mode = get_frozen_mode(parent_offset);
-          if ((frozen_mode == access_mode::rw) && (data_nodes[ctx_offset].value().effective_mode == access_mode::read))
-          {
-            static ::std::atomic<int> warning_count{0};
-            if (warning_count.fetch_add(1, ::std::memory_order_relaxed) < 100)
-            {
-              fprintf(stderr,
-                      "Warning : no write access on data pushed with a write mode (may be suboptimal) (symbol %s)\n",
-                      symbol.empty() ? "(no symbol)" : symbol.c_str());
-              if (warning_count.load(::std::memory_order_relaxed) == 100)
-              {
-                fprintf(stderr, "Warning: Suppressing further write mode warnings (reached limit of 100)\n");
-              }
-            }
-          }
-
-          _CCCL_ASSERT(!data_nodes[ctx_offset].value().frozen_ld.has_value(), "internal error");
-          data_nodes[ctx_offset].reset();
-        }
-
-        // Unfreezing data will create a dependency which we need to track to
-        // display a dependency between the context and its parent in DOT.
-        // We do this operation before finalizing the context.
-        _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
-        parent_dnode.get_cnt--;
-
-        sctx.get_node(ctx_offset)
-          ->ctx.get_dot()
-          ->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
-      }
-
-      // Unfreeze the logical data after the context has been finalized.
-      void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
-      {
-        nvtx_range r("stackable_logical_data::pop_after_finalize");
-
-        _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
-        auto& dnode = data_nodes[parent_offset].value();
-
-        _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
-
-        dnode.unfreeze_prereqs.merge(finalize_prereqs);
-
-        // Only unfreeze if there are no other subcontext still using it
-        _CCCL_ASSERT(dnode.get_cnt >= 0, "get_cnt should never be negative");
-        if (dnode.get_cnt == 0)
-        {
-          dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
-          dnode.frozen_ld.reset();
-        }
-      }
-
-      int get_unique_id() const
-      {
-        _CCCL_ASSERT(data_root_offset != -1, "");
-        _CCCL_ASSERT(data_nodes[data_root_offset].has_value(), "");
-
-        // Get the ID of the base logical data
-        return get_data_node(data_root_offset).ld.get_unique_id();
-      }
-
-      bool is_read_only() const
-      {
-        return read_only;
-      }
-
-      class data_node
-      {
-      public:
-        data_node(logical_data<T> ld)
-            : ld(mv(ld))
-        {}
-
-        // Get the access mode used to freeze data
-        access_mode get_frozen_mode() const
-        {
-          _CCCL_ASSERT(frozen_ld.has_value(), "cannot query frozen mode : not frozen");
-          return frozen_ld.value().get_access_mode();
-        }
-
-        void set_symbol(const ::std::string& symbol)
-        {
-          ld.set_symbol(symbol);
-        }
-
-        logical_data<T> ld;
-
-        // Frozen counterpart of ld (if any)
-        ::std::optional<frozen_logical_data<T>> frozen_ld;
-
-        event_list unfreeze_prereqs;
-
-        // Once frozen, count number of calls to get
-        int get_cnt = 0;
-
-        // Keep track of actual data accesses, so that we can detect if we
-        // eventually did not need to freeze a data in write mode, for example.
-        access_mode effective_mode = access_mode::none;
-      };
-
-      auto& get_data_node(int offset)
-      {
-        _CCCL_ASSERT(offset != -1, "invalid value");
-        _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
-        return data_nodes[offset].value();
-      }
-
-      const auto& get_data_node(int offset) const
-      {
-        _CCCL_ASSERT(offset != -1, "invalid value");
-        _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
-        return data_nodes[offset].value();
-      }
-
-      template <typename Func>
-      void traverse_data_nodes(Func&& func) const
-      {
-        ::std::stack<int> node_stack;
-        node_stack.push(data_root_offset);
-
-        while (!node_stack.empty())
-        {
-          int offset = node_stack.top();
-          node_stack.pop();
-
-          // Call the provided function on the current node
-          func(offset);
-
-          // Push children to stack (reverse order to maintain left-to-right order)
-          const auto& children = sctx.get_children_offsets(offset);
-          for (auto it = children.rbegin(); it != children.rend(); ++it)
-          {
-            if (was_imported(*it))
-            {
-              node_stack.push(*it);
-            }
-          }
-        }
-      }
-
-      void set_symbol(::std::string symbol_)
-      {
-        auto ctx_lock = sctx.acquire_exclusive_lock();
-        symbol        = mv(symbol_);
-        traverse_data_nodes([this](int offset) {
-          get_data_node(offset).ld.set_symbol(this->symbol);
-        });
-      }
-
-      int get_data_root_offset() const
-      {
-        return data_root_offset;
-      }
-
-      bool was_imported(int offset) const
-      {
-        _CCCL_ASSERT(offset != -1, "");
-
-        if (offset >= int(data_nodes.size()))
-        {
-          return false;
-        }
-
-        return data_nodes[offset].has_value();
-      }
-
-      // Mark how a construct accessed this data node, so that we may detect if
-      // we were overly cautious when freezing data in RW mode. This would
-      // prevent concurrent accesses from different contexts, and may require
-      // to push data in read only, if appropriate.
-      void mark_access(int offset, access_mode m)
-      {
-        _CCCL_ASSERT(offset != -1 && data_nodes[offset].has_value(), "Failed to find data node for mark_access");
-        data_nodes[offset].value().effective_mode |= m;
-      }
-
-      bool is_frozen(int offset) const
-      {
-        _CCCL_ASSERT(data_nodes[offset].has_value(), "");
-        return data_nodes[offset].value().frozen_ld.has_value();
-      }
-
-      access_mode get_frozen_mode(int offset) const
-      {
-        _CCCL_ASSERT(is_frozen(offset), "");
-        return data_nodes[offset].value().frozen_ld.value().get_access_mode();
-      }
-
-      ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
-      {
-        return ::std::shared_lock<::std::shared_mutex>(mutex);
-      }
-
-      ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
-      {
-        return ::std::unique_lock<::std::shared_mutex>(mutex);
-      }
-
-      friend impl;
-
-    private:
-      // Centralized method to grow data nodes to a certain size
-      void grow_data_nodes(int target_size,
-                           size_t factor_numerator   = node_hierarchy::default_growth_numerator,
-                           size_t factor_denominator = node_hierarchy::default_growth_denominator)
-      {
-        if (target_size < int(data_nodes.size()))
-        {
-          return; // Already large enough
-        }
-
-        size_t new_size =
-          ::std::max(static_cast<size_t>(target_size), data_nodes.size() * factor_numerator / factor_denominator);
-        data_nodes.resize(new_size);
-      }
-
-      stackable_ctx sctx;
-
-      ::std::vector<::std::optional<data_node>> data_nodes;
-
-      int data_root_offset;
-
-      ::std::string symbol;
-
-      // Indicate whether it is allowed to access this logical data with
-      // write() or rw() access
-      bool read_only = false;
-
-      mutable ::std::shared_mutex mutex;
-    };
-
   public:
-    impl() = default;
-    impl(stackable_ctx sctx_,
-         int target_offset,
-         bool ld_from_shape,
-         logical_data<T> ld,
-         bool can_export,
-         data_place where = data_place::invalid())
-        : sctx(mv(sctx_))
-    {
-      impl_state = ::std::make_shared<state>(sctx);
+    explicit state(stackable_ctx _sctx)
+        : sctx(mv(_sctx))
+    {}
 
-      // TODO pass this offset directly rather than a boolean for more flexibility ? (e.g. creating a ctx of depth 2,
-      // export at depth 1, not 0 ...)
-      int data_root_offset         = can_export ? sctx.get_root_offset() : target_offset;
-      impl_state->data_root_offset = data_root_offset;
-
-      // Save the logical data at the base level
-      if (data_root_offset >= int(impl_state->data_nodes.size()))
-      {
-        impl_state->grow_data_nodes(data_root_offset + 1);
-      }
-      _CCCL_ASSERT(!impl_state->data_nodes[data_root_offset].has_value(), "");
-
-      impl_state->data_nodes[data_root_offset].emplace(ld);
-
-      // If necessary, import data recursively until we reach the target depth.
-      // We first find the path from the target to the root and we push along this path
-      if (target_offset != data_root_offset)
-      {
-        // Recurse from the target offset to the root offset
-        ::std::stack<int> path;
-        int current = target_offset;
-        while (current != data_root_offset)
-        {
-          path.push(current);
-
-          current = sctx.get_parent_offset(current);
-          _CCCL_ASSERT(current != -1, "");
-        }
-
-        // push along the path
-        while (!path.empty())
-        {
-          int offset = path.top();
-          push(offset, ld_from_shape ? access_mode::write : access_mode::rw, where);
-
-          path.pop();
-        }
-      }
-    }
-
-    // stackable_logical_data::impl::~impl
-    ~impl()
-    {
-      // Nothing to clean up if moved or default-constructed
-      if (!impl_state)
-      {
-        return;
-      }
-
-      auto ctx_lock = sctx.acquire_exclusive_lock(); // to protect retained_data
-
-      int data_root_offset = impl_state->get_data_root_offset();
-
-      _CCCL_ASSERT(impl_state->data_nodes[data_root_offset].has_value(), "");
-
-      // Do NOT destroy data_nodes here: the root data_node may still hold a
-      // frozen_ld that children depend on for pop_after_finalize to unfreeze.
-      // Ownership is transferred to children via retain_data; the shared_ptr
-      // ref-count ensures all data_nodes (including the root) are destroyed
-      // only after every child context has finished its pop sequence.
-      const auto& root_children = sctx.get_children_offsets(data_root_offset);
-      for (auto c : root_children)
-      {
-        if (impl_state->was_imported(c))
-        {
-          // Transfer shared_ptr ownership to child context's retained_data vector.
-          // The child context will keep impl_state alive until it's popped.
-          sctx.get_node(c)->retain_data(impl_state);
-        }
-      }
-
-      impl_state = nullptr;
-    }
-
-    // Delete copy constructor and copy assignment operator
-    impl(const impl&)            = delete;
-    impl& operator=(const impl&) = delete;
-
-    // Non movable
-    impl(impl&&) noexcept            = delete;
-    impl& operator=(impl&&) noexcept = delete;
-
-    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
-    {
-      return impl_state->acquire_shared_lock();
-    }
-
-    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
-    {
-      return impl_state->acquire_exclusive_lock();
-    }
-
-    const auto& get_ld(int offset) const
-    {
-      _CCCL_ASSERT(offset != -1 && impl_state->was_imported(offset), "Failed to find imported data");
-      return impl_state->get_data_node(offset).ld;
-    }
-
-    auto& get_ld(int offset)
-    {
-      _CCCL_ASSERT(offset != -1 && impl_state->was_imported(offset), "Failed to find imported data");
-      return impl_state->get_data_node(offset).ld;
-    }
-
-    int get_data_root_offset() const
-    {
-      return impl_state->get_data_root_offset();
-    }
-
-    int get_unique_id() const
-    {
-      return impl_state->get_unique_id();
-    }
-
-    /* Import data into the ctx at this offset */
-    void push(int ctx_offset, access_mode m, data_place where = data_place::invalid())
+    void pop_before_finalize(int ctx_offset) override
     {
       int parent_offset = sctx.get_parent_offset(ctx_offset);
+      _CCCL_ASSERT(parent_offset != -1, "");
 
-      // Base case: if this is root context (no parent), data should already exist
-      if (parent_offset == -1)
+      _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
+
+      auto& parent_dnode = data_nodes[parent_offset].value();
+
+      if (data_nodes[ctx_offset].has_value())
       {
-        _CCCL_ASSERT(impl_state->was_imported(ctx_offset), "Root context must already have data");
-        return;
-      }
-
-      if (ctx_offset >= int(impl_state->data_nodes.size()))
-      {
-        impl_state->grow_data_nodes(ctx_offset + 1);
-      }
-
-      if (impl_state->data_nodes[ctx_offset].has_value())
-      {
-        // Data already exists - ensure existing mode is compatible, no upgrades possible
-        auto& existing_node = impl_state->data_nodes[ctx_offset].value();
-        _CCCL_ASSERT(access_mode_permits(existing_node.effective_mode, m), "Cannot change existing access mode");
-        return;
-      }
-
-      // Ancestor compatibility is now handled by recursive push calls
-
-      // Check if parent has data, if not push with max required mode
-      access_mode max_required_parent_mode =
-        (m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw;
-
-      if (!impl_state->data_nodes[parent_offset].has_value())
-      {
-        // RECURSIVE CALL: Ensure parent has data first
-        push(parent_offset, max_required_parent_mode, where);
-      }
-
-      _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data should be available here");
-
-      auto& to_node   = sctx.get_node(ctx_offset);
-      auto& from_node = sctx.get_node(parent_offset);
-
-      context& to_ctx   = to_node->ctx;
-      context& from_ctx = from_node->ctx;
-
-      auto& from_data_node = impl_state->data_nodes[parent_offset].value();
-
-      if (where.is_invalid())
-      {
-        // use the default place
-        where = from_ctx.default_exec_place().affine_data_place();
-      }
-
-      _CCCL_ASSERT(!where.is_invalid(), "Invalid data place");
-
-      // Freeze the logical data of the parent node if it wasn't yet
-      if (!from_data_node.frozen_ld.has_value())
-      {
-        from_data_node.frozen_ld = from_ctx.freeze(from_data_node.ld, m, where, false /* not a user freeze */);
-        from_data_node.get_cnt   = 0;
-      }
-      else
-      {
-        // Data is already frozen - this is an IMPLICIT push
-        // For implicit pushes, use conservative mode: write/rw unless specifically read-only
-        access_mode existing_frozen_mode = from_data_node.frozen_ld.value().get_access_mode();
-
-        // Check if we need to upgrade the frozen mode for implicit push
-        if (!access_mode_permits(existing_frozen_mode, m))
+        access_mode frozen_mode = get_frozen_mode(parent_offset);
+        if ((frozen_mode == access_mode::rw) && (data_nodes[ctx_offset].value().effective_mode == access_mode::read))
         {
-          fprintf(stderr,
-                  "Error: Incompatible access mode - existing frozen mode %s conflicts with requested mode %s\n",
-                  access_mode_string(existing_frozen_mode),
-                  access_mode_string(m));
-          abort();
+          static ::std::atomic<int> warning_count{0};
+          if (warning_count.fetch_add(1, ::std::memory_order_relaxed) < 100)
+          {
+            fprintf(stderr,
+                    "Warning : no write access on data pushed with a write mode (may be suboptimal) (symbol %s)\n",
+                    symbol.empty() ? "(no symbol)" : symbol.c_str());
+            if (warning_count.load(::std::memory_order_relaxed) == 100)
+            {
+              fprintf(stderr, "Warning: Suppressing further write mode warnings (reached limit of 100)\n");
+            }
+          }
         }
+
+        _CCCL_ASSERT(!data_nodes[ctx_offset].value().frozen_ld.has_value(), "internal error");
+        data_nodes[ctx_offset].reset();
       }
 
-      _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
-      auto& frozen_ld = from_data_node.frozen_ld.value();
+      _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
+      parent_dnode.get_cnt--;
 
-      // FAKE IMPORT : use the stream needed to support the (graph) ctx
-      cudaStream_t stream = to_node->support_stream;
+      sctx.get_node(ctx_offset)->ctx.get_dot()->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
+    }
 
-      // Ensure there is a copy of the data in the data place, we keep a
-      // reference count of each context using this frozen data so that we only
-      // unfreeze once possible.
-      ::std::pair<T, event_list> get_res = frozen_ld.get(where);
-      auto ld                            = to_ctx.logical_data(get_res.first, where);
-      from_data_node.get_cnt++;
+    void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
+    {
+      nvtx_range r("stackable_logical_data::pop_after_finalize");
 
-      to_node->ctx_prereqs.merge(mv(get_res.second));
+      _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
+      auto& dnode = data_nodes[parent_offset].value();
 
-      if (!impl_state->symbol.empty())
+      _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
+
+      dnode.unfreeze_prereqs.merge(finalize_prereqs);
+
+      _CCCL_ASSERT(dnode.get_cnt >= 0, "get_cnt should never be negative");
+      if (dnode.get_cnt == 0)
       {
-        ld.set_symbol(impl_state->symbol);
+        dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
+        dnode.frozen_ld.reset();
+      }
+    }
+
+    struct data_node
+    {
+      explicit data_node(logical_data<T> ld)
+          : ld(mv(ld))
+      {}
+
+      logical_data<T> ld;
+      ::std::optional<frozen_logical_data<T>> frozen_ld;
+      event_list unfreeze_prereqs;
+      int get_cnt                = 0;
+      access_mode effective_mode = access_mode::none;
+    };
+
+    auto& get_data_node(int offset)
+    {
+      _CCCL_ASSERT(offset != -1, "invalid value");
+      _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
+      return data_nodes[offset].value();
+    }
+
+    const auto& get_data_node(int offset) const
+    {
+      _CCCL_ASSERT(offset != -1, "invalid value");
+      _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
+      return data_nodes[offset].value();
+    }
+
+    void grow_data_nodes(int target_size,
+                         size_t factor_numerator   = node_hierarchy::default_growth_numerator,
+                         size_t factor_denominator = node_hierarchy::default_growth_denominator)
+    {
+      if (target_size < int(data_nodes.size()))
+      {
+        return;
       }
 
-      // The inner context depends on the freeze operation, so we ensure DOT
-      // displays these dependencies from the freeze in the parent context to
-      // the child context itself.
-      to_ctx.get_dot()->ctx_add_input_id(frozen_ld.freeze_fake_task_id());
-
-      // Keep track of data that were pushed in this context.  This will be
-      // used to pop data automatically when nested contexts are popped.
-      to_node->track_pushed_data(impl_state);
-
-      // Create the node at the requested offset based on the logical data we
-      // have just created from the data frozen in its parent.
-      impl_state->data_nodes[ctx_offset].emplace(mv(ld));
-    }
-
-    /* Pop one level down */
-    void pop_before_finalize(int ctx_offset)
-    {
-      impl_state->pop_before_finalize(ctx_offset);
-    }
-
-    void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs)
-    {
-      impl_state->pop_after_finalize(parent_offset, finalize_prereqs);
-    }
-
-    void set_symbol(::std::string symbol)
-    {
-      impl_state->set_symbol(mv(symbol));
-    }
-
-    auto get_symbol() const
-    {
-      return impl_state->symbol;
-    }
-
-    // The write-back mechanism here refers to the write-back of the data at the bottom of the stack (user visible)
-    void set_write_back(bool flag)
-    {
-      _CCCL_ASSERT(!impl_state->data_nodes.empty(), "invalid value");
-      impl_state->data_nodes[impl_state->data_root_offset].value().ld.set_write_back(flag);
-    }
-
-    // Indicate that this logical data will only be used in a read-only mode
-    // now. Implicit data push will therefore be done in a read-only mode,
-    // which allows concurrent read accesses from  different contexts (ie. from
-    // multiple CUDA graphs)
-    void set_read_only(bool flag = true)
-    {
-      impl_state->read_only = flag;
-    }
-
-    bool is_read_only() const
-    {
-      return impl_state->is_read_only();
-    }
-
-    void mark_access(int offset, access_mode m)
-    {
-      return impl_state->mark_access(offset, m);
+      size_t new_size =
+        ::std::max(static_cast<size_t>(target_size), data_nodes.size() * factor_numerator / factor_denominator);
+      data_nodes.resize(new_size);
     }
 
     bool was_imported(int offset) const
     {
-      return impl_state->was_imported(offset);
+      _CCCL_ASSERT(offset != -1, "");
+
+      if (offset >= int(data_nodes.size()))
+      {
+        return false;
+      }
+
+      return data_nodes[offset].has_value();
+    }
+
+    void mark_access(int offset, access_mode m)
+    {
+      _CCCL_ASSERT(offset != -1 && data_nodes[offset].has_value(), "Failed to find data node for mark_access");
+      data_nodes[offset].value().effective_mode |= m;
     }
 
     bool is_frozen(int offset) const
     {
-      return impl_state->is_frozen(offset);
+      _CCCL_ASSERT(data_nodes[offset].has_value(), "");
+      return data_nodes[offset].value().frozen_ld.has_value();
     }
 
-    // Get the access mode used to freeze at a given offset
     access_mode get_frozen_mode(int offset) const
     {
-      return impl_state->get_frozen_mode(offset);
+      _CCCL_ASSERT(is_frozen(offset), "");
+      return data_nodes[offset].value().frozen_ld.value().get_access_mode();
     }
 
-    int get_ctx_head_offset() const
+    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
     {
-      return sctx.get_head_offset();
+      return ::std::shared_lock<::std::shared_mutex>(mutex);
     }
 
-  private:
-    template <typename, typename, bool>
-    friend class stackable_task_dep;
+    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
+    {
+      return ::std::unique_lock<::std::shared_mutex>(mutex);
+    }
 
     stackable_ctx sctx;
+    ::std::vector<::std::optional<data_node>> data_nodes;
+    int data_root_offset = -1;
+    ::std::string symbol;
+    bool read_only = false;
 
-    ::std::shared_ptr<state> impl_state;
+  private:
+    mutable ::std::shared_mutex mutex;
   };
 
-public:
   stackable_logical_data() = default;
+
+  stackable_logical_data(const stackable_logical_data&)                = default;
+  stackable_logical_data& operator=(const stackable_logical_data&)     = default;
+  stackable_logical_data(stackable_logical_data&&) noexcept            = default;
+  stackable_logical_data& operator=(stackable_logical_data&&) noexcept = default;
 
   /* Create a logical data in the stackable ctx : in order to make it possible
    * to export all the way down to the root context, we create the logical data
    * in the root, and import them. */
   stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
-      : pimpl(::std::make_shared<impl>(sctx, ctx_offset, ld_from_shape, mv(ld), can_export))
+      : owner_(::std::make_shared<owner>(::std::make_shared<state>(mv(sctx))))
   {
     static_assert(::std::is_move_constructible_v<stackable_logical_data>);
     static_assert(::std::is_move_assignable_v<stackable_logical_data>);
+
+    // TODO pass this offset directly rather than a boolean for more flexibility ? (e.g. creating a ctx of depth 2,
+    // export at depth 1, not 0 ...)
+    const int data_root_offset        = can_export ? owner_->payload->sctx.get_root_offset() : ctx_offset;
+    owner_->payload->data_root_offset = data_root_offset;
+
+    if (data_root_offset >= int(owner_->payload->data_nodes.size()))
+    {
+      owner_->payload->grow_data_nodes(data_root_offset + 1);
+    }
+    _CCCL_ASSERT(!owner_->payload->data_nodes[data_root_offset].has_value(), "");
+
+    owner_->payload->data_nodes[data_root_offset].emplace(mv(ld));
+
+    if (ctx_offset != data_root_offset)
+    {
+      ::std::stack<int> path;
+      int current = ctx_offset;
+      while (current != data_root_offset)
+      {
+        path.push(current);
+        current = owner_->payload->sctx.get_parent_offset(current);
+        _CCCL_ASSERT(current != -1, "");
+      }
+
+      while (!path.empty())
+      {
+        const int offset = path.top();
+        push_at(offset, ld_from_shape ? access_mode::write : access_mode::rw, data_place::invalid());
+        path.pop();
+      }
+    }
   }
 
   int get_data_root_offset() const
   {
-    return pimpl->get_data_root_offset();
+    return data().data_root_offset;
   }
 
   const auto& get_ld(int offset) const
   {
-    return pimpl->get_ld(offset);
+    _CCCL_ASSERT(offset != -1 && data().was_imported(offset), "Failed to find imported data");
+    return data().get_data_node(offset).ld;
   }
 
   auto& get_ld(int offset)
   {
-    return pimpl->get_ld(offset);
+    _CCCL_ASSERT(offset != -1 && mut_data().was_imported(offset), "Failed to find imported data");
+    return mut_data().get_data_node(offset).ld;
   }
 
   int get_unique_id() const
   {
-    return pimpl->get_unique_id();
+    const int root = get_data_root_offset();
+    _CCCL_ASSERT(root != -1, "");
+    _CCCL_ASSERT(data().data_nodes[root].has_value(), "");
+    return data().get_data_node(root).ld.get_unique_id();
   }
 
   void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
   {
-    pimpl->push(ctx_offset, m, mv(where));
+    const_cast<stackable_logical_data*>(this)->push_at(ctx_offset, m, mv(where));
   }
 
   void push(access_mode m, data_place where = data_place::invalid()) const
   {
-    int ctx_offset = pimpl->get_ctx_head_offset();
-    pimpl->push(ctx_offset, m, mv(where));
+    push(data().sctx.get_head_offset(), m, mv(where));
+  }
+
+  stackable_ctx& sctx()
+  {
+    return mut_data().sctx;
+  }
+
+  const stackable_ctx& sctx() const
+  {
+    return data().sctx;
   }
 
   // Helpers — return lazy stackable_task_dep descriptors.
@@ -792,38 +423,35 @@ public:
 
   auto& set_symbol(::std::string symbol)
   {
-    pimpl->set_symbol(mv(symbol));
+    auto& st      = mut_data();
+    auto ctx_lock = st.sctx.acquire_exclusive_lock();
+    st.symbol     = mv(symbol);
+    traverse_data_nodes(st, [symbol = st.symbol](state& s, int offset) {
+      s.get_data_node(offset).ld.set_symbol(symbol);
+    });
     return *this;
   }
 
   void set_write_back(bool flag)
   {
-    pimpl->set_write_back(flag);
+    auto& st = mut_data();
+    _CCCL_ASSERT(!st.data_nodes.empty(), "invalid value");
+    st.get_data_node(st.data_root_offset).ld.set_write_back(flag);
   }
 
   void set_read_only(bool flag = true)
   {
-    pimpl->set_read_only(flag);
+    mut_data().read_only = flag;
   }
 
   bool is_read_only() const
   {
-    return pimpl->is_read_only();
+    return data().read_only;
   }
 
   auto get_symbol() const
   {
-    return pimpl->get_symbol();
-  }
-
-  auto get_impl()
-  {
-    return pimpl;
-  }
-
-  auto get_impl() const
-  {
-    return pimpl;
+    return data().symbol;
   }
 
   // Test whether it is valid to access this stackable_logical_data with a
@@ -831,10 +459,10 @@ public:
   // if necessary.
   //
   // Returns true if the task_dep needs an update
-  bool validate_access(int ctx_offset, const stackable_ctx& sctx, access_mode m) const
+  bool validate_access(int ctx_offset, const stackable_ctx& sctx_ref, access_mode m) const
   {
-    // Grab the lock of the data, note that we are already holding the context lock in read mode
-    auto lock = pimpl->acquire_exclusive_lock();
+    auto& self = *const_cast<stackable_logical_data*>(this);
+    auto lock  = self.mut_data().acquire_exclusive_lock();
 
     _CCCL_ASSERT(m != access_mode::none && m != access_mode::relaxed, "Unsupported access mode in nested context");
 
@@ -845,17 +473,12 @@ public:
       return false;
     }
 
-    // If the stackable logical data is already available at the appropriate depth, we
-    // simply need to ensure we don't make an illegal access (eg. writing a
-    // read only variable)
-    if (pimpl->was_imported(ctx_offset))
+    if (data().was_imported(ctx_offset))
     {
-      // Always validate access modes - find the actual parent with frozen data
-      int parent_offset = sctx.get_parent_offset(ctx_offset);
-      if (parent_offset != -1 && pimpl->is_frozen(parent_offset))
+      int parent_offset = sctx_ref.get_parent_offset(ctx_offset);
+      if (parent_offset != -1 && data().is_frozen(parent_offset))
       {
-        access_mode parent_frozen_mode = pimpl->get_frozen_mode(parent_offset);
-        // Check access mode compatibility with parent's frozen mode
+        access_mode parent_frozen_mode = data().get_frozen_mode(parent_offset);
         if (!access_mode_permits(parent_frozen_mode, m))
         {
           fprintf(stderr,
@@ -866,52 +489,220 @@ public:
         }
       }
 
-      // To potentially detect if we were overly cautious when importing data
-      // in rw mode, we record how we access it in this construct
-      pimpl->mark_access(ctx_offset, m);
-
-      // We need to update because the current ctx offset was not the base offset
+      self.mark_access_at(ctx_offset, m);
       return true;
     }
 
-    // If we reach this point, this means we need to automatically push data
-
-    // The access mode will be very conservative for these implicit accesses
     access_mode push_mode =
       is_read_only() ? access_mode::read
                      : ((m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw);
 
-    // Recurse from the target offset to its first imported(pushed) parent
     ::std::stack<int> path;
     int current = ctx_offset;
-    while (!pimpl->was_imported(current))
+    while (!data().was_imported(current))
     {
       path.push(current);
-
-      current = sctx.get_parent_offset(current);
+      current = sctx_ref.get_parent_offset(current);
       _CCCL_ASSERT(current != -1, "");
     }
 
-    // use the affine data place for the current default place
-    auto where = sctx.get_ctx(ctx_offset).default_exec_place().affine_data_place();
+    auto where = sctx_ref.get_ctx(ctx_offset).default_exec_place().affine_data_place();
 
-    // push along the path
     while (!path.empty())
     {
-      int offset = path.top();
-      pimpl->push(offset, push_mode, where);
+      const int offset = path.top();
+      self.push_at(offset, push_mode, where);
       path.pop();
     }
 
-    // To potentially detect if we were overly cautious when importing data
-    // in rw mode, we record how we access it in this construct
-    pimpl->mark_access(ctx_offset, m);
-
+    self.mark_access_at(ctx_offset, m);
     return true;
   }
 
 private:
-  ::std::shared_ptr<impl> pimpl;
+  template <typename, typename, bool>
+  friend class stackable_task_dep;
+
+  //! Runs when the last shell copy dies; pins `state` in child graph nodes.
+  struct owner
+  {
+    ::std::shared_ptr<state> payload;
+
+    explicit owner(::std::shared_ptr<state> st)
+        : payload(mv(st))
+    {}
+
+    ~owner()
+    {
+      if (payload)
+      {
+        adopt_into_context(payload);
+      }
+    }
+
+    owner(const owner&)            = delete;
+    owner& operator=(const owner&) = delete;
+    owner(owner&&)                 = delete;
+    owner& operator=(owner&&)      = delete;
+  };
+
+  const state& data() const
+  {
+    _CCCL_ASSERT(owner_ && owner_->payload, "stackable_logical_data used after move or default construction");
+    return *owner_->payload;
+  }
+
+  state& mut_data()
+  {
+    _CCCL_ASSERT(owner_ && owner_->payload, "stackable_logical_data used after move or default construction");
+    return *owner_->payload;
+  }
+
+  static void adopt_into_context(const ::std::shared_ptr<state>& st)
+  {
+    if (!st)
+    {
+      return;
+    }
+
+    auto ctx_lock = st->sctx.acquire_exclusive_lock();
+
+    const int data_root_offset = st->data_root_offset;
+    _CCCL_ASSERT(st->data_nodes[data_root_offset].has_value(), "");
+
+    // Do NOT destroy data_nodes here: the root data_node may still hold a
+    // frozen_ld that children depend on for pop_after_finalize to unfreeze.
+    // Pin the shared state in imported child nodes so it outlives this handle
+    // until every child context has finished its pop sequence.
+    const auto& root_children = st->sctx.get_children_offsets(data_root_offset);
+    for (auto c : root_children)
+    {
+      if (st->was_imported(c))
+      {
+        st->sctx.get_node(c)->retain_data(st);
+      }
+    }
+  }
+
+  template <typename Func>
+  static void traverse_data_nodes(state& st, Func&& func)
+  {
+    ::std::stack<int> node_stack;
+    node_stack.push(st.data_root_offset);
+
+    while (!node_stack.empty())
+    {
+      const int offset = node_stack.top();
+      node_stack.pop();
+
+      func(st, offset);
+
+      const auto& children = st.sctx.get_children_offsets(offset);
+      for (auto it = children.rbegin(); it != children.rend(); ++it)
+      {
+        if (st.was_imported(*it))
+        {
+          node_stack.push(*it);
+        }
+      }
+    }
+  }
+
+  void mark_access_at(int offset, access_mode m)
+  {
+    mut_data().mark_access(offset, m);
+  }
+
+  void push_at(int ctx_offset, access_mode m, data_place where = data_place::invalid())
+  {
+    auto& st                = mut_data();
+    const int parent_offset = st.sctx.get_parent_offset(ctx_offset);
+
+    if (parent_offset == -1)
+    {
+      _CCCL_ASSERT(st.was_imported(ctx_offset), "Root context must already have data");
+      return;
+    }
+
+    if (ctx_offset >= int(st.data_nodes.size()))
+    {
+      st.grow_data_nodes(ctx_offset + 1);
+    }
+
+    if (st.data_nodes[ctx_offset].has_value())
+    {
+      auto& existing_node = st.data_nodes[ctx_offset].value();
+      _CCCL_ASSERT(access_mode_permits(existing_node.effective_mode, m), "Cannot change existing access mode");
+      return;
+    }
+
+    access_mode max_required_parent_mode =
+      (m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw;
+
+    if (!st.data_nodes[parent_offset].has_value())
+    {
+      push_at(parent_offset, max_required_parent_mode, where);
+    }
+
+    _CCCL_ASSERT(st.data_nodes[parent_offset].has_value(), "parent data should be available here");
+
+    auto& to_node   = st.sctx.get_node(ctx_offset);
+    auto& from_node = st.sctx.get_node(parent_offset);
+
+    context& to_ctx   = to_node->ctx;
+    context& from_ctx = from_node->ctx;
+
+    auto& from_data_node = st.data_nodes[parent_offset].value();
+
+    if (where.is_invalid())
+    {
+      where = from_ctx.default_exec_place().affine_data_place();
+    }
+
+    _CCCL_ASSERT(!where.is_invalid(), "Invalid data place");
+
+    if (!from_data_node.frozen_ld.has_value())
+    {
+      from_data_node.frozen_ld = from_ctx.freeze(from_data_node.ld, m, where, false /* not a user freeze */);
+      from_data_node.get_cnt   = 0;
+    }
+    else
+    {
+      access_mode existing_frozen_mode = from_data_node.frozen_ld.value().get_access_mode();
+
+      if (!access_mode_permits(existing_frozen_mode, m))
+      {
+        fprintf(stderr,
+                "Error: Incompatible access mode - existing frozen mode %s conflicts with requested mode %s\n",
+                access_mode_string(existing_frozen_mode),
+                access_mode_string(m));
+        abort();
+      }
+    }
+
+    _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
+    auto& frozen_ld = from_data_node.frozen_ld.value();
+
+    ::std::pair<T, event_list> get_res = frozen_ld.get(where);
+    auto ld                            = to_ctx.logical_data(get_res.first, where);
+    from_data_node.get_cnt++;
+
+    to_node->ctx_prereqs.merge(mv(get_res.second));
+
+    if (!st.symbol.empty())
+    {
+      ld.set_symbol(st.symbol);
+    }
+
+    to_ctx.get_dot()->ctx_add_input_id(frozen_ld.freeze_fake_task_id());
+
+    to_node->track_pushed_data(owner_->payload);
+
+    st.data_nodes[ctx_offset].emplace(mv(ld));
+  }
+
+  // Aliased across shell copies; `owner` runs orphan adoption in its destructor.
+  ::std::shared_ptr<owner> owner_;
 };
 
 inline stackable_logical_data<void_interface> stackable_ctx::token()
@@ -948,7 +739,7 @@ public:
   // Resolves at the current thread's head offset.
   operator task_dep<T, reduce_op, initialize>() const
   {
-    auto& sctx = d.get_impl()->sctx;
+    auto& sctx = d.sctx();
     int offset = sctx.get_head_offset();
     d.validate_access(offset, sctx, mode);
     return resolve(offset);
@@ -1091,6 +882,11 @@ public:
     return !token_.expired();
   }
 
+  explicit operator bool() const
+  {
+    return valid();
+  }
+
 private:
   friend class stackable_ctx;
 
@@ -1174,9 +970,11 @@ inline stackable_ctx::graph_scope_guard stackable_ctx::graph_scope(const ::cuda:
 
 //! \brief RAII wrapper for a re-launchable pop scope.
 //!
-//! On construction, calls ctx.push() and then ctx.pop_prologue(). The caller
-//! uses launch() as many times as desired; the destructor (or an explicit
-//! release()) runs ctx.pop_epilogue() and makes the handle invalid.
+//! On construction, calls `ctx.push()`. The caller builds the nested graph
+//! body, then uses `launch()` (or `exec()` / `stream()` / `graph()`) as many
+//! times as desired; the first such call triggers `ctx.pop_prologue()`. The
+//! destructor (or an explicit `release()`) runs `ctx.pop_epilogue()` and
+//! invalidates the handle.
 //!
 //! Usage:
 //! \code
@@ -1197,12 +995,8 @@ public:
       : ctx_(ctx)
   {
     ctx_.push(loc);
-    // The graph body is built by the caller after construction. The handle
-    // is populated on release() / destructor by calling pop_prologue() only
-    // once we're ready - but the plan names this class a "scope" in the
-    // same spirit as graph_scope_guard, so we run pop_prologue() lazily on
-    // the first call to launch(). This matches the natural call order
-    // (push -> build -> launch -> pop_epilogue).
+    // pop_prologue() runs lazily on the first launch()/exec()/stream()/graph(),
+    // or on release() if none of those were called.
   }
 
   ~launchable_graph_scope() noexcept
@@ -1255,33 +1049,29 @@ public:
     {
       return;
     }
-    released_ = true;
 
-    if (!prepared_)
-    {
-      // No one ever called launch()/exec()/stream()/graph(): we still ran push()
-      // in the constructor, so we must match it with a prologue+epilogue
-      // pair to tear the node down cleanly. finalize_after_launch handles
-      // the no-launch case correctly.
-      handle_   = ctx_.pop_prologue();
-      prepared_ = true;
-    }
+    // If no one ever called launch()/exec()/stream()/graph(): we still ran push()
+    // in the constructor, so we must match it with a prologue+epilogue
+    // pair to tear the node down cleanly. finalize_after_launch handles
+    // the no-launch case correctly.
+    ensure_prepared_();
+
     ctx_.pop_epilogue();
+    released_ = true;
   }
 
 private:
   void ensure_prepared_()
   {
-    if (!prepared_)
+    _CCCL_VERIFY(!released_, "launchable_graph_scope used after release()");
+    if (!handle_)
     {
-      handle_   = ctx_.pop_prologue();
-      prepared_ = true;
+      handle_ = ctx_.pop_prologue();
     }
   }
 
   stackable_ctx& ctx_;
   launchable_graph_handle handle_;
-  bool prepared_ = false;
   bool released_ = false;
 };
 
