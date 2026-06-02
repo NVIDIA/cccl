@@ -223,7 +223,7 @@ struct MergeSortPolicySelector
 };
 // example-end sort-pairs-policy-selector
 
-C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API", "[merge_sort][env]")
+C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with tuning", "[merge_sort][env]")
 {
   // example-begin sort-pairs-tuning
   auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
