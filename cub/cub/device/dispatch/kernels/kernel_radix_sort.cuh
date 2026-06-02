@@ -160,9 +160,7 @@ __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_blo
                               policy.store_algorithm,
                               policy.scan_algorithm,
                               NoScaling<policy.threads_per_block, policy.items_per_thread>,
-                              delay_constructor_t<policy.delay_constructor.kind,
-                                                  policy.delay_constructor.delay,
-                                                  policy.delay_constructor.l2_write_latency>>;
+                              delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT = scan::AgentScan<ScanPolicy, OffsetT*, OffsetT*, ::cuda::std::plus<>, OffsetT, OffsetT, OffsetT>;
