@@ -94,7 +94,7 @@ That'd give us the following PTX code:
 
 
             ld.param.u32    %r1, [op_param_0];
-            shl.b32         %r2, %r1, 1;
+           	shl.b32 	%r2, %r1, 1;
             st.param.b32    [func_retval0+0], %r2;
             ret;
     }
