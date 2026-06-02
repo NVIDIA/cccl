@@ -50,7 +50,7 @@ void block_histogram(c2h::device_vector<SampleT>& d_samples, c2h::device_vector<
 // %PARAM% TEST_BINS bins 32:256:1024
 
 using types            = c2h::type_list<std::uint8_t, std::uint16_t>;
-using threads_in_block = c2h::enum_type_list<int, 32, 96, 128>;
+using threads_in_block = c2h::enum_type_list<int, 32, 33, 96, 128>;
 using items_per_thread = c2h::enum_type_list<int, 1, 5>;
 using bins             = c2h::enum_type_list<int, TEST_BINS>;
 using algorithms =

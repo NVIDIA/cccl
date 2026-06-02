@@ -192,12 +192,12 @@ private:
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Internal specialization.
-  using InternalBlockHistogram =
-    ::cuda::std::_If<Algorithm == BLOCK_HISTO_SORT,
-                     detail::BlockHistogramSort<T, BlockDimX, ItemsPerThread, Bins, BlockDimY, BlockDimZ>,
-                     ::cuda::std::_If<Algorithm == BLOCK_HISTO_ATOMIC,
-                                      detail::BlockHistogramAtomic<Bins>,
-                                      detail::BlockHistogramAtomicWarpAggregated<Bins>>>;
+  using InternalBlockHistogram = ::cuda::std::_If<
+    Algorithm == BLOCK_HISTO_SORT,
+    detail::BlockHistogramSort<T, BlockDimX, ItemsPerThread, Bins, BlockDimY, BlockDimZ>,
+    ::cuda::std::_If<Algorithm == BLOCK_HISTO_ATOMIC,
+                     detail::BlockHistogramAtomic<Bins>,
+                     detail::BlockHistogramAtomicWarpAggregated<Bins, BlockDimX, BlockDimY, BlockDimZ>>>;
 
   /// Shared memory storage layout type for BlockHistogram
   using _TempStorage = typename InternalBlockHistogram::TempStorage;
