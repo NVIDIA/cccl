@@ -126,41 +126,39 @@ static constexpr int hybrid_smem_split_bin_single_channel = 49152;
 // dispatch entry points.
 enum class algorithm : unsigned char
 {
+  // --- Privatized-SMEM histograms (low/mid bin counts) ---
+
   // Static fixed-size privatized-SMEM histogram: bins <= 256, and all byte
   // samples. The per-block histogram is a compile-time-sized __shared__ array.
   smem_priv_256,
 
   // Dynamic privatized-SMEM histogram for 256 < bins <= max_dynamic_smem_bins.
-  // The per-block histogram lives in extern __shared__ sized at launch (so a
-  // single kernel covers the whole range instead of a ladder of compile-time
-  // tiers) and is merged into the output with a per-block atomicAdd.
+  // The per-block histogram lives in extern __shared__ sized at launch (so one
+  // kernel covers the whole range instead of a ladder of compile-time tiers)
+  // and is merged into the output with a per-block atomicAdd.
   smem_priv_dynamic,
 
-  // Hybrid SMEM+GMEM single-pass kernel. One cooperative launch; bins in
-  // (xlarge, chunked_max] for sizeof(SampleT)<=4 single-channel paths.
+  // Single-channel SMEM+GMEM single-pass kernel: a primary range of bins stays
+  // on chip while the tail spills to a per-block GMEM region, merged in one
+  // cooperative launch. Bridges the privatized-SMEM and high-bin regimes.
   hybrid_single_pass,
 
-  // High-bin GMEM-priv path with the persistent direct-atomic-to-output
-  // kernel + per-block SMEM cuckoo cache. Cache absorbs cross-block
-  // contention for low-entropy hot-bin workloads.
-  gmem_priv_cuckoo,
+  // --- High-bin algorithms (bins > max_dynamic_smem_bins) ---
 
-  // High-bin GMEM-priv path with the cooperative SweepPersistent kernel
-  // (per-block privatised histograms + atomic-free gather merge after
-  // grid.sync). Wins on bandwidth-bound large-input workloads where the
-  // cuckoo cache's lookup chains stall.
-  gmem_priv_sweep,
+  // Direct atomics to the output, fronted by a per-block 2-hash (cuckoo) SMEM
+  // cache that absorbs cross-block contention for skewed hot-bin inputs.
+  direct_atomic_cuckoo,
 
-  // High-bin GMEM-priv path with the persistent direct-atomic-to-output
-  // kernel + per-block SINGLE-PROBE direct-mapped SMEM cache. Identical to
-  // gmem_priv_cuckoo except the cache probes exactly one slot (miss -> GMEM
-  // atomic) instead of a 2-hash cuckoo chain. The shorter, less-divergent
-  // critical section wins at HUGE element counts with very high bin counts
-  // (single channel), where the cooperative sweep's per-block privatized
-  // intermediate is DRAM-bound and privatization buys ~nothing (only a
-  // handful of counts per bin), while the cuckoo chain's extra CAS/probe
-  // work is wasted because the bins vastly outnumber the cache slots.
-  gmem_priv_single_probe,
+  // Direct atomics to the output, fronted by a per-block single-probe
+  // direct-mapped SMEM cache. The shorter, less-divergent probe wins over the
+  // cuckoo chain at very high bin counts, where bins vastly outnumber cache
+  // slots so the cache holds almost nothing and the extra cuckoo probe is wasted.
+  direct_atomic_single_probe,
+
+  // Per-block privatized histograms in GMEM, combined by an atomic-free
+  // gather-merge after a grid sync (one cooperative launch). Wins on
+  // bandwidth-bound large inputs where the direct-atomic cache thrashes.
+  gmem_priv_gather,
 };
 
 // Inputs to the selector. Every value used to make a dispatch decision must
@@ -259,9 +257,9 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   //
   // The choice here is between four GMEM-priv-class algorithms: the
   // direct-atomic-to-output kernel with a per-block SMEM cuckoo cache
-  // (`gmem_priv_cuckoo`) or single-probe direct-mapped cache
-  // (`gmem_priv_single_probe`), the cooperative privatized-then-gather-merge
-  // `gmem_priv_sweep`, and the single-channel SMEM+GMEM single-pass
+  // (`direct_atomic_cuckoo`) or single-probe direct-mapped cache
+  // (`direct_atomic_single_probe`), the cooperative privatized-then-gather-merge
+  // `gmem_priv_gather`, and the single-channel SMEM+GMEM single-pass
   // `hybrid_single_pass`. The selector cannot observe the input entropy (a
   // run-time data property), so each rule below is the algorithm that wins the
   // GEOMEAN over the {constant, skewed, uniform} entropy mix for that
@@ -340,7 +338,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
     // brief-13 cuckoo 2nd-probe gate never fires on them.
     if (f.num_bins > chunked_smem_bins_max_single_channel)
     {
-      return algorithm::gmem_priv_single_probe;
+      return algorithm::direct_atomic_single_probe;
     }
 
     // Cap-bin tier (65536). Small-N (fixed-cost-bound) cells route to
@@ -352,7 +350,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
     // (65536 EVEN-F64 +25%, EVEN-I32 +9%, RANGE +0.8-3%).
     if (f.num_pixels <= kSmallNHighBinPixels)
     {
-      return algorithm::gmem_priv_single_probe;
+      return algorithm::direct_atomic_single_probe;
     }
     // Cap-bin tier at moderate/large N: the SMEM+GMEM single-pass hybrid keeps
     // the whole (modest) histogram on-chip and dominates here -- up to ~2x over
@@ -373,15 +371,15 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
     {
       if (f.num_pixels >= kRangeF64SweepPixelThreshold)
       {
-        return algorithm::gmem_priv_sweep;
+        return algorithm::gmem_priv_gather;
       }
       if (f.num_pixels >= (1LL << 24)) // ~16M pixels
       {
         return algorithm::hybrid_single_pass;
       }
-      return algorithm::gmem_priv_cuckoo;
+      return algorithm::direct_atomic_cuckoo;
     }
-    return algorithm::gmem_priv_cuckoo;
+    return algorithm::direct_atomic_cuckoo;
   }
 
   // ---- Multi-channel high-bin (hybrid is single-channel-only) ----
@@ -392,7 +390,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // costly, while cuckoo loses ~9% on the geomean). Everything else -> cuckoo.
   if (f.is_even && f.sample_bytes < 8)
   {
-    return algorithm::gmem_priv_single_probe;
+    return algorithm::direct_atomic_single_probe;
   }
   // RANGE at the 16384/65536-bin tiers, moderate/large input (16M..256M):
   // single_probe, BOTH sample widths (I32 and F64).
@@ -438,16 +436,16 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   if (!f.is_even && f.num_bins <= chunked_smem_bins_max_single_channel
       && f.num_pixels >= (1LL << 24) && f.num_pixels <= kSweepPixelThreshold)
   {
-    return algorithm::gmem_priv_single_probe;
+    return algorithm::direct_atomic_single_probe;
   }
   // Strictly the 262144 mid-tier (above the cap, at/below kMidHighBinTier): the
   // 65536 cap-bin F64 cells favour cuckoo here, not single-probe.
   if (f.sample_bytes >= 8 && f.num_bins > chunked_smem_bins_max_single_channel
       && f.num_bins <= kMidHighBinTier && f.num_pixels >= kSweepPixelThreshold)
   {
-    return algorithm::gmem_priv_single_probe;
+    return algorithm::direct_atomic_single_probe;
   }
-  return algorithm::gmem_priv_cuckoo;
+  return algorithm::direct_atomic_cuckoo;
 }
 
 template <int NUM_CHANNELS,
@@ -1038,7 +1036,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // launch args below are all common to both; only the leader's probe
       // policy differs. Selected when the caller requests
       // `direct_atomic_cache_mode == 1` (the huge-N single-channel high-bin
-      // route picked by the unified selector as gmem_priv_single_probe).
+      // route picked by the unified selector as direct_atomic_single_probe).
       auto direct_atomic_single_probe_kernel_ptr =
         &DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel<PolicySelector,
                                                                      PRIVATIZED_SMEM_BINS,
@@ -2368,21 +2366,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       }
       [[fallthrough]];
     }
-    case algorithm::gmem_priv_cuckoo:
-    case algorithm::gmem_priv_sweep:
-    case algorithm::gmem_priv_single_probe: {
+    case algorithm::direct_atomic_cuckoo:
+    case algorithm::gmem_priv_gather:
+    case algorithm::direct_atomic_single_probe: {
       // All three go through PRIVATIZED_SMEM_BINS=0 in the deeper `dispatch<>`,
       // which chooses between the direct-atomic-to-output kernel and the
       // SweepPersistent gather-merge kernel based on `disable_direct_atomic`,
       // and (for the direct-atomic path) between the cuckoo and single-probe
       // caches based on `direct_atomic_cache_mode`. We pass both from the
       // selector's pick:
-      //   gmem_priv_sweep        -> disable_direct_atomic=true  (sweep)
-      //   gmem_priv_cuckoo       -> direct-atomic, cache_mode=0 (cuckoo)
-      //   gmem_priv_single_probe -> direct-atomic, cache_mode=1 (single-probe)
-      constexpr int PRIVATIZED_SMEM_BINS  = 0;
-      const bool disable_direct_atomic_io = (algo == algorithm::gmem_priv_sweep);
-      const int direct_atomic_cache_mode  = (algo == algorithm::gmem_priv_single_probe) ? 1 : 0;
+      //   gmem_priv_gather        -> disable_direct_atomic=true  (sweep)
+      //   direct_atomic_cuckoo       -> direct-atomic, cache_mode=0 (cuckoo)
+      //   direct_atomic_single_probe -> direct-atomic, cache_mode=1 (single-probe)
+      constexpr int PRIVATIZED_SMEM_BINS = 0;
+      const bool disable_direct_atomic   = (algo == algorithm::gmem_priv_gather);
+      const int direct_atomic_cache_mode = (algo == algorithm::direct_atomic_single_probe) ? 1 : 0;
       return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2400,7 +2398,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
         policy_selector,
         kernel_source,
         launcher_factory,
-        disable_direct_atomic_io,
+        disable_direct_atomic,
         direct_atomic_cache_mode);
     }
   }
