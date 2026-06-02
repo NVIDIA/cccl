@@ -22,7 +22,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-designator")
 #  endif // _CCCL_COMPILER(CLANG)
 
 // example-begin transform-policy-selector
-struct MyTransformPolicySelector
+struct TransformPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::TransformPolicy
   {
@@ -48,7 +48,7 @@ C2H_TEST("cub::DeviceTransform::Transform env-based API with tuning", "[transfor
     d_output.data(),
     d_input.size(),
     cuda::std::negate{},
-    cuda::execution::tune(MyTransformPolicySelector{}));
+    cuda::execution::tune(TransformPolicySelector{}));
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceTransform::Transform failed with status: " << error << '\n';
