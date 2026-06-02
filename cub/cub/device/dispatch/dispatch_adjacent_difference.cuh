@@ -123,7 +123,7 @@ template <typename InputIteratorT,
           MayAlias AliasOpt,
           ReadOption ReadOpt,
           typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == MayAlias::Yes>>
-struct DispatchAdjacentDifference
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceAdjacentDifference") DispatchAdjacentDifference
 {
   using InputT = detail::it_value_t<InputIteratorT>;
 
