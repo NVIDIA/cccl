@@ -557,4 +557,24 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+struct no_unroll_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const
+    -> cub::detail::merge_sort::merge_sort_policy
+  {
+    return {256, 7, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT, false};
+  }
+};
+
+TEST_CASE("DeviceMergeSort::SortKeys works with unroll disabled", "[merge_sort][device]")
+{
+  auto d_keys = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto env    = cuda::execution::tune(no_unroll_tuning{});
+
+  device_merge_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
+
+  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  REQUIRE(d_keys == expected_keys);
+}
+
 #endif // TEST_LAUNCH != 1

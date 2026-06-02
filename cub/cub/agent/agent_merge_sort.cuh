@@ -48,7 +48,7 @@ struct AgentBlockSort
   static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
 
-  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT>;
+  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
 
   using KeysLoadIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyInputIteratorT>;
   using ItemsLoadIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueInputIteratorT>;
@@ -555,7 +555,7 @@ struct AgentMerge
     //
     int indices[ITEMS_PER_THREAD];
 
-    SerialMerge(
+    detail::serial_merge<policy.unroll>(
       &storage.keys_shared[0],
       keys1_beg_local,
       keys2_beg_local + num_keys1,

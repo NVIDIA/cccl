@@ -40,6 +40,7 @@ template <int ThreadsPerBlock,
           CacheLoadModifier LoadModifier,
           BlockStoreAlgorithm StoreAlgorithm,
           bool UseBlockLoadToShared,
+          bool Unroll,
           typename KeysIt1,
           typename ItemsIt1,
           typename KeysIt2,
@@ -222,7 +223,7 @@ struct agent_t
 
     // perform serial merge
     int indices[ItemsPerThread];
-    cub::SerialMerge(
+    cub::detail::serial_merge<Unroll>(
       keys1_shared,
       keys1_beg_thread,
       keys2_offset + keys2_beg_thread,

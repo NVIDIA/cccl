@@ -95,6 +95,13 @@ struct merge_sort_policy
   CacheLoadModifier load_modifier;
   BlockStoreAlgorithm store_algorithm;
 
+  // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
+#if defined(CCCL_AVOID_SORT_UNROLL)
+  bool unroll = false;
+#else // CCCL_AVOID_SORT_UNROLL
+  bool unroll = true;
+#endif // CCCL_AVOID_SORT_UNROLL
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
   {
     return threads_per_block * items_per_thread;
@@ -105,7 +112,7 @@ struct merge_sort_policy
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.store_algorithm == rhs.store_algorithm;
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.unroll == rhs.unroll;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -117,9 +124,10 @@ struct merge_sort_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const merge_sort_policy& p)
   {
-    return os << "merge_sort_policy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-              << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
+    return os
+        << "merge_sort_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .store_algorithm = " << p.store_algorithm << ", .unroll = " << p.unroll << " }";
   }
 #endif // _CCCL_HOSTED()
 };

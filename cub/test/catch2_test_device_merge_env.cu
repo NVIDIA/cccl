@@ -318,3 +318,64 @@ TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]")
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+struct no_unroll_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::merge::merge_policy
+  {
+    return {256, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false, false};
+  }
+};
+
+TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]")
+{
+  auto keys1  = c2h::device_vector<int>{0, 2, 5};
+  auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
+  auto result = c2h::device_vector<int>(7);
+  auto env    = cuda::execution::tune(no_unroll_tuning{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergeKeys(
+      keys1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      static_cast<int>(keys2.size()),
+      result.begin(),
+      cuda::std::less<>{},
+      env));
+
+  c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  REQUIRE(result == expected);
+}
+
+TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]")
+{
+  auto keys1   = c2h::device_vector<int>{0, 2, 5};
+  auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
+  auto keys2   = c2h::device_vector<int>{0, 3, 3, 4};
+  auto values2 = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
+
+  auto result_keys   = c2h::device_vector<int>(7);
+  auto result_values = c2h::device_vector<char>(7);
+  auto env           = cuda::execution::tune(no_unroll_tuning{});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergePairs(
+      keys1.begin(),
+      values1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      values2.begin(),
+      static_cast<int>(keys2.size()),
+      result_keys.begin(),
+      result_values.begin(),
+      cuda::std::less<>{},
+      env));
+
+  c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  REQUIRE(result_keys == expected_keys);
+  REQUIRE(result_values == expected_values);
+}
