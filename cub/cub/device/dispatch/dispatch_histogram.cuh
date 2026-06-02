@@ -524,102 +524,6 @@ struct DeviceHistogramKernelSource
       IsEven>;
   }
 
-  /// Returns the persistent grid-resident histogram sweep kernel that fuses
-  /// output-histogram initialization with the sweep+store phase via a
-  /// `cooperative_groups::this_grid().sync()` between them. The returned
-  /// kernel must be launched cooperatively (`cudaLaunchCooperativeKernel`)
-  /// so that all blocks are co-resident, which is a precondition of the
-  /// grid sync. This is the host-init variant: it accepts pre-initialized
-  /// decode operators, mirroring `HistogramSweepKernel`.
-  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernelPersistent()
-  {
-    return &DeviceHistogramSweepPersistentKernel<
-      PolicyT,
-      PRIVATIZED_SMEM_BINS,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
-      SampleIteratorT,
-      CounterT,
-      PrivatizedDecodeOpT,
-      OutputDecodeOpT,
-      OffsetT>;
-  }
-
-  /// Host-init variant of the staging histogram sweep kernel. Skips StoreOutput so
-  /// a follow-on combine kernel handles cross-block reduction.
-  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingHostInitKernel()
-  {
-    return &DeviceHistogramSweepStagingHostInitKernel<
-      PolicyT,
-      PRIVATIZED_SMEM_BINS,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
-      SampleIteratorT,
-      CounterT,
-      PrivatizedDecodeOpT,
-      OutputDecodeOpT,
-      OffsetT>;
-  }
-
-  /// Device-init staging variant of the histogram sweep kernel.
-  template <typename PolicyT,
-            int PRIVATIZED_SMEM_BINS,
-            typename FirstLevelArrayT,
-            typename SecondLevelArrayT,
-            bool IsEven,
-            bool IsByteSample>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingKernelDeviceInit()
-  {
-    using DecodeOpT = ::cuda::std::conditional_t<IsEven,
-                                                 typename TransformsT::ScaleTransform,
-                                                 typename TransformsT::template SearchTransform<const LevelT*>>;
-
-    using PrivatizedDecodeOpT =
-      ::cuda::std::conditional_t<IsByteSample, typename TransformsT::PassThruTransform, DecodeOpT>;
-    using OutputDecodeOpT =
-      ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
-
-    return &DeviceHistogramSweepStagingKernel<
-      PolicyT,
-      PRIVATIZED_SMEM_BINS,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
-      SampleIteratorT,
-      CounterT,
-      FirstLevelArrayT,
-      SecondLevelArrayT,
-      PrivatizedDecodeOpT,
-      OutputDecodeOpT,
-      OffsetT,
-      IsEven>;
-  }
-
-  /// Combine kernel: reduces per-block privatized histograms across all blocks.
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramCombineKernel()
-  {
-    return &DeviceHistogramCombineKernel<NUM_ACTIVE_CHANNELS, CounterT>;
-  }
-
-  /// Host-init dynamic-SMEM variant of the staging histogram sweep kernel. Used for the
-  /// xlarge tier (>48 KB SMEM/block) on architectures supporting larger dyn-SMEM via
-  /// cudaFuncSetAttribute.
-  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingHostInitDynSmemKernel()
-  {
-    return &DeviceHistogramSweepStagingHostInitDynSmemKernel<
-      PolicyT,
-      PRIVATIZED_SMEM_BINS,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
-      SampleIteratorT,
-      CounterT,
-      PrivatizedDecodeOpT,
-      OutputDecodeOpT,
-      OffsetT>;
-  }
-
   /// Host-init dynamic-SMEM, NON-staging variant: merges each block's dyn-SMEM
   /// privatized histogram directly into the global output via atomicAdd
   /// (no staging slabs, no combine kernel). Host must launch the init kernel first.
@@ -627,26 +531,6 @@ struct DeviceHistogramKernelSource
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepNonStagingDynSmemKernel()
   {
     return &DeviceHistogramSweepNonStagingDynSmemKernel<
-      PolicyT,
-      PRIVATIZED_SMEM_BINS,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
-      SampleIteratorT,
-      CounterT,
-      PrivatizedDecodeOpT,
-      OutputDecodeOpT,
-      OffsetT>;
-  }
-
-  /// Host-init FUSED dynamic-SMEM staging+combine sweep kernel. Used for cooperative
-  /// launch that fuses sweep+combine into one kernel via grid_group::sync().
-  template <typename PolicyT,
-            int PRIVATIZED_SMEM_BINS,
-            typename PrivatizedDecodeOpT,
-            typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingFusedHostInitDynSmemKernel()
-  {
-    return &DeviceHistogramSweepStagingFusedHostInitDynSmemKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -677,39 +561,6 @@ struct DeviceHistogramKernelSource
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
       OffsetT>;
-  }
-
-  /// Device-init dynamic-SMEM variant of the staging histogram sweep kernel.
-  template <typename PolicyT,
-            int PRIVATIZED_SMEM_BINS,
-            typename FirstLevelArrayT,
-            typename SecondLevelArrayT,
-            bool IsEven,
-            bool IsByteSample>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepStagingDynSmemKernelDeviceInit()
-  {
-    using DecodeOpT = ::cuda::std::conditional_t<IsEven,
-                                                 typename TransformsT::ScaleTransform,
-                                                 typename TransformsT::template SearchTransform<const LevelT*>>;
-
-    using PrivatizedDecodeOpT =
-      ::cuda::std::conditional_t<IsByteSample, typename TransformsT::PassThruTransform, DecodeOpT>;
-    using OutputDecodeOpT =
-      ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
-
-    return &DeviceHistogramSweepStagingDynSmemKernel<
-      PolicyT,
-      PRIVATIZED_SMEM_BINS,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
-      SampleIteratorT,
-      CounterT,
-      FirstLevelArrayT,
-      SecondLevelArrayT,
-      PrivatizedDecodeOpT,
-      OutputDecodeOpT,
-      OffsetT,
-      IsEven>;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
@@ -2116,7 +1967,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  constexpr int kPrivatizedSmemBins = max_extended_smem_bins_single_channel_xlarge;
+  constexpr int kPrivatizedSmemBins = max_dynamic_smem_bins;
 
   // The hybrid kernel is single-channel-focused and assumes a chunked split with
   // primary in SMEM and secondary in per-block GMEM. We require kSplitBin to be at
