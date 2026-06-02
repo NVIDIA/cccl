@@ -42,29 +42,29 @@ struct __no_bounds
 //!
 //! The bound type is deduced from the non-type template parameters.
 //!
-//! @tparam _Lowest The static lower bound.
-//! @tparam _Max The static upper bound.
-template <auto _Lowest, auto _Max>
+//! @tparam _Lower The static lower bound.
+//! @tparam _Upper The static upper bound.
+template <auto _Lower, auto _Upper>
 struct __static_bounds
 {
-  static_assert(::cuda::std::is_same_v<decltype(_Lowest), decltype(_Max)>,
+  static_assert(::cuda::std::is_same_v<decltype(_Lower), decltype(_Upper)>,
                 "Static bounds endpoints must have the same type");
-  static_assert(_Lowest <= _Max, "Lowest must be <= Max");
+  static_assert(_Lower <= _Upper, "Lower bound must be <= upper bound");
 
-  [[nodiscard]] _CCCL_API static constexpr decltype(_Lowest) lowest() noexcept
+  [[nodiscard]] _CCCL_API static constexpr decltype(_Lower) lower() noexcept
   {
-    return _Lowest;
+    return _Lower;
   }
-  [[nodiscard]] _CCCL_API static constexpr decltype(_Max) max() noexcept
+  [[nodiscard]] _CCCL_API static constexpr decltype(_Upper) upper() noexcept
   {
-    return _Max;
+    return _Upper;
   }
 };
 
 template <class _Tp>
 inline constexpr bool __is_static_bounds_v = false;
-template <auto _Lowest, auto _Max>
-inline constexpr bool __is_static_bounds_v<__static_bounds<_Lowest, _Max>> = true;
+template <auto _Lower, auto _Upper>
+inline constexpr bool __is_static_bounds_v<__static_bounds<_Lower, _Upper>> = true;
 
 // =====================================================================
 // runtime_bounds
@@ -76,16 +76,26 @@ inline constexpr bool __is_static_bounds_v<__static_bounds<_Lowest, _Max>> = tru
 template <class _Tp>
 struct __runtime_bounds
 {
-  _Tp lowest = ::cuda::std::numeric_limits<_Tp>::lowest();
-  _Tp max    = ::cuda::std::numeric_limits<_Tp>::max();
+  _Tp __lower_ = ::cuda::std::numeric_limits<_Tp>::lowest();
+  _Tp __upper_ = ::cuda::std::numeric_limits<_Tp>::max();
 
   constexpr __runtime_bounds() noexcept = default;
 
-  _CCCL_API constexpr __runtime_bounds(_Tp __lowest, _Tp __max) noexcept
-      : lowest(__lowest)
-      , max(__max)
+  _CCCL_API constexpr __runtime_bounds(_Tp __lower, _Tp __upper) noexcept
+      : __lower_(__lower)
+      , __upper_(__upper)
   {
-    _CCCL_ASSERT(__lowest <= __max, "Runtime lowest bound must be <= runtime max bound");
+    _CCCL_ASSERT(__lower <= __upper, "Runtime lower bound must be <= runtime upper bound");
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Tp lower() const noexcept
+  {
+    return __lower_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Tp upper() const noexcept
+  {
+    return __upper_;
   }
 };
 
@@ -105,24 +115,24 @@ inline constexpr bool __is_runtime_bounds_v<__runtime_bounds<_Tp>> = true;
 
 //! @brief Create compile-time bounds.
 //!
-//! @tparam _Lowest The static lower bound.
-//! @tparam _Max The static upper bound.
+//! @tparam _Lower The static lower bound.
+//! @tparam _Upper The static upper bound.
 //! @return A compile-time bounds object.
-template <auto _Lowest, auto _Max>
-[[nodiscard]] _CCCL_API constexpr __static_bounds<_Lowest, _Max> __bounds() noexcept
+template <auto _Lower, auto _Upper>
+[[nodiscard]] _CCCL_API constexpr __static_bounds<_Lower, _Upper> __bounds() noexcept
 {
   return {};
 }
 
 //! @brief Create runtime bounds.
 //!
-//! @param __lowest The runtime lower bound.
-//! @param __max The runtime upper bound.
+//! @param __lower The runtime lower bound.
+//! @param __upper The runtime upper bound.
 //! @return A runtime bounds object.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr __runtime_bounds<_Tp> __bounds(_Tp __lowest, _Tp __max) noexcept
+[[nodiscard]] _CCCL_API constexpr __runtime_bounds<_Tp> __bounds(_Tp __lower, _Tp __upper) noexcept
 {
-  return {__lowest, __max};
+  return {__lower, __upper};
 }
 
 template <class _Tp>

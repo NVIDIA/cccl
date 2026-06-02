@@ -23,7 +23,7 @@ TEST_FUNC constexpr bool test()
   {
     int val  = 42;
     auto def = cuda::__argument::__deferred{cuda::std::span<int, 1>{&val, 1}};
-    assert(def.arg[0] == 42);
+    assert(cuda::__argument::__unwrap(def)[0] == 42);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == cuda::std::numeric_limits<int>::lowest());
     static_assert(cuda::__argument::__traits<decltype(def)>::max == cuda::std::numeric_limits<int>::max());
   }
@@ -32,7 +32,7 @@ TEST_FUNC constexpr bool test()
   {
     int val  = 42;
     auto def = cuda::__argument::__deferred{cuda::std::span<int, 1>{&val, 1}, cuda::__argument::__bounds<1, 1000>()};
-    assert(def.arg[0] == 42);
+    assert(cuda::__argument::__unwrap(def)[0] == 42);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 1);
     static_assert(cuda::__argument::__traits<decltype(def)>::max == 1000);
   }
@@ -45,14 +45,14 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::__argument::__traits<def_t>::max == 100);
     // Also verify construction works
     auto def = cuda::__argument::__deferred{&val, cuda::__argument::__bounds<0, 100>()};
-    assert(def.arg == &val);
+    assert(cuda::__argument::__unwrap(def) == &val);
   }
 
   // Deferred single value via fancy iterator
   {
     auto it  = cuda::counting_iterator<int>{42};
     auto def = cuda::__argument::__deferred{it, cuda::__argument::__bounds<0, 100>()};
-    assert(def.arg[0] == 42);
+    assert(cuda::__argument::__unwrap(def)[0] == 42);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 0);
     static_assert(cuda::__argument::__traits<decltype(def)>::max == 100);
     static_assert(cuda::__argument::__traits<decltype(def)>::is_single_value);
@@ -73,8 +73,8 @@ TEST_FUNC constexpr bool test()
   {
     auto it  = cuda::counting_iterator<int>{10};
     auto def = cuda::__argument::__deferred_sequence{it, cuda::__argument::__bounds<0, 100>()};
-    assert(def.arg[0] == 10);
-    assert(def.arg[2] == 12);
+    assert(cuda::__argument::__unwrap(def)[0] == 10);
+    assert(cuda::__argument::__unwrap(def)[2] == 12);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 0);
     static_assert(cuda::__argument::__traits<decltype(def)>::max == 100);
     static_assert(!cuda::__argument::__traits<decltype(def)>::is_single_value);

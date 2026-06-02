@@ -143,6 +143,13 @@ _CCCL_API constexpr void __assert_in_range([[maybe_unused]] _From __val) noexcep
   }
 }
 
+template <class _To, class _From>
+[[nodiscard]] _CCCL_API constexpr _To __runtime_bound_cast(_From __val) noexcept
+{
+  __assert_in_range<_To>(__val);
+  return static_cast<_To>(__val);
+}
+
 template <class _To, auto _Value>
 _CCCL_API constexpr bool __static_bound_in_range() noexcept
 {
@@ -179,7 +186,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_lowest() noexcept
   }
   else
   {
-    return static_cast<_ElementType>(_StaticBounds::lowest());
+    return static_cast<_ElementType>(_StaticBounds::lower());
   }
 }
 
@@ -192,7 +199,7 @@ _CCCL_API constexpr _ElementType __wrapper_static_max() noexcept
   }
   else
   {
-    return static_cast<_ElementType>(_StaticBounds::max());
+    return static_cast<_ElementType>(_StaticBounds::upper());
   }
 }
 
@@ -200,14 +207,14 @@ template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_lowest(__runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
   auto __static_lowest = __wrapper_static_lowest<_ElementType, _StaticBounds>();
-  return __static_lowest > __runtime_bounds.lowest ? __static_lowest : __runtime_bounds.lowest;
+  return __static_lowest > __runtime_bounds.lower() ? __static_lowest : __runtime_bounds.lower();
 }
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __effective_max(__runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
   auto __static_max = __wrapper_static_max<_ElementType, _StaticBounds>();
-  return __static_max < __runtime_bounds.max ? __static_max : __runtime_bounds.max;
+  return __static_max < __runtime_bounds.upper() ? __static_max : __runtime_bounds.upper();
 }
 
 template <class _ElementType, class _StaticBounds>
@@ -242,8 +249,8 @@ template <class _ElementType>
 _CCCL_API constexpr void
 __validate_runtime_element_bounds(const _ElementType& __val, __runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
-  _CCCL_ASSERT((__val >= __runtime_bounds.lowest), "immediate argument value is below runtime lowest bound");
-  _CCCL_ASSERT((__val <= __runtime_bounds.max), "immediate argument value is above runtime max bound");
+  _CCCL_ASSERT((__val >= __runtime_bounds.lower()), "immediate argument value is below runtime lower bound");
+  _CCCL_ASSERT((__val <= __runtime_bounds.upper()), "immediate argument value is above runtime upper bound");
 }
 
 // =====================================================================
@@ -261,7 +268,7 @@ struct __immediate
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
                 "static argument bounds cannot be represented by the element type");
 
-  _Arg arg;
+  _Arg __arg_;
 
 private:
   _CCCL_API constexpr void __validate_value() const noexcept
@@ -269,19 +276,19 @@ private:
     if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __element_type>
                   && ::cuda::std::is_arithmetic_v<__element_type>)
     {
-      __validate_static_element_bounds<__element_type, _StaticBounds>(arg);
+      __validate_static_element_bounds<__element_type, _StaticBounds>(__arg_);
     }
   }
 
 public:
   _CCCL_API constexpr __immediate(_Arg __arg) noexcept
-      : arg{::cuda::std::move(__arg)}
+      : __arg_{::cuda::std::move(__arg)}
   {
     __validate_value();
   }
 
   _CCCL_API constexpr __immediate(_Arg __arg, _StaticBounds) noexcept
-      : arg{::cuda::std::move(__arg)}
+      : __arg_{::cuda::std::move(__arg)}
   {
     __validate_value();
   }
@@ -308,7 +315,7 @@ struct __immediate_sequence
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
                 "static argument bounds cannot be represented by the element type");
 
-  _Arg arg;
+  _Arg __arg_;
   __runtime_bounds<__element_type> __runtime_bounds_{};
 
 private:
@@ -327,7 +334,7 @@ private:
   {
     if constexpr (__is_iterable_v<_Arg> && ::cuda::std::is_arithmetic_v<__element_type>)
     {
-      for (const auto& __a : arg)
+      for (const auto& __a : __arg_)
       {
         __validate_element(__a);
       }
@@ -336,14 +343,14 @@ private:
 
 public:
   _CCCL_API constexpr __immediate_sequence(_Arg __arg) noexcept
-      : arg{::cuda::std::move(__arg)}
+      : __arg_{::cuda::std::move(__arg)}
   {
     __validate_bounds();
     __validate_value();
   }
 
   _CCCL_API constexpr __immediate_sequence(_Arg __arg, _StaticBounds) noexcept
-      : arg{::cuda::std::move(__arg)}
+      : __arg_{::cuda::std::move(__arg)}
   {
     __validate_bounds();
     __validate_value();
@@ -351,22 +358,20 @@ public:
 
   template <class _BoundsTp>
   _CCCL_API constexpr __immediate_sequence(_Arg __arg, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg{::cuda::std::move(__arg)}
-      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
+      : __arg_{::cuda::std::move(__arg)}
+      , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
+                          __runtime_bound_cast<__element_type>(__rb.upper())}
   {
-    __assert_in_range<__element_type>(__rb.lowest);
-    __assert_in_range<__element_type>(__rb.max);
     __validate_bounds();
     __validate_value();
   }
 
   template <class _BoundsTp>
   _CCCL_API constexpr __immediate_sequence(_Arg __arg, _StaticBounds, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg{::cuda::std::move(__arg)}
-      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
+      : __arg_{::cuda::std::move(__arg)}
+      , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
+                          __runtime_bound_cast<__element_type>(__rb.upper())}
   {
-    __assert_in_range<__element_type>(__rb.lowest);
-    __assert_in_range<__element_type>(__rb.max);
     __validate_bounds();
     __validate_value();
   }
@@ -404,38 +409,36 @@ struct __deferred_base
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
                 "static argument bounds cannot be represented by the element type");
 
-  _Arg arg;
+  _Arg __arg_;
   __runtime_bounds<__element_type> __runtime_bounds_{};
 
   _CCCL_API constexpr __deferred_base(_Arg __arg) noexcept
-      : arg{::cuda::std::move(__arg)}
+      : __arg_{::cuda::std::move(__arg)}
   {
     __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
   }
 
   _CCCL_API constexpr __deferred_base(_Arg __arg, _StaticBounds) noexcept
-      : arg{::cuda::std::move(__arg)}
+      : __arg_{::cuda::std::move(__arg)}
   {
     __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
   }
 
   template <class _BoundsTp>
   _CCCL_API constexpr __deferred_base(_Arg __arg, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg{::cuda::std::move(__arg)}
-      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
+      : __arg_{::cuda::std::move(__arg)}
+      , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
+                          __runtime_bound_cast<__element_type>(__rb.upper())}
   {
-    __assert_in_range<__element_type>(__rb.lowest);
-    __assert_in_range<__element_type>(__rb.max);
     __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
   }
 
   template <class _BoundsTp>
   _CCCL_API constexpr __deferred_base(_Arg __arg, _StaticBounds, __runtime_bounds<_BoundsTp> __rb) noexcept
-      : arg{::cuda::std::move(__arg)}
-      , __runtime_bounds_{__element_type{__rb.lowest}, __element_type{__rb.max}}
+      : __arg_{::cuda::std::move(__arg)}
+      , __runtime_bounds_{__runtime_bound_cast<__element_type>(__rb.lower()),
+                          __runtime_bound_cast<__element_type>(__rb.upper())}
   {
-    __assert_in_range<__element_type>(__rb.lowest);
-    __assert_in_range<__element_type>(__rb.max);
     __validate_bounds_intersection<__element_type, _StaticBounds>(__runtime_bounds_);
   }
 
@@ -529,19 +532,19 @@ _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(__immediate<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const __immediate<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg __unwrap(__immediate<_Arg, _StaticBounds>&& __arg) noexcept
 {
-  return ::cuda::std::move(__arg.arg);
+  return ::cuda::std::move(__arg.__arg_);
 }
 
 template <auto _Value>
@@ -561,55 +564,55 @@ __unwrap(const __constant_sequence<_Value>&) noexcept
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(__immediate_sequence<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const __immediate_sequence<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg __unwrap(__immediate_sequence<_Arg, _StaticBounds>&& __arg) noexcept
 {
-  return ::cuda::std::move(__arg.arg);
+  return ::cuda::std::move(__arg.__arg_);
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(__deferred<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const __deferred<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg __unwrap(__deferred<_Arg, _StaticBounds>&& __arg) noexcept
 {
-  return ::cuda::std::move(__arg.arg);
+  return ::cuda::std::move(__arg.__arg_);
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg& __unwrap(__deferred_sequence<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr const _Arg& __unwrap(const __deferred_sequence<_Arg, _StaticBounds>& __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr _Arg __unwrap(__deferred_sequence<_Arg, _StaticBounds>&& __arg) noexcept
 {
-  return ::cuda::std::move(__arg.arg);
+  return ::cuda::std::move(__arg.__arg_);
 }
 
 template <auto _Value>
@@ -627,13 +630,29 @@ _CCCL_API constexpr auto __constant_compute_max() noexcept
 template <auto _Value>
 _CCCL_API constexpr auto __constant_sequence_compute_lowest() noexcept
 {
-  return *::cuda::std::min_element(_Value.begin(), _Value.end());
+  using _ElementType = __element_type_of_t<::cuda::std::remove_cvref_t<decltype(_Value)>>;
+  auto __first       = _Value.begin();
+  auto __last        = _Value.end();
+
+  if (__first == __last)
+  {
+    return ::cuda::std::numeric_limits<_ElementType>::lowest();
+  }
+  return static_cast<_ElementType>(*::cuda::std::min_element(__first, __last));
 }
 
 template <auto _Value>
 _CCCL_API constexpr auto __constant_sequence_compute_max() noexcept
 {
-  return *::cuda::std::max_element(_Value.begin(), _Value.end());
+  using _ElementType = __element_type_of_t<::cuda::std::remove_cvref_t<decltype(_Value)>>;
+  auto __first       = _Value.begin();
+  auto __last        = _Value.end();
+
+  if (__first == __last)
+  {
+    return ::cuda::std::numeric_limits<_ElementType>::max();
+  }
+  return static_cast<_ElementType>(*::cuda::std::max_element(__first, __last));
 }
 
 // =====================================================================
@@ -773,7 +792,7 @@ template <auto _Value>
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr auto __lowest_(__immediate<_Arg, _StaticBounds> __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>
@@ -823,7 +842,7 @@ template <auto _Value>
 template <class _Arg, class _StaticBounds>
 [[nodiscard]] _CCCL_API constexpr auto __max_(__immediate<_Arg, _StaticBounds> __arg) noexcept
 {
-  return __arg.arg;
+  return __arg.__arg_;
 }
 
 template <class _Arg, class _StaticBounds>

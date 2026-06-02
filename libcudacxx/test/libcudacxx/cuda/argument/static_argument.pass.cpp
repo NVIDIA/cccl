@@ -10,6 +10,7 @@
 
 #include <cuda/__argument_>
 #include <cuda/std/array>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -74,6 +75,15 @@ TEST_FUNC void test()
     constexpr auto sa = cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{128, 256, 512}>{};
     static_assert(cuda::__argument::__lowest_(sa) == 128);
     static_assert(cuda::__argument::__max_(sa) == 512);
+  }
+#endif // TEST_HAS_CLASS_NTTP
+
+#if TEST_HAS_CLASS_NTTP
+  // Bounds: empty array sequence has unconstrained element bounds
+  {
+    constexpr auto sa = cuda::__argument::__constant_sequence<cuda::std::array<int, 0>{}>{};
+    static_assert(cuda::__argument::__lowest_(sa) == cuda::std::numeric_limits<int>::lowest());
+    static_assert(cuda::__argument::__max_(sa) == cuda::std::numeric_limits<int>::max());
   }
 #endif // TEST_HAS_CLASS_NTTP
 
