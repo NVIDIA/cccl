@@ -168,7 +168,7 @@ struct DeviceScan
     static_assert(!is_gpu_to_gpu_required || is_safe_integral_op,
                   "gpu_to_gpu deterministic scan requires integral types with known operators");
 
-    constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
+    static constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
 
     using default_policy_selector_t = detail::scan::
       policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT, stable_reduction_order>;
