@@ -59,23 +59,24 @@ namespace detail::histogram
 // Maximum number of bins per channel for which we will use a privatized smem strategy
 static constexpr int max_privatized_smem_bins = 256;
 
-// Extended SMEM-privatized tiers for single-channel non-byte sample histograms. These tiers
-// scale the per-block SMEM histogram allocation up so the agent can keep larger histograms
-// on chip (avoiding the slow GMEM atomicAdd_block of the GMEM-privatized path) at the cost
-// of extra per-block SMEM and reduced occupancy.
-//
-// We carry three tiers:
-//   - 2048 bins x 4 bytes = 8 KB SMEM/block (static SMEM), plenty of occupancy headroom.
-//   - 8192 bins x 4 bytes = 32 KB SMEM/block (static SMEM), fits within ptxas default
-//     static-SMEM cap (48 KB).
-//   - 16384 bins x 4 bytes = 64 KB SMEM/block (dynamic SMEM). Static SMEM exceeds the
-//     ptxas default 48 KB cap, so this tier uses extern __shared__ + cudaFuncSetAttribute
-//     (cudaFuncAttributeMaxDynamicSharedMemorySize). On SM90/SM100 the per-CTA SMEM
-//     budget is large enough (B200 supports ~228 KiB per CTA) for this tier to launch
-//     with reasonable occupancy.
-static constexpr int max_extended_smem_bins_single_channel        = 2048;
-static constexpr int max_extended_smem_bins_single_channel_large  = 8192;
-static constexpr int max_extended_smem_bins_single_channel_xlarge = 16384;
+// Above the static 256-bin tier, larger privatized histograms (up to this cap)
+// are kept on chip in a single dynamic-SMEM kernel whose per-block histogram
+// lives in extern __shared__ sized at launch. This keeps the histogram in fast
+// SMEM (avoiding the GMEM atomicAdd_block of the GMEM-privatized path) without a
+// ladder of compile-time-sized kernels. 16384 bins x 4 bytes = 64 KB/block
+// exceeds the ptxas 48 KB static cap, so the dynamic kernel raises its
+// cudaFuncAttributeMaxDynamicSharedMemorySize; the per-CTA SMEM budget on
+// SM90/SM100 is large enough for this to launch with reasonable occupancy.
+static constexpr int max_dynamic_smem_bins = 16384;
+
+// Multi-channel privatized-SMEM eligibility is more restrictive than
+// single-channel: the per-block histogram footprint and the classify cost both
+// scale with the active channel count, so beyond these bin counts multi-channel
+// cells route to the high-bin (direct-atomic) path instead. RANGE (expensive
+// SearchTransform classify) stays privatized only up to the smaller bound; EVEN
+// (cheap ScaleTransform classify) up to the larger.
+static constexpr int multi_channel_smem_bins_range = 2048;
+static constexpr int multi_channel_smem_bins_even  = 8192;
 
 // Chunked dyn-SMEM staging-fused tier for histograms with bins exceeding the dyn-SMEM
 // xlarge tier (16384). Each chunk runs the existing dyn-SMEM staging-combine path over
@@ -125,15 +126,15 @@ static constexpr int hybrid_smem_split_bin_single_channel = 49152;
 // dispatch entry points.
 enum class algorithm : unsigned char
 {
-  // Tier-0: bins <= 256, fits in the legacy fixed-size privatized SMEM.
-  // The deeper `dispatch<>` chooses between the cooperative SweepPersistent
-  // kernel (single launch) and the legacy Init+Sweep pair.
+  // Static fixed-size privatized-SMEM histogram: bins <= 256, and all byte
+  // samples. The per-block histogram is a compile-time-sized __shared__ array.
   smem_priv_256,
 
-  // Tier-1/2/3: extended SMEM-priv tiers selected per channel count.
-  smem_priv_2k, // 2048 bins (multi-channel medium, single-channel medium)
-  smem_priv_8k, // 8192 bins (single-channel large)
-  smem_priv_16k, // 16384 bins (single-channel xlarge, multi-channel up to 3 active)
+  // Dynamic privatized-SMEM histogram for 256 < bins <= max_dynamic_smem_bins.
+  // The per-block histogram lives in extern __shared__ sized at launch (so a
+  // single kernel covers the whole range instead of a ladder of compile-time
+  // tiers) and is merged into the output with a per-block atomicAdd.
+  smem_priv_dynamic,
 
   // Hybrid SMEM+GMEM single-pass kernel. One cooperative launch; bins in
   // (xlarge, chunked_max] for sizeof(SampleT)<=4 single-channel paths.
@@ -218,7 +219,11 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   }
 
   // -----------------------------------------------------------------------
-  // Low-bin region: SMEM-priv tier cascade.
+  // Privatized-SMEM region. <=256 bins (and all byte samples) use the static
+  // fixed-size kernel; above that, a single dynamic-SMEM kernel covers the
+  // whole range up to the cap. Multi-channel eligibility is more restrictive
+  // (footprint + classify cost scale with channel count); past it, cells fall
+  // through to the high-bin region below.
   // -----------------------------------------------------------------------
   if (f.num_bins <= max_privatized_smem_bins)
   {
@@ -226,36 +231,26 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   }
   if (f.num_active_channels == 1)
   {
-    if (f.num_bins <= max_extended_smem_bins_single_channel)
+    if (f.num_bins <= max_dynamic_smem_bins)
     {
-      return algorithm::smem_priv_2k;
-    }
-    if (f.num_bins <= max_extended_smem_bins_single_channel_large)
-    {
-      return algorithm::smem_priv_8k;
-    }
-    if (f.num_bins <= max_extended_smem_bins_single_channel_xlarge)
-    {
-      return algorithm::smem_priv_16k;
+      return algorithm::smem_priv_dynamic;
     }
   }
   else
   {
-    // Multi-channel SMEM-priv tiers: only the medium tier (2K) is universally
-    // safe; the large/xlarge tiers stay in play for EVEN (cheap classify)
-    // and only with at most 3 active channels (dyn-SMEM headroom).
-    if (f.num_bins <= max_extended_smem_bins_single_channel)
+    // RANGE (or any transform) up to the smaller cap; EVEN extends further
+    // (cheap classify), with the top of the range gated to <=3 active channels.
+    if (f.num_bins <= multi_channel_smem_bins_range)
     {
-      return algorithm::smem_priv_2k;
+      return algorithm::smem_priv_dynamic;
     }
-    if (f.is_even && f.num_bins <= max_extended_smem_bins_single_channel_large)
+    if (f.is_even && f.num_bins <= multi_channel_smem_bins_even)
     {
-      return algorithm::smem_priv_8k;
+      return algorithm::smem_priv_dynamic;
     }
-    if (f.is_even && f.num_active_channels <= 3
-        && f.num_bins <= max_extended_smem_bins_single_channel_xlarge)
+    if (f.is_even && f.num_active_channels <= 3 && f.num_bins <= max_dynamic_smem_bins)
     {
-      return algorithm::smem_priv_16k;
+      return algorithm::smem_priv_dynamic;
     }
   }
 
@@ -840,123 +835,30 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const auto init_kernel    = kernel_source.template HistogramInitKernel<PolicySelector>();
-  const auto combine_kernel = kernel_source.HistogramCombineKernel();
+  const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
 
-  // Whether this dispatch uses the dynamic-SMEM staging tier. The xlarge tier
-  // (16384 bins, 64 KB SMEM/block) MUST use dyn-SMEM because static SMEM
-  // exceeds the ptxas 48 KB cap. The large (8192 bins, 32 KB) tier also uses
-  // dyn-SMEM here so it shares the staging+fused-launch code path with xlarge.
-  //
-  // The medium (2048 bins, 8 KB) tier instead uses the NON-staging path:
-  // static-SMEM privatization with a per-block atomicAdd StoreOutput merge to
-  // the global histogram. For only 2048 bins the staging path's overhead --
-  // a full grid.sync plus a GMEM round-trip (write each block's SMEM histogram
-  // to a per-block staging slab, then read it back in the cross-block gather) --
-  // is not amortised; the direct atomic merge touches half the GMEM traffic and
-  // avoids the cooperative-launch grid.sync. (The brief's "which tiers earn
-  // their place" question: at 2K bins, staging does not.)
-  static constexpr bool kStagingUsesDynSmem =
-    (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_xlarge)
-    || (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_large);
-  static constexpr bool kStagingChannelOk = (NUM_ACTIVE_CHANNELS >= 1 && NUM_ACTIVE_CHANNELS <= 4);
-  static constexpr bool kStagingPrivOk    = kStagingUsesDynSmem;
+  // The privatized-SMEM histogram for 256 < bins <= max_dynamic_smem_bins lives
+  // in extern __shared__ sized at launch, so its per-CTA SMEM footprint can
+  // exceed the ptxas 48 KB static cap (16384 bins x 4 B = 64 KB). The dispatch
+  // raises the kernel's cudaFuncAttributeMaxDynamicSharedMemorySize and passes
+  // the byte budget as the third launch parameter. The 256-bin / byte tier and
+  // the GMEM-privatized path (PRIVATIZED_SMEM_BINS == 0) use static SMEM.
+  static constexpr bool kUseDynamicSmem = (PRIVATIZED_SMEM_BINS == max_dynamic_smem_bins);
 
-  // Non-staging dyn-SMEM merge for the xlarge (16384-bin) tier: keep the
-  // privatized histogram in dyn-SMEM (it exceeds the 48 KB static cap) but merge
-  // each block directly into the global output via atomicAdd in StoreOutput,
-  // skipping the per-block GMEM staging slab + grid.sync + cross-block gather.
-  // At 16384 bins cross-block atomic contention on the output is spread over
-  // 16384 distinct bins, so the direct merge avoids the staging GMEM round-trip
-  // without paying heavy contention. The 8192-bin tier keeps staging.
-  // (Extends the 2K-tier finding to the dyn-SMEM tier.)
-  static constexpr bool kUseNonStagingDynSmem =
-    kStagingUsesDynSmem && (PRIVATIZED_SMEM_BINS == max_extended_smem_bins_single_channel_xlarge);
-
-  // Use the staging path for dyn-SMEM tiers EXCEPT the ones routed to the
-  // non-staging dyn-SMEM merge above.
-  static constexpr bool kUseStagingPath = kStagingChannelOk && kStagingPrivOk && !kUseNonStagingDynSmem;
-
-  // Build the staging sweep kernel pointer for the dyn-SMEM xlarge tier. For other tiers this is unused.
-  auto staging_sweep_kernel = [&] {
-    if constexpr (kStagingUsesDynSmem)
-    {
-      if constexpr (IsDeviceInit)
-      {
-        return kernel_source.template HistogramSweepStagingDynSmemKernelDeviceInit<
-               PolicySelector,
-               PRIVATIZED_SMEM_BINS,
-               FirstLevelArrayT,
-               SecondLevelArrayT,
-               IsEven,
-               IsByteSample>();
-      }
-      else
-      {
-        using output_decode_op_t     = typename FirstLevelArrayT::value_type;
-        using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-        return kernel_source.template HistogramSweepStagingHostInitDynSmemKernel<
-               PolicySelector,
-               PRIVATIZED_SMEM_BINS,
-               privatized_decode_op_t,
-               output_decode_op_t>();
-      }
-    }
-    else if constexpr (IsDeviceInit)
-    {
-      // Returned but unused for non-dyn-SMEM tiers; pick a kernel pointer with the same shape
-      // so `decltype(staging_sweep_kernel)` is well-defined.
-      return kernel_source.template HistogramSweepKernelDeviceInit<
-             PolicySelector,
-             PRIVATIZED_SMEM_BINS,
-             FirstLevelArrayT,
-             SecondLevelArrayT,
-             IsEven,
-             IsByteSample>();
-    }
-    else
+  // The dynamic-SMEM kernel merges each block's privatized histogram directly
+  // into the global output via per-block atomicAdd (StoreOutput): at these bin
+  // counts the cross-block contention is spread over enough distinct bins that a
+  // direct merge beats a GMEM staging round-trip + cross-block gather.
+  auto sweep_kernel = [&] {
+    if constexpr (kUseDynamicSmem)
     {
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-      return kernel_source
-        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
-    }
-  }();
-
-  // For the dyn-SMEM xlarge tier, alias `sweep_kernel` to `staging_sweep_kernel` to avoid instantiating
-  // the static-SMEM AgentHistogram (which would exceed the ptxas 48 KB cap for 16384 bins).
-  // For the non-staging dyn-SMEM tier, use the dedicated dyn-SMEM kernel that
-  // merges directly to the output via atomicAdd (StoreOutput) instead of staging.
-  auto sweep_kernel = [&] {
-    if constexpr (kUseNonStagingDynSmem)
-    {
-      if constexpr (IsDeviceInit)
-      {
-        // Device-init non-staging dyn-SMEM is not used by the active paths; alias
-        // to the staging device-init kernel so decltype is well-defined. (The
-        // non-staging dyn-SMEM tier is only selected on the host-init path.)
-        return kernel_source.template HistogramSweepStagingDynSmemKernelDeviceInit<
-               PolicySelector,
-               PRIVATIZED_SMEM_BINS,
-               FirstLevelArrayT,
-               SecondLevelArrayT,
-               IsEven,
-               IsByteSample>();
-      }
-      else
-      {
-        using output_decode_op_t     = typename FirstLevelArrayT::value_type;
-        using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-        return kernel_source.template HistogramSweepNonStagingDynSmemKernel<
-               PolicySelector,
-               PRIVATIZED_SMEM_BINS,
-               privatized_decode_op_t,
-               output_decode_op_t>();
-      }
-    }
-    else if constexpr (kStagingUsesDynSmem)
-    {
-      return staging_sweep_kernel;
+      return kernel_source.template HistogramSweepNonStagingDynSmemKernel<
+             PolicySelector,
+             PRIVATIZED_SMEM_BINS,
+             privatized_decode_op_t,
+             output_decode_op_t>();
     }
     else if constexpr (IsDeviceInit)
     {
@@ -994,36 +896,35 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  // Compute the dynamic-SMEM size for the staging-dyn-smem path. When staging is enabled and
-  // PRIVATIZED_SMEM_BINS exceeds the ptxas static-SMEM cap, the per-block histogram lives in
-  // extern __shared__; the launch must reserve enough dynamic SMEM and the kernel must have
-  // its cudaFuncAttributeMaxDynamicSharedMemorySize attribute raised accordingly.
-  // Layout: per-channel contiguous, sum_ch num_privatized_bins[ch] entries.
-  int dyn_smem_bytes_for_staging = 0;
-  if constexpr (kStagingUsesDynSmem)
+  // Dynamic-SMEM byte budget for the dynamic-SMEM kernel: the per-block
+  // histogram lives in extern __shared__, sized as sum_ch num_privatized_bins[ch]
+  // counters (per-channel contiguous). The launch reserves this many bytes and
+  // the kernel's cudaFuncAttributeMaxDynamicSharedMemorySize is raised to match.
+  int dyn_smem_bytes = 0;
+  if constexpr (kUseDynamicSmem)
   {
     int total_bins = 0;
     for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
     {
       total_bins += (num_privatized_levels[ch] - 1);
     }
-    dyn_smem_bytes_for_staging = total_bins * static_cast<int>(kernel_source.CounterSize());
+    dyn_smem_bytes = total_bins * static_cast<int>(kernel_source.CounterSize());
   }
 
-  // Get SM occupancy for sweep_kernel. For the staging-dyn-smem path, occupancy must be queried
+  // Get SM occupancy for sweep_kernel. For the dynamic-SMEM path, occupancy must be queried
   // with the dynamic-SMEM byte budget set so the driver accounts for the per-CTA SMEM footprint.
   int histogram_sweep_sm_occupancy;
-  if constexpr (kStagingUsesDynSmem)
+  if constexpr (kUseDynamicSmem)
   {
     // Raise the kernel's max-dynamic-SMEM cap so the occupancy query accounts for the dyn-SMEM
     // CTA footprint. (The cap also has to be raised before the actual launch below.)
     if (const auto error =
-          CubDebug(launcher_factory.set_max_dynamic_smem_size_for(sweep_kernel, dyn_smem_bytes_for_staging)))
+          CubDebug(launcher_factory.set_max_dynamic_smem_size_for(sweep_kernel, dyn_smem_bytes)))
     {
       return error;
     }
     if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-          histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block, dyn_smem_bytes_for_staging)))
+          histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block, dyn_smem_bytes)))
     {
       return error;
     }
@@ -1763,149 +1664,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 #endif // _CCCL_HOSTED()
 
-  // For the dyn-SMEM staging tier (xlarge, 16384 bins, single-channel, host-init,
-  // non-byte) we can fuse the staging-sweep + cross-block combine pair into a
-  // single cooperative launch using `grid_group::sync()`. This saves one
-  // `cudaLaunch*` round-trip + the standalone combine kernel's ~18us launch
-  // overhead, which is a meaningful fraction of total runtime on the
-  // small-Elements (1048576) configurations of the xlarge tier.
-  bool launched_fused_staging = false;
-#if _CCCL_HOSTED()
-  if constexpr (kUseStagingPath && !IsDeviceInit)
-  {
-    if (!launched_persistent && blocks_per_row > 0 && blocks_per_col > 0)
-    {
-      using output_decode_op_t     = typename FirstLevelArrayT::value_type;
-      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-
-      // Use a 1-D grid for the cooperative launch; the staging kernel computes
-      // `block_id = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x`,
-      // which evaluates identically for a 1-D `(num_thread_blocks, 1, 1)` grid
-      // and the 2-D `(blocks_per_row, blocks_per_col, 1)` grid; AgentHistogram
-      // also uses this convention.
-      dim3 fused_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
-
-      auto fused_kernel_ptr =
-        kernel_source.template HistogramSweepStagingFusedHostInitDynSmemKernel<
-            PolicySelector,
-            PRIVATIZED_SMEM_BINS,
-            privatized_decode_op_t,
-            output_decode_op_t>();
-
-      // Force device-side instantiation of the fused kernel template via a dead
-      // `<<<>>>` call. Without this, just taking `&kernel` produces only the
-      // host shadow function and the runtime kernel-registration table has no
-      // device-side entry to match it, causing `cudaLaunchCooperativeKernel`
-      // to fail with `cudaErrorInvalidResourceHandle`.
-      if (false)
-      {
-        DeviceHistogramSweepStagingFusedHostInitDynSmemKernel<PolicySelector,
-                                                              PRIVATIZED_SMEM_BINS,
-                                                              NUM_CHANNELS,
-                                                              NUM_ACTIVE_CHANNELS,
-                                                              SampleIteratorT,
-                                                              CounterT,
-                                                              privatized_decode_op_t,
-                                                              output_decode_op_t,
-                                                              OffsetT>
-          <<<fused_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, dyn_smem_bytes_for_staging, stream>>>(
-            d_samples,
-            num_output_bins_wrapper,
-            num_privatized_bins_wrapper,
-            d_output_histograms,
-            d_privatized_histograms_wrapper,
-            first_level_array,
-            second_level_array,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            tiles_per_row,
-            tile_queue);
-      }
-
-      const void* fused_kernel_ptr_void = reinterpret_cast<const void*>(fused_kernel_ptr);
-
-      // Raise the dyn-SMEM cap on the fused kernel before launch.
-      cudaError_t cap_err =
-        launcher_factory.set_max_dynamic_smem_size_for(fused_kernel_ptr, dyn_smem_bytes_for_staging);
-      if (cap_err != cudaSuccess)
-      {
-        // Don't propagate; just clear and fall through to the two-launch path.
-        (void) cudaGetLastError();
-      }
-      else
-      {
-        // Query the FUSED kernel's per-SM occupancy with the actual dyn-SMEM
-        // budget. The fused kernel may have higher register / shared-memory
-        // pressure than the staging-only kernel (extra grid.sync code paths,
-        // the inline reduce-and-write loop), so its occupancy can be lower.
-        // Cooperative launch requires `num_thread_blocks <= sm_count *
-        // sm_occupancy_of_the_kernel_we_are_launching`. If the fused kernel
-        // doesn't fit at the staging-grid size, fall back gracefully.
-        int fused_sm_occupancy = 0;
-        const auto occ_err = launcher_factory.MaxSmOccupancy(
-          fused_sm_occupancy, fused_kernel_ptr, threads_per_block, dyn_smem_bytes_for_staging);
-        if (occ_err != cudaSuccess)
-        {
-          (void) cudaGetLastError();
-          fused_sm_occupancy = 0;
-        }
-        const bool fused_fits = (fused_sm_occupancy > 0)
-                                && (num_thread_blocks <= fused_sm_occupancy * sm_count);
-        int device_ordinal        = 0;
-        int cooperative_supported = 0;
-        const bool coop_query_ok =
-          (cudaGetDevice(&device_ordinal) == cudaSuccess
-           && cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
-           && cooperative_supported != 0);
-        if (coop_query_ok && fused_fits)
-        {
-          // The fused kernel takes the same arguments as the staging-only
-          // sweep kernel: (d_samples, num_output_bins, num_privatized_bins,
-          // d_output_histograms, d_privatized_histograms, output_decode_op,
-          // privatized_decode_op, num_row_pixels, num_rows, row_stride_samples,
-          // tiles_per_row, tile_queue).
-          //
-          // For host-init non-byte, the dispatch caller passes the decode-op
-          // arrays via `first_level_array` (output decode op) and
-          // `second_level_array` (privatized decode op). They were originally
-          // defined here as ::cuda::std::array<DecodeOpT, NUM_ACTIVE_CHANNELS>.
-          void* kernel_args[] = {
-            const_cast<void*>(static_cast<const void*>(&d_samples)),
-            const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
-            const_cast<void*>(static_cast<const void*>(&num_privatized_bins_wrapper)),
-            const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
-            const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper)),
-            const_cast<void*>(static_cast<const void*>(&first_level_array)),
-            const_cast<void*>(static_cast<const void*>(&second_level_array)),
-            const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
-            const_cast<void*>(static_cast<const void*>(&num_rows)),
-            const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
-            const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
-            const_cast<void*>(static_cast<const void*>(&tile_queue))};
-          cudaError_t coop_status = cudaLaunchCooperativeKernel(
-            fused_kernel_ptr_void,
-            fused_grid_dims,
-            dim3{static_cast<unsigned int>(threads_per_block)},
-            kernel_args,
-            /*sharedMem=*/static_cast<size_t>(dyn_smem_bytes_for_staging),
-            stream);
-          if (coop_status == cudaSuccess)
-          {
-            launched_fused_staging = true;
-          }
-          else
-          {
-            // Clear sticky error so legacy two-launch fallback can run cleanly.
-            (void) cudaGetLastError();
-          }
-        }
-      }
-    }
-  }
-#endif // _CCCL_HOSTED()
-
-  if (!launched_persistent && !launched_fused_staging)
+  // Non-cooperative path: a standalone init kernel followed by the sweep kernel.
+  // Taken when the cooperative GMEM-privatized gather-merge above did not launch
+  // (every privatized-SMEM tier, plus the direct-atomic and legacy fallbacks).
+  if (!launched_persistent)
   {
     constexpr int histogram_init_threads_per_block = 256;
     int histogram_init_grid_dims =
@@ -1950,97 +1712,33 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-    if constexpr (kUseStagingPath)
+    // The dynamic-SMEM kernel's per-block histogram lives in extern __shared__,
+    // so the launch passes the dyn-SMEM byte budget (its cap was already raised
+    // in the occupancy-query branch above); the static-SMEM tiers pass 0. The
+    // kernel merges each block's histogram into the output via per-block
+    // atomicAdd, so no follow-on combine launch is needed.
+    const int sweep_smem_bytes = kUseDynamicSmem ? dyn_smem_bytes : 0;
+    if (const auto error = CubDebug(
+          launcher_factory(sweep_grid_dims,
+                           threads_per_block,
+                           sweep_smem_bytes,
+                           stream,
+                           /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+            .doit(sweep_kernel,
+                  d_samples,
+                  num_output_bins_wrapper,
+                  num_privatized_bins_wrapper,
+                  d_output_histograms,
+                  d_privatized_histograms_wrapper,
+                  first_level_array,
+                  second_level_array,
+                  num_row_pixels,
+                  num_rows,
+                  row_stride_samples,
+                  tiles_per_row,
+                  tile_queue)))
     {
-      // Dynamic-SMEM staging path: launch the staging sweep kernel (which skips per-block
-      // atomicAdd-to-global), then run the combine kernel to reduce per-block staging slabs
-      // into the final output histogram.
-      // The dynamic-SMEM cap was already raised above as part of the occupancy query
-      // (set_max_dynamic_smem_size_for in the kStagingUsesDynSmem branch).
-      if (const auto error = CubDebug(
-            launcher_factory(sweep_grid_dims,
-                             threads_per_block,
-                             dyn_smem_bytes_for_staging,
-                             stream,
-                             /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-              .doit(staging_sweep_kernel,
-                    d_samples,
-                    num_output_bins_wrapper,
-                    num_privatized_bins_wrapper,
-                    d_output_histograms,
-                    d_privatized_histograms_wrapper,
-                    first_level_array,
-                    second_level_array,
-                    num_row_pixels,
-                    num_rows,
-                    row_stride_samples,
-                    tiles_per_row,
-                    tile_queue)))
-      {
-        return error;
-      }
-
-      // Combine kernel: 256 threads x ceil(num_privatized_bins / 256) blocks per channel.
-      // For non-byte samples, num_privatized_bins == num_output_bins (PassThru output decode).
-      constexpr int combine_threads = 256;
-      int combine_blocks_x          = (max_num_output_bins + combine_threads - 1) / combine_threads;
-
-      // Cast d_privatized_histograms to const for combine kernel.
-      ::cuda::std::array<const CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_const_wrapper;
-      for (int ch = 0; ch < NUM_ACTIVE_CHANNELS; ++ch)
-      {
-        d_privatized_const_wrapper[ch] = d_privatized_histograms_wrapper[ch];
-      }
-
-      dim3 combine_grid_dims;
-      combine_grid_dims.x = (unsigned int) combine_blocks_x;
-      combine_grid_dims.y = (unsigned int) NUM_ACTIVE_CHANNELS;
-      combine_grid_dims.z = 1;
-
-      if (const auto error = CubDebug(
-            launcher_factory(combine_grid_dims,
-                             combine_threads,
-                             0,
-                             stream,
-                             /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-              .doit(combine_kernel,
-                    d_output_histograms,
-                    d_privatized_const_wrapper,
-                    num_privatized_bins_wrapper,
-                    num_thread_blocks)))
-      {
-        return error;
-      }
-    }
-    else
-    {
-      // Non-staging launch. For the non-staging dyn-SMEM tier the per-block
-      // histogram lives in extern __shared__, so we must pass the dyn-SMEM byte
-      // budget (its cap was already raised in the occupancy-query branch above);
-      // the static-SMEM non-staging tiers pass 0.
-      const int non_staging_smem_bytes = kUseNonStagingDynSmem ? dyn_smem_bytes_for_staging : 0;
-      if (const auto error = CubDebug(
-            launcher_factory(sweep_grid_dims,
-                             threads_per_block,
-                             non_staging_smem_bytes,
-                             stream,
-                             /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-              .doit(sweep_kernel,
-                    d_samples,
-                    num_output_bins_wrapper,
-                    num_privatized_bins_wrapper,
-                    d_output_histograms,
-                    d_privatized_histograms_wrapper,
-                    first_level_array,
-                    second_level_array,
-                    num_row_pixels,
-                    num_rows,
-                    row_stride_samples,
-                    tiles_per_row,
-                    tile_queue)))
-      {
-        return error;
-      }
+      return error;
     }
   }
 
@@ -2759,48 +2457,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
         kernel_source,
         launcher_factory);
     }
-    case algorithm::smem_priv_2k: {
-      constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_privatized_levels,
-        num_output_levels,
-        output_decode_op,
-        privatized_decode_op,
-        max_num_output_bins,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream,
-        policy_selector,
-        kernel_source,
-        launcher_factory);
-    }
-    case algorithm::smem_priv_8k: {
-      constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_large;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_privatized_levels,
-        num_output_levels,
-        output_decode_op,
-        privatized_decode_op,
-        max_num_output_bins,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream,
-        policy_selector,
-        kernel_source,
-        launcher_factory);
-    }
-    case algorithm::smem_priv_16k: {
-      constexpr int PRIVATIZED_SMEM_BINS = max_extended_smem_bins_single_channel_xlarge;
+    case algorithm::smem_priv_dynamic: {
+      // One dynamic-SMEM kernel for the whole 256 < bins <= max_dynamic_smem_bins
+      // range: the per-block histogram lives in extern __shared__ sized at launch
+      // and merges into the output with a per-block atomicAdd. PRIVATIZED_SMEM_BINS
+      // here is only the "use SMEM privatization, dynamically sized" marker (its
+      // value selects the dynamic path in dispatch<>; the actual bin count comes
+      // from the runtime level arrays).
+      constexpr int PRIVATIZED_SMEM_BINS = max_dynamic_smem_bins;
       return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
         d_temp_storage,
         temp_storage_bytes,
