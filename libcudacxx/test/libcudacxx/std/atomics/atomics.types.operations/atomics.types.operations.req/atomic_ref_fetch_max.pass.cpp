@@ -19,6 +19,10 @@
 //     Integral
 //     atomic_ref<Integral>::fetch_max(Integral op,
 //                                     memory_order m = memory_order_seq_cst) const;
+//
+// template <class T>
+//     T*
+//     atomic_ref<T*>::fetch_max(T* op, memory_order m = memory_order_seq_cst) const;
 
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
@@ -58,16 +62,44 @@ struct TestFn
   }
 };
 
+template <class T, template <typename, typename> class Selector>
+TEST_FUNC void testp()
+{
+  using X = typename cuda::std::remove_pointer<T>::type;
+  using A = cuda::std::atomic_ref<T>;
+  // Pointers into the same array have a well-defined ordering.
+  X arr[8] = {};
+  {
+    Selector<T, constructor_initializer> sel;
+    A a(*sel.construct(arr + 2));
+    assert(a.fetch_max(arr + 5) == arr + 2);
+    assert(a.load() == arr + 5);
+  }
+  {
+    Selector<T, constructor_initializer> sel;
+    A a(*sel.construct(arr + 5));
+    assert(a.fetch_max(arr + 2) == arr + 5);
+    assert(a.load() == arr + 5);
+  }
+}
+
 int main(int, char**)
 {
-  NV_DISPATCH_TARGET(NV_IS_HOST,
-                     (TestEachIntegralRefType<TestFn, local_memory_selector>()();),
-                     NV_PROVIDES_SM_70,
-                     (TestEachIntegralRefType<TestFn, local_memory_selector>()();))
+  NV_DISPATCH_TARGET(
+    NV_IS_HOST,
+    (TestEachIntegralRefType<TestFn, local_memory_selector>()(); testp<int*, local_memory_selector>();
+     testp<const int*, local_memory_selector>();),
+    NV_PROVIDES_SM_70,
+    (TestEachIntegralRefType<TestFn, local_memory_selector>()(); testp<int*, local_memory_selector>();
+     testp<const int*, local_memory_selector>();))
 
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (TestEachIntegralRefType<TestFn, shared_memory_selector>()();
-                TestEachIntegralRefType<TestFn, global_memory_selector>()();))
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (TestEachIntegralRefType<TestFn, shared_memory_selector>()(); testp<int*, shared_memory_selector>();
+     testp<const int*, shared_memory_selector>();
+     TestEachIntegralRefType<TestFn, global_memory_selector>()();
+     testp<int*, global_memory_selector>();
+     testp<const int*, global_memory_selector>();))
 
   return 0;
 }
