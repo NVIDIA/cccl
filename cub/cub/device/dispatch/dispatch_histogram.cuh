@@ -78,22 +78,11 @@ static constexpr int max_dynamic_smem_bins = 16384;
 static constexpr int multi_channel_smem_bins_range = 2048;
 static constexpr int multi_channel_smem_bins_even  = 8192;
 
-// Chunked dyn-SMEM staging-fused tier for histograms with bins exceeding the dyn-SMEM
-// xlarge tier (16384). Each chunk runs the existing dyn-SMEM staging-combine path over
-// a `chunk_size`-bin slice of the privatized-bin space, with the per-chunk decode op
-// remapping samples outside the slice to bin -1. Trades `num_chunks` x sample reads
-// for `num_chunks` x SMEM atomicAdd_block (instead of 1x GMEM atomicAdd_block on the
-// legacy persistent-kernel GMEM-priv path).
-//
-// Single-channel chunk_size choice: 2 chunks of 32768 wins for the 60000-bin EVEN
-// axis. More, smaller chunks (3 x 20000, 4 x 15000) lose: the extra launches and
-// the extra wasted classify + sample-read passes dominate the SMEM atomicAdd_block
-// savings. 32768 is a clean power of two; per-block dyn-SMEM at 32768 bins is 131 KB
-// single-channel, well within B200's ~228 KiB per-CTA cap.
-static constexpr int chunked_smem_chunk_size_single_channel = 32768;
-static constexpr int chunked_smem_num_chunks_single_channel = 2;
-static constexpr int chunked_smem_bins_max_single_channel =
-  chunked_smem_chunk_size_single_channel * chunked_smem_num_chunks_single_channel;
+// Upper bin bound of the single-channel hybrid SMEM+GMEM single-pass kernel: at
+// or below this the histogram is small enough that keeping its primary range on
+// chip pays off (above it, the high-bin direct-atomic caches take over). Also
+// the cap below which single-channel high-bin cells consider the hybrid path.
+static constexpr int hybrid_smem_bins_max_single_channel = 65536;
 
 // Hybrid SMEM+GMEM split point: bins [0, hybrid_split) live in per-block dyn-SMEM;
 // bins [hybrid_split, max_total) live in per-block GMEM staging. Larger split fits
@@ -167,38 +156,26 @@ struct selector_features
   long long num_pixels; // total pixels per active channel
 };
 
-// Pick a single algorithm for one cell. Rules are first-match.
+// Pick a single algorithm for one cell. Rules are first-match. The selector
+// cannot observe input entropy, so each rule is the geomean winner over the
+// input-distribution mix for its (channels, sample width, bin tier, pixels)
+// regime, derived by sweeping every algorithm across the benchmark matrix.
 //
-// The selector is split into two regions:
+//   1. Privatized-SMEM region (num_bins <= max_dynamic_smem_bins): <=256 bins
+//      (and all byte samples) use the static smem_priv_256 kernel; above that, a
+//      single dynamic-SMEM kernel (smem_priv_dynamic). Multi-channel eligibility
+//      is more restrictive (per-block footprint + classify cost scale with the
+//      active channel count), so multi-channel RANGE / >3-channel cells past the
+//      relevant cap fall through to the high-bin region.
 //
-//   1. Low-bin region (num_bins <= 16384): SMEM-privatised tiers handle these.
-//      Tiers cascade by bin count: smem_priv_256 -> 2K -> 8K -> 16K. Multi-
-//      channel non-EVEN cuts the cascade short at 2K because the per-block
-//      privatisation storage scales with NUM_ACTIVE_CHANNELS and the
-//      SearchTransform classify cost dominates beyond that point.
-//
-//   2. High-bin region (num_bins > 16384): cuckoo (direct GMEM atomics with a
-//      small SMEM cache) is the robust default, with explicit overrides only
-//      in the regimes where a privatized path genuinely wins the entropy-mix
-//      geomean. Re-mapped per-cell on SM100 by a controlled force-each-algo
-//      sweep (worker-2 brief-9); the detailed rationale is inline at the
-//      high-bin region below. Summary (first-match):
-//
-//      Single-channel:
-//        * bins <= 65536 (cap), EVEN          -> hybrid  (whole histogram on-chip)
-//        * bins <= 65536, RANGE F64, N>=64M    -> sweep   (classify amortized)
-//        * bins <= 65536, RANGE F64, N>=16M    -> hybrid
-//        * bins <= 65536, RANGE F64, small N   -> cuckoo
-//        * bins <= 65536, RANGE I32            -> cuckoo
-//        * bins == 262144, F64, N>=256M        -> sweep   (mid-tier privatization)
-//        * else                                -> cuckoo
-//
-//      Multi-channel (hybrid is single-channel-only):
-//        * EVEN I32                            -> single_probe
-//        * RANGE (I32 or F64), bins<=65536,
-//                              16M<=N<=256M    -> single_probe
-//        * bins == 262144, F64, N>=256M        -> single_probe
-//        * else                                -> cuckoo
+//   2. High-bin region: the single-channel SMEM+GMEM hybrid_single_pass and the
+//      two direct-atomic caches (single_probe / cuckoo). Single-channel uses the
+//      on-chip hybrid where the histogram fits and the input amortizes its setup
+//      (the 65536 cap tier at N>4M, the 262144 mid tier once amortized), and
+//      direct atomics elsewhere. Multi-channel uses the direct-atomic caches.
+//      The cuckoo and single-probe caches measure within noise, so single-probe
+//      (the leaner probe) is the default and cuckoo serves the larger multi
+//      bin tiers.
 template <bool IsByteSample>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features const& f)
 {
@@ -289,7 +266,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
 
     // Cap tier (<=65536): the whole histogram fits the on-chip hybrid kernel,
     // which dominates here for both transforms once N > 4M.
-    if (f.num_bins <= chunked_smem_bins_max_single_channel)
+    if (f.num_bins <= hybrid_smem_bins_max_single_channel)
     {
       return algorithm::hybrid_single_pass;
     }
@@ -327,7 +304,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // Cap tier (<=65536) at moderate/large input: single-probe, except the EVEN F64
   // case handled above. Covers RANGE (both widths) and is a measured tie for the
   // cells it overlaps, so it never regresses.
-  if (f.num_bins <= chunked_smem_bins_max_single_channel && f.num_pixels >= kHybridMidTierPixels
+  if (f.num_bins <= hybrid_smem_bins_max_single_channel && f.num_pixels >= kHybridMidTierPixels
       && !(f.is_even && f.sample_bytes >= 8))
   {
     return algorithm::direct_atomic_single_probe;
@@ -1203,7 +1180,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         (cudaDeviceGetAttribute(&cooperative_supported, cudaDevAttrCooperativeLaunch, device_ordinal) == cudaSuccess
          && cooperative_supported != 0);
       // The persistent / direct-atomic kernels may have lower per-SM occupancy
-      // than the staging sweep kernel that was used to size `num_thread_blocks`,
+      // than the sweep kernel that was used to size `num_thread_blocks`,
       // so we must verify the chosen kernel's occupancy fits the requested
       // cooperative grid; otherwise `cudaLaunchCooperativeKernel` will fail
       // with cudaErrorCooperativeLaunchTooLarge and we fall back to the legacy
@@ -1849,10 +1826,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
       InnerPrivatizedDecodeOpT,
       OutputDecodeOpT>();
 
-  // Force device-side instantiation of the hybrid kernel template via a dead `<<<>>>` call,
-  // mirroring the pattern used by the existing fused-staging-kernel dispatch. Without this,
-  // just taking `&kernel` produces only the host shadow function and the runtime
-  // kernel-registration table has no device-side entry to match it.
+  // Force device-side instantiation of the hybrid kernel template via a dead `<<<>>>` call.
+  // Without this, just taking `&kernel` produces only the host shadow function and the runtime
+  // kernel-registration table has no device-side entry to match it (cooperative launch then
+  // fails with cudaErrorInvalidResourceHandle).
   if (false)
   {
     DeviceHistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel<PolicySelector,
@@ -2177,7 +2154,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
           dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
                                                    NUM_ACTIVE_CHANNELS,
                                                    hybrid_smem_split_bin_single_channel,
-                                                   chunked_smem_bins_max_single_channel>(
+                                                   hybrid_smem_bins_max_single_channel>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
