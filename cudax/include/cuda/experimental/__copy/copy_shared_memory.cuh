@@ -71,10 +71,12 @@ template <bool _UseXorSwizzle>
     static_assert(__max_tile_size == 32, "XOR shared-memory swizzle assumes 32 banks and 32-element tile modes");
     constexpr __tile_extent_t __swizzle_tile_size = __max_tile_size * __max_tile_size;
     const auto __outer                            = __offset / __swizzle_tile_size;
-    const auto __inner                            = __offset - (__outer * __swizzle_tile_size);
+    const auto __offset_tile_rounded              = __outer * __swizzle_tile_size;
+    const auto __inner                            = __offset - __offset_tile_rounded;
     const auto __row                              = __inner / __max_tile_size;
-    const auto __col                              = __inner - (__row * __max_tile_size);
-    return __outer * __swizzle_tile_size + __row * __max_tile_size + (__col ^ __row);
+    const auto __row_tile_rounded                 = __row * __max_tile_size;
+    const auto __col                              = __inner - __row_tile_rounded;
+    return __offset_tile_rounded + __row_tile_rounded + (__col ^ __row);
   }
   return __offset;
 }

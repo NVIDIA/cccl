@@ -202,8 +202,8 @@ NVBENCH_BENCH(several_dimensions_non_square).set_name("several_dimensions_non_sq
  * Transpose benchmark
  **********************************************************************************************************************/
 
-// src: (32768,32768):(32768,1)
-// dst: (32768,32768):(1,32768)
+// src: (32768,32768):(1,32768)
+// dst: (32768,32768):(32768,1)
 void transpose_2D_col_row(nvbench::state& state)
 {
   cuda::std::array<int, 2> shape{32768, 32768};
