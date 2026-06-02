@@ -34,6 +34,12 @@ TEST_DEVICE_FUNC void test_types(T valueA = T{}, T valueB = T{1})
   }
 }
 
+struct WithPadding
+{
+  int a;
+  char b;
+};
+
 __global__ void test_kernel()
 {
   test_types<uint8_t>();
@@ -46,6 +52,9 @@ __global__ void test_kernel()
   test_types(char3{0, 0, 0}, char3{1, 1, 1});
   using array_t = cuda::std::array<char, 6>;
   test_types(array_t{0, 0, 0, 0, 0, 0}, array_t{1, 1, 1, 1, 1, 1});
+#if defined(_CCCL_BUILTIN_BUILTIN_CLEAR_PADDING)
+  test_types<WithPadding>();
+#endif
 }
 
 int main(int, char**)
