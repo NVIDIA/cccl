@@ -216,6 +216,9 @@ public:
       CompareOpT,
       KeyT,
       ValueT>::policy;
+    static_assert(1 <= policy.threads_per_block && policy.threads_per_block <= 1024,
+                  "Number of threads per block need to be inside [1;1024]");
+    static_assert(1 <= policy.items_per_thread, "Number of items per thread needs to be at least 1");
     constexpr auto tile_size = policy.threads_per_block * policy.items_per_thread;
     const auto num_tiles     = ::cuda::ceil_div(num_items, tile_size);
 
@@ -511,6 +514,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
+    _CCCL_ASSERT(1 <= policy.threads_per_block && policy.threads_per_block <= 1024,
+                 "Number of threads per block need to be inside [1;1024]");
+    _CCCL_ASSERT(1 <= policy.items_per_thread, "Number of items per thread needs to be at least 1");
     const auto tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
