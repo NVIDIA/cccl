@@ -476,15 +476,13 @@ struct AgentHistogram
         // only ONE bracket is live at a time (no per-channel mru[NumActiveChannels]
         // register array -> no spill on the register-pinned multi-channel sweep).
         // It threads across the `pixels_per_thread` consecutive same-channel
-        // classifies below. The SMEM-priv RANGE sweep was profiled ALU-bound
-        // (ncu, multi.range 2000-bin/64M/e=0.337: ALU 49.9% highest pipe, DRAM
-        // 5.5%, IPC 2.98) -- the SearchTransform interpolate+clamp+verify ladder
-        // is the cost. On a cache hit BinSelect returns the cached bin with two
-        // register compares and ZERO of that ladder; low-entropy cells (the
-        // benchmark's e=0 / e=0.337 majority) have high consecutive-sample
-        // bracket locality. The 4-arg BinSelect overload is a no-op forwarder on
-        // EVEN's ScaleTransform (is_range_transform==false), so this is
-        // byte-identical for EVEN and only changes the RANGE classify.
+        // classifies below. The SMEM-priv RANGE sweep is ALU-bound on the
+        // SearchTransform interpolate+clamp+verify ladder. On a cache hit
+        // BinSelect returns the cached bin with two register compares and ZERO of
+        // that ladder; low-entropy inputs have high consecutive-sample bracket
+        // locality. The 4-arg BinSelect overload is a no-op forwarder on EVEN's
+        // ScaleTransform (is_range_transform==false), so this is byte-identical
+        // for EVEN and only changes the RANGE classify.
         typename PrivatizedDecodeOpT::BracketCacheT mru;
 
         // Bin pixels

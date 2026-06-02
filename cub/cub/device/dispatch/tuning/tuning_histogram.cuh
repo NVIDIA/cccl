@@ -239,7 +239,7 @@ struct sm100_tuning<true, SampleT, 1, 1, counter_size::_4, primitive_sample::yes
   static constexpr int vec_size                                  = 1 << 2;
 };
 
-// sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
+// sample_size 2/4/8: no SM100 specialization beat the inherited SM90 tuning
 
 // range
 template <class SampleT>
@@ -258,12 +258,9 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 
 // SM100 sample_size 4 (I32) single-channel non-byte tuning. The default Policy500 fallback
 // {384 threads, t_scale(16)=16 ipt} is suboptimal for the dyn-SMEM 16384-bin tier where
-// SMEM atomicAdd_block contention dominates. Use 768 threads / 12 ipt (matching SM90 sample_size=1
-// shape) to spread atomic contention across more concurrent issues per CTA.
-//
-// Verified empirically vs 512/12 (-1.27%), 928/12 (-0.79%), 768/16 (-1.43%); 768/12 wins.
-// LOAD_LDG was verified vs LOAD_CA (-0.50%); LOAD_LDG wins. BLOCK_LOAD_VECTORIZE slightly beats
-// BLOCK_LOAD_DIRECT (+0.08%, within noise).
+// SMEM atomicAdd_block contention dominates. Use 768 threads / 12 ipt (matching the SM90
+// sample_size=1 shape) to spread atomic contention across more concurrent issues per CTA,
+// with LOAD_LDG (streaming) loads.
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_4>
 {
@@ -277,12 +274,10 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
   static constexpr int vec_size                                  = 1 << 2;
 };
 
-// SM100 sample_size 8 (F64) single-channel non-byte tuning. F64 has half the throughput per byte
-// and the dyn-SMEM 16384 tier already saturates at ~5 TB/s for F64 entropy=1.0; aim for a balanced
-// {threads, ipt} that doesn't regress lower-bin tiers either.
-//
-// Verified empirically vs 768/8 (-0.37% overall, but -3% on range): 512/8 wins because it
-// trades a small even-path regression for a larger range-path improvement.
+// SM100 sample_size 8 (F64) single-channel non-byte tuning. F64 has half the throughput per
+// byte and the dyn-SMEM 16384 tier is already bandwidth-saturated, so aim for a balanced
+// {threads, ipt} that does not regress the lower-bin tiers. 512 threads / 8 ipt trades a small
+// even-path cost for a larger range-path gain over the wider 768-thread shape.
 template <bool IsEven, class SampleT>
 struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sample_size::_8>
 {
@@ -296,7 +291,7 @@ struct sm100_tuning<IsEven, SampleT, 1, 1, counter_size::_4, primitive_sample::y
   static constexpr int vec_size                                  = 1 << 2;
 };
 
-// multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
+// multi.even and multi.range: no SM100 specialization beat the inherited SM90 tuning
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
@@ -440,40 +435,18 @@ public:
           //
           // direct_atomic_threads_per_block=512: the high-bin direct-atomic
           // (cuckoo / single-probe) single-channel RANGE cells run a SEPARATE
-          // kernel from the SMEM-priv sweep -- the cuckoo kernel for bins>65536
-          // (and all F64 high-bin) at <256M pixels, and the single-probe kernel
-          // for 1M bins at >=256M pixels. These atomic straight to the output via
+          // kernel from the SMEM-priv sweep, and atomic straight to the output via
           // a pure grid-stride loop, so their block size is decoupled from the
-          // sweep without affecting correctness.
-          //
-          // A structured thread sweep over the 57 direct-atomic cells (I32+F64,
-          // bins 65536/262144/1M, all entropy/input-size; per-cell GiB/s geomean,
-          // measured against an identical build differing only in this field so
-          // the ~140 unaffected cells stay fixed at ratio 1.000) is UNIMODAL with
-          // a clear peak at 512: 256=0.814, 384=0.971, 512=1.024, 768=1.000
-          // (relative to the 768-thread inherit). 512 beats the inherited 768 by
-          // +2.4% and 384 by +5.4%; both the cuckoo and single-probe sub-groups
-          // agree on 512.
-          //
-          // ncu on the 1M-bin/256M/uniform single-probe cell explains it: at 768
-          // threads (30 regs) the kernel is pinned to 2 blocks/SM (Block Limit
-          // Registers/SMEM/Warps all == 2) -> 75% achieved occupancy, 17.9%
-          // issue-slot utilisation, 79.9% of warp cycles stalled on the
-          // long-scoreboard SMEM-cache atomic dependency (44.8 GB/s, latency- not
-          // bandwidth-bound). At 512 threads (28 regs) all three limiters jump to
-          // 4 blocks/SM -> 100% achieved occupancy (63.9 warps), 47.1 GB/s, 23.0
-          // vs 24.2 ms: the extra co-resident blocks (each its own dynamic-SMEM
-          // cache partition + a shorter per-block CAS/atomicAdd_block dependency
-          // chain) hide the scoreboard-stall-dominated latency. 384/256 starve the
-          // issue pipeline (too few warps/block); 768 caps occupancy at 75%.
-          //
-          // Note this differs from the multi-channel RANGE single-probe path
-          // (worker-3 brief-4), which peaked at 384: there the 3-active-channel
-          // SearchTransform makes it latency-bound and the 1024-slot/channel cache
-          // is small, so the SM wanted even more, smaller blocks. Single-channel
-          // RANGE has one SearchTransform and a 4096-slot cache, so it is more
-          // throughput-bound and 512 (more warps/block) wins -- the per-transform
-          // decouple is itself per-channel-count.
+          // sweep without affecting correctness. They are latency-bound on the
+          // SMEM-cache atomic dependency at exhausted issue throughput, so a
+          // narrower 512-thread block (vs the 768-thread sweep) admits more
+          // co-resident blocks per SM -- each with its own dynamic-SMEM cache
+          // partition and a shorter per-block CAS/atomicAdd_block dependency chain
+          // -- which hides that latency. Going narrower than 512 starves the issue
+          // pipeline; 768 caps occupancy. This differs from the multi-channel
+          // RANGE path (which wants an even narrower block) because single-channel
+          // has one SearchTransform and a larger cache, making it more
+          // throughput-bound, so the per-transform decouple is per-channel-count.
           //
           // The sweep tiers keep the 768-thread shape (SMEM-priv occupancy-bound,
           // not direct-atomic latency-bound). EVEN inherits its sweep thread count
@@ -483,7 +456,7 @@ public:
         }
       }
 
-      // sample_size 2 showed no benefit over SM90 during verification benchmarks
+      // sample_size 2: no SM100 specialization beat the inherited SM90 tuning
 
       // SM100 multi-channel (num_channels >= 2) tuning, decoupled per transform.
       // Previously every multi-channel configuration fell through to the SM50
@@ -502,58 +475,42 @@ public:
       {
         if (!is_even)
         {
-          // RANGE: 1024 threads. worker-3 found 768==1024 within noise on the
-          // SMEM-priv mid-bin sweep cells (where 768 gets better occupancy), but
-          // this policy ALSO drives the high-bin direct-atomic (cuckoo/single-probe)
-          // kernels, which atomic directly to the output and are GMEM-atomic/
-          // classify-latency bound rather than SMEM-priv occupancy bound. A wider
-          // 1024-thread launch gives those kernels more resident warps to hide that
-          // latency (matching EVEN's 1024 pick). rle=true is free. Keep LOAD_LDG:
-          // an LOAD_CA ablation regressed multi_range -26.2% (cache-all thrashes
-          // L1/L2 caching the SearchTransform level-array + sample loads across the
-          // 3 active channels on the SMEM-priv mid-bin sweep cells; LDG's streaming
-          // loads avoid the eviction churn).
+          // RANGE: 1024 threads. On the SMEM-priv mid-bin sweep cells 768 and 1024
+          // are within noise, but this policy ALSO drives the high-bin
+          // direct-atomic (cuckoo/single-probe) kernels, which atomic directly to
+          // the output and are GMEM-atomic / classify-latency bound rather than
+          // SMEM-priv occupancy bound; the wider 1024-thread launch gives those
+          // kernels more resident warps to hide that latency (matching EVEN's
+          // 1024 pick). rle=true is free. Keep LOAD_LDG: LOAD_CA (cache-all)
+          // thrashes L1/L2 caching the SearchTransform level-array + sample loads
+          // across the active channels, while LDG's streaming loads avoid the
+          // eviction churn.
           //
-          // direct_atomic_threads_per_block=384 (COMBINE / brief-8): the
-          // multi-channel direct-atomic RANGE decouple from worker-3 brief-4
-          // (parent C 614970dd). The high-bin direct-atomic cuckoo/single-probe
-          // kernels share this policy but run a SEPARATE grid-stride kernel from
-          // the SMEM-priv sweep. ncu on the 1M-bin/256M/uniform single-probe
-          // cell at 1024 threads showed ~100% achieved occupancy (2 blocks/SM,
-          // 64 warps) but 89.6%-of-cycles long-scoreboard SMEM-cache atomic
-          // stalls at 15% issue util: 64 warps hammer ONE block's single-probe
-          // cache. A 384-thread block lets the SM hold more, smaller blocks,
-          // each with its own dynamic-SMEM cache partition and a shorter atomic
-          // dependency chain. The SMEM-priv mid-bin sweep tiers keep the
-          // 1024-thread shape (threads_per_block stays 1024); only the
-          // direct-atomic kernels see 384. iter4: C's 384 REVERTED to 0 (inherit
-          // 1024) -- decompose found C's 384 and cuckoo R=2 are antagonistic on
-          // multi_range (the larger R=2 per-slot count footprint + a 384-thread
-          // launch together starve the cuckoo cache). Keep cuckoo R=2 at 1024 to
-          // capture B's multi_range gain without the antagonism.
+          // direct_atomic_threads_per_block stays 0 (the direct-atomic kernels
+          // inherit 1024): a narrower direct-atomic block was found antagonistic
+          // with the multi-channel count-replica footprint -- the larger per-slot
+          // count plus a narrow launch together starve the cache -- so the
+          // multi-channel direct-atomic kernels keep the 1024-thread shape and the
+          // count-replica de-serialization instead.
           return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 0};
         }
         else
         {
-          // EVEN: 1024 threads. The SMEM-priv even sweep was pinned to 1 block/SM
-          // (32 warps, 50% occ): at t_scale(16) the per-thread accumulate holds
-          // samples[pixels_per_thread][NumChannels] + bins[pixels_per_thread]
-          // (for I32, 3 active channels: 5*4 + 5 = 25 live ints) which compiles to
-          // ~58 registers => 58*2048 > 65536 regs/SM, so only one CTA is resident
-          // and there is no second block to hide the shared-memory atomicAdd
-          // latency this contention-bound sweep is dominated by.
+          // EVEN: 1024 threads. At t_scale(16) the per-thread accumulate holds
+          // samples[pixels_per_thread][NumChannels] + bins[pixels_per_thread],
+          // which compiles to enough registers to pin the contention-bound
+          // SMEM-priv even sweep to 1 block/SM -- leaving no second block to hide
+          // the shared-memory atomicAdd latency it is dominated by.
           //
           // Halve the nominal items (t_scale(8): 2 pixels/thread for I32, 1 for
           // F64). That shrinks the live samples/bins arrays enough for ptxas to
           // hold the kernel in <= 32 registers WITHOUT spilling (forcing 32 regs
-          // at t_scale(16) instead spills ~88 B and nets a regression -- measured),
-          // which together with the DeviceHistogramSweepKernel __launch_bounds__
-          // min-blocks=2 hint admits a 2nd resident CTA (64 warps, 100% occ) on
-          // the register-limited low-bin even tiers (256/2048 bins, 4 KB/25 KB
-          // SMEM -- registers, not SMEM, gate occupancy here). rle=true is
-          // preserved (load-bearing: dropping the same-bin RLE coalescing
-          // collapses multi_even). LOAD_CA matches the single-channel SM100 even
-          // tuning.
+          // at t_scale(16) instead spills and regresses), which together with the
+          // DeviceHistogramSweepKernel __launch_bounds__ min-blocks=2 hint admits
+          // a 2nd resident CTA on the register-limited low-bin even tiers (where
+          // registers, not SMEM, gate occupancy). rle=true is load-bearing
+          // (dropping the same-bin RLE coalescing collapses the multi-channel even
+          // path). LOAD_CA matches the single-channel SM100 even tuning.
           return histogram_policy{1024, t_scale(8), BLOCK_LOAD_DIRECT, LOAD_CA, true, SMEM, false, 4, 0};
         }
       }
