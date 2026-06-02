@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/__memory/pointer_traits.h>
+#  include <cuda/std/__pstl/cuda/common.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -75,6 +76,9 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     _OutputIterator __result,
     _BinaryPredicate __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType    = iter_difference_t<_InputIterator>;
     using DispatchUnique = CUB_NS_QUALIFIER::DispatchSelectIf<
       _InputIterator,
@@ -103,8 +107,6 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
       __pred,
       __count,
       nullptr);
-
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     { // Create temporary storage for the return value as well as a copy of the input sequence as Unique is not inplace
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};

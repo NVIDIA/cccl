@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/common.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -79,6 +80,9 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
     _InputIterator __last,
     _OutputIterator __result)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType = size_t;
 
     const auto __count  = static_cast<_OffsetType>(::cuda::std::distance(__first, __last));
@@ -103,8 +107,6 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
       static_cast<_OffsetType*>(nullptr),
       __count,
       nullptr);
-
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     {
       // Allocate memory for result

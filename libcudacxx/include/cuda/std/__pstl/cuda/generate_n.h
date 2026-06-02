@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/common.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
@@ -67,6 +68,9 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
   [[nodiscard]] _CCCL_HOST_API static _OutputIterator
   __par_impl(const _Policy& __policy, _OutputIterator __result, const int64_t __count, _UnaryOp __func)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     // We pass the policy as an environment to DeviceTransform
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceTransform::Generate,
@@ -76,8 +80,6 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
       ::cuda::std::move(__func),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __result + __count;

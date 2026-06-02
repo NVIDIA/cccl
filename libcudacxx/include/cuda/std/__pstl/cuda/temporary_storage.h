@@ -140,7 +140,8 @@ class __temporary_storage
       return ::cuda::device_default_memory_pool(::cuda::get_stream(__policy).device());
     }
     else
-    { // no stream no memory resource, assume device 0
+    {
+      // If no stream was specified, we use the device 0.
       return ::cuda::device_default_memory_pool(0);
     }
   }

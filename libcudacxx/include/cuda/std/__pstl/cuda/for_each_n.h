@@ -48,6 +48,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/common.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/convert_to_integral.h>
@@ -68,6 +69,9 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
   [[nodiscard]] _CCCL_HOST_API static _Iter
   __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     const auto __count = ::cuda::std::__convert_to_integral(__orig_n);
 
     // We pass the policy as an environment to DeviceFor
@@ -79,8 +83,6 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
       ::cuda::std::move(__func),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __first + static_cast<iter_difference_t<_Iter>>(__count);

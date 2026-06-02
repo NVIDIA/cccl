@@ -50,6 +50,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/common.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -86,8 +87,10 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
   template <class _Policy, class _Tp, class _BinaryPredicate>
   _CCCL_HOST_API static void __radix_sort_impl(const _Policy& __policy, _Tp* __first, _Tp* __last, _BinaryPredicate)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     const auto __count = static_cast<size_t>(::cuda::std::distance(__first, __last));
-    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
 
     CUB_NS_QUALIFIER::DoubleBuffer<_Tp> __buffer{__first, nullptr};
 
