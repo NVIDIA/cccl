@@ -144,6 +144,9 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+cudax_add_catch2_test(test_target group.mapping.binary_partition
+    group/mapping/binary_partition.cu
+)
 cudax_add_catch2_test(test_target group.mapping.composite_mapping
     group/mapping/composite_mapping.cu
 )
@@ -176,6 +179,19 @@ cudax_add_catch2_test(test_target group.segmented_algorithm
 )
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
+)
+
+cudax_add_catch2_test(test_target coop.reduce.this_thread
+    coop/reduce/this_thread.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_warp
+    coop/reduce/this_warp.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_block
+    coop/reduce/this_block.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_cluster
+    coop/reduce/this_cluster.cu
 )
 
 if (cudax_ENABLE_CUFILE)
