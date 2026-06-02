@@ -640,8 +640,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
               {
                 // Add the sums of preceding CTAs to the cumulative sum.
                 AccumT regSumExclusiveCta = refSumExclusiveCtaR.data();
-                // sumExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
-                sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(regSumExclusiveCta, sumExclusive);
+                // sumExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps. Skip it, when
+                // this thread has no valid items to process in the last tile.
+                if (squad.threadRank() == 0 || (is_last_tile_ic && valid_items_this_thread == 0))
+                {
+                  sumExclusive = regSumExclusiveCta;
+                }
+                else
+                {
+                  sumExclusive = scan_op(regSumExclusiveCta, sumExclusive);
+                }
               }
             }
 
@@ -649,8 +657,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
             {
               if (is_first_tile)
               {
-                // The first thread cannot use scan_op because sumExclusive holds garbage data
-                if (squad.threadRank() == 0)
+                // The first thread cannot use scan_op because sumExclusive holds garbage data. Also skip sumExclusive
+                // when
+                // this thread has no valid items to process in the last tile.
+                if (squad.threadRank() == 0 || (is_last_tile_ic && valid_items_this_thread == 0))
                 {
                   sumExclusive = static_cast<AccumT>(real_init_value);
                 }
