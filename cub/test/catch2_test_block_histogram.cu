@@ -15,23 +15,23 @@
 
 #include <c2h/catch2_test_helper.h>
 
-template <int BINS,
-          int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
-          cub::BlockHistogramAlgorithm ALGORITHM,
+template <int Bins,
+          int BlockThreads,
+          int ItemsPerThread,
+          cub::BlockHistogramAlgorithm Algorithm,
           typename T,
           typename HistoCounter>
 __global__ void block_histogram_kernel(T* d_samples, HistoCounter* d_histogram)
 {
   // Parameterize BlockHistogram type for our thread block
-  using block_histogram_t = cub::BlockHistogram<T, BLOCK_THREADS, ITEMS_PER_THREAD, BINS, ALGORITHM>;
+  using block_histogram_t = cub::BlockHistogram<T, BlockThreads, ItemsPerThread, Bins, Algorithm>;
 
   // Allocate temp storage in shared memory
   __shared__ typename block_histogram_t::TempStorage temp_storage;
 
   // Per-thread tile data
-  T data[ITEMS_PER_THREAD];
-  cub::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_samples, data);
+  T data[ItemsPerThread];
+  cub::LoadDirectStriped<BlockThreads>(threadIdx.x, d_samples, data);
 
   // Test histo (writing directly to histogram buffer in global)
   block_histogram_t(temp_storage).Histogram(data, d_histogram);
@@ -41,6 +41,71 @@ template <int ItemsPerThread, int ThreadsInBlock, int Bins, cub::BlockHistogramA
 void block_histogram(c2h::device_vector<SampleT>& d_samples, c2h::device_vector<int>& d_histogram)
 {
   block_histogram_kernel<Bins, ThreadsInBlock, ItemsPerThread, Algorithm>
+    <<<1, ThreadsInBlock>>>(thrust::raw_pointer_cast(d_samples.data()), thrust::raw_pointer_cast(d_histogram.data()));
+
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+template <int Bins, int BlockThreads, int ItemsPerThread, typename T, typename HistoCounter>
+__global__ void block_histogram_composite_kernel(T* d_samples, HistoCounter* d_histogram)
+{
+  using block_histogram_t =
+    cub::BlockHistogram<T, BlockThreads, ItemsPerThread, Bins, cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED>;
+
+  __shared__ typename block_histogram_t::TempStorage temp_storage;
+
+  T data[ItemsPerThread];
+  const int block_offset = blockIdx.x * BlockThreads * ItemsPerThread;
+  cub::LoadDirectStriped<BlockThreads>(threadIdx.x, d_samples + block_offset, data);
+
+  block_histogram_t(temp_storage).Composite(data, d_histogram);
+}
+
+template <int ItemsPerThread, int ThreadsInBlock, int Bins, typename SampleT>
+void block_histogram_composite(
+  c2h::device_vector<SampleT>& d_samples, c2h::device_vector<int>& d_histogram, int num_blocks)
+{
+  block_histogram_composite_kernel<Bins, ThreadsInBlock, ItemsPerThread><<<num_blocks, ThreadsInBlock>>>(
+    thrust::raw_pointer_cast(d_samples.data()), thrust::raw_pointer_cast(d_histogram.data()));
+
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+template <int Bins, int BlockThreads, int ItemsPerThread, typename T, typename HistoCounter>
+__global__ void block_histogram_composite_shared_kernel(T* d_samples, HistoCounter* d_histogram)
+{
+  using block_histogram_t =
+    cub::BlockHistogram<T, BlockThreads, ItemsPerThread, Bins, cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED>;
+
+  __shared__ typename block_histogram_t::TempStorage temp_storage;
+  __shared__ HistoCounter s_histogram[Bins];
+
+  for (int bin = threadIdx.x; bin < Bins; bin += BlockThreads)
+  {
+    s_histogram[bin] = 0;
+  }
+
+  __syncthreads();
+
+  T data[ItemsPerThread];
+  cub::LoadDirectStriped<BlockThreads>(threadIdx.x, d_samples, data);
+
+  block_histogram_t(temp_storage).Composite(data, s_histogram);
+
+  __syncthreads();
+
+  for (int bin = threadIdx.x; bin < Bins; bin += BlockThreads)
+  {
+    d_histogram[bin] = s_histogram[bin];
+  }
+}
+
+template <int ItemsPerThread, int ThreadsInBlock, int Bins, typename SampleT>
+void block_histogram_composite_shared(c2h::device_vector<SampleT>& d_samples, c2h::device_vector<int>& d_histogram)
+{
+  block_histogram_composite_shared_kernel<Bins, ThreadsInBlock, ItemsPerThread>
     <<<1, ThreadsInBlock>>>(thrust::raw_pointer_cast(d_samples.data()), thrust::raw_pointer_cast(d_histogram.data()));
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
@@ -166,6 +231,59 @@ C2H_TEST("Block histogram can be computed with random input",
   // Run kernel
   block_histogram<params::items_per_thread, params::threads_in_block, params::bins, params::algorithm>(
     d_samples, d_histogram);
+
+  REQUIRE(h_reference == d_histogram);
+}
+
+TEST_CASE("Block histogram warp-aggregated composite updates a global histogram from multiple blocks",
+          "[histogram][block]")
+{
+  using sample_t = std::uint16_t;
+
+  static constexpr int items_per_thread = 3;
+  static constexpr int threads_in_block = 64;
+  static constexpr int num_blocks       = 5;
+  static constexpr int num_bins         = TEST_BINS;
+  static constexpr int num_samples      = num_blocks * threads_in_block * items_per_thread;
+
+  c2h::host_vector<sample_t> h_samples(num_samples);
+  for (int i = 0; i < num_samples; ++i)
+  {
+    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % num_bins);
+  }
+
+  auto h_reference = compute_host_reference(num_bins, h_samples);
+
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  block_histogram_composite<items_per_thread, threads_in_block, num_bins>(d_samples, d_histogram, num_blocks);
+
+  REQUIRE(h_reference == d_histogram);
+}
+
+TEST_CASE("Block histogram warp-aggregated composite updates a shared histogram from a partial warp block",
+          "[histogram][block]")
+{
+  using sample_t = std::uint16_t;
+
+  static constexpr int items_per_thread = 3;
+  static constexpr int threads_in_block = 33;
+  static constexpr int num_bins         = TEST_BINS;
+  static constexpr int num_samples      = threads_in_block * items_per_thread;
+
+  c2h::host_vector<sample_t> h_samples(num_samples);
+  for (int i = 0; i < num_samples; ++i)
+  {
+    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % num_bins);
+  }
+
+  auto h_reference = compute_host_reference(num_bins, h_samples);
+
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  block_histogram_composite_shared<items_per_thread, threads_in_block, num_bins>(d_samples, d_histogram);
 
   REQUIRE(h_reference == d_histogram);
 }
