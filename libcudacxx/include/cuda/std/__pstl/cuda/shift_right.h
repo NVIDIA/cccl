@@ -78,7 +78,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_right, __execution_backend::__c
     const auto __count_remaining = static_cast<_OffsetType>(__count - __num_shifted);
     const auto __result          = __first + __num_shifted;
 
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
 
     if (2 * __num_shifted > __count)
     { // There is no overlap between the source and destination, so we can just copy
