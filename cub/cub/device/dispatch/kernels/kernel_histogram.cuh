@@ -73,9 +73,10 @@ namespace detail::histogram
 
 // Set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
 //
-// The single-probe cache (DeviceHistogramDirectAtomicSingleProbeKernel)
-// is direct-mapped: each bin hashes to exactly ONE slot, and a slot collision (slot
-// owned by another bin) is an IMMEDIATE GMEM spill -- no second chance. That
+// The single-probe cache (the `single_probe_cache` probe op of
+// DeviceHistogramDirectAtomicKernel) is direct-mapped: each bin hashes to exactly
+// ONE slot, and a slot collision (slot owned by another bin) is an IMMEDIATE GMEM
+// spill -- no second chance. That
 // single-slot conflict miss is the residual loss once Fibonacci hashing and
 // vectorized loads are in place.
 //
@@ -1929,6 +1930,200 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
+//! Per-block SMEM cache update operators for the direct-atomic histogram kernel.
+//! `DeviceHistogramDirectAtomicKernel` is templated on one of these and calls
+//! `ProbeOp::apply(...)` for each (bin, contribution); the cache policy is thus a
+//! pluggable op rather than a branch in the kernel. Each operator receives this
+//! channel's key array, this warp's replica count array, this channel's GMEM
+//! output, the bin and its (warp-coalesced) increment, and the hash parameters.
+//! A cache hit/claim bumps a block-scope count; a miss spills one device-scope
+//! atomic to `output[bin]`.
+
+//! 2-hash cuckoo cache update: on a primary-slot collision, try a secondary slot
+//! before spilling. `DisableSecondProbe` compiles the secondary probe out for the
+//! very-high-bin tier (hit rate ~0, so the second key read is pure waste).
+template <bool DisableSecondProbe = false>
+struct cuckoo_cache_probe
+{
+  template <typename CounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
+  {
+    const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
+    const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
+    const int existing_key1  = keys[slot1];
+    if (existing_key1 == bin)
+    {
+      // Primary hit: bump cache count.
+      atomicAdd_block(&counts[slot1], contribution);
+    }
+    else if (existing_key1 == -1)
+    {
+      // Primary slot empty: try to claim it via CAS.
+      const int prev = atomicCAS(&keys[slot1], -1, bin);
+      if (prev == -1 || prev == bin)
+      {
+        atomicAdd_block(&counts[slot1], contribution);
+      }
+      else if constexpr (DisableSecondProbe)
+      {
+        // High-bin tier: no secondary probe -- spill directly to GMEM.
+        atomicAdd(&output[bin], contribution);
+      }
+      else
+      {
+        // Lost the race. Try secondary slot.
+        const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
+        const int slot2          = static_cast<int>(hash2 & cache_mask);
+        const int existing_key2  = keys[slot2];
+        if (existing_key2 == bin)
+        {
+          atomicAdd_block(&counts[slot2], contribution);
+        }
+        else if (existing_key2 == -1)
+        {
+          const int prev2 = atomicCAS(&keys[slot2], -1, bin);
+          if (prev2 == -1 || prev2 == bin)
+          {
+            atomicAdd_block(&counts[slot2], contribution);
+          }
+          else
+          {
+            atomicAdd(&output[bin], contribution);
+          }
+        }
+        else
+        {
+          atomicAdd(&output[bin], contribution);
+        }
+      }
+    }
+    else if constexpr (DisableSecondProbe)
+    {
+      // High-bin tier: primary occupied by a different bin -> spill to GMEM
+      // without a secondary probe.
+      atomicAdd(&output[bin], contribution);
+    }
+    else
+    {
+      // Primary occupied by a different bin: try the secondary slot.
+      const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
+      const int slot2          = cache_slot_from_hash(hash2, cache_mask, cache_slot_log2);
+      const int existing_key2  = keys[slot2];
+      if (existing_key2 == bin)
+      {
+        atomicAdd_block(&counts[slot2], contribution);
+      }
+      else if (existing_key2 == -1)
+      {
+        const int prev2 = atomicCAS(&keys[slot2], -1, bin);
+        if (prev2 == -1 || prev2 == bin)
+        {
+          atomicAdd_block(&counts[slot2], contribution);
+        }
+        else
+        {
+          atomicAdd(&output[bin], contribution);
+        }
+      }
+      else
+      {
+        atomicAdd(&output[bin], contribution);
+      }
+    }
+  }
+};
+
+//! Single-probe direct-mapped cache update (or `CUB_HISTO_SINGLE_PROBE_WAYS`-way
+//! set-associative): leaner critical section than cuckoo; wins at very high bin
+//! counts where the cache holds almost nothing.
+struct single_probe_cache
+{
+  template <typename CounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
+  {
+    const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
+    if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
+    {
+      // Single direct-mapped probe: hash bin to one slot.
+      const int slot         = cache_slot_from_hash(hash, cache_mask, cache_slot_log2);
+      const int existing_key = keys[slot];
+      if (existing_key == bin)
+      {
+        // Hit: bump cache count (block-scope atomic, ~10x cheaper).
+        atomicAdd_block(&counts[slot], contribution);
+      }
+      else if (existing_key == -1)
+      {
+        // Empty: try to claim via CAS.
+        const int prev = atomicCAS(&keys[slot], -1, bin);
+        if (prev == -1 || prev == bin)
+        {
+          atomicAdd_block(&counts[slot], contribution);
+        }
+        else
+        {
+          // Lost the claim race to a different bin: go straight to GMEM.
+          atomicAdd(&output[bin], contribution);
+        }
+      }
+      else
+      {
+        // Collision (slot owned by another bin): single GMEM atomic.
+        atomicAdd(&output[bin], contribution);
+      }
+    }
+    else
+    {
+      // WAYS-way set-associative probe. Hash `bin` to a SET of
+      // `CUB_HISTO_SINGLE_PROBE_WAYS` ADJACENT slots [base, base+WAYS); the set
+      // budget is `cache_slots_per_channel / WAYS` sets. Probe the ways in two
+      // passes so a colliding bin gets a fallback slot before spilling:
+      //   pass 1: any way already holding `bin` -> hit (bump its count);
+      //   pass 2: first EMPTY way -> CAS-claim it;
+      //   neither: every way is owned by a different live bin -> GMEM spill.
+      // Adjacent ways keep the WAYS key reads in one/two SMEM banks (vs the
+      // cuckoo cache's two independent random-hash slots).
+      constexpr int kWaysLog2 = (CUB_HISTO_SINGLE_PROBE_WAYS == 4) ? 2 : 1;
+      const int set           = cache_slot_from_hash(hash, cache_mask >> kWaysLog2, cache_slot_log2 - kWaysLog2);
+      const int base          = set << kWaysLog2;
+      bool done               = false;
+      // Pass 1: existing-key hit on any way.
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
+      {
+        if (!done && keys[base + w] == bin)
+        {
+          atomicAdd_block(&counts[base + w], contribution);
+          done = true;
+        }
+      }
+      // Pass 2: claim the first empty way (CAS); a lost race that resolves to
+      // `bin` is also a hit, a lost race to another bin moves to the next way.
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
+      {
+        if (!done && keys[base + w] == -1)
+        {
+          const int prev = atomicCAS(&keys[base + w], -1, bin);
+          if (prev == -1 || prev == bin)
+          {
+            atomicAdd_block(&counts[base + w], contribution);
+            done = true;
+          }
+        }
+      }
+      if (!done)
+      {
+        // All ways occupied by other live bins (or every empty way lost its CAS
+        // race): single GMEM atomic. Correctness: contribution added once.
+        atomicAdd(&output[bin], contribution);
+      }
+    }
+  }
+};
+
 //! Persistent grid-resident histogram sweep kernel that fuses output-histogram
 //! initialization with a direct-atomic sweep. For the very-high-bin
 //! GMEM-privatized path the per-block privatization storage is so large
@@ -1974,12 +2169,12 @@ template <typename PolicySelector,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool DisableSecondProbe = false>
+          typename ProbeOp = cuckoo_cache_probe<>>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectAtomicCuckooKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectAtomicKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
@@ -2196,114 +2391,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // loads in registers across the unrolled chunk).
     using SampleValueT = it_value_t<SampleIteratorT>;
 
-    // Single-source the leader's warp-coalesce + 2-hash cuckoo cache update
-    // so the pipelined (single-channel) and interleaved (multi-channel) loops
-    // below share identical probe logic.
-    auto probe_cuckoo = [&](int ch, int bin) {
-      // The 2-hash cuckoo cache update for one (bin, contribution). Factored so
-      // the warp_coalesce knob can drive it once per peer group (leader) or once
-      // per valid lane without duplicating the body.
+    // Single-source the leader's warp-coalesce + cache update so the pipelined
+    // (single-channel) and interleaved (multi-channel) loops below share
+    // identical probe logic. The cache update itself is the pluggable `ProbeOp`
+    // (cuckoo_cache_probe<> or single_probe_cache), called per (bin,
+    // contribution); the kernel holds no probe-specific branches.
+    auto probe = [&](int ch, int bin) {
+      // The cache update for one (bin, contribution). Factored so the
+      // warp_coalesce knob can drive it once per peer group (leader) or once per
+      // valid lane without duplicating the body.
       auto update = [&](int bin, CounterT contribution) {
-        // Two hash functions (cuckoo-style): on a primary slot collision, try
-        // a secondary slot before falling back to GMEM. This roughly doubles
-        // the effective cache hit rate for moderate-entropy distributions
-        // where a few bins dominate but each thread is otherwise visiting
-        // random bins.
-        //
-        // The second probe is COMPILE-TIME-GATED off for the high-bin tier
-        // (bins >> cache slots). There the cache hit rate is near zero (almost
-        // every bin is unique), so the secondary slot rarely holds a useful key:
-        // it just reads a second SMEM key -- the largest waste on this SMEM-bound
-        // kernel -- before spilling to GMEM anyway, DOUBLING the SMEM key
-        // transactions per miss. With `DisableSecondProbe`, a primary collision
-        // spills directly to GMEM (one key-read + spill, exactly like the
-        // single-probe kernel) while the cuckoo kernel's other properties (the
-        // multi-channel count-replica de-serialization, etc.) are RETAINED --
-        // which routing the cells to the single-probe kernel would lose. The
-        // 2-probe path is kept for the moderate-bin tier where the secondary slot
-        // raises the hit rate.
-        const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
-        const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
-        const int existing_key1  = s_cache_keys[ch][slot1];
-        if (existing_key1 == bin)
-        {
-          // Primary hit: bump cache count.
-          atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
-        }
-        else if (existing_key1 == -1)
-        {
-          // Primary slot empty: try to claim it via CAS.
-          const int prev = atomicCAS(&s_cache_keys[ch][slot1], -1, bin);
-          if (prev == -1 || prev == bin)
-          {
-            atomicAdd_block(&s_cache_counts[ch][slot1], contribution);
-          }
-          else if constexpr (DisableSecondProbe)
-          {
-            // High-bin tier: no secondary probe -- spill directly to GMEM.
-            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-          }
-          else
-          {
-            // Lost the race. Try secondary slot.
-            const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-            const int slot2          = static_cast<int>(hash2 & cache_mask);
-            const int existing_key2  = s_cache_keys[ch][slot2];
-            if (existing_key2 == bin)
-            {
-              atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-            }
-            else if (existing_key2 == -1)
-            {
-              const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
-              if (prev2 == -1 || prev2 == bin)
-              {
-                atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-              }
-              else
-              {
-                atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-              }
-            }
-            else
-            {
-              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-            }
-          }
-        }
-        else if constexpr (DisableSecondProbe)
-        {
-          // High-bin tier: primary occupied by a different bin -> spill to GMEM
-          // without a secondary probe.
-          atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-        }
-        else
-        {
-          // Primary occupied by a different bin: try the secondary slot.
-          const unsigned int hash2 = static_cast<unsigned int>(bin) * 2246822519u;
-          const int slot2          = cache_slot_from_hash(hash2, cache_mask, cache_slot_log2);
-          const int existing_key2  = s_cache_keys[ch][slot2];
-          if (existing_key2 == bin)
-          {
-            atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-          }
-          else if (existing_key2 == -1)
-          {
-            const int prev2 = atomicCAS(&s_cache_keys[ch][slot2], -1, bin);
-            if (prev2 == -1 || prev2 == bin)
-            {
-              atomicAdd_block(&s_cache_counts[ch][slot2], contribution);
-            }
-            else
-            {
-              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-            }
-          }
-          else
-          {
-            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-          }
-        }
+        ProbeOp::apply(
+          s_cache_keys[ch], s_cache_counts[ch], d_output_histograms_wrapper[ch], bin, contribution, cache_mask, cache_slot_log2);
       };
 
       // Warp-coalesce same-bin lanes into one cache update (gated by the
@@ -2382,7 +2481,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int u = 0; u < unroll; ++u)
         {
-          probe_cuckoo(0, bins[u]);
+          probe(0, bins[u]);
         }
       }
     }
@@ -2460,7 +2559,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
-              probe_cuckoo(ch, bins[ch]);
+              probe(ch, bins[ch]);
             }
           }
         }
@@ -2508,7 +2607,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int ch = 0; ch < NumActiveChannels; ++ch)
             {
-              probe_cuckoo(ch, bins[ch]);
+              probe(ch, bins[ch]);
             }
           }
         }
@@ -2579,546 +2678,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // Emit the trigger so any PDL-launched downstream kernel in the stream
   // sees a completion signal. (Cooperative launches typically do not use
   // PDL, so this is a no-op in the common case.)
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-}
-
-//! Single-probe direct-mapped variant of the direct-atomic persistent sweep
-//! kernel.
-//!
-//! This kernel targets the very-high-bin / very-large-input regime
-//! (e.g. >=256M pixels with >16K bins, single channel) where the
-//! cooperative gather-merge `DeviceHistogramGmemPrivGatherKernel` is
-//! catastrophic: it materialises a per-block privatized histogram of size
-//! `num_blocks * num_bins * sizeof(CounterT)` in GMEM (e.g. ~1.9 GB at 444
-//! blocks x 1M bins x 4 B), writes it scattered, then reads it strided at a
-//! tiny L2 hit rate -- DRAM-bound, while privatization buys almost nothing
-//! because each output bin only receives a handful of counts (negligible
-//! cross-block contention).
-//!
-//! Like `DeviceHistogramDirectAtomicCuckooKernel`, every thread
-//! reads samples directly and the warp-leader coalesces same-bin lanes with
-//! `__match_any_sync`. The difference is the per-block SMEM cache policy: this
-//! kernel uses a SINGLE-PROBE direct-mapped cache. Each warp-leader hashes its
-//! bin to exactly one slot and:
-//!   * hit  (slot key == bin)      -> `atomicAdd_block` into the slot count;
-//!   * empty (slot key == -1)      -> claim it with one `atomicCAS`, then
-//!                                     `atomicAdd_block` if the claim succeeds
-//!                                     (or if a peer concurrently claimed the
-//!                                     same bin), else fall back to GMEM;
-//!   * collision (key != bin)      -> a single device-scope `atomicAdd`
-//!                                     directly to the output histogram.
-//! After the sweep, every claimed slot is flushed once to GMEM. There is no
-//! secondary probe and no rehash chain, so the leader's hot path has far less
-//! branch divergence and issues at most one cache atomic before falling
-//! through to GMEM. This trades a lower cache hit rate (compared to the
-//! 2-hash cuckoo cache) for a much shorter, less divergent critical section --
-//! the right trade-off when bins greatly exceed the slot count and the cache
-//! mostly absorbs the few genuinely hot bins of skewed/constant inputs while
-//! the long uniform tail streams straight to GMEM atomics.
-//!
-//! Shares the cuckoo kernel's DYNAMIC-SMEM cache (the dispatch layer picks the
-//! largest power-of-two `cache_slots_per_channel` that preserves occupancy);
-//! the only difference from the cuckoo kernel is the single-probe policy in
-//! the leader's hot path.
-//!
-//! CORRECTNESS: each lane's contribution is added exactly once -- either to a
-//! cache slot (which is flushed to GMEM exactly once at the end) or directly
-//! to GMEM on a miss. Because counts are additive and every leader's atomic is
-//! independent, the result is identical regardless of how slots are claimed or
-//! evicted, so the kernel is race-free for the final counts.
-//!
-//! Must be launched cooperatively (`cudaLaunchCooperativeKernel`) so all
-//! blocks are co-resident, a precondition of `grid_group::sync()`.
-template <typename PolicySelector,
-          int PrivatizedSmemBins,
-          int NumChannels,
-          int NumActiveChannels,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename PrivatizedDecodeOpT,
-          typename OutputDecodeOpT,
-          typename OffsetT>
-#if _CCCL_HAS_CONCEPTS()
-  requires histogram_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectAtomicSingleProbeKernel(
-    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
-    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
-    _CCCL_GRID_CONSTANT const OffsetT num_rows,
-    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
-    _CCCL_GRID_CONSTANT const int cache_slots_per_channel)
-{
-  namespace cg = ::cooperative_groups;
-
-  cg::grid_group grid = cg::this_grid();
-
-  // Phase 1: zero the output histograms via a grid-wide stride loop.
-  const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
-  const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
-  const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
-  const unsigned int total_threads   = blocks_per_grid * blockDim.x;
-
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    const int channel_bins = num_output_bins_wrapper[ch];
-    for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
-    {
-      d_output_histograms_wrapper[ch][bin] = 0;
-    }
-  }
-
-  // Phase 2: grid-wide sync so all output-histogram zeros are visible.
-  grid.sync();
-
-  // Phase 3: direct-atomic sweep with a single-probe direct-mapped SMEM cache.
-  constexpr int unroll       = 4;
-  const OffsetT total_pixels = num_rows * num_row_pixels;
-
-  // Single-probe direct-mapped cache, in DYNAMIC shared memory (same layout
-  // and dispatch-chosen `cache_slots_per_channel` as the cuckoo kernel: keys
-  // for all channels first, then replicated counts). Only the probe policy
-  // differs.
-  //
-  // Same SMEM-atomic SERIALIZATION relief as the cuckoo kernel: the count array
-  // is split into `kCountReplicas` replicas and warp `w` uses replica
-  // `w % kCountReplicas`, so at most ~ceil(num_warps/kCountReplicas) warps
-  // contend a given (replica, slot) word. Keys stay shared; updates stay
-  // atomicAdd_block (warps sharing a replica are race-free). Layout: keys for
-  // all channels (`NumActiveChannels * slots` ints), then replicated counts
-  // (`NumActiveChannels * kCountReplicas * slots` CounterT).
-  //
-  // R is gated PER NUM_ACTIVE_CHANNELS (compile-time, via cache_tuning::replicas,
-  // matching the cuckoo kernel and the host sizer): multi-channel uses R>1 to
-  // de-serialise the hot-slot atomicAdd_block -- worth more than the halved slot
-  // count at the high bin counts that reach this kernel, where the cache hit rate
-  // is near zero -- while single-channel uses R=1 because it is occupancy /
-  // key-read-bound, leaving its count layout byte-for-byte identical to an
-  // unreplicated cache. R is kept compile-time (not a runtime arg) so the
-  // register-pinned kernel keeps stable codegen; `NumActiveChannels` is a
-  // template param so single-channel folds to constexpr 1.
-  constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
-  constexpr bool kWarpCoalesce = current_policy<PolicySelector>().warp_coalesce;
-  const int cache_mask  = cache_slots_per_channel - 1;
-  const int cache_slot_log2 = 32 - __clz(cache_mask);
-  const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
-  const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
-  extern __shared__ unsigned char s_bin_cache_raw[];
-  int* const s_cache_keys_base = reinterpret_cast<int*>(s_bin_cache_raw);
-  CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
-    s_bin_cache_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
-  int* s_cache_keys[NumActiveChannels];
-  CounterT* s_cache_counts[NumActiveChannels];
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    s_cache_keys[ch]   = s_cache_keys_base + static_cast<size_t>(ch) * slots_sz;
-    s_cache_counts[ch] =
-      s_cache_counts_base + (static_cast<size_t>(ch) * kCountReplicas + replica) * slots_sz;
-  }
-
-  // Initialize cache: keys = -1 (empty sentinel), all replica counts = 0.
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
-    {
-      s_cache_keys[ch][slot] = -1;
-    }
-  }
-  {
-    const size_t total_count_words = static_cast<size_t>(NumActiveChannels) * kCountReplicas * slots_sz;
-    for (size_t i = threadIdx.x; i < total_count_words; i += blockDim.x)
-    {
-      s_cache_counts_base[i] = CounterT{0};
-    }
-  }
-  __syncthreads();
-
-  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
-  // interpolation state out of the per-sample classify. No-op for EVEN /
-  // byte-sample decode ops. Used by both the num_rows==1 and the general
-  // sweep below.
-  PrivatizedDecodeOpT decode_op[NumActiveChannels];
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    decode_op[ch] = privatized_decode_op_wrapper[ch];
-    decode_op[ch].PrecomputeOnDevice();
-  }
-
-  // Per-thread, per-channel MRU bin-bracket cache. GATED TO SINGLE-CHANNEL: see
-  // the matching comment in DeviceHistogramDirectAtomicCuckooKernel --
-  // multi-channel mru[NumActiveChannels] spills to local memory and the per-sample
-  // LMEM round-trips cost more than the level loads they would replace; single-
-  // channel mru[1] fits in registers and speeds the RANGE classify. Multi-channel
-  // keeps the cacheless BinSelect.
-  constexpr bool kUseMruCache = (NumActiveChannels == 1) && PrivatizedDecodeOpT::is_range_transform;
-  typename PrivatizedDecodeOpT::BracketCacheT mru[NumActiveChannels];
-
-  if (num_rows == 1)
-  {
-    const OffsetT step         = static_cast<OffsetT>(total_threads);
-    const OffsetT start        = static_cast<OffsetT>(tid_global);
-    const unsigned int lane_id = threadIdx.x & 0x1f;
-
-    const OffsetT chunk           = static_cast<OffsetT>(unroll) * step;
-    const OffsetT chunk_iters_max = (total_pixels + chunk - 1) / chunk;
-
-    // Sample type produced by the input iterator (used to stage prefetched
-    // loads in registers across the unrolled chunk).
-    using SampleValueT = it_value_t<SampleIteratorT>;
-
-    // Single-source the leader's warp-coalesce + single-probe cache update so
-    // the pipelined (single-channel) and interleaved (multi-channel) loops
-    // below share identical logic.
-    auto probe_single = [&](int ch, int bin) {
-      // The single-probe (or WAYS-way set-associative) cache update for one
-      // (bin, contribution). Factored so the warp_coalesce knob drives it once
-      // per peer group (leader) or once per valid lane without duplication.
-      auto update = [&](int bin, CounterT contribution) {
-        const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
-        if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
-        {
-          // Single direct-mapped probe: hash bin to one slot.
-          const int slot         = cache_slot_from_hash(hash, cache_mask, cache_slot_log2);
-          const int existing_key = s_cache_keys[ch][slot];
-          if (existing_key == bin)
-          {
-            // Hit: bump cache count (block-scope atomic, ~10x cheaper).
-            atomicAdd_block(&s_cache_counts[ch][slot], contribution);
-          }
-          else if (existing_key == -1)
-          {
-            // Empty: try to claim via CAS.
-            const int prev = atomicCAS(&s_cache_keys[ch][slot], -1, bin);
-            if (prev == -1 || prev == bin)
-            {
-              atomicAdd_block(&s_cache_counts[ch][slot], contribution);
-            }
-            else
-            {
-              // Lost the claim race to a different bin: go straight to GMEM.
-              atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-            }
-          }
-          else
-          {
-            // Collision (slot owned by another bin): single GMEM atomic.
-            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-          }
-        }
-        else
-        {
-          // WAYS-way set-associative probe. Hash `bin` to a SET of
-          // `CUB_HISTO_SINGLE_PROBE_WAYS` ADJACENT slots [base, base+WAYS); the set
-          // budget is `cache_slots_per_channel / WAYS` sets. Probe the ways in two
-          // passes so a colliding bin gets a fallback slot before spilling:
-          //   pass 1: any way already holding `bin` -> hit (bump its count);
-          //   pass 2: first EMPTY way -> CAS-claim it;
-          //   neither: every way is owned by a different live bin -> GMEM spill.
-          // Adjacent ways keep the WAYS key reads in one/two SMEM banks (vs the
-          // cuckoo kernel's two independent random-hash slots).
-          constexpr int kWaysLog2  = (CUB_HISTO_SINGLE_PROBE_WAYS == 4) ? 2 : 1;
-          const int set            = cache_slot_from_hash(hash, cache_mask >> kWaysLog2, cache_slot_log2 - kWaysLog2);
-          const int base           = set << kWaysLog2;
-          bool done                = false;
-          // Pass 1: existing-key hit on any way.
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
-          {
-            if (!done && s_cache_keys[ch][base + w] == bin)
-            {
-              atomicAdd_block(&s_cache_counts[ch][base + w], contribution);
-              done = true;
-            }
-          }
-          // Pass 2: claim the first empty way (CAS); a lost race that resolves to
-          // `bin` is also a hit, a lost race to another bin moves to the next way.
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int w = 0; w < CUB_HISTO_SINGLE_PROBE_WAYS; ++w)
-          {
-            if (!done && s_cache_keys[ch][base + w] == -1)
-            {
-              const int prev = atomicCAS(&s_cache_keys[ch][base + w], -1, bin);
-              if (prev == -1 || prev == bin)
-              {
-                atomicAdd_block(&s_cache_counts[ch][base + w], contribution);
-                done = true;
-              }
-            }
-          }
-          if (!done)
-          {
-            // All ways occupied by other live bins (or every empty way lost its
-            // CAS race): single GMEM atomic. Correctness: contribution added once.
-            atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
-          }
-        }
-      };
-
-      // Warp-coalesce same-bin lanes (gated by the warp_coalesce policy knob; on
-      // by default). Inline on-path keeps codegen byte-identical to the
-      // hand-tuned register-pinned kernel.
-      if constexpr (kWarpCoalesce)
-      {
-        const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-        const int leader         = __ffs(static_cast<int>(peers)) - 1;
-        if (bin >= 0 && static_cast<int>(lane_id) == leader)
-        {
-          update(bin, static_cast<CounterT>(__popc(peers)));
-        }
-      }
-      else if (bin >= 0)
-      {
-        update(bin, CounterT{1});
-      }
-    };
-
-    if constexpr (NumActiveChannels == 1)
-    {
-      // Single-channel: SOFTWARE-PIPELINE the unrolled chunk. Issue all
-      // `unroll` independent global loads up front (Phase A) so the long
-      // global-load latency overlaps instead of serialising one
-      // load -> classify -> match -> SMEM-read -> atomic chain per pixel;
-      // then classify (Phase B); then coalesce/probe/atomic (Phase C). This
-      // is the primary latency-hiding lever for this issue-bound /
-      // eligible-warp-scarce kernel. The staged register array is only `unroll`
-      // samples deep here (NumActiveChannels==1), so the extra register
-      // footprint is small and occupancy is preserved.
-      for (OffsetT it = 0; it < chunk_iters_max; ++it)
-      {
-        const OffsetT pixel = start + it * chunk;
-
-        // Phase A: issue all of this chunk's loads up front.
-        SampleValueT staged[unroll];
-        bool valid[unroll];
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < unroll; ++u)
-        {
-          const OffsetT this_pixel = pixel + u * step;
-          valid[u]                 = this_pixel < total_pixels;
-          const OffsetT pix_off    = valid[u] ? (this_pixel * NumChannels) : OffsetT{0};
-          staged[u]                = d_samples[pix_off];
-        }
-
-        // Phase B: classify all staged samples into bins.
-        int bins[unroll];
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < unroll; ++u)
-        {
-          int bin = -1;
-          if (valid[u])
-          {
-            if constexpr (kUseMruCache)
-            {
-              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true, mru[0]);
-            }
-            else
-            {
-              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged[u], bin, true);
-            }
-            const int num_bins = num_output_bins_wrapper[0];
-            if (bin >= num_bins)
-            {
-              bin = -1;
-            }
-          }
-          bins[u] = bin;
-        }
-
-        // Phase C: warp-coalesce, probe the SMEM cache, atomic-update.
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int u = 0; u < unroll; ++u)
-        {
-          probe_single(0, bins[u]);
-        }
-      }
-    }
-    else
-    {
-      // Multi-channel: VECTORIZE the per-pixel load (see the cuckoo kernel for
-      // the full rationale). Issue ONE wide `CubVector<SampleT, NumChannels>`
-      // (e.g. `int4`) load per pixel, classify the active lanes from registers,
-      // and fall back to the per-channel scalar loop when no native, aligned
-      // sample pointer is available.
-      using PixelT            = typename CubVector<SampleValueT, NumChannels>::Type;
-      const auto* native_base = SampleNativePointer<SampleValueT>(d_samples);
-      const bool vectorizable = (native_base != nullptr)
-                             && ((reinterpret_cast<size_t>(native_base) & (alignof(PixelT) - 1)) == 0);
-      if (vectorizable)
-      {
-        const PixelT* const pixels = reinterpret_cast<const PixelT*>(native_base);
-        for (OffsetT it = 0; it < chunk_iters_max; ++it)
-        {
-          const OffsetT pixel = start + it * chunk;
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int u = 0; u < unroll; ++u)
-          {
-            const OffsetT this_pixel = pixel + u * step;
-            const bool valid_pixel   = this_pixel < total_pixels;
-            const PixelT pix = pixels[valid_pixel ? this_pixel : OffsetT{0}];
-            const SampleValueT* const lanes = reinterpret_cast<const SampleValueT*>(&pix);
-
-            // CHANNEL-LEVEL PARALLELISM: classify ALL C channels first, THEN
-            // probe all C -- the same split the cuckoo kernel's multi-channel
-            // loop uses. The per-channel RANGE SearchTransform classify is bound
-            // by the dependent `wrapped_levels[guess]` LDG chain at exhausted
-            // occupancy, so the only lever left is more INDEPENDENT loads in
-            // flight. An interleaved `for ch { BinSelect; probe_single }` puts
-            // `probe_single`'s `__match_any_sync` (a warp convergence point)
-            // BETWEEN consecutive channels, serialising the C otherwise-
-            // independent dependent-LDG chains per pixel. Splitting so every
-            // channel's `BinSelect` runs back-to-back (no intervening warp sync)
-            // lets the C chains OVERLAP (C-way memory-level parallelism); the
-            // probe phase then coalesces+atomics each bin. The staged state is
-            // only `bins[NumActiveChannels]` ints, which holds within the
-            // kernel's register budget.
-            int bins[NumActiveChannels];
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int ch = 0; ch < NumActiveChannels; ++ch)
-            {
-              int bin = -1;
-              if (valid_pixel)
-              {
-                if constexpr (kUseMruCache)
-                {
-                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true, mru[ch]);
-                }
-                else
-                {
-                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
-                }
-                const int num_bins = num_output_bins_wrapper[ch];
-                if (bin >= num_bins)
-                {
-                  bin = -1;
-                }
-              }
-              bins[ch] = bin;
-            }
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int ch = 0; ch < NumActiveChannels; ++ch)
-            {
-              probe_single(ch, bins[ch]);
-            }
-          }
-        }
-      }
-      else
-      {
-        // Scalar fallback: per-channel global loads (non-native / unaligned
-        // pointer). Same CHANNEL-LEVEL PARALLELISM split as the vectorized path:
-        // classify all C channels back-to-back (overlapping the C independent
-        // dependent-LDG SearchTransform chains, no intervening `__match_any_sync`
-        // from probe_single), then probe all C. Staging only the resulting
-        // `bins[NumActiveChannels]` (rather than `unroll * NumActiveChannels`
-        // SAMPLES) keeps the register footprint small.
-        for (OffsetT it = 0; it < chunk_iters_max; ++it)
-        {
-          const OffsetT pixel = start + it * chunk;
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int u = 0; u < unroll; ++u)
-          {
-            const OffsetT this_pixel = pixel + u * step;
-            const bool valid_pixel   = this_pixel < total_pixels;
-            const OffsetT pix_off    = valid_pixel ? (this_pixel * NumChannels) : OffsetT{0};
-            int bins[NumActiveChannels];
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int ch = 0; ch < NumActiveChannels; ++ch)
-            {
-              int bin = -1;
-              if (valid_pixel)
-              {
-                auto sample = d_samples[pix_off + ch];
-                if constexpr (kUseMruCache)
-                {
-                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true, mru[ch]);
-                }
-                else
-                {
-                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
-                }
-                const int num_bins = num_output_bins_wrapper[ch];
-                if (bin >= num_bins)
-                {
-                  bin = -1;
-                }
-              }
-              bins[ch] = bin;
-            }
-            _CCCL_PRAGMA_UNROLL_FULL()
-            for (int ch = 0; ch < NumActiveChannels; ++ch)
-            {
-              probe_single(ch, bins[ch]);
-            }
-          }
-        }
-      }
-    }
-
-    // Flush every claimed cache slot to the global histogram. Each slot's
-    // total is the sum of its `kCountReplicas` replicas.
-    __syncthreads();
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
-    {
-      CounterT* const ch_counts_base = s_cache_counts_base + static_cast<size_t>(ch) * kCountReplicas * slots_sz;
-      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
-      {
-        const int key = s_cache_keys[ch][slot];
-        if (key >= 0)
-        {
-          CounterT cnt = CounterT{0};
-          _CCCL_PRAGMA_UNROLL_FULL()
-          for (int r = 0; r < kCountReplicas; ++r)
-          {
-            cnt += ch_counts_base[static_cast<size_t>(r) * slots_sz + slot];
-          }
-          if (cnt > CounterT{0})
-          {
-            atomicAdd(&d_output_histograms_wrapper[ch][key], cnt);
-          }
-        }
-      }
-    }
-  }
-  else
-  {
-    // Slow path: row-strided input that is not flattenable. No coalescing.
-    for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels;
-         pixel += static_cast<OffsetT>(total_threads))
-    {
-      const OffsetT row     = pixel / num_row_pixels;
-      const OffsetT col     = pixel - row * num_row_pixels;
-      const OffsetT pix_off = row * row_stride_samples + col * NumChannels;
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        auto sample = d_samples[pix_off + ch];
-        int bin     = -1;
-        if constexpr (kUseMruCache)
-        {
-          decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true, mru[ch]);
-        }
-        else
-        {
-          decode_op[ch].template BinSelect<LOAD_DEFAULT>(sample, bin, true);
-        }
-        const int num_bins = num_output_bins_wrapper[ch];
-        if (bin >= 0 && bin < num_bins)
-        {
-          atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
-        }
-      }
-    }
-  }
-
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 

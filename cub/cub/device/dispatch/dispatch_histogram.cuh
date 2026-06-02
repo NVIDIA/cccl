@@ -525,12 +525,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // of bin count.
   bool disable_direct_atomic = false,
   // Cache policy for the direct-atomic-to-output kernel (only consulted when
-  // the direct-atomic path is taken, i.e. !disable_direct_atomic):
-  //   0 -> 2-hash cuckoo cache (DeviceHistogramDirectAtomicCuckooKernel)
-  //   1 -> single-probe direct-mapped cache
-  //        (DeviceHistogramDirectAtomicSingleProbeKernel)
-  // Both kernels share the same dynamic-SMEM cache layout and the
-  // dispatch-chosen `cache_slots_per_channel`; only the probe policy differs.
+  // the direct-atomic path is taken, i.e. !disable_direct_atomic). Both select
+  // the same DeviceHistogramDirectAtomicKernel with a different probe op:
+  //   0 -> 2-hash cuckoo cache (cuckoo_cache_probe)
+  //   1 -> single-probe direct-mapped cache (single_probe_cache)
+  // The two share the same dynamic-SMEM cache layout and the dispatch-chosen
+  // `cache_slots_per_channel`; only the probe op differs.
   int direct_atomic_cache_mode = 0)
 {
   ::cuda::compute_capability cc{};
@@ -858,15 +858,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
       auto direct_atomic_kernel_ptr =
-        &DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
-                                                          PRIVATIZED_SMEM_BINS,
-                                                          NUM_CHANNELS,
-                                                          NUM_ACTIVE_CHANNELS,
-                                                          SampleIteratorT,
-                                                          CounterT,
-                                                          privatized_decode_op_t,
-                                                          output_decode_op_t,
-                                                          OffsetT>;
+        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                           PRIVATIZED_SMEM_BINS,
+                                           NUM_CHANNELS,
+                                           NUM_ACTIVE_CHANNELS,
+                                           SampleIteratorT,
+                                           CounterT,
+                                           privatized_decode_op_t,
+                                           output_decode_op_t,
+                                           OffsetT,
+                                           cuckoo_cache_probe<>>;
       const void* direct_atomic_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_kernel_ptr);
 
@@ -882,16 +883,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // it). The 2-probe kernel above is kept for the moderate-bin tier where the
       // secondary slot raises the hit rate.
       auto direct_atomic_noprobe2_kernel_ptr =
-        &DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
-                                                          PRIVATIZED_SMEM_BINS,
-                                                          NUM_CHANNELS,
-                                                          NUM_ACTIVE_CHANNELS,
-                                                          SampleIteratorT,
-                                                          CounterT,
-                                                          privatized_decode_op_t,
-                                                          output_decode_op_t,
-                                                          OffsetT,
-                                                          /*DisableSecondProbe=*/true>;
+        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                           PRIVATIZED_SMEM_BINS,
+                                           NUM_CHANNELS,
+                                           NUM_ACTIVE_CHANNELS,
+                                           SampleIteratorT,
+                                           CounterT,
+                                           privatized_decode_op_t,
+                                           output_decode_op_t,
+                                           OffsetT,
+                                           cuckoo_cache_probe</*DisableSecondProbe=*/true>>;
       const void* direct_atomic_noprobe2_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_noprobe2_kernel_ptr);
 
@@ -904,15 +905,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `direct_atomic_cache_mode == 1` (the huge-N single-channel high-bin
       // route picked by the unified selector as direct_atomic_single_probe).
       auto direct_atomic_single_probe_kernel_ptr =
-        &DeviceHistogramDirectAtomicSingleProbeKernel<PolicySelector,
-                                                                     PRIVATIZED_SMEM_BINS,
-                                                                     NUM_CHANNELS,
-                                                                     NUM_ACTIVE_CHANNELS,
-                                                                     SampleIteratorT,
-                                                                     CounterT,
-                                                                     privatized_decode_op_t,
-                                                                     output_decode_op_t,
-                                                                     OffsetT>;
+        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                           PRIVATIZED_SMEM_BINS,
+                                           NUM_CHANNELS,
+                                           NUM_ACTIVE_CHANNELS,
+                                           SampleIteratorT,
+                                           CounterT,
+                                           privatized_decode_op_t,
+                                           output_decode_op_t,
+                                           OffsetT,
+                                           single_probe_cache>;
       const void* direct_atomic_single_probe_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_single_probe_kernel_ptr);
 
@@ -1118,15 +1120,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
       if (false)
       {
-        DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
-                                                         PRIVATIZED_SMEM_BINS,
-                                                         NUM_CHANNELS,
-                                                         NUM_ACTIVE_CHANNELS,
-                                                         SampleIteratorT,
-                                                         CounterT,
-                                                         privatized_decode_op_t,
-                                                         output_decode_op_t,
-                                                         OffsetT>
+        DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                          PRIVATIZED_SMEM_BINS,
+                                          NUM_CHANNELS,
+                                          NUM_ACTIVE_CHANNELS,
+                                          SampleIteratorT,
+                                          CounterT,
+                                          privatized_decode_op_t,
+                                          output_decode_op_t,
+                                          OffsetT,
+                                          cuckoo_cache_probe<>>
           <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
             d_samples,
             num_output_bins_wrapper,
@@ -1136,15 +1139,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_rows,
             row_stride_samples,
             cache_slots_per_channel);
-        DeviceHistogramDirectAtomicSingleProbeKernel<PolicySelector,
-                                                                    PRIVATIZED_SMEM_BINS,
-                                                                    NUM_CHANNELS,
-                                                                    NUM_ACTIVE_CHANNELS,
-                                                                    SampleIteratorT,
-                                                                    CounterT,
-                                                                    privatized_decode_op_t,
-                                                                    output_decode_op_t,
-                                                                    OffsetT>
+        DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                          PRIVATIZED_SMEM_BINS,
+                                          NUM_CHANNELS,
+                                          NUM_ACTIVE_CHANNELS,
+                                          SampleIteratorT,
+                                          CounterT,
+                                          privatized_decode_op_t,
+                                          output_decode_op_t,
+                                          OffsetT,
+                                          single_probe_cache>
           <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
             d_samples,
             num_output_bins_wrapper,
@@ -1156,16 +1160,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             cache_slots_per_channel);
         // Force device-side emission of the second-probe-gated cuckoo variant so
         // `cudaLaunchCooperativeKernel` can resolve its device entry.
-        DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
-                                                         PRIVATIZED_SMEM_BINS,
-                                                         NUM_CHANNELS,
-                                                         NUM_ACTIVE_CHANNELS,
-                                                         SampleIteratorT,
-                                                         CounterT,
-                                                         privatized_decode_op_t,
-                                                         output_decode_op_t,
-                                                         OffsetT,
-                                                         /*DisableSecondProbe=*/true>
+        DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                          PRIVATIZED_SMEM_BINS,
+                                          NUM_CHANNELS,
+                                          NUM_ACTIVE_CHANNELS,
+                                          SampleIteratorT,
+                                          CounterT,
+                                          privatized_decode_op_t,
+                                          output_decode_op_t,
+                                          OffsetT,
+                                          cuckoo_cache_probe</*DisableSecondProbe=*/true>>
           <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, cuckoo_cache_smem_bytes, stream>>>(
             d_samples,
             num_output_bins_wrapper,
