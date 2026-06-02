@@ -74,9 +74,9 @@ struct TransformPrefetchPolicy
                                   //!< the size of a cache line.
   // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost, so prevent unrolling
   // bgruber: but A6000 and H100 show small gains without pragma, so omitting pragma
-  // TODO(bgruber): settle how the unroll factor works and provide a common documentation block.
-  int unroll_factor = 0; //!< The unroll factor for the transformation loop in the kernel. The value 0 retains the
-                         //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling.
+  int unroll_factor = 0; //!< For any value >1, the unroll factor for the transformation loop in the kernel. The value 0
+                         //!< retains the compiler's default unrolling by specifying no unroll pragma. 1 prevents no
+                         //!< unrolling.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs)
