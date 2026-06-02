@@ -73,7 +73,7 @@ namespace detail::histogram
 
 // Set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
 //
-// The single-probe cache (DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel)
+// The single-probe cache (DeviceHistogramDirectAtomicSingleProbeKernel)
 // is direct-mapped: each bin hashes to exactly ONE slot, and a slot collision (slot
 // owned by another bin) is an IMMEDIATE GMEM spill -- no second chance. That
 // single-slot conflict miss is the residual loss once Fibonacci hashing and
@@ -1435,7 +1435,7 @@ template <typename PolicySelector,
 // multi-channel policies and falls back to minBlocks=0 for the narrow fallback.
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
                   (current_policy<PolicySelector>().threads_per_block >= 512) ? 2 : 0)
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -1606,7 +1606,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -1713,7 +1713,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! eliminating the separate `DeviceHistogramInitKernel` launch and its
 //! associated launch overhead.
 //!
-//! This is the host-init variant: it mirrors `DeviceHistogramSweepKernel`'s
+//! This is the host-init variant: it mirrors `DeviceHistogramSmemPrivKernel`'s
 //! interface and accepts pre-initialized decode operators, plus the
 //! `max_num_output_bins` argument used to bound the output-histogram
 //! initialization stride loop.
@@ -1749,7 +1749,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepPersistentKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramGmemPrivGatherKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -1952,7 +1952,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! (`cudaLaunchCooperativeKernel`) so that all blocks are co-resident on
 //! the device, which is a precondition of `grid_group::sync()`.
 //!
-//! Unlike `DeviceHistogramSweepPersistentKernel`, this kernel does not
+//! Unlike `DeviceHistogramGmemPrivGatherKernel`, this kernel does not
 //! use `AgentHistogram`. The agent's `AccumulatePixels` uses
 //! `atomicAdd_block` (block-scope), which is undefined for memory shared
 //! across blocks. We therefore implement a small stand-alone sweep that
@@ -1979,7 +1979,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDirectAtomicPersistentKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectAtomicCuckooKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
@@ -2116,10 +2116,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
   const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
-  extern __shared__ unsigned char s_cuckoo_raw[];
-  int* const s_cache_keys_base       = reinterpret_cast<int*>(s_cuckoo_raw);
+  extern __shared__ unsigned char s_bin_cache_raw[];
+  int* const s_cache_keys_base       = reinterpret_cast<int*>(s_bin_cache_raw);
   CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
-    s_cuckoo_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
+    s_bin_cache_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
   // Per-channel shared key base and this warp's replica count base.
   int* s_cache_keys[NumActiveChannels];
   CounterT* s_cache_counts[NumActiveChannels];
@@ -2587,7 +2587,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 //!
 //! This kernel targets the very-high-bin / very-large-input regime
 //! (e.g. >=256M pixels with >16K bins, single channel) where the
-//! cooperative gather-merge `DeviceHistogramSweepPersistentKernel` is
+//! cooperative gather-merge `DeviceHistogramGmemPrivGatherKernel` is
 //! catastrophic: it materialises a per-block privatized histogram of size
 //! `num_blocks * num_bins * sizeof(CounterT)` in GMEM (e.g. ~1.9 GB at 444
 //! blocks x 1M bins x 4 B), writes it scattered, then reads it strided at a
@@ -2595,7 +2595,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
 //! because each output bin only receives a handful of counts (negligible
 //! cross-block contention).
 //!
-//! Like `DeviceHistogramSweepDirectAtomicPersistentKernel`, every thread
+//! Like `DeviceHistogramDirectAtomicCuckooKernel`, every thread
 //! reads samples directly and the warp-leader coalesces same-bin lanes with
 //! `__match_any_sync`. The difference is the per-block SMEM cache policy: this
 //! kernel uses a SINGLE-PROBE direct-mapped cache. Each warp-leader hashes its
@@ -2642,7 +2642,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectAtomicSingleProbeKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
@@ -2707,10 +2707,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
   const int replica     = static_cast<int>((threadIdx.x >> 5)) % kCountReplicas;
-  extern __shared__ unsigned char s_singleprobe_raw[];
-  int* const s_cache_keys_base = reinterpret_cast<int*>(s_singleprobe_raw);
+  extern __shared__ unsigned char s_bin_cache_raw[];
+  int* const s_cache_keys_base = reinterpret_cast<int*>(s_bin_cache_raw);
   CounterT* const s_cache_counts_base = reinterpret_cast<CounterT*>(
-    s_singleprobe_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
+    s_bin_cache_raw + static_cast<size_t>(NumActiveChannels) * slots_sz * sizeof(int));
   int* s_cache_keys[NumActiveChannels];
   CounterT* s_cache_counts[NumActiveChannels];
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -2752,7 +2752,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   }
 
   // Per-thread, per-channel MRU bin-bracket cache. GATED TO SINGLE-CHANNEL: see
-  // the matching comment in DeviceHistogramSweepDirectAtomicPersistentKernel --
+  // the matching comment in DeviceHistogramDirectAtomicCuckooKernel --
   // multi-channel mru[NumActiveChannels] spills to local memory and the per-sample
   // LMEM round-trips cost more than the level loads they would replace; single-
   // channel mru[1] fits in registers and speeds the RANGE classify. Multi-channel
@@ -3152,7 +3152,7 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 // minBlocks=2 hint; the dispatch sizes the grid by this kernel's own sm_occupancy.
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepNonStagingDynSmemKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivDynamicKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -3270,7 +3270,7 @@ template <typename PolicySelector,
 // allocation (~224 KB/CTA on B200), so the minBlocks=1 hint lets the compiler use
 // more registers per thread (no need to budget for 2 blocks/SM SMEM-fit).
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 1)
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramHybridSinglePassKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_smem_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_gmem_bins_wrapper,

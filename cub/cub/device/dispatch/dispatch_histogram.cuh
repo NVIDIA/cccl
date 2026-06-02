@@ -335,9 +335,9 @@ struct DeviceHistogramKernelSource
 
   /// Returns the default histogram sweep kernel that receives pre-initialized decode operators from the host.
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernel()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivKernel()
   {
-    return &DeviceHistogramSweepKernel<
+    return &DeviceHistogramSmemPrivKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -356,7 +356,7 @@ struct DeviceHistogramKernelSource
             typename SecondLevelArrayT,
             bool IsEven,
             bool IsByteSample>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernelDeviceInit()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivDeviceInitKernel()
   {
     // For DispatchEven, we use the scale transform to convert samples to
     // privatized bins and pass-thru transform to convert privatized bins to
@@ -375,7 +375,7 @@ struct DeviceHistogramKernelSource
     using OutputDecodeOpT =
       ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
 
-    return &DeviceHistogramSweepDeviceInitKernel<
+    return &DeviceHistogramSmemPrivDeviceInitKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -394,9 +394,9 @@ struct DeviceHistogramKernelSource
   /// privatized histogram directly into the global output via atomicAdd
   /// (no staging slabs, no combine kernel). Host must launch the init kernel first.
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepNonStagingDynSmemKernel()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivDynamicKernel()
   {
-    return &DeviceHistogramSweepNonStagingDynSmemKernel<
+    return &DeviceHistogramSmemPrivDynamicKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -415,9 +415,9 @@ struct DeviceHistogramKernelSource
   /// each sample once into the full bin space.
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto
-  HistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel()
+  HistogramHybridSinglePassKernel()
   {
-    return &DeviceHistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel<
+    return &DeviceHistogramHybridSinglePassKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -519,16 +519,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {},
   // When the caller already picked between the direct-atomic-to-output
-  // (cuckoo) path and the cooperative SweepPersistent (gather-merge) path
-  // via the unified algorithm selector, this overrides the legacy
-  // `direct_atomic_bin_threshold` heuristic. Set true to force the
-  // SweepPersistent / Init+Sweep path regardless of bin count.
+  // (cuckoo) path and the cooperative gather-merge path via the unified
+  // algorithm selector, this overrides the legacy `direct_atomic_bin_threshold`
+  // heuristic. Set true to force the gather-merge / Init+Sweep path regardless
+  // of bin count.
   bool disable_direct_atomic = false,
   // Cache policy for the direct-atomic-to-output kernel (only consulted when
   // the direct-atomic path is taken, i.e. !disable_direct_atomic):
-  //   0 -> 2-hash cuckoo cache (DeviceHistogramSweepDirectAtomicPersistentKernel)
+  //   0 -> 2-hash cuckoo cache (DeviceHistogramDirectAtomicCuckooKernel)
   //   1 -> single-probe direct-mapped cache
-  //        (DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel)
+  //        (DeviceHistogramDirectAtomicSingleProbeKernel)
   // Both kernels share the same dynamic-SMEM cache layout and the
   // dispatch-chosen `cache_slots_per_channel`; only the probe policy differs.
   int direct_atomic_cache_mode = 0)
@@ -571,7 +571,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-      return kernel_source.template HistogramSweepNonStagingDynSmemKernel<
+      return kernel_source.template HistogramSmemPrivDynamicKernel<
              PolicySelector,
              PRIVATIZED_SMEM_BINS,
              privatized_decode_op_t,
@@ -579,7 +579,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
     else if constexpr (IsDeviceInit)
     {
-      return kernel_source.template HistogramSweepKernelDeviceInit<
+      return kernel_source.template HistogramSmemPrivDeviceInitKernel<
              PolicySelector,
              PRIVATIZED_SMEM_BINS,
              FirstLevelArrayT,
@@ -592,7 +592,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
       return kernel_source
-        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
+        .template HistogramSmemPrivKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
     }
   }();
 
@@ -809,7 +809,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // nvcc emits the device-side kernel during device compilation. The
       // launch itself runs only once via `cudaLaunchCooperativeKernel`
       // below so `grid.sync()` works.
-      auto persistent_kernel_ptr = &DeviceHistogramSweepPersistentKernel<PolicySelector,
+      auto persistent_kernel_ptr = &DeviceHistogramGmemPrivGatherKernel<PolicySelector,
                                                                          PRIVATIZED_SMEM_BINS,
                                                                          NUM_CHANNELS,
                                                                          NUM_ACTIVE_CHANNELS,
@@ -829,7 +829,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `cudaErrorInvalidResourceHandle`.
       if (false)
       {
-        DeviceHistogramSweepPersistentKernel<PolicySelector,
+        DeviceHistogramGmemPrivGatherKernel<PolicySelector,
                                              PRIVATIZED_SMEM_BINS,
                                              NUM_CHANNELS,
                                              NUM_ACTIVE_CHANNELS,
@@ -858,7 +858,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
       auto direct_atomic_kernel_ptr =
-        &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+        &DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
                                                           PRIVATIZED_SMEM_BINS,
                                                           NUM_CHANNELS,
                                                           NUM_ACTIVE_CHANNELS,
@@ -882,7 +882,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // it). The 2-probe kernel above is kept for the moderate-bin tier where the
       // secondary slot raises the hit rate.
       auto direct_atomic_noprobe2_kernel_ptr =
-        &DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+        &DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
                                                           PRIVATIZED_SMEM_BINS,
                                                           NUM_CHANNELS,
                                                           NUM_ACTIVE_CHANNELS,
@@ -904,7 +904,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `direct_atomic_cache_mode == 1` (the huge-N single-channel high-bin
       // route picked by the unified selector as direct_atomic_single_probe).
       auto direct_atomic_single_probe_kernel_ptr =
-        &DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel<PolicySelector,
+        &DeviceHistogramDirectAtomicSingleProbeKernel<PolicySelector,
                                                                      PRIVATIZED_SMEM_BINS,
                                                                      NUM_CHANNELS,
                                                                      NUM_ACTIVE_CHANNELS,
@@ -1118,7 +1118,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
       if (false)
       {
-        DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+        DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
                                                          PRIVATIZED_SMEM_BINS,
                                                          NUM_CHANNELS,
                                                          NUM_ACTIVE_CHANNELS,
@@ -1136,7 +1136,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_rows,
             row_stride_samples,
             cache_slots_per_channel);
-        DeviceHistogramSweepDirectAtomicSingleProbePersistentKernel<PolicySelector,
+        DeviceHistogramDirectAtomicSingleProbeKernel<PolicySelector,
                                                                     PRIVATIZED_SMEM_BINS,
                                                                     NUM_CHANNELS,
                                                                     NUM_ACTIVE_CHANNELS,
@@ -1156,7 +1156,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             cache_slots_per_channel);
         // Force device-side emission of the second-probe-gated cuckoo variant so
         // `cudaLaunchCooperativeKernel` can resolve its device entry.
-        DeviceHistogramSweepDirectAtomicPersistentKernel<PolicySelector,
+        DeviceHistogramDirectAtomicCuckooKernel<PolicySelector,
                                                          PRIVATIZED_SMEM_BINS,
                                                          NUM_CHANNELS,
                                                          NUM_ACTIVE_CHANNELS,
@@ -1225,13 +1225,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const bool selected_fits = use_direct_atomic_to_output ? direct_atomic_fits : persistent_fits;
 
       // Grid size for the direct-atomic kernels. Unlike the gather-merge
-      // SweepPersistent kernel, the direct-atomic cuckoo / single-probe kernels
-      // distribute work via a pure grid-stride loop over `total_pixels` and use
-      // neither `tile_queue` nor `tiles_per_row`, so ANY block count produces
-      // correct counts -- more blocks simply means more resident warps. The
-      // shared `num_thread_blocks` above is sized off the SweepPersistent
-      // kernel's per-SM occupancy, which is lower (the gather-merge kernel is
-      // register-heavy). The direct-atomic kernel admits more blocks/SM and is
+      // kernel, the direct-atomic cuckoo / single-probe kernels distribute work
+      // via a pure grid-stride loop over `total_pixels` and use neither
+      // `tile_queue` nor `tiles_per_row`, so ANY block count produces correct
+      // counts -- more blocks simply means more resident warps. The shared
+      // `num_thread_blocks` above is sized off the gather-merge kernel's per-SM
+      // occupancy, which is lower (the gather-merge kernel is register-heavy).
+      // The direct-atomic kernel admits more blocks/SM and is
       // bound by SMEM-atomic scoreboard latency, so grow the grid to the
       // direct-atomic kernel's OWN co-resident capacity so the extra warps hide
       // that latency, capped by the available work (no point launching blocks
@@ -1822,7 +1822,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   // Calculate occupancy and grid size.
   int fused_sm_occupancy = 0;
   auto fused_hybrid_kernel_ptr =
-    kernel_source.template HistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel<
+    kernel_source.template HistogramHybridSinglePassKernel<
       PolicySelector,
       kPrivatizedSmemBins,
       InnerPrivatizedDecodeOpT,
@@ -1834,7 +1834,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   // fails with cudaErrorInvalidResourceHandle).
   if (false)
   {
-    DeviceHistogramSweepStagingFusedHybridSinglePassHostInitDynSmemKernel<PolicySelector,
+    DeviceHistogramHybridSinglePassKernel<PolicySelector,
                                                                           kPrivatizedSmemBins,
                                                                           NUM_CHANNELS,
                                                                           NUM_ACTIVE_CHANNELS,
@@ -2184,10 +2184,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
     case algorithm::direct_atomic_single_probe: {
       // All three go through PRIVATIZED_SMEM_BINS=0 in the deeper `dispatch<>`,
       // which chooses between the direct-atomic-to-output kernel and the
-      // SweepPersistent gather-merge kernel based on `disable_direct_atomic`,
-      // and (for the direct-atomic path) between the cuckoo and single-probe
-      // caches based on `direct_atomic_cache_mode`. We pass both from the
-      // selector's pick:
+      // gather-merge kernel based on `disable_direct_atomic`, and (for the
+      // direct-atomic path) between the cuckoo and single-probe caches based on
+      // `direct_atomic_cache_mode`. We pass both from the selector's pick:
       //   gmem_priv_gather        -> disable_direct_atomic=true  (sweep)
       //   direct_atomic_cuckoo       -> direct-atomic, cache_mode=0 (cuckoo)
       //   direct_atomic_single_probe -> direct-atomic, cache_mode=1 (single-probe)
