@@ -30,7 +30,6 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_find.cuh>
-#  include <cub/device/device_reduce.cuh>
 
 _CCCL_DIAG_POP
 
@@ -40,13 +39,11 @@ _CCCL_DIAG_POP
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/lexicographical_compare.h>
-#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
@@ -55,7 +52,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/common_type.h>
-#  include <cuda/std/__type_traits/remove_cvref.h>
+#  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -63,8 +60,8 @@ _CCCL_DIAG_POP
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 // Tri-valued result of comparing a pair (a, b) drawn from the two input ranges
-// under `comp`. The underlying values are chosen so that a `0` accumulator with
-// `plus` recovers the sign directly: a negative result means `a` orders before `b`.
+// under `comp`: `__less` if `a` orders before `b`, `__greater` if `b` orders
+// before `a`, `__equal` otherwise.
 enum class __lex_ordering : int
 {
   __less    = -1,
@@ -74,7 +71,8 @@ enum class __lex_ordering : int
 
 // Maps a pair (a, b) to its `__lex_ordering`. Used as the transform of a
 // `cuda::zip_transform_iterator`, so the per-element state is computed lazily by
-// the device kernels that walk the iterator.
+// the device kernels that walk the iterator. Both a const and a non-const call
+// operator are provided so that comparators with a non-const `operator()` work.
 template <class _Compare>
 struct __lex_state_fn
 {
@@ -83,6 +81,20 @@ struct __lex_state_fn
   _CCCL_API explicit constexpr __lex_state_fn(_Compare __comp) noexcept(is_nothrow_move_constructible_v<_Compare>)
       : __comp_(::cuda::std::move(__comp))
   {}
+
+  template <class _Tp, class _Up>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __lex_ordering operator()(const _Tp& __a, const _Up& __b)
+  {
+    if (__comp_(__a, __b))
+    {
+      return __lex_ordering::__less;
+    }
+    if (__comp_(__b, __a))
+    {
+      return __lex_ordering::__greater;
+    }
+    return __lex_ordering::__equal;
+  }
 
   template <class _Tp, class _Up>
   [[nodiscard]] _CCCL_DEVICE_API constexpr __lex_ordering operator()(const _Tp& __a, const _Up& __b) const
@@ -108,15 +120,20 @@ struct __lex_non_equal
   }
 };
 
-// Transform handed to the read-back pass: surfaces the ordering as its underlying
-// signed value so the 1-element reduction returns it unchanged.
-struct __lex_ordering_to_int
+// Resolves the final answer on device from the index found by the find pass,
+// avoiding a host round-trip and a second device reduction. `__result` holds the
+// first non-equivalent index on entry and the boolean answer (0/1) on exit:
+//   - if no divergence was found within the common prefix, the shorter range is
+//     "less" (`__shorter_is_less`);
+//   - otherwise the ordering at the divergence position decides.
+template <class _StateIter, class _OffsetType>
+_CCCL_KERNEL_ATTRIBUTES void __lexicographical_compare_result_kernel(
+  _StateIter __state_first, _OffsetType __count, bool __shorter_is_less, _OffsetType* __result)
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr int operator()(__lex_ordering __state) const noexcept
-  {
-    return static_cast<int>(__state);
-  }
-};
+  const _OffsetType __k = *__result;
+  *__result =
+    static_cast<_OffsetType>((__k == __count) ? __shorter_is_less : (*(__state_first + __k) == __lex_ordering::__less));
+}
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -141,23 +158,17 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       return false;
     }
 
-    using _OffsetType = common_type_t<iter_difference_t<_InputIter1>, iter_difference_t<_InputIter2>>;
-    const auto __n1   = static_cast<_OffsetType>(::cuda::std::distance(__first1, __last1));
-    const auto __n2   = static_cast<_OffsetType>(::cuda::std::distance(__first2, __last2));
-    const auto __n    = ::cuda::std::min(__n1, __n2);
+    using _OffsetType   = common_type_t<iter_difference_t<_InputIter1>, iter_difference_t<_InputIter2>>;
+    const auto __count1 = static_cast<_OffsetType>(::cuda::std::distance(__first1, __last1));
+    const auto __count2 = static_cast<_OffsetType>(::cuda::std::distance(__first2, __last2));
+    const auto __count  = ::cuda::std::min(__count1, __count2);
 
     // Lazy per-element ordering over the two input ranges, capped at the common
     // length so neither side reads past its own end.
     auto __state_first = ::cuda::zip_transform_iterator{
       __lex_state_fn<_Compare>{::cuda::std::move(__comp)}, ::cuda::std::move(__first1), ::cuda::std::move(__first2)};
 
-    constexpr __lex_ordering_to_int __to_int{};
-    constexpr ::cuda::std::plus<int> __plus{};
-
-    // Size the temporary storage for both passes up front and allocate it once.
-    // The find pass over `__n` elements dominates the 1-element read-back, so the
-    // shared region is reused by both cub calls; only the two 1-element result
-    // slots are extra.
+    // Determine the find pass' temporary storage requirement up front.
     size_t __find_bytes = 0;
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceFind::FindIf,
@@ -167,32 +178,16 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       __state_first,
       static_cast<_OffsetType*>(nullptr),
       __lex_non_equal{},
-      __n);
-
-    size_t __reduce_bytes = 0;
-    _CCCL_TRY_CUDA_API(
-      CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
-      "__pstl_cuda_lexicographical_compare: determining temporary storage for cub::DeviceReduce::TransformReduce "
-      "failed",
-      static_cast<void*>(nullptr),
-      __reduce_bytes,
-      __state_first,
-      static_cast<int*>(nullptr),
-      _OffsetType{1},
-      __plus,
-      __to_int,
-      int{0});
-
-    const size_t __temp_bytes = ::cuda::std::max(__find_bytes, __reduce_bytes);
+      __count);
 
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
-    // Single allocation: slot<0> = find offset, slot<1> = read-back state, plus the
-    // shared algorithm scratch region sized for whichever pass needs more.
-    __temporary_storage<_OffsetType, int> __storage{__policy, __temp_bytes, 1, 1};
+    // Single allocation: slot<0> holds the find index and then the boolean answer,
+    // plus the find pass' scratch region.
+    __temporary_storage<_OffsetType> __storage{__policy, __find_bytes, 1};
+    auto __result_ptr = __storage.template __get_raw_ptr<0>();
 
     // Pass 1 (early-terminating): index of the first non-equivalent pair.
-    _OffsetType __k;
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceFind::FindIf,
       "__pstl_cuda_lexicographical_compare: kernel launch of cub::DeviceFind::FindIf failed",
@@ -201,50 +196,41 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       __state_first,
       __storage.template __get_ptr<0>(),
       __lex_non_equal{},
-      __n,
+      __count,
       __stream.get());
+
+    // Pass 2: resolve the answer in place on device, so only one value is copied
+    // back to the host (no second reduce launch, no offset round-trip).
+    const bool __shorter_is_less = (__count1 < __count2);
+    const void* __kernel =
+      reinterpret_cast<const void*>(&__lexicographical_compare_result_kernel<decltype(__state_first), _OffsetType>);
+    void* __kernel_args[] = {
+      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__state_first))),
+      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__count))),
+      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__shorter_is_less))),
+      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__result_ptr)))};
+    _CCCL_TRY_CUDA_API(
+      ::cudaLaunchKernel,
+      "__pstl_cuda_lexicographical_compare: kernel launch of result resolution failed",
+      __kernel,
+      ::dim3{1},
+      ::dim3{1},
+      __kernel_args,
+      size_t{0},
+      __stream.get());
+
+    _OffsetType __result;
     _CCCL_TRY_CUDA_API(
       ::cudaMemcpyAsync,
-      "__pstl_cuda_lexicographical_compare: copy of find result from device to host failed",
-      ::cuda::std::addressof(__k),
-      __storage.template __get_ptr<0>(),
+      "__pstl_cuda_lexicographical_compare: copy of result from device to host failed",
+      ::cuda::std::addressof(__result),
+      __result_ptr,
       sizeof(_OffsetType),
       ::cudaMemcpyDefault,
       __stream.get());
     __stream.sync();
 
-    // No divergence within the common prefix: the shorter range is "less".
-    if (__k == __n)
-    {
-      return __n1 < __n2;
-    }
-
-    // Pass 2: read back the ordering at the divergence position via a 1-element
-    // transform_reduce, reusing the same scratch region as the find pass.
-    int __state;
-    _CCCL_TRY_CUDA_API(
-      CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
-      "__pstl_cuda_lexicographical_compare: kernel launch of cub::DeviceReduce::TransformReduce failed",
-      __storage.__get_temp_storage(),
-      __reduce_bytes,
-      __state_first + __k,
-      __storage.template __get_ptr<1>(),
-      _OffsetType{1},
-      __plus,
-      __to_int,
-      int{0},
-      __stream.get());
-    _CCCL_TRY_CUDA_API(
-      ::cudaMemcpyAsync,
-      "__pstl_cuda_lexicographical_compare: copy of read-back result from device to host failed",
-      ::cuda::std::addressof(__state),
-      __storage.template __get_ptr<1>(),
-      sizeof(int),
-      ::cudaMemcpyDefault,
-      __stream.get());
-    __stream.sync();
-
-    return __state < 0;
+    return __result != _OffsetType{0};
   }
 
   _CCCL_TEMPLATE(class _Policy, class _InputIter1, class _InputIter2, class _Compare)
