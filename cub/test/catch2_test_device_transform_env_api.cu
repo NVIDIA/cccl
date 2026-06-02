@@ -41,7 +41,7 @@ C2H_TEST("cub::DeviceTransform::Transform env-based API with tuning", "[transfor
 {
   // example-begin transform-tuning
   auto d_input  = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7};
-  auto d_output = thrust::device_vector<int>(7);
+  auto d_output = thrust::device_vector<int>(7, thrust::no_init);
 
   const auto error = cub::DeviceTransform::Transform(
     d_input.data(),
