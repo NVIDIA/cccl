@@ -40,6 +40,7 @@ struct HistogramPolicy
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
   int direct_atomic_threads_per_block = 0; //!< Thread count for direct-atomic kernels; 0 inherits threads_per_block
+  bool warp_coalesce                  = true; //!< Coalesce same-bin warp lanes on global-memory atomic paths
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int direct_atomic_threads() const
   {
@@ -54,7 +55,8 @@ struct HistogramPolicy
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
         && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
-        && lhs.direct_atomic_threads_per_block == rhs.direct_atomic_threads_per_block;
+        && lhs.direct_atomic_threads_per_block == rhs.direct_atomic_threads_per_block
+        && lhs.warp_coalesce == rhs.warp_coalesce;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -72,7 +74,8 @@ struct HistogramPolicy
         << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
         << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins
-        << ", .direct_atomic_threads_per_block = " << p.direct_atomic_threads_per_block << " }";
+        << ", .direct_atomic_threads_per_block = " << p.direct_atomic_threads_per_block
+        << ", .warp_coalesce = " << p.warp_coalesce << " }";
   }
 #endif // _CCCL_HOSTED()
 };
