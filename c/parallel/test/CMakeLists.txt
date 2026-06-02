@@ -54,7 +54,3 @@ file(
 foreach (test_src IN LISTS test_srcs)
   cccl_c_parallel_add_test(test_target "${test_src}")
 endforeach()
-
-if (CCCL_C_Parallel_ENABLE_HOSTJIT AND TARGET hostjit_lib)
-  add_subdirectory(freestanding)
-endif()

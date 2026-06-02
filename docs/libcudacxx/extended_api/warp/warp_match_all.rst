@@ -27,11 +27,15 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 
 - ``true`` if all lanes in the ``lane_mask`` have the same value for ``data``. ``false`` otherwise.
 
+**Constraints**
+
+- ``T`` shall be trivially copyable, see :ref:`cuda::is_trivially_copyable <libcudacxx-extended-api-type_traits-is_trivially_copyable>`.
+- When ``__builtin_clear_padding`` is not supported, ``T`` shall have no padding bits, that is, ``T``'s value representation shall be identical to its object representation.
+
 **Preconditions**
 
 - The functionality is only supported on ``SM >= 70``.
 - ``lane_mask`` must be non-zero.
-- ``T`` shall have no padding bits, that is, ``T``'s value representation shall be identical to its object representation.
 
 **Undefined Behavior**
 

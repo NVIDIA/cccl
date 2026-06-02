@@ -595,6 +595,7 @@ inline stf_async_resources_handle async_resources_to_opaque(async_resources_hand
 {
   return reinterpret_cast<stf_async_resources_handle>(p);
 }
+
 inline async_resources_handle* async_resources_from_opaque(stf_async_resources_handle h) noexcept
 {
   return reinterpret_cast<async_resources_handle*>(h);
@@ -615,20 +616,16 @@ void stf_async_resources_destroy(stf_async_resources_handle h)
 
 stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts)
 {
-  // NULL => defaults (matches stf_ctx_create()).
+  // NULL opts matches stf_ctx_create().
   const stf_ctx_options defaults{};
   const stf_ctx_options& o = opts ? *opts : defaults;
 
-  const bool has_stream     = (o.has_stream != 0);
-  async_resources_handle ah = o.handle ? *async_resources_from_opaque(o.handle) : async_resources_handle{nullptr};
+  const bool has_stream           = (o.has_stream != 0);
+  const async_resources_handle ah = o.handle ? *async_resources_from_opaque(o.handle) : async_resources_handle{nullptr};
 
-  // Dispatch to the matching C++ overload in
-  // cudax/include/cuda/experimental/__stf/{stream,graph}/..._ctx.cuh.
-  // C++ uses overload resolution (effectively optional<cudaStream_t>) to
-  // distinguish "user bound a stream" from "user did not"; we mirror that
-  // using the explicit has_stream flag. Using o.stream alone is insufficient
-  // since cudaStream_t is a pointer and 0/nullptr is the default NULL stream
-  // -- a legitimate value a caller may want to bind.
+  // C++ overloads distinguish "caller supplied a stream" from "use the
+  // default constructor". `cudaStream_t` is pointer-like, so a separate flag is
+  // required to let callers intentionally bind the CUDA default stream.
   return to_opaque(stf_try_allocate([&]() -> context* {
     switch (o.backend)
     {
