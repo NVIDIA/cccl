@@ -27,7 +27,6 @@
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -37,6 +36,7 @@
 #  include <cuda/std/__type_traits/has_unique_object_representation.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
+#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 
 #  include <cuda/experimental/__copy_bytes/mdspan_to_raw_tensor.cuh>
@@ -50,19 +50,19 @@
 namespace cuda::experimental
 {
 template <typename _ByteT>
-inline constexpr bool __is_fill_bytes_value_v =
+inline constexpr bool __can_fill_bytes_value_v =
   ::cuda::std::is_trivially_copyable_v<_ByteT> && ::cuda::std::has_unique_object_representations_v<_ByteT>
   && (sizeof(_ByteT) == 1 || sizeof(_ByteT) == 2 || sizeof(_ByteT) == 4);
 
 // __half, __nv_bfloat16 don't have a unique object representation
 #  if _CCCL_HAS_NVFP16()
 template <>
-inline constexpr bool __is_fill_bytes_value_v<::__half> = true;
+inline constexpr bool __can_fill_bytes_value_v<::__half> = false;
 #  endif // _CCCL_HAS_NVFP16()
 
 #  if _CCCL_HAS_NVBF16()
 template <>
-inline constexpr bool __is_fill_bytes_value_v<::__nv_bfloat16> = true;
+inline constexpr bool __can_fill_bytes_value_v<::__nv_bfloat16> = false;
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename _Tp, typename _ByteT>
@@ -98,7 +98,8 @@ _CCCL_HOST_API void __fill_bytes_tile(
 //! - The destination must not have an interleaved stride order.
 //!
 //! Integer literals use their usual type. For example, ``0`` is an ``int`` and requests a 4-byte pattern fill; use
-//! ``cuda::std::uint8_t{0}`` or ``cuda::std::byte{0}`` for a byte pattern fill.
+//! ``cuda::std::uint8_t{0}`` or ``cuda::std::byte{0}`` for a byte pattern fill. The implementation is optimized to
+//! maximize the contiguous memory regions to fill.
 //!
 //! .. code-block:: c++
 //!
@@ -106,7 +107,7 @@ _CCCL_HOST_API void __fill_bytes_tile(
 //!
 //!      using extents_t = cuda::std::dims<2>;
 //!      cuda::device_mdspan<int, extents_t> dst(dst_ptr, extents);
-//!      cuda::experimental::fill_bytes(dst, cuda::std::uint32_t{0xff00ff00}, stream);
+//!      cuda::experimental::fill_bytes(dst, cuda::std::uint32_t{0xFF00FF00}, stream);
 //!
 //! @endrst
 //! @brief Asynchronously fills a device mdspan with a 1-, 2-, or 4-byte pattern.
@@ -129,8 +130,9 @@ _CCCL_HOST_API void fill_bytes(::cuda::device_mdspan<_Tp, _Extents, _Layout, _Ac
   using __stride_t   = __mdspan_stride_t<_Layout, typename __mdspan_t::mapping_type>;
 
   static_assert(!::cuda::std::is_const_v<_Tp>, "cudax::fill_bytes: element type must not be const");
-  static_assert(::cuda::is_trivially_copyable_v<_Tp>, "cudax::fill_bytes: element type must be trivially copyable");
-  static_assert(__is_fill_bytes_value_v<__value_t>,
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>,
+                "cudax::fill_bytes: element type must be trivially copyable");
+  static_assert(__can_fill_bytes_value_v<__value_t>,
                 "cudax::fill_bytes: fill value type must be trivially copyable with unique object representations and "
                 "have size 1, 2, or 4");
   static_assert(sizeof(_Tp) % sizeof(__value_t) == 0,
