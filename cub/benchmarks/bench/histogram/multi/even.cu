@@ -4,6 +4,7 @@
 #include <nvbench_helper.cuh>
 
 #include "../histogram_common.cuh"
+#include "../histogram_inputs.cuh"
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
@@ -20,7 +21,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   constexpr int num_channels        = 4;
   constexpr int num_active_channels = 3;
 
-  const auto entropy     = str_to_entropy(state.get_string("Entropy"));
+  const auto shape       = parse_input_shape(state.get_string("InputShape"));
   const auto elements    = state.get_int64("Elements{io}");
   const auto num_bins    = state.get_int64("Bins");
   const int num_levels_r = static_cast<int>(num_bins) + 1;
@@ -58,7 +59,8 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
   thrust::device_vector<CounterT> hist_b(num_bins);
-  thrust::device_vector<SampleT> input = generate(elements * num_channels, entropy, lower_level_r, upper_level_r);
+  thrust::device_vector<SampleT> input = generate_histogram_input_even<SampleT>(
+    shape, elements * num_channels, static_cast<int>(num_bins), lower_level_r, upper_level_r);
 
   SampleT* d_input        = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
@@ -173,4 +175,18 @@ NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_of
   .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
   .add_int64_axis("Elements{io}", {100'000, 1 << 20, 20'000'000, 1 << 28})
   .add_int64_axis("Bins", {32, 100, 2000, 16384, 60000, 2097152})
-  .add_string_axis("Entropy", {"0.201", "1.000"});
+  // One `concentrated` shape swept across entropy (1.0=uniform, 0.5=spike,
+  // 0.0=constant) plus the multi-hot and cache-adversarial shapes. Each value
+  // may carry an inline knob as "name:value"; see histogram_inputs.cuh.
+  .add_string_axis(
+    "InputShape",
+    {"concentrated:1.0",
+     "concentrated:0.5",
+     "concentrated:0.0",
+     "powerlaw:0.5",
+     "zipf:1.0",
+     "hash_synonym",
+     "capacity_cliff",
+     "stale_resident",
+     "temporal_phases",
+     "strided_sweep"});
