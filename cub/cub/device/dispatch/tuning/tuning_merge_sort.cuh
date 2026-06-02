@@ -50,14 +50,16 @@ struct MergeSortPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -146,8 +148,7 @@ static_assert(merge_sort_policy_selector<policy_selector>);
 template <typename KeyIteratorT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> MergeSortPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> MergeSortPolicy
   {
     return policy_selector{int{sizeof(it_value_t<KeyIteratorT>)}}(cc);
   }
