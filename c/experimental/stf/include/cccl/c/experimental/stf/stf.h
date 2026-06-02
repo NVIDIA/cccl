@@ -74,7 +74,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif
 
 //! \defgroup AccessMode Data Access Modes
 //! \brief Specifies how tasks access logical data
