@@ -87,7 +87,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
   _CCCL_HOST_API static void __radix_sort_impl(const _Policy& __policy, _Tp* __first, _Tp* __last, _BinaryPredicate)
   {
     const auto __count = static_cast<size_t>(::cuda::std::distance(__first, __last));
-    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
 
     CUB_NS_QUALIFIER::DoubleBuffer<_Tp> __buffer{__first, nullptr};
 
@@ -145,7 +145,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
   __merge_sort_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPredicate __pred)
   {
     const auto __count = ::cuda::std::distance(__first, __last);
-    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
 
     // Run the kernel
     _CCCL_TRY_CUDA_API(
