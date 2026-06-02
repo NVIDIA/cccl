@@ -496,6 +496,8 @@ MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noex
     return error;
   }
 
+  // TODO: over-conservative by ~`reserved_smem_size`. `MaxSharedMemoryPerBlockOptin` already excludes reserved
+  // (opt_in == perSM - reserved), so subtracting reserved here double-counts it.
   max_dyn_smem_bytes = max_smem_size_optin - reserved_smem_size - static_cast<int>(kernel_attrs.sharedSizeBytes);
   return cudaSuccess;
 }

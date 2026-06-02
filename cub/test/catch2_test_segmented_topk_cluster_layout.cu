@@ -18,7 +18,7 @@ template <typename SizeT>
 template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
 void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
 {
-  using layout_t = cub::detail::batched_topk_cluster::smem_tile_layout<KeyT, ChunkBytes, LoadAlignBytes>;
+  using layout_t = cub::detail::batched_topk_cluster::smem_block_tile_layout<KeyT, ChunkBytes, LoadAlignBytes>;
 
   const int usable_bytes = dynamic_smem_bytes - layout_t::base_padding_bytes;
   REQUIRE(usable_bytes > 0);
@@ -26,11 +26,12 @@ void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
   const int slots = usable_bytes / layout_t::slot_stride_bytes;
   REQUIRE(slots > 0);
 
-  const auto tile_capacity = layout_t::tile_capacity(dynamic_smem_bytes);
-  REQUIRE(tile_capacity == static_cast<cuda::std::uint32_t>(slots * layout_t::chunk_items));
+  const auto block_tile_capacity = layout_t::block_tile_capacity(dynamic_smem_bytes);
+  REQUIRE(block_tile_capacity == static_cast<cuda::std::uint32_t>(slots * layout_t::chunk_items));
 
-  const auto coverage = layout_t::template cluster_coverage<cuda::std::int64_t>(cluster_blocks, tile_capacity);
-  REQUIRE(coverage > 0);
+  const auto cluster_tile_capacity =
+    layout_t::template cluster_tile_capacity<cuda::std::int64_t>(cluster_blocks, block_tile_capacity);
+  REQUIRE(cluster_tile_capacity > 0);
 
   const auto max_rank_chunks = [](cuda::std::int64_t segment_size, int head_items, int blocks) {
     using size_t             = cuda::std::int64_t;
@@ -49,15 +50,16 @@ void check_layout_case(int dynamic_smem_bytes, int cluster_blocks)
             dynamic_smem_bytes,
             cluster_blocks,
             slots,
-            tile_capacity,
-            coverage,
+            block_tile_capacity,
+            cluster_tile_capacity,
             head_items);
-    REQUIRE(max_rank_chunks(coverage, head_items, cluster_blocks) <= slots);
+    REQUIRE(max_rank_chunks(cluster_tile_capacity, head_items, cluster_blocks) <= slots);
   }
 
-  const auto unreserved_coverage = static_cast<cuda::std::int64_t>(cluster_blocks) * tile_capacity;
-  CAPTURE(c2h::type_name<KeyT>(), ChunkBytes, LoadAlignBytes, dynamic_smem_bytes, cluster_blocks, slots, tile_capacity);
-  REQUIRE(max_rank_chunks(unreserved_coverage, 1, cluster_blocks) == slots + 1);
+  const auto unreserved_cluster_tile_capacity = static_cast<cuda::std::int64_t>(cluster_blocks) * block_tile_capacity;
+  CAPTURE(
+    c2h::type_name<KeyT>(), ChunkBytes, LoadAlignBytes, dynamic_smem_bytes, cluster_blocks, slots, block_tile_capacity);
+  REQUIRE(max_rank_chunks(unreserved_cluster_tile_capacity, 1, cluster_blocks) == slots + 1);
 }
 
 template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
@@ -83,10 +85,10 @@ TEST_CASE("Segmented TopK cluster SMEM layout reserves the unaligned head chunk"
   constexpr auto policy = default_policy{}(cuda::compute_capability{9, 0});
 
   using default_float_layout =
-    cub::detail::batched_topk_cluster::smem_tile_layout<float, policy.chunk_bytes, policy.load_align_bytes>;
-  static_assert(default_float_layout::tile_capacity(0) == 0);
-  static_assert(default_float_layout::template cluster_coverage<int>(8, 0) == 0);
-  static_assert(default_float_layout::template cluster_coverage<int>(1, default_float_layout::chunk_items) == 0);
+    cub::detail::batched_topk_cluster::smem_block_tile_layout<float, policy.chunk_bytes, policy.load_align_bytes>;
+  static_assert(default_float_layout::block_tile_capacity(0) == 0);
+  static_assert(default_float_layout::template cluster_tile_capacity<int>(8, 0) == 0);
+  static_assert(default_float_layout::template cluster_tile_capacity<int>(1, default_float_layout::chunk_items) == 0);
 
   check_layout_matrix<cuda::std::uint8_t, policy.chunk_bytes, policy.load_align_bytes>();
   check_layout_matrix<float, policy.chunk_bytes, policy.load_align_bytes>();

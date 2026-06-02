@@ -103,10 +103,11 @@ struct alignas(16) cluster_topk_state
   ::cuda::std::uint32_t early_stop;
 };
 
-// Dynamic-SMEM layout shared by dispatch and the agent. `tile_capacity` is the physical per-CTA resident capacity
-// passed to the kernel; `cluster_coverage` reserves one chunk of logical coverage for a possible unaligned head chunk.
+// Dynamic-SMEM layout shared by dispatch and the agent. `block_tile_capacity` is the physical per-CTA
+// resident capacity passed to the kernel; `cluster_tile_capacity` reserves one chunk of logical coverage
+// for a possible unaligned head chunk.
 template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
-struct smem_tile_layout
+struct smem_block_tile_layout
 {
   static constexpr int chunk_items = ChunkBytes / int{sizeof(KeyT)};
   static constexpr int slot_alignment =
@@ -115,24 +116,24 @@ struct smem_tile_layout
     ::cuda::round_up(detail::LoadToSharedBufferSizeBytes<KeyT>(chunk_items) + slot_alignment, slot_alignment);
   static constexpr int base_padding_bytes = (alignof(KeyT) > 16) ? slot_alignment : 0;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint32_t tile_capacity(int dynamic_smem_bytes) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint32_t
+  block_tile_capacity(int dynamic_smem_bytes) noexcept
   {
-    const int usable_bytes = dynamic_smem_bytes - base_padding_bytes;
-    if (usable_bytes <= 0)
-    {
-      return 0;
-    }
-    const int slots = usable_bytes / slot_stride_bytes;
+    const int usable_bytes = (::cuda::std::max) (0, dynamic_smem_bytes - base_padding_bytes);
+    const int slots        = usable_bytes / slot_stride_bytes;
     return static_cast<::cuda::std::uint32_t>(slots * chunk_items);
   }
 
   template <typename SizeT>
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr SizeT
-  cluster_coverage(int cluster_blocks, ::cuda::std::uint32_t physical_tile_capacity) noexcept
+  cluster_tile_capacity(int cluster_blocks, ::cuda::std::uint32_t physical_block_tile_capacity) noexcept
   {
-    const auto physical_coverage  = static_cast<SizeT>(cluster_blocks) * static_cast<SizeT>(physical_tile_capacity);
+    const auto physical_cluster_tile_items =
+      static_cast<SizeT>(cluster_blocks) * static_cast<SizeT>(physical_block_tile_capacity);
     const auto head_chunk_reserve = static_cast<SizeT>(chunk_items);
-    return (physical_coverage > head_chunk_reserve) ? physical_coverage - head_chunk_reserve : SizeT{0};
+    return (physical_cluster_tile_items > head_chunk_reserve)
+           ? physical_cluster_tile_items - head_chunk_reserve
+           : SizeT{0};
   }
 };
 
@@ -140,7 +141,7 @@ struct smem_tile_layout
 // Cluster top-k agent
 // -----------------------------------------------------------------------------
 // Cluster width is a runtime value (see `process_impl` for the readback), so
-// it is not a template parameter; per-block tile layout is still controlled
+// it is not a template parameter; per-block block_tile layout is still controlled
 // by the template parameters below.
 template <int ThreadsPerBlock,
           int UnrollFactor,
@@ -174,7 +175,7 @@ struct agent_batched_topk_cluster
   static constexpr int load_align_bytes  = LoadAlignBytes;
   static constexpr int bits_per_pass     = BitsPerPass;
   static constexpr int num_buckets       = 1 << bits_per_pass;
-  using smem_layout_t                    = smem_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
+  using smem_layout_t                    = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
   static constexpr int chunk_items       = smem_layout_t::chunk_items;
   static constexpr int slot_alignment    = smem_layout_t::slot_alignment;
   static constexpr int slot_stride_bytes = smem_layout_t::slot_stride_bytes;
@@ -232,9 +233,9 @@ struct agent_batched_topk_cluster
 #endif
   };
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char> key_tile_buffer() const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char> block_tile_buffer() const
   {
-    const int slots = static_cast<int>(tile_capacity / chunk_items);
+    const int slots = static_cast<int>(block_tile_capacity / chunk_items);
     return {key_slots, static_cast<::cuda::std::size_t>(slots * slot_stride_bytes)};
   }
 
@@ -244,13 +245,13 @@ struct agent_batched_topk_cluster
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char>
-  available_key_tile_buffer(char* buffer_begin) const
+  available_block_tile_buffer(char* buffer_begin) const
   {
-    const auto buffer = key_tile_buffer();
+    const auto buffer = block_tile_buffer();
     char* const end   = ::cuda::std::data(buffer) + static_cast<int>(::cuda::std::size(buffer));
-    _CCCL_ASSERT(buffer_begin >= ::cuda::std::data(buffer) && buffer_begin <= end, "Invalid key tile buffer cursor");
+    _CCCL_ASSERT(buffer_begin >= ::cuda::std::data(buffer) && buffer_begin <= end, "Invalid block_tile buffer cursor");
     _CCCL_ASSERT(::cuda::is_aligned(buffer_begin, detail::LoadToSharedBufferAlignBytes<key_t>()),
-                 "Key tile buffer cursor must satisfy BlockLoadToShared's shared-memory alignment");
+                 "block_tile buffer cursor must satisfy BlockLoadToShared's shared-memory alignment");
     return {buffer_begin, static_cast<::cuda::std::size_t>(end - buffer_begin)};
   }
 
@@ -377,7 +378,7 @@ struct agent_batched_topk_cluster
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
   char* key_slots;
-  offset_t tile_capacity;
+  offset_t block_tile_capacity;
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_batched_topk_cluster(
     TempStorage& temp_storage_,
@@ -388,7 +389,7 @@ struct agent_batched_topk_cluster
     SelectDirectionParameterT select_directions_,
     NumSegmentsParameterT num_segments_,
     char* key_slots_,
-    offset_t tile_capacity_)
+    offset_t block_tile_capacity_)
       : temp_storage(temp_storage_.Alias())
       , d_key_segments_it(d_key_segments_it_)
       , d_key_segments_out_it(d_key_segments_out_it_)
@@ -397,7 +398,7 @@ struct agent_batched_topk_cluster
       , select_directions(select_directions_)
       , num_segments(num_segments_)
       , key_slots(key_slots_)
-      , tile_capacity(tile_capacity_)
+      , block_tile_capacity(block_tile_capacity_)
   {}
 
   // ---------------------------------------------------------------------------
@@ -559,7 +560,8 @@ private:
     const offset_t my_chunks = num_rank_chunks(chunks, cluster_rank, cluster_size);
     // The launch coverage check reserves one extra chunk for the possible unaligned head, so every local chunk remains
     // resident for later radix passes while only the BlockLoadToShared instances are reused round-robin.
-    _CCCL_ASSERT(my_chunks * offset_t{chunk_items} <= tile_capacity, "Dynamic shared memory tile is too small");
+    _CCCL_ASSERT(my_chunks * offset_t{chunk_items} <= block_tile_capacity,
+                 "Dynamic shared memory block_tile is too small");
 
     ::cuda::std::span<key_t> resident_keys;
 
@@ -601,11 +603,11 @@ private:
           if (aligned_chunk)
           {
             pending_spans.emplace_back(
-              loader.template CopyAsync<key_t, load_align_bytes>(available_key_tile_buffer(next_dst), src));
+              loader.template CopyAsync<key_t, load_align_bytes>(available_block_tile_buffer(next_dst), src));
           }
           else
           {
-            pending_spans.emplace_back(loader.template CopyAsync<key_t>(available_key_tile_buffer(next_dst), src));
+            pending_spans.emplace_back(loader.template CopyAsync<key_t>(available_block_tile_buffer(next_dst), src));
           }
           next_dst = span_end(pending_spans[stage]);
           tokens.emplace_back(loader.Commit());
@@ -631,11 +633,12 @@ private:
             if (next_aligned_chunk)
             {
               pending_spans[stage] =
-                loaders[stage].template CopyAsync<key_t, load_align_bytes>(available_key_tile_buffer(next_dst), src);
+                loaders[stage].template CopyAsync<key_t, load_align_bytes>(available_block_tile_buffer(next_dst), src);
             }
             else
             {
-              pending_spans[stage] = loaders[stage].template CopyAsync<key_t>(available_key_tile_buffer(next_dst), src);
+              pending_spans[stage] =
+                loaders[stage].template CopyAsync<key_t>(available_block_tile_buffer(next_dst), src);
             }
             next_dst      = span_end(pending_spans[stage]);
             tokens[stage] = loaders[stage].Commit();
@@ -663,8 +666,8 @@ private:
         }
       }
       const int resident_count = span_size(resident_keys);
-      _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= tile_capacity,
-                   "Dynamic shared memory tile is too small");
+      _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
+                   "Dynamic shared memory block_tile is too small");
       __syncthreads();
     }
 
@@ -995,7 +998,7 @@ private:
 
     // Final cluster barrier: hold every block in the cluster until all DSMEM
     // atomics into the leader's state are complete. Without this, a fast
-    // block (e.g. one whose tile is entirely padding) can return while another
+    // block (e.g. one whose block_tile is entirely padding) can return while another
     // block is still writing to leader-resident memory through DSMEM, which
     // surfaces as a "cluster target block not present" exception.
     cluster.sync();
@@ -1031,11 +1034,11 @@ private:
       segment_fits_offset =
         segment_size <= static_cast<segment_size_val_t>(::cuda::std::numeric_limits<offset_t>::max());
     }
-    const auto max_cluster_coverage =
-      smem_layout_t::template cluster_coverage<segment_size_val_t>(static_cast<int>(cluster_blocks), tile_capacity);
-    if (!segment_fits_offset || segment_size > max_cluster_coverage)
+    const auto max_cluster_tile_capacity = smem_layout_t::template cluster_tile_capacity<segment_size_val_t>(
+      static_cast<int>(cluster_blocks), block_tile_capacity);
+    if (!segment_fits_offset || segment_size > max_cluster_tile_capacity)
     {
-      _CCCL_ASSERT(false, "Segment exceeds the selected cluster top-k tile capacity");
+      _CCCL_ASSERT(false, "Segment exceeds the selected cluster top-k cluster_tile capacity");
       return;
     }
 

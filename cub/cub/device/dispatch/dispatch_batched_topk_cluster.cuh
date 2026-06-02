@@ -8,7 +8,7 @@
 //! segmented top-k. Each cluster processes one segment end-to-end: private
 //! histograms are reduced into the leader block via DSMEM atomics, then every
 //! block reads the merged histogram back through DSMEM, locally identifies the
-//! k-th bucket, and refines its shared-memory key tile across radix passes.
+//! k-th bucket, and refines its shared-memory cluster_tile across radix passes.
 //!
 //! Two kernels share the agent body:
 //!   * Host: no `__cluster_dims__`, launched via `cudaLaunchKernelExC` with the
@@ -89,7 +89,7 @@ struct launch_config
 {
   int cluster_blocks;
   int dynamic_smem_bytes;
-  ::cuda::std::uint32_t tile_capacity;
+  ::cuda::std::uint32_t block_tile_capacity;
 };
 
 // -----------------------------------------------------------------------------
@@ -116,7 +116,7 @@ __launch_bounds__(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_segmented
   KParameterT k_param,
   SelectDirectionParameterT select_directions,
   NumSegmentsParameterT num_segments,
-  ::cuda::std::uint32_t tile_capacity)
+  ::cuda::std::uint32_t block_tile_capacity)
 {
   using agent_t = agent_batched_topk_cluster<
     ThreadsPerBlock,
@@ -154,7 +154,7 @@ __launch_bounds__(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_segmented
     select_directions,
     num_segments,
     key_slots,
-    tile_capacity);
+    block_tile_capacity);
 
   agent.Process();
 }
@@ -182,7 +182,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     KParameterT k_param,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    ::cuda::std::uint32_t tile_capacity)
+    ::cuda::std::uint32_t block_tile_capacity)
 {
   using agent_t = agent_batched_topk_cluster<
     ThreadsPerBlock,
@@ -220,7 +220,7 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
     select_directions,
     num_segments,
     key_slots,
-    tile_capacity);
+    block_tile_capacity);
 
   agent.Process();
 }
@@ -260,7 +260,7 @@ struct force_emit_kernel<Kernel>
 // -----------------------------------------------------------------------------
 // Dispatch
 // -----------------------------------------------------------------------------
-// Keys-only; every segment must fit in one cluster tile. Host picks
+// Keys-only; every segment must fit in one cluster_tile. Host picks
 // `(cluster_blocks, dynamic_smem_bytes)` at runtime from a finite table; CDP
 // uses the static kernel at `max_portable_cluster_blocks` and portable SMEM.
 
@@ -293,7 +293,7 @@ struct force_emit_kernel<Kernel>
                   k_param,                                                              \
                   select_directions,                                                    \
                   num_segments,                                                         \
-                  tile_capacity)))                                                      \
+                  block_tile_capacity)))                                                \
     {                                                                                   \
       return error;                                                                     \
     }
@@ -332,10 +332,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
-  using layout_t = smem_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
+  using layout_t = smem_block_tile_layout<key_t, ChunkBytes, LoadAlignBytes>;
+  using agent_t  = agent_batched_topk_cluster<
+     ThreadsPerBlock,
+     UnrollFactor,
+     PipelineStages,
+     ChunkBytes,
+     LoadAlignBytes,
+     BitsPerPass,
+     KeyInputItItT,
+     KeyOutputItItT,
+     SegmentSizeParameterT,
+     KParameterT,
+     SelectDirectionParameterT,
+     NumSegmentsParameterT>;
 
   static_assert(ChunkBytes % LoadAlignBytes == 0);
   static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
+  constexpr int static_smem_bytes = static_cast<int>(sizeof(typename agent_t::TempStorage));
 
   const auto max_seg_size = runtime_max_segment_size(segment_sizes);
   using max_seg_size_t    = decltype(+max_seg_size);
@@ -431,9 +445,39 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         return error;
       }
 
-      constexpr int portable_dynamic_smem_bytes = 48 * 1024;
-      int configured_dynamic_smem_limit         = portable_dynamic_smem_bytes;
-      const auto ensure_dynamic_smem_limit      = [&](int dynamic_smem_bytes) {
+      // The table entries express the documented total per-block shared-memory budget
+      // (`cudaDevAttrMaxSharedMemoryPerBlockOptin`). The usable dynamic portion is that budget minus the
+      // kernel's static shared memory and the CUDA driver's per-block reserved shared memory, matching
+      // `MaxPotentialDynamicSmemBytes`. Subtracting the reserved bytes here keeps a documented entry (e.g. 99 KiB)
+      // from deriving a dynamic size that overshoots `max_dynamic_smem_bytes` and being discarded below.
+      int device_id = 0;
+      if (const auto error = CubDebug(cudaGetDevice(&device_id)))
+      {
+        return error;
+      }
+      int reserved_smem_bytes = 0;
+      if (const auto error =
+            CubDebug(cudaDeviceGetAttribute(&reserved_smem_bytes, cudaDevAttrReservedSharedMemoryPerBlock, device_id)))
+      {
+        return error;
+      }
+      // TODO: subtracting `reserved` mirrors `MaxPotentialDynamicSmemBytes`, but that helper double-counts it
+      // (opt-in already excludes reserved), so this is ~`reserved` bytes too conservative. Revisit once the helper is
+      // fixed.
+      const int nondynamic_smem_bytes = static_smem_bytes + reserved_smem_bytes;
+
+      const auto runtime_policy = PolicySelector{}(::cuda::compute_capability{sm_version / 10});
+      _CCCL_ASSERT(runtime_policy.launch_configs.size() <= max_launch_configs,
+                   "Cluster TopK launch config table exceeds policy capacity");
+
+      const auto total_to_dynamic_smem = [&](int total_smem_bytes) {
+        return (total_smem_bytes > nondynamic_smem_bytes) ? total_smem_bytes - nondynamic_smem_bytes : 0;
+      };
+
+      constexpr int portable_total_smem_bytes = 48 * 1024;
+      const int portable_dynamic_smem_bytes   = total_to_dynamic_smem(portable_total_smem_bytes);
+      int configured_dynamic_smem_limit       = portable_dynamic_smem_bytes;
+      const auto ensure_dynamic_smem_limit    = [&](int dynamic_smem_bytes) {
         if (dynamic_smem_bytes <= configured_dynamic_smem_limit)
         {
           return cudaSuccess;
@@ -450,52 +494,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         return cudaSuccess;
       };
 
-      const int smem_96k                 = (::cuda::std::min) (96 * 1024, max_dynamic_smem_bytes);
-      const int smem_160k                = (::cuda::std::min) (160 * 1024, max_dynamic_smem_bytes);
-      const int optin_dynamic_smem_bytes = max_dynamic_smem_bytes;
-
-      constexpr int num_candidate_configs                 = 8;
-      const int candidate_clusters[num_candidate_configs] = {
-        max_portable_cluster_blocks,
-        max_supported_cluster_blocks,
-        max_portable_cluster_blocks,
-        max_supported_cluster_blocks,
-        max_portable_cluster_blocks,
-        max_supported_cluster_blocks,
-        max_portable_cluster_blocks,
-        max_supported_cluster_blocks};
-      const int candidate_smem[num_candidate_configs] = {
-        portable_dynamic_smem_bytes,
-        portable_dynamic_smem_bytes,
-        smem_96k,
-        smem_96k,
-        smem_160k,
-        smem_160k,
-        optin_dynamic_smem_bytes,
-        optin_dynamic_smem_bytes};
-
       launch_config selected_config{0, 0, 0};
       launch_config largest_supported_config{0, 0, 0};
       // The table is intentionally tiny; scan all entries and select the lowest coverage that satisfies the bound
       // rather than relying on the declaration order to be sorted by coverage.
-      for (int i = 0; i < num_candidate_configs; ++i)
+      for (const auto policy_config : runtime_policy.launch_configs)
       {
-        const int candidate_cluster_blocks = candidate_clusters[i];
-        const int candidate_dynamic_smem   = candidate_smem[i];
+        const int candidate_cluster_blocks = policy_config.cluster_blocks;
+        const int candidate_dynamic_smem   = total_to_dynamic_smem(policy_config.total_smem_bytes);
         if (candidate_dynamic_smem > max_dynamic_smem_bytes)
         {
           continue;
         }
 
-        const auto candidate_tile_capacity = layout_t::tile_capacity(candidate_dynamic_smem);
-        if (candidate_tile_capacity == 0)
+        const auto candidate_block_tile_capacity = layout_t::block_tile_capacity(candidate_dynamic_smem);
+        if (candidate_block_tile_capacity == 0)
         {
           continue;
         }
 
-        launch_config candidate{candidate_cluster_blocks, candidate_dynamic_smem, candidate_tile_capacity};
-        const auto candidate_coverage =
-          layout_t::template cluster_coverage<max_seg_size_t>(candidate.cluster_blocks, candidate.tile_capacity);
+        launch_config candidate{candidate_cluster_blocks, candidate_dynamic_smem, candidate_block_tile_capacity};
+        const auto candidate_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
+          candidate.cluster_blocks, candidate.block_tile_capacity);
 
         bool candidate_can_improve_selection = false;
         if constexpr (detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
@@ -503,12 +523,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           // Runtime-sized segments may exceed every finite candidate, so find the largest supported fallback.
           candidate_can_improve_selection = true;
         }
-        else if (candidate_coverage >= max_seg_size)
+        else if (candidate_cluster_tile_capacity >= max_seg_size)
         {
-          const auto selected_coverage = layout_t::template cluster_coverage<max_seg_size_t>(
-            selected_config.cluster_blocks, selected_config.tile_capacity);
+          const auto selected_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
+            selected_config.cluster_blocks, selected_config.block_tile_capacity);
           candidate_can_improve_selection =
-            selected_config.cluster_blocks == 0 || candidate_coverage < selected_coverage;
+            selected_config.cluster_blocks == 0 || candidate_cluster_tile_capacity < selected_cluster_tile_capacity;
         }
         if (!candidate_can_improve_selection)
         {
@@ -536,15 +556,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
         if constexpr (detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
         {
-          const auto largest_supported_coverage = layout_t::template cluster_coverage<max_seg_size_t>(
-            largest_supported_config.cluster_blocks, largest_supported_config.tile_capacity);
-          if (largest_supported_config.cluster_blocks == 0 || candidate_coverage > largest_supported_coverage)
+          const auto largest_supported_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
+            largest_supported_config.cluster_blocks, largest_supported_config.block_tile_capacity);
+          if (largest_supported_config.cluster_blocks == 0
+              || candidate_cluster_tile_capacity > largest_supported_cluster_tile_capacity)
           {
             largest_supported_config = candidate;
           }
         }
 
-        if (candidate_coverage >= max_seg_size)
+        if (candidate_cluster_tile_capacity >= max_seg_size)
         {
           selected_config = candidate;
         }
@@ -566,6 +587,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         return cudaErrorInvalidValue;
       }
 
+      const auto selected_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
+        selected_config.cluster_blocks, selected_config.block_tile_capacity);
+      if (selected_cluster_tile_capacity >= max_seg_size)
+      {
+        const auto required_physical_cluster_tile_items =
+          static_cast<::cuda::std::uint64_t>(max_seg_size) + static_cast<::cuda::std::uint64_t>(layout_t::chunk_items);
+        selected_config.cluster_blocks = static_cast<int>(
+          ::cuda::ceil_div(required_physical_cluster_tile_items,
+                           static_cast<::cuda::std::uint64_t>(selected_config.block_tile_capacity)));
+
+        const auto required_block_tile_capacity = ::cuda::ceil_div(
+          required_physical_cluster_tile_items, static_cast<::cuda::std::uint64_t>(selected_config.cluster_blocks));
+        const auto required_slots =
+          ::cuda::ceil_div(required_block_tile_capacity, static_cast<::cuda::std::uint64_t>(layout_t::chunk_items));
+        selected_config.dynamic_smem_bytes =
+          layout_t::base_padding_bytes + static_cast<int>(required_slots) * layout_t::slot_stride_bytes;
+        selected_config.block_tile_capacity = layout_t::block_tile_capacity(selected_config.dynamic_smem_bytes);
+      }
+
       if (const auto error = CubDebug(cudaFuncSetAttribute(
             reinterpret_cast<const void*>(dynamic_kernel),
             cudaFuncAttributeMaxDynamicSharedMemorySize,
@@ -574,9 +614,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         return error;
       }
 
-      const int cluster_blocks = selected_config.cluster_blocks;
-      const auto tile_capacity = selected_config.tile_capacity;
-      cfg.dynamicSmemBytes     = static_cast<unsigned int>(selected_config.dynamic_smem_bytes);
+      const int cluster_blocks       = selected_config.cluster_blocks;
+      const auto block_tile_capacity = selected_config.block_tile_capacity;
+      cfg.dynamicSmemBytes           = static_cast<unsigned int>(selected_config.dynamic_smem_bytes);
 
       const auto grid_blocks =
         static_cast<::cuda::std::uint64_t>(num_seg_val) * static_cast<::cuda::std::uint64_t>(cluster_blocks);
@@ -597,21 +637,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             k_param,
             select_directions,
             num_segments,
-            tile_capacity)))
+            block_tile_capacity)))
       {
         return error;
       }
     }),
     ({
       // CDP path: device-side launches cannot opt in to more than portable
-      // dynamic SMEM or non-portable cluster widths.
-      constexpr int dynamic_smem_bytes = 48 * 1024;
-      constexpr auto tile_capacity     = layout_t::tile_capacity(dynamic_smem_bytes);
-      constexpr auto static_cluster_tile =
-        layout_t::template cluster_coverage<max_seg_size_t>(max_portable_cluster_blocks, tile_capacity);
+      // total SMEM or non-portable cluster widths.
+      constexpr int portable_total_smem_bytes = 48 * 1024;
+      constexpr int dynamic_smem_bytes =
+        (portable_total_smem_bytes > static_smem_bytes) ? portable_total_smem_bytes - static_smem_bytes : 0;
+      constexpr auto block_tile_capacity = layout_t::block_tile_capacity(dynamic_smem_bytes);
+      constexpr auto portable_cluster_tile_capacity =
+        layout_t::template cluster_tile_capacity<max_seg_size_t>(max_portable_cluster_blocks, block_tile_capacity);
       if constexpr (!detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
       {
-        if (max_seg_size > static_cast<max_seg_size_t>(static_cluster_tile))
+        if (max_seg_size > static_cast<max_seg_size_t>(portable_cluster_tile_capacity))
         {
           return cudaErrorInvalidValue;
         }
