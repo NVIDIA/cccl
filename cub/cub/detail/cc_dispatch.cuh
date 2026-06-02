@@ -112,9 +112,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
   // This causes f to be only instantiated for each distinct policy, since the same policy for different arches results
   // in the same integral_constant type passed to f
   using policy_t = decltype(policy_selector(::cuda::compute_capability{}));
-  (...,
-   (device_cc == all_ccs[Is] ? (e = f(policy_constant<policy_t, policy_selector(all_ccs[Is])>{}))
-                             : cudaSuccess));
+  (..., (device_cc == all_ccs[Is] ? (e = f(policy_constant<policy_t, policy_selector(all_ccs[Is])>{})) : cudaSuccess));
 #  else // if _CCCL_STD_VER >= 2020
   // In C++17, we have to collapse architectures with the same policies ourselves, so we instantiate call_for_cc once
   // per policy on the lowest CC which produces the same policy
