@@ -53,7 +53,12 @@ using types            = c2h::type_list<std::uint8_t, std::uint16_t>;
 using threads_in_block = c2h::enum_type_list<int, 32, 96, 128>;
 using items_per_thread = c2h::enum_type_list<int, 1, 5>;
 using bins             = c2h::enum_type_list<int, TEST_BINS>;
-using algorithms = c2h::enum_type_list<cub::BlockHistogramAlgorithm, cub::BLOCK_HISTO_SORT, cub::BLOCK_HISTO_ATOMIC>;
+using algorithms =
+  c2h::enum_type_list<cub::BlockHistogramAlgorithm,
+                      cub::BLOCK_HISTO_SORT,
+                      cub::BLOCK_HISTO_ATOMIC,
+                      cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED,
+                      cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED_CG>;
 
 template <class TestType>
 struct params_t
