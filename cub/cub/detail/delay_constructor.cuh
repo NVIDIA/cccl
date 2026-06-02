@@ -30,7 +30,7 @@ enum class LookbackDelayAlgorithm
   exponential_backon_jitter_window,
   exponential_backon_jitter,
   exponential_backon,
-  reduce_by_key
+  __reduce_by_key //!< Internal
 };
 
 #if _CCCL_HOSTED()
@@ -54,8 +54,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm kin
       return os << "LookbackDelayAlgorithm::exponential_backon_jitter";
     case LookbackDelayAlgorithm::exponential_backon:
       return os << "LookbackDelayAlgorithm::exponential_backon";
-    case LookbackDelayAlgorithm::reduce_by_key:
-      return os << "LookbackDelayAlgorithm::reduce_by_key";
+    case LookbackDelayAlgorithm::__reduce_by_key:
+      return os << "LookbackDelayAlgorithm::__reduce_by_key";
     default:
       return os << "<unknown LookbackDelayAlgorithm: " << static_cast<int>(kind) << ">";
   }
@@ -132,7 +132,7 @@ inline constexpr auto lookback_delay_policy_from_type<exponential_backon_constru
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold>
 inline constexpr auto
   lookback_delay_policy_from_type<reduce_by_key_delay_constructor_t<Delay, L2WriteLatency, GridThreshold>> =
-    LookbackDelayPolicy{LookbackDelayAlgorithm::reduce_by_key, Delay, L2WriteLatency};
+    LookbackDelayPolicy{LookbackDelayAlgorithm::__reduce_by_key, Delay, L2WriteLatency};
 
 template <LookbackDelayAlgorithm Kind, unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for;
@@ -186,7 +186,7 @@ struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backon, Delay, 
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<LookbackDelayAlgorithm::reduce_by_key, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::__reduce_by_key, Delay, L2WriteLatency>
 {
   using type = reduce_by_key_delay_constructor_t<Delay, L2WriteLatency>;
 };
@@ -211,7 +211,7 @@ _CCCL_HOST_DEVICE_API constexpr auto default_reduce_by_key_delay_constructor_pol
 {
   if (value_is_primitive_or_trivially_copyable && (value_size + key_size < 16))
   {
-    return LookbackDelayPolicy{LookbackDelayAlgorithm::reduce_by_key, 350, 450};
+    return LookbackDelayPolicy{LookbackDelayAlgorithm::__reduce_by_key, 350, 450};
   }
   return default_delay_constructor_policy(key_is_primitive_or_trivially_copyable);
 }
