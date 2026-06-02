@@ -136,8 +136,6 @@ struct __constant_sequence
 template <class _To, class _From>
 _CCCL_API constexpr void __assert_in_range([[maybe_unused]] _From __val) noexcept
 {
-  static_assert(::cuda::std::is_arithmetic_v<::cuda::std::remove_cv_t<_To>>,
-                "runtime argument bounds require an arithmetic element type");
   if constexpr (::cuda::std::__cccl_is_cv_integer_v<_To> && ::cuda::std::__cccl_is_cv_integer_v<_From>)
   {
     _CCCL_ASSERT(::cuda::std::in_range<::cuda::std::remove_cv_t<_To>>(__val),
@@ -161,7 +159,7 @@ _CCCL_API constexpr bool __static_bound_in_range() noexcept
   }
   else
   {
-    return false;
+    return true;
   }
 }
 
@@ -170,8 +168,7 @@ inline constexpr bool __valid_static_bounds_v = true;
 
 template <class _ElementType, auto _Lowest, auto _Max>
 inline constexpr bool __valid_static_bounds_v<_ElementType, __static_bounds<_Lowest, _Max>> =
-  ::cuda::std::is_arithmetic_v<::cuda::std::remove_cv_t<_ElementType>>
-  && __static_bound_in_range<_ElementType, _Lowest>() && __static_bound_in_range<_ElementType, _Max>();
+  __static_bound_in_range<_ElementType, _Lowest>() && __static_bound_in_range<_ElementType, _Max>();
 
 template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr _ElementType __wrapper_static_lowest() noexcept
@@ -659,6 +656,18 @@ struct __traits_impl
   static constexpr element_type max     = ::cuda::std::numeric_limits<element_type>::max();
 };
 
+template <auto _Value>
+struct __traits_impl<__constant<_Value>>
+{
+  using value_type                      = ::cuda::std::remove_cvref_t<decltype(_Value)>;
+  using element_type                    = value_type;
+  static constexpr bool is_constant     = true;
+  static constexpr bool is_deferred     = false;
+  static constexpr bool is_single_value = true;
+  static constexpr element_type lowest  = __constant_compute_lowest<_Value>();
+  static constexpr element_type max     = __constant_compute_max<_Value>();
+};
+
 template <class _Arg, class _StaticBounds>
 struct __traits_impl<__immediate<_Arg, _StaticBounds>>
 {
@@ -672,18 +681,6 @@ struct __traits_impl<__immediate<_Arg, _StaticBounds>>
   static constexpr bool is_single_value = true;
   static constexpr element_type lowest  = __wrapper_static_lowest<element_type, _StaticBounds>();
   static constexpr element_type max     = __wrapper_static_max<element_type, _StaticBounds>();
-};
-
-template <auto _Value>
-struct __traits_impl<__constant<_Value>>
-{
-  using value_type                      = ::cuda::std::remove_cvref_t<decltype(_Value)>;
-  using element_type                    = value_type;
-  static constexpr bool is_constant     = true;
-  static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __constant_compute_lowest<_Value>();
-  static constexpr element_type max     = __constant_compute_max<_Value>();
 };
 
 template <auto _Value>
