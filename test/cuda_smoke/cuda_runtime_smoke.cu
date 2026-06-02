@@ -58,9 +58,7 @@ TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
   }
   CUDART_REQUIRE(cudaDeviceSynchronize());
 
-  constexpr int block = 64;
-  const int grid      = (n + block - 1) / block;
-  increment_kernel<<<grid, block>>>(p, n); // device transform
+  increment_kernel<<<4, 64>>>(p, n); // device transform
   CUDART_REQUIRE(cudaGetLastError());
   CUDART_REQUIRE(cudaDeviceSynchronize());
 
@@ -70,5 +68,39 @@ TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
   }
 
   CUDART_REQUIRE(cudaFree(p));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
+
+// smoke test for GPU memory allocation/deallocation
+
+TEST_CASE("cudaMalloc/cudaFree round-trip works", "[cuda_smoke][device_memory]")
+{
+  (void) cudaGetLastError();
+
+  constexpr int n = 256;
+
+  int* d_ptr = nullptr;
+  CUDART_REQUIRE(cudaMalloc(&d_ptr, n * sizeof(int)));
+  REQUIRE(d_ptr != nullptr);
+
+  int h_ins[n];
+  for (int i = 0; i < n; ++i)
+  {
+    h_ins[i] = i;
+  }
+  CUDART_REQUIRE(cudaMemcpy(d_ptr, h_ins, n * sizeof(int), cudaMemcpyHostToDevice));
+
+  increment_kernel<<<4, 64>>>(d_ptr, n);
+  CUDART_REQUIRE(cudaGetLastError());
+  CUDART_REQUIRE(cudaDeviceSynchronize());
+
+  int h_outs[n];
+  CUDART_REQUIRE(cudaMemcpy(h_outs, d_ptr, n * sizeof(int), cudaMemcpyDeviceToHost));
+  for (int i = 0; i < n; ++i)
+  {
+    REQUIRE(h_outs[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaFree(d_ptr));
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }
