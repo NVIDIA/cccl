@@ -10,32 +10,23 @@
 
 // template <class... Types> class tuple;
 
-// tuple(tuple&& u);
+// template<class Tuple>
+// tuple(Tuple&& u);
 
 #include <cuda/std/__memory_>
+#include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
+#if _CCCL_HAS_HOST_STD_LIB()
+#  include <array>
+#  include <utility>
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 #include "MoveOnly.h"
 #include "test_macros.h"
-
-struct ConstructsWithTupleLeaf
-{
-  TEST_FUNC ConstructsWithTupleLeaf() {}
-
-  TEST_FUNC ConstructsWithTupleLeaf(ConstructsWithTupleLeaf const&)
-  {
-    assert(false);
-  }
-  TEST_FUNC ConstructsWithTupleLeaf(ConstructsWithTupleLeaf&&) {}
-
-  template <class T>
-  TEST_FUNC ConstructsWithTupleLeaf(T)
-  {
-    static_assert(!cuda::std::is_same<T, T>::value, "Constructor instantiated for type other than int");
-  }
-};
 
 // move_only type which triggers the empty base optimization
 struct move_only_ebo
@@ -91,40 +82,82 @@ TEST_FUNC void test_sfinae()
 int main(int, char**)
 {
   {
-    using T = cuda::std::tuple<>;
-    T t0;
-    T t = cuda::std::move(t0);
-    unused(t); // Prevent unused warning
-  }
-  {
     using T = cuda::std::tuple<MoveOnly>;
-    T t0(MoveOnly(0));
+    cuda::std::array<MoveOnly, 1> t0{MoveOnly(0)};
     T t = cuda::std::move(t0);
     assert(cuda::std::get<0>(t) == 0);
   }
+
+#if _CCCL_HAS_HOST_STD_LIB()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using T = cuda::std::tuple<MoveOnly>;
+                 std::array<MoveOnly, 1> t0{MoveOnly(0)};
+                 T t = cuda::std::move(t0);
+                 assert(cuda::std::get<0>(t) == 0);
+               }))
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
   {
     using T = cuda::std::tuple<MoveOnly, MoveOnly>;
-    T t0(MoveOnly(0), MoveOnly(1));
+    cuda::std::array<MoveOnly, 2> t0{MoveOnly(0), MoveOnly(1)};
     T t = cuda::std::move(t0);
     assert(cuda::std::get<0>(t) == 0);
     assert(cuda::std::get<1>(t) == 1);
   }
+
+#if _CCCL_HAS_HOST_STD_LIB()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using T = cuda::std::tuple<MoveOnly, MoveOnly>;
+                 std::array<MoveOnly, 2> t0{MoveOnly(0), MoveOnly(1)};
+                 T t = cuda::std::move(t0);
+                 assert(cuda::std::get<0>(t) == 0);
+                 assert(cuda::std::get<1>(t) == 1);
+               }))
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+  {
+    using T = cuda::std::tuple<MoveOnly, MoveOnly>;
+    cuda::std::pair<MoveOnly, MoveOnly> t0{MoveOnly(0), MoveOnly(1)};
+    T t = cuda::std::move(t0);
+    assert(cuda::std::get<0>(t) == 0);
+    assert(cuda::std::get<1>(t) == 1);
+  }
+
+#if _CCCL_HAS_HOST_STD_LIB()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using T = cuda::std::tuple<MoveOnly, MoveOnly>;
+                 std::pair<MoveOnly, MoveOnly> t0{MoveOnly(0), MoveOnly(1)};
+                 T t = cuda::std::move(t0);
+                 assert(cuda::std::get<0>(t) == 0);
+                 assert(cuda::std::get<1>(t) == 1);
+               }))
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+  {
+    using T = cuda::std::tuple<float, float>;
+    cuda::std::complex<float> t0{0.0f, 1.0f};
+    T t = cuda::std::move(t0);
+    assert(cuda::std::get<0>(t) == 0.0f);
+    assert(cuda::std::get<1>(t) == 1.0f);
+  }
+
+#if _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using T = cuda::std::tuple<float, float>;
+                 std::complex<float> t0{0.0f, 1.0f};
+                 T t = cuda::std::move(t0);
+                 assert(cuda::std::get<0>(t) == 0.0f);
+                 assert(cuda::std::get<1>(t) == 1.0f);
+               }))
+#endif // _CCCL_HAS_HOST_STD_LIB() && defined(__cpp_lib_tuple_like)
+
   {
     using T = cuda::std::tuple<MoveOnly, MoveOnly, MoveOnly>;
-    T t0(MoveOnly(0), MoveOnly(1), MoveOnly(2));
+    cuda::std::array<MoveOnly, 3> t0{MoveOnly(0), MoveOnly(1), MoveOnly(2)};
     T t = cuda::std::move(t0);
     assert(cuda::std::get<0>(t) == 0);
     assert(cuda::std::get<1>(t) == 1);
     assert(cuda::std::get<2>(t) == 2);
-  }
-  // A bug in tuple caused __tuple_leaf to use its explicit converting constructor
-  //  as its move constructor. This tests that ConstructsWithTupleLeaf is not called
-  // (w/ __tuple_leaf)
-  {
-    using d_t = cuda::std::tuple<ConstructsWithTupleLeaf>;
-    d_t d((ConstructsWithTupleLeaf()));
-    d_t d2(static_cast<d_t&&>(d));
-    unused(d2);
   }
   {
     test_sfinae<move_only_ebo>();
