@@ -41,15 +41,15 @@ struct BlockHistogramAtomicWarpAggregated
   struct TempStorage
   {};
 
-  unsigned int linear_tid;
+  unsigned int linear_tid_;
 
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramAtomicWarpAggregated(TempStorage& temp_storage)
-      : linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      : linear_tid_(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   template <int BIN_BITS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int FallbackPeerMask(unsigned int bin) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int FallbackPeerMask(unsigned int bin) const
   {
     if constexpr (PARTIAL_WARP_THREADS == 0)
     {
@@ -57,7 +57,7 @@ struct BlockHistogramAtomicWarpAggregated
     }
     else
     {
-      const unsigned int warp_id = linear_tid / detail::warp_threads;
+      const unsigned int warp_id = linear_tid_ / detail::warp_threads;
       return (warp_id == PARTIAL_WARP_ID) ? MatchAny<BIN_BITS, PARTIAL_WARP_THREADS>(bin) : MatchAny<BIN_BITS>(bin);
     }
   }
