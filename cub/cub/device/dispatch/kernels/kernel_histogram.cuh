@@ -2158,6 +2158,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // template param, so the single-channel specialisation folds to constexpr 1
   // (byte-identical pre-replica cache -- worker-3 brief-6).
   constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
+  constexpr bool kWarpCoalesce = current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask  = cache_slots_per_channel - 1;
   // log2(slots) for the high-bits hash mode; slots is a power of two so this is
   // popcount(mask) == 32 - clz(mask). Computed once; the hot path is clz-free.
@@ -2251,15 +2252,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // so the pipelined (single-channel) and interleaved (multi-channel) loops
     // below share identical probe logic.
     auto probe_cuckoo = [&](int ch, int bin) {
-      // Coalesce same-bin lanes into a single atomic add. All lanes in the
-      // warp must call `__match_any_sync` with the same mask; we use
-      // 0xffffffffu so the call is well-defined even when individual lanes
-      // have invalid bins (-1).
-      const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-      const int leader         = __ffs(static_cast<int>(peers)) - 1;
-      if (bin >= 0 && static_cast<int>(lane_id) == leader)
-      {
-        const CounterT contribution = static_cast<CounterT>(__popc(peers));
+      // The 2-hash cuckoo cache update for one (bin, contribution). Factored so
+      // the warp_coalesce knob can drive it once per peer group (leader) or once
+      // per valid lane without duplicating the body.
+      auto update = [&](int bin, CounterT contribution) {
         // Two hash functions (cuckoo-style): on a primary slot collision, try
         // a secondary slot before falling back to GMEM. This roughly doubles
         // the effective cache hit rate for moderate-entropy distributions
@@ -2362,6 +2358,25 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
           }
         }
+      };
+
+      // Warp-coalesce same-bin lanes into one cache update (gated by the
+      // warp_coalesce policy knob; on by default). When on, the lowest matching
+      // lane applies the popcount-summed contribution; when off, every valid
+      // lane applies 1. The inline form below keeps the on-path codegen
+      // byte-identical to the hand-tuned kernel (this kernel is register-pinned).
+      if constexpr (kWarpCoalesce)
+      {
+        const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+        const int leader         = __ffs(static_cast<int>(peers)) - 1;
+        if (bin >= 0 && static_cast<int>(lane_id) == leader)
+        {
+          update(bin, static_cast<CounterT>(__popc(peers)));
+        }
+      }
+      else if (bin >= 0)
+      {
+        update(bin, CounterT{1});
       }
     };
 
@@ -2753,6 +2768,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // template param so single-channel folds to constexpr 1 (byte-identical
   // pre-replica cache -- worker-3 brief-6).
   constexpr int kCountReplicas = cache_tuning::replicas(NumActiveChannels);
+  constexpr bool kWarpCoalesce = current_policy<PolicySelector>().warp_coalesce;
   const int cache_mask  = cache_slots_per_channel - 1;
   const int cache_slot_log2 = 32 - __clz(cache_mask);
   const size_t slots_sz = static_cast<size_t>(cache_slots_per_channel);
@@ -2826,12 +2842,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     // the pipelined (single-channel) and interleaved (multi-channel) loops
     // below share identical logic.
     auto probe_single = [&](int ch, int bin) {
-      const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-      const int leader         = __ffs(static_cast<int>(peers)) - 1;
-      if (bin >= 0 && static_cast<int>(lane_id) == leader)
-      {
-        const CounterT contribution = static_cast<CounterT>(__popc(peers));
-        const unsigned int hash     = static_cast<unsigned int>(bin) * 2654435761u;
+      // The single-probe (or WAYS-way set-associative) cache update for one
+      // (bin, contribution). Factored so the warp_coalesce knob drives it once
+      // per peer group (leader) or once per valid lane without duplication.
+      auto update = [&](int bin, CounterT contribution) {
+        const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
         if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
         {
           // Single direct-mapped probe: hash bin to one slot.
@@ -2909,6 +2924,23 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
             atomicAdd(&d_output_histograms_wrapper[ch][bin], contribution);
           }
         }
+      };
+
+      // Warp-coalesce same-bin lanes (gated by the warp_coalesce policy knob; on
+      // by default). Inline on-path keeps codegen byte-identical to the
+      // hand-tuned register-pinned kernel.
+      if constexpr (kWarpCoalesce)
+      {
+        const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+        const int leader         = __ffs(static_cast<int>(peers)) - 1;
+        if (bin >= 0 && static_cast<int>(lane_id) == leader)
+        {
+          update(bin, static_cast<CounterT>(__popc(peers)));
+        }
+      }
+      else if (bin >= 0)
+      {
+        update(bin, CounterT{1});
       }
     };
 

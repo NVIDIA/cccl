@@ -40,6 +40,48 @@ enum BlockHistogramMemoryPreference
   BLEND
 };
 
+namespace detail::histogram
+{
+// Warp-level same-bin coalescing for atomic accumulation.
+//
+// When several lanes of a warp classify a sample into the same bin, folding
+// their increments into one atomic (issued by a single leader lane, with the
+// peer count as the increment) collapses up to 32 contended atomics on a hot
+// bin into one. This is the dual of intra-thread RLE (`rle_compress`): RLE
+// coalesces a thread's consecutive same-bin samples, warp-coalescing coalesces
+// a warp's same-bin lanes. It is the win on the high-latency GMEM-privatized /
+// direct-atomic paths, where contention on hot output bins dominates.
+//
+// `WarpCoalesce` gates the mechanism so it is controlled by one policy flag
+// rather than hard-coded at each call site (mirroring `rle_compress`):
+//   - true  (SM70+): leader-elect via __match_any_sync and apply once.
+//   - false, or pre-SM70: every valid lane applies its own increment of 1.
+// `apply(bin, count)` is invoked on exactly the lane(s) that should issue the
+// atomic, with `count` summed appropriately. Bins < 0 are skipped.
+template <bool WarpCoalesce, typename ApplyFn>
+_CCCL_DEVICE _CCCL_FORCEINLINE void warp_coalesce_atomic(int lane_id, int bin, ApplyFn apply)
+{
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_70,
+    (if constexpr (WarpCoalesce) {
+       const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+       const int leader         = __ffs(static_cast<int>(peers)) - 1;
+       if (bin >= 0 && lane_id == leader)
+       {
+         apply(bin, __popc(peers));
+       }
+     } else {
+       if (bin >= 0)
+       {
+         apply(bin, 1);
+       }
+     }),
+    (// Pre-SM70: no warp-coalesce primitive; each valid lane applies its own.
+     (void) lane_id;
+     if (bin >= 0) { apply(bin, 1); }));
+}
+} // namespace detail::histogram
+
 #if _CCCL_HOSTED()
 namespace detail
 {
@@ -83,6 +125,35 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 //! Parameterizable tuning policy type for AgentHistogram
+//!
+//! @tparam ThreadsPerBlock
+//!   Threads per thread block
+//!
+//! @tparam PixelsPerThread
+//!   Pixels per thread (per tile of input)
+//!
+//! @tparam LoadAlgorithm
+//!   The BlockLoad algorithm to use
+//!
+//! @tparam LoadModifier
+//!   Cache load modifier for reading input elements
+//!
+//! @tparam RleCompress
+//!   Whether to perform localized RLE to compress samples before histogramming
+//!
+//! @tparam MemoryPreference
+//!   Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
+//!
+//! @tparam WorkStealing
+//!   Whether to dequeue tiles from a global work queue
+//!
+//! @tparam VecSize
+//!   Vector size for samples loading (1, 2, 4)
+//!
+//! @tparam WarpCoalesce
+//!   Whether to coalesce a warp's same-bin lanes into one atomic on the
+//!   GMEM-privatized / direct-atomic paths (the dual of RLE; see
+//!   `warp_coalesce_atomic`). Defaults on; only meaningfully disabled for study.
 template <int ThreadsPerBlock,
           int PixelsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
@@ -90,7 +161,8 @@ template <int ThreadsPerBlock,
           bool RleCompress,
           BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
-          int VecSize = 4>
+          int VecSize        = 4,
+          bool WarpCoalesce  = true>
 struct agent_histogram_policy
 {
   /// Threads per thread block
@@ -100,6 +172,9 @@ struct agent_histogram_policy
 
   /// Whether to perform localized RLE to compress samples before histogramming
   static constexpr bool IS_RLE_COMPRESS = RleCompress;
+
+  /// Whether to coalesce a warp's same-bin lanes into one atomic (GMEM-priv path)
+  static constexpr bool IS_WARP_COALESCE = WarpCoalesce;
 
   /// Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
   static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = MemoryPreference;
@@ -217,6 +292,7 @@ struct AgentHistogram
   static constexpr int tile_pixels                 = pixels_per_thread * threads_per_block;
   static constexpr int tile_samples                = samples_per_thread * threads_per_block;
   static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
+  static constexpr bool is_warp_coalesce           = AgentHistogramPolicyT::IS_WARP_COALESCE;
   static constexpr bool is_work_stealing           = AgentHistogramPolicyT::IS_WORK_STEALING;
   static constexpr CacheLoadModifier load_modifier = AgentHistogramPolicyT::LOAD_MODIFIER;
   static constexpr auto mem_preference =
@@ -365,43 +441,29 @@ struct AgentHistogram
     TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::true_type is_rle_compress)
   {
-    // Warp-coalesce only on GMEM-privatized paths (PrivatizedSmemBins
-    // == 0). The SMEM path uses cheap shared atomics that don't
-    // benefit enough to amortise the `__match_any_sync` overhead at
-    // low bin counts (e.g. Bins == 32).
+    // On the GMEM-privatized path (PrivatizedSmemBins == 0) the atomics target
+    // high-latency global-memory bins, so coalescing a warp's same-bin lanes
+    // into one atomic (the dual of this RLE overload) is the win. The SMEM path
+    // (handled in the else branch) keeps intra-thread RLE instead: shared atomics
+    // are cheap enough that the coalesce overhead does not pay off at low bins.
     if constexpr (PrivatizedSmemBins == 0)
     {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_70,
-        (const int lane_id = static_cast<int>(threadIdx.x & 0x1f);
-         _CCCL_PRAGMA_UNROLL_FULL()
-         for (int ch = 0; ch < NumActiveChannels; ++ch) {
-           _CCCL_PRAGMA_UNROLL_FULL()
-           for (int pixel = 0; pixel < pixels_per_thread; ++pixel) {
-             int bin = -1;
-             privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
-             const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-             const int leader_lane    = __ffs(static_cast<int>(peers)) - 1;
-             if (bin >= 0 && lane_id == leader_lane) {
-               atomicAdd_block(privatized_histograms[ch] + bin, static_cast<CounterT>(__popc(peers)));
-             }
-           }
-         }),
-        (// Pre-SM70 fallback: per-lane atomicAdd_block (or atomicAdd on
-         // pre-SM60), skip warp coalesce.
-         _CCCL_PRAGMA_UNROLL_FULL()
-         for (int ch = 0; ch < NumActiveChannels; ++ch) {
-           _CCCL_PRAGMA_UNROLL_FULL()
-           for (int pixel = 0; pixel < pixels_per_thread; ++pixel) {
-             int bin = -1;
-             privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
-             if (bin >= 0) {
-               NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                                 (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
-                                 (atomicAdd(privatized_histograms[ch] + bin, 1);));
-             }
-           }
-         }));
+      const int lane_id = static_cast<int>(threadIdx.x & 0x1f);
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+        {
+          int bin = -1;
+          privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+          detail::histogram::warp_coalesce_atomic<is_warp_coalesce>(lane_id, bin, [&](int b, int count) {
+            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                              (atomicAdd_block(privatized_histograms[ch] + b, static_cast<CounterT>(count));),
+                              (atomicAdd(privatized_histograms[ch] + b, static_cast<CounterT>(count));));
+          });
+        }
+      }
     }
     else
     {
