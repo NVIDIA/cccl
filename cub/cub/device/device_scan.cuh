@@ -168,20 +168,14 @@ struct DeviceScan
     static_assert(!is_gpu_to_gpu_required || is_safe_integral_op,
                   "gpu_to_gpu deterministic scan requires integral types with known operators");
 
-    // MSVC WARP : wrap in bool_constant to survive lambda capture as a compile-time constant
-    using stable_reduction_order = ::cuda::std::bool_constant<is_run_to_run_required && is_fp_plus_op>;
+    constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
 
-    using default_policy_selector_t = detail::scan::policy_selector_from_types<
-      InputIteratorT,
-      OutputIteratorT,
-      accum_t,
-      offset_t,
-      ScanOpT,
-      stable_reduction_order::value>;
+    using default_policy_selector_t = detail::scan::
+      policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT, stable_reduction_order>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return scan_impl_determinism<EnforceInclusive, stable_reduction_order::value>(
+        return scan_impl_determinism<EnforceInclusive, stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
       });
   }
