@@ -230,9 +230,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       policy.store_algorithm,
       policy.scan_algorithm,
       NoScaling<policy.threads_per_block, policy.items_per_thread>,
-      delay_constructor_t<policy.delay_constructor.kind,
-                          policy.delay_constructor.delay,
-                          policy.delay_constructor.l2_write_latency>>;
+      delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
 
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<

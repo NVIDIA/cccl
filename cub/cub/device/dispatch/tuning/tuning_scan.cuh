@@ -74,17 +74,19 @@ struct ScanLookbackPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
-  LookbackDelayPolicy delay_constructor; //!< The policy configuring the delay used in decoupled lookback
+  LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.delay_constructor == rhs.delay_constructor;
+        && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -96,7 +98,7 @@ struct ScanLookbackPolicy
         << "ScanLookbackPolicy { .threads_per_block = " << p.threads_per_block
         << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -125,8 +127,7 @@ struct ScanWarpspeedPolicy
     return items_per_thread * num_reduce_and_scan_warps * cub::detail::warp_threads;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
   {
     return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
         && lhs.look_ahead_items_per_thread == rhs.look_ahead_items_per_thread
@@ -134,8 +135,7 @@ struct ScanWarpspeedPolicy
         && lhs.block_idx_stages == rhs.block_idx_stages;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -989,9 +989,8 @@ struct policy_selector
     return {};
   }
 
-  _CCCL_HOST_DEVICE_API constexpr bool
-  can_use_warpspeed([[maybe_unused]] ::cuda::compute_capability cc,
-                    [[maybe_unused]] const ScanWarpspeedPolicy& warpspeed_policy) const
+  _CCCL_HOST_DEVICE_API constexpr bool can_use_warpspeed(
+    [[maybe_unused]] ::cuda::compute_capability cc, [[maybe_unused]] const ScanWarpspeedPolicy& warpspeed_policy) const
   {
     // We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
     // MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing
