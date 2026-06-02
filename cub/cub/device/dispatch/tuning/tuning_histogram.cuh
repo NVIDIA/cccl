@@ -79,6 +79,50 @@ struct HistogramPolicy
 
 namespace detail::histogram
 {
+// ---------------------------------------------------------------------------
+// Device-tuning constants for the high-bin direct-atomic cache.
+//
+// These are the hardware-shaped knobs for the per-block SMEM cache that the
+// direct-atomic-to-output kernels use to absorb cross-block contention. They
+// live here, in the tuning header, so the dispatch sizing logic and the kernel
+// bodies read ONE definition instead of repeating the literals (the count-replica
+// factor in particular was previously duplicated across the host sizer and both
+// direct-atomic kernels and had to be kept in sync by hand). Defaults are tuned
+// for SM90/SM100 (B200) and can be revisited per architecture.
+struct cache_tuning
+{
+  // Count-array replica factor for multi-active-channel direct-atomic caches.
+  // The per-slot count array is split into this many warp-strided replicas so
+  // cross-warp atomicAdd_block traffic on a hot slot is de-serialised; single
+  // channel uses 1 (no replication, byte-identical to an unreplicated cache).
+  // Kept compile-time (a runtime replica factor regressed the register-pinned
+  // multi-channel kernel), so callers select via `replicas(num_active_channels)`.
+  static constexpr int multi_channel_count_replicas = 4;
+
+  _CCCL_HOST_DEVICE static constexpr int replicas(int num_active_channels)
+  {
+    return num_active_channels > 1 ? multi_channel_count_replicas : 1;
+  }
+
+  // Per-channel SMEM cache slot floor (power of two). The dispatch grows the
+  // slot count above this only while it stays free of occupancy cost. Single
+  // channel affords a larger floor than multi (which pays per active channel).
+  static constexpr int slots_floor_single_channel = 4096;
+  static constexpr int slots_floor_multi_channel  = 1024;
+
+  _CCCL_HOST_DEVICE static constexpr int slots_floor(int num_active_channels)
+  {
+    return num_active_channels == 1 ? slots_floor_single_channel : slots_floor_multi_channel;
+  }
+
+  // Per-CTA opt-in dynamic-SMEM budget for the cache. The dispatch queries the
+  // device's cudaDevAttrMaxSharedMemoryPerBlockOptin (B200/SM100 ~228 KiB) and
+  // reserves `smem_reserve_bytes` for static/driver use; if the query fails it
+  // falls back to `smem_fallback_bytes`.
+  static constexpr int smem_fallback_bytes = 96 * 1024;
+  static constexpr int smem_reserve_bytes  = 4096;
+};
+
 // TODO(bgruber): drop in CCCL 4.0
 enum class primitive_sample
 {
