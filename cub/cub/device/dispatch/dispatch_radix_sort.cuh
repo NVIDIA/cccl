@@ -79,8 +79,6 @@ struct DeviceRadixSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitLookbackKernel<PolicySelector, int>);
-
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
     DeviceRadixSortOnesweepKernel<PolicySelector, Order, KeyT, ValueT, OffsetT, int, int, DecomposerT>);
@@ -678,18 +676,9 @@ private:
           ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
         PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
-        const size_t num_lookback_items = static_cast<size_t>(num_blocks) * RADIX_DIGITS;
-        constexpr int INIT_LOOKBACK_THREADS = 256;
-        const int init_lookback_blocks      = static_cast<int>(
-          ::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
 
-        if (const auto error = CubDebug(launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream)
-                                          .doit(kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items)))
-        {
-          return error;
-        }
-
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+        if (const auto error =
+              CubDebug(cudaMemsetAsync(d_lookback, 0, num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT), stream)))
         {
           return error;
         }
@@ -711,7 +700,7 @@ private:
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
         if (const auto error = CubDebug(
-              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream, /* use_pdl */ true)
+              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
                 .doit(
                   onesweep_kernel,
                   d_lookback,

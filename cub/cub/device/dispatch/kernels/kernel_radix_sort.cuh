@@ -534,20 +534,6 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   }
 }
 
-template <typename PolicySelector, typename AtomicOffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitLookbackKernel(
-  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
-  _CCCL_GRID_CONSTANT const size_t num_lookback_items)
-{
-  const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
-  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x; idx < num_lookback_items; idx += stride)
-  {
-    d_lookback[idx] = 0;
-  }
-  __threadfence();
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-}
-
 template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
