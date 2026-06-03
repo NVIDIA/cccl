@@ -180,7 +180,6 @@ struct AgentRadixSortOnesweep
   PortionOffsetT num_items;
   int current_bit;
   int num_bits;
-  bool use_pdl;
 
   // other thread variables
   int warp;
@@ -242,10 +241,8 @@ struct AgentRadixSortOnesweep
       {
         bins[u] = other_bins[u];
       }
-      if (agent.use_pdl)
-      {
-        _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-      }
+
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       agent.LookbackPartial(bins);
 
       agent.TryShortCircuit(keys, bins);
@@ -659,7 +656,6 @@ struct AgentRadixSortOnesweep
     PortionOffsetT num_items,
     int current_bit,
     int num_bits,
-    bool use_pdl,
     DecomposerT decomposer = {})
       : s(temp_storage.Alias())
       , d_lookback(d_lookback)
@@ -673,7 +669,6 @@ struct AgentRadixSortOnesweep
       , num_items(num_items)
       , current_bit(current_bit)
       , num_bits(num_bits)
-      , use_pdl(use_pdl)
       , warp(threadIdx.x / WARP_THREADS)
       , lane(::cuda::ptx::get_sreg_laneid())
       , decomposer(decomposer)

@@ -79,6 +79,10 @@ struct DeviceRadixSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
 
+  CUB_DEFINE_KERNEL_GETTER(
+    RadixSortInitBinsAndCountersKernel,
+    DeviceRadixSortInitBinsAndCountersKernel<PolicySelector, OffsetT, int>);
+
   CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitLookbackKernel<PolicySelector, int>);
 
   CUB_DEFINE_KERNEL_GETTER(
@@ -593,18 +597,10 @@ private:
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
 
-    // initialization
-    if (const auto error =
-          CubDebug(cudaMemsetAsync(d_ctrs, 0, num_portions * num_passes * sizeof(AtomicOffsetT), stream)))
-    {
-      return error;
-    }
+    const bool use_pdl = num_items <= static_cast<OffsetT>(1 << 20);
 
-    // compute num_passes histograms with RADIX_DIGITS bins each
-    if (const auto error = CubDebug(cudaMemsetAsync(d_bins, 0, num_passes * RADIX_DIGITS * sizeof(OffsetT), stream)))
-    {
-      return error;
-    }
+    const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
+    const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
     int device  = -1;
     int num_sms = 0;
 
@@ -640,8 +636,46 @@ private:
             policy.histogram.radix_bits);
 #endif
 
+    // Initialization is intentionally adjacent to the histogram launch. For the PDL path, this avoids consuming the
+    // short init kernel's runtime in host-side launch setup work before the dependent histogram is submitted.
+    if (use_pdl)
+    {
+      constexpr int INIT_STARTUP_THREADS = 256;
+      const size_t num_init_items        = ::cuda::std::max(num_counter_items, num_bin_items);
+      const int init_startup_blocks =
+        static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(INIT_STARTUP_THREADS)));
+
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking init_bins_and_counters_kernel<<<%d, %d, 0, %lld>>>()\n",
+              init_startup_blocks,
+              INIT_STARTUP_THREADS,
+              reinterpret_cast<long long>(stream));
+#endif
+
+      if (const auto error = CubDebug(
+            launcher_factory(init_startup_blocks, INIT_STARTUP_THREADS, 0, stream, use_pdl)
+              .doit(
+                kernel_source.RadixSortInitBinsAndCountersKernel(), d_ctrs, num_counter_items, d_bins, num_bin_items)))
+      {
+        return error;
+      }
+    }
+    else
+    {
+      if (const auto error = CubDebug(cudaMemsetAsync(d_ctrs, 0, num_counter_items * sizeof(AtomicOffsetT), stream)))
+      {
+        return error;
+      }
+
+      // compute num_passes histograms with RADIX_DIGITS bins each
+      if (const auto error = CubDebug(cudaMemsetAsync(d_bins, 0, num_bin_items * sizeof(OffsetT), stream)))
+      {
+        return error;
+      }
+    }
+
     if (const auto error = CubDebug(
-          launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
+          launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream, use_pdl)
             .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
     {
       return error;
@@ -683,8 +717,6 @@ private:
       d_keys.d_buffers[1]   = d_keys_tmp2;
       d_values.d_buffers[1] = d_values_tmp2;
     }
-
-    const bool use_pdl = num_items <= static_cast<OffsetT>(1 << 20);
 
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
@@ -749,7 +781,6 @@ private:
                   portion_num_items,
                   current_bit,
                   num_bits,
-                  use_pdl,
                   decomposer)))
         {
           return error;

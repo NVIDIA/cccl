@@ -416,7 +416,7 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
       values,
       current_bit,
       end_bit,
-      bool_constant_v < Order == SortOrder::Descending >,
+      bool_constant_v<Order == SortOrder::Descending>,
       bool_constant_v<KEYS_ONLY>,
       decomposer);
 
@@ -475,10 +475,34 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   agent.Process();
 }
 
+template <typename PolicySelector, typename OffsetT, typename AtomicOffsetT>
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitBinsAndCountersKernel(
+  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_ctrs,
+  _CCCL_GRID_CONSTANT const size_t num_counter_items,
+  _CCCL_GRID_CONSTANT OffsetT* const d_bins,
+  _CCCL_GRID_CONSTANT const size_t num_bin_items)
+{
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
+  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+       idx < ::cuda::std::max(num_counter_items, num_bin_items);
+       idx += stride)
+  {
+    if (idx < num_counter_items)
+    {
+      d_ctrs[idx] = 0;
+    }
+    if (idx < num_bin_items)
+    {
+      d_bins[idx] = 0;
+    }
+  }
+}
+
 template <typename PolicySelector, typename AtomicOffsetT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitLookbackKernel(
-  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
-  _CCCL_GRID_CONSTANT const size_t num_lookback_items)
+  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback, _CCCL_GRID_CONSTANT const size_t num_lookback_items)
 {
   const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x; idx < num_lookback_items; idx += stride)
@@ -510,7 +534,6 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
     _CCCL_GRID_CONSTANT const PortionOffsetT num_items,
     _CCCL_GRID_CONSTANT const int current_bit,
     _CCCL_GRID_CONSTANT const int num_bits,
-    _CCCL_GRID_CONSTANT const bool use_pdl,
     _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   static constexpr radix_sort_onesweep_policy policy = current_policy<PolicySelector>().onesweep;
@@ -548,7 +571,6 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
     num_items,
     current_bit,
     num_bits,
-    use_pdl,
     decomposer);
   agent.Process();
 }
