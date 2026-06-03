@@ -5,21 +5,21 @@
 """
 Lifecycle/ownership tests for the STF Cython wrappers.
 
-These tests exercise every destruction order between a context and its
-children (logical_data, task, stackable_logical_data, stackable_task) plus
-inter-test contamination scenarios that previously aborted the interpreter
-with ``cudaErrorContextIsDestroyed`` from ``~stream_and_event``.
+These tests pin down the destruction-order contract between a context and its
+children (logical_data, task, stackable_logical_data, stackable_task): a child
+wrapper may be garbage-collected in any order relative to its owning context --
+before or after ``finalize()``, and even after an unrelated context has since
+been created and destroyed -- without aborting the interpreter.
 
-The fix (see ``context._alive`` / ``stackable_context._alive`` in
-``_stf_bindings_impl.pyx``) gives every context a Python-refcounted sentinel
-that all child wrappers share and consult in their ``__dealloc__``. When the
-context is finalized -- explicitly, or when an unfinalized context is merely
-abandoned during ``__dealloc__`` -- the sentinel is flipped so any surviving
-child becomes a no-op on destruction.
+The contract is enforced by a Python-refcounted ``_alive`` sentinel shared
+between each context and its children (see ``context._alive`` /
+``stackable_context._alive`` in ``_stf_bindings_impl.pyx``): once the context is
+finalized -- explicitly, or by being abandoned without an explicit
+``finalize()`` -- the sentinel is flipped so any surviving child's
+``__dealloc__`` becomes a no-op instead of touching a destroyed CUDA context.
 
-Without the fix, the multi-context tests below abort the interpreter on
-garbage collection rather than failing cleanly. They MUST run in this same
-process / module so a regression actually trips them.
+The multi-context cases below must run in this same process / module so that a
+regression in that contract is actually exercised by garbage collection.
 """
 
 import gc
@@ -36,8 +36,8 @@ import cuda.stf._experimental as stf
 
 def _make_ctx_and_leak_logical_data():
     """Return a ``logical_data`` whose owning ``context`` was already
-    finalize()d. Without the sentinel fix, dropping the returned object
-    later (especially after another context exists) crashes."""
+    finalize()d, so the caller can exercise dropping the child after its
+    context is gone (especially once another context exists)."""
     ctx = stf.context()
     buf = np.ones(16, dtype=np.float64)
     ld = ctx.logical_data(buf, name="lA")
@@ -69,10 +69,9 @@ def test_logical_data_outlives_unfinalized_context():
 
 
 def test_multiple_contexts_in_sequence():
-    """Two back-to-back contexts; objects from #1 outlive into #2's lifetime.
-
-    This is the pattern that previously aborted in pytest bulk runs
-    (``test_burger_stackable.py`` followed by ``test_burger_stackable_fast``).
+    """Two back-to-back contexts where objects from #1 outlive into #2's
+    lifetime -- the destruction ordering produced by pytest bulk runs (e.g.
+    ``test_burger_stackable.py`` followed by ``test_burger_stackable_fast``).
     """
     leaked_from_first = _make_ctx_and_leak_logical_data()
     ctx2 = stf.context()
@@ -161,8 +160,8 @@ def test_stackable_logical_data_outlives_unfinalized_context():
 
 
 def test_two_stackable_contexts_in_sequence():
-    """Reproduces the pattern from the burger_stackable / burger_stackable_fast
-    bulk-run abort."""
+    """Same back-to-back ordering as the non-stackable case, for stackable
+    contexts (the burger_stackable / burger_stackable_fast bulk-run ordering)."""
     leaked_from_first = _make_stackable_ctx_and_leak()
     sctx2 = stf.stackable_context()
     sld2 = sctx2.logical_data(np.zeros(8, dtype=np.float32), name="lB")
@@ -240,15 +239,17 @@ def test_mixed_context_types_with_outliving_children():
 
 
 def test_sentinel_is_shared_between_context_and_child():
-    """White-box: confirm the sentinel object is identity-shared, not copied.
+    """Guard the shared-sentinel contract via its observable behavior.
 
-    If a future refactor accidentally turns _alive into a ``cdef bint``, this
-    test fails immediately instead of regressing the lifecycle silently.
+    The sentinel must be one object shared by a context and its children, not a
+    per-object copy. ``_alive`` is a Cython ``cdef`` field with no Python
+    attribute to inspect, so this probes the behavior instead: after
+    ``finalize()``, dropping a child must neither raise nor abort. If a future
+    refactor turned the shared sentinel into a per-object ``cdef bint``, this
+    ordering would regress -- keeping it covered here.
     """
     ctx = stf.context()
     ld = ctx.logical_data(np.ones(4, dtype=np.float64))
-    # _alive isn't a Python attr (Cython cdef), so probe via finalize semantics
-    # instead: after finalize(), dropping ld must not raise / abort.
     ctx.finalize()
     del ld
     gc.collect()
