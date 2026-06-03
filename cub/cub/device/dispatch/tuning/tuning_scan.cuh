@@ -590,6 +590,19 @@ struct scan_warpspeed_policy
   int look_ahead_items_per_thread;
   int items_per_thread;
 
+  // For the number of stages below, a positive value is taken directly, otherwise it is added to the runtime determined
+  // number of stages. For example, a value of 2 means two stages. A value of -2 means runtime number of stages - 2.
+  // Therefore, a value of 0 just takes the number of stages.
+  // TODO(bgruber): should we rather have two values? A stage bias (additive) and a stage scale (multiplicative)?
+
+  // We do not need too many stages for lookahead since the lookahead warp is the bottleneck. As soon as it produces a
+  // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
+  int lookahead_stages = 2;
+
+  // If one less than the number of stages, we find a small speedup compared to setting it equal to num_stages. Not sure
+  // why.
+  int block_idx_stages = -1;
+
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
     return items_per_thread * num_reduce_and_scan_warps * warp_threads;
@@ -600,7 +613,8 @@ struct scan_warpspeed_policy
   {
     return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
         && lhs.look_ahead_items_per_thread == rhs.look_ahead_items_per_thread
-        && lhs.items_per_thread == rhs.items_per_thread;
+        && lhs.items_per_thread == rhs.items_per_thread && lhs.lookahead_stages == rhs.lookahead_stages
+        && lhs.block_idx_stages == rhs.block_idx_stages;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -612,9 +626,11 @@ struct scan_warpspeed_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_warpspeed_policy& p)
   {
-    return os << "scan_warpspeed_policy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
-              << ", .look_ahead_items_per_thread = " << p.look_ahead_items_per_thread
-              << ", .items_per_thread = " << p.items_per_thread << " }";
+    return os
+        << "scan_warpspeed_policy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
+        << ", .look_ahead_items_per_thread = " << p.look_ahead_items_per_thread
+        << ", .items_per_thread = " << p.items_per_thread << ", .lookahead_stages = " << p.lookahead_stages
+        << ", .block_idx_stages = " << p.block_idx_stages << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -714,7 +730,7 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_sched(const scan_warp
   return warpspeed::SquadDesc{3, 1}; // no point in being more than 1 warp
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookback(const scan_warpspeed_policy&)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookahead(const scan_warpspeed_policy&)
 {
   return warpspeed::SquadDesc{4, 1}; // must have 1 warp
 }
@@ -745,23 +761,6 @@ constexpr _CCCL_HOST_DEVICE_API bool is_arithmetic_type(type_t type)
   return false;
 }
 
-struct scan_stage_counts
-{
-  int num_block_idx_stages;
-  int num_sum_exclusive_cta_stages;
-};
-
-_CCCL_HOST_DEVICE_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
-{
-  // If numBlockIdxStages is one less than the number of stages, we find a small speedup compared to setting it equal to
-  // num_stages. Not sure why. TODO(bgruber): make this tunable
-  const int num_block_idx_stages = ::cuda::std::max(1, num_stages - 1);
-
-  // We do not need too many sumExclusiveCta stages. The lookback warp is the bottleneck. As soon as it produces a new
-  // value, it will be consumed by the scanStore squad, releasing the stage.
-  return {num_block_idx_stages, 2};
-}
-
 struct ScanResourcesRaw
 {
   warpspeed::SmemResourceRaw smemInOut;
@@ -785,7 +784,7 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
     squad_scan_store(policy),
     squad_load(policy),
     squad_sched(policy),
-    squad_lookback(policy),
+    squad_lookahead(policy),
   };
 
   smemInOut.addPhase(syncHandler, smemAllocator, squad_load(policy));
@@ -794,7 +793,7 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_sched(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookback(policy));
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
   smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
 
   smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_reduce(policy));
@@ -812,7 +811,6 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
 {
   warpspeed::SyncHandler syncHandler{};
   warpspeed::SmemAllocator smemAllocator{};
-  const auto counts = make_scan_stage_counts(num_stages);
 
   const int align_inout = ::cuda::std::max({16, input_align, output_align});
   const int inout_bytes = policy.tile_size() * input_size + 16;
@@ -821,11 +819,16 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const auto reduce_squad   = squad_reduce(policy);
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
+  const int num_block_idx_stages =
+    policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, num_stages + policy.block_idx_stages);
+  const int num_sum_exclusive_cta_stages =
+    policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, num_stages + policy.lookahead_stages);
+
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
-  void* next_block_idx_base = smemAllocator.alloc(
-    static_cast<::cuda::std::uint32_t>(sizeof(uint4) * counts.num_block_idx_stages), alignof(uint4));
-  void* sum_exclusive_base = smemAllocator.alloc(
-    static_cast<::cuda::std::uint32_t>(accum_size * counts.num_sum_exclusive_cta_stages), accum_align);
+  void* next_block_idx_base =
+    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sizeof(uint4) * num_block_idx_stages), alignof(uint4));
+  void* sum_exclusive_base =
+    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(accum_size * num_sum_exclusive_cta_stages), accum_align);
   void* sum_thread_warp_base =
     smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sum_thread_warp * num_stages), accum_align);
 
@@ -836,9 +839,8 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
       next_block_idx_base,
       static_cast<int>(sizeof(uint4)),
       static_cast<int>(sizeof(uint4)),
-      counts.num_block_idx_stages},
-    warpspeed::SmemResourceRaw{
-      syncHandler, sum_exclusive_base, accum_size, accum_size, counts.num_sum_exclusive_cta_stages},
+      num_block_idx_stages},
+    warpspeed::SmemResourceRaw{syncHandler, sum_exclusive_base, accum_size, accum_size, num_sum_exclusive_cta_stages},
     warpspeed::SmemResourceRaw{syncHandler, sum_thread_warp_base, sum_thread_warp, sum_thread_warp, num_stages},
   };
 

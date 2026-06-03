@@ -56,3 +56,14 @@ Standard C++ Library fills for Standard C++: provide general-purpose,
 speed-of-light tools to CUDA C++ developers, allowing them to focus on
 solving the problems that matter. Unifying these projects is the first step
 towards realizing that goal.
+
+CUDA C++ Tile support
+======================
+
+`CUDA Tile <https://developer.nvidia.com/cuda/tile#section-more-resources>`_ introduces a new way to program GPUs at a higher level than SIMT.
+
+Due to the additional constraints of tile compilation :doc:`CUB <cub/index>`, :doc:`Thrust <thrust/index>`
+and :doc:`Cuda Experimental <cudax/index>` are currently not supported in a tile program.
+
+There is partial support for :doc:`libcu++ <libcudacxx/index>` for tile programs.
+The current support matrix can be found in the :doc:`libcu++ documentation <libcudacxx/tile>`

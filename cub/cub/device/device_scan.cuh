@@ -204,15 +204,8 @@ struct DeviceScan
     using policy_selector_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
 
-    return detail::scan_by_key::dispatch<
-      KeysInputIteratorT,
-      ValuesInputIteratorT,
-      ValuesOutputIteratorT,
-      EqualityOpT,
-      ScanOpT,
-      InitValueT,
-      offset_t,
-      accum_t>(
+    // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
+    return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -775,7 +768,8 @@ struct DeviceScan
             typename InitValueT,
             typename NumItemsT,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1397,10 +1391,11 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT,
-            typename NumItemsT,
+            typename InitValueIterT                                              = InitValueT*,
+            typename NumItemsT                                                   = int,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2271,7 +2266,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2903,6 +2899,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive prefix sum-by-key of an ``int`` device vector.
   //!
@@ -2975,30 +2972,9 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
     using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    init_t init_value{};
-
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using offset_t = detail::choose_offset_t<NumItemsT>;
       using tuning_t = decltype(tuning);
-      using accum_t =
-        ::cuda::std::__accumulator_t<::cuda::std::plus<>, cub::detail::it_value_t<ValuesInputIteratorT>, init_t>;
-      using default_policy_selector_t =
-        detail::scan_by_key::policy_selector_from_types<detail::it_value_t<KeysInputIteratorT>,
-                                                        accum_t,
-                                                        cub::detail::it_value_t<ValuesInputIteratorT>,
-                                                        ::cuda::std::plus<>>;
-      using policy_selector_t = ::cuda::std::execution::
-        __query_result_or_t<tuning_t, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
-
-      return detail::scan_by_key::dispatch<
-        KeysInputIteratorT,
-        ValuesInputIteratorT,
-        ValuesOutputIteratorT,
-        EqualityOpT,
-        ::cuda::std::plus<>,
-        init_t,
-        offset_t,
-        accum_t>(
+      return scan_by_key_impl<tuning_t>(
         storage,
         bytes,
         d_keys_in,
@@ -3006,10 +2982,9 @@ struct DeviceScan
         d_values_out,
         equality_op,
         ::cuda::std::plus<>{},
-        init_value,
-        static_cast<offset_t>(num_items),
-        stream,
-        policy_selector_t{});
+        init_t{},
+        num_items,
+        stream);
     });
   }
 
@@ -3035,6 +3010,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive prefix scan-by-key of an ``int`` device vector.
   //!
@@ -3149,6 +3125,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix sum-by-key of an ``int`` device vector.
   //!
@@ -3256,6 +3233,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix scan-by-key of an ``int`` device vector.
   //!

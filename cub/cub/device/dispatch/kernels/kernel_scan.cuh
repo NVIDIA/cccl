@@ -191,7 +191,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
   _CCCL_GRID_CONSTANT const int start_tile,
-  ScanOpT scan_op,
+  _CCCL_GRID_CONSTANT const ScanOpT scan_op,
 // nvcc 12.0 gets stuck compiling some TUs like `cub.bench.scan.exclusive.sum.base`, so only enable for newer versions
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   _CCCL_GRID_CONSTANT

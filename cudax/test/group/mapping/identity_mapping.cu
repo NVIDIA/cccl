@@ -15,6 +15,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -51,14 +52,16 @@ __device__ void test_identity_mapping(Config config)
     static_assert(cuda::std::is_same_v<Result, ThreadsInWarpMappingResult>);
 
     static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
-    CUDAX_CHECK(result.group_count() == prev_mapping_result.group_count());
-    CUDAX_CHECK(result.group_rank() == prev_mapping_result.group_rank());
+    CHECK(result.group_count() == prev_mapping_result.group_count());
+    CHECK(result.group_rank() == prev_mapping_result.group_rank());
 
     static_assert(Result::static_count() == ThreadsInWarpMappingResult::static_count());
-    CUDAX_CHECK(result.count() == prev_mapping_result.count());
-    CUDAX_CHECK(result.rank() == prev_mapping_result.rank());
+    CHECK(result.count() == prev_mapping_result.count());
+    CHECK(result.rank() == prev_mapping_result.rank());
 
-    CUDAX_CHECK(result.is_valid() == prev_mapping_result.is_valid());
+    CHECK(result.lane_mask() == prev_mapping_result.lane_mask());
+
+    CHECK(result.is_valid() == prev_mapping_result.is_valid());
     static_assert(Result::is_always_exhaustive() == ThreadsInWarpMappingResult::is_always_exhaustive());
     static_assert(Result::is_always_contiguous() == ThreadsInWarpMappingResult::is_always_contiguous());
   }

@@ -65,13 +65,13 @@ workflows:
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
-    # c.parallel with HostJIT
+    # c.parallel v2 (HostJIT-based)
     #
     # For now, this is a separate job run for Linux/CUDA13.
-    # Eventually we will want building with HostJIT to be the
-    # default, and will do it across the entire matrix. Currently
-    # blocked on libnvfatbin availability on Windows containers, and for CUDA <12.4.
-    - {jobs: ['test'], project: 'cccl_c_parallel_hostjit', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    # Eventually v2 will replace v1 as the default and run across the
+    # entire matrix. Currently blocked on libnvfatbin availability on
+    # Windows containers, and for CUDA <12.4.
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
@@ -145,8 +145,8 @@ workflows:
     - {project: 'packaging', jobs: ['install']}
     # NVBench Helper testing:
     - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
-    # c.parallel with HostJIT
-    - {jobs: ['test'], project: 'cccl_c_parallel_hostjit', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
+    # c.parallel v2 (HostJIT-based)
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 'rtx2080'}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
@@ -371,7 +371,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.06'
+devcontainer_version: '26.08'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 15
@@ -391,7 +391,7 @@ ctk_versions:
   12.9: { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda'] }
   13.0: { stds: [17, 20] }
   13.1: { stds: [17, 20], alias: ['nvhpc-prev', 'nvhpc']}
-  13.2: { stds: [17, 20], alias: ['13.X'] }
+  13.3: { stds: [17, 20], alias: ['13.X'] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -582,9 +582,15 @@ projects:
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
-  cccl_c_parallel_hostjit:
-    name: 'CCCL C Parallel (HostJIT)'
+  cccl_c_parallel_v2:
+    name: 'CCCL C Parallel v2 (HostJIT)'
     stds: [20]
+    # test_cccl_c_parallel_v2.sh builds inline (no separate build script),
+    # so suppress the default test→build dependency. test_nobuild invokes
+    # test_<project>.sh directly without a producer build job.
+    job_map:
+      build: []
+      test: ['test_nobuild']
   cccl_c_stf:
     name: 'CCCL C CUDASTF'
     stds: [20]

@@ -386,7 +386,7 @@ struct DispatchScan
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
-          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
+          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* dependent_launch */ ptx_version >= 900)
             .doit(init_kernel, kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
     {
       return error;
@@ -437,7 +437,8 @@ struct DispatchScan
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, policy.Scan().ThreadsPerBlock(), 0, stream, /* use_pdl */ true)
+            launcher_factory(
+              scan_grid_size, policy.Scan().ThreadsPerBlock(), 0, stream, /* dependent_launch */ ptx_version >= 900)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
@@ -584,7 +585,11 @@ struct DispatchScan
 #  endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
-            launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+            launcher_factory(init_grid_size,
+                             init_kernel_threads,
+                             0,
+                             stream,
+                             /* dependent_launch */ ptx_version >= 900)
               .doit(kernel_source.InitKernel(),
                     kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
                     grid_dim)))
@@ -614,7 +619,7 @@ struct DispatchScan
 #  endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
-            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+            launcher_factory(grid_dim, block_dim, smem_size, stream, /* dependent_launch */ ptx_version >= 900)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
@@ -699,7 +704,7 @@ struct DispatchScan
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
-          launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+          launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ ptx_version >= 900)
             .doit(kernel_source.InitKernel(), kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
     {
       return error;
@@ -750,7 +755,8 @@ struct DispatchScan
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, active_policy.threads_per_block, 0, stream, /* use_pdl */ true)
+            launcher_factory(
+              scan_grid_size, active_policy.threads_per_block, 0, stream, /* dependent_launch */ ptx_version >= 900)
               .doit(kernel_source.ScanKernel(),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),

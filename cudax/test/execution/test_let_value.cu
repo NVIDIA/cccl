@@ -429,7 +429,7 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
                             }),
                             ex::prop{test_query, 42});
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  CUDAX_CHECK(result == 42);
+  CHECK(result == 42);
 }
 
 // NOT YET SUPPORTED

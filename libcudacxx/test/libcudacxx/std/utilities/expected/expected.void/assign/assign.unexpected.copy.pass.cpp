@@ -61,13 +61,11 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<void, int>&, const 
 
 // !is_constructible_v<E, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyConstructible>&,
-                                          const cuda::std::unexpected<NotCopyConstructible>&>,
-              "");
+                                          const cuda::std::unexpected<NotCopyConstructible>&>);
 
 // !is_assignable_v<E&, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyAssignable>&,
-                                          const cuda::std::unexpected<NotCopyAssignable>&>,
-              "");
+                                          const cuda::std::unexpected<NotCopyAssignable>&>);
 
 TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {

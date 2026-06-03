@@ -16,6 +16,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -45,7 +46,7 @@ __device__ void test_group_as(Config config)
       Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -58,7 +59,7 @@ __device__ void test_group_as(Config config)
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -76,7 +77,7 @@ __device__ void test_group_as(Config config)
       static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == ns[i]);
+        CHECK(Mapping::static_count(i) == ns[i]);
       }
     }
 
@@ -94,7 +95,7 @@ __device__ void test_group_as(Config config)
       const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -126,14 +127,18 @@ __device__ void test_group_as(Config config)
       }
 
       static_assert(Result::static_group_count() == ngroups);
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.group_rank() == group_rank_ref);
+      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+      CHECK(result.group_rank() == group_rank_ref);
 
       static_assert(Result::static_count() == cuda::std::dynamic_extent);
-      CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-      CUDAX_CHECK(result.rank() == rank_ref);
+      CHECK(result.count() == ns[group_rank_ref]);
+      CHECK(result.rank() == rank_ref);
 
-      CUDAX_CHECK(result.is_valid());
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
+
+      CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
     }
@@ -155,7 +160,7 @@ __device__ void test_group_as(Config config)
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -173,7 +178,7 @@ __device__ void test_group_as(Config config)
       static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == cuda::std::dynamic_extent);
+        CHECK(Mapping::static_count(i) == cuda::std::dynamic_extent);
       }
     }
 
@@ -191,7 +196,7 @@ __device__ void test_group_as(Config config)
       const Mapping mapping{ns};
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -223,14 +228,18 @@ __device__ void test_group_as(Config config)
       }
 
       static_assert(Result::static_group_count() == ngroups);
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.group_rank() == group_rank_ref);
+      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+      CHECK(result.group_rank() == group_rank_ref);
 
       static_assert(Result::static_count() == cuda::std::dynamic_extent);
-      CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-      CUDAX_CHECK(result.rank() == rank_ref);
+      CHECK(result.count() == ns[group_rank_ref]);
+      CHECK(result.rank() == rank_ref);
 
-      CUDAX_CHECK(result.is_valid());
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
+
+      CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
     }
@@ -261,7 +270,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
       Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -277,7 +286,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -292,7 +301,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == ns[i]);
+        CHECK(Mapping::static_count(i) == ns[i]);
       }
     }
 
@@ -310,7 +319,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -335,8 +344,8 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.is_valid() == is_valid_ref);
+      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+      CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
       {
@@ -352,10 +361,14 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
-        CUDAX_CHECK(result.group_rank() == group_rank_ref);
+        CHECK(result.group_rank() == group_rank_ref);
 
-        CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-        CUDAX_CHECK(result.rank() == rank_ref);
+        CHECK(result.count() == ns[group_rank_ref]);
+        CHECK(result.rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }
@@ -379,7 +392,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -394,7 +407,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == cuda::std::dynamic_extent);
+        CHECK(Mapping::static_count(i) == cuda::std::dynamic_extent);
       }
     }
 
@@ -412,7 +425,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const Mapping mapping{ns, cudax::non_exhaustive};
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.count(i) == ns[i]);
       }
     }
 
@@ -437,8 +450,8 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.is_valid() == is_valid_ref);
+      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+      CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
       {
@@ -454,10 +467,14 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
-        CUDAX_CHECK(result.group_rank() == group_rank_ref);
+        CHECK(result.group_rank() == group_rank_ref);
 
-        CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-        CUDAX_CHECK(result.rank() == rank_ref);
+        CHECK(result.count() == ns[group_rank_ref]);
+        CHECK(result.rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }
