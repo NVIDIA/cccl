@@ -597,7 +597,7 @@ private:
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
 
-    const bool use_pdl = num_items <= static_cast<OffsetT>(1 << 20);
+    const bool use_pdl = true;
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
