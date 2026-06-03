@@ -202,7 +202,7 @@ void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
 //! \brief Activate the sub-place at linear index \p idx (0 for scalar places).
 //! Saves the current CUDA context; call stf_exec_place_scope_exit to restore.
-//! \return Opaque scope handle, or NULL on failure.
+//! \return Opaque scope handle, or NULL on failure (including when \p idx is out of bounds).
 stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx);
 
 //! \brief Restore the CUDA context saved by stf_exec_place_scope_enter and destroy the scope.

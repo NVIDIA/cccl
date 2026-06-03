@@ -348,6 +348,10 @@ void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
 stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx)
 {
   _CCCL_ASSERT(place != nullptr, "exec_place handle must not be null");
+  if (idx >= from_opaque(place)->size())
+  {
+    return nullptr;
+  }
   return to_opaque(stf_try_allocate([&] {
     return new exec_place_scope(*from_opaque(place), idx);
   }));
@@ -561,7 +565,18 @@ void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStrea
 void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  from_opaque(h)->deallocate(ptr, size, stream);
+  try
+  {
+    from_opaque(h)->deallocate(ptr, size, stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_deallocate failed: %s\n", e.what());
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_deallocate failed: unknown exception\n");
+  }
 }
 
 int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
