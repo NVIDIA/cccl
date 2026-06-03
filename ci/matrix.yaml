@@ -585,11 +585,13 @@ projects:
       test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples']
   python_v2:
     name: "Python (cuda.compute on v2/HostJIT)"
-    # Only the cuda.compute path differs between v1 and v2; cccl.headers,
-    # cuda.coop, and examples are unaffected so we don't re-run them here.
+    # Only the cuda.compute path differs between v1 and v2; cccl.headers and
+    # cuda.coop are unaffected so we don't re-run them here. Examples ARE
+    # exercised: this PR adds a v2-specific raw_op example and touches
+    # test_examples.py, so test_py_examples must run here.
     job_map:
       build: ['build_py_wheel']
-      test:  ['test_py_par']
+      test:  ['test_py_par', 'test_py_examples']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

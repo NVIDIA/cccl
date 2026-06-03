@@ -155,10 +155,20 @@ def pytest_collection_modifyitems(config, items):
         # Explicit per-test deferrals.
         # `item.originalname` is the function name without parametrize suffix;
         # `item.name` includes it. Either match defers the test.
+        # Match the parametrized id first (e.g. "test_foo[int32]"), then the
+        # bare function name, so an entry can defer either a single
+        # parametrization or a whole function — as the comment above claims.
         bare = getattr(item, "originalname", item.name)
-        if bare in _V2_BROKEN_TESTS:
+        key = (
+            item.name
+            if item.name in _V2_BROKEN_TESTS
+            else bare
+            if bare in _V2_BROKEN_TESTS
+            else None
+        )
+        if key is not None:
             item.add_marker(
                 pytest.mark.skip(
-                    reason="v2 (HostJIT) backend: " + _V2_BROKEN_TESTS[bare]
+                    reason="v2 (HostJIT) backend: " + _V2_BROKEN_TESTS[key]
                 )
             )

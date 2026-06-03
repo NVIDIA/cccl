@@ -288,6 +288,11 @@ cdef class Op:
             code_bytes = <bytes>ltoir
             code_kind = "ltoir"
         elif hasattr(ltoir, "bytes_") and hasattr(ltoir, "kind"):
+            if not isinstance(ltoir.bytes_, bytes) or not isinstance(ltoir.kind, str):
+                raise TypeError(
+                    f"DeviceCode.bytes_ must be bytes and .kind must be str; "
+                    f"got {type(ltoir.bytes_)} and {type(ltoir.kind)}"
+                )
             code_bytes = <bytes>ltoir.bytes_
             code_kind = <str>ltoir.kind
         else:
@@ -304,6 +309,11 @@ cdef class Op:
                 extra_bytes.append(el)
                 extra_kinds.append("ltoir")
             elif hasattr(el, "bytes_") and hasattr(el, "kind"):
+                if not isinstance(el.bytes_, bytes) or not isinstance(el.kind, str):
+                    raise TypeError(
+                        f"extra_ltoirs[{i}].bytes_ must be bytes and .kind must be str; "
+                        f"got {type(el.bytes_)} and {type(el.kind)}"
+                    )
                 extra_bytes.append(el.bytes_)
                 extra_kinds.append(el.kind)
             else:
