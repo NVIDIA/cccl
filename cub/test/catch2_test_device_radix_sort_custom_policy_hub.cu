@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the radix sort dispatcher
+
+// disable deprecation warnings for DispatchScan
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_radix_sort.cuh>
@@ -8,8 +13,6 @@
 #include "catch2_radix_sort_helper.cuh"
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 
 template <typename KeyT, typename OffsetT>
 struct my_policy_hub
