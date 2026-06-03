@@ -610,13 +610,13 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-
     // load keys
     // if warp1 < warp2, all elements of warp1 occur before those of warp2
     // in the source array
     bit_ordered_type keys[ITEMS_PER_THREAD];
     LoadKeys(block_idx * TILE_ITEMS, keys);
+
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
     // rank keys
     int ranks[ITEMS_PER_THREAD];
