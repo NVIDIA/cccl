@@ -86,16 +86,25 @@ _CCCL_HOST_API void __fill_bytes_tile(
 //! Asynchronous mdspan byte fill
 //! -----------------------------
 //!
-//! ``fill_bytes`` asynchronously fills the elements of a device ``mdspan`` with the object representation of
-//! a 1-, 2-, or 4-byte fill value on the given CUDA stream.
+//! ``fill_bytes`` asynchronously fills the mapped elements of a device ``mdspan`` with a repeated byte pattern on the
+//! given CUDA stream. The pattern is the object representation of a 1-, 2-, or 4-byte fill value. This is a byte
+//! operation: it does not assign ``__byte_value`` as an object of the destination element type. For strided layouts,
+//! only bytes belonging to mapped destination elements are filled; padding bytes outside the mapping are left
+//! unchanged.
+//!
+//! The operation is enqueued on ``__stream`` and may complete after ``fill_bytes`` returns. Synchronize the stream, or
+//! otherwise order dependent work on the same stream, before observing the filled data.
 //!
 //! - Destination element and fill value types must be trivially copyable.
 //! - The fill value type must have unique object representations and size 1, 2, or 4.
-//! - The destination element size and alignment must support the fill value size.
+//! - The destination element type must not be ``const``.
+//! - The destination element size must be a multiple of the fill value size.
+//! - The destination element alignment must be at least the fill value size.
 //! - Layout policies must be one of the predefined ``cuda::std`` layout policies
 //!   (``layout_right``, ``layout_left``, ``layout_stride``) or ``cuda::layout_stride_relaxed``.
 //! - Accessor policies must be convertible to ``cuda::std::default_accessor``.
 //! - The destination must not have an interleaved stride order.
+//! - Zero-size mdspans are no-ops and do not require a non-null data handle.
 //!
 //! Integer literals use their usual type. For example, ``0`` is an ``int`` and requests a 4-byte pattern fill; use
 //! ``cuda::std::uint8_t{0}`` or ``cuda::std::byte{0}`` for a byte pattern fill. The implementation is optimized to
@@ -105,19 +114,21 @@ _CCCL_HOST_API void __fill_bytes_tile(
 //!
 //!    #include <cuda/experimental/fill_bytes.cuh>
 //!
-//!      using extents_t = cuda::std::dims<2>;
-//!      cuda::device_mdspan<int, extents_t> dst(dst_ptr, extents);
-//!      cuda::experimental::fill_bytes(dst, cuda::std::uint32_t{0xFF00FF00}, stream);
+//!    using extents_t = cuda::std::dims<2>;
+//!    cuda::device_mdspan<int, extents_t> dst(dst_ptr, extents);
+//!    cuda::experimental::fill_bytes(dst, cuda::std::uint32_t{0xFF00FF00}, stream);
 //!
 //! @endrst
 //! @brief Asynchronously fills a device mdspan with a 1-, 2-, or 4-byte pattern.
 //!
-//! Validates preconditions, converts the mdspan to a raw tensor descriptor, simplifies the layout
-//! (sort, flip negative strides, coalesce), then dispatches asynchronous memset operations.
+//! Validates the public preconditions, then dispatches asynchronous memset operations over the mapped destination
+//! elements.
 //!
 //! @param[out] __mdspan Destination device mdspan
 //! @param[in] __byte_value Value pattern to fill into the destination
 //! @param[in] __stream CUDA stream for the asynchronous fill
+//! @throws std::invalid_argument if ``__stream`` is the null stream, or if a non-empty destination has a null data
+//! handle, is insufficiently aligned, or has interleaved stride order.
 template <typename _Tp, typename _Extents, typename _Layout, typename _Accessor, typename _ByteT>
 _CCCL_HOST_API void fill_bytes(::cuda::device_mdspan<_Tp, _Extents, _Layout, _Accessor> __mdspan,
                                const _ByteT __byte_value,
