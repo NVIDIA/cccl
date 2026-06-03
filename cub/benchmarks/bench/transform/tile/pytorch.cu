@@ -4,7 +4,7 @@
 // PyTorch ops on tile.  Uses ct::tanh / ct::sin / ct::exp / ct::select.
 
 #include <nvbench/nvbench.cuh>
-#include "device_transform.cuh"
+#include <cub/device/dispatch/dispatch_transform_tile.cuh>
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
 #include <cuda_bf16.h>

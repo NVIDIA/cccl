@@ -5,7 +5,7 @@
 // Sits next to the benches so it builds against the same tileiras
 // toolchain and does not pretend to be part of CCCL's catch2 suite.
 
-#include "device_transform.cuh"
+#include <cub/device/dispatch/dispatch_transform_tile.cuh>
 
 #include <cuda_runtime.h>
 #include <cuda/std/tuple>

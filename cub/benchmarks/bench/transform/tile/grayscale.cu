@@ -7,7 +7,7 @@
 // we'll then fall back to treating R/G/B as three separate float streams.
 
 #include <nvbench/nvbench.cuh>
-#include "device_transform.cuh"
+#include <cub/device/dispatch/dispatch_transform_tile.cuh>
 #include "bench_init.cuh"
 #include <cuda_runtime.h>
 #include <cuda/std/tuple>

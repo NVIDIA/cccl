@@ -6,7 +6,7 @@
 // dedicated cub_tile::DeviceTransform::Fill API which writes a constant.
 
 #include <nvbench/nvbench.cuh>
-#include "device_transform.cuh"
+#include <cub/device/dispatch/dispatch_transform_tile.cuh>
 #include <cuda_runtime.h>
 
 template <typename T>

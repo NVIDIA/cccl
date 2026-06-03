@@ -7,7 +7,7 @@
 
 #include <nvbench/nvbench.cuh>
 
-#include "device_transform.cuh"
+#include <cub/device/dispatch/dispatch_transform_tile.cuh>
 
 #include <cuda_runtime.h>
 #include <cuda/std/tuple>
