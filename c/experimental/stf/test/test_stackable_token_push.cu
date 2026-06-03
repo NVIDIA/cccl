@@ -8,8 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// C++ reproducer for the Python-side failure observed when combining a
-// stackable token with push_graph / pop_prologue:
+// Regression test for the C-facade stackable-token dispatch fix. Combining a
+// stackable token with push_graph / pop_prologue used to abort inside STF with
+// a "Data interface type mismatch" (assumed void_interface, actual
+// mdspan<char, ..., layout_stride>) because the C API treated every stackable
+// logical-data handle as a slice<char> and mis-cast tokens. The abort was a
+// hard C-level abort, so the Python binding that drives this exact sequence
+// could not catch it:
 //
 //     ctx = stf.stackable_context()
 //     tok = ctx.token()
@@ -18,20 +23,12 @@
 //     with ctx.task(tok.read()):  ...
 //     step_graph = ctx.pop_prologue_shared()
 //
-// aborts inside STF with:
-//     Data interface type mismatch.
-//     Assumed: cuda::experimental::stf::void_interface
-//     Actual:  mdspan<char, extents<long unsigned int, ...>, layout_stride>
-//
-// That happens on a hard C-level abort, so the Python binding can't catch it.
-// This test drives exactly the same sequence through the C stackable API so
-// the bug is reproducible without any Python / Warp in the picture.
+// These tests drive the same sequences through the C stackable API directly,
+// so the path stays covered without any Python / Warp in the picture.
 //
 // The existing `stackable: token + fence` test uses tokens but outside any
-// push_graph scope, and the existing pop_prologue tests use real
-// logical_data; so the combination "tokens inside push_graph" is not
-// exercised anywhere else. The first of the two token-in-graph tests below
-// is expected to trip the internal type check.
+// push_graph scope, and the existing pop_prologue tests use real logical_data;
+// so the combination "tokens inside push_graph" is only exercised here.
 
 #include <cmath>
 #include <cstdint>
@@ -46,9 +43,9 @@ namespace
 __global__ void noop_kernel() {}
 } // namespace
 
-// Minimal repro: a single token-only task inside a push_graph / pop scope.
-// Does NOT use pop_prologue — just push_graph + pop — to isolate whether
-// the failure is in the task-deps handling or in the prologue machinery.
+// Minimal case: a single token-only task inside a push_graph / pop scope.
+// Does NOT use pop_prologue — just push_graph + pop — so token task-deps
+// handling is covered independently of the prologue machinery.
 C2H_TEST("stackable: token in push_graph scope (no prologue)", "[stackable][token][bug]")
 {
   stf_ctx_handle ctx = stf_stackable_ctx_create();
@@ -75,8 +72,8 @@ C2H_TEST("stackable: token in push_graph scope (no prologue)", "[stackable][toke
 
 // Exact mirror of the Python run_stf_unified path:
 //   ctx.push() -> task(tok.write()) -> task(tok.read()) -> pop_prologue(_shared)
-// The Python version aborts inside pop_prologue_shared() with the
-// void_interface vs mdspan<char> mismatch.
+// This used to abort inside pop_prologue(_shared)() with the void_interface vs
+// mdspan<char> mismatch before the C-facade dispatch fix.
 C2H_TEST("stackable: token write/read chain + pop_prologue", "[stackable][token][launchable][bug]")
 {
   const int relaunchN = 4;
