@@ -1,6 +1,6 @@
-.. _libcudacxx-extended-api-warp-warp-match-all:
+.. _libcudacxx-extended-api-warp-warp-match-any:
 
-``cuda::device::warp_match_all``
+``cuda::device::warp_match_any``
 ================================
 
 Defined in ``<cuda/warp>`` header.
@@ -10,18 +10,18 @@ Defined in ``<cuda/warp>`` header.
     namespace cuda::device {
 
     template <typename T>
-    [[nodiscard]] __device__ bool
-    warp_match_all(const T& data, lane_mask = lane_mask::all());
+    [[nodiscard]] __device__ lane_mask
+    warp_match_any(const T& data, lane_mask = lane_mask::all());
 
     } // namespace cuda::device
 
-The functionality provides a generalized and safe alternative to CUDA warp match all intrinsic ``__match_all_sync``.
+The functionality provides a generalized and safe alternative to CUDA warp match any intrinsic ``__match_any_sync``.
 The function allows bitwise comparison of any data size, including raw arrays, pointers, and structs.
 
 .. note::
 
   The underlying CUDA intrinsic does not provide memory ordering.
-
+  
 **Parameters**
 
 - ``data``: data to compare.
@@ -29,12 +29,12 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 
 **Return value**
 
-- ``true`` if all lanes in the ``lane_mask`` have the same value for ``data``. ``false`` otherwise.
+- A ``lane_mask`` representing the non-exited lanes in ``lane_mask`` that have the same bitwise value for ``data`` as  the calling lane.
 
 **Constraints**
 
 - ``T`` shall be trivially copyable, see :ref:`cuda::is_trivially_copyable <libcudacxx-extended-api-type_traits-is_trivially_copyable>`.
-- ``T`` shall be bitwise comparable, see :ref:`cuda::is_bitwise_comparable <libcudacxx-extended-api-type_traits-is_bitwise_comparable>`, except when ``__builtin_clear_padding`` is supported. In the latter case, ``T`` can have padding bits.
+- When ``__builtin_clear_padding`` is not supported, ``T`` shall have no padding bits, that is, ``T``'s value representation shall be identical to its object representation.
 
 **Preconditions**
 
@@ -53,7 +53,7 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 
 **References**
 
-- `CUDA match_all Intrinsics <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#warp-match-functions>`_
+- `CUDA match_any Intrinsics <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#warp-match-functions>`_
 - `PTX match.sync instruction <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-match-sync>`_
 
 Example
@@ -71,10 +71,22 @@ Example
     };            // 4 bytes of padding
 
     __global__ void warp_match_kernel() {
-        assert(cuda::device::warp_match_all(2));
-        assert(cuda::device::warp_match_all(2, cuda::device::lane_mask::all()));
-        assert(cuda::device::warp_match_all(MyStruct{1.0, 3})); // compile error, except when __builtin_clear_padding is supported
-        assert(!cuda::device::warp_match_all(threadIdx.x));
+        {
+            auto mask     = cuda::device::warp_match_any(threadIdx.x / 4);
+            auto expected = cuda::device::lane_mask{0b1111 << ((threadIdx.x / 4) * 4)};
+            assert(mask == expected);
+        }
+        {
+            auto mask     = cuda::device::warp_match_any(2);
+            auto expected = cuda::device::lane_mask{0xFFFFFFFF};
+            assert(mask == expected);
+        }
+        {
+            // compile error, except when __builtin_clear_padding is supported
+            auto mask     = cuda::device::warp_match_any(MyStruct{1.0, 3});
+            auto expected = cuda::device::lane_mask{0xFFFFFFFF};
+            assert(mask == expected);
+        }
     }
 
     int main() {
@@ -83,4 +95,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/x1sWbx14r>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/Ys1McG8nv>`_
