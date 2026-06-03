@@ -78,10 +78,12 @@ it the default.
 from __future__ import annotations
 
 import numpy as np
-import warp as wp
-from warp import stf_experimental as wp_stf
+import pytest
 
 import cuda.stf._experimental as stf
+
+wp = pytest.importorskip("warp")
+wp_stf = pytest.importorskip("warp.stf_experimental")
 
 N = 1 << 14
 FRAMES = 3

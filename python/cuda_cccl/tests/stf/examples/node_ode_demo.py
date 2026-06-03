@@ -45,11 +45,13 @@ import os
 import time
 
 import numpy as np
-import torch
-import torch.nn as nn
+import pytest
 
 import cuda.stf._experimental as stf
 from cuda.stf._experimental.interop.pytorch import pytorch_task
+
+torch = pytest.importorskip("torch")
+nn = torch.nn
 
 # ---------------------------------------------------------------------------
 # ODE models -- verbatim from torchdiffeq/examples/ode_demo.py

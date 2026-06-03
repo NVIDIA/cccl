@@ -25,11 +25,13 @@ import argparse
 import os
 
 import numpy as np
-import warp as wp
-from warp import stf_experimental as wp_stf
+import pytest
 
 import cuda.stf._experimental as stf
 from cuda.bindings import runtime as cudart
+
+wp = pytest.importorskip("warp")
+wp_stf = pytest.importorskip("warp.stf_experimental")
 
 N = 64
 WHILE_ITERS = 2

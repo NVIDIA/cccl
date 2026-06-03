@@ -25,9 +25,11 @@ Requires CUDA 12.4+ for conditional graph nodes.
 from __future__ import annotations
 
 import numpy as np
-import warp as wp
+import pytest
 
 import cuda.stf._experimental as stf
+
+wp = pytest.importorskip("warp")
 
 # ---------------------------------------------------------------------------
 # STF <-> Warp glue: wp.Stream adapter cache and CAI -> wp.array helpers.

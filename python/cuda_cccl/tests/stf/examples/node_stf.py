@@ -60,10 +60,12 @@ import time
 from dataclasses import dataclass
 
 import numpy as np
-import torch
+import pytest
 
 import cuda.stf._experimental as stf
 from cuda.stf._experimental.interop.pytorch import pytorch_task
+
+torch = pytest.importorskip("torch")
 
 # ---------------------------------------------------------------------------
 # Config

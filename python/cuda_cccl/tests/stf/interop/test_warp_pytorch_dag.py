@@ -31,9 +31,8 @@ import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
-
-import warp as wp  # noqa: E402
-from warp import stf_experimental as wp_stf  # noqa: E402
+wp = pytest.importorskip("warp")
+wp_stf = pytest.importorskip("warp.stf_experimental")
 
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.pytorch import pytorch_task  # noqa: E402

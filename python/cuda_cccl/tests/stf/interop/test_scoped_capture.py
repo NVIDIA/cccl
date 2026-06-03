@@ -28,10 +28,12 @@ step 5 complete without a ``cudaErrorStreamCaptureIsolation``.
 from __future__ import annotations
 
 import numpy as np
-import warp as wp
+import pytest
 
 import cuda.stf._experimental as stf
 from cuda.bindings import runtime as cudart
+
+wp = pytest.importorskip("warp")
 
 N = 1 << 12
 

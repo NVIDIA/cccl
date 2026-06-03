@@ -36,10 +36,12 @@ NOTE: All scalar writes use slice ops / .copy_() / .fill_() instead of
 import os
 
 import numpy as np
-import torch
+import pytest
 
 import cuda.stf._experimental as stf
 from cuda.stf._experimental.interop.pytorch import pytorch_task
+
+torch = pytest.importorskip("torch")
 
 BURGER_PLOT = os.environ.get("BURGER_PLOT", "") != ""
 

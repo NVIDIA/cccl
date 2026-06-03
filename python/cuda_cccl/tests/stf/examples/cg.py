@@ -32,10 +32,12 @@ Requires CUDA 12.4+ (conditional graph nodes).
 """
 
 import numpy as np
-import torch
+import pytest
 
 import cuda.stf._experimental as stf
 from cuda.stf._experimental.interop.pytorch import pytorch_task
+
+torch = pytest.importorskip("torch")
 
 # --- Linear-algebra building blocks (PyTorch, graph-capture safe) ----------
 

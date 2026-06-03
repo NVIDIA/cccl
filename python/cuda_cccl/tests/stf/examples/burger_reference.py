@@ -64,8 +64,11 @@ import os
 import time
 
 import numpy as np
-import torch
-from torch._higher_order_ops import while_loop as hop_while_loop
+import pytest
+
+torch = pytest.importorskip("torch")
+
+from torch._higher_order_ops import while_loop as hop_while_loop  # noqa: E402
 
 BURGER_PLOT = os.environ.get("BURGER_PLOT", "") != ""
 
