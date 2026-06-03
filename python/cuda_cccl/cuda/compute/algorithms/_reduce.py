@@ -22,7 +22,14 @@ from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_str
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
 from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct, IteratorBase, IteratorT, Operator
+from ..typing import (
+    DeviceArrayLike,
+    GpuStruct,
+    IteratorBase,
+    IteratorT,
+    Operator,
+    _Struct,
+)
 
 
 class _Reduce:
@@ -149,23 +156,24 @@ def make_reduce_into(
             "expected numpy array or object with .dtype"
         ) from e
 
-    # Validate d_in if it is a device array (iterators may not expose dtype reliably here):
-    if not isinstance(d_in, IteratorBase):
-        in_dtype = get_dtype(d_in)
-        if in_dtype != accum_dtype:
-            raise TypeError(
-                f"reduce_into dtype mismatch: input dtype {in_dtype} != accumulator dtype {accum_dtype}. "
-                "Ensure d_in elements and h_init have identical dtype to avoid truncation or misinterpretation."
-            )
+    # Validate d_in and d_out if they are device arrays (iterators may not expose
+    # dtype reliably here). Additionally, only require equality of dtypes for
+    # struct objects; mixed scalar dtypes (e.g. int8 input with int64 output)
+    # is acceptable
+    if isinstance(h_init, _Struct):
+        for arr, name in ((d_in, "input"), (d_out, "output")):
+            if isinstance(arr, IteratorBase):
+                continue
 
-    # Validate d_out dtype as well (should hold a single accumulator value):
-    if not isinstance(d_out, IteratorBase):
-        out_dtype = get_dtype(d_out)
-        if accum_dtype != out_dtype:
-            raise TypeError(
-                f"reduce_into dtype mismatch: output dtype {out_dtype} != accumulator dtype {accum_dtype}. "
-                "Ensure d_out and h_init have identical dtype."
-            )
+            dtype = get_dtype(arr)
+            breakpoint()
+            if dtype != accum_dtype:
+                raise TypeError(
+                    f"reduce_into dtype mismatch: {name} dtype {dtype} != "
+                    f"accumulator dtype {accum_dtype}. "
+                    f"Ensure {name} elements and h_init have identical dtype to "
+                    "avoid truncation or misinterpretation."
+                )
 
     op_adapter = make_op_adapter(op)
     return _Reduce(
