@@ -231,60 +231,334 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   }
 }
 
-C2H_TEST("exec_place_pick_stream standalone resources", "[places][stream]")
+C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[task][places][grid]")
 {
+  const size_t nplaces = 2;
+  stf_exec_place_handle places[2];
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    places[i] = stf_exec_place_device(0);
+  }
+  stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
+  REQUIRE(grid != nullptr);
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    stf_exec_place_destroy(places[i]);
+  }
+
+  stf_data_place_handle composite_dplace = stf_data_place_composite(grid, blocked_mapper_1d);
+  REQUIRE(composite_dplace != nullptr);
+  stf_exec_place_set_affine_data_place(grid, composite_dplace);
+
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  std::vector<float> X(4, 0.0f);
+
+  stf_logical_data_handle lX = stf_logical_data(ctx, X.data(), X.size() * sizeof(float));
+  REQUIRE(lX != nullptr);
+
+  stf_task_handle t = stf_task_create(ctx);
+  REQUIRE(t != nullptr);
+  stf_task_set_exec_place(t, grid);
+  stf_task_add_dep(t, lX, STF_RW);
+  stf_task_start(t);
+
+  stf_dim4 dims;
+  int got_dims = stf_task_get_grid_dims(t, &dims);
+  REQUIRE(got_dims == 0);
+  REQUIRE(dims.x == 2);
+  REQUIRE(dims.y == 1);
+  REQUIRE(dims.z == 1);
+  REQUIRE(dims.t == 1);
+
+  CUstream s0, s1;
+  REQUIRE(stf_task_get_custream_at_index(t, 0, &s0) == 0);
+  REQUIRE(stf_task_get_custream_at_index(t, 1, &s1) == 0);
+  REQUIRE(s0 != nullptr);
+  REQUIRE(s1 != nullptr);
+
+  stf_task_end(t);
+  stf_task_destroy(t);
+
+  stf_data_place_destroy(composite_dplace);
+  stf_exec_place_grid_destroy(grid);
+  stf_logical_data_destroy(lX);
+  stf_ctx_finalize(ctx);
+}
+
+C2H_TEST("task get_grid_dims returns error for non-grid exec_place", "[task][places][grid]")
+{
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
+
+  float val   = 0.0f;
+  auto lX     = stf_logical_data(ctx, &val, sizeof(float));
+  auto e_dev0 = stf_exec_place_device(0);
+
+  stf_task_handle t = stf_task_create(ctx);
+  REQUIRE(t != nullptr);
+  stf_task_set_exec_place(t, e_dev0);
+  stf_task_add_dep(t, lX, STF_RW);
+  stf_task_start(t);
+
+  stf_dim4 dims;
+  REQUIRE(stf_task_get_grid_dims(t, &dims) != 0);
+
+  stf_task_end(t);
+  stf_task_destroy(t);
+
+  stf_exec_place_destroy(e_dev0);
+  stf_logical_data_destroy(lX);
+  stf_ctx_finalize(ctx);
+}
+
+// ===== Place scope and accessor tests (task-free usage) =====
+
+C2H_TEST("exec_place_scope enter/exit", "[places][scope]")
+{
+  stf_machine_init();
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
+
+  stf_exec_place_scope_handle scope = stf_exec_place_scope_enter(dev0, 0);
+  REQUIRE(scope != nullptr);
+
+  stf_exec_place_scope_exit(scope);
+  stf_exec_place_scope_exit(nullptr);
+
+  stf_exec_place_destroy(dev0);
+}
+
+C2H_TEST("exec_place_scope nested", "[places][scope]")
+{
+  stf_machine_init();
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
+
+  stf_exec_place_scope_handle outer = stf_exec_place_scope_enter(dev0, 0);
+  REQUIRE(outer != nullptr);
+
+  stf_exec_place_scope_handle inner = stf_exec_place_scope_enter(dev0, 0);
+  REQUIRE(inner != nullptr);
+
+  stf_exec_place_scope_exit(inner);
+  stf_exec_place_scope_exit(outer);
+
+  stf_exec_place_destroy(dev0);
+}
+
+C2H_TEST("exec_place_get_affine_data_place", "[places][accessor]")
+{
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
+
+  stf_data_place_handle dp = stf_exec_place_get_affine_data_place(dev0);
+  REQUIRE(dp != nullptr);
+  REQUIRE(stf_data_place_get_device_ordinal(dp) == 0);
+
+  stf_data_place_destroy(dp);
+  stf_exec_place_destroy(dev0);
+}
+
+C2H_TEST("exec_place_pick_stream standalone", "[places][scope][stream]")
+{
+  stf_machine_init();
+  // Standalone use: no STF context required, just a registry the caller owns.
   stf_exec_place_resources_handle res = stf_exec_place_resources_create();
   REQUIRE(res != nullptr);
 
-  stf_exec_place_handle place = stf_exec_place_current_device();
-  REQUIRE(place != nullptr);
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
 
-  CUstream stream = stf_exec_place_pick_stream(res, place, /*for_computation=*/1);
-  REQUIRE(stream != nullptr);
-  REQUIRE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess);
+  stf_exec_place_scope_handle scope = stf_exec_place_scope_enter(dev0, 0);
+  REQUIRE(scope != nullptr);
 
-  stf_exec_place_destroy(place);
+  CUstream s = stf_exec_place_pick_stream(res, dev0, /*for_computation=*/1);
+  REQUIRE(s != nullptr);
+
+  stf_exec_place_scope_exit(scope);
+  stf_exec_place_destroy(dev0);
   stf_exec_place_resources_destroy(res);
 }
 
-C2H_TEST("exec_place resources are independent", "[places][stream]")
+C2H_TEST("exec_place resources are independent", "[places][scope][stream]")
 {
+  stf_machine_init();
   stf_exec_place_resources_handle res1 = stf_exec_place_resources_create();
   stf_exec_place_resources_handle res2 = stf_exec_place_resources_create();
   REQUIRE(res1 != nullptr);
   REQUIRE(res2 != nullptr);
 
-  stf_exec_place_handle place = stf_exec_place_current_device();
-  REQUIRE(place != nullptr);
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
 
-  CUstream stream1 = stf_exec_place_pick_stream(res1, place, /*for_computation=*/1);
-  CUstream stream2 = stf_exec_place_pick_stream(res2, place, /*for_computation=*/1);
+  stf_exec_place_scope_handle scope = stf_exec_place_scope_enter(dev0, 0);
+  REQUIRE(scope != nullptr);
+
+  CUstream stream1 = stf_exec_place_pick_stream(res1, dev0, /*for_computation=*/1);
+  CUstream stream2 = stf_exec_place_pick_stream(res2, dev0, /*for_computation=*/1);
   REQUIRE(stream1 != nullptr);
   REQUIRE(stream2 != nullptr);
   REQUIRE(stream1 != stream2);
 
-  stf_exec_place_destroy(place);
+  stf_exec_place_scope_exit(scope);
+  stf_exec_place_destroy(dev0);
   stf_exec_place_resources_destroy(res2);
   stf_exec_place_resources_destroy(res1);
 }
 
-C2H_TEST("exec_place_pick_stream borrowed context resources", "[places][stream][ctx]")
+C2H_TEST("exec_place_pick_stream borrowed from context", "[places][scope][stream][ctx]")
 {
-  stf_ctx_handle ctx = stf_ctx_create();
-  REQUIRE(ctx != nullptr);
-
+  stf_machine_init();
+  stf_ctx_handle ctx                  = stf_ctx_create();
   stf_exec_place_resources_handle res = stf_ctx_get_place_resources(ctx);
   REQUIRE(res != nullptr);
 
-  stf_exec_place_handle place = stf_exec_place_current_device();
-  REQUIRE(place != nullptr);
+  stf_exec_place_handle dev0        = stf_exec_place_device(0);
+  stf_exec_place_scope_handle scope = stf_exec_place_scope_enter(dev0, 0);
 
-  CUstream stream = stf_exec_place_pick_stream(res, place, /*for_computation=*/1);
-  REQUIRE(stream != nullptr);
-  REQUIRE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess);
+  CUstream s = stf_exec_place_pick_stream(res, dev0, /*for_computation=*/1);
+  REQUIRE(s != nullptr);
 
+  stf_exec_place_scope_exit(scope);
+  stf_exec_place_destroy(dev0);
+  // `res` is a non-owning wrapper around context resources; destroy only the wrapper.
   stf_exec_place_resources_destroy(res);
-
-  stf_exec_place_destroy(place);
   stf_ctx_finalize(ctx);
+}
+
+C2H_TEST("exec_place_get_place on grid", "[places][accessor][grid]")
+{
+  const size_t nplaces       = 2;
+  int device_ids[2]          = {0, 0};
+  stf_exec_place_handle grid = stf_exec_place_grid_from_devices(device_ids, nplaces);
+  REQUIRE(grid != nullptr);
+
+  stf_exec_place_handle sub0 = stf_exec_place_get_place(grid, 0);
+  stf_exec_place_handle sub1 = stf_exec_place_get_place(grid, 1);
+  REQUIRE(sub0 != nullptr);
+  REQUIRE(sub1 != nullptr);
+  REQUIRE(stf_exec_place_is_device(sub0) != 0);
+  REQUIRE(stf_exec_place_is_device(sub1) != 0);
+
+  stf_exec_place_destroy(sub0);
+  stf_exec_place_destroy(sub1);
+  stf_exec_place_grid_destroy(grid);
+}
+
+C2H_TEST("exec_place_get_place on scalar", "[places][accessor]")
+{
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
+
+  stf_exec_place_handle sub = stf_exec_place_get_place(dev0, 0);
+  REQUIRE(sub != nullptr);
+  REQUIRE(stf_exec_place_is_device(sub) != 0);
+
+  stf_exec_place_destroy(sub);
+  stf_exec_place_destroy(dev0);
+}
+
+C2H_TEST("exec_place_get_place out of bounds", "[places][accessor]")
+{
+  stf_exec_place_handle dev0 = stf_exec_place_device(0);
+  REQUIRE(dev0 != nullptr);
+  REQUIRE(stf_exec_place_get_place(dev0, 1) == nullptr);
+  stf_exec_place_destroy(dev0);
+
+  int device_ids[2]          = {0, 0};
+  stf_exec_place_handle grid = stf_exec_place_grid_from_devices(device_ids, 2);
+  REQUIRE(grid != nullptr);
+  REQUIRE(stf_exec_place_get_place(grid, 2) == nullptr);
+  stf_exec_place_grid_destroy(grid);
+}
+
+C2H_TEST("machine_init idempotent", "[places][machine]")
+{
+  stf_machine_init();
+  stf_machine_init();
+}
+
+C2H_TEST("data_place_allocate_device", "[places][allocate]")
+{
+  stf_exec_place_resources_handle res = stf_exec_place_resources_create();
+  stf_exec_place_handle ep            = stf_exec_place_device(0);
+  REQUIRE(ep != nullptr);
+
+  stf_exec_place_scope_handle scope = stf_exec_place_scope_enter(ep, 0);
+  REQUIRE(scope != nullptr);
+
+  CUstream stream              = stf_exec_place_pick_stream(res, ep, /*for_computation=*/0);
+  stf_data_place_handle dplace = stf_exec_place_get_affine_data_place(ep);
+  REQUIRE(dplace != nullptr);
+
+  void* ptr = stf_data_place_allocate(dplace, 1024, reinterpret_cast<cudaStream_t>(stream));
+  REQUIRE(ptr != nullptr);
+
+  stf_data_place_deallocate(dplace, ptr, 1024, reinterpret_cast<cudaStream_t>(stream));
+
+  stf_data_place_destroy(dplace);
+  stf_exec_place_scope_exit(scope);
+  stf_exec_place_destroy(ep);
+  stf_exec_place_resources_destroy(res);
+}
+
+C2H_TEST("data_place_allocate_host", "[places][allocate]")
+{
+  stf_data_place_handle dplace = stf_data_place_host();
+  REQUIRE(dplace != nullptr);
+
+  void* ptr = stf_data_place_allocate(dplace, 256, nullptr);
+  REQUIRE(ptr != nullptr);
+
+  int* buf = static_cast<int*>(ptr);
+  buf[0]   = 42;
+  REQUIRE(buf[0] == 42);
+
+  stf_data_place_deallocate(dplace, ptr, 256, nullptr);
+  stf_data_place_destroy(dplace);
+}
+
+C2H_TEST("data_place_allocate_managed", "[places][allocate]")
+{
+  stf_data_place_handle dplace = stf_data_place_managed();
+  REQUIRE(dplace != nullptr);
+
+  void* ptr = stf_data_place_allocate(dplace, 512, nullptr);
+  REQUIRE(ptr != nullptr);
+
+  int* buf = static_cast<int*>(ptr);
+  buf[0]   = 99;
+  REQUIRE(buf[0] == 99);
+
+  stf_data_place_deallocate(dplace, ptr, 512, nullptr);
+  stf_data_place_destroy(dplace);
+}
+
+C2H_TEST("data_place_allocation_is_stream_ordered", "[places][allocate]")
+{
+  stf_data_place_handle dev = stf_data_place_device(0);
+  REQUIRE(dev != nullptr);
+  REQUIRE(stf_data_place_allocation_is_stream_ordered(dev) == 1);
+  stf_data_place_destroy(dev);
+
+  stf_data_place_handle host = stf_data_place_host();
+  REQUIRE(host != nullptr);
+  REQUIRE(stf_data_place_allocation_is_stream_ordered(host) == 0);
+  stf_data_place_destroy(host);
+
+  stf_data_place_handle mgd = stf_data_place_managed();
+  REQUIRE(mgd != nullptr);
+  REQUIRE(stf_data_place_allocation_is_stream_ordered(mgd) == 0);
+  stf_data_place_destroy(mgd);
+}
+
+C2H_TEST("data_place_allocate_invalid_returns_null", "[places][allocate]")
+{
+  stf_data_place_handle inv = stf_data_place_affine();
+  REQUIRE(inv != nullptr);
+  void* ptr = stf_data_place_allocate(inv, 64, nullptr);
+  REQUIRE(ptr == nullptr);
+  stf_data_place_destroy(inv);
 }

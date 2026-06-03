@@ -120,6 +120,16 @@ template <class P>
   {
     return static_cast<stf_host_launch_deps_handle>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<P, exec_place_scope>)
+  {
+    return static_cast<stf_exec_place_scope_handle>(opaque_bits);
+  }
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  else if constexpr (::std::is_same_v<P, green_context_helper>)
+  {
+    return static_cast<stf_green_context_helper_handle>(opaque_bits);
+  }
+#endif
   else
   {
     static_assert(stf_dependent_false_v<P>, "to_opaque: missing pointee -> handle pairing");
@@ -161,6 +171,16 @@ template <class Opaque>
   {
     return static_cast<const reserved::host_launch_deps*>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<Opaque*, stf_exec_place_scope_handle>)
+  {
+    return static_cast<const exec_place_scope*>(opaque_bits);
+  }
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  else if constexpr (::std::is_same_v<Opaque*, stf_green_context_helper_handle>)
+  {
+    return static_cast<const green_context_helper*>(opaque_bits);
+  }
+#endif
   else
   {
     static_assert(stf_dependent_false_v<Opaque>, "from_opaque_const: missing handle -> pointee pairing");
@@ -196,6 +216,50 @@ stf_exec_place_handle stf_exec_place_current_device(void)
   return to_opaque(stf_try_allocate([] {
     return new exec_place(exec_place::current_device());
   }));
+}
+
+stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  return to_opaque(stf_try_allocate([sm_count, dev_id] {
+    return new green_context_helper(sm_count, dev_id);
+  }));
+#else
+  (void) sm_count;
+  (void) dev_id;
+  return nullptr;
+#endif
+}
+
+void stf_green_context_helper_destroy(stf_green_context_helper_handle h)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  delete from_opaque(h);
+#else
+  (void) h;
+#endif
+}
+
+size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(h != nullptr, "green_context_helper handle must not be null");
+  return from_opaque(h)->get_count();
+#else
+  (void) h;
+  return 0;
+#endif
+}
+
+int stf_green_context_helper_get_device_id(stf_green_context_helper_handle h)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(h != nullptr, "green_context_helper handle must not be null");
+  return static_cast<int>(from_opaque(h)->get_device_id());
+#else
+  (void) h;
+  return -1;
+#endif
 }
 
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h)
@@ -281,6 +345,27 @@ void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
   stf_exec_place_destroy(grid);
 }
 
+stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx)
+{
+  _CCCL_ASSERT(place != nullptr, "exec_place handle must not be null");
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place_scope(*from_opaque(place), idx);
+  }));
+}
+
+void stf_exec_place_scope_exit(stf_exec_place_scope_handle scope)
+{
+  delete from_opaque(scope);
+}
+
+stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
+  return to_opaque(stf_try_allocate([h] {
+    return new data_place(from_opaque(h)->affine_data_place());
+  }));
+}
+
 stf_exec_place_resources_handle stf_exec_place_resources_create(void)
 {
   return stf_try_allocate([] {
@@ -317,7 +402,45 @@ CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exe
 {
   _CCCL_ASSERT(res != nullptr, "exec_place_resources handle must not be null");
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
-  return reinterpret_cast<CUstream>(from_opaque(h)->pick_stream(*res->resources, for_computation != 0));
+  return reinterpret_cast<CUstream>(from_opaque(h)->pick_stream(*from_opaque(res), for_computation != 0));
+}
+
+stf_exec_place_handle stf_exec_place_get_place(stf_exec_place_handle h, size_t idx)
+{
+  _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
+  if (idx >= from_opaque(h)->size())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([h, idx] {
+    return new exec_place(from_opaque(h)->get_place(idx));
+  }));
+}
+
+stf_exec_place_handle
+stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int use_green_ctx_data_place)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(helper != nullptr, "green_context_helper handle must not be null");
+  auto* gc_helper = from_opaque(helper);
+  if (idx >= gc_helper->get_count())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([gc_helper, idx, use_green_ctx_data_place] {
+    return new exec_place(exec_place::green_ctx(gc_helper->get_view(idx), use_green_ctx_data_place != 0));
+  }));
+#else
+  (void) helper;
+  (void) idx;
+  (void) use_green_ctx_data_place;
+  return nullptr;
+#endif
+}
+
+void stf_machine_init(void)
+{
+  cuda::experimental::places::reserved::machine::instance();
 }
 
 stf_data_place_handle stf_data_place_host(void)
@@ -369,6 +492,25 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(helper != nullptr, "green_context_helper handle must not be null");
+  auto* gc_helper = from_opaque(helper);
+  if (idx >= gc_helper->get_count())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([gc_helper, idx] {
+    return new data_place(data_place::green_ctx(gc_helper->get_view(idx)));
+  }));
+#else
+  (void) helper;
+  (void) idx;
+  return nullptr;
+#endif
+}
+
 stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
@@ -395,6 +537,37 @@ const char* stf_data_place_to_string(stf_data_place_handle h)
   static thread_local ::std::string s;
   s = from_opaque(h)->to_string();
   return s.c_str();
+}
+
+void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  try
+  {
+    return from_opaque(h)->allocate(static_cast<::std::ptrdiff_t>(size), stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_allocate failed: %s\n", e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_allocate failed: unknown exception\n");
+    return nullptr;
+  }
+}
+
+void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  from_opaque(h)->deallocate(ptr, size, stream);
+}
+
+int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
 }
 
 stf_ctx_handle stf_ctx_create(void)
@@ -700,6 +873,41 @@ CUstream stf_task_get_custream(stf_task_handle t)
 
   auto* task_ptr = from_opaque(t);
   return static_cast<CUstream>(task_ptr->get_stream());
+}
+
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
+{
+  if (t == nullptr || out_dims == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = from_opaque(t);
+  dim4 d;
+  if (!task_ptr->get_grid_dims(&d))
+  {
+    return -1;
+  }
+  out_dims->x = static_cast<uint64_t>(d.x);
+  out_dims->y = static_cast<uint64_t>(d.y);
+  out_dims->z = static_cast<uint64_t>(d.z);
+  out_dims->t = static_cast<uint64_t>(d.t);
+  return 0;
+}
+
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream)
+{
+  if (t == nullptr || out_stream == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = from_opaque(t);
+  cudaStream_t s = task_ptr->get_stream(place_index);
+  if (s == nullptr)
+  {
+    return -1;
+  }
+  *out_stream = static_cast<CUstream>(s);
+  return 0;
 }
 
 void stf_task_destroy(stf_task_handle t)
