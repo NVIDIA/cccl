@@ -166,7 +166,6 @@ def make_reduce_into(
                 continue
 
             dtype = get_dtype(arr)
-            breakpoint()
             if dtype != accum_dtype:
                 raise TypeError(
                     f"reduce_into dtype mismatch: {name} dtype {dtype} != "
