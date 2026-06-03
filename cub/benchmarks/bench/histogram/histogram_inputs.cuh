@@ -56,10 +56,9 @@ enum class InputShape
                   // s >= 0 (default 1.0).
   hash_synonym,   // hot bins all collide on one cache slot. KNOB = hot share
                   // in [0,1] (default 0.9).
-  stale_resident, // a cold working set, swept cyclically, that recurs in every
-                  // block but overflows the SMEM cache so it cannot stay resident
-                  // (thrashes it). KNOB = working-set size as a multiple of cache
-                  // slots (default 2.0 => twice the slots, overflowing the cache).
+  stale_resident, // cold prefix claims slots, then a hot bulk (attacks
+                  // no-evict). KNOB = prefix coverage as a multiple of cache
+                  // slots (default 1.0 => claim `slots` bins).
   temporal_phases,// the hot bin steps to a new location across phases. KNOB =
                   // number of phases (default 8).
   strided_sweep,  // bin = stride*i % B (minimal temporal locality). KNOB =
