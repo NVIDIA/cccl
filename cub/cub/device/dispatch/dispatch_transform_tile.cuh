@@ -3,8 +3,8 @@
 
 // Tile port of cub::DeviceTransform. The public surface mirrors
 // cub::DeviceTransform::{Transform, Fill}; the kernels are written against the
-// tile DSL (cuda::tiles). This header is only safe to include when nvcc is
-// invoked with --enable-tile and CTK >= 13.3.
+// tile DSL (cuda::tiles). This header requires CTK 13.3 or newer and nvcc
+// invoked with --enable-tile.
 
 #pragma once
 
@@ -18,16 +18,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/cmath>
-#include <cuda/std/tuple>
-#include <cuda/std/utility>
+#if _CCCL_CTK_AT_LEAST(13, 3)
 
-#include <cuda_runtime.h>
-#include <cuda_tile.h>
+#  include <cuda/cmath>
+#  include <cuda/std/tuple>
+#  include <cuda/std/utility>
 
-#include <cstdint>
+#  include <cuda_runtime.h>
+#  include <cuda_tile.h>
 
-namespace cub_tile::detail
+#  include <cstdint>
+
+CUB_NAMESPACE_BEGIN
+
+namespace detail::transform::tile
 {
 
 constexpr int min_bytes_in_flight_per_sm(int cc_x10)
@@ -159,20 +163,14 @@ __tile_global__ void fill_kernel(int64_t num_items_, T* __restrict__ out_, T val
   out_view.store_masked(ct::full<tile_t>(value), bx);
 }
 
-} // namespace cub_tile::detail
-
-namespace cub_tile
-{
-
 struct DeviceTransform
 {
   template <int TileSize = 0, bool MufuHeavy = false, typename Fn, typename Out, typename... Ins>
   static cudaError_t
   Transform(::cuda::std::tuple<Ins*...> inputs, Out* output, int64_t num_items, Fn, cudaStream_t stream = 0)
   {
-    constexpr int chosen = (TileSize > 0) ? TileSize : detail::pick_tile_size<Out, Ins...>(MufuHeavy);
-    return detail::launch_impl<chosen, Fn>(
-      inputs, output, num_items, stream, ::cuda::std::index_sequence_for<Ins...>{});
+    constexpr int chosen = (TileSize > 0) ? TileSize : pick_tile_size<Out, Ins...>(MufuHeavy);
+    return launch_impl<chosen, Fn>(inputs, output, num_items, stream, ::cuda::std::index_sequence_for<Ins...>{});
   }
 
   // Fill
@@ -183,12 +181,23 @@ struct DeviceTransform
     {
       return cudaSuccess;
     }
-    constexpr int chosen     = (TileSize > 0) ? TileSize : detail::pick_tile_size<T>();
+    constexpr int chosen     = (TileSize > 0) ? TileSize : pick_tile_size<T>();
     const int64_t num_blocks = (num_items + chosen - 1) / chosen;
-    detail::fill_kernel<chosen, T>
-      <<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(num_items, output, value);
+    fill_kernel<chosen, T><<<static_cast<unsigned int>(num_blocks), 1, 0, stream>>>(num_items, output, value);
     return cudaGetLastError();
   }
 };
 
+} // namespace detail::transform::tile
+
+CUB_NAMESPACE_END
+
+// Compatibility shim. Existing benches and tests still call
+// cub_tile::DeviceTransform; once they move to cub::DeviceTransform with named
+// functors and the trait dispatch, this alias can be removed.
+namespace cub_tile
+{
+using DeviceTransform = ::cub::detail::transform::tile::DeviceTransform;
 } // namespace cub_tile
+
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
