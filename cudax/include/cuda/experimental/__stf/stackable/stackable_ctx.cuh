@@ -1371,7 +1371,8 @@ public:
     stackable_ctx& ctx,
     size_t count,
     unsigned int default_launch_value = 1,
-    unsigned int flags                = cudaGraphCondAssignDefault)
+    unsigned int flags                = cudaGraphCondAssignDefault,
+    ::cuda::std::source_location loc  = ::cuda::std::source_location::current())
       : ctx_(ctx)
   {
     auto counter_shape = shape_of<scalar_view<size_t>>();
@@ -1379,7 +1380,7 @@ public:
 
     init_counter_value(ctx_, counter_, count);
 
-    while_guard_.emplace(ctx_, default_launch_value, flags, ::cuda::std::source_location::current());
+    while_guard_.emplace(ctx_, default_launch_value, flags, loc);
 
     setup_condition_update(*while_guard_, counter_);
   }
@@ -1401,8 +1402,7 @@ private:
 inline auto stackable_ctx::repeat_graph_scope(
   size_t count, unsigned int default_launch_value, unsigned int flags, ::cuda::std::source_location loc)
 {
-  (void) loc;
-  return repeat_graph_scope_guard(*this, count, default_launch_value, flags);
+  return repeat_graph_scope_guard(*this, count, default_launch_value, flags, loc);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
