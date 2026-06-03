@@ -46,7 +46,7 @@ namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanWarpspeedPolicy& policy)
 {
-  const auto num_total_warps = 2 * policy.num_reduce_and_scan_warps + 1 /*num_load_warps*/
+  const auto num_total_warps = 2 * policy.reduce_and_scan_warps + 1 /*num_load_warps*/
                              + 1 /*num_sched_warps*/ + 1 /*num_lookahead_warps*/;
   return num_total_warps * warp_threads;
 }

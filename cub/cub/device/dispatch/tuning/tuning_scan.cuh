@@ -106,7 +106,7 @@ struct ScanLookbackPolicy
 //! The tuning policy for the warpspeed scan algorithm in @ref DeviceScan.
 struct ScanWarpspeedPolicy
 {
-  int num_reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
+  int reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
   int items_per_thread; //!< Number of items processed per reduction and scanning thread
   int lookahead_items_per_thread; //!< Number of look-ahead items per thread in the lookback warp
 
@@ -124,13 +124,12 @@ struct ScanWarpspeedPolicy
 
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
-    return items_per_thread * num_reduce_and_scan_warps * cub::detail::warp_threads;
+    return items_per_thread * reduce_and_scan_warps * cub::detail::warp_threads;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
   {
-    return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
-        && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.reduce_and_scan_warps == rhs.reduce_and_scan_warps && lhs.items_per_thread == rhs.items_per_thread
         && lhs.lookahead_items_per_thread == rhs.lookahead_items_per_thread
         && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
   }
@@ -144,9 +143,8 @@ struct ScanWarpspeedPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const ScanWarpspeedPolicy& p)
   {
     return os
-        << "ScanWarpspeedPolicy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
-        << ", .items_per_thread = " << p.items_per_thread
-        << ", .lookahead_items_per_thread = " << p.lookahead_items_per_thread
+        << "ScanWarpspeedPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
+        << p.items_per_thread << ", .lookahead_items_per_thread = " << p.lookahead_items_per_thread
         << ", .lookahead_stages = " << p.lookahead_stages << ", .block_idx_stages = " << p.block_idx_stages << " }";
   }
 #endif // _CCCL_HOSTED()
@@ -713,12 +711,12 @@ _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
 
 _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_reduce(const ScanWarpspeedPolicy& policy)
 {
-  return warpspeed::SquadDesc{0, policy.num_reduce_and_scan_warps};
+  return warpspeed::SquadDesc{0, policy.reduce_and_scan_warps};
 }
 
 _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan_store(const ScanWarpspeedPolicy& policy)
 {
-  return warpspeed::SquadDesc{1, policy.num_reduce_and_scan_warps};
+  return warpspeed::SquadDesc{1, policy.reduce_and_scan_warps};
 }
 
 _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load(const ScanWarpspeedPolicy&)
@@ -887,9 +885,9 @@ struct policy_selector
 #if _CCCL_COMPILER(NVHPC)
     // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
     // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700.
-    warpspeed_policy.num_reduce_and_scan_warps = 2;
+    warpspeed_policy.reduce_and_scan_warps = 2;
 #else // _CCCL_COMPILER(NVHPC)
-    warpspeed_policy.num_reduce_and_scan_warps = 4;
+    warpspeed_policy.reduce_and_scan_warps = 4;
 #endif // _CCCL_COMPILER(NVHPC)
 
     // TODO(bgruber): 5 is a bit better for complex<float>
