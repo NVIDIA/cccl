@@ -64,12 +64,61 @@ Use ``with ctx.task(...) as t:`` to get a task handle. Inside the block:
   :meth:`t.args_cai() <task.args_cai>` return object(s) that implement the
   **CUDA Array Interface**, so you can pass them to Numba (``cuda.from_cuda_array_interface(...)``),
   PyTorch (``torch.as_tensor(...)``), or CuPy (``cp.asarray(...)``).
+* **Host callbacks** — :meth:`ctx.host_launch(...) <context.host_launch>` schedules a
+  Python callback with dependency tracking; the dependencies are unpacked as NumPy
+  arrays and passed to the callback (e.g.
+  ``ctx.host_launch(lX.read(), fn=lambda x: print(x.sum()))``).
 
-The ``cuda.stf._experimental`` package does not ship Numba/PyTorch helpers; see
-`tests/stf/numba_helpers.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/numba_helpers.py>`_,
-`numba_decorator.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/numba_decorator.py>`_,
-and `pytorch_task.py <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/stf/pytorch_task.py>`_
-for examples.
+Interop adapters
+----------------
+
+On top of the raw CUDA Array Interface, ``cuda.stf._experimental`` ships small,
+**opt-in** adapters for Numba and PyTorch under
+:mod:`cuda.stf._experimental.interop`. Importing ``cuda.stf._experimental`` does
+**not** import Numba or PyTorch; the optional runtime is imported lazily inside
+each adapter, and a missing dependency raises a clear ``ImportError`` at first
+use. You import only the adapter you need.
+
+**PyTorch** (:mod:`cuda.stf._experimental.interop.pytorch`) —
+:func:`pytorch_task` opens a task, makes the task's CUDA stream the current
+PyTorch stream for the duration of the block, and yields the task arguments as
+``torch.Tensor`` views::
+
+    from cuda.stf._experimental.interop.pytorch import pytorch_task
+
+    with pytorch_task(ctx, lX.read(), lY.rw()) as (x_tensor, y_tensor):
+        y_tensor[:] = x_tensor * 2
+
+``tensor_arg(task, index)`` and ``tensor_arguments(task)`` convert one or all
+task arguments to tensors if you manage the task block yourself.
+
+**Numba** (:mod:`cuda.stf._experimental.interop.numba`) — :func:`numba_task`
+opens a task and yields ``(numba_arrays, stream)``, where ``stream`` can be
+passed straight to ``cuda.compute`` algorithms::
+
+    from cuda.stf._experimental.interop.numba import numba_task
+
+    with numba_task(ctx, lA.read(), lB.read(), lC.rw()) as (args, stream):
+        cuda.compute.binary_transform(args[0], args[1], args[2], OpKind.PLUS, N, stream=stream)
+
+The :func:`jit` decorator wraps ``numba.cuda.jit`` so a kernel can be launched
+directly with STF ``dep`` arguments; the conversion into device arrays (and the
+task that scopes them) happens automatically::
+
+    from numba import cuda
+
+    from cuda.stf._experimental.interop.numba import jit
+
+    @jit
+    def axpy(a, x, y):
+        i = cuda.grid(1)
+        if i < x.size:
+            y[i] = a * x[i] + y[i]
+
+    axpy[grid, block](2.0, lX.read(), lY.rw())
+
+``get_arg_numba(task, index)`` and ``numba_arguments(task)`` are the lower-level
+converters used by these helpers.
 
 Record-once task graphs
 -----------------------
@@ -127,8 +176,11 @@ task dependencies.
 Example collections
 -------------------
 
-For runnable examples (Numba kernels, PyTorch, tokens, multi-GPU, FDTD), see the
+For runnable examples, see the
 `STF tests and examples <https://github.com/NVIDIA/cccl/tree/main/python/cuda_cccl/tests/stf>`_.
+The ``interop/`` subdirectory exercises the Numba and PyTorch adapters (kernels,
+tokens, multi-GPU, FDTD), and ``examples/`` holds larger end-to-end programs
+(conjugate gradient, Cholesky, Burger, neural ODE).
 
 For the full STF programming model, graph visualization, and C++ API, see
 :ref:`CUDASTF (C++) <stf>`.
