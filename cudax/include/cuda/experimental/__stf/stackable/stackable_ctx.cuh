@@ -87,175 +87,14 @@ inline bool access_mode_permits(access_mode granted, access_mode requested)
 
 //! Logical data type used in a stackable_ctx context type.
 //!
-//! It should behaves exactly like a logical_data with additional API to import
-//! it across nested contexts.
-//!
-//! The public class (shell) owns user-handle lifetime and import/adoption logic.
-//! The nested `state` type holds the data-node tree and virtual pop hooks; it
-//! is shared with graph nodes via `shared_ptr`. Shell copies alias an `owner`
-//! control block that pins orphaned state when the last handle dies.
+//! It behaves like a logical_data with additional API to import it across
+//! nested contexts (push/pop between context levels).
 template <typename T>
 class stackable_logical_data
 {
 public:
   /// @brief Alias for `T` - matches logical_data<T> convention
   using element_type = T;
-
-  //! @brief Retained payload stored type-erased in graph nodes (`pushed_data` /
-  //! `retained_data`). Pop hooks are virtual; everything else lives in the shell.
-  class state : public stackable_logical_data_impl_state_base
-  {
-  public:
-    explicit state(stackable_ctx _sctx)
-        : sctx(mv(_sctx))
-    {}
-
-    void pop_before_finalize(int ctx_offset) override
-    {
-      int parent_offset = sctx.get_parent_offset(ctx_offset);
-      _CCCL_ASSERT(parent_offset != -1, "");
-
-      _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
-
-      auto& parent_dnode = data_nodes[parent_offset].value();
-
-      if (data_nodes[ctx_offset].has_value())
-      {
-        access_mode frozen_mode = get_frozen_mode(parent_offset);
-        if ((frozen_mode == access_mode::rw) && (data_nodes[ctx_offset].value().effective_mode == access_mode::read))
-        {
-          static ::std::atomic<int> warning_count{0};
-          if (warning_count.fetch_add(1, ::std::memory_order_relaxed) < 100)
-          {
-            fprintf(stderr,
-                    "Warning : no write access on data pushed with a write mode (may be suboptimal) (symbol %s)\n",
-                    symbol.empty() ? "(no symbol)" : symbol.c_str());
-            if (warning_count.load(::std::memory_order_relaxed) == 100)
-            {
-              fprintf(stderr, "Warning: Suppressing further write mode warnings (reached limit of 100)\n");
-            }
-          }
-        }
-
-        _CCCL_ASSERT(!data_nodes[ctx_offset].value().frozen_ld.has_value(), "internal error");
-        data_nodes[ctx_offset].reset();
-      }
-
-      _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
-      parent_dnode.get_cnt--;
-
-      sctx.get_node(ctx_offset)->ctx.get_dot()->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
-    }
-
-    void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
-    {
-      nvtx_range r("stackable_logical_data::pop_after_finalize");
-
-      _CCCL_ASSERT(data_nodes[parent_offset].has_value(), "");
-      auto& dnode = data_nodes[parent_offset].value();
-
-      _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
-
-      dnode.unfreeze_prereqs.merge(finalize_prereqs);
-
-      _CCCL_ASSERT(dnode.get_cnt >= 0, "get_cnt should never be negative");
-      if (dnode.get_cnt == 0)
-      {
-        dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
-        dnode.frozen_ld.reset();
-      }
-    }
-
-    struct data_node
-    {
-      explicit data_node(logical_data<T> ld)
-          : ld(mv(ld))
-      {}
-
-      logical_data<T> ld;
-      ::std::optional<frozen_logical_data<T>> frozen_ld;
-      event_list unfreeze_prereqs;
-      int get_cnt                = 0;
-      access_mode effective_mode = access_mode::none;
-    };
-
-    auto& get_data_node(int offset)
-    {
-      _CCCL_ASSERT(offset != -1, "invalid value");
-      _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
-      return data_nodes[offset].value();
-    }
-
-    const auto& get_data_node(int offset) const
-    {
-      _CCCL_ASSERT(offset != -1, "invalid value");
-      _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
-      return data_nodes[offset].value();
-    }
-
-    void grow_data_nodes(int target_size,
-                         size_t factor_numerator   = node_hierarchy::default_growth_numerator,
-                         size_t factor_denominator = node_hierarchy::default_growth_denominator)
-    {
-      if (target_size < int(data_nodes.size()))
-      {
-        return;
-      }
-
-      size_t new_size =
-        ::std::max(static_cast<size_t>(target_size), data_nodes.size() * factor_numerator / factor_denominator);
-      data_nodes.resize(new_size);
-    }
-
-    bool was_imported(int offset) const
-    {
-      _CCCL_ASSERT(offset != -1, "");
-
-      if (offset >= int(data_nodes.size()))
-      {
-        return false;
-      }
-
-      return data_nodes[offset].has_value();
-    }
-
-    void mark_access(int offset, access_mode m)
-    {
-      _CCCL_ASSERT(offset != -1 && data_nodes[offset].has_value(), "Failed to find data node for mark_access");
-      data_nodes[offset].value().effective_mode |= m;
-    }
-
-    bool is_frozen(int offset) const
-    {
-      _CCCL_ASSERT(data_nodes[offset].has_value(), "");
-      return data_nodes[offset].value().frozen_ld.has_value();
-    }
-
-    access_mode get_frozen_mode(int offset) const
-    {
-      _CCCL_ASSERT(is_frozen(offset), "");
-      return data_nodes[offset].value().frozen_ld.value().get_access_mode();
-    }
-
-    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
-    {
-      return ::std::shared_lock<::std::shared_mutex>(mutex);
-    }
-
-    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
-    {
-      return ::std::unique_lock<::std::shared_mutex>(mutex);
-    }
-
-    stackable_ctx sctx;
-    ::std::vector<::std::optional<data_node>> data_nodes;
-    int data_root_offset = -1;
-    ::std::string symbol;
-    bool read_only = false;
-
-  private:
-    mutable ::std::shared_mutex mutex;
-  };
 
   stackable_logical_data() = default;
 
@@ -278,29 +117,27 @@ public:
     const int data_root_offset        = can_export ? owner_->payload->sctx.get_root_offset() : ctx_offset;
     owner_->payload->data_root_offset = data_root_offset;
 
-    if (data_root_offset >= int(owner_->payload->data_nodes.size()))
+    if (static_cast<size_t>(data_root_offset) >= owner_->payload->data_nodes.size())
     {
-      owner_->payload->grow_data_nodes(data_root_offset + 1);
+      owner_->payload->grow_data_nodes(static_cast<size_t>(data_root_offset) + 1);
     }
-    _CCCL_ASSERT(!owner_->payload->data_nodes[data_root_offset].has_value(), "");
+    _CCCL_ASSERT(!owner_->payload->data_nodes[static_cast<size_t>(data_root_offset)].has_value(), "");
 
-    owner_->payload->data_nodes[data_root_offset].emplace(mv(ld));
+    owner_->payload->data_nodes[static_cast<size_t>(data_root_offset)].emplace(mv(ld));
 
     if (ctx_offset != data_root_offset)
     {
       ::std::stack<int> path;
-      int current = ctx_offset;
-      while (current != data_root_offset)
+      for (int current = ctx_offset; current != data_root_offset;
+           current     = owner_->payload->sctx.get_parent_offset(current))
       {
+        _CCCL_ASSERT(current >= 0, "");
         path.push(current);
-        current = owner_->payload->sctx.get_parent_offset(current);
-        _CCCL_ASSERT(current != -1, "");
       }
 
       while (!path.empty())
       {
-        const int offset = path.top();
-        push_at(offset, ld_from_shape ? access_mode::write : access_mode::rw, data_place::invalid());
+        push_at(path.top(), ld_from_shape ? access_mode::write : access_mode::rw, data_place::invalid());
         path.pop();
       }
     }
@@ -313,21 +150,21 @@ public:
 
   const auto& get_ld(int offset) const
   {
-    _CCCL_ASSERT(offset != -1 && data().was_imported(offset), "Failed to find imported data");
+    _CCCL_ASSERT(offset >= 0 && data().was_imported(offset), "Failed to find imported data");
     return data().get_data_node(offset).ld;
   }
 
   auto& get_ld(int offset)
   {
-    _CCCL_ASSERT(offset != -1 && mut_data().was_imported(offset), "Failed to find imported data");
+    _CCCL_ASSERT(offset >= 0 && mut_data().was_imported(offset), "Failed to find imported data");
     return mut_data().get_data_node(offset).ld;
   }
 
   int get_unique_id() const
   {
     const int root = get_data_root_offset();
-    _CCCL_ASSERT(root != -1, "");
-    _CCCL_ASSERT(data().data_nodes[root].has_value(), "");
+    _CCCL_ASSERT(root >= 0, "");
+    _CCCL_ASSERT(data().data_nodes[static_cast<size_t>(root)].has_value(), "");
     return data().get_data_node(root).ld.get_unique_id();
   }
 
@@ -425,8 +262,8 @@ public:
   {
     auto& st      = mut_data();
     auto ctx_lock = st.sctx.acquire_exclusive_lock();
-    st.symbol     = mv(symbol);
-    traverse_data_nodes(st, [symbol = st.symbol](state& s, int offset) {
+    st.symbol     = symbol;
+    traverse_data_nodes(st, [symbol](state& s, int offset) {
       s.get_data_node(offset).ld.set_symbol(symbol);
     });
     return *this;
@@ -434,9 +271,10 @@ public:
 
   void set_write_back(bool flag)
   {
-    auto& st = mut_data();
+    const auto& st = data();
+    _CCCL_ASSERT(st.data_root_offset >= 0, "invalid value");
     _CCCL_ASSERT(!st.data_nodes.empty(), "invalid value");
-    st.get_data_node(st.data_root_offset).ld.set_write_back(flag);
+    mut_data().get_data_node(st.data_root_offset).ld.set_write_back(flag);
   }
 
   void set_read_only(bool flag = true)
@@ -475,10 +313,10 @@ public:
 
     if (data().was_imported(ctx_offset))
     {
-      int parent_offset = sctx_ref.get_parent_offset(ctx_offset);
-      if (parent_offset != -1 && data().is_frozen(parent_offset))
+      const int parent_offset = sctx_ref.get_parent_offset(ctx_offset);
+      if (parent_offset >= 0 && data().is_frozen(parent_offset))
       {
-        access_mode parent_frozen_mode = data().get_frozen_mode(parent_offset);
+        const access_mode parent_frozen_mode = data().get_frozen_mode(parent_offset);
         if (!access_mode_permits(parent_frozen_mode, m))
         {
           fprintf(stderr,
@@ -493,25 +331,22 @@ public:
       return true;
     }
 
-    access_mode push_mode =
+    const access_mode push_mode =
       is_read_only() ? access_mode::read
                      : ((m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw);
 
     ::std::stack<int> path;
-    int current = ctx_offset;
-    while (!data().was_imported(current))
+    for (int current = ctx_offset; !data().was_imported(current); current = sctx_ref.get_parent_offset(current))
     {
+      _CCCL_ASSERT(current >= 0, "");
       path.push(current);
-      current = sctx_ref.get_parent_offset(current);
-      _CCCL_ASSERT(current != -1, "");
     }
 
-    auto where = sctx_ref.get_ctx(ctx_offset).default_exec_place().affine_data_place();
+    const auto where = sctx_ref.get_ctx(ctx_offset).default_exec_place().affine_data_place();
 
     while (!path.empty())
     {
-      const int offset = path.top();
-      self.push_at(offset, push_mode, where);
+      self.push_at(path.top(), push_mode, where);
       path.pop();
     }
 
@@ -522,6 +357,163 @@ public:
 private:
   template <typename, typename, bool>
   friend class stackable_task_dep;
+
+  class state : public stackable_logical_data_impl_state_base
+  {
+  public:
+    explicit state(stackable_ctx _sctx)
+        : sctx(mv(_sctx))
+    {}
+
+    void pop_before_finalize(int ctx_offset) override
+    {
+      const int parent_offset = sctx.get_parent_offset(ctx_offset);
+      _CCCL_ASSERT(parent_offset >= 0, "");
+
+      _CCCL_ASSERT(data_nodes[static_cast<size_t>(parent_offset)].has_value(), "");
+      auto& parent_dnode = data_nodes[static_cast<size_t>(parent_offset)].value();
+
+      if (data_nodes[static_cast<size_t>(ctx_offset)].has_value())
+      {
+        const access_mode frozen_mode = get_frozen_mode(parent_offset);
+        if ((frozen_mode == access_mode::rw)
+            && (data_nodes[static_cast<size_t>(ctx_offset)].value().effective_mode == access_mode::read))
+        {
+          static ::std::atomic<int> warning_count{0};
+          if (warning_count.fetch_add(1, ::std::memory_order_relaxed) < 100)
+          {
+            fprintf(stderr,
+                    "Warning : no write access on data pushed with a write mode (may be suboptimal) (symbol %s)\n",
+                    symbol.empty() ? "(no symbol)" : symbol.c_str());
+            if (warning_count.load(::std::memory_order_relaxed) == 100)
+            {
+              fprintf(stderr, "Warning: Suppressing further write mode warnings (reached limit of 100)\n");
+            }
+          }
+        }
+
+        _CCCL_ASSERT(!data_nodes[static_cast<size_t>(ctx_offset)].value().frozen_ld.has_value(), "internal error");
+        data_nodes[static_cast<size_t>(ctx_offset)].reset();
+      }
+
+      _CCCL_ASSERT(parent_dnode.frozen_ld.has_value(), "internal error");
+      parent_dnode.get_cnt--;
+
+      sctx.get_node(ctx_offset)->ctx.get_dot()->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
+    }
+
+    void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
+    {
+      nvtx_range r("stackable_logical_data::pop_after_finalize");
+
+      _CCCL_ASSERT(parent_offset >= 0, "");
+      _CCCL_ASSERT(data_nodes[static_cast<size_t>(parent_offset)].has_value(), "");
+      auto& dnode = data_nodes[static_cast<size_t>(parent_offset)].value();
+
+      _CCCL_ASSERT(dnode.frozen_ld.has_value(), "internal error");
+
+      dnode.unfreeze_prereqs.merge(finalize_prereqs);
+
+      _CCCL_ASSERT(dnode.get_cnt >= 0, "get_cnt should never be negative");
+      if (dnode.get_cnt == 0)
+      {
+        dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
+        dnode.frozen_ld.reset();
+      }
+    }
+
+    struct data_node
+    {
+      explicit data_node(logical_data<T> ld)
+          : ld(mv(ld))
+      {}
+
+      logical_data<T> ld;
+      ::std::optional<frozen_logical_data<T>> frozen_ld;
+      event_list unfreeze_prereqs;
+      int get_cnt                = 0;
+      access_mode effective_mode = access_mode::none;
+    };
+
+    auto& get_data_node(int offset)
+    {
+      _CCCL_ASSERT(offset >= 0, "invalid value");
+      const auto idx = static_cast<size_t>(offset);
+      _CCCL_ASSERT(data_nodes[idx].has_value(), "invalid value");
+      return data_nodes[idx].value();
+    }
+
+    const auto& get_data_node(int offset) const
+    {
+      _CCCL_ASSERT(offset >= 0, "invalid value");
+      const auto idx = static_cast<size_t>(offset);
+      _CCCL_ASSERT(data_nodes[idx].has_value(), "invalid value");
+      return data_nodes[idx].value();
+    }
+
+    void grow_data_nodes(size_t target_size,
+                         size_t factor_numerator   = node_hierarchy::default_growth_numerator,
+                         size_t factor_denominator = node_hierarchy::default_growth_denominator)
+    {
+      if (target_size <= data_nodes.size())
+      {
+        return;
+      }
+
+      const size_t new_size = ::std::max(target_size, data_nodes.size() * factor_numerator / factor_denominator);
+      data_nodes.resize(new_size);
+    }
+
+    bool was_imported(int offset) const
+    {
+      if (offset < 0)
+      {
+        return false;
+      }
+
+      const auto idx = static_cast<size_t>(offset);
+      return idx < data_nodes.size() && data_nodes[idx].has_value();
+    }
+
+    void mark_access(int offset, access_mode m)
+    {
+      _CCCL_ASSERT(offset >= 0, "Failed to find data node for mark_access");
+      _CCCL_ASSERT(data_nodes[static_cast<size_t>(offset)].has_value(), "Failed to find data node for mark_access");
+      data_nodes[static_cast<size_t>(offset)].value().effective_mode |= m;
+    }
+
+    bool is_frozen(int offset) const
+    {
+      _CCCL_ASSERT(offset >= 0, "");
+      _CCCL_ASSERT(data_nodes[static_cast<size_t>(offset)].has_value(), "");
+      return data_nodes[static_cast<size_t>(offset)].value().frozen_ld.has_value();
+    }
+
+    access_mode get_frozen_mode(int offset) const
+    {
+      _CCCL_ASSERT(is_frozen(offset), "");
+      return data_nodes[static_cast<size_t>(offset)].value().frozen_ld.value().get_access_mode();
+    }
+
+    ::std::shared_lock<::std::shared_mutex> acquire_shared_lock() const
+    {
+      return ::std::shared_lock<::std::shared_mutex>(mutex);
+    }
+
+    ::std::unique_lock<::std::shared_mutex> acquire_exclusive_lock()
+    {
+      return ::std::unique_lock<::std::shared_mutex>(mutex);
+    }
+
+    stackable_ctx sctx;
+    ::std::vector<::std::optional<data_node>> data_nodes;
+    int data_root_offset = -1;
+    ::std::string symbol;
+    bool read_only = false;
+
+  private:
+    mutable ::std::shared_mutex mutex;
+  };
 
   //! Runs when the last shell copy dies; pins `state` in child graph nodes.
   struct owner
@@ -568,7 +560,8 @@ private:
     auto ctx_lock = st->sctx.acquire_exclusive_lock();
 
     const int data_root_offset = st->data_root_offset;
-    _CCCL_ASSERT(st->data_nodes[data_root_offset].has_value(), "");
+    _CCCL_ASSERT(data_root_offset >= 0, "");
+    _CCCL_ASSERT(st->data_nodes[static_cast<size_t>(data_root_offset)].has_value(), "");
 
     // Do NOT destroy data_nodes here: the root data_node may still hold a
     // frozen_ld that children depend on for pop_after_finalize to unfreeze.
@@ -618,41 +611,40 @@ private:
     auto& st                = mut_data();
     const int parent_offset = st.sctx.get_parent_offset(ctx_offset);
 
-    if (parent_offset == -1)
+    if (parent_offset < 0)
     {
       _CCCL_ASSERT(st.was_imported(ctx_offset), "Root context must already have data");
       return;
     }
 
-    if (ctx_offset >= int(st.data_nodes.size()))
+    _CCCL_ASSERT(ctx_offset >= 0, "");
+    if (static_cast<size_t>(ctx_offset) >= st.data_nodes.size())
     {
-      st.grow_data_nodes(ctx_offset + 1);
+      st.grow_data_nodes(static_cast<size_t>(ctx_offset) + 1);
     }
 
-    if (st.data_nodes[ctx_offset].has_value())
+    if (st.data_nodes[static_cast<size_t>(ctx_offset)].has_value())
     {
-      auto& existing_node = st.data_nodes[ctx_offset].value();
+      auto& existing_node = st.data_nodes[static_cast<size_t>(ctx_offset)].value();
       _CCCL_ASSERT(access_mode_permits(existing_node.effective_mode, m), "Cannot change existing access mode");
       return;
     }
 
-    access_mode max_required_parent_mode =
+    const access_mode max_required_parent_mode =
       (m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw;
 
-    if (!st.data_nodes[parent_offset].has_value())
+    if (!st.data_nodes[static_cast<size_t>(parent_offset)].has_value())
     {
       push_at(parent_offset, max_required_parent_mode, where);
     }
 
-    _CCCL_ASSERT(st.data_nodes[parent_offset].has_value(), "parent data should be available here");
+    _CCCL_ASSERT(st.data_nodes[static_cast<size_t>(parent_offset)].has_value(), "parent data should be available here");
 
-    auto& to_node   = st.sctx.get_node(ctx_offset);
-    auto& from_node = st.sctx.get_node(parent_offset);
+    auto& to_node  = st.sctx.get_node(ctx_offset);
+    auto& to_ctx   = to_node->ctx;
+    auto& from_ctx = st.sctx.get_node(parent_offset)->ctx;
 
-    context& to_ctx   = to_node->ctx;
-    context& from_ctx = from_node->ctx;
-
-    auto& from_data_node = st.data_nodes[parent_offset].value();
+    auto& from_data_node = st.data_nodes[static_cast<size_t>(parent_offset)].value();
 
     if (where.is_invalid())
     {
@@ -668,7 +660,7 @@ private:
     }
     else
     {
-      access_mode existing_frozen_mode = from_data_node.frozen_ld.value().get_access_mode();
+      const access_mode existing_frozen_mode = from_data_node.frozen_ld.value().get_access_mode();
 
       if (!access_mode_permits(existing_frozen_mode, m))
       {
@@ -698,7 +690,7 @@ private:
 
     to_node->track_pushed_data(owner_->payload);
 
-    st.data_nodes[ctx_offset].emplace(mv(ld));
+    st.data_nodes[static_cast<size_t>(ctx_offset)].emplace(mv(ld));
   }
 
   // Aliased across shell copies; `owner` runs orphan adoption in its destructor.
@@ -943,7 +935,7 @@ public:
   using context_type = stackable_ctx;
 
   explicit graph_scope_guard(stackable_ctx& ctx,
-                             const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
+                             ::cuda::std::source_location loc = ::cuda::std::source_location::current())
       : ctx_(ctx)
   {
     ctx_.push(loc);
@@ -963,7 +955,7 @@ private:
   stackable_ctx& ctx_;
 };
 
-inline stackable_ctx::graph_scope_guard stackable_ctx::graph_scope(const ::cuda::std::source_location& loc)
+inline stackable_ctx::graph_scope_guard stackable_ctx::graph_scope(::cuda::std::source_location loc)
 {
   return graph_scope_guard(*this, loc);
 }
@@ -991,7 +983,7 @@ public:
   using context_type = stackable_ctx;
 
   explicit launchable_graph_scope(stackable_ctx& ctx,
-                                  const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
+                                  ::cuda::std::source_location loc = ::cuda::std::source_location::current())
       : ctx_(ctx)
   {
     ctx_.push(loc);
@@ -1171,7 +1163,7 @@ public:
   }
 
   //! \brief True iff this copy still holds a shared reference and the
-  //! underlying pop has not been epiloged (e.g. manually via
+  //! underlying pop has not been epilogued (e.g. manually via
   //! `ctx.pop_epilogue()`).
   bool valid() const noexcept
   {
@@ -1254,9 +1246,9 @@ public:
 
   explicit while_graph_scope_guard(
     stackable_ctx& ctx,
-    unsigned int default_launch_value       = 0,
-    unsigned int flags                      = cudaGraphCondAssignDefault,
-    const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
+    unsigned int default_launch_value = 0,
+    unsigned int flags                = cudaGraphCondAssignDefault,
+    ::cuda::std::source_location loc  = ::cuda::std::source_location::current())
       : ctx_(ctx)
   {
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
@@ -1325,7 +1317,7 @@ private:
 };
 
 inline stackable_ctx::while_graph_scope_guard stackable_ctx::while_graph_scope(
-  unsigned int default_launch_value, unsigned int flags, const ::cuda::std::source_location& loc)
+  unsigned int default_launch_value, unsigned int flags, ::cuda::std::source_location loc)
 {
   return while_graph_scope_guard(*this, default_launch_value, flags, loc);
 }
@@ -1407,7 +1399,7 @@ private:
 };
 
 inline auto stackable_ctx::repeat_graph_scope(
-  size_t count, unsigned int default_launch_value, unsigned int flags, const ::cuda::std::source_location& loc)
+  size_t count, unsigned int default_launch_value, unsigned int flags, ::cuda::std::source_location loc)
 {
   (void) loc;
   return repeat_graph_scope_guard(*this, count, default_launch_value, flags);
