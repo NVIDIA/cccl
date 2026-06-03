@@ -53,7 +53,7 @@ class scheduler
 public:
   scheduler()
   {
-    cuda_safe_call(cudaGetDeviceCount(&num_devices));
+    num_devices = cuda_try<cudaGetDeviceCount>();
     assert(num_devices > 0);
   }
 

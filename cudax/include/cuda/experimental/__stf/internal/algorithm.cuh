@@ -104,7 +104,7 @@ public:
     }
 
     cudaGraphNode_t c;
-    cuda_safe_call(cudaGraphAddChildGraphNode(&c, graph, nullptr, 0, *inner_graph));
+    cuda_try(cudaGraphAddChildGraphNode(&c, graph, nullptr, 0, *inner_graph));
   }
 
   /* This simply executes the algorithm within the existing context. This
@@ -285,7 +285,7 @@ public:
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_safe_call(cudaGraphLaunch(*eg, stream));
+    cuda_try(cudaGraphLaunch(*eg, stream));
 
     // Free resources allocated through the adapter
     adapter.clear();
@@ -339,7 +339,7 @@ public:
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_safe_call(cudaGraphLaunch(*eg, stream));
+    cuda_try(cudaGraphLaunch(*eg, stream));
 
     // Free resources allocated through the adapter
     adapter.clear();

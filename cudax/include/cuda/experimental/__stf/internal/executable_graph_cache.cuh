@@ -100,8 +100,7 @@ public:
       cache_size_limit = atol(str) * 1024 * 1024;
     }
 
-    int ndevices;
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
+    const int ndevices = cuda_try<cudaGetDeviceCount>();
 
     // One individual cache per device (TODO per execution place at some point
     // if we consider green contexts or multi-gpu graphs ?)
