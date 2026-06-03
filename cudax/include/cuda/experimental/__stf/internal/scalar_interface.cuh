@@ -131,7 +131,7 @@ public:
 
     size_t sz = sizeof(T);
 
-    cuda_try(cudaMemcpyAsync((void*) dst_instance.addr, (void*) src_instance.addr, sz, kind, stream));
+    cuda_try<cudaMemcpyAsync>((void*) dst_instance.addr, (void*) src_instance.addr, sz, kind, stream);
   }
 
   void data_allocate(

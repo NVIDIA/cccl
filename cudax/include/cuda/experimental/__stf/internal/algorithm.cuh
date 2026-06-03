@@ -103,8 +103,7 @@ public:
       graph_cache[hashValue] = inner_graph;
     }
 
-    cudaGraphNode_t c;
-    cuda_try(cudaGraphAddChildGraphNode(&c, graph, nullptr, 0, *inner_graph));
+    ::std::ignore = cuda_try<cudaGraphAddChildGraphNode>(graph, nullptr, 0, *inner_graph);
   }
 
   /* This simply executes the algorithm within the existing context. This
@@ -250,6 +249,12 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
+    // Speaking of which.
+    SCOPE(exit)
+    {
+      adapter.clear();
+    };
+
     auto current_data_place = gctx.default_exec_place().affine_data_place();
 
     // Call fun with all arguments transformed to logical data
@@ -285,10 +290,7 @@ public:
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_try(cudaGraphLaunch(*eg, stream));
-
-    // Free resources allocated through the adapter
-    adapter.clear();
+    cuda_try<cudaGraphLaunch>(*eg, stream);
   }
 
   /* Contrary to `run`, we here have a dynamic set of dependencies for the
@@ -306,6 +308,12 @@ public:
     // defer the allocations and deallocations to the cudaMallocAsync API
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
+
+    // Speaking of which.
+    SCOPE(exit)
+    {
+      adapter.clear();
+    };
 
     auto current_place = gctx.default_exec_place();
 
@@ -339,10 +347,7 @@ public:
       cached_exec_graphs[stream].push_back(eg);
     }
 
-    cuda_try(cudaGraphLaunch(*eg, stream));
-
-    // Free resources allocated through the adapter
-    adapter.clear();
+    cuda_try<cudaGraphLaunch>(*eg, stream);
   }
 
 private:
