@@ -589,6 +589,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTA
   using BlockScan                                         = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename BlockScan::TempStorage temp_storage;
 
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
   // load the bins
   OffsetT bins[BINS_PER_THREAD];
   int bin_start = blockIdx.x * RADIX_DIGITS;
