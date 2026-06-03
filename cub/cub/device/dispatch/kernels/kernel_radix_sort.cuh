@@ -451,10 +451,12 @@ template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
           typename OffsetT,
+          typename AtomicOffsetT = int,
           typename DecomposerT = identity_decomposer_t>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) void DeviceRadixSortHistogramKernel(
   _CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
+  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_ctrs,
   _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   _CCCL_GRID_CONSTANT const int start_bit,
@@ -462,6 +464,10 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   static constexpr radix_sort_histogram_policy policy = current_policy<PolicySelector>().histogram;
+  constexpr int RADIX_BITS                            = policy.radix_bits;
+  constexpr int RADIX_DIGITS                          = 1 << RADIX_BITS;
+  constexpr int BLOCK_THREADS                         = policy.threads_per_block;
+  constexpr int BINS_PER_THREAD                       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
 
   using HistogramPolicyT =
     AgentRadixSortHistogramPolicy<policy.threads_per_block,
@@ -470,9 +476,74 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
                                   void,
                                   policy.radix_bits>;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
+  using BlockScan = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename AgentT::TempStorage temp_storage;
+  __shared__ typename BlockScan::TempStorage scan_temp_storage;
+  __shared__ bool is_last_block;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
   agent.Process();
+
+  __threadfence();
+  __syncthreads();
+  if (threadIdx.x == 0)
+  {
+    is_last_block = atomicAdd(d_ctrs, 1) == static_cast<AtomicOffsetT>(gridDim.x - 1);
+  }
+  __syncthreads();
+
+  if (is_last_block)
+  {
+    const int num_passes = ::cuda::ceil_div(end_bit - start_bit, RADIX_BITS);
+    for (int pass = 0; pass < num_passes; ++pass)
+    {
+      OffsetT bins[BINS_PER_THREAD];
+      const int bin_start = pass * RADIX_DIGITS;
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < BINS_PER_THREAD; ++u)
+      {
+        const int bin = threadIdx.x * BINS_PER_THREAD + u;
+        if (bin >= RADIX_DIGITS)
+        {
+          break;
+        }
+        bins[u] = d_bins_out[bin_start + bin];
+      }
+
+      BlockScan(scan_temp_storage).ExclusiveSum(bins, bins);
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int u = 0; u < BINS_PER_THREAD; ++u)
+      {
+        const int bin = threadIdx.x * BINS_PER_THREAD + u;
+        if (bin >= RADIX_DIGITS)
+        {
+          break;
+        }
+        d_bins_out[bin_start + bin] = bins[u];
+      }
+      __syncthreads();
+    }
+
+    __threadfence();
+    __syncthreads();
+    if (threadIdx.x == 0)
+    {
+      d_ctrs[0] = 0;
+    }
+  }
+}
+
+template <typename PolicySelector, typename AtomicOffsetT>
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitLookbackKernel(
+  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
+  _CCCL_GRID_CONSTANT const size_t num_lookback_items)
+{
+  const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
+  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x; idx < num_lookback_items; idx += stride)
+  {
+    d_lookback[idx] = 0;
+  }
 }
 
 template <typename PolicySelector,

@@ -75,9 +75,11 @@ struct DeviceRadixSortKernelSource
     DeviceRadixSortDownsweepKernel<PolicySelector, true, Order, KeyT, ValueT, OffsetT, DecomposerT>);
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortHistogramKernel,
-                           DeviceRadixSortHistogramKernel<PolicySelector, Order, KeyT, OffsetT, DecomposerT>);
+                           DeviceRadixSortHistogramKernel<PolicySelector, Order, KeyT, OffsetT, int, DecomposerT>);
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitLookbackKernel<PolicySelector, int>);
 
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
@@ -640,7 +642,15 @@ private:
 
     if (const auto error = CubDebug(
           launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
-            .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
+            .doit(
+              histogram_kernel,
+              d_bins,
+              d_ctrs,
+              d_keys.Current(),
+              num_items,
+              begin_bit,
+              end_bit,
+              decomposer)))
     {
       return error;
     }
@@ -650,28 +660,6 @@ private:
       return error;
     }
 
-    // exclusive sums to determine starts
-    const int SCAN_BLOCK_THREADS = policy.exclusive_sum.threads_per_block;
-
-// log exclusive_sum_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
-            num_passes,
-            SCAN_BLOCK_THREADS,
-            reinterpret_cast<long long>(stream),
-            policy.exclusive_sum.radix_bits);
-#endif
-
-    if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream)
-                                      .doit(kernel_source.RadixSortExclusiveSumKernel(), d_bins)))
-    {
-      return error;
-    }
-
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-    {
-      return error;
-    }
     // use the other buffer if no overwrite is allowed
     KeyT* d_keys_tmp     = d_keys.Alternate();
     ValueT* d_values_tmp = d_values.Alternate();
@@ -690,9 +678,18 @@ private:
           ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
         PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
+        const size_t num_lookback_items = static_cast<size_t>(num_blocks) * RADIX_DIGITS;
+        constexpr int INIT_LOOKBACK_THREADS = 256;
+        const int init_lookback_blocks      = static_cast<int>(
+          ::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
 
-        if (const auto error =
-              CubDebug(cudaMemsetAsync(d_lookback, 0, num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT), stream)))
+        if (const auto error = CubDebug(launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream)
+                                          .doit(kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items)))
+        {
+          return error;
+        }
+
+        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
         {
           return error;
         }
