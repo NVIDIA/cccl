@@ -39,6 +39,7 @@ import argparse
 import functools
 import os
 import sys
+import textwrap
 
 import numpy as np
 
@@ -229,17 +230,18 @@ def draw_sequence(ax, bins, num_bins, shape=None):
 def render_shape(shape, outdir, n, num_bins, seed):
     bins, counts, num_bins = char_input(shape, n, num_bins, seed)
     fig, axes = plt.subplots(1, 3, figsize=(18, 4.8))
+    # Wrap the blurb so a long description does not run past the figure edge.
+    blurb = "\n".join(textwrap.wrap(f"InputShape: {shape}   —   {SHAPE_BLURB.get(shape, '')}", width=150))
     fig.suptitle(
-        f"InputShape: {shape}   —   {SHAPE_BLURB.get(shape, '')}\n"
-        f"(N={fmt_int(n)} samples, {fmt_bins(num_bins)} bins, seed={seed})",
+        f"{blurb}\n(N={fmt_int(n)} samples, {fmt_bins(num_bins)} bins, seed={seed})",
         fontsize=12,
     )
     draw_distribution(axes[0], counts, num_bins)
     draw_rankfreq(axes[1], counts)
     draw_sequence(axes[2], bins, num_bins, shape=shape)
-    fig.tight_layout(rect=(0, 0, 1, 0.90))
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
     out = os.path.join(outdir, f"{shape.replace(':', '_')}.png")
-    fig.savefig(out, dpi=120)
+    fig.savefig(out, dpi=120, bbox_inches="tight")
     plt.close(fig)
     return out, num_bins, int(np.count_nonzero(counts)), int(counts.max())
 
