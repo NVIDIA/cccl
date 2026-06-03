@@ -434,7 +434,7 @@ struct ScanPolicySelector
           .load_modifier     = cub::LOAD_DEFAULT,
           .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
           .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-          .lookback_delay    = cub::LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
+          .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}},
       .warpspeed = cub::ScanWarpspeedPolicy{} // ignored since algorithm is lookback
     };
   }
