@@ -13,8 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/argument>
+#include <cuda/__argument_>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
@@ -29,10 +30,10 @@ namespace detail::params
 //! For single-value arguments, the index is ignored and the value is returned directly.
 //! For per-segment arguments, returns the element at the given index.
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES((!::cuda::argument::__is_wrapper_v<::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<_Tp>>>) )
+_CCCL_REQUIRES((!::cuda::__argument::__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
 _CCCL_HOST_DEVICE constexpr auto get_param(_Tp&& __arg, [[maybe_unused]] size_t __index) noexcept
 {
-  if constexpr (::cuda::argument::__is_single_value_v<::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<_Tp>>>)
+  if constexpr (::cuda::__argument::__traits<::cuda::std::remove_cvref_t<_Tp>>::is_single_value)
   {
     return __arg;
   }
@@ -44,37 +45,31 @@ _CCCL_HOST_DEVICE constexpr auto get_param(_Tp&& __arg, [[maybe_unused]] size_t 
 
 template <auto _Value>
 _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::argument::__constant<_Value>&, [[maybe_unused]] size_t __index) noexcept
+get_param(const ::cuda::__argument::__constant<_Value>& __arg, [[maybe_unused]] size_t __index) noexcept
 {
-  return _Value;
+  return ::cuda::__argument::__unwrap(__arg);
 }
 
 template <class _Arg, class _StaticBounds>
 _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::argument::__immediate<_Arg, _StaticBounds>& __arg, [[maybe_unused]] size_t __index) noexcept
+get_param(const ::cuda::__argument::__immediate<_Arg, _StaticBounds>& __arg,
+          [[maybe_unused]] size_t __index) noexcept
 {
-  if constexpr (::cuda::argument::__is_single_value_v<_Arg>)
-  {
-    return __arg.arg;
-  }
-  else
-  {
-    return __arg.arg[__index];
-  }
-}
-
-template <class _Arg, class _StaticBounds>
-_CCCL_HOST_DEVICE constexpr auto get_param(const ::cuda::argument::__deferred_value<_Arg, _StaticBounds>& __arg,
-                                           [[maybe_unused]] size_t __index) noexcept
-{
-  return __arg.arg[__index];
+  return ::cuda::__argument::__unwrap(__arg);
 }
 
 template <class _Arg, class _StaticBounds>
 _CCCL_HOST_DEVICE constexpr auto
-get_param(const ::cuda::argument::__deferred_sequence<_Arg, _StaticBounds>& __arg, size_t __index) noexcept
+get_param(const ::cuda::__argument::__immediate_sequence<_Arg, _StaticBounds>& __arg, size_t __index) noexcept
 {
-  return __arg.arg[__index];
+  return ::cuda::__argument::__unwrap(__arg)[__index];
+}
+
+template <class _Arg, class _StaticBounds>
+_CCCL_HOST_DEVICE constexpr auto
+get_param(const ::cuda::__argument::__deferred_sequence<_Arg, _StaticBounds>& __arg, size_t __index) noexcept
+{
+  return ::cuda::__argument::__unwrap(__arg)[__index];
 }
 
 // =====================================================================

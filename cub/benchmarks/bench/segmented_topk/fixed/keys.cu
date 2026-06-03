@@ -4,7 +4,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 
-#include <cuda/argument>
+#include <cuda/__argument_>
 #include <cuda/iterator>
 
 #include <nvbench_helper.cuh>
@@ -51,7 +51,7 @@ void fixed_seg_size_topk_keys(
   const auto selected_elements = static_cast<::cuda::std::ptrdiff_t>(MaxNumSelected);
   const auto num_segments      = ::cuda::std::max<std::size_t>(1, (max_elements / segment_size));
   const auto elements          = num_segments * segment_size;
-  const auto total_num_items   = ::cuda::argument::__immediate{static_cast<::cuda::std::int64_t>(elements)};
+  const auto total_num_items   = ::cuda::__argument::__immediate{static_cast<::cuda::std::int64_t>(elements)};
   const bit_entropy entropy    = str_to_entropy(state.get_string("Entropy"));
 
   // Skip workloads where k exceeds the segment size
@@ -68,8 +68,8 @@ void fixed_seg_size_topk_keys(
   auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
   auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), selected_elements);
 
-  auto segment_sizes    = ::cuda::argument::__constant<MaxSegmentSize>{};
-  auto k                = ::cuda::argument::__constant<MaxNumSelected>{};
+  auto segment_sizes    = ::cuda::__argument::__constant<MaxSegmentSize>{};
+  auto k                = ::cuda::__argument::__constant<MaxNumSelected>{};
   auto select_direction = cub::detail::topk::select::max;
 
   state.add_element_count(elements, "NumElements");
@@ -99,7 +99,7 @@ void fixed_seg_size_topk_keys(
       segment_sizes,
       k,
       select_direction,
-      ::cuda::argument::__immediate{static_cast<::cuda::std::int64_t>(num_segments)},
+      ::cuda::__argument::__immediate{static_cast<::cuda::std::int64_t>(num_segments)},
       total_num_items,
       env);
   });

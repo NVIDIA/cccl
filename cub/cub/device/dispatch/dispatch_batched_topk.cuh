@@ -34,7 +34,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
-#include <cuda/argument>
+#include <cuda/__argument_>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -119,7 +119,7 @@ template <typename KeyInputItItT,
           typename PolicySelector = policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
                                                                it_value_t<it_value_t<ValueInputItItT>>,
                                                                ::cuda::std::int64_t,
-                                                               ::cuda::argument::__traits<KParameterT>::max>>
+                                                               ::cuda::__argument::__traits<KParameterT>::max>>
 #if _CCCL_HAS_CONCEPTS()
   requires batched_topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -138,7 +138,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
-  using large_segment_tile_offset_t = typename ::cuda::argument::__traits<TotalNumItemsGuaranteeT>::element_type;
+  using large_segment_tile_offset_t = typename ::cuda::__argument::__traits<TotalNumItemsGuaranteeT>::element_type;
 
   // Wrap the raw enum into the internal discrete param type
   auto select_directions          = wrap_select_direction(select_direction);
@@ -164,9 +164,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr int worker_per_segment_tile_size =
     worker_per_segment_policy.threads_per_block * worker_per_segment_policy.items_per_thread;
   static constexpr bool any_small_segments =
-    ::cuda::argument::__traits<SegmentSizeParameterT>::lowest <= worker_per_segment_tile_size;
+    ::cuda::__argument::__traits<SegmentSizeParameterT>::lowest <= worker_per_segment_tile_size;
   static constexpr bool only_small_segments =
-    ::cuda::argument::__traits<SegmentSizeParameterT>::max <= worker_per_segment_tile_size;
+    ::cuda::__argument::__traits<SegmentSizeParameterT>::max <= worker_per_segment_tile_size;
 
   // Allocation layout:
   //   only_small_segments: [0] dummy.
@@ -176,7 +176,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr int allocations_array_size     = only_small_segments ? 1 : (any_small_segments ? 3 : 2);
   size_t allocation_sizes[allocations_array_size] = {1};
 
-  using num_segments_val_t         = typename ::cuda::argument::__traits<NumSegmentsParameterT>::element_type;
+  using num_segments_val_t         = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
   using counters_t                 = batched_topk_counters<num_segments_val_t>;
   using segment_size_scan_offset_t = detail::choose_offset_t<num_segments_val_t>;
   using segment_size_scan_input_op_t =
@@ -232,7 +232,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // TODO (elstehle): support number of segments provided by device-accessible iterator
   // Only uniform number of segments are supported (i.e., we need to resolve the number of segments on the host)
-  static_assert(::cuda::argument::__traits<NumSegmentsParameterT>::is_single_value,
+  static_assert(::cuda::__argument::__traits<NumSegmentsParameterT>::is_single_value,
                 "Only uniform segment sizes are currently supported.");
 
   if constexpr (any_small_segments)
@@ -334,7 +334,7 @@ template <typename KeyInputItItT,
     policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
                                it_value_t<it_value_t<ValueInputItItT>>,
                                ::cuda::std::int64_t,
-                               params::static_max_value_v<KParameterT>>;
+                               ::cuda::__argument::__traits<KParameterT>::max>;
   return detail::dispatch_with_env_and_tuning<default_policy_selector>(
     env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
       return dispatch(
