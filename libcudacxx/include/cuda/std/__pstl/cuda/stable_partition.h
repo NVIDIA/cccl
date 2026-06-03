@@ -71,7 +71,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
 
     _OffsetType __num_selected;
     const auto __count = static_cast<_OffsetType>(::cuda::std::distance(__first, __last));
-    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
 
     // Determine temporary device storage requirements for device_stable_partition
     size_t __num_bytes = 0;
