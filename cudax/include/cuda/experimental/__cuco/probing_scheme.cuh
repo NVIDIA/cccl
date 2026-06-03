@@ -58,9 +58,10 @@ public:
   _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
 
   template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
-                                         _ProbeKey __probe_key,
-                                         _Extent __upper_bound) const noexcept;
+  _CCCL_HOST_DEVICE_API constexpr auto
+  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                _ProbeKey __probe_key,
+                _Extent __upper_bound) const noexcept;
 
   _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {
@@ -112,9 +113,10 @@ public:
   _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
 
   template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
-                                         _ProbeKey __probe_key,
-                                         _Extent __upper_bound) const noexcept;
+  _CCCL_HOST_DEVICE_API constexpr auto
+  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                _ProbeKey __probe_key,
+                _Extent __upper_bound) const noexcept;
 
   _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {

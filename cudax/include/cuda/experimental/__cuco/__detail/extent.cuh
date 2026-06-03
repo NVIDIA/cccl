@@ -91,7 +91,8 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType, ::cuda::std::s
 //! @param __ext Requested storage extent
 //! @param __desired_load_factor Desired load factor (0, 1]
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_valid_extent(extent<_SizeType> __ext, double __desired_load_factor)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+__make_valid_extent(extent<_SizeType> __ext, double __desired_load_factor)
 {
   if (__desired_load_factor <= 0.)
   {

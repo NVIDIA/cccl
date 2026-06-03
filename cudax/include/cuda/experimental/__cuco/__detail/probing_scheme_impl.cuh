@@ -30,7 +30,8 @@ public:
   using __extent_type = _Extent;
   using __size_type   = typename __extent_type::index_type;
 
-  _CCCL_HOST_DEVICE_API constexpr __probing_iterator(__size_type __start, __size_type __step, __extent_type __upper_bound) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __probing_iterator(
+    __size_type __start, __size_type __step, __extent_type __upper_bound) noexcept
       : __curr_index{__start}
       , __step_size{__step}
       , __upper_bound{__upper_bound}
