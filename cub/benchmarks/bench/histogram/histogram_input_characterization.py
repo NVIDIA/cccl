@@ -39,7 +39,6 @@ import argparse
 import functools
 import os
 import sys
-import textwrap
 
 import numpy as np
 
@@ -60,9 +59,7 @@ SHAPES = [
     "concentrated:0.5",
     "concentrated:0.25",
     "concentrated:0.0",
-    "powerlaw:0.75",
     "powerlaw:0.5",
-    "powerlaw:0.25",
     "zipf",
     "temporal_phases",
     "stale_resident",
@@ -73,17 +70,14 @@ SHAPES = [
 SHAPE_BLURB = {
     "concentrated:1.0": "uniform endpoint (entropy 1.0): exact equal counts per bin, in random sequence order "
     "(a Feistel shuffle of the tiling) — uniform counts, randomly distributed",
-    "concentrated:0.75": "entropy 0.75: random bin probabilities (softmax over random logits) — MOSTLY uniform, mild variation",
-    "concentrated:0.5": "entropy 0.5 (bare `concentrated` default): random bin probabilities dialed to medium entropy",
-    "concentrated:0.25": "entropy 0.25: random bin probabilities, now strongly skewed toward a few bins",
-    "concentrated:0.0": "single value (entropy 0.0): 100% on one bin, scattered to seed%bins (NOT bin 0)",
-    "powerlaw:0.75": "power-law warm set (entropy 0.75): gentle 1/rank^s decay over many bins",
+    "concentrated:0.75": "spike-slab (entropy 0.75): one hot bin over a uniform floor, hot share grows as entropy drops",
+    "concentrated:0.5": "spike-slab (entropy 0.5, the bare `concentrated` default): one hot bin over a uniform floor",
+    "concentrated:0.25": "spike-slab (entropy 0.25): a dominant hot bin over a thin uniform floor",
+    "concentrated:0.0": "single hot bin (entropy 0.0): 100% on one bin, scattered to seed%bins (NOT bin 0)",
     "powerlaw:0.5": "power-law warm set (entropy 0.5): one dominant bin + a decaying tail",
-    "powerlaw:0.25": "power-law warm set (entropy 0.25): steep decay, a few bins dominate",
     "zipf": "Zipf warm set: many hot bins, classic 1/rank decay (rank-frequency is ~a straight log-log line)",
     "temporal_phases": "the hot bin steps to a new location each phase (multiple hot bins across the sequence)",
-    "stale_resident": "a cold working set (~2x cache slots) swept cyclically: recurs every block but overflows the "
-    "per-block cache so it cannot stay resident (thrashes it)",
+    "stale_resident": "a cold prefix sweeps every cache slot once (count 1 each), then a hot bulk hammers one bin",
     "hash_synonym": "several bins spaced by the cache slot count (4096) collide on ONE cache slot, over a floor",
     "sawtooth": "bin(i)=i%period: a monotonic ramp that resets periodically (sequential locality, bounded working set)",
 }
@@ -194,30 +188,13 @@ def draw_rankfreq(ax, counts):
     ax.grid(True, which="both", linestyle=":", alpha=0.45)
 
 
-# Shapes whose interesting sequence structure lives at the WHOLE-sequence scale
-# (e.g. the hot bin steps across the full input), so the panel must span all N.
-# Everything else is shown as a CONTIGUOUS prefix: a periodic shape (sawtooth, the
-# stale_resident cycle) aliases into garbage if you linspace-subsample N points at
-# a period that divides the step, but a contiguous window never aliases and shows
-# the true ramp/cycle. For i.i.d. shapes a contiguous window is just as
-# representative as a random subsample.
-_FULL_RANGE_SEQ_SHAPES = {"temporal_phases"}
-
-
-def draw_sequence(ax, bins, num_bins, shape=None):
-    """bin index vs position in the input sequence."""
+def draw_sequence(ax, bins, num_bins):
+    """bin index vs position in the input sequence (subsampled)."""
     n = len(bins)
-    full_range = shape is not None and shape.split(":")[0] in _FULL_RANGE_SEQ_SHAPES
-    if full_range:
-        idx = np.linspace(0, n - 1, CHAR_SEQ_SAMPLES).astype(np.int64) if n > CHAR_SEQ_SAMPLES else np.arange(n)
-        xlabel = "position in input sequence (full range, subsampled)"
-    else:
-        w = min(n, CHAR_SEQ_SAMPLES)
-        idx = np.arange(w)  # contiguous prefix — never aliases periodic shapes
-        xlabel = f"position in input sequence (first {w:,})"
-    ax.scatter(idx, bins[idx], s=5, alpha=0.45, color=SEQ_COLOR, edgecolors="none")
+    idx = np.linspace(0, n - 1, CHAR_SEQ_SAMPLES).astype(np.int64) if n > CHAR_SEQ_SAMPLES else np.arange(n)
+    ax.scatter(idx, bins[idx], s=5, alpha=0.4, color=SEQ_COLOR, edgecolors="none")
     ax.set_title("position of values (bin index vs position in sequence)", fontsize=10)
-    ax.set_xlabel(xlabel)
+    ax.set_xlabel("position in input sequence")
     ax.set_ylabel("bin index")
     ax.set_ylim(-num_bins * 0.02, num_bins * 1.02)
     ax.grid(axis="y", linestyle=":", alpha=0.4)
@@ -230,18 +207,17 @@ def draw_sequence(ax, bins, num_bins, shape=None):
 def render_shape(shape, outdir, n, num_bins, seed):
     bins, counts, num_bins = char_input(shape, n, num_bins, seed)
     fig, axes = plt.subplots(1, 3, figsize=(18, 4.8))
-    # Wrap the blurb so a long description does not run past the figure edge.
-    blurb = "\n".join(textwrap.wrap(f"InputShape: {shape}   —   {SHAPE_BLURB.get(shape, '')}", width=150))
     fig.suptitle(
-        f"{blurb}\n(N={fmt_int(n)} samples, {fmt_bins(num_bins)} bins, seed={seed})",
+        f"InputShape: {shape}   —   {SHAPE_BLURB.get(shape, '')}\n"
+        f"(N={fmt_int(n)} samples, {fmt_bins(num_bins)} bins, seed={seed})",
         fontsize=12,
     )
     draw_distribution(axes[0], counts, num_bins)
     draw_rankfreq(axes[1], counts)
-    draw_sequence(axes[2], bins, num_bins, shape=shape)
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    draw_sequence(axes[2], bins, num_bins)
+    fig.tight_layout(rect=(0, 0, 1, 0.90))
     out = os.path.join(outdir, f"{shape.replace(':', '_')}.png")
-    fig.savefig(out, dpi=120, bbox_inches="tight")
+    fig.savefig(out, dpi=120)
     plt.close(fig)
     return out, num_bins, int(np.count_nonzero(counts)), int(counts.max())
 

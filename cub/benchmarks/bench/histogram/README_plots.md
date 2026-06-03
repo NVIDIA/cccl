@@ -48,78 +48,16 @@ line per algorithm, per element count.
 > you re-run the sweep. The characterization top row reflects the current generator;
 > the perf grid reflects whatever the sweep last measured.
 
-A forced algorithm that does not apply at a given `(transform, channels)` simply
-has no measured points and is dropped from that panel.
+`hybrid_single_pass` is single-channel-only
+and omitted from the multi-channel folders.
 
 ```
-python histogram_algo_perf.py --results sweep_results.json \
-    [--hitrate hitrate_results.json] --outdir algo_perf_figs
+python histogram_algo_perf.py --results sweep_results.json --outdir algo_perf_figs
 ```
 
-## 3. `histogram_algo_sweep.py` — produce the perf JSON (incl. upstream `main`)
-Drives the sweep the plot script consumes. For every
-`(binary, SampleT, Elements, Bins, InputShape)` cell it forces each high-bin
-algorithm via `CUB_HISTO_FORCE_ALGO` (the six gmem-privatized / direct-atomic
-variants) and also records the selector's own pick as `default`. Forcing is only
-honored above the high-bin threshold (bins > 4096); at/below it every forced algo
-falls back to `smem_privatized`, so low-bin cells are recorded once under
-`default`. `CUB_HISTO_DEBUG_SLOTS` is set so a direct-atomic kernel that actually
-ran prints a tell — recorded per cell (`dr=1`) to catch a silent fallback.
-
-Pass `--main-bin-dir` pointing at benchmark binaries built from upstream `main`
-to add a `main` column = main's default dispatch (main has no force hook).
-
-**For an all-shapes comparison, build the main baseline with THIS branch's
-input-shape generators.** The branch's two later input-shape commits
-(`0cf4594ba6` sawtooth/random-order/drop-capacity_cliff, `286a78e248` redefine
-concentrated/stale_resident) are **bench-only** — they touch no dispatch/kernel
-code — so overlaying this branch's `histogram_inputs.cuh` / `*.cu` onto a stock-`main`
-checkout yields *main's dispatch with identical generators*. Then every shape is
-apples-to-apples and only the dispatch differs (the comparison we want). Setup:
-
-```
-git worktree add ../main-baseline main
-cp cub/benchmarks/bench/histogram/{even,range,histogram_inputs}.cuh? \
-   ../main-baseline/cub/benchmarks/bench/histogram/         # + multi/{even,range}.cu
-# configure+build the 4 cub.bench.histogram.*.base targets in the main worktree
-```
-
-With that, the sweep compares **all** swept shapes by default (no restriction).
-
-If instead you point `--main-bin-dir` at UNMODIFIED upstream-main binaries (whose
-generators differ for `concentrated:*` / `stale_resident`, and which lack
-`sawtooth`), restrict the comparison to the generator-identical subset:
-`--main-comparable-shapes powerlaw:0.5 zipf:1.0 hash_synonym temporal_phases strided_sweep`.
-
-```
-python histogram_algo_sweep.py \
-    --branch-bin-dir build/autocuda/cub-benchmark/bin \
-    --main-bin-dir   ../main-baseline/build/cub-benchmark/bin \
-    --samples I32 F64 --out sweep_results.json
-# knobs: --bins --elements --samples --shapes --binaries --repeats --timeout
-#        --main-comparable-shapes (only for unmodified-main baselines)
-```
-
-This is the shipped, reproducible successor to the older scratch force-hook driver
-(it validated forced==launched from the `CUB_HISTO_DEBUG_SLOTS` tell). The two
-plotting scripts above only consume the resulting JSON.
-
-### Optional: SMEM-cache hit-rate panels (two-pass sweep)
-The cached high-bin kernels (`cuckoo`, `single_probe`) can be built with
-`-DCUB_HISTO_TRACK_HITRATE=1` to count, per launch, the contributions ABSORBED in
-the SMEM cache (a block-scope `atomicAdd` — a hit) vs SPILLED to a GMEM atomic (a
-miss), weighted by the warp-coalesced contribution so the rate is over input
-elements. The instrumentation is **zero-cost when the macro is off** (no extra
-`apply()` args, no accumulators — SASS-identical to the uninstrumented,
-register-pinned kernel); the host reads the grid-wide totals back via
-`cudaMemcpyFromSymbol` and prints `[hitrate] ...` under `CUB_HISTO_LOG_HITRATE=1`.
-
-Because the readback adds overhead, the parameter space is swept **twice**: once
-with the normal binaries for performance (`sweep_results.json`), and once with the
-`*.hitrate` binaries for hit rate (`hitrate_results.json`). The hit-rate pass uses
-NVBench `--profile` (one measured launch per cell — hit/miss counts are
-deterministic) and a single sample type (hit rate is sample-type-independent). When
-`--hitrate` is supplied, each per-shape image gains a bottom row: **cuckoo hit-rate
-vs #bins** and **single-probe hit-rate vs #bins**, each with **#elements as series**.
+The sweep JSON is produced by a scratch driver that forces each candidate via a
+`CUB_HISTO_FORCE_ALGO` env hook (sweep-only scaffolding, not shipped) and validates
+forced==launched from `CUB_HISTO_LOG_LAUNCH` output. The two scripts here only
+consume the resulting JSON.
 
 Both scripts need `numpy` + `matplotlib`.

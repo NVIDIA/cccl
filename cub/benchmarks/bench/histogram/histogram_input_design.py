@@ -194,34 +194,23 @@ def solve_powerlaw_exponent(num_bins: int, target: float) -> float:
     return 0.5 * (lo + hi)
 
 
-def softmax_logits(num_bins: int, seed: int) -> np.ndarray:
-    """Per-bin standard-normal logits (Box-Muller on two hashed uniforms),
-    mirroring softmax_logits() in the header."""
-    b = np.arange(num_bins, dtype=_U64)
-    u1 = u01_from_hash(element_key(b, seed))
-    u2 = u01_from_hash(element_key(b, seed ^ 0xD1B54A32D192ED03))
-    u1 = np.where(u1 > 0.0, u1, 1e-300)
-    return np.sqrt(-2.0 * np.log(u1)) * np.cos(2.0 * np.pi * u2)
+def spike_slab_entropy(num_bins: int, p: float) -> float:
+    base = (1.0 - p) / num_bins
+    pmf = np.full(num_bins, base)
+    pmf[0] += p
+    return normalized_entropy(pmf)
 
 
-def softmax_pmf(g: np.ndarray, T: float) -> np.ndarray:
-    z = (g - g.max()) / T
-    e = np.exp(z)
-    return e / e.sum()
-
-
-def solve_softmax_pmf(num_bins: int, target: float, seed: int) -> np.ndarray:
-    """Softmax over random logits, temperature bisected in log-space to hit the
-    target normalized entropy (entropy increases with T). Mirrors the header."""
-    g = softmax_logits(num_bins, seed)
-    lo, hi = 1e-3, 1e3
-    for _ in range(80):
-        mid = (lo * hi) ** 0.5
-        if normalized_entropy(softmax_pmf(g, mid)) < target:
-            lo = mid
-        else:
+def solve_spike_share(num_bins: int, target: float) -> float:
+    """Bisection mirror: 60 iters, p in [0, 1], entropy decreasing in p."""
+    lo, hi = 0.0, 1.0
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        if spike_slab_entropy(num_bins, mid) < target:
             hi = mid
-    return softmax_pmf(g, (lo * hi) ** 0.5)
+        else:
+            lo = mid
+    return 0.5 * (lo + hi)
 
 
 # ---------------------------------------------------------------------------
@@ -239,10 +228,9 @@ def build_pmf(spec: ShapeSpec, num_bins: int, seed: int) -> np.ndarray:
         elif target <= 0.0:
             pmf[scatter_bin(0, num_bins, offset)] = 1.0
         else:
-            # Completely random bin probabilities dialed to the target entropy
-            # (softmax over per-bin random logits). All bins occupied, smoothly
-            # more uniform as the knob -> 1; no single dominant "hot" bin.
-            pmf[:] = solve_softmax_pmf(num_bins, target, seed)
+            p = solve_spike_share(num_bins, target)
+            pmf[:] = (1.0 - p) / num_bins
+            pmf[scatter_bin(0, num_bins, offset)] += p
 
     elif spec.shape == "powerlaw":
         s = solve_powerlaw_exponent(num_bins, knob_or(spec, DEFAULT_POWERLAW_ENTROPY))
@@ -325,14 +313,16 @@ def _bins_for_spec(spec: ShapeSpec, n: int, num_bins: int, seed: int) -> np.ndar
         return _scatter_bin_vec(phase.astype(object) * step, num_bins, offset)
 
     if spec.shape == "stale_resident":
-        # A cold working set of `span` distinct bins, swept cyclically (k = i*odd
-        # % span) and scattered across the array. Recurs in every block but
-        # overflows the per-block cache when span > slots -> thrashes it.
-        cover = knob_or(spec, 2.0)
+        cover = knob_or(spec, 1.0)
         want = int(round(cover * K_ADVERSARIAL_CACHE_SLOTS))
-        span = max(1, min(want, num_bins))
-        k = (np.arange(n, dtype=_U64) * _U64(2654435761)) % _U64(span)
-        return _scatter_bin_vec(k.astype(object), num_bins, offset)
+        n_cold = max(1, min(want, num_bins))
+        if num_bins > n_cold:
+            hot_bin = int(n_cold + (offset % (num_bins - n_cold)))
+        else:
+            hot_bin = num_bins // 2
+        i = np.arange(n, dtype=np.int64)
+        bins = np.where(i < n_cold, i % num_bins, hot_bin).astype(np.int64)
+        return bins
 
     raise ValueError(f"unreachable shape {spec.shape!r}")
 
