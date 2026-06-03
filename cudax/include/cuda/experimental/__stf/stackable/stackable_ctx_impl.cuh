@@ -454,8 +454,7 @@ public:
           else
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
           {
-            cudaGraph_t dummy_graph = nullptr;
-            cuda_try(cudaGraphCreate(&dummy_graph, 0));
+            cudaGraph_t dummy_graph = cuda_try<cudaGraphCreate>(0);
 
             // dummy_graph is intentionally destroyed below. Until that destroy
             // succeeds, we own it; this guard releases it if any of the following
@@ -476,8 +475,7 @@ public:
             // cudaGraphDestroyNode plus careful dependency rewiring; we accept the
             // orphan because parent_graph's lifetime extends well beyond this scope
             // and the orphan is harmless until parent_graph is destroyed.
-            cudaGraphNode_t n;
-            cuda_try(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, dummy_graph));
+            const cudaGraphNode_t n = cuda_try<cudaGraphAddChildGraphNode>(parent_graph, nullptr, 0, dummy_graph);
 
             // cudaGraphAddChildGraphNode clones dummy_graph into the parent
             cuda_try(cudaGraphDestroy(dummy_graph));
@@ -486,14 +484,14 @@ public:
             // Get the graph described by the child, not the graph that was
             // cloned into the child graph node so that changes are reflected
             // in it.
-            cuda_try(cudaGraphChildGraphNodeGetGraph(n, &graph));
+            graph       = cuda_try<cudaGraphChildGraphNodeGetGraph>(n);
             input_node  = n;
             output_node = n;
           }
         }
         else
         {
-          cuda_try(cudaGraphCreate(&graph, 0));
+          graph = cuda_try<cudaGraphCreate>(0);
         }
 
         // We own `graph` (the raw cudaGraph_t member) only when we freshly allocated
@@ -538,11 +536,10 @@ public:
           // Add conditional node to parent graph. The node lives inside `graph`;
           // if construction fails later, the SCOPE(fail) above destroys `graph`
           // and the node is cleaned up implicitly.
-          cudaGraphNode_t conditionalNode;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_try(cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams));
+          const cudaGraphNode_t conditionalNode = cuda_try<cudaGraphAddNode>(graph, nullptr, nullptr, 0, &cParams);
 #  else
-          cuda_try(cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams));
+          const cudaGraphNode_t conditionalNode = cuda_try<cudaGraphAddNode>(graph, nullptr, 0, &cParams);
 #  endif
 
           // Get the body graph from the conditional node
@@ -561,8 +558,7 @@ public:
           kconfig.kernelParams   = kconfig_args;
           kconfig.sharedMemBytes = 0;
 
-          cudaGraphNode_t reset_node;
-          cuda_try(cudaGraphAddKernelNode(&reset_node, graph, &conditionalNode, 1, &kconfig));
+          const cudaGraphNode_t reset_node = cuda_try<cudaGraphAddKernelNode>(graph, &conditionalNode, 1, &kconfig);
 
           input_node  = conditionalNode;
           output_node = reset_node;
