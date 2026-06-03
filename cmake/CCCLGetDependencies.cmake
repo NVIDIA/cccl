@@ -77,7 +77,7 @@ endmacro()
 
 set(
   CCCL_NVBENCH_SHA
-  "373970323f3e2a3995761ea682ca64dfcbdd1e26"
+  "ee4b9f0963387334db194663134dc6ef714004c4"
   CACHE STRING
   "SHA/tag to use for CCCL's NVBench."
 )
