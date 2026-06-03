@@ -123,12 +123,12 @@ struct DeviceScanKernelSource
     return {};
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_size()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t lookahead_tile_state_size()
   {
     return sizeof(warpspeed::tile_state_t<AccumT>);
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_alignment()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t lookahead_tile_state_alignment()
   {
     return alignof(warpspeed::tile_state_t<AccumT>);
   }
@@ -140,7 +140,7 @@ struct DeviceScanKernelSource
     return arg;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto look_ahead_make_tile_state_kernel_arg(void* ts)
+  CUB_RUNTIME_FUNCTION static constexpr auto lookahead_make_tile_state_kernel_arg(void* ts)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
     ::cuda::std::__construct_at(&arg.warpspeed, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
@@ -491,7 +491,7 @@ struct DispatchScan
     CUB_DETAIL_CONSTEXPR_ISH const ScanWarpspeedPolicy warpspeed_policy = policy_getter().warpspeed;
     CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.num_reduce_and_scan_warps >= 1,
                                  "Warpspeed scan policy have at least 1 warp for reducing and scanning");
-    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.look_ahead_items_per_thread >= 1,
+    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.lookahead_items_per_thread >= 1,
                                  "Warpspeed scan policy must look ahead at least 1 item per thread");
     CUB_DETAIL_STATIC_ISH_ASSERT(
       warpspeed_policy.items_per_thread >= 1, "Warpspeed scan policy must have at least 1 item per thread");
@@ -501,7 +501,7 @@ struct DispatchScan
 
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size();
+      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.lookahead_tile_state_size();
       return cudaSuccess;
     }
 
@@ -524,7 +524,7 @@ struct DispatchScan
     }
 
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
-    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
+    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.lookahead_tile_state_alignment()), "");
 
     auto scan_kernel                 = kernel_source.ScanKernel();
     [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
@@ -599,7 +599,7 @@ struct DispatchScan
                              stream,
                              /* dependent_launch */ ptx_version >= 900)
               .doit(kernel_source.InitKernel(),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
                     grid_dim)))
       {
         return error;
@@ -631,7 +631,7 @@ struct DispatchScan
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
                     /* start_tile, unused */ 0,
                     ::cuda::std::move(scan_op),
                     init_value,

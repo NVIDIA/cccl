@@ -107,7 +107,7 @@ struct ScanLookbackPolicy
 struct ScanWarpspeedPolicy
 {
   int num_reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
-  int look_ahead_items_per_thread; //!< Number of look-ahead items per thread in the lookback warp
+  int lookahead_items_per_thread; //!< Number of look-ahead items per thread in the lookback warp
   int items_per_thread; //!< Number of items processed per reduction and scanning thread
 
   // For the number of stages below, a positive value is taken directly, otherwise it is added to the runtime determined
@@ -130,7 +130,7 @@ struct ScanWarpspeedPolicy
   _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
   {
     return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
-        && lhs.look_ahead_items_per_thread == rhs.look_ahead_items_per_thread
+        && lhs.lookahead_items_per_thread == rhs.lookahead_items_per_thread
         && lhs.items_per_thread == rhs.items_per_thread && lhs.lookahead_stages == rhs.lookahead_stages
         && lhs.block_idx_stages == rhs.block_idx_stages;
   }
@@ -145,7 +145,7 @@ struct ScanWarpspeedPolicy
   {
     return os
         << "ScanWarpspeedPolicy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
-        << ", .look_ahead_items_per_thread = " << p.look_ahead_items_per_thread
+        << ", .lookahead_items_per_thread = " << p.lookahead_items_per_thread
         << ", .items_per_thread = " << p.items_per_thread << ", .lookahead_stages = " << p.lookahead_stages
         << ", .block_idx_stages = " << p.block_idx_stages << " }";
   }
@@ -893,7 +893,7 @@ struct policy_selector
 #endif // _CCCL_COMPILER(NVHPC)
 
     // TODO(bgruber): 5 is a bit better for complex<float>
-    warpspeed_policy.look_ahead_items_per_thread = accum_size == 2 ? 3 : 4;
+    warpspeed_policy.lookahead_items_per_thread = accum_size == 2 ? 3 : 4;
 
     // manual tuning based on cub.bench.scan.exclusive.sum.base
     // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)

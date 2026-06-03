@@ -47,7 +47,7 @@ namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanWarpspeedPolicy& policy)
 {
   const auto num_total_warps = 2 * policy.num_reduce_and_scan_warps + 1 /*num_load_warps*/
-                             + 1 /*num_sched_warps*/ + 1 /*num_look_ahead_warps*/;
+                             + 1 /*num_sched_warps*/ + 1 /*num_lookahead_warps*/;
   return num_total_warps * warp_threads;
 }
 
@@ -277,8 +277,8 @@ struct warpspeed_scan_closure
     squad_lookahead(policy),
   };
 
-  static constexpr int tile_size                   = policy.tile_size();
-  static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
+  static constexpr int tile_size                  = policy.tile_size();
+  static constexpr int lookahead_items_per_thread = policy.lookahead_items_per_thread;
 
   // We might try to instantiate the kernel with huge types which would lead to a small tile size. Ensure its never 0
   static constexpr int elemPerThread = policy.items_per_thread;
@@ -326,7 +326,7 @@ struct warpspeed_scan_closure
 
     if (!is_first_tile)
     {
-      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<look_ahead_items_per_thread>(
+      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
         specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
       if (squad.isLeaderThread())
       {
