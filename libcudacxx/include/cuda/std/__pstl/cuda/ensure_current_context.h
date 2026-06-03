@@ -24,6 +24,7 @@
 #if _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/std/__type_traits/is_callable.h>
@@ -31,8 +32,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
-
-_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 template <class _Policy>
 [[nodiscard]] _CCCL_HOST_API __ensure_current_context __pstl_ensure_current_ctx_for(const _Policy& __policy)
@@ -43,13 +42,11 @@ template <class _Policy>
   }
   else
   {
-    int __device_id;
-    ::cudaGetDevice(&__device_id);
-    return __ensure_current_context{device_ref{__device_id}};
+    int __curr_device{};
+    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
+    return __ensure_current_context{device_ref{__curr_device}};
   }
 }
-
-_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
 _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 

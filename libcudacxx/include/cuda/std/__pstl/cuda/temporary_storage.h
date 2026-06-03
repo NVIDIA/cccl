@@ -32,6 +32,7 @@
 #  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -141,8 +142,10 @@ class __temporary_storage
     }
     else
     {
-      // If no stream was specified, we use the device 0.
-      return ::cuda::device_default_memory_pool(0);
+      // If no stream was specified, use the current device.
+      int __curr_device{};
+      _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
+      return ::cuda::device_default_memory_pool(__curr_device);
     }
   }
 
