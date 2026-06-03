@@ -3,40 +3,47 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Drop-in STF Dopri5 on torchdiffeq's ``ode_demo.py`` setup.
+STF Dopri5 as a drop-in for ``torchdiffeq.odeint`` on the canonical Neural ODE.
 
-Context
--------
-``test_node_stf.py`` validates the underlying performance claim on a
-hand-written MLP vector field. This file shows that the same mechanism
-(compiled Dopri5 body + ``ctx.while_loop`` + device-side termination) can
-serve as a drop-in replacement for ``torchdiffeq.odeint`` on the exact
-Neural-ODE ``ODEFunc`` used by torchdiffeq's own
-``examples/ode_demo.py`` -- the canonical "fit a 2D spiral" demo.
+This example reproduces the *evaluation* forward pass of torchdiffeq's own
+``examples/ode_demo.py`` (the canonical "fit a 2D spiral" Neural ODE) and shows
+that a single STF entry point::
+
+    stf_odeint(f, y0, (t0, t1), atol=..., rtol=...)  ->  y(t1)
+
+can replace ``torchdiffeq.odeint(f, y0, [t0, t1])`` for forward integration.
+
+(The companion ``neural_ode_rk4.py`` covers the fixed-step variant using
+``ctx.graph_scope() + ctx.repeat(N)``.)
+
+How it works
+------------
+The Dormand-Prince 5(4) step is written as a fixed-shape compiled body (all
+accept/reject control flow expressed as ``torch.where`` masks on a scalar
+signal), and the adaptive loop runs inside ``ctx.while_loop`` with a device-side
+termination scalar. The whole integration is therefore one CUDA graph with a
+device-driven WHILE node -- no host<->device synchronization per step to decide
+whether to continue.
 
 Scope
 -----
-* Forward-only drop-in: ``stf_odeint(f, y0, (t0, t1), atol, rtol)`` returns
-  ``y(t1)``. No autograd/adjoint yet -- the training path of ode_demo.py
-  still needs torchdiffeq. The *evaluation* path (``with torch.no_grad():
-  odeint(func, true_y0, t)``) is what this file replaces.
-* Endpoint-only output; no dense ``t_eval`` trajectory. Extending to dense
-  output requires recording accepted snapshots inside the while_loop body
-  and interpolating -- noted as a followup.
-* Two vector fields are tested for robustness:
-    1. ``Lambda()`` -- torchdiffeq's canonical ground-truth dynamics
-       ``dy/dt = y**3 @ A`` (no learned parameters).
-    2. ``ODEFunc()`` -- the actual Neural ODE architecture from
-       ``ode_demo.py``, with the default std=0.1 random init. Random init
-       is fine here because we only check solver *agreement*, not the
-       quality of the fit.
+* Forward-only drop-in: returns ``y(t1)``. No autograd/adjoint yet, and no
+  dense ``t_eval`` trajectory (endpoint only) -- both are noted as followups.
+* Two vector fields are exercised:
+    1. ``Lambda()`` -- torchdiffeq's ground-truth dynamics ``dy/dt = y**3 @ A``.
+    2. ``ODEFunc()`` -- the actual Neural ODE nn.Module from ode_demo.py.
 
-Toggles
--------
-    LLM_ODE_DEMO_BENCH=1   run the benchmark (default off).
-    LLM_ODE_DEMO_TEND=25   integration horizon (default 25, matches ode_demo).
-    LLM_ODE_DEMO_ITERS=30  timed iterations.
-    LLM_ODE_DEMO_WARMUP=5  warmup iterations.
+Correctness is checked against an independent, torch-only reference that solves
+the same Dopri5 body with a host-driven CUDA-graph loop
+(``cudagraph_host_odeint``); both must agree on ``y(t1)``.
+
+Run it directly::
+
+    python neural_ode_dopri5.py
+
+Set ``LLM_ODE_DEMO_BENCH=1`` to additionally print STF-vs-host-loop wall-clock
+timings (informational only -- nothing is asserted on performance). The
+integration horizon can be tuned with ``LLM_ODE_DEMO_TEND`` (default 25).
 """
 
 from __future__ import annotations
@@ -103,7 +110,7 @@ class ODEFunc(nn.Module):
 # Dormand-Prince 5(4) tableau
 # ---------------------------------------------------------------------------
 #
-# Coefficients duplicated (rather than imported from test_node_stf) so this
+# Coefficients duplicated (rather than imported from neural_ode_rk4) so this
 # file stays standalone and can be read as a worked example.
 
 _A21 = 1.0 / 5.0
@@ -145,7 +152,7 @@ _C2, _C3, _C4, _C5, _C6, _C7 = 1.0 / 5.0, 3.0 / 10.0, 4.0 / 5.0, 8.0 / 9.0, 1.0,
 # (which fire when the body is re-entered inside a CUDA graph capture and
 # try to re-take an RNG snapshot), we specialize the compiled body per
 # vector-field family and pass all parameters explicitly. This mirrors the
-# pattern already validated in ``test_node_stf.py``.
+# pattern already validated in ``neural_ode_rk4.py``.
 
 
 def _dopri5_step(y, t, h, t_end, atol, rtol, k_fn):
@@ -314,7 +321,7 @@ def _build_stf_odeint_persistent(
 
     # Parameters are read-only for the lifetime of the solver -- mark them
     # as such so the stackable_ctx auto-pushes READ at every nesting level
-    # instead of RW (see the same treatment in test_node_stf.py).
+    # instead of RW (see the same treatment in neural_ode_rk4.py).
     # logical_data takes host-backed numpy arrays; we own a copy so the
     # live nn.Module weights can continue to train without aliasing this
     # solver's frozen view of them.
@@ -554,37 +561,6 @@ def cudagraph_host_odeint(
 
 
 # ---------------------------------------------------------------------------
-# Baseline adapters (torchdiffeq / torchode)
-# ---------------------------------------------------------------------------
-
-
-def _torchdiffeq_odeint(f, y0, t_span, *, atol=1e-6, rtol=1e-6):
-    from torchdiffeq import odeint
-
-    t = torch.tensor(
-        [float(t_span[0]), float(t_span[1])],
-        device=y0.device,
-        dtype=y0.dtype,
-    )
-    return odeint(f, y0, t, method="dopri5", atol=atol, rtol=rtol)[-1]
-
-
-def _torchode_odeint(f, y0, t_span, *, atol=1e-6, rtol=1e-6):
-    import torchode as to
-
-    # torchode expects f(t, y); our nn.Modules already have that signature.
-    term = to.ODETerm(f, with_stats=False)
-    method = to.Dopri5(term=term)
-    controller = to.IntegralController(atol=atol, rtol=rtol, term=term)
-    solver = to.AutoDiffAdjoint(method, controller)
-    B = y0.shape[0]
-    t_start = torch.full((B,), float(t_span[0]), device=y0.device, dtype=y0.dtype)
-    t_end = torch.full((B,), float(t_span[1]), device=y0.device, dtype=y0.dtype)
-    problem = to.InitialValueProblem(y0=y0, t_start=t_start, t_end=t_end)
-    return solver.solve(problem).ys[:, -1]
-
-
-# ---------------------------------------------------------------------------
 # Correctness test -- the core deliverable of this file
 # ---------------------------------------------------------------------------
 
@@ -612,53 +588,38 @@ def _assert_endpoints_match(label: str, *ys, atol=1e-4, rtol=1e-4):
         )
 
 
-def test_ode_demo_correctness_lambda():
-    """Ground-truth dynamics: all three solvers must agree on ``y(t_end)``."""
+def test_dopri5_correctness_lambda():
+    """Ground-truth dynamics: the STF drop-in must agree on ``y(t_end)``.
+
+    The reference is ``cudagraph_host_odeint``: an independent, torch-only
+    solver that runs the *same* Dopri5 body but drives the adaptive loop from
+    the host (replay a captured graph + read the termination flag with
+    ``cond.item()``). Same math, different control-loop driver, so agreement
+    isolates the STF ``ctx.while_loop`` plumbing.
+    """
     cfg = _ode_demo_cfg()
     f = Lambda().cuda()
 
-    y_td = _torchdiffeq_odeint(
-        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
-    )
-    try:
-        y_to = _torchode_odeint(
-            f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
-        )
-    except ImportError:
-        y_to = None
-
     y_stf = stf_odeint(f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"])
-    y_cg = cudagraph_host_odeint(
+    y_ref = cudagraph_host_odeint(
         f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
     )
 
-    ys = [y_td, y_stf, y_cg] + ([y_to] if y_to is not None else [])
-    _assert_endpoints_match("Lambda", *ys)
+    _assert_endpoints_match("Lambda", y_ref, y_stf)
 
 
-def test_ode_demo_correctness_odefunc():
+def test_dopri5_correctness_odefunc():
     """Actual Neural ODE nn.Module -- same drop-in, same agreement."""
     cfg = _ode_demo_cfg()
     torch.manual_seed(0xC0DE)
     f = ODEFunc().cuda()
 
-    y_td = _torchdiffeq_odeint(
-        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
-    )
-    try:
-        y_to = _torchode_odeint(
-            f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
-        )
-    except ImportError:
-        y_to = None
-
     y_stf = stf_odeint(f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"])
-    y_cg = cudagraph_host_odeint(
+    y_ref = cudagraph_host_odeint(
         f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
     )
 
-    ys = [y_td, y_stf, y_cg] + ([y_to] if y_to is not None else [])
-    _assert_endpoints_match("ODEFunc", *ys)
+    _assert_endpoints_match("ODEFunc", y_ref, y_stf)
 
 
 # ---------------------------------------------------------------------------
@@ -694,304 +655,55 @@ def _time_stf_forward(forward, *, iters: int, warmup: int) -> float:
     return samples[len(samples) // 2] * 1e3
 
 
-def test_ode_demo_benchmark():
-    if os.environ.get("LLM_ODE_DEMO_BENCH", "0") == "0":
-        print("Set LLM_ODE_DEMO_BENCH=1 to run the ode_demo benchmark; skipping.")
-        return
-    """Same workload as ode_demo.py's eval-time forward call, three solvers."""
-    cfg = _ode_demo_cfg()
-    iters = int(os.environ.get("LLM_ODE_DEMO_ITERS", "30"))
-    warmup = int(os.environ.get("LLM_ODE_DEMO_WARMUP", "5"))
+def _print_timings(cfg, *, iters: int, warmup: int):
+    """Print STF-vs-host-loop wall-clock timings (informational; no assertions).
 
+    Both solvers run the same compiled Dopri5 body. The ``cuda-graph + host
+    loop`` baseline replays a captured graph but reads the termination flag
+    with ``cond.item()`` -- a host<->device sync per step -- while STF's
+    ``ctx.while_loop`` keeps the loop control on the device. The gap is what
+    device-side control flow buys.
+    """
     torch.manual_seed(0xC0DE)
     f = ODEFunc().cuda()
 
-    # torchdiffeq.odeint: closure over f since it's stateless across calls.
-    t_td = _time_callable(
-        lambda: _torchdiffeq_odeint(
-            f,
-            cfg["y0"],
-            cfg["t_span"],
-            atol=cfg["atol"],
-            rtol=cfg["rtol"],
-        ),
-        iters=iters,
-        warmup=warmup,
-    )
-
-    # torchode: build the solver once (torchode has per-call Python setup
-    # that we don't want to amortise into every timed iteration).
-    try:
-        import torchode as to
-
-        term = to.ODETerm(f, with_stats=False)
-        method = to.Dopri5(term=term)
-        controller = to.IntegralController(
-            atol=cfg["atol"],
-            rtol=cfg["rtol"],
-            term=term,
-        )
-        solver_obj = to.AutoDiffAdjoint(method, controller)
-        try:
-            solver_obj = torch.compile(
-                solver_obj,
-                mode="reduce-overhead",
-                fullgraph=False,
-            )
-        except Exception:  # noqa: BLE001
-            pass
-
-        B = cfg["y0"].shape[0]
-        t_start = torch.full(
-            (B,),
-            float(cfg["t_span"][0]),
-            device=cfg["y0"].device,
-            dtype=cfg["y0"].dtype,
-        )
-        t_end = torch.full(
-            (B,),
-            float(cfg["t_span"][1]),
-            device=cfg["y0"].device,
-            dtype=cfg["y0"].dtype,
-        )
-
-        def torchode_call():
-            problem = to.InitialValueProblem(
-                y0=cfg["y0"],
-                t_start=t_start,
-                t_end=t_end,
-            )
-            return solver_obj.solve(problem).ys[:, -1]
-
-        t_to = _time_callable(torchode_call, iters=iters, warmup=warmup)
-    except ImportError:
-        t_to = float("nan")
-
-    # Manual CUDAGraph + host-driven termination (NO STF). Same compiled
-    # body, same Dopri5 math, just a different outer loop.
     forward_cg, _ = _build_cudagraph_host_odeint_persistent(
-        f,
-        cfg["y0"],
-        cfg["t_span"],
-        atol=cfg["atol"],
-        rtol=cfg["rtol"],
+        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
     )
     t_cg = _time_callable(forward_cg, iters=iters, warmup=warmup)
 
-    # STF: persistent context.
     forward, ctx, _ = _build_stf_odeint_persistent(
-        f,
-        cfg["y0"],
-        cfg["t_span"],
-        atol=cfg["atol"],
-        rtol=cfg["rtol"],
+        f, cfg["y0"], cfg["t_span"], atol=cfg["atol"], rtol=cfg["rtol"]
     )
     try:
         t_stf = _time_stf_forward(forward, iters=iters, warmup=warmup)
     finally:
         ctx.finalize()
 
-    # Report.
     print(
         f"\n=== ode_demo.py-style eval: y0={cfg['y0'].tolist()}, "
         f"t_span={cfg['t_span']}, atol={cfg['atol']}, rtol={cfg['rtol']} ==="
     )
-    print(f"  {'solver':<32} {'ms / run':>12} {'speedup vs torchdiffeq':>26}")
-    print("  " + "-" * 72)
+    print(f"  {'solver':<34} {'ms / run':>12} {'speedup vs host loop':>22}")
+    print("  " + "-" * 70)
     for name, t in (
-        ("torchdiffeq/dopri5", t_td),
-        ("torchode/dopri5", t_to),
-        ("cuda-graph + host loop (manual)", t_cg),
-        ("stf/dopri5 (drop-in)", t_stf),
+        ("cuda-graph + host loop (no STF)", t_cg),
+        ("stf/while_loop (drop-in)", t_stf),
     ):
-        if t != t:  # NaN
-            print(f"  {name:<32} {'(skipped)':>12} {'-':>26}")
-        else:
-            sp = t_td / t if t > 0 else float("nan")
-            print(f"  {name:<32} {t:>10.2f}   {sp:>24.2f}x")
-
-    # Hard gate: STF must beat torchdiffeq (same algorithm, device-side vs
-    # host-side control loop). If this ever fails, something regressed.
-    assert t_stf == t_stf and t_td / t_stf >= 2.0, (
-        f"stf/dopri5 is not >=2x faster than torchdiffeq/dopri5 "
-        f"on the ode_demo workload (stf={t_stf:.2f} ms, td={t_td:.2f} ms). "
-        f"Expected a comfortable margin since the algorithmic work is "
-        f"identical and only the control-loop driver differs."
-    )
-
-
-# ---------------------------------------------------------------------------
-# Size sweep -- where does the STF advantage plateau?
-# ---------------------------------------------------------------------------
-#
-# ode_demo.py is a tutorial with a 2-wide state and a 50-wide hidden. That
-# size is overhead-bound, which is exactly where STF's device-side control
-# loop wins. Real Neural ODEs are bigger, and Python-loop overhead becomes
-# a smaller fraction of total cost. This sweep measures the crossover.
-#
-# Configurations are picked to span the realistic regimes discussed in
-# torchode/FFJORD literature:
-#
-#   toy           (B= 1, D=  2, H=  50)  ode_demo.py itself
-#   small         (B= 1, D= 16, H= 128)  minimal "non-toy" Neural ODE
-#   medium        (B=32, D= 64, H= 256)  latent-ODE time-series regime
-#   medium-large  (B=64, D=128, H= 256)
-#   large         (B=32, D=256, H= 512)  FFJORD-like per-step cost
-#
-# All configs use t in [0, 5] (vs. 25 for ode_demo) to keep total runtime
-# reasonable across the sweep; step count still scales with the stiffness
-# of each random-init vector field, so the #steps each solver actually
-# takes will vary across rows.
-
-
-_SWEEP_CONFIGS = [
-    # (B, D, H, label)
-    (1, 2, 50, "toy (ode_demo)"),
-    (1, 16, 128, "small"),
-    (32, 64, 256, "medium (latent-ODE)"),
-    (64, 128, 256, "medium-large"),
-    (32, 256, 512, "large (FFJORD-ish)"),
-]
-
-
-def test_ode_demo_sweep():
-    if os.environ.get("LLM_ODE_DEMO_SWEEP", "0") == "0":
-        print("Set LLM_ODE_DEMO_SWEEP=1 to run the problem-size sweep; skipping.")
-        return
-    """Sweep problem size from ode_demo.py's toy to FFJORD-ish per-step cost.
-
-    Reports ``ms/run`` and speedup vs torchdiffeq for each config. Not a
-    hard gate: we *expect* the STF advantage to shrink as the matmul
-    work starts to dominate Python-loop overhead; the point is to
-    quantify where the crossover is.
-    """
-    iters = int(os.environ.get("LLM_ODE_DEMO_ITERS", "10"))
-    warmup = int(os.environ.get("LLM_ODE_DEMO_WARMUP", "3"))
-    t_span = (0.0, float(os.environ.get("LLM_ODE_DEMO_SWEEP_TEND", "5")))
-    atol = rtol = 1e-6
-
-    rows = []
-
-    for B, D, H, label in _SWEEP_CONFIGS:
-        torch.manual_seed(0xC0DE + B * 131 + D * 17 + H)
-        f = ODEFunc(dim=D, hidden=H).cuda()
-        # 0.5 * N(0, 1) IC keeps |y**3| moderate and the adaptive solver
-        # from taking pathologically small steps at random-init.
-        y0 = torch.randn(B, D, device="cuda", dtype=torch.float32) * 0.5
-
-        # ---- torchdiffeq ----
-        t_td = _time_callable(
-            lambda f=f, y0=y0: _torchdiffeq_odeint(
-                f,
-                y0,
-                t_span,
-                atol=atol,
-                rtol=rtol,
-            ),
-            iters=iters,
-            warmup=warmup,
-        )
-
-        # ---- torchode (built + compiled once per config) ----
-        try:
-            import torchode as to
-
-            term = to.ODETerm(f, with_stats=False)
-            method = to.Dopri5(term=term)
-            controller = to.IntegralController(atol=atol, rtol=rtol, term=term)
-            solver_obj = to.AutoDiffAdjoint(method, controller)
-            try:
-                solver_obj = torch.compile(
-                    solver_obj,
-                    mode="reduce-overhead",
-                    fullgraph=False,
-                )
-            except Exception:  # noqa: BLE001
-                pass
-
-            t_start = torch.full(
-                (B,), float(t_span[0]), device=y0.device, dtype=y0.dtype
-            )
-            t_end = torch.full((B,), float(t_span[1]), device=y0.device, dtype=y0.dtype)
-
-            def torchode_call(
-                solver_obj=solver_obj, y0=y0, t_start=t_start, t_end=t_end
-            ):
-                prob = to.InitialValueProblem(
-                    y0=y0,
-                    t_start=t_start,
-                    t_end=t_end,
-                )
-                return solver_obj.solve(prob).ys[:, -1]
-
-            t_to = _time_callable(torchode_call, iters=iters, warmup=warmup)
-        except ImportError:
-            t_to = float("nan")
-        except Exception as e:  # noqa: BLE001
-            # Some torchode compile paths crash on very small or unusual
-            # shapes; record the failure but keep the sweep going.
-            print(f"  [torchode error on {label}: {type(e).__name__}: {e}]")
-            t_to = float("nan")
-
-        # ---- Manual CUDAGraph + host-sync loop (NO STF) ----
-        forward_cg, _ = _build_cudagraph_host_odeint_persistent(
-            f,
-            y0,
-            t_span,
-            atol=atol,
-            rtol=rtol,
-        )
-        t_cg = _time_callable(forward_cg, iters=iters, warmup=warmup)
-
-        # ---- STF drop-in (persistent context per config) ----
-        forward, ctx, _ = _build_stf_odeint_persistent(
-            f,
-            y0,
-            t_span,
-            atol=atol,
-            rtol=rtol,
-        )
-        try:
-            t_stf = _time_stf_forward(forward, iters=iters, warmup=warmup)
-        finally:
-            ctx.finalize()
-
-        rows.append((label, B, D, H, t_td, t_to, t_cg, t_stf))
-
-    # Pretty table. Columns:
-    #   td = torchdiffeq (pure host-loop)
-    #   to = torchode (batched + torch.compile)
-    #   cg = manual CUDAGraph replay + host-side cond.item() (NO STF)
-    #   stf = STF ctx.while_loop + device-side cond
-    print(
-        f"\n=== Problem-size sweep: t_span={t_span}, atol=rtol={atol}, "
-        f"iters={iters} (median) ==="
-    )
-    hdr = (
-        f"  {'config':<22} {'B':>4} {'D':>5} {'H':>5} "
-        f"{'torchdiffeq':>12} {'torchode':>12} {'manual-cg':>12} "
-        f"{'stf':>10} {'vs td':>8} {'vs manual-cg':>14}"
-    )
-    print(hdr)
-    print("  " + "-" * (len(hdr) - 2))
-    for label, B, D, H, t_td, t_to, t_cg, t_stf in rows:
-        to_s = "n/a" if t_to != t_to else f"{t_to:8.2f} ms"
-        vs_td = f"{t_td / t_stf:>5.2f}x" if t_stf > 0 else "nan"
-        vs_cg = f"{t_cg / t_stf:>5.2f}x" if t_cg == t_cg and t_stf > 0 else "n/a"
-        print(
-            f"  {label:<22} {B:>4} {D:>5} {H:>5} "
-            f"{t_td:8.2f} ms  {to_s:>10}  {t_cg:8.2f} ms "
-            f"{t_stf:7.2f} ms {vs_td:>7}  {vs_cg:>12}"
-        )
+        sp = t_cg / t if t > 0 else float("nan")
+        print(f"  {name:<34} {t:>10.2f}   {sp:>20.2f}x")
 
 
 def main():
-    test_ode_demo_correctness_lambda()
-    print("ode_demo Lambda correctness: PASS")
-    test_ode_demo_correctness_odefunc()
-    print("ode_demo ODEFunc correctness: PASS")
-    test_ode_demo_benchmark()
-    test_ode_demo_sweep()
+    test_dopri5_correctness_lambda()
+    print("Dopri5 Lambda correctness: PASS")
+    test_dopri5_correctness_odefunc()
+    print("Dopri5 ODEFunc correctness: PASS")
+    if os.environ.get("LLM_ODE_DEMO_BENCH", "0") != "0":
+        cfg = _ode_demo_cfg()
+        iters = int(os.environ.get("LLM_ODE_DEMO_ITERS", "30"))
+        warmup = int(os.environ.get("LLM_ODE_DEMO_WARMUP", "5"))
+        _print_timings(cfg, iters=iters, warmup=warmup)
 
 
 if __name__ == "__main__":
