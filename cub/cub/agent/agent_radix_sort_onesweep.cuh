@@ -242,6 +242,10 @@ struct AgentRadixSortOnesweep
       {
         bins[u] = other_bins[u];
       }
+      if (agent.use_pdl)
+      {
+        _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+      }
       agent.LookbackPartial(bins);
 
       agent.TryShortCircuit(keys, bins);
@@ -616,11 +620,6 @@ struct AgentRadixSortOnesweep
     // in the source array
     bit_ordered_type keys[ITEMS_PER_THREAD];
     LoadKeys(block_idx * TILE_ITEMS, keys);
-
-    if (use_pdl)
-    {
-      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    }
 
     // rank keys
     int ranks[ITEMS_PER_THREAD];
