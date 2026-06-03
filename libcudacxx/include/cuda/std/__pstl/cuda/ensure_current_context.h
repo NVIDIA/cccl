@@ -44,8 +44,8 @@ template <class _Policy>
   else
   {
     int __device_id;
-    ::cudaGetDevice(__device_id);
-    return __ensure_current_context{__device_id};
+    ::cudaGetDevice(&__device_id);
+    return __ensure_current_context{device_ref{__device_id}};
   }
 }
 
