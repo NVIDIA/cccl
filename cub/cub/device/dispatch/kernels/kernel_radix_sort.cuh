@@ -510,6 +510,7 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
     _CCCL_GRID_CONSTANT const PortionOffsetT num_items,
     _CCCL_GRID_CONSTANT const int current_bit,
     _CCCL_GRID_CONSTANT const int num_bits,
+    _CCCL_GRID_CONSTANT const bool use_pdl,
     _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   static constexpr radix_sort_onesweep_policy policy = current_policy<PolicySelector>().onesweep;
@@ -547,6 +548,7 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
     num_items,
     current_bit,
     num_bits,
+    use_pdl,
     decomposer);
   agent.Process();
 }

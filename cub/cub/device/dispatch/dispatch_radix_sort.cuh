@@ -684,6 +684,8 @@ private:
       d_values.d_buffers[1] = d_values_tmp2;
     }
 
+    const bool use_pdl = num_items <= static_cast<OffsetT>(1 << 20);
+
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
       int num_bits = ::cuda::std::min(end_bit - current_bit, RADIX_BITS);
@@ -694,14 +696,26 @@ private:
 
         PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
         const size_t num_lookback_items = static_cast<size_t>(num_blocks) * RADIX_DIGITS;
-        constexpr int INIT_LOOKBACK_THREADS = 256;
-        const int init_lookback_blocks      = static_cast<int>(
-          ::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
 
-        if (const auto error = CubDebug(launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream)
-                                          .doit(kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items)))
+        if (use_pdl)
         {
-          return error;
+          constexpr int INIT_LOOKBACK_THREADS = 256;
+          const int init_lookback_blocks      = static_cast<int>(
+            ::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
+
+          if (const auto error =
+                CubDebug(launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream, use_pdl)
+                           .doit(kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items)))
+          {
+            return error;
+          }
+        }
+        else
+        {
+          if (const auto error = CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
+          {
+            return error;
+          }
         }
 
 // log onesweep_kernel configuration
@@ -721,7 +735,7 @@ private:
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
         if (const auto error = CubDebug(
-              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream, /* use_pdl */ true)
+              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream, use_pdl)
                 .doit(
                   onesweep_kernel,
                   d_lookback,
@@ -735,6 +749,7 @@ private:
                   portion_num_items,
                   current_bit,
                   num_bits,
+                  use_pdl,
                   decomposer)))
         {
           return error;
