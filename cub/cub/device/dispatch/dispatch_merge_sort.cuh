@@ -111,7 +111,7 @@ template <typename KeyInputIteratorT,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
           typename KeyT                  = cub::detail::it_value_t<KeyIteratorT>,
           typename ValueT                = cub::detail::it_value_t<ValueIteratorT>>
-struct DispatchMergeSort
+struct CCCL_DEPRECATED_BECAUSE("Please use DeviceMergeSort") DispatchMergeSort
 {
   /// Whether or not there are values to be trucked along with keys
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
