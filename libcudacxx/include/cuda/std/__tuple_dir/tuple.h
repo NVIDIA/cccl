@@ -217,6 +217,27 @@ public:
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
+  // Horrible hack to make tuple_of_iterator_references work
+  template <class _TupleOfIteratorReferences,
+            // clang-tidy has fallen off its rocker and claims we can use the non-existent
+            // __tuple_of_iterato_references_v here.
+            // NOLINTBEGIN(modernize-type-traits)
+            enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0,
+            // NOLINTEND(modernize-type-traits)
+            enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
+  _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
+      : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{})
+  {}
+
+private:
+  template <class _TupleOfIteratorReferences,
+            size_t... _Indices,
+            enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0>
+  _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t, __tuple_indices<_Indices...>)
+      : tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
+  {}
+
+public:
   template <class _UTuple>
   using _TupleLikeConstraints = integral_constant<
     __select_constructor,
