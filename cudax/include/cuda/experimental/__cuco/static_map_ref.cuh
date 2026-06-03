@@ -23,9 +23,7 @@
 
 #include <cuda/atomic>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/iterator>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>

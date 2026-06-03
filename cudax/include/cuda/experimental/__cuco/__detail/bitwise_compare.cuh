@@ -25,7 +25,7 @@
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
+#include <cuda/std/cstring>
 
 #include <cuda/experimental/__cuco/traits.hpp>
 

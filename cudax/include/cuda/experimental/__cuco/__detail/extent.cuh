@@ -28,10 +28,10 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/__detail/prime.hpp>
 #include <cuda/experimental/__cuco/__detail/types.cuh>
-#include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

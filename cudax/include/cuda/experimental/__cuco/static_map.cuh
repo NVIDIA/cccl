@@ -28,6 +28,7 @@
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/tuple>
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>

@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_reduce.cuh>
-
 #include <cuda/atomic>
 #include <cuda/std/cstdint>
 #include <cuda/std/iterator>

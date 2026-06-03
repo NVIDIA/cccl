@@ -27,6 +27,7 @@
 #include <thrust/reduce.h>
 
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/atomic>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>

@@ -80,7 +80,13 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Extent>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept
+  {
+    using __size_type        = typename _Extent::index_type;
+    __size_type const __init = __hash(__probe_key) % (__upper_bound.extent(0) / _BucketSize) * _BucketSize;
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
+      __init, static_cast<__size_type>(_BucketSize), __upper_bound};
+  }
 
   //! @brief Returns a cooperative group based probing iterator.
   //!
@@ -98,7 +104,14 @@ public:
   _CCCL_HOST_DEVICE_API constexpr auto
   make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                 _ProbeKey __probe_key,
-                _Extent __upper_bound) const noexcept;
+                _Extent __upper_bound) const noexcept
+  {
+    using __size_type              = typename _Extent::index_type;
+    constexpr __size_type __stride = cg_size * _BucketSize;
+    __size_type const __init       = __hash(__probe_key) % (__upper_bound.extent(0) / __stride) * __stride
+                             + static_cast<__size_type>(__group.thread_rank() * _BucketSize);
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{__init, __stride, __upper_bound};
+  }
 
   //! @brief Gets the function used to hash keys.
   //!
@@ -181,7 +194,14 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Extent>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept
+  {
+    using __size_type = typename _Extent::index_type;
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
+      static_cast<__size_type>(__hash1(__probe_key)) % (__upper_bound.extent(0) / _BucketSize) * _BucketSize,
+      static_cast<__size_type>((__hash2(__probe_key) % (__upper_bound.extent(0) / _BucketSize - 1) + 1) * _BucketSize),
+      __upper_bound};
+  }
 
   //! @brief Returns a cooperative group based probing iterator.
   //!
@@ -199,7 +219,17 @@ public:
   _CCCL_HOST_DEVICE_API constexpr auto
   make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                 _ProbeKey __probe_key,
-                _Extent __upper_bound) const noexcept;
+                _Extent __upper_bound) const noexcept
+  {
+    using __size_type              = typename _Extent::index_type;
+    constexpr __size_type __stride = cg_size * _BucketSize;
+
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
+      static_cast<__size_type>(__hash1(__probe_key)) % (__upper_bound.extent(0) / __stride) * __stride
+        + static_cast<__size_type>(__group.thread_rank() * _BucketSize),
+      static_cast<__size_type>((__hash2(__probe_key) % (__upper_bound.extent(0) / __stride - 1) + 1) * __stride),
+      __upper_bound};
+  }
 
   //! @brief Gets the functions used to hash keys.
   //!
@@ -230,7 +260,5 @@ template <int _CgSize, class _Hash1, class _Hash2>
 struct is_double_hashing<double_hashing<_CgSize, _Hash1, _Hash2>> : ::cuda::std::true_type
 {};
 } // namespace cuda::experimental::cuco
-
-#include <cuda/experimental/__cuco/__detail/probing_scheme_impl.cuh>
 
 #endif // _CUDAX___CUCO_PROBING_SCHEME_CUH

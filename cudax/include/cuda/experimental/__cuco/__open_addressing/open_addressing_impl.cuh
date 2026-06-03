@@ -30,9 +30,12 @@
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/iterator>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__detail/types.cuh>
@@ -42,8 +45,6 @@
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
-
-#include <cmath>
 
 #include <cuda/std/__cccl/prologue.h>
 
