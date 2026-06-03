@@ -57,7 +57,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
 // cudaGetDriverEntryPoint function is deprecated
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 #  if _CCCL_HOSTED()
 //! @brief Gets the cuGetProcAddress function pointer.

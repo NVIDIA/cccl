@@ -46,7 +46,7 @@ struct __unary_function_keep_layout_base
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Arg, class _Result>
 using __unary_function = unary_function<_Arg, _Result>;
 _CCCL_SUPPRESS_DEPRECATED_POP

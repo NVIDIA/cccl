@@ -58,7 +58,7 @@ extern __declfn_t<_Tp&&> declval<_Tp, void_t<_Tp&&>>;
 // Suppress deprecation notice for volatile-qualified return type resulting
 // from volatile-qualified types _Tp.
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Tp>
 _CCCL_API inline _Tp&& __declval(int);
 template <class _Tp>

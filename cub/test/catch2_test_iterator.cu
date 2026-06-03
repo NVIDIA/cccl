@@ -7,7 +7,7 @@
 // We start suppressing deprecation warnings but do not stop at the end of the file. This suppresses warnings in the
 // compiler-generated `catch2_test_iterator.compute_120.cudafe1.stub.c`
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>

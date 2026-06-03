@@ -65,7 +65,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class T>
 struct ref_diff
 {
@@ -172,7 +172,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 struct cust_diff
 {
   template <class T>

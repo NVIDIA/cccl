@@ -13,7 +13,7 @@
 #include "test_macros.h"
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_DIAG
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 template <class VType, size_t Size>
 TEST_FUNC constexpr void test()
