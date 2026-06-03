@@ -72,7 +72,6 @@ set(
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
-  local_stf/stackable_token_push_prologue.cu
   local_stf/stackable_write_back.cu
   local_stf/stackable_redundant_deps.cu
   local_stf/stackable_tmp.cu
