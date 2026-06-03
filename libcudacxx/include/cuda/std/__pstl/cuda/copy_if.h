@@ -144,7 +144,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
         }
         else
         {
-          throw;
+          _CCCL_RETHROW;
         }
       }
       _CCCL_CATCH_FALLTHROUGH
