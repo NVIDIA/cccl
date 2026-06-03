@@ -1432,11 +1432,11 @@ cdef class task:
         stf_task_set_symbol(self._t, name.encode())
 
     def set_exec_place(self, object exec_p):
-       if not isinstance(exec_p, exec_place):
-           raise TypeError("set_exec_place expects and exec_place argument")
+        if not isinstance(exec_p, exec_place):
+            raise TypeError("set_exec_place expects an exec_place argument")
 
-       cdef exec_place ep = <exec_place> exec_p
-       stf_task_set_exec_place(self._t, ep._h)
+        cdef exec_place ep = <exec_place> exec_p
+        stf_task_set_exec_place(self._t, ep._h)
 
     def stream_ptr(self):
         """Return a :class:`CudaStream` for this task's CUDA stream.

@@ -1,3 +1,7 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 """Demo: a DAG of captured tasks, each with a *local* STF context inside
 that exposes intra-task concurrency. Two complementary STF patterns
 composed inside a single unified ``cudaGraph_t``.

@@ -1,3 +1,7 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 """Smoke test: STF local context inside a Warp ``ScopedCapture``.
 
 Exercises the exact configuration the C++ test ``legacy_to_stf_in_capture.cu``
