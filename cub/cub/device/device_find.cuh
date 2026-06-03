@@ -27,6 +27,25 @@
 
 CUB_NAMESPACE_BEGIN
 
+//! @rst
+//! @par Tuning
+//! All algorithms in DeviceFind that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref FindPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin find-if-policy-selector
+//!      :end-before: example-end find-if-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin find-if-tuning
+//!      :end-before: example-end find-if-tuning
+//!
+//! @endrst
 struct DeviceFind
 {
   //! @rst
@@ -426,12 +445,12 @@ struct DeviceFind
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::FindIf");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
 
     using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::find::dispatch(
           storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
       });
