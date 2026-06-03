@@ -17,6 +17,10 @@
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
+#if _CCCL_CTK_AT_LEAST(13, 3) && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#  include <cub/device/dispatch/dispatch_transform_tile.cuh>
+#endif
+
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/always_true_false.h>
@@ -99,6 +103,32 @@ struct DeviceTransform
 
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
+#if _CCCL_CTK_AT_LEAST(13, 3) && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+    // Opt-in tile path. When every compile-time gate passes we route here
+    // and DO NOT instantiate the standard CUB transform dispatch below --
+    // under --enable-tile that path fails to compile for many (Op, T)
+    // combinations. Runtime alignment / divisibility violations on this
+    // branch surface as cudaErrorInvalidValue; the caller is expected to
+    // satisfy the 16-byte preconditions when opting into the tile path.
+    if constexpr (StableAddress == detail::transform::requires_stable_address::no
+                  && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+                  && detail::transform::tile::tile_dispatch_eligible_v<
+                       TransformOp,
+                       RandomAccessIteratorOut,
+                       RandomAccessIteratorsIn...>)
+    {
+      cudaError_t tile_result;
+      if (detail::transform::tile::try_dispatch<TransformOp>(
+            inputs, output, static_cast<offset_t>(num_items), stream, tile_result))
+      {
+        return tile_result;
+      }
+      return cudaErrorInvalidValue;
+    }
+    else
+#endif // _CCCL_CTK_AT_LEAST(13, 3) && CCCL_ENABLE_TILE_TRANSFORM_DISPATCH && _CCCL_TILE_COMPILATION()
+    {
+
     using tuning_env =
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
     using default_policy_selector =
@@ -122,6 +152,7 @@ struct DeviceTransform
       ::cuda::std::move(transform_op),
       stream,
       policy_selector{});
+    }
   }
 
   // TODO(bgruber): we want to eventually forward the output tuple to the kernel and optimize writing multiple streams
