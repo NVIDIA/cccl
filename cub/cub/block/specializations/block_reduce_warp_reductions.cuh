@@ -31,7 +31,6 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__bit/integral.h>
 
 #include <nv/target>
 
@@ -105,6 +104,15 @@ struct BlockReduceWarpReductions
   //! @rst
   //! Returns block-wide aggregate in *thread*\ :sub:`0`.
   //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction operator
+  //!
+  //! @param[in] warp_aggregate
+  //!   **[**\ *lane*\ :sub:`0` **only]** Warp-wide aggregate reduction of input items
   template <typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregatesNonDeterministic(ReductionOp /*reduction_op*/, T warp_aggregate)
   {
@@ -115,8 +123,10 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
+    // Warp 0 already contributed its aggregate above since it is also linear_tid == 0
     if (lane_id == 0 && warp_id != 0)
     {
+      // TODO: replace this with other atomic operations when specified
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_60,
         ({
@@ -157,9 +167,12 @@ struct BlockReduceWarpReductions
     // single-thread sequential loop over the warp aggregates.
     // When __reduce_<op>_sync is available (redux), the parallel path is a single HW instruction,
     // so we use a lower threshold.
+    // Also require at least one full warp to avoid issues with WarpReduceShfl when block size < warp size.
     constexpr int small_block_warp_threshold = is_redux_enabled_cuda_operator<ReductionOp, T> ? 2 : 4;
-    constexpr bool use_parallel_reduction    = (warps >= small_block_warp_threshold);
+    constexpr bool use_parallel_reduction =
+      (warps >= small_block_warp_threshold) && (threads_per_block >= warp_threads);
 
+    // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
     if constexpr (!use_parallel_reduction)
     {
       // Sequential reduction in linear_tid == 0 (legacy path for small blocks).
@@ -181,7 +194,7 @@ struct BlockReduceWarpReductions
       // Parallel reduction in warp 0.
       if (warp_id == 0)
       {
-        const int num_warps = FullTile ? int(warps) : static_cast<int>(::cuda::ceil_div(num_valid, logical_warp_size));
+        const int num_warps = FullTile ? warps : ::cuda::ceil_div(num_valid, logical_warp_size);
 
         if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T>)
         {
@@ -194,8 +207,8 @@ struct BlockReduceWarpReductions
                        }))
         }
 
-        // Shuffle-based tree over bit_ceil(warps) lanes.
-        constexpr int logical_lanes = static_cast<int>(::cuda::std::bit_ceil(static_cast<unsigned>(warps)));
+        // Shuffle-based tree over next_power_of_two(warps) lanes.
+        constexpr int logical_lanes = ::cuda::next_power_of_two(warps);
 
         T val;
         constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
