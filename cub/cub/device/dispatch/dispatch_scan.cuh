@@ -65,7 +65,8 @@ template <typename PolicySelector,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          ForceInclusive EnforceInclusive>
+          ForceInclusive EnforceInclusive,
+          bool StableReductionOrder = false>
 struct DeviceScanKernelSource
 {
   using ScanTileStateT = ScanTileState<AccumT>;
@@ -84,7 +85,8 @@ struct DeviceScanKernelSource
                      InitValueT,
                      OffsetT,
                      AccumT,
-                     EnforceInclusive == ForceInclusive::Yes>)
+                     EnforceInclusive == ForceInclusive::Yes,
+                     StableReductionOrder>)
 
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t InputSize()
   {
@@ -898,26 +900,29 @@ namespace detail::scan
 {
 template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
+  bool StableReductionOrder       = false,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT         = ::cuda::std::__accumulator_t<ScanOpT,
-                                                         cub::detail::it_value_t<InputIteratorT>,
-                                                         ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                          cub::detail::it_value_t<InputIteratorT>,
-                                                                          typename InitValueT::value_type>>,
-  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource   = DeviceScanKernelSource<
-      PolicySelector,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      AccumT,
-      EnforceInclusive>,
+  typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
+                                                 cub::detail::it_value_t<InputIteratorT>,
+                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                  cub::detail::it_value_t<InputIteratorT>,
+                                                                  typename InitValueT::value_type>>,
+  typename PolicySelector =
+    policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, StableReductionOrder>,
+  typename KernelSource = DeviceScanKernelSource<
+    PolicySelector,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    AccumT,
+    EnforceInclusive,
+    StableReductionOrder>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires scan_policy_selector<PolicySelector>
@@ -986,25 +991,27 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   });
 }
 
-template <
-  typename AccumT,
-  ForceInclusive EnforceInclusive = ForceInclusive::No,
-  typename InputIteratorT,
-  typename OutputIteratorT,
-  typename ScanOpT,
-  typename InitValueT,
-  typename OffsetT,
-  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource   = DeviceScanKernelSource<
-      PolicySelector,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      AccumT,
-      EnforceInclusive>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <typename AccumT,
+          ForceInclusive EnforceInclusive = ForceInclusive::No,
+          bool StableReductionOrder       = false,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename PolicySelector =
+            policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, StableReductionOrder>,
+          typename KernelSource = DeviceScanKernelSource<
+            PolicySelector,
+            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+            ScanOpT,
+            InitValueT,
+            OffsetT,
+            AccumT,
+            EnforceInclusive,
+            StableReductionOrder>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -1018,7 +1025,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
-  return dispatch<EnforceInclusive, InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, OffsetT, AccumT>(
+  return dispatch<EnforceInclusive,
+                  StableReductionOrder,
+                  InputIteratorT,
+                  OutputIteratorT,
+                  ScanOpT,
+                  InitValueT,
+                  OffsetT,
+                  AccumT>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
