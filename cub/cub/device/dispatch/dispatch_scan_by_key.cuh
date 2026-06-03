@@ -284,7 +284,7 @@ template <
 struct DispatchScanByKey
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
-                "DispatchScan only supports unsigned offset types of at least 4-bytes");
+                "DispatchScanByKey only supports unsigned offset types of at least 4-bytes");
 
   //---------------------------------------------------------------------
   // Constants and Types
@@ -734,7 +734,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelLauncherFactory launcher_factory = {}) -> cudaError_t
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
-                "DispatchScan only supports unsigned offset types of at least 4-bytes");
+                "scan_by_key::dispatch only supports unsigned offset types of at least 4-bytes");
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
