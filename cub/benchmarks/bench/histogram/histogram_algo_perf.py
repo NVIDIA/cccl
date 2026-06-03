@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import sys
+import textwrap
 
 import numpy as np
 
@@ -80,6 +81,10 @@ def fmt_elements(e: int) -> str:
         return f"{e >> 30}G"
     if e % (1 << 20) == 0:
         return f"{e >> 20}M"
+    if e >= 1 << 30:
+        return f"{e / (1 << 30):.2f}G"  # non-power-of-2 (e.g. 2e9 -> 1.86G)
+    if e >= 1 << 20:
+        return f"{e / (1 << 20):.1f}M"
     return str(e)
 
 
@@ -143,9 +148,10 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     gs = fig.add_gridspec(nrows, ncols)
 
     transform, channels = BINARY_META[binary_label]
+    head = f"{transform.upper()} · {channels}-channel · {sample}  —  InputShape: {shape}  ({C.SHAPE_BLURB.get(shape, '')})"
+    head = "\n".join(textwrap.wrap(head, width=120))
     fig.suptitle(
-        f"{transform.upper()} · {channels}-channel · {sample}  —  InputShape: {shape}"
-        f"  ({C.SHAPE_BLURB.get(shape, '')})\n"
+        f"{head}\n"
         f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
         f"below: GiB/s vs #bins per input size — one line per algorithm (markers = measured points)",
         fontsize=12,
@@ -170,7 +176,7 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
                     transform=ax.transAxes, fontsize=9, color="gray")
 
     fig.tight_layout(rect=(0, 0, 1, 0.94))
-    fig.savefig(outpath, dpi=110)
+    fig.savefig(outpath, dpi=110, bbox_inches="tight")
     plt.close(fig)
 
 
