@@ -152,7 +152,7 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     )
 
     C.draw_distribution(fig.add_subplot(gs[0, 0]), counts, char_bins)
-    C.draw_sequence(fig.add_subplot(gs[0, 1]), bins, char_bins)
+    C.draw_sequence(fig.add_subplot(gs[0, 1]), bins, char_bins, shape=shape)
     legend_ax = fig.add_subplot(gs[0, 2])
     legend_ax.axis("off")
     handles = [
