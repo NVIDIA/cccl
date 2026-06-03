@@ -185,8 +185,9 @@ C2H_TEST("stackable: logical_data write/read chain + pop_prologue (workaround)",
   stf_ctx_handle ctx = stf_stackable_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  uint8_t* host_dep;
-  cudaMallocHost(&host_dep, N * sizeof(uint8_t));
+  uint8_t* host_dep = nullptr;
+  cudaError_t err   = cudaMallocHost(&host_dep, N * sizeof(uint8_t));
+  REQUIRE(err == cudaSuccess);
   for (size_t i = 0; i < N; i++)
   {
     host_dep[i] = 0;
