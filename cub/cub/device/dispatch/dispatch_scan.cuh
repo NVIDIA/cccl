@@ -491,10 +491,10 @@ struct DispatchScan
     CUB_DETAIL_CONSTEXPR_ISH const ScanWarpspeedPolicy warpspeed_policy = policy_getter().warpspeed;
     CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.num_reduce_and_scan_warps >= 1,
                                  "Warpspeed scan policy have at least 1 warp for reducing and scanning");
-    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.lookahead_items_per_thread >= 1,
-                                 "Warpspeed scan policy must look ahead at least 1 item per thread");
     CUB_DETAIL_STATIC_ISH_ASSERT(
       warpspeed_policy.items_per_thread >= 1, "Warpspeed scan policy must have at least 1 item per thread");
+    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.lookahead_items_per_thread >= 1,
+                                 "Warpspeed scan policy must look ahead at least 1 item per thread");
 
     const int grid_dim =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));

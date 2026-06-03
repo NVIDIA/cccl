@@ -107,8 +107,8 @@ struct ScanLookbackPolicy
 struct ScanWarpspeedPolicy
 {
   int num_reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
-  int lookahead_items_per_thread; //!< Number of look-ahead items per thread in the lookback warp
   int items_per_thread; //!< Number of items processed per reduction and scanning thread
+  int lookahead_items_per_thread; //!< Number of look-ahead items per thread in the lookback warp
 
   // For the number of stages below, a positive value is taken directly, otherwise it is added to the runtime determined
   // number of stages. For example, a value of 2 means two stages. A value of -2 means runtime number of stages - 2.
@@ -130,9 +130,9 @@ struct ScanWarpspeedPolicy
   _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
   {
     return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
+        && lhs.items_per_thread == rhs.items_per_thread
         && lhs.lookahead_items_per_thread == rhs.lookahead_items_per_thread
-        && lhs.items_per_thread == rhs.items_per_thread && lhs.lookahead_stages == rhs.lookahead_stages
-        && lhs.block_idx_stages == rhs.block_idx_stages;
+        && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
   }
 
   _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const ScanWarpspeedPolicy& lhs, const ScanWarpspeedPolicy& rhs)
@@ -145,9 +145,9 @@ struct ScanWarpspeedPolicy
   {
     return os
         << "ScanWarpspeedPolicy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
+        << ", .items_per_thread = " << p.items_per_thread
         << ", .lookahead_items_per_thread = " << p.lookahead_items_per_thread
-        << ", .items_per_thread = " << p.items_per_thread << ", .lookahead_stages = " << p.lookahead_stages
-        << ", .block_idx_stages = " << p.block_idx_stages << " }";
+        << ", .lookahead_stages = " << p.lookahead_stages << ", .block_idx_stages = " << p.block_idx_stages << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -947,14 +947,14 @@ struct policy_selector
         {
           case 1:
             // wrps_4.lbi_8.ipt_160 ()  1.264254  1.264254  1.264254  1.264254
-            return ScanWarpspeedPolicy{4, 8, 160 - 1};
+            return ScanWarpspeedPolicy{4, 160 - 1, 8};
             // TODO(gonidelis): we found this tuning but it regressed:
             // wrps_3.lbi_4.ipt_96 ()  1.454824  1.247212  1.450590  1.560418
-            // return ScanWarpspeedPolicy{3, 4, 96 - 1};
+            // return ScanWarpspeedPolicy{3, 96 - 1, 4};
           case 2:
             // TODO(gonidelis): we found this tuning but it regresses large problems, we should revisit this
             // // wrps_4.lbi_2.ipt_96 ()  1.082511  0.929516  1.091523  1.264033
-            // return ScanWarpspeedPolicy{4, 2, 96 - 1};
+            // return ScanWarpspeedPolicy{4, 96 - 1, 2};
             // clang-format off
             //|   I16   |      I64      |      2^16      |  17.304 us |       1.07% |  15.244 us |       0.77% |    -2.060 us | -11.91% |   FAST   |
             //|   I16   |      I64      |      2^20      |  19.466 us |       1.21% |  17.266 us |       2.93% |    -2.200 us | -11.30% |   FAST   |
@@ -963,21 +963,21 @@ struct policy_selector
             //|   I16   |      I64      |      2^32      |   3.238 ms |       0.53% |   3.429 ms |       0.53% |   191.299 us |   5.91% |   SLOW   |
             // clang-format on
             // wrps_6.lbi_2.ipt_96 ()  1.167633  1.167633  1.167633  1.167633
-            return ScanWarpspeedPolicy{6, 2, 96 - 1};
+            return ScanWarpspeedPolicy{6, 96 - 1, 2};
           case 4:
             if (input_type == type_t::float32)
             {
               // wrps_4.lbi_3.ipt_88 ()  1.047200  1.002119  1.042654  1.081102
-              return ScanWarpspeedPolicy{4, 3, 88 - 1};
+              return ScanWarpspeedPolicy{4, 88 - 1, 3};
             }
             // wrps_4.lbi_3.ipt_80 ()  1.019078  0.999708  1.017346  1.052592
-            return ScanWarpspeedPolicy{4, 3, 80 - 1};
+            return ScanWarpspeedPolicy{4, 80 - 1, 3};
           case 8:
             // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
-            return ScanWarpspeedPolicy{2, 5, 88 - 1};
+            return ScanWarpspeedPolicy{2, 88 - 1, 5};
           case 16:
             // wrps_5.lbi_8.ipt_16 ()  1.159883  1.000000  1.143709  1.275821
-            return ScanWarpspeedPolicy{5, 8, 16 - 1};
+            return ScanWarpspeedPolicy{5, 16 - 1, 8};
             // TODO(bgruber): tune for more data types
           default:
             break;

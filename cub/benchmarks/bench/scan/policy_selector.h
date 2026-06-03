@@ -22,8 +22,8 @@ struct policy_selector
             cub::ScanLookbackPolicy{},
             cub::ScanWarpspeedPolicy{
               TUNE_NUM_REDUCE_SCAN_WARPS,
-              TUNE_NUM_LOOKBACK_ITEMS,
               TUNE_ITEMS_PLUS_ONE - 1,
+              TUNE_NUM_LOOKBACK_ITEMS,
               TUNE_LOOKBACK_STAGES,
               TUNE_BLOCK_IDX_STAGES}};
 #  else
