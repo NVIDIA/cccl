@@ -362,7 +362,7 @@ _CCCL_KERNEL_ATTRIBUTES void __insert_and_find(
 }
 
 //! @brief Total count of matches for keys in range using block reduce + atomic counter.
-template <bool _IsOuter, int _CgSize, int _BlockSize, class _InputIt, class _AtomicT, class _Ref>
+template <int _CgSize, int _BlockSize, class _InputIt, class _AtomicT, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES void
 __count(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _AtomicT* __counter, _Ref __ref)
 {
@@ -377,14 +377,7 @@ __count(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n
   {
     if constexpr (_CgSize == 1)
     {
-      if constexpr (_IsOuter)
-      {
-        __thread_count += ::cuda::std::max(typename _Ref::size_type{1}, __ref.count(*(__first + __idx)));
-      }
-      else
-      {
-        __thread_count += __ref.count(*(__first + __idx));
-      }
+      __thread_count += __ref.count(*(__first + __idx));
     }
     else
     {
@@ -393,14 +386,7 @@ __count(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n
       auto __count_val = __ref.count(__tile, *(__first + __idx));
       if (__tile.thread_rank() == 0)
       {
-        if constexpr (_IsOuter)
-        {
-          __thread_count += ::cuda::std::max(typename _Ref::size_type{1}, __count_val);
-        }
-        else
-        {
-          __thread_count += __count_val;
-        }
+        __thread_count += __count_val;
       }
     }
     __idx += __loop_stride;
@@ -414,56 +400,31 @@ __count(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n
 }
 
 //! @brief Per-key count of matches (no stencil).
-template <bool _IsOuter, int _CgSize, int _BlockSize, class _InputIt, class _OutputIt, class _Ref>
+template <int _CgSize, int _BlockSize, class _InputIt, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES void __count_each(
   _InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _OutputIt __output_begin, _Ref __ref)
 {
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
   auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id() / _CgSize;
 
-  using __size_type                       = typename _Ref::size_type;
-  __size_type constexpr __outer_min_count = 1;
+  using __size_type = typename _Ref::size_type;
 
   while (__idx < __n)
   {
     typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
     if constexpr (_CgSize == 1)
     {
-      if constexpr (_IsOuter)
-      {
-        *(__output_begin + __idx) = ::cuda::std::max(__ref.count(__key), __size_type{__outer_min_count});
-      }
-      else
-      {
-        *(__output_begin + __idx) = __ref.count(__key);
-      }
+      *(__output_begin + __idx) = __ref.count(__key);
     }
     else
     {
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
         ::cooperative_groups::this_thread_block());
-      if constexpr (_IsOuter)
+      const auto __total =
+        ::cooperative_groups::reduce(__tile, __ref.count(__tile, __key), ::cooperative_groups::plus<__size_type>());
+      if (__tile.thread_rank() == 0)
       {
-        auto __count_val = __ref.count(__tile, __key);
-        if (__tile.all(__count_val == 0) && __tile.thread_rank() == 0)
-        {
-          ++__count_val;
-        }
-        const auto __total =
-          ::cooperative_groups::reduce(__tile, __count_val, ::cooperative_groups::plus<__size_type>());
-        if (__tile.thread_rank() == 0)
-        {
-          *(__output_begin + __idx) = __total;
-        }
-      }
-      else
-      {
-        const auto __total =
-          ::cooperative_groups::reduce(__tile, __ref.count(__tile, __key), ::cooperative_groups::plus<__size_type>());
-        if (__tile.thread_rank() == 0)
-        {
-          *(__output_begin + __idx) = __total;
-        }
+        *(__output_begin + __idx) = __total;
       }
     }
     __idx += __loop_stride;
@@ -471,8 +432,7 @@ _CCCL_KERNEL_ATTRIBUTES void __count_each(
 }
 
 //! @brief Retrieve matching slots.
-template <bool _IsOuter,
-          int _BlockSize,
+template <int _BlockSize,
           class _InputProbeIt,
           class _StencilIt,
           class _Predicate,
@@ -491,7 +451,7 @@ _CCCL_KERNEL_ATTRIBUTES void __retrieve(
   _Ref __ref)
 {
   const auto __block = ::cooperative_groups::this_thread_block();
-  __ref.template retrieve<_IsOuter, _BlockSize>(
+  __ref.template retrieve<_BlockSize>(
     __block, __input_probe, __n, __stencil, __pred, __output_probe, __output_match, __counter);
 }
 

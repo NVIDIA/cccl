@@ -502,33 +502,6 @@ public:
     return __impl.find(__group, __key);
   }
 
-  //! @brief Counts occurrences of the given key (0 or 1 for a map without duplicates).
-  //!
-  //! @param __key The key to count
-  //!
-  //! @return The number of matches
-  template <class _ProbeKey = key_type>
-  [[nodiscard]] _CCCL_DEVICE size_type count(_ProbeKey __key) const noexcept
-  {
-    return __impl.__count(__key);
-  }
-
-  //! @brief Cooperative-group variant of `count`.
-  //!
-  //! @tparam _ParentCG Parent cooperative group type
-  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
-  //!
-  //! @param __group Cooperative group of size `cg_size` performing this count
-  //! @param __key The key to count
-  //!
-  //! @return Number of matches (0 or 1 for a map without duplicates)
-  template <class _ParentCG, class _ProbeKey = key_type>
-  [[nodiscard]] _CCCL_DEVICE size_type
-  count(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
-  {
-    return __impl.__count(__group, __key);
-  }
-
   // ===== For-each operations =====
 
   //! @brief Applies a callback to the value matching the given key.
@@ -556,31 +529,6 @@ public:
                              _CallbackOp&& __callback_op) const noexcept
   {
     __impl.for_each(__group, __key, ::cuda::std::forward<_CallbackOp>(__callback_op));
-  }
-
-  // ===== Block-level retrieve =====
-
-  //! @brief Block-level retrieve (internal kernel dispatch).
-  template <bool _IsOuter,
-            int _BlockSize,
-            class _InputProbeIt,
-            class _StencilIt,
-            class _Predicate,
-            class _OutputProbeIt,
-            class _OutputMatchIt,
-            class _AtomicCounter>
-  _CCCL_DEVICE void retrieve(
-    const ::cooperative_groups::thread_block& __block,
-    _InputProbeIt __input_probe,
-    ::cuda::experimental::cuco::__detail::__index_type __n,
-    _StencilIt __stencil,
-    _Predicate __pred,
-    _OutputProbeIt __output_probe,
-    _OutputMatchIt __output_match,
-    _AtomicCounter __counter) const
-  {
-    __impl.template __retrieve_impl<_IsOuter, _BlockSize>(
-      __block, __input_probe, __n, __stencil, __pred, __output_probe, __output_match, *__counter);
   }
 
   // ===== Shared memory support =====

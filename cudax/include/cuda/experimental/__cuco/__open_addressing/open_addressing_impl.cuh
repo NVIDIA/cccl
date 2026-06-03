@@ -177,8 +177,8 @@ private:
     return reinterpret_cast<::cuda::atomic<__size_type, _Scope>*>(__ptr);
   }
 
-  //! @brief Private total-count implementation (inner or outer).
-  template <bool _IsOuter, class _InputIt, class _Ref>
+  //! @brief Private total-count implementation.
+  template <class _InputIt, class _Ref>
   [[nodiscard]] _CCCL_HOST __size_type
   __count(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) const
   {
@@ -192,15 +192,15 @@ private:
 
     const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
-    __open_addressing::__count<_IsOuter, __cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
+    __open_addressing::__count<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
         __first, __num_keys, __as_atomic(__counter), __container_ref);
 
     return __read_counter(__counter, __stream);
   }
 
-  //! @brief Private per-key count implementation (inner or outer).
-  template <bool _IsOuter, class _InputIt, class _OutputIt, class _Ref>
+  //! @brief Private per-key count implementation.
+  template <class _InputIt, class _OutputIt, class _Ref>
   _CCCL_HOST void __count_each(
     _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
     const noexcept
@@ -213,13 +213,13 @@ private:
 
     const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
-    __open_addressing::__count_each<_IsOuter, __cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
+    __open_addressing::__count_each<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
         __first, __num_keys, __output_begin, __container_ref);
   }
 
-  //! @brief Private retrieve implementation (inner or outer).
-  template <bool _IsOuter, class _InputProbeIt, class _OutputProbeIt, class _OutputMatchIt, class _Ref>
+  //! @brief Private retrieve implementation.
+  template <class _InputProbeIt, class _OutputProbeIt, class _OutputMatchIt, class _Ref>
   _CCCL_HOST ::cuda::std::pair<_OutputProbeIt, _OutputMatchIt> __retrieve_impl(
     _InputProbeIt __first,
     _InputProbeIt __last,
@@ -241,7 +241,7 @@ private:
     const auto __grid_size =
       ::cuda::experimental::cuco::__detail::__grid_size(__n, __cg_size, __grid_stride, __block_size);
 
-    __open_addressing::__retrieve<_IsOuter, __block_size><<<__grid_size, __block_size, 0, __stream.get()>>>(
+    __open_addressing::__retrieve<__block_size><<<__grid_size, __block_size, 0, __stream.get()>>>(
       __first, __n, __output_probe, __output_match, __as_atomic(__counter), __container_ref);
 
     const auto __num_retrieved = __read_counter(__counter, __stream);
@@ -527,22 +527,7 @@ public:
     _Ref __container_ref,
     ::cuda::stream_ref __stream) const
   {
-    constexpr auto __is_outer = false;
-    return this->__retrieve_impl<__is_outer>(__first, __last, __output_probe, __output_match, __container_ref, __stream);
-  }
-
-  //! @brief Retrieves matching pairs (outer join).
-  template <class _InputProbeIt, class _OutputProbeIt, class _OutputMatchIt, class _Ref>
-  _CCCL_HOST ::cuda::std::pair<_OutputProbeIt, _OutputMatchIt> retrieve_outer(
-    _InputProbeIt __first,
-    _InputProbeIt __last,
-    _OutputProbeIt __output_probe,
-    _OutputMatchIt __output_match,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) const
-  {
-    constexpr auto __is_outer = true;
-    return this->__retrieve_impl<__is_outer>(__first, __last, __output_probe, __output_match, __container_ref, __stream);
+    return this->__retrieve_impl(__first, __last, __output_probe, __output_match, __container_ref, __stream);
   }
 
   //! @brief Returns the total number of matches for keys in `[first, last)`.
@@ -550,17 +535,7 @@ public:
   [[nodiscard]] _CCCL_HOST __size_type
   count(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) const
   {
-    constexpr auto __is_outer = false;
-    return this->template __count<__is_outer>(__first, __last, __container_ref, __stream);
-  }
-
-  //! @brief Returns the total number of matches for keys in `[first, last)` (outer).
-  template <class _InputIt, class _Ref>
-  [[nodiscard]] _CCCL_HOST __size_type
-  count_outer(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) const noexcept
-  {
-    constexpr auto __is_outer = true;
-    return this->template __count<__is_outer>(__first, __last, __container_ref, __stream);
+    return this->__count(__first, __last, __container_ref, __stream);
   }
 
   //! @brief Outputs per-key match counts.
@@ -569,18 +544,7 @@ public:
     _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
     const noexcept
   {
-    constexpr auto __is_outer = false;
-    this->template __count_each<__is_outer>(__first, __last, __output_begin, __container_ref, __stream);
-  }
-
-  //! @brief Outputs per-key match counts (outer, minimum 1).
-  template <class _InputIt, class _OutputIt, class _Ref>
-  _CCCL_HOST void count_each_outer(
-    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
-    const noexcept
-  {
-    constexpr auto __is_outer = true;
-    this->template __count_each<__is_outer>(__first, __last, __output_begin, __container_ref, __stream);
+    this->__count_each(__first, __last, __output_begin, __container_ref, __stream);
   }
 
   //! @brief Retrieves all non-empty slots.
