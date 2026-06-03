@@ -27,7 +27,8 @@
 // The specializations below can be removed once we drop these architectures.
 
 template <>
-_CCCL_API inline __half cuda::minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_HOST_DEVICE_API inline __half
+cuda::minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::min(__half2float(a), __half2float(b));
@@ -38,7 +39,8 @@ _CCCL_API inline __half cuda::minimum<void>::operator()<__half, __half>(const __
 }
 
 template <>
-_CCCL_API inline __half cuda::maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_HOST_DEVICE_API inline __half
+cuda::maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::max(__half2float(a), __half2float(b));
@@ -202,6 +204,7 @@ inline void init_default_constant(uchar3& val, int element_val = 2)
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 inline void init_default_constant(ulonglong4& val, int element_val = 2)
 {
   const auto element_init = static_cast<unsigned long long>(element_val);

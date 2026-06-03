@@ -27,6 +27,7 @@
 #include <cuda/__hierarchy/queries/rank.h>
 #include <cuda/barrier>
 #include <cuda/hierarchy>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -37,6 +38,7 @@
 #include <cuda/experimental/__group/concepts.cuh>
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/mapping/group_by.cuh>
+#include <cuda/experimental/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/__group/this_group.cuh>
 #include <cuda/experimental/__group/traits.cuh>
 
@@ -57,8 +59,27 @@ class group
 
   // todo(dabayer): static_assert that _Unit is (under) typename _ParentGroup::unit_type
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
+  __get_initial_mapping_result(const _ParentGroup& __parent) noexcept
+  {
+    using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
+    using _MappingResult =
+      ::cuda::experimental::__mapping_result<1,
+                                             ::cuda::experimental::__static_count_query_group<_Unit, _ParentGroup>(),
+                                             _ParentMappingResult::is_always_exhaustive(),
+                                             _ParentMappingResult::is_always_contiguous()>;
+    return _MappingResult{
+      1,
+      0,
+      ::cuda::experimental::__count_query_group<unsigned, _Unit>(__parent),
+      ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__parent),
+      __parent.__mapping_result().lane_mask()};
+  }
+
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
-  using _MappingResult       = __group_mapping_result_t<_Mapping, _Unit, _ParentGroup>;
+  using _MappingResult       = decltype(::cuda::std::declval<const _Mapping&>().map(
+    ::cuda::std::declval<const _ParentGroup&>(),
+    __get_initial_mapping_result(::cuda::std::declval<const _ParentGroup&>())));
   using _SynchronizerInstance =
     __group_synchronizer_instance_t<_Synchronizer, _Unit, _ParentGroup, _Mapping, _MappingResult>;
   static_assert(__group_mapping_result<_MappingResult>);
@@ -72,20 +93,16 @@ class group
   [[nodiscard]] _CCCL_DEVICE_API static _MappingResult
   __do_mapping(const _Mapping& __mapping, const _ParentGroup& __parent) noexcept
   {
-    // Do not invoke the mapping for threads that are not part of the parent group.
-    if constexpr (!_ParentMappingResult::is_always_exhaustive())
-    {
-      if (!__parent.__mapping_result().is_valid())
-      {
-        return _MappingResult::invalid();
-      }
-    }
-
-    const auto __mapping_result = __mapping.map(_Unit{}, __parent);
+    const auto __mapping_result = __mapping.map(__parent, __get_initial_mapping_result(__parent));
     if (__mapping_result.is_valid())
     {
       _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
       _CCCL_ASSERT(__mapping_result.rank() < __mapping_result.count(), "invalid rank");
+      _CCCL_ASSERT(
+        (__mapping_result.lane_mask() & ::cuda::device::lane_mask::this_lane()) != ::cuda::device::lane_mask::none(),
+        "invalid lane mask - this lane must be contained in the lane mask");
+      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) <= __mapping_result.count(),
+                   "invalid lane mask - too many lanes are set in the lane mask");
     }
     return __mapping_result;
   }
@@ -103,7 +120,7 @@ class group
     {
       if (!__parent.__mapping_result().is_valid())
       {
-        return _MappingResult::invalid();
+        return _SynchronizerInstance::invalid();
       }
     }
     return __synchronizer.make_instance(_Unit{}, __parent, __mapping, __mapping_result);
@@ -194,9 +211,9 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t count(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
   {
-    return count_as<::cuda::std::size_t>(__in_level);
+    return count_as<typename _InLevel::__product_type>(__in_level);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
@@ -214,9 +231,9 @@ public:
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t rank(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
   {
-    return rank_as<::cuda::std::size_t>(__in_level);
+    return rank_as<typename _InLevel::__product_type>(__in_level);
   }
 };
 

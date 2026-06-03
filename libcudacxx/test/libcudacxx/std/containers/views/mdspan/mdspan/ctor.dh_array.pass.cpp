@@ -63,10 +63,7 @@ TEST_FUNC constexpr void
 test_mdspan_ctor_array(const H& handle, const M& map, const A&, cuda::std::array<typename M::index_type, N> exts)
 {
   using MDS = cuda::std::mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   MDS m(handle, exts);
   test_move_counter<MDS, H>();
 
@@ -123,8 +120,7 @@ TEST_FUNC constexpr void test_mdspan_ctor(const H& handle, const M& map, const A
   static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
   static_assert(ac == cuda::std::is_default_constructible<A>::value);
   static_assert(
-    !cuda::std::is_constructible<MDS, const H&, const cuda::std::array<typename MDS::index_type, MDS::rank()>&>::value,
-    "");
+    !cuda::std::is_constructible<MDS, const H&, const cuda::std::array<typename MDS::index_type, MDS::rank()>&>::value);
 }
 
 template <bool mec, bool ac, class H, class L, class A>
@@ -149,22 +145,18 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
   // Sanity check that this layouts mapping is constructible from extents (via its move constructor)
   static_assert(
     cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                cuda::std::extents<int>>::value,
-    "");
+                                cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<true, ac>(handle, layout_wrapping_integral<8>(), acc);
   // Sanity check that this layouts mapping is not constructible from extents
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 cuda::std::extents<int>>::value,
-    "");
+                                 cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 

@@ -40,10 +40,7 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
 
   static_assert(mec == cuda::std::is_constructible<M, const typename M::extents_type&>::value);
   static_assert(ac == cuda::std::is_default_constructible<A>::value);
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   // use formulation of constructor which tests that its not explicit
   MDS m = {handle, map.extents()};
   test_move_counter<MDS, H>();
@@ -87,22 +84,18 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
   // Sanity check that this layouts mapping is constructible from extents (via its move constructor)
   static_assert(
     cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                cuda::std::extents<int>>::value,
-    "");
+                                cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<false, ac>(handle, layout_wrapping_integral<8>(), acc);
   // Sanity check that this layouts mapping is not constructible from extents
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 cuda::std::extents<int>>::value,
-    "");
+                                 cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 

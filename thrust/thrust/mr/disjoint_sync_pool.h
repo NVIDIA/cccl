@@ -38,7 +38,7 @@ template <typename Upstream, typename Bookkeeper>
 struct disjoint_synchronized_pool_resource : public memory_resource<typename Upstream::pointer>
 {
   using unsync_pool = disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper>;
-  using lock_t      = std::lock_guard<std::mutex>;
+  using lock_t      = std::scoped_lock<std::mutex>;
 
   using void_ptr = typename Upstream::pointer;
 

@@ -35,6 +35,17 @@ Typical usage of an algorithm looks like this:
 API conventions
 +++++++++++++++
 
+* **Keyword-only parameters** — All algorithm parameters are **keyword-only**.
+  They must always be passed by name, not by position:
+
+  .. code-block:: python
+
+     # correct
+     cuda.compute.reduce_into(d_in=d_input, d_out=d_output, num_items=n, op=OpKind.PLUS, h_init=h_init)
+
+     # incorrect — positional arguments are not accepted
+     cuda.compute.reduce_into(d_input, d_output, n, OpKind.PLUS, h_init)  # TypeError
+
 * **Naming** — The ``d_`` prefix denotes *device* memory (e.g., CuPy arrays, PyTorch tensors);
   ``h_`` denotes *host* memory (NumPy arrays). Some scalar values must be passed as
   host arrays.
@@ -75,14 +86,14 @@ returns a reusable reduction object that lets you manage memory explicitly.
    :caption: Controlling temporary memory.
 
    # create a reducer object:
-   reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)
-   # get the temporary storage size by passing None as the first argument:
-   temp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init)
+   reducer = cuda.compute.make_reduce_into(d_in=d_in, d_out=d_out, op=op, h_init=h_init)
+   # get the temporary storage size by passing None for the temp_storage argument:
+   temp_storage_bytes = reducer(temp_storage=None, d_in=d_in, d_out=d_out, num_items=num_items, op=op, h_init=h_init)
    # allocate the temporary storage as any array-like object
    # (e.g., CuPy array, Torch tensor):
    temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-   # perform the reduction, passing the temporary storage as the first argument:
-   reducer(temp_storage, d_in, d_out, op, num_items, h_init)
+   # perform the reduction:
+   reducer(temp_storage=temp_storage, d_in=d_in, d_out=d_out, num_items=num_items, op=op, h_init=h_init)
 
 The object-based API splits the algorithm invocation into three phases,
 
@@ -294,6 +305,8 @@ To clear all caches and free memory:
 This forces recompilation on the next algorithm invocation—useful for benchmarking
 compilation time or reclaiming memory.
 
+.. _cuda.compute.externally_compiled_operators:
+
 Externally Compiled Operators
 -----------------------------
 
@@ -339,7 +352,9 @@ minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA d
 
 .. code-block:: bash
 
-   pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+   pip install cuda-cccl[minimal-cu13]      # or minimal-cu12  (pip-installed cuda-toolkit)
+   pip install cuda-cccl[minimal-sysctk13]  # or minimal-sysctk12  (system CUDA toolkit)
+
 
 
 Examples

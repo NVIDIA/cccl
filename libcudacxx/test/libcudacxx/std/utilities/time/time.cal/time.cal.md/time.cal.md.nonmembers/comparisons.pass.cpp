@@ -36,20 +36,14 @@ int main(int, char**)
   AssertComparisonsAreNoexcept<month_day>();
   AssertComparisonsReturnBool<month_day>();
 
-  static_assert(
-    testComparisons(
-      month_day{cuda::std::chrono::January, day{1}}, month_day{cuda::std::chrono::January, day{1}}, true, false),
-    "");
+  static_assert(testComparisons(
+    month_day{cuda::std::chrono::January, day{1}}, month_day{cuda::std::chrono::January, day{1}}, true, false));
 
-  static_assert(
-    testComparisons(
-      month_day{cuda::std::chrono::January, day{1}}, month_day{cuda::std::chrono::January, day{2}}, false, true),
-    "");
+  static_assert(testComparisons(
+    month_day{cuda::std::chrono::January, day{1}}, month_day{cuda::std::chrono::January, day{2}}, false, true));
 
-  static_assert(
-    testComparisons(
-      month_day{cuda::std::chrono::January, day{1}}, month_day{cuda::std::chrono::February, day{1}}, false, true),
-    "");
+  static_assert(testComparisons(
+    month_day{cuda::std::chrono::January, day{1}}, month_day{cuda::std::chrono::February, day{1}}, false, true));
 
   //  same day, different months
   for (unsigned i = 1; i < 12; ++i)

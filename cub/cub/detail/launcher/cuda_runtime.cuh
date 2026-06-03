@@ -17,15 +17,34 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__device/compute_capability.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
 struct TripleChevronFactory
 {
+  CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
+  {
+    if (dependent_launch)
+    {
+      [[maybe_unused]] int sm_version = 0;
+      _CCCL_ASSERT(SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
+      if (sm_version >= 900)
+      {
+        [[maybe_unused]] ::cuda::compute_capability cc;
+        _CCCL_ASSERT(PtxComputeCap(cc) == cudaSuccess, "Failed to query PTX compute capability");
+        _CCCL_ASSERT((cc >= ::cuda::compute_capability{9, 0}),
+                     "Enabling PDL for a kernel launch requires CC 9.0+ PTX/SASS when running on SM90+");
+      }
+    }
+  }
+
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
     dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
   {
+    __assert_pdl_allowed(dependent_launch);
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 
@@ -36,9 +55,9 @@ struct TripleChevronFactory
   }
 
   template <class T = void>
-  CUB_RUNTIME_FUNCTION ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  CUB_RUNTIME_FUNCTION ::cudaError_t PtxComputeCap(::cuda::compute_capability& cc) const
   {
-    return ptx_arch_id<T>(arch_id);
+    return ptx_compute_cap<T>(cc);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const

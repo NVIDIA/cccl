@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable ("count") cannot be used in tile code
+
 // <functional>
 
 // reference_wrapper
@@ -59,6 +62,8 @@ TEST_FUNC void test_void_1()
     assert(count == save_count + 2);
     save_count = count;
   }
+
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     void (*fp)(int) = f_void_1;
@@ -68,6 +73,7 @@ TEST_FUNC void test_void_1()
     assert(count == save_count + 3);
     save_count = count;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_void_1 a0;
@@ -141,6 +147,7 @@ TEST_FUNC void test_int_1()
     int i = 2;
     assert(r1(i) == 3);
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     int (*fp)(int) = f_int_1;
@@ -148,6 +155,7 @@ TEST_FUNC void test_int_1()
     int i = 3;
     assert(r1(i) == 4);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_int_1 a0;
@@ -226,6 +234,7 @@ TEST_FUNC void test_void_2()
     assert(count == save_count + 5);
     save_count = count;
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     void (*fp)(int, int) = f_void_2;
@@ -236,6 +245,7 @@ TEST_FUNC void test_void_2()
     assert(count == save_count + 7);
     save_count = count;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_void_2 a0;
@@ -309,6 +319,7 @@ TEST_FUNC void testint_2()
     int j = 3;
     assert(r1(i, j) == i + j);
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     int (*fp)(int, int) = f_int_2;
@@ -317,6 +328,7 @@ TEST_FUNC void testint_2()
     int j = 4;
     assert(r1(i, j) == i + j);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_int_2 a0;

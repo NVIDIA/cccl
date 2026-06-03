@@ -80,7 +80,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env_and_tuning(EnvT env, A
 {
   return detail::dispatch_with_env(
     env, [&]([[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      using policy_t = decltype(DefaultPolicySelector{}(::cuda::arch_id{}));
+      using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
       using policy_selector =
         ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
       return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);

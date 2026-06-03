@@ -14,13 +14,13 @@
 #endif // no system header
 
 #include <cub/agent/agent_unique_by_key.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -41,10 +41,10 @@ struct host_policy_provider
 
   struct fallback_pol_getter
   {
-    _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
       unique_by_key_policy policy = PolicyGetter{}();
-      policy.block_threads        = 64;
+      policy.threads_per_block    = 64;
       policy.items_per_thread     = 1;
       return policy;
     }
@@ -63,7 +63,7 @@ struct device_policy_provider
     _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
       unique_by_key_policy policy = PolicyGetter{}();
-      policy.block_threads        = 64;
+      policy.threads_per_block    = 64;
       policy.items_per_thread     = 1;
       return policy;
     }
@@ -84,7 +84,7 @@ class unique_by_key_vsmem_helper_impl
   static constexpr unique_by_key_policy selected_policy = PolicyProvider::selected_policy;
 
   using selected_policy_t = AgentUniqueByKeyPolicy<
-    selected_policy.block_threads,
+    selected_policy.threads_per_block,
     selected_policy.items_per_thread,
     selected_policy.load_algorithm,
     selected_policy.load_modifier,
@@ -96,7 +96,7 @@ class unique_by_key_vsmem_helper_impl
   static constexpr unique_by_key_policy fallback_policy = PolicyProvider::fallback_policy;
 
   using fallback_policy_t = AgentUniqueByKeyPolicy<
-    fallback_policy.block_threads,
+    fallback_policy.threads_per_block,
     fallback_policy.items_per_thread,
     fallback_policy.load_algorithm,
     fallback_policy.load_modifier,
@@ -237,13 +237,13 @@ template <typename PolicySelector,
           typename OffsetT>
 __launch_bounds__(
   device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, current_tuning_arch()>,
+    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
     ValueOutputIteratorT,
     EqualityOpT,
-    OffsetT>::policy.block_threads)
+    OffsetT>::policy.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
@@ -257,7 +257,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, current_tuning_arch()>,
+    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,

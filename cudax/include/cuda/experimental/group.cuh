@@ -25,7 +25,11 @@
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/group.cuh>
 #include <cuda/experimental/__group/implicit_hierarchy.cuh>
+#include <cuda/experimental/__group/mapping/binary_partition.cuh>
+#include <cuda/experimental/__group/mapping/composite_mapping.cuh>
+#include <cuda/experimental/__group/mapping/group_as.cuh>
 #include <cuda/experimental/__group/mapping/group_by.cuh>
+#include <cuda/experimental/__group/mapping/identity_mapping.cuh>
 #include <cuda/experimental/__group/queries.cuh>
 #include <cuda/experimental/__group/synchronizer/barrier_synchronizer.cuh>
 #include <cuda/experimental/__group/synchronizer/lane_synchronizer.cuh>

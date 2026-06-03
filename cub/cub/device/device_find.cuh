@@ -17,9 +17,11 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/device_for.cuh>
+#include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/dispatch_find.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__nvtx/nvtx.h>
 
@@ -114,10 +116,10 @@ struct DeviceFind
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
-  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the element
-  //! of said range which **is not** ordered **before** ``value``.
+  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the
+  //! **first** element of said range which **is not** ordered **before** ``value``.
   //!
-  //! - The range ``[first, last)`` must be sorted consistently with ``comp``.
+  //! - The range ``[d_range, d_range + range_num_items)`` must be sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.3.0
   //!
@@ -212,14 +214,20 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return DeviceFor::__for_each_n_no_nvtx(
-      d_temp_storage,
-      temp_storage_bytes,
-      ::cuda::make_zip_iterator(d_values, d_output),
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return DeviceTransform::__transform_internal(
+      ::cuda::std::make_tuple(d_values),
+      d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::find::make_comp_wrapper<detail::find::lower_bound>(
+      ::cuda::always_true{},
+      detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-      stream);
+      ::cuda::stream_ref{stream});
   }
 
   //! @rst
@@ -228,8 +236,8 @@ struct DeviceFind
   //!
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
   //! ``[d_range, d_range + range_num_items)``,
-  //! using ``comp`` as the comparator to find the iterator to the element of said range which **is** ordered
-  //! **after** ``value``.
+  //! using ``comp`` as the comparator to find the iterator to the **first** element of said range which **is**
+  //! ordered **after** ``value``.
   //!
   //! - The range ``[d_range, d_range + range_num_items)`` must be sorted consistently with ``comp``.
   //!
@@ -326,17 +334,28 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return DeviceFor::__for_each_n_no_nvtx(
-      d_temp_storage,
-      temp_storage_bytes,
-      ::cuda::make_zip_iterator(d_values, d_output),
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return DeviceTransform::__transform_internal(
+      ::cuda::std::make_tuple(d_values),
+      d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::find::make_comp_wrapper<detail::find::upper_bound>(
+      ::cuda::always_true{},
+      detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-      stream);
+      ::cuda::stream_ref{stream});
   }
   //! @rst
   //! Finds the first element in the input sequence that satisfies the given predicate.
+  //!
+  //! - The search terminates at the first element where the predicate evaluates to true.
+  //! - The index of the found element is written to ``d_out``.
+  //! - If no element satisfies the predicate, ``num_items`` is written to ``d_out``.
+  //! - The range ``[d_out, d_out + 1)`` shall not overlap ``[d_in, d_in + num_items)`` in any way.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -346,11 +365,7 @@ struct DeviceFind
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - The search terminates at the first element where the predicate evaluates to true.
-  //! - The index of the found element is written to ``d_out``.
-  //! - If no element satisfies the predicate, ``num_items`` is written to ``d_out``.
-  //! - The range ``[d_out, d_out + 1)`` shall not overlap ``[d_in, d_in + num_items)`` in any way.
-  //!
+
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -359,8 +374,8 @@ struct DeviceFind
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin find-if-env-predicate
-  //!     :end-before: example-end find-if-env-predicate
+  //!     :start-after: example-begin find-if-predicate
+  //!     :end-before: example-end find-if-predicate
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
   //!     :language: c++
@@ -420,8 +435,8 @@ struct DeviceFind
 
   //! @rst
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
-  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the element
-  //! of said range which **is not** ordered **before** ``value``.
+  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the
+  //! **first** element of said range which **is not** ordered **before** ``value``.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -520,22 +535,28 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return DeviceFor::__for_each_n_no_nvtx(
-        storage,
-        bytes,
-        ::cuda::make_zip_iterator(d_values, d_output),
+      if (storage == nullptr)
+      {
+        bytes = 1;
+        return cudaSuccess;
+      }
+
+      return DeviceTransform::__transform_internal(
+        ::cuda::std::make_tuple(d_values),
+        d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::find::make_comp_wrapper<detail::find::lower_bound>(
+        ::cuda::always_true{},
+        detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-        stream);
+        ::cuda::stream_ref{stream});
     });
   }
 
   //! @rst
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
   //! ``[d_range, d_range + range_num_items)``,
-  //! using ``comp`` as the comparator to find the iterator to the element of said range which **is** ordered
-  //! **after** ``value``.
+  //! using ``comp`` as the comparator to find the iterator to the **first** element of said range which **is**
+  //! ordered **after** ``value``.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -634,14 +655,20 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return DeviceFor::__for_each_n_no_nvtx(
-        storage,
-        bytes,
-        ::cuda::make_zip_iterator(d_values, d_output),
+      if (storage == nullptr)
+      {
+        bytes = 1;
+        return cudaSuccess;
+      }
+
+      return DeviceTransform::__transform_internal(
+        ::cuda::std::make_tuple(d_values),
+        d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::find::make_comp_wrapper<detail::find::upper_bound>(
+        ::cuda::always_true{},
+        detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-        stream);
+        ::cuda::stream_ref{stream});
     });
   }
 };

@@ -29,15 +29,12 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, t
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Fill, fill);
 
-using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
-
 C2H_TEST("DeviceTransform::Transform BabelStream add",
          "[device][transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>,
-         offset_types)
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = c2h::get<1, TestType>;
+  using offset_t = cuda::std::int64_t;
 
   // test edge cases around 16, 128, page size, and full tile
   const offset_t num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097, 100'000);
@@ -61,10 +58,9 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
 
 // note: because this uses a fancy iterator type, it will only test the fallback kernel
 C2H_TEST("DeviceTransform::Transform works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = c2h::get<0, TestType>;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const auto num_items = detail::make_large_offset<offset_t>();
 
@@ -81,10 +77,9 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
 }
 
 C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 {
-  using offset_t = c2h::get<0, TestType>;
+  using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
   const offset_t num_items = detail::make_large_offset<offset_t>();
 
@@ -110,17 +105,20 @@ struct times_seven
   }
 };
 
-C2H_TEST("DeviceTransform::Transform with large input",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
-         offset_types)
+// Exercises the 32-bit byte-offset overflow regime in transform_kernel_ublkcp (NVIDIA/cccl#8800).
+// num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
+// straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
+// and I64 offset types.
+C2H_TEST("DeviceTransform::Transform works with large input",
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
-  using type     = unsigned short;
-  using offset_t = c2h::get<0, TestType>;
+  using type     = std::uint32_t;
+  using offset_t = cuda::std::int64_t;
 
-  // make size a few thread blocks below/beyond 4GiB. need to make sure I32 num_items stays below 2^31
-  constexpr offset_t num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
-  REQUIRE(num_items > 0);
+  const auto delta         = GENERATE(-123456, 123456);
+  const offset_t num_items = static_cast<offset_t>((offset_t{1} << 30) + delta);
+  CAPTURE(c2h::type_name<offset_t>(), num_items);
 
   c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(1), input);
@@ -184,8 +182,8 @@ using uncommon_types = c2h::type_list<
   overaligned_t<32>, // exceeds the memcpy_async (Hopper/Blackwell) and bulk copy alignments (only Blackwell)
 #if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
   overaligned_t<256>, // exceeds copy alignment on Hopper
-                      // and exhausts guaranteed shared memory on Hopper (block_threads = 256, req. smem = 64KiB)
-  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (block_threads = 128, req. smem = 64KiB)
+                      // and exhausts guaranteed shared memory on Hopper (threads_per_block = 256, req. smem = 64KiB)
+  overaligned_t<512>, // exhausts guaranteed shared memory on Blackwell (threads_per_block = 128, req. smem = 64KiB)
 #endif // !_CCCL_COMPILER(MSVC)
   huge_t>;
 
@@ -294,11 +292,10 @@ struct nstream_kernel
 // overwrites one input stream
 C2H_TEST("DeviceTransform::Transform BabelStream nstream",
          "[device][transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
-         offset_types)
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type     = c2h::get<0, TestType>;
-  using offset_t = c2h::get<1, TestType>;
+  using offset_t = cuda::std::int64_t;
 
   const offset_t num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<type> a(num_items, thrust::no_init);
@@ -735,7 +732,7 @@ C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
-template <int BlockThreads, int ItemsPerPthread, typename T>
+template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
   // we trigger the next kernel's launch very soon and wait a bit for it to spin up before starting to write. this way
@@ -744,7 +741,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   NV_IF_TARGET(NV_PROVIDES_SM_70, __nanosleep(100'000);); // must be enough to cover the next kernel's launch overhead
 
-  const int tile_size = ItemsPerPthread * BlockThreads;
+  const int tile_size = ItemsPerPthread * ThreadsPerBlock;
   const size_t offset = size_t{blockIdx.x} * tile_size;
 
   data += offset;
@@ -752,7 +749,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {
-    const int i = threadIdx.x + j * BlockThreads;
+    const int i = threadIdx.x + j * ThreadsPerBlock;
     if (i < n)
     {
       data[i] = value;
@@ -763,13 +760,13 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 template <typename T>
 void fill_pdl(T* data, size_t n, T value)
 {
-  constexpr auto block_threads    = 256;
-  constexpr auto items_per_thread = 4;
-  const auto blocks               = static_cast<unsigned>(::cuda::ceil_div(n, block_threads * items_per_thread));
+  constexpr auto threads_per_block = 256;
+  constexpr auto items_per_thread  = 4;
+  const auto blocks                = static_cast<unsigned>(::cuda::ceil_div(n, threads_per_block * items_per_thread));
 
   THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-    blocks, block_threads, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
-    .doit(fill_pdl_kernel<block_threads, items_per_thread, T>, data, n, value);
+    blocks, threads_per_block, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
+    .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
 
 C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
@@ -787,10 +784,10 @@ C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
   // completely async work of filling, 2x transforming and 1x reduction. we also avoid using the launch wrapper, since
   // it would synchronize
   fill_pdl(thrust::raw_pointer_cast(data.data()), num_items, 42);
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
-  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
+  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
   thrust::reduce_into(
-    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, ::cuda::std::logical_and{});
+    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, cuda::std::logical_and{});
   REQUIRE(result[0]); // access finally synchronize
 }
 #endif

@@ -26,6 +26,7 @@
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>
+#include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
@@ -86,7 +87,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _UIntType, size_t _WordSize, size_t _WordCount, size_t _NumRounds, _UIntType... _Constants>
 class philox_engine
 {
-  static_assert(__cccl_is_unsigned_integer_v<_UIntType>, "philox_engine: _UIntType must be an unsigned integer type");
+  static_assert(__cccl_random_is_valid_uinttype<_UIntType>,
+                "philox_engine: UIntType must be a supported unsigned integer type");
   static_assert(_WordCount == 2 || _WordCount == 4, "N argument must be either 2 or 4");
   static_assert(sizeof...(_Constants) == _WordCount, "consts array must be of length N");
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
@@ -154,7 +156,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
-  _CCCL_API constexpr explicit philox_engine(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr explicit philox_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
@@ -175,7 +177,7 @@ public:
   // Prevent this overload if Sseq is convertible to result_type
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
-  _CCCL_API constexpr void seed(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __seq)
   {
     __x_                                            = {};
     __y_                                            = {};
@@ -321,7 +323,7 @@ public:
   }
 #endif
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   //! This function streams a philox_engine to a std::basic_ostream.
   //! @param os The basic_ostream to stream out to.
   //! @param e The philox_engine to stream out.
@@ -425,7 +427,7 @@ public:
 
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   _CCCL_API constexpr void __increment_counter() noexcept

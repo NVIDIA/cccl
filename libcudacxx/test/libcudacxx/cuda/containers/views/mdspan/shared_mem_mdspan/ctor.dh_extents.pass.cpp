@@ -41,10 +41,7 @@ TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map,
 
   static_assert(mec == cuda::std::is_constructible_v<M, const typename M::extents_type&>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   // use formulation of constructor which tests that its not explicit
   MDS m = {handle, map.extents()};
   test_move_counter<MDS, H>();

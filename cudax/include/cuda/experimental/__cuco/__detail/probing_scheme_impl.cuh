@@ -30,24 +30,24 @@ public:
   using __extent_type = _Extent;
   using __size_type   = typename __extent_type::index_type;
 
-  _CCCL_API constexpr __probing_iterator(__size_type __start, __size_type __step, __extent_type __upper_bound) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __probing_iterator(__size_type __start, __size_type __step, __extent_type __upper_bound) noexcept
       : __curr_index{__start}
       , __step_size{__step}
       , __upper_bound{__upper_bound}
   {}
 
-  _CCCL_API constexpr auto operator*() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr auto operator*() const noexcept
   {
     return __curr_index;
   }
 
-  _CCCL_API constexpr auto operator++() noexcept
+  _CCCL_HOST_DEVICE_API constexpr auto operator++() noexcept
   {
     __curr_index = (__curr_index + __step_size) % __upper_bound.extent(0);
     return *this;
   }
 
-  _CCCL_API constexpr auto operator++(int) noexcept
+  _CCCL_HOST_DEVICE_API constexpr auto operator++(int) noexcept
   {
     auto __temp = *this;
     ++(*this);
@@ -65,7 +65,7 @@ namespace cuda::experimental::cuco
 {
 template <int _CgSize, class _Hash>
 template <int _BucketSize, class _ProbeKey, class _Extent>
-_CCCL_API constexpr auto
+_CCCL_HOST_DEVICE_API constexpr auto
 linear_probing<_CgSize, _Hash>::make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept
 {
   using __size_type        = typename _Extent::index_type;
@@ -76,7 +76,7 @@ linear_probing<_CgSize, _Hash>::make_iterator(_ProbeKey __probe_key, _Extent __u
 
 template <int _CgSize, class _Hash>
 template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
-_CCCL_API constexpr auto linear_probing<_CgSize, _Hash>::make_iterator(
+_CCCL_HOST_DEVICE_API constexpr auto linear_probing<_CgSize, _Hash>::make_iterator(
   ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
   _ProbeKey __probe_key,
   _Extent __upper_bound) const noexcept
@@ -90,7 +90,7 @@ _CCCL_API constexpr auto linear_probing<_CgSize, _Hash>::make_iterator(
 
 template <int _CgSize, class _Hash1, class _Hash2>
 template <int _BucketSize, class _ProbeKey, class _Extent>
-_CCCL_API constexpr auto
+_CCCL_HOST_DEVICE_API constexpr auto
 double_hashing<_CgSize, _Hash1, _Hash2>::make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept
 {
   using __size_type = typename _Extent::index_type;
@@ -102,7 +102,7 @@ double_hashing<_CgSize, _Hash1, _Hash2>::make_iterator(_ProbeKey __probe_key, _E
 
 template <int _CgSize, class _Hash1, class _Hash2>
 template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
-_CCCL_API constexpr auto double_hashing<_CgSize, _Hash1, _Hash2>::make_iterator(
+_CCCL_HOST_DEVICE_API constexpr auto double_hashing<_CgSize, _Hash1, _Hash2>::make_iterator(
   ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
   _ProbeKey __probe_key,
   _Extent __upper_bound) const noexcept

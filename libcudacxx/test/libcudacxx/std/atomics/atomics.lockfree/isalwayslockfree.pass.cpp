@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads, c++98, c++03, c++11, c++14, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
@@ -157,7 +160,7 @@ TEST_FUNC void run()
   checkLongLongTypes();
   static_assert(cuda::std::atomic<void*>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE));
   static_assert(
-    cuda::std::atomic<cuda::std::nullptr_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE), "");
+    cuda::std::atomic<cuda::std::nullptr_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE));
 }
 
 int main(int, char**)

@@ -114,6 +114,17 @@ projects:
     include_regexes: ["c/parallel/"]
     exclude_project_files: [cccl_c_parallel_public]
 
+  cccl_c_parallel_v2:
+    name: "CCCL C Parallel Library v2 (HostJIT)"
+    matrix_project: "cccl_c_parallel_v2"
+    # v2 depends on libcudacxx, cub, and thrust headers (it JIT-compiles
+    # CUB's host+device code via HostJIT). Any change to those should trigger
+    # v2 to run.
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public, c2h]
+    full_dependencies: []
+    include_regexes:
+      - "c/parallel\\.v2/"
+
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
     matrix_project: "cccl_c_stf"
@@ -197,6 +208,7 @@ projects:
       - cudax_internal
       - cccl_c_parallel_public
       - cccl_c_parallel_internal
+      - cccl_c_parallel_v2
       - cccl_c_stf
       - stdpar
       - c2h
@@ -207,6 +219,7 @@ projects:
 ignore_regexes:
   - '.+\.md$'
   - '\.branch_notes/'
+  - '\.coderabbit\.yaml'
   - '\.clang-format'
   - '\.clangd'
   # Do not add .clang-tidy to this list. If we modify .clang-tidy to either add or remove

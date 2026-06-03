@@ -27,6 +27,9 @@ file(
   "src/*.cpp"
 )
 
+# hostjit sources are built as a separate library; exclude from cccl.c.parallel
+list(FILTER srcs EXCLUDE REGEX "src/hostjit/")
+
 add_library(cccl.c.parallel SHARED ${srcs})
 set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
 cccl_configure_target(cccl.c.parallel DIALECT 20)

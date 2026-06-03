@@ -13,9 +13,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <new>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include "test_macros.h"
 

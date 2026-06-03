@@ -156,7 +156,7 @@ public:
 
 private:
   using void_ptr = typename Upstream::pointer;
-  using char_ptr = typename thrust::detail::pointer_traits<void_ptr>::template rebind<char>::other;
+  using char_ptr = typename ::cuda::std::pointer_traits<void_ptr>::template rebind<char>;
 
   struct chunk_descriptor
   {
@@ -475,7 +475,7 @@ public:
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed
-    assert(reinterpret_cast<::cuda::std::intmax_t>(detail::pointer_traits<void_ptr>::get(p)) % alignment == 0);
+    assert(reinterpret_cast<::cuda::std::intmax_t>(::cuda::std::to_address(p)) % alignment == 0);
 
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)

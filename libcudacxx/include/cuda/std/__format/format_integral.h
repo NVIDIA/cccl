@@ -40,7 +40,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class _CharT, class _OutIt>
-[[nodiscard]] _CCCL_API _OutIt __fmt_format_char(_Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
+__fmt_format_char(_Tp __value, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs)
 {
   if constexpr (!is_same_v<_CharT, _Tp>)
   {
@@ -83,7 +84,8 @@ inline constexpr int __fmt_int_buffer_size_v<_Tp, 16> =
   + 2 // Reserve space for the '0x' prefix.
   + 1; // Reserve space for the sign.
 
-[[nodiscard]] _CCCL_API constexpr char* __fmt_insert_sign(char* __buf, bool __negative, __fmt_spec_sign __sign)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr char*
+__fmt_insert_sign(char* __buf, bool __negative, __fmt_spec_sign __sign)
 {
   if (__negative)
   {
@@ -109,7 +111,7 @@ inline constexpr int __fmt_int_buffer_size_v<_Tp, 16> =
 }
 
 template <class _Tp, class _CharT, class _FmtCtx>
-[[nodiscard]] _CCCL_API typename _FmtCtx::iterator __fmt_format_int_impl(
+[[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator __fmt_format_int_impl(
   _Tp __value,
   _FmtCtx& __ctx,
   __fmt_parsed_spec<_CharT> __specs,
@@ -161,7 +163,7 @@ template <class _Tp, class _CharT, class _FmtCtx>
 }
 
 template <class _Tp, class _CharT, class _FmtCtx>
-[[nodiscard]] _CCCL_API typename _FmtCtx::iterator
+[[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtCtx::iterator
 __fmt_format_int(_Tp __value, _FmtCtx& __ctx, __fmt_parsed_spec<_CharT> __specs)
 {
   static_assert(__cccl_is_integer_v<_Tp>);
@@ -209,7 +211,7 @@ __fmt_format_int(_Tp __value, _FmtCtx& __ctx, __fmt_parsed_spec<_CharT> __specs)
 }
 
 template <class _CharT, class _FmtContext>
-[[nodiscard]] _CCCL_API typename _FmtContext::iterator
+[[nodiscard]] _CCCL_HOST_DEVICE_API typename _FmtContext::iterator
 __fmt_format_bool(bool __value, _FmtContext& __ctx, __fmt_parsed_spec<_CharT> __specs)
 {
   basic_string_view<_CharT> __str{};

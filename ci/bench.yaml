@@ -38,7 +38,7 @@ benchmarks:
       # Examples:
       # - 'compute/reduce/sum\.py'
       # - 'compute/transform/.*\.py'
-      # - 'coop/bench_warp_reduce\.py'
+      # - 'coop/_experimental/bench_warp_reduce\.py'
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
@@ -51,7 +51,7 @@ benchmarks:
     # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
-  # launch_args: "--cuda 13.1 --host gcc14"
+  # launch_args: "--cuda 13.3 --host gcc14"
   launch_args: "" # Latest nvcc + gcc
 
   # Advanced:

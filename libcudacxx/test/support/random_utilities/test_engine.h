@@ -7,14 +7,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#if !_CCCL_COMPILER(NVRTC)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/random>
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include "test_macros.h"
 
@@ -152,8 +149,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_min_max()
   return true;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <sstream>
+#if _CCCL_HOSTED()
 template <typename Engine>
 void test_save_restore()
 {
@@ -168,7 +164,7 @@ void test_save_restore()
   e1.discard(10000);
   assert(e0() == e1());
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <typename Engine, typename Engine::result_type value_10000>
 TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_engine()

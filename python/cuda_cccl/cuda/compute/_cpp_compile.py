@@ -67,6 +67,7 @@ def compile_cpp_to_ltoir(
         relocatable_device_code=True,
         link_time_optimization=True,
         std="c++20",
+        define_macro="__NV_NO_VECTOR_DEPRECATION_DIAG",
         include_path=include_paths,
     )
 

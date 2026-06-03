@@ -164,7 +164,7 @@ public:
 
   _CCCL_API constexpr take_while_view(_View __base, _Pred __pred)
       : view_interface<take_while_view<_View, _Pred>>()
-      , __pred_(::cuda::std::in_place, ::cuda::std::move(__pred))
+      , __pred_(in_place_t{}, ::cuda::std::move(__pred))
       , __base_(::cuda::std::move(__base))
   {}
 
@@ -189,33 +189,34 @@ public:
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto begin()
   {
-    return ::cuda::std::ranges::begin(__base_);
+    return ::cuda::std::ranges::__begin_cpo{}(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto begin() const
   {
-    return ::cuda::std::ranges::begin(__base_);
+    return ::cuda::std::ranges::__begin_cpo{}(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
-    return __sentinel</*_Const=*/false>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
+    return __sentinel</*_Const=*/false>(::cuda::std::ranges::__end_cpo{}(__base_), ::cuda::std::addressof(*__pred_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto end() const
   {
-    return __sentinel</*_Const=*/true>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
+    return __sentinel</*_Const=*/true>(::cuda::std::ranges::__end_cpo{}(__base_), ::cuda::std::addressof(*__pred_));
   }
 };
 
 template <class _Range, class _Pred>
-_CCCL_HOST_DEVICE take_while_view(_Range&&, _Pred) -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_while_view(_Range&&, _Pred)
+  -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

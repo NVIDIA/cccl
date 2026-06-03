@@ -25,7 +25,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortPairs(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -38,7 +37,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortPairs failed with status: " << error << '\n';
@@ -65,7 +64,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortPairsDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -78,7 +76,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortPairsDescending failed with status: " << error << '\n';
@@ -103,7 +101,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -114,7 +111,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys failed with status: " << error << '\n';
@@ -137,7 +134,6 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedRadixSort::SortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -148,7 +144,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
     offsets.begin() + 1,
     0,
     static_cast<int>(sizeof(int) * 8),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedRadixSort::SortKeysDescending failed with status: " << error << '\n';

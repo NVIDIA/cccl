@@ -7,12 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
-// default constructors that don't exist because it evaluates the class initializers before
-// considering the default constructors requirements clause. It's not possible to selectively
-// disable them in this file like the others, so we just disable the compiler entirely.
-
-// UNSUPPORTED: (clang-14 || gcc-12 || msvc-19.39) && c++20
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 // constexpr iterator& operator--() requires bidirectional_range<V>;
 // constexpr iterator operator--(int) requires bidirectional_range<V>;

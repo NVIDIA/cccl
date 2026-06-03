@@ -24,7 +24,8 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -334,7 +335,7 @@ struct policy_selector
   bool length_is_trivially_copyable;
   bool key_is_primitive;
 
-  _CCCL_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> rle_encode_policy
+  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> rle_encode_policy
   {
     constexpr int nominal_4B_items_per_thread = 6;
     const int combined_input_bytes            = length_size + key_size;
@@ -354,10 +355,11 @@ struct policy_selector
         length_size, int{sizeof(int)}, length_is_primitive || length_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_encode_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> rle_encode_policy
   {
     // if we don't have a tuning for SM100, fall back to SM90
-    if (arch >= ::cuda::arch_id::sm_100 && length_is_primitive && length_size == 4 && key_is_primitive)
+    if (cc >= ::cuda::compute_capability{10, 0} && length_is_primitive && length_size == 4 && key_is_primitive)
     {
       if (key_size == 1)
       {
@@ -401,7 +403,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (length_is_primitive && length_size == 4)
       {
@@ -451,12 +453,12 @@ struct policy_selector
       return __make_default_policy(LOAD_DEFAULT);
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return __make_default_policy(LOAD_LDG);
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (length_is_primitive && length_size == 4)
       {
@@ -518,16 +520,17 @@ static_assert(rle_encode_policy_selector<policy_selector>);
 template <class LengthT, class KeyT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_encode_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> rle_encode_policy
   {
     constexpr policy_selector selector{
       int{sizeof(LengthT)},
       int{sizeof(KeyT)},
       classify_type<KeyT>,
       is_primitive_v<LengthT>,
-      ::cuda::std::is_trivially_copyable_v<LengthT>,
+      ::cuda::is_trivially_copyable_v<LengthT>,
       is_primitive_v<KeyT>};
-    return selector(arch);
+    return selector(cc);
   }
 };
 } // namespace detail::rle::encode

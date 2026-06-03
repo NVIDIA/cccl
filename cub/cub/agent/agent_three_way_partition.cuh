@@ -22,10 +22,6 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
-#endif
-
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -37,7 +33,7 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
@@ -45,7 +41,7 @@ template <int BlockThreads,
           class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentThreeWayPartitionPolicy
 {
-  static constexpr int BLOCK_THREADS                 = BlockThreads;
+  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -56,20 +52,6 @@ struct AgentThreeWayPartitionPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TODO(bgruber): remove
-namespace detail
-{
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ThreeWayPartitionAgentPolicy,
-  (UniqueByKeyAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 namespace detail::three_way_partition
 {

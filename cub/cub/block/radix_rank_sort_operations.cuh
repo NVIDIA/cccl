@@ -113,7 +113,7 @@ struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
   using typename BaseDigitExtractor<KeyT>::UnsignedBits;
 
   ::cuda::std::uint32_t bit_start;
-  ::cuda::std::uint32_t mask;
+  ::cuda::std::uint32_t mask; // NOLINT(modernize-use-default-member-init)
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE
   ShiftDigitExtractor(::cuda::std::uint32_t bit_start = 0, ::cuda::std::uint32_t num_bits = 0)

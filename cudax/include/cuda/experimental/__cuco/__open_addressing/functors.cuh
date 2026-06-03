@@ -37,7 +37,7 @@ struct __get_slot
 {
   _StorageRef __storage;
 
-  _CCCL_API explicit constexpr __get_slot(_StorageRef __storage_ref) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr __get_slot(_StorageRef __storage_ref) noexcept
       : __storage{__storage_ref}
   {}
 
@@ -63,7 +63,7 @@ struct __slot_is_filled
   _Key __empty_sentinel;
   _Key __erased_sentinel;
 
-  _CCCL_API explicit constexpr __slot_is_filled(_Key __empty, _Key __erased) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr __slot_is_filled(_Key __empty, _Key __erased) noexcept
       : __empty_sentinel{__empty}
       , __erased_sentinel{__erased}
   {}

@@ -21,7 +21,7 @@
 #include <thrust/system/cpp/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system::cpp
+namespace system::cpp // NOLINT(modernize-concat-nested-namespaces)
 {
 //! \cond
 namespace detail

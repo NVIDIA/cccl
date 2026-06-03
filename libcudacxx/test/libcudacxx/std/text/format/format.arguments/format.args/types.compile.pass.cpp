@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: bit field read/write is unsupported in tile code
-
 // <cuda/std/format>
 
 // Namespace std typedefs:

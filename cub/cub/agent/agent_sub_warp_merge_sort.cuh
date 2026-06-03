@@ -24,7 +24,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int BlockThreadsArg,
+template <int ThreadsPerBlock,
           int WarpThreadsArg,
           int ItemsPerThreadArg,
           cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
@@ -32,7 +32,7 @@ template <int BlockThreadsArg,
           cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
 struct AgentSubWarpMergeSortPolicy
 {
-  static constexpr int BLOCK_THREADS      = BlockThreadsArg;
+  static constexpr int BLOCK_THREADS      = ThreadsPerBlock;
   static constexpr int WARP_THREADS       = WarpThreadsArg;
   static constexpr int ITEMS_PER_THREAD   = ItemsPerThreadArg;
   static constexpr int ITEMS_PER_TILE     = WARP_THREADS * ITEMS_PER_THREAD;
@@ -42,23 +42,6 @@ struct AgentSubWarpMergeSortPolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LoadModifierArg;
   static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TODO(bgruber): remove
-namespace detail
-{
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  SubWarpMergeSortAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (WARP_THREADS, WarpThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (ITEMS_PER_TILE, ItemsPerTile, int),
-  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::WarpLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::WarpStoreAlgorithm))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 namespace detail::sub_warp_merge_sort
 {

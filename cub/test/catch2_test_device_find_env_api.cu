@@ -14,7 +14,7 @@
 
 #include <c2h/catch2_test_helper.h>
 
-// example-begin find-if-env-predicate
+// example-begin find-if-predicate
 struct is_greater_than_t
 {
   int threshold;
@@ -23,7 +23,7 @@ struct is_greater_than_t
     return value > threshold;
   }
 };
-// example-end find-if-env-predicate
+// example-end find-if-predicate
 
 C2H_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]")
 {

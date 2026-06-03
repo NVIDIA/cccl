@@ -24,7 +24,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -148,7 +148,7 @@ struct DeviceScanKernelSource
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> scan_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> scan_policy
 {
   // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
   // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
@@ -171,32 +171,9 @@ _CCCL_API constexpr auto convert_policy() -> scan_policy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-private:
-  struct extract_policy_dispatch_t
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> scan_policy
   {
-    scan_policy& policy;
-
-    template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
-    {
-      policy = convert_policy<ActivePolicyT>();
-      return cudaSuccess;
-    }
-  };
-
-public:
-  // Called from host (compile-time) and device code during dispatch
-  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
-  {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      ({
-                        const int ptx_version = static_cast<int>(arch) * 10;
-                        scan_policy policy{};
-                        extract_policy_dispatch_t dispatch{policy};
-                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-                        return policy;
-                      }),
-                      ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 } // namespace detail::scan
@@ -367,7 +344,7 @@ struct DispatchScan
     policy.CheckLoadModifier();
 
     // Number of input tiles
-    const int tile_size = policy.Scan().BlockThreads() * policy.Scan().ItemsPerThread();
+    const int tile_size = policy.Scan().ThreadsPerBlock() * policy.Scan().ItemsPerThread();
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
     auto tile_state = kernel_source.TileState();
@@ -409,7 +386,7 @@ struct DispatchScan
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
-          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
+          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* dependent_launch */ ptx_version >= 900)
             .doit(init_kernel, kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
     {
       return error;
@@ -430,7 +407,7 @@ struct DispatchScan
     // Get SM occupancy for scan_kernel
     int scan_sm_occupancy;
     if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().BlockThreads())))
+          CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().ThreadsPerBlock())))
     {
       return error;
     }
@@ -452,7 +429,7 @@ struct DispatchScan
               "per thread, %d SM occupancy\n",
               start_tile,
               scan_grid_size,
-              policy.Scan().BlockThreads(),
+              policy.Scan().ThreadsPerBlock(),
               (long long) stream,
               policy.Scan().ItemsPerThread(),
               scan_sm_occupancy);
@@ -460,7 +437,8 @@ struct DispatchScan
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
+            launcher_factory(
+              scan_grid_size, policy.Scan().ThreadsPerBlock(), 0, stream, /* dependent_launch */ ptx_version >= 900)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
@@ -607,7 +585,11 @@ struct DispatchScan
 #  endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
-            launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+            launcher_factory(init_grid_size,
+                             init_kernel_threads,
+                             0,
+                             stream,
+                             /* dependent_launch */ ptx_version >= 900)
               .doit(kernel_source.InitKernel(),
                     kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
                     grid_dim)))
@@ -637,7 +619,7 @@ struct DispatchScan
 #  endif // CUB_DEBUG_LOG
 
       if (const auto error = CubDebug(
-            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+            launcher_factory(grid_dim, block_dim, smem_size, stream, /* dependent_launch */ ptx_version >= 900)
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
@@ -679,7 +661,7 @@ struct DispatchScan
                                  "The memory consistency model does not apply to texture accesses");
 
     // Number of input tiles
-    const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+    const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
     auto tile_state = kernel_source.TileState();
@@ -722,7 +704,7 @@ struct DispatchScan
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
-          launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+          launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ ptx_version >= 900)
             .doit(kernel_source.InitKernel(), kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
     {
       return error;
@@ -742,8 +724,8 @@ struct DispatchScan
 
     // Get SM occupancy for scan_kernel
     int scan_sm_occupancy;
-    if (const auto error = CubDebug(
-          launcher_factory.MaxSmOccupancy(scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.block_threads)))
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
     {
       return error;
     }
@@ -765,7 +747,7 @@ struct DispatchScan
               "per thread, %d SM occupancy\n",
               start_tile,
               scan_grid_size,
-              active_policy.block_threads,
+              active_policy.threads_per_block,
               (long long) stream,
               active_policy.items_per_thread,
               scan_sm_occupancy);
@@ -773,7 +755,8 @@ struct DispatchScan
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream, /* use_pdl */ true)
+            launcher_factory(
+              scan_grid_size, active_policy.threads_per_block, 0, stream, /* dependent_launch */ ptx_version >= 900)
               .doit(kernel_source.ScanKernel(),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
@@ -955,26 +938,29 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
                 "DispatchScan only supports unsigned offset types of at least 4-bytes");
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;
-                 ss << policy_selector(arch_id);
-                 _CubLog("Dispatching DeviceScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceScan to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
                }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   struct fake_policy
   {
     using MaxPolicy = void;
   };
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return DispatchScan<InputIteratorT,
                         OutputIteratorT,
                         ScanOpT,

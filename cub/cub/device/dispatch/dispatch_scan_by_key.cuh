@@ -123,7 +123,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_prev_in,
@@ -139,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   static constexpr scan_by_key_policy policy = current_policy<PolicySelector>();
 
   using scan_by_key_policy_t = AgentScanByKeyPolicy<
-    policy.block_threads,
+    policy.threads_per_block,
     policy.items_per_thread,
     policy.load_algorithm,
     policy.load_modifier,
@@ -418,7 +418,7 @@ struct DispatchScanByKey
     }
 
     // Number of input tiles
-    const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+    const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
     auto tile_state = kernel_source.TileState();
@@ -502,14 +502,14 @@ struct DispatchScanByKey
               "per thread\n",
               start_tile,
               scan_grid_size,
-              active_policy.block_threads,
+              active_policy.threads_per_block,
               (long long) stream,
               active_policy.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
-            launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream)
+            launcher_factory(scan_grid_size, active_policy.threads_per_block, 0, stream)
               .doit(kernel_source.ScanKernel(),
                     d_keys_in,
                     d_keys_prev_in,
@@ -636,23 +636,24 @@ struct DispatchScanByKey
     KernelSourceT kernel_source            = {},
     KernelLauncherFactory launcher_factory = {})
   {
-    ::cuda::arch_id arch_id{};
-    if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {
       return error;
     }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
                    ::std::stringstream ss;
-                   ss << policy_selector(arch_id);
-                   _CubLog("Dispatching DeviceScanByKey to arch %d with tuning: %s\n",
-                           static_cast<int>(arch_id),
+                   ss << policy_selector(cc);
+                   _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
                            ss.str().c_str());
                  }))
-#endif
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+    const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(cc);
 
     return DispatchScanByKey<KeysInputIteratorT,
                              ValuesInputIteratorT,
@@ -686,6 +687,7 @@ struct DispatchScanByKey
 namespace detail::scan_by_key
 {
 template <
+  typename OverrideAccumT = use_default,
   typename KeysInputIteratorT,
   typename ValuesInputIteratorT,
   typename ValuesOutputIteratorT,
@@ -693,11 +695,14 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT = ::cuda::std::__accumulator_t<
-    ScanOpT,
-    cub::detail::it_value_t<ValuesInputIteratorT>,
-    ::cuda::std::
-      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
+  typename AccumT = ::cuda::std::conditional_t<
+    !::cuda::std::is_same_v<OverrideAccumT, use_default>,
+    OverrideAccumT,
+    ::cuda::std::__accumulator_t<
+      ScanOpT,
+      cub::detail::it_value_t<ValuesInputIteratorT>,
+      ::cuda::std::
+        _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>>,
   typename PolicySelector = policy_selector_from_types<cub::detail::it_value_t<KeysInputIteratorT>,
                                                        AccumT,
                                                        cub::detail::it_value_t<ValuesInputIteratorT>,
@@ -731,27 +736,29 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
                 "DispatchScan only supports unsigned offset types of at least 4-bytes");
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST, ({
-      ::std::stringstream ss;
-      ss << policy_selector(arch_id);
-      _CubLog("Dispatching DeviceScanByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
-    }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   struct fake_policy
   {
     using MaxPolicy = void;
   };
 
-  const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+  const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(cc);
 
   return DispatchScanByKey<KeysInputIteratorT,
                            ValuesInputIteratorT,

@@ -2253,11 +2253,9 @@ cdef class DeviceHistogramBuildResult:
 # -------------------
 cdef extern from "cccl/c/binary_search.h":
     cdef struct cccl_device_binary_search_build_result_t 'cccl_device_binary_search_build_result_t':
-        int cc
-        void* cubin
-        size_t cubin_size
-        CUlibrary library
-        CUkernel kernel
+        cccl_device_transform_build_result_t transform
+        size_t op_state_size
+        size_t op_state_alignment
 
     cdef CUresult cccl_device_binary_search_build(
         cccl_device_binary_search_build_result_t*,
@@ -2364,8 +2362,8 @@ cdef class DeviceBinarySearchBuildResult:
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(
-            <const char*>self.build_data.cubin,
-            self.build_data.cubin_size
+            <const char*>self.build_data.transform.cubin,
+            self.build_data.transform.cubin_size
         )
 
 

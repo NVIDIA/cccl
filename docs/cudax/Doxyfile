@@ -96,6 +96,7 @@ PREDEFINED = \
     "_CCCL_CONSTEXPR_CXX20=constexpr" \
     "_CCCL_CONSTEXPR_CXX23=constexpr" \
     "_CCCL_API=inline" \
+    "_CCCL_HOST_DEVICE_API=inline" \
     "_CCCL_HOST_API=inline" \
     "_CCCL_DEVICE_API=inline" \
     "_CCCL_NODEBUG_API=inline" \

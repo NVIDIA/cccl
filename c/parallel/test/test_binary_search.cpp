@@ -87,9 +87,11 @@ struct binary_search_build
 struct binary_search_run
 {
   template <typename... Ts>
-  CUresult operator()(BuildResultT build, void*, std::size_t*, cccl_binary_search_mode_t, Ts... args) const noexcept
+  CUresult operator()(
+    BuildResultT build, void* scratch, std::size_t* scratch_size, cccl_binary_search_mode_t, Ts... args) const noexcept
   {
-    return cccl_device_binary_search(build, args...);
+    *scratch_size = 1;
+    return (scratch) ? cccl_device_binary_search(build, args...) : CUDA_SUCCESS;
   }
 };
 

@@ -25,7 +25,6 @@
 #include <thrust/iterator/detail/any_assign.h>
 
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -347,6 +346,7 @@ __CUB_ALIGN_BYTES(int4, 16)
 __CUB_ALIGN_BYTES(uint4, 16)
 __CUB_ALIGN_BYTES(float4, 16)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 __CUB_ALIGN_BYTES(long4, 16)
 __CUB_ALIGN_BYTES(ulong4, 16)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -360,6 +360,7 @@ __CUB_ALIGN_BYTES(longlong2, 16)
 __CUB_ALIGN_BYTES(ulonglong2, 16)
 __CUB_ALIGN_BYTES(double2, 16)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 __CUB_ALIGN_BYTES(longlong4, 16)
 __CUB_ALIGN_BYTES(ulonglong4, 16)
 __CUB_ALIGN_BYTES(double4, 16)
@@ -646,6 +647,7 @@ CUB_DEFINE_VECTOR_TYPE(signed char,        char)
 CUB_DEFINE_VECTOR_TYPE(short,              short)
 CUB_DEFINE_VECTOR_TYPE(int,                int)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_DEFINE_VECTOR_TYPE(long,               long)
 CUB_DEFINE_VECTOR_TYPE(long long,          longlong)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -653,11 +655,13 @@ CUB_DEFINE_VECTOR_TYPE(unsigned char,      uchar)
 CUB_DEFINE_VECTOR_TYPE(unsigned short,     ushort)
 CUB_DEFINE_VECTOR_TYPE(unsigned int,       uint)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_DEFINE_VECTOR_TYPE(unsigned long,      ulong)
 CUB_DEFINE_VECTOR_TYPE(unsigned long long, ulonglong)
 _CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(float,              float)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_DEFINE_VECTOR_TYPE(double,             double)
 _CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(bool,               uchar)
@@ -725,12 +729,12 @@ struct KeyValuePair
     return (value != b.value) || (key != b.key);
   }
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const KeyValuePair& pair)
   {
     return os << '(' << pair.key << ',' << pair.value << ')';
   }
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 };
 
 /**
@@ -990,7 +994,7 @@ using BaseTraits = detail::BaseTraits<_CATEGORY, _PRIMITIVE, _UnsignedBits, T>;
 //! * The arithmetic throughput of the type is similar to other built-in types of the same size
 //! For other types, if you want to use them with radix sort, please use the decomposer interface of the radix sort.
 // clang-format off
-template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, false, T, T> {};
+template <typename T, typename = T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER, false, T, T> {};
 
 template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, NullType, NullType> {};
 
@@ -1093,15 +1097,15 @@ private:
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, unsigned long long, double> {};
 #  if _CCCL_HAS_NVFP16()
-    template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, unsigned short, __half> {};
+    template <typename T> struct NumericTraits<__half, T> :          BaseTraits<FLOATING_POINT, true, unsigned short, T> {};
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
-    template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, unsigned short, __nv_bfloat16> {};
+    template <typename T> struct NumericTraits<__nv_bfloat16, T> :   BaseTraits<FLOATING_POINT, true, unsigned short, T> {};
 #  endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8()
-    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
-    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
+    template <typename T> struct NumericTraits<__nv_fp8_e4m3, T> :   BaseTraits<FLOATING_POINT, true, unsigned char, T> {};
+    template <typename T> struct NumericTraits<__nv_fp8_e5m2, T> :   BaseTraits<FLOATING_POINT, true, unsigned char, T> {};
 #endif // _CCCL_HAS_NVFP8()
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, typename UnitWord<bool>::VolatileWord, bool> {};

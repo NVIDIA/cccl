@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/std/cassert>
 #include <cuda/std/ctime>
 #include <cuda/std/type_traits>

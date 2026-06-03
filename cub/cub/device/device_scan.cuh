@@ -87,15 +87,15 @@ CUB_NAMESPACE_BEGIN
 struct DeviceScan
 {
   //! @cond
-  template <typename TuningEnvT,
+  template <ForceInclusive EnforceInclusive = ForceInclusive::No,
+            typename PolicySelectorT,
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            ::cuda::execution::determinism::__determinism_t Determinism,
-            ForceInclusive EnforceInclusive = ForceInclusive::No>
-  CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
+            typename Determinism>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -103,25 +103,12 @@ struct DeviceScan
     ScanOpT scan_op,
     InitValueT init,
     NumItemsT num_items,
-    ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
-    cudaStream_t stream)
+    Determinism /*determinism*/,
+    cudaStream_t stream,
+    PolicySelectorT policy_selector)
   {
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    using accum_t =
-      ::cuda::std::__accumulator_t<ScanOpT,
-                                   cub::detail::it_value_t<InputIteratorT>,
-                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                    cub::detail::it_value_t<InputIteratorT>,
-                                                    typename InitValueT::value_type>>;
-
-    using default_policy_selector_t =
-      detail::scan::policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT>;
-
-    using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::scan::scan_policy, default_policy_selector_t>;
-
     return detail::scan::dispatch<EnforceInclusive>(
       d_temp_storage,
       temp_storage_bytes,
@@ -131,7 +118,7 @@ struct DeviceScan
       init,
       static_cast<offset_t>(num_items),
       stream,
-      policy_selector_t{});
+      policy_selector);
   }
 
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
@@ -161,6 +148,9 @@ struct DeviceScan
                                    ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using default_policy_selector_t =
+      detail::scan::policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT>;
 
     constexpr bool is_determinism_required =
       !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
@@ -171,18 +161,11 @@ struct DeviceScan
     static_assert(!is_determinism_required || is_safe_integral_op,
                   "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_impl_determinism<
-        tuning_t,
-        InputIteratorT,
-        OutputIteratorT,
-        ScanOpT,
-        InitValueT,
-        NumItemsT,
-        ::cuda::execution::determinism::__determinism_t(requested_determinism_t::value),
-        EnforceInclusive>(storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return scan_impl_determinism<EnforceInclusive>(
+          storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream, policy_selector);
+      });
   }
 
   template <typename TuningEnvT,
@@ -221,15 +204,8 @@ struct DeviceScan
     using policy_selector_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
 
-    return detail::scan_by_key::dispatch<
-      KeysInputIteratorT,
-      ValuesInputIteratorT,
-      ValuesOutputIteratorT,
-      EqualityOpT,
-      ScanOpT,
-      InitValueT,
-      offset_t,
-      accum_t>(
+    // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
+    return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -417,13 +393,7 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
@@ -572,13 +542,7 @@ struct DeviceScan
   //!   @endrst
   template <typename IteratorT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
@@ -803,14 +767,9 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1003,13 +962,7 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, EnvT env = {})
@@ -1347,15 +1300,9 @@ struct DeviceScan
   template <typename IteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT = InitValueT*,
-            typename NumItemsT      = int,
-            typename EnvT           = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename InitValueIterT                                          = InitValueT*,
+            typename NumItemsT                                               = int,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     IteratorT d_data,
@@ -1444,16 +1391,11 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT,
-            typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename InitValueIterT                                              = InitValueT*,
+            typename NumItemsT                                                   = int,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1712,13 +1654,7 @@ struct DeviceScan
   //!   @endrst
   template <typename IteratorT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
@@ -1783,13 +1719,7 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
@@ -2179,13 +2109,7 @@ struct DeviceScan
   template <typename IteratorT,
             typename ScanOpT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
@@ -2257,13 +2181,7 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            ,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
@@ -2348,13 +2266,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void
-#else
-            ::cuda::std::execution::env<>
-#endif
-            >
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2986,6 +2899,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive prefix sum-by-key of an ``int`` device vector.
   //!
@@ -3042,12 +2956,7 @@ struct DeviceScan
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void,
-#else
-            ::cuda::std::execution::env<>,
-#endif
+            typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
@@ -3063,30 +2972,9 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
     using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    init_t init_value{};
-
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using offset_t = detail::choose_offset_t<NumItemsT>;
       using tuning_t = decltype(tuning);
-      using accum_t =
-        ::cuda::std::__accumulator_t<::cuda::std::plus<>, cub::detail::it_value_t<ValuesInputIteratorT>, init_t>;
-      using default_policy_selector_t =
-        detail::scan_by_key::policy_selector_from_types<detail::it_value_t<KeysInputIteratorT>,
-                                                        accum_t,
-                                                        cub::detail::it_value_t<ValuesInputIteratorT>,
-                                                        ::cuda::std::plus<>>;
-      using policy_selector_t = ::cuda::std::execution::
-        __query_result_or_t<tuning_t, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
-
-      return detail::scan_by_key::dispatch<
-        KeysInputIteratorT,
-        ValuesInputIteratorT,
-        ValuesOutputIteratorT,
-        EqualityOpT,
-        ::cuda::std::plus<>,
-        init_t,
-        offset_t,
-        accum_t>(
+      return scan_by_key_impl<tuning_t>(
         storage,
         bytes,
         d_keys_in,
@@ -3094,10 +2982,9 @@ struct DeviceScan
         d_values_out,
         equality_op,
         ::cuda::std::plus<>{},
-        init_value,
-        static_cast<offset_t>(num_items),
-        stream,
-        policy_selector_t{});
+        init_t{},
+        num_items,
+        stream);
     });
   }
 
@@ -3123,6 +3010,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive prefix scan-by-key of an ``int`` device vector.
   //!
@@ -3194,12 +3082,7 @@ struct DeviceScan
             typename InitValueT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void,
-#else
-            ::cuda::std::execution::env<>,
-#endif
+            typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
@@ -3242,6 +3125,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix sum-by-key of an ``int`` device vector.
   //!
@@ -3298,12 +3182,7 @@ struct DeviceScan
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void,
-#else
-            ::cuda::std::execution::env<>,
-#endif
+            typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
@@ -3354,6 +3233,7 @@ struct DeviceScan
   //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive prefix scan-by-key of an ``int`` device vector.
   //!
@@ -3417,12 +3297,7 @@ struct DeviceScan
             typename ScanOpT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
-#ifdef _CCCL_DOXYGEN_INVOKED
-            void,
-#else
-            ::cuda::std::execution::env<>,
-#endif
+            typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,

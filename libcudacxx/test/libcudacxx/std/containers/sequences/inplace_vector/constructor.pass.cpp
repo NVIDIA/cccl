@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6080486 : error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
+
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
@@ -50,11 +53,9 @@ TEST_FUNC constexpr void test_copy_move()
   static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 42>>::value
-                  == cuda::std::is_nothrow_copy_constructible<T>::value,
-                "");
+                == cuda::std::is_nothrow_copy_constructible<T>::value);
   static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 42>>::value
-                  == cuda::std::is_nothrow_move_constructible<T>::value,
-                "");
+                == cuda::std::is_nothrow_move_constructible<T>::value);
   { // inplace_vector<T, 0> can be copy constructed
     cuda::std::inplace_vector<T, 0> input{};
     cuda::std::inplace_vector<T, 0> vec(input);

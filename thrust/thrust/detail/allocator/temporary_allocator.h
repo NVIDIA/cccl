@@ -27,6 +27,8 @@
 
 #include <nv/target>
 
+#include <cstdio>
+
 #if _CCCL_CUDA_COMPILATION() && _CCCL_DEVICE_COMPILATION()
 #  include <thrust/system/cuda/detail/terminate.h>
 #endif // _CCCL_CUDA_COMPILATION() && _CCCL_DEVICE_COMPILATION()
@@ -91,13 +93,24 @@ public:
     {
       thrust::return_temporary_buffer(system(), p, n);
     }
+    // Swallow all exceptions to maintain noexcept contract per C++ allocator requirements.
+    // Deallocate must be noexcept to be safe in destructors and during exception unwinding.
+    // Clear CUDA error state and leak the memory rather than propagating exception.
+    // Memory is leaked, but this matches standard allocator behavior when deallocation fails.
+    _CCCL_CATCH (std::exception & e)
+    {
+      // if we have some context about the thrown exception, log it
+      NV_IF_TARGET(NV_IS_HOST, {
+        ::fprintf(stderr, "Exception thrown in thrust::detail::temporary_allocator::deallocate: %s\n", e.what());
+      })
+      _CCCL_ASSERT(false, "Exception thrown in thrust::detail::temporary_allocator::deallocate");
+#if _CCCL_CUDA_COMPILATION()
+      NV_IF_TARGET(NV_IS_HOST, cudaGetLastError();)
+#endif // _CCCL_CUDA_COMPILATION()
+    }
     _CCCL_CATCH_ALL
     {
-      _CCCL_ASSERT(false, "Exception thrown in deallocate");
-      // Swallow all exceptions to maintain noexcept contract per C++ allocator requirements.
-      // Deallocate must be noexcept to be safe in destructors and during exception unwinding.
-      // Clear CUDA error state and leak the memory rather than propagating exception.
-      // Memory is leaked, but this matches standard allocator behavior when deallocation fails.
+      _CCCL_ASSERT(false, "Exception thrown in thrust::detail::temporary_allocator::deallocate");
 #if _CCCL_CUDA_COMPILATION()
       NV_IF_TARGET(NV_IS_HOST, cudaGetLastError();)
 #endif // _CCCL_CUDA_COMPILATION()

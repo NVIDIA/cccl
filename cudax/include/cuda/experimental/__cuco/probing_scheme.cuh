@@ -44,25 +44,25 @@ public:
   static constexpr int cg_size = __base_type::__cg_size;
   using hasher                 = _Hash;
 
-  _CCCL_API constexpr linear_probing(const _Hash& __hash = {})
+  _CCCL_HOST_DEVICE_API constexpr linear_probing(const _Hash& __hash = {})
       : __hash{__hash}
   {}
 
   template <class _NewHash>
-  [[nodiscard]] _CCCL_API constexpr auto rebind_hash_function(const _NewHash& __hash) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const noexcept
   {
     return linear_probing<cg_size, _NewHash>{__hash};
   }
 
   template <int _BucketSize, class _ProbeKey, class _Extent>
-  _CCCL_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
 
   template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
-  _CCCL_API constexpr auto make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                                          _ProbeKey __probe_key,
                                          _Extent __upper_bound) const noexcept;
 
-  _CCCL_API constexpr hasher hash_function() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {
     return __hash;
   }
@@ -85,19 +85,19 @@ public:
   static constexpr int cg_size = __base_type::__cg_size;
   using hasher                 = ::cuda::std::tuple<_Hash1, _Hash2>;
 
-  _CCCL_API constexpr double_hashing(const _Hash1& __hash1 = {}, const _Hash2& __hash2 = {1})
+  _CCCL_HOST_DEVICE_API constexpr double_hashing(const _Hash1& __hash1 = {}, const _Hash2& __hash2 = {1})
       : __hash1{__hash1}
       , __hash2{__hash2}
   {}
 
-  _CCCL_API constexpr double_hashing(const ::cuda::std::tuple<_Hash1, _Hash2>& __hash)
+  _CCCL_HOST_DEVICE_API constexpr double_hashing(const ::cuda::std::tuple<_Hash1, _Hash2>& __hash)
       : __hash1{__hash.first}
       , __hash2{__hash.second}
   {}
 
   template <class _NewHash,
             class _Enable = ::cuda::std::enable_if_t<::cuda::experimental::cuco::is_tuple_like<_NewHash>::value>>
-  [[nodiscard]] _CCCL_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
   {
     static_assert(::cuda::experimental::cuco::is_tuple_like<_NewHash>::value,
                   "The given hasher must be a tuple-like object");
@@ -109,14 +109,14 @@ public:
   }
 
   template <int _BucketSize, class _ProbeKey, class _Extent>
-  _CCCL_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept;
 
   template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
-  _CCCL_API constexpr auto make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                                          _ProbeKey __probe_key,
                                          _Extent __upper_bound) const noexcept;
 
-  _CCCL_API constexpr hasher hash_function() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
   {
     return {__hash1, __hash2};
   }

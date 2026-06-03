@@ -21,6 +21,7 @@
 #  include <cub/util_device.cuh>
 #  include <cub/util_math.cuh>
 
+#  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/partition.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -30,9 +31,11 @@
 #  include <thrust/system/cuda/detail/uninitialized_copy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
+#  include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -40,97 +43,81 @@ namespace cuda_cub
 namespace detail
 {
 template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate, typename OffsetT>
-struct DispatchPartitionIf
+[[nodiscard]] cudaError_t THRUST_RUNTIME_FUNCTION dispatch_partition(
+  execution_policy<Derived>& policy,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIt first,
+  StencilIt stencil,
+  OutputIt output,
+  Predicate predicate,
+  OffsetT num_items,
+  std::size_t& num_selected)
 {
-  static cudaError_t THRUST_RUNTIME_FUNCTION dispatch(
-    execution_policy<Derived>& policy,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIt first,
-    StencilIt stencil,
-    OutputIt output,
-    Predicate predicate,
-    OffsetT num_items,
-    std::size_t& num_selected)
+  // FIXME(bgruber): the call to the dispatch function should be replaced by a public CUB API, but there is currently no
+  // exposure of a partition with stencil and predicate (a `DevicePartition:FlaggedIf`)
+
+  using equality_op_t = cub::NullType;
+
+  cudaStream_t stream = cuda_cub::stream(policy);
+
+  std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
+  void* allocations[2]            = {nullptr, nullptr};
+
+  // Query algorithm memory requirements
+  cudaError_t status = cub::detail::select::dispatch<cub::SelectImpl::Partition>(
+    nullptr,
+    allocation_sizes[0],
+    first,
+    stencil,
+    output,
+    static_cast<OffsetT*>(nullptr),
+    predicate,
+    equality_op_t{},
+    num_items,
+    stream);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  // Return if we're only querying temporary storage requirements
+  if (d_temp_storage == nullptr)
   {
-    using num_selected_out_it_t = OffsetT*;
-    using equality_op_t         = cub::NullType;
-
-    cudaError_t status  = cudaSuccess;
-    cudaStream_t stream = cuda_cub::stream(policy);
-
-    std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
-    void* allocations[2]            = {nullptr, nullptr};
-
-    // Query algorithm memory requirements
-    status = cub::DispatchSelectIf<
-      InputIt,
-      StencilIt,
-      OutputIt,
-      num_selected_out_it_t,
-      Predicate,
-      equality_op_t,
-      OffsetT,
-      cub::SelectImpl::Partition>::Dispatch(nullptr,
-                                            allocation_sizes[0],
-                                            first,
-                                            stencil,
-                                            output,
-                                            static_cast<num_selected_out_it_t>(nullptr),
-                                            predicate,
-                                            equality_op_t{},
-                                            num_items,
-                                            stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    // Return if we're only querying temporary storage requirements
-    if (d_temp_storage == nullptr)
-    {
-      return status;
-    }
-
-    // Return for empty problems
-    if (num_items == 0)
-    {
-      num_selected = 0;
-      return status;
-    }
-
-    // Memory allocation for the number of selected output items
-    OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
-
-    // Run algorithm
-    status = cub::DispatchSelectIf<
-      InputIt,
-      StencilIt,
-      OutputIt,
-      num_selected_out_it_t,
-      Predicate,
-      equality_op_t,
-      OffsetT,
-      cub::SelectImpl::Partition>::Dispatch(allocations[0],
-                                            allocation_sizes[0],
-                                            first,
-                                            stencil,
-                                            output,
-                                            d_num_selected_out,
-                                            predicate,
-                                            equality_op_t{},
-                                            num_items,
-                                            stream);
-    _CUDA_CUB_RET_IF_FAIL(status);
-
-    // Get number of selected items
-    status = cuda_cub::synchronize(policy);
-    _CUDA_CUB_RET_IF_FAIL(status);
-    num_selected = static_cast<std::size_t>(get_value(policy, d_num_selected_out));
-
     return status;
   }
-};
+
+  // Return for empty problems
+  if (num_items == 0)
+  {
+    num_selected = 0;
+    return status;
+  }
+
+  // Memory allocation for the number of selected output items
+  OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+
+  // Run algorithm
+  status = cub::detail::select::dispatch<cub::SelectImpl::Partition>(
+    allocations[0],
+    allocation_sizes[0],
+    first,
+    stencil,
+    output,
+    d_num_selected_out,
+    predicate,
+    equality_op_t{},
+    num_items,
+    stream);
+  _CUDA_CUB_RET_IF_FAIL(status);
+
+  // Get number of selected items
+  status = cuda_cub::synchronize(policy);
+  _CUDA_CUB_RET_IF_FAIL(status);
+  num_selected = static_cast<std::size_t>(get_value(policy, d_num_selected_out));
+
+  return status;
+}
 
 template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate>
 THRUST_RUNTIME_FUNCTION std::size_t partition(
@@ -141,24 +128,15 @@ THRUST_RUNTIME_FUNCTION std::size_t partition(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = thrust::detail::it_difference_t<InputIt>;
-
-  size_type num_items = ::cuda::std::distance(first, last);
+  const auto num_items = ::cuda::std::distance(first, last);
   std::size_t num_selected{};
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
 
-  // 32-bit offset-type dispatch
-  using dispatch32_t = DispatchPartitionIf<Derived, InputIt, StencilIt, OutputIt, Predicate, std::int32_t>;
-
-  // 64-bit offset-type dispatch
-  using dispatch64_t = DispatchPartitionIf<Derived, InputIt, StencilIt, OutputIt, Predicate, std::int64_t>;
-
   // Query temporary storage requirements
-  THRUST_INDEX_TYPE_DISPATCH2(
+  THRUST_INDEX_TYPE_DISPATCH(
     status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
+    dispatch_partition,
     num_items,
     (policy, nullptr, temp_storage_bytes, first, stencil, output, predicate, num_items_fixed, num_selected));
   cuda_cub::throw_on_error(status, "partition failed on 1st step");
@@ -168,10 +146,9 @@ THRUST_RUNTIME_FUNCTION std::size_t partition(
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
-  THRUST_INDEX_TYPE_DISPATCH2(
+  THRUST_INDEX_TYPE_DISPATCH(
     status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
+    dispatch_partition,
     num_items,
     (policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, num_items_fixed, num_selected));
   cuda_cub::throw_on_error(status, "partition failed on 2nd step");
@@ -365,13 +342,47 @@ stable_partition(execution_policy<Derived>& policy, Iterator first, Iterator las
   return ret;
 }
 
+// Functor for the single-pass is_partitioned check.
+// Returns true for an adjacent pair (a[i], a[i+1]) where pred(a[i]) is false
+// and pred(a[i+1]) is true — i.e., a "false → true" transition that violates
+// the partitioning invariant.
+template <class Predicate>
+struct __is_partitioned_fn
+{
+  Predicate pred_;
+
+  // Not const-qualified: a const operator() would propagate const onto pred_
+  // and reject predicates whose own operator() is non-const (Thrust permits these).
+  template <class Tuple>
+  [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple)
+  {
+    const bool lhs = pred_(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
+    const bool rhs = pred_(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
+    return !lhs && rhs;
+  }
+};
+
+// Single-pass implementation: zip adjacent elements and find any "false → true"
+// transition. Two-pass (find_if_not + find_if) required two kernel launches;
+// this approach uses one find_if over (a[i], a[i+1]) pairs, cutting kernel
+// launch overhead roughly in half for typical inputs.
+// See: https://github.com/NVIDIA/cccl/issues/8085
 template <class Derived, class ItemsIt, class Predicate>
 bool _CCCL_HOST_DEVICE
 is_partitioned(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Predicate predicate)
 {
-  ItemsIt boundary = cuda_cub::find_if_not(policy, first, last, predicate);
-  ItemsIt end      = cuda_cub::find_if(policy, boundary, last, predicate);
-  return end == last;
+  if (first == last)
+  {
+    return true;
+  }
+  // Build a range of adjacent pairs: (a[0],a[1]), (a[1],a[2]), ..., (a[n-2],a[n-1]).
+  // The distance of this zip range is min(n, n-1) = n-1 (via zip_iterator::operator-).
+  const auto first_zip = ::cuda::make_zip_iterator(first, first + 1);
+  const auto last_zip  = ::cuda::make_zip_iterator(last, last);
+  const auto result    = cuda_cub::find_if(policy, first_zip, last_zip, __is_partitioned_fn<Predicate>{predicate});
+  // Checking get<1>(result) == last (rather than result == last_zip) correctly
+  // handles the n==1 edge case where find_if_n returns first_zip (num_items==0).
+  return ::cuda::std::get<1>(result.__iterators()) == last;
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

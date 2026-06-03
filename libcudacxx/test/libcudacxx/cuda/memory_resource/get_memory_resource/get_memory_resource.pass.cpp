@@ -198,19 +198,19 @@ TEST_FUNC void test()
   { // Can call get_memory_resource directly on a synchronous_resource (returns ref to itself)
     struct sync_only_resource
     {
-      __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+      TEST_FUNC void* allocate_sync(std::size_t, std::size_t)
       {
         return nullptr;
       }
 
-      __host__ __device__ void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+      TEST_FUNC void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 
-      __host__ __device__ bool operator==(const sync_only_resource&) const noexcept
+      TEST_FUNC bool operator==(const sync_only_resource&) const noexcept
       {
         return true;
       }
 
-      __host__ __device__ bool operator!=(const sync_only_resource&) const noexcept
+      TEST_FUNC bool operator!=(const sync_only_resource&) const noexcept
       {
         return false;
       }
@@ -239,31 +239,31 @@ TEST_FUNC void test()
     {
       test_resource inner_{};
 
-      __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+      TEST_FUNC void* allocate_sync(std::size_t, std::size_t)
       {
         return nullptr;
       }
 
-      __host__ __device__ void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+      TEST_FUNC void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 
-      __host__ __device__ void* allocate(cuda::stream_ref, std::size_t, std::size_t)
+      TEST_FUNC void* allocate(cuda::stream_ref, std::size_t, std::size_t)
       {
         return nullptr;
       }
 
-      __host__ __device__ void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) noexcept {}
+      TEST_FUNC void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) noexcept {}
 
-      __host__ __device__ bool operator==(const resource_with_method&) const noexcept
+      TEST_FUNC bool operator==(const resource_with_method&) const noexcept
       {
         return true;
       }
 
-      __host__ __device__ bool operator!=(const resource_with_method&) const noexcept
+      TEST_FUNC bool operator!=(const resource_with_method&) const noexcept
       {
         return false;
       }
 
-      __host__ __device__ const test_resource& get_memory_resource() const noexcept
+      TEST_FUNC const test_resource& get_memory_resource() const noexcept
       {
         return inner_;
       }

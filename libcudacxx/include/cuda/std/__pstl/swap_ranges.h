@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__functional/address_stability.h>
 #  include <cuda/__iterator/counting_iterator.h>
@@ -63,7 +63,8 @@ struct __swap_ranges_iter_swap_fn
   template <class _DifferenceType>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr void operator()(const _DifferenceType __index) const
   {
-    ::cuda::std::iter_swap(__first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
+    ::cuda::std::__iter_swap_cpo{}(
+      __first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
   }
 };
 
@@ -153,6 +154,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_SWAP_RANGES_H

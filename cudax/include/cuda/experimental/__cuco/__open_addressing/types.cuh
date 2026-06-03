@@ -33,7 +33,7 @@ namespace cuda::experimental::cuco::__open_addressing
 template <class _Key>
 struct __empty_key : public ::cuda::experimental::cuco::__strong_type<_Key>
 {
-  _CCCL_API explicit constexpr __empty_key(_Key __value)
+  _CCCL_HOST_DEVICE_API explicit constexpr __empty_key(_Key __value)
       : ::cuda::experimental::cuco::__strong_type<_Key>(__value)
   {}
 };
@@ -44,7 +44,7 @@ struct __empty_key : public ::cuda::experimental::cuco::__strong_type<_Key>
 template <class _T>
 struct __empty_value : public ::cuda::experimental::cuco::__strong_type<_T>
 {
-  _CCCL_API explicit constexpr __empty_value(_T __value)
+  _CCCL_HOST_DEVICE_API explicit constexpr __empty_value(_T __value)
       : ::cuda::experimental::cuco::__strong_type<_T>(__value)
   {}
 };
@@ -55,7 +55,7 @@ struct __empty_value : public ::cuda::experimental::cuco::__strong_type<_T>
 template <class _Key>
 struct __erased_key : public ::cuda::experimental::cuco::__strong_type<_Key>
 {
-  _CCCL_API explicit constexpr __erased_key(_Key __value)
+  _CCCL_HOST_DEVICE_API explicit constexpr __erased_key(_Key __value)
       : ::cuda::experimental::cuco::__strong_type<_Key>(__value)
   {}
 };

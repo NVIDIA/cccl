@@ -46,14 +46,13 @@ C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceMemcpy::Batched(
     thrust::raw_pointer_cast(d_src_ptrs.data()),
     thrust::raw_pointer_cast(d_dst_ptrs.data()),
     thrust::raw_pointer_cast(d_sizes.data()),
     num_buffers,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceMemcpy::Batched failed with status: " << error << '\n';
@@ -63,6 +62,7 @@ C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
   thrust::device_vector<int> expected_b{60};
   // example-end memcpy-batched-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_dst_a == expected_a);
   REQUIRE(d_dst_b == expected_b);

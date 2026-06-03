@@ -179,6 +179,77 @@ static_assert(cuda::std::same_as<LegacyInputTraits::reference, LegacyInput::refe
 static_assert(cuda::std::same_as<LegacyInputTraits::pointer, void>);
 static_assert(!has_iterator_concept_v<LegacyInputTraits>);
 
+struct LegacyInputArrow
+{
+  struct iterator_category
+  {};
+  struct value_type
+  {};
+  struct reference
+  {
+    TEST_FUNC operator value_type() const;
+  };
+
+  TEST_FUNC friend bool operator==(LegacyInputArrow, LegacyInputArrow);
+#if TEST_STD_VER < 2020
+  TEST_FUNC friend bool operator!=(LegacyInputArrow, LegacyInputArrow);
+#endif
+  // Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+  TEST_FUNC int* operator->();
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC LegacyInputArrow& operator++();
+  TEST_FUNC LegacyInputArrow operator++(int);
+};
+template <>
+struct cuda::std::incrementable_traits<LegacyInputArrow>
+{
+  using difference_type = short;
+};
+using LegacyInputArrowTraits = cuda::std::iterator_traits<LegacyInputArrow>;
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::iterator_category, LegacyInputArrow::iterator_category>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::value_type, LegacyInputArrow::value_type>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::difference_type, short>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::reference, LegacyInputArrow::reference>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::pointer, int*>);
+static_assert(!has_iterator_concept_v<LegacyInputArrowTraits>);
+
+struct LegacyInputPointer
+{
+  struct iterator_category
+  {};
+  struct value_type
+  {};
+  struct reference
+  {
+    TEST_FUNC operator value_type() const;
+  };
+  // If the qualified-id I​::​pointer is valid and denotes a type, then pointer names that type.
+  struct pointer
+  {};
+
+  TEST_FUNC friend bool operator==(LegacyInputPointer, LegacyInputPointer);
+#if TEST_STD_VER < 2020
+  TEST_FUNC friend bool operator!=(LegacyInputPointer, LegacyInputPointer);
+#endif
+  // Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+  TEST_FUNC int* operator->();
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC LegacyInputPointer& operator++();
+  TEST_FUNC LegacyInputPointer operator++(int);
+};
+template <>
+struct cuda::std::incrementable_traits<LegacyInputPointer>
+{
+  using difference_type = short;
+};
+using LegacyInputPointerTraits = cuda::std::iterator_traits<LegacyInputPointer>;
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::iterator_category, LegacyInputPointer::iterator_category>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::value_type, LegacyInputPointer::value_type>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::difference_type, short>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::reference, LegacyInputPointer::reference>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::pointer, LegacyInputPointer::pointer>);
+static_assert(!has_iterator_concept_v<LegacyInputPointerTraits>);
+
 struct LegacyInputNoValueType
 {
   struct not_value_type
@@ -258,8 +329,7 @@ struct LegacyBidirectional
   TEST_FUNC friend short operator-(LegacyBidirectional, LegacyBidirectional);
 };
 using LegacyBidirectionalTraits = cuda::std::iterator_traits<LegacyBidirectional>;
-static_assert(cuda::std::same_as<LegacyBidirectionalTraits::iterator_category, cuda::std::bidirectional_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<LegacyBidirectionalTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyBidirectionalTraits::value_type, LegacyBidirectional::value_type>);
 static_assert(cuda::std::same_as<LegacyBidirectionalTraits::difference_type, short>);
 static_assert(cuda::std::same_as<LegacyBidirectionalTraits::reference, const LegacyBidirectional::value_type&>);
@@ -321,8 +391,7 @@ struct cuda::std::incrementable_traits<MinusNotDeclaredIter>
   using difference_type = short;
 };
 using MinusNotDeclaredIterTraits = cuda::std::iterator_traits<MinusNotDeclaredIter>;
-static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::iterator_category, cuda::std::bidirectional_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::value_type, MinusNotDeclaredIter::value_type>);
 static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::difference_type, short>);
 static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::reference, const MinusNotDeclaredIter::value_type&>);
@@ -379,7 +448,7 @@ struct WrongSubscriptReturnType
 };
 using WrongSubscriptReturnTypeTraits = cuda::std::iterator_traits<WrongSubscriptReturnType>;
 static_assert(
-  cuda::std::same_as<WrongSubscriptReturnTypeTraits::iterator_category, cuda::std::bidirectional_iterator_tag>, "");
+  cuda::std::same_as<WrongSubscriptReturnTypeTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<WrongSubscriptReturnTypeTraits::value_type, WrongSubscriptReturnType::value_type>);
 static_assert(cuda::std::same_as<WrongSubscriptReturnTypeTraits::difference_type, short>);
 static_assert(cuda::std::same_as<WrongSubscriptReturnTypeTraits::reference, WrongSubscriptReturnType::value_type&>);
@@ -413,8 +482,7 @@ struct LegacyRandomAccess
   TEST_FUNC friend LegacyRandomAccess operator+(int, LegacyRandomAccess);
 };
 using LegacyRandomAccessTraits = cuda::std::iterator_traits<LegacyRandomAccess>;
-static_assert(cuda::std::same_as<LegacyRandomAccessTraits::iterator_category, cuda::std::random_access_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<LegacyRandomAccessTraits::iterator_category, cuda::std::random_access_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyRandomAccessTraits::value_type, LegacyRandomAccess::value_type>);
 static_assert(cuda::std::same_as<LegacyRandomAccessTraits::difference_type, short>);
 static_assert(cuda::std::same_as<LegacyRandomAccessTraits::reference, const LegacyRandomAccess::value_type&>);
@@ -484,12 +552,12 @@ struct cuda::std::incrementable_traits<LegacyRandomAccessSpaceship>
 };
 using LegacyRandomAccessSpaceshipTraits = cuda::std::iterator_traits<LegacyRandomAccessSpaceship>;
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::iterator_category, cuda::std::random_access_iterator_tag>, "");
+  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::iterator_category, cuda::std::random_access_iterator_tag>);
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::value_type, LegacyRandomAccessSpaceship::not_value_type>, "");
+  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::value_type, LegacyRandomAccessSpaceship::not_value_type>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::difference_type, short>);
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::reference, LegacyRandomAccessSpaceship::not_value_type&>, "");
+  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::reference, LegacyRandomAccessSpaceship::not_value_type&>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::pointer, void>);
 static_assert(!has_iterator_concept_v<LegacyRandomAccessSpaceshipTraits>);
 
@@ -548,8 +616,7 @@ struct LegacyOutputWithMemberTypes
   // Since (*it) is not convertible to value_type, this is not a LegacyInputIterator.
 };
 using LegacyOutputWithMemberTypesTraits = cuda::std::iterator_traits<LegacyOutputWithMemberTypes>;
-static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::iterator_category, cuda::std::output_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::iterator_category, cuda::std::output_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::value_type, void>);
 static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::difference_type, long>);
 static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::reference, void>);
@@ -614,7 +681,7 @@ struct cuda::std::iterator_traits<LegacyRandomAccessSpecialized>
 };
 using LegacyRandomAccessSpecializedTraits = cuda::std::iterator_traits<LegacyRandomAccessSpecialized>;
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpecializedTraits::iterator_category, cuda::std::output_iterator_tag>, "");
+  cuda::std::same_as<LegacyRandomAccessSpecializedTraits::iterator_category, cuda::std::output_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpecializedTraits::value_type, short>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpecializedTraits::difference_type, short>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpecializedTraits::reference, short&>);
@@ -649,7 +716,7 @@ static_assert(!has_iterator_concept_v<ForwardTestIteratorTraits>);
 
 using BidirectionalTestIteratorTraits = cuda::std::iterator_traits<bidirectional_iterator<int*>>;
 static_assert(
-  cuda::std::same_as<BidirectionalTestIteratorTraits::iterator_category, cuda::std::bidirectional_iterator_tag>, "");
+  cuda::std::same_as<BidirectionalTestIteratorTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<BidirectionalTestIteratorTraits::value_type, int>);
 static_assert(cuda::std::same_as<BidirectionalTestIteratorTraits::difference_type, cuda::std::ptrdiff_t>);
 static_assert(cuda::std::same_as<BidirectionalTestIteratorTraits::reference, int&>);
@@ -658,7 +725,7 @@ static_assert(!has_iterator_concept_v<BidirectionalTestIteratorTraits>);
 
 using RandomAccessTestIteratorTraits = cuda::std::iterator_traits<random_access_iterator<int*>>;
 static_assert(
-  cuda::std::same_as<RandomAccessTestIteratorTraits::iterator_category, cuda::std::random_access_iterator_tag>, "");
+  cuda::std::same_as<RandomAccessTestIteratorTraits::iterator_category, cuda::std::random_access_iterator_tag>);
 static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::value_type, int>);
 static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::difference_type, cuda::std::ptrdiff_t>);
 static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::reference, int&>);
@@ -666,8 +733,7 @@ static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::pointer, int*>)
 static_assert(!has_iterator_concept_v<RandomAccessTestIteratorTraits>);
 
 using ContiguousTestIteratorTraits = cuda::std::iterator_traits<contiguous_iterator<int*>>;
-static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::iterator_category, cuda::std::contiguous_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::iterator_category, cuda::std::contiguous_iterator_tag>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::value_type, int>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::difference_type, cuda::std::ptrdiff_t>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::reference, int&>);

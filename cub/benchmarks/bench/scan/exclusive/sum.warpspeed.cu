@@ -12,7 +12,10 @@
 #else // _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 
 #  if __CUDA_ARCH_LIST__ < 1000
-#    warning "Warpspeed scan requires at least sm_100. Disabling it."
+// We don't care if clang-tidy can't parse this
+#    ifndef _CCCL_CLANG_TIDY_INVOKED
+#      warning "Warpspeed scan requires at least sm_100. Disabling it."
+#    endif // !defined _CCCL_CLANG_TIDY_INVOKED
 #  else // __CUDA_ARCH_LIST__ < 1000
 
 #    if __cccl_ptx_isa < 860
@@ -27,6 +30,9 @@
 // TODO(bgruber): find a good range and step width, items per thread should be coprime with 32 to avoid SMEM conflicts.
 // Should we specify nominal items per thread instead?
 // %RANGE% TUNE_ITEMS_PLUS_ONE ipt 8:256:8
+
+// %RANGE% TUNE_LOOKBACK_STAGES lbs -2:2:1
+// %RANGE% TUNE_BLOCK_IDX_STAGES bis -2:2:1
 
 #      define USES_WARPSPEED() 1
 using op_t              = ::cuda::std::plus<>;

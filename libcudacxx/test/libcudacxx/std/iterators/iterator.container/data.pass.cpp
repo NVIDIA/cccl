@@ -57,8 +57,6 @@ TEST_FUNC void test_const_array(const T (&array)[Sz])
   assert(cuda::std::data(array) == &array[0]);
 }
 
-TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
-
 int main(int, char**)
 {
   cuda::std::inplace_vector<int, 3> v;
@@ -79,6 +77,7 @@ int main(int, char**)
   test_container(sv);
   test_const_container(sv);
 
+  constexpr int arrA[]{1, 2, 3};
   test_const_array(arrA);
 
   return 0;

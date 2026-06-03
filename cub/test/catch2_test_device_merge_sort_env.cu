@@ -32,12 +32,12 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_st
 
 namespace stdexec = cuda::std::execution;
 
-template <int BlockThreads>
+template <int ThreadsPerBlock>
 struct merge_sort_tuning
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::merge_sort::merge_sort_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::MergeSortPolicy
   {
-    return {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
+    return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
   }
 };
 
@@ -446,20 +446,7 @@ TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_sort
   REQUIRE(d_keys_out == expected_keys);
 }
 
-struct block_size_compare_t
-{
-  unsigned int* block_size;
-
-  __device__ bool operator()(int lhs, int rhs) const
-  {
-    if (threadIdx.x == 0)
-    {
-      // use an atomic operation to write the block dim in case multiple blocks are launched
-      atomicMax(block_size, blockDim.x);
-    }
-    return lhs < rhs;
-  }
-};
+using block_size_compare_t = block_size_extracting_op<cuda::std::less<>>;
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
@@ -471,7 +458,7 @@ C2H_TEST("DeviceMergeSort::SortPairs can be tuned", "[merge_sort][device]", bloc
   c2h::device_vector<int> d_values{0, 1, 2, 3};
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess
           == cub::DeviceMergeSort::SortPairs(
@@ -490,7 +477,7 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy can be tuned", "[merge_sort][device]", 
   c2h::device_vector<int> d_values_out(4);
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
 
   device_merge_sort_pairs_copy(
     d_keys_in.data().get(),
@@ -509,7 +496,7 @@ C2H_TEST("DeviceMergeSort::SortKeys can be tuned", "[merge_sort][device]", block
   c2h::device_vector<int> d_keys{4, 1, 3, 2};
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
 
   device_merge_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
   REQUIRE(d_block_size[0] == target_block_size);
@@ -522,7 +509,7 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy can be tuned", "[merge_sort][device]", b
   c2h::device_vector<int> d_keys_out(4);
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
 
   device_merge_sort_keys_copy(
     d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env);
@@ -536,7 +523,7 @@ C2H_TEST("DeviceMergeSort::StableSortPairs can be tuned", "[merge_sort][device]"
   c2h::device_vector<int> d_values{0, 1, 2, 3};
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
 
   device_merge_stable_sort_pairs(
     d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
@@ -549,7 +536,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeys can be tuned", "[merge_sort][device]",
   c2h::device_vector<int> d_keys{4, 1, 3, 2};
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
 
   device_merge_stable_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
   REQUIRE(d_block_size[0] == target_block_size);
@@ -562,7 +549,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
   c2h::device_vector<int> d_keys_out(4);
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
+  auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
 
   device_merge_stable_sort_keys_copy(
     d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env);
@@ -570,3 +557,35 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::MergeSortPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergeSortPolicy>);
+
+  // aggregate init
+  constexpr auto p1 = cub::MergeSortPolicy{
+    256,
+    11,
+    cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    cub::CacheLoadModifier::LOAD_DEFAULT,
+    cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2 = cub::MergeSortPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 11,
+    .load_algorithm    = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT,
+    .store_algorithm   = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

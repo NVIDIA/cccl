@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/__functional/call_or.h>
@@ -15,6 +18,8 @@
 #include <cuda/stream>
 
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
 TEST_FUNC void test()
 {

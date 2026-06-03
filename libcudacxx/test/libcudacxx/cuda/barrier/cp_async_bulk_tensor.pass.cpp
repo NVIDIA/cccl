@@ -11,9 +11,13 @@
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+// UNSUPPORTED: clang && !nvcc
 
 // UNSUPPORTED: nvrtc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/barrier>
 

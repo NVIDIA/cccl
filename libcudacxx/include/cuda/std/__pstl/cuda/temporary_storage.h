@@ -150,7 +150,7 @@ public:
   _CCCL_REQUIRES((sizeof...(_Sizes) == sizeof...(_StoredTypes)))
   _CCCL_HOST_API
   __temporary_storage(const _Policy& __policy, const size_t __num_bytes_storage, const _Sizes... __elements_stored)
-      : __stream_(::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy))
+      : __stream_(::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy))
       , __resource_(__get_memory_resource_or(__policy))
       , __total_bytes_allocated_(__get_total_bytes_allocated(__num_bytes_storage, __elements_stored...))
       , __storage_(__get_storage(

@@ -18,7 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
@@ -29,6 +29,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -248,28 +249,29 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
-  _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
-  _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
-  _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-  _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
-  _CCCL_GRID_CONSTANT KeyInT* const in_buf,
-  _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
-  _CCCL_GRID_CONSTANT KeyInT* const out_buf,
-  _CCCL_GRID_CONSTANT OffsetT* const out_idx_buf,
-  Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-  _CCCL_GRID_CONSTANT OffsetT* const histogram,
-  _CCCL_GRID_CONSTANT const OffsetT num_items,
-  _CCCL_GRID_CONSTANT const OutOffsetT k,
-  _CCCL_GRID_CONSTANT const OffsetT buffer_length,
-  ExtractBinOpT extract_bin_op,
-  IdentifyCandidatesOpT identify_candidates_op,
-  _CCCL_GRID_CONSTANT const int pass,
-  _CCCL_GRID_CONSTANT const bool is_last_pass)
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
+    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
+    _CCCL_GRID_CONSTANT KeyInT* const in_buf,
+    _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
+    _CCCL_GRID_CONSTANT KeyInT* const out_buf,
+    _CCCL_GRID_CONSTANT OffsetT* const out_idx_buf,
+    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+    _CCCL_GRID_CONSTANT OffsetT* const histogram,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const OutOffsetT k,
+    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+    ExtractBinOpT extract_bin_op,
+    IdentifyCandidatesOpT identify_candidates_op,
+    _CCCL_GRID_CONSTANT const int pass,
+    _CCCL_GRID_CONSTANT const bool is_last_pass)
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
-    AgentTopKPolicy<policy.block_threads,
+    AgentTopKPolicy<policy.threads_per_block,
                     policy.items_per_thread,
                     policy.bits_per_pass,
                     policy.load_algorithm,
@@ -312,7 +314,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKHistogramKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
@@ -329,7 +331,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
-    AgentTopKPolicy<policy.block_threads,
+    AgentTopKPolicy<policy.threads_per_block,
                     policy.items_per_thread,
                     policy.bits_per_pass,
                     policy.load_algorithm,
@@ -373,7 +375,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
@@ -390,7 +392,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 {
   static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
-    AgentTopKPolicy<policy.block_threads,
+    AgentTopKPolicy<policy.threads_per_block,
                     policy.items_per_thread,
                     policy.bits_per_pass,
                     policy.load_algorithm,
@@ -473,13 +475,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << policy_selector(cc);
+                 _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
     using key_in_t                             = it_value_t<KeyInputIteratorT>;
     using value_in_t                           = it_value_t<ValueInputIteratorT>;
@@ -501,10 +514,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // The algorithm allocates a double-buffer for intermediate results of size
     // num_items/coefficient_for_candidate_buffer
     static constexpr OffsetT coefficient_for_candidate_buffer = 128;
-    constexpr int block_threads                               = active_policy.block_threads;
+    constexpr int threads_per_block                           = active_policy.threads_per_block;
     constexpr int items_per_thread                            = active_policy.items_per_thread;
     constexpr int bits_per_pass                               = active_policy.bits_per_pass;
-    constexpr int tile_size                                   = block_threads * items_per_thread;
+    constexpr int tile_size                                   = threads_per_block * items_per_thread;
     const auto num_tiles      = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
     const int total_bits      = detail::radix::traits_t<key_in_t>::default_end_bit(decomposer);
     const int num_passes      = calc_num_passes<bits_per_pass>(total_bits);
@@ -579,7 +592,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     int main_kernel_blocks_per_sm = 0;
     if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(main_kernel_blocks_per_sm, topk_kernel, block_threads)))
+          CubDebug(launcher_factory.MaxSmOccupancy(main_kernel_blocks_per_sm, topk_kernel, threads_per_block)))
     {
       return error;
     }
@@ -590,7 +603,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
             "%lld>>>(), %d items per thread, %d SM occupancy\n",
             topk_grid_size,
-            block_threads,
+            threads_per_block,
             (long long) stream,
             items_per_thread,
             main_kernel_blocks_per_sm);
@@ -614,8 +627,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         extract_bin_op>;
 
       int histogram_kernel_blocks_per_sm = 0;
-      if (const auto error =
-            CubDebug(launcher_factory.MaxSmOccupancy(histogram_kernel_blocks_per_sm, histogram_kernel, block_threads)))
+      if (const auto error = CubDebug(
+            launcher_factory.MaxSmOccupancy(histogram_kernel_blocks_per_sm, histogram_kernel, threads_per_block)))
       {
         return error;
       }
@@ -624,7 +637,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
       extract_bin_op extract_op(0, total_bits, decomposer);
       if (const auto error = CubDebug(
-            launcher_factory(histogram_grid_size, block_threads, 0, stream)
+            launcher_factory(histogram_grid_size, threads_per_block, 0, stream)
               .doit(histogram_kernel,
                     d_keys_in,
                     d_keys_out,
@@ -659,7 +672,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
 
       if (const auto error = CubDebug(
-            launcher_factory(topk_grid_size, block_threads, 0, stream)
+            launcher_factory(topk_grid_size, threads_per_block, 0, stream)
               .doit(topk_kernel,
                     d_keys_in,
                     d_keys_out,
@@ -702,15 +715,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
     int last_filter_kernel_blocks_per_sm = 0;
-    if (const auto error = CubDebug(
-          launcher_factory.MaxSmOccupancy(last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, block_threads)))
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, threads_per_block)))
     {
       return error;
     }
     const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
     const auto last_filter_grid_size            = (::cuda::std::min) (last_filter_kernel_max_occupancy, num_tiles);
     if (const auto error = CubDebug(
-          launcher_factory(last_filter_grid_size, block_threads, 0, stream)
+          launcher_factory(last_filter_grid_size, threads_per_block, 0, stream)
             .doit(topk_last_filter_kernel,
                   d_keys_in,
                   d_keys_out,

@@ -23,12 +23,9 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -36,34 +33,36 @@ namespace detail::unique_by_key
 {
 struct unique_by_key_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  _CCCL_API constexpr friend bool operator==(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const unique_by_key_policy& p)
   {
     return os
-        << "unique_by_key_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
+        << "unique_by_key_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
         << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif
+#endif // _CCCL_HOSTED()
 };
 
 enum class primitive_key
@@ -873,12 +872,12 @@ struct policy_selector
   bool primitive_value;
 
 private:
-  [[nodiscard]] _CCCL_API constexpr auto default_items_per_thread() const -> int
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
   {
     return cub::detail::nominal_4B_items_to_items(11, key_size);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_default_policy() const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> unique_by_key_policy
   {
     return {64,
             default_items_per_thread(),
@@ -888,7 +887,8 @@ private:
             delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm100_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning() const
+    -> ::cuda::std::optional<unique_by_key_policy>
   {
     if (!primitive_key)
     {
@@ -1048,7 +1048,8 @@ private:
     return {};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm90_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning() const
+    -> ::cuda::std::optional<unique_by_key_policy>
   {
     if (!primitive_key)
     {
@@ -1260,7 +1261,8 @@ private:
     return {};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm80_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm80_tuning() const
+    -> ::cuda::std::optional<unique_by_key_policy>
   {
     if (!primitive_key)
     {
@@ -1457,9 +1459,10 @@ private:
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> unique_by_key_policy
   {
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (auto tuning = get_sm100_tuning())
       {
@@ -1467,7 +1470,7 @@ public:
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (auto tuning = get_sm90_tuning())
       {
@@ -1476,12 +1479,12 @@ public:
       return get_default_policy();
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return get_default_policy();
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (auto tuning = get_sm80_tuning())
       {
@@ -1496,18 +1499,19 @@ public:
 template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> unique_by_key_policy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),
       static_cast<int>(sizeof(ValueT)),
       is_primitive<KeyT>::value && sizeof(KeyT) <= 8,
-      is_primitive<ValueT>::value && sizeof(ValueT) <= 8}(arch);
+      is_primitive<ValueT>::value && sizeof(ValueT) <= 8}(cc);
   }
 };
 
 template <typename ActivePolicyT>
-_CCCL_API constexpr auto convert_policy() -> unique_by_key_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> unique_by_key_policy
 {
   using policy_t = typename ActivePolicyT::UniqueByKeyPolicyT;
   return {policy_t::BLOCK_THREADS,
@@ -1521,16 +1525,9 @@ _CCCL_API constexpr auto convert_policy() -> unique_by_key_policy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> unique_by_key_policy
   {
-    using UniqueByKeyPolicyT = typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT;
-    return unique_by_key_policy{
-      UniqueByKeyPolicyT::BLOCK_THREADS,
-      UniqueByKeyPolicyT::ITEMS_PER_THREAD,
-      UniqueByKeyPolicyT::LOAD_ALGORITHM,
-      UniqueByKeyPolicyT::LOAD_MODIFIER,
-      UniqueByKeyPolicyT::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename UniqueByKeyPolicyT::detail::delay_constructor_t>};
+    return convert_policy<typename PolicyHub::MaxPolicy>();
   }
 };
 

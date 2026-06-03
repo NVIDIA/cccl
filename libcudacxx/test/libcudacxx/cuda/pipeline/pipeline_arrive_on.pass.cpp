@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // Remove after bump to version 4
 #include <cuda/barrier>
 

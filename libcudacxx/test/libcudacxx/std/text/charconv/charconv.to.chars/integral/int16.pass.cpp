@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
-
 #include <cuda/std/array>
 #include <cuda/std/charconv>
 #include <cuda/std/cstddef>
@@ -1150,6 +1147,22 @@ TEST_FUNC constexpr void test_to_chars(const TestItem& item)
   const auto value    = static_cast<T>(item.val);
   const char* ref_str = (cuda::std::is_signed_v<T>) ? item.str_signed : item.str_unsigned;
   const auto ref_len  = cuda::std::strlen(ref_str);
+
+  // ptxas below 13.4 + int16_t gives invalid result for -32768. See nvbug 5537408.
+#if _CCCL_CUDACC_BELOW(13, 4)
+  if (!cuda::std::is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, ({
+                   if constexpr (cuda::std::is_signed_v<T>)
+                   {
+                     if (value == -32768)
+                     {
+                       return;
+                     }
+                   }
+                 }))
+  }
+#endif // _CCCL_CUDACC_BELOW(13, 4)
 
   // Check valid buffer size
   {

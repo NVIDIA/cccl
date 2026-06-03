@@ -796,31 +796,38 @@ struct checking_identity
 
   _CCCL_HOST_DEVICE unsigned operator()([[maybe_unused]] unsigned a, [[maybe_unused]] unsigned b) const
   {
-    // only the SM100 tuning will pick the warpspeed implementation currently, so only verify on that architecture.
-    // < SM100 and SM120 will use the old scan implementation for this scan operator, which passes invalid data.
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_100,
-      ({
-        _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
-        _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
-      }),
-      NV_PROVIDES_SM_120,
-      ());
-
+    _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+    _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
     return sentinel;
   }
 };
 
 void TestInclusiveScanForInvalidValues()
 {
-  const thrust::device_vector<unsigned> input(10'000, checking_identity::sentinel);
-  thrust::device_vector<unsigned> output(10'000, thrust::no_init);
+  using value_t = unsigned;
 
-  thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
-  ASSERT_EQUAL(input, output);
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  // for the CUDA backend, only the warpspeed implementation does not call the scan operator on out-of-bounds data
+  cuda::compute_capability cc;
+  ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
+  using policy_selector_t = cub::detail::scan::
+    policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
+  if (policy_selector_t{}(cc).algorithm == cub::detail::scan::scan_algorithm::warpspeed)
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  {
+    for (int n : {1, 100, 10'000})
+    {
+      const thrust::device_vector<value_t> input(n, checking_identity::sentinel);
+      thrust::device_vector<value_t> output(n, thrust::no_init);
 
-  thrust::exclusive_scan(input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
-  ASSERT_EQUAL(input, output);
+      thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
+      ASSERT_EQUAL(input, output);
+
+      thrust::exclusive_scan(
+        input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
+      ASSERT_EQUAL(input, output);
+    }
+  }
 }
 DECLARE_UNITTEST(TestInclusiveScanForInvalidValues);
 

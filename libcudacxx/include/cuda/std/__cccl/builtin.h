@@ -38,7 +38,7 @@
 //! * MSVC needs manual handling, has no real way of checking builtins so all is manual
 //! * GCC  needs manual handling, before gcc-10 as that finally supports __has_builtin
 //!
-//! In case compiler support for a builtin is advertised but leads to regressions we explicitly #undef the macro
+//! In case compiler support for a builtin is advertised but leads to regressions we explicitly undef the macro
 //!
 //! Finally, because `_CCCL_CHECK_BUILTIN` may lead to false positives, we move detection of new builtins over towards
 //! just using _CCCL_HAS_BUILTIN
@@ -426,6 +426,12 @@
 #if _CCCL_HAS_BUILTIN(__is_complete_type)
 #  define _CCCL_BUILTIN_IS_COMPLETE_TYPE(...) __is_complete_type(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_complete_type)
+
+#if _CCCL_HAS_BUILTIN(__builtin_clear_padding) \
+  && (_CCCL_HOST_COMPILATION() || !(_CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVHPC)))
+#  define _CCCL_BUILTIN_CLEAR_PADDING(...) __builtin_clear_padding(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_clear_padding) && (_CCCL_HOST_COMPILATION() || !(_CCCL_COMPILER(GCC) ||
+       // _CCCL_COMPILER(NVHPC)))
 
 // NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
 #if _CCCL_CUDACC_BELOW(12, 2)

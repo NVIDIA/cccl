@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6080486 : error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
+
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -28,9 +31,8 @@ TEST_FUNC constexpr void test_copy()
   // Zero capacity inplace_vector is nothrow_copy_assignable
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 42>>::value
-                  == cuda::std::conjunction<cuda::std::is_nothrow_copy_constructible<T>,
-                                            cuda::std::is_nothrow_copy_assignable<T>>::value,
-                "");
+                == cuda::std::conjunction<cuda::std::is_nothrow_copy_constructible<T>,
+                                          cuda::std::is_nothrow_copy_assignable<T>>::value);
 
   { // inplace_vector<T, 0> can be copy assigned
     const cuda::std::inplace_vector<T, 0> input{};
@@ -85,9 +87,8 @@ TEST_FUNC constexpr void test_move()
   // Zero capacity inplace_vector is nothrow_move_assignable
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 42>>::value
-                  == cuda::std::conjunction<cuda::std::is_nothrow_move_constructible<T>,
-                                            cuda::std::is_nothrow_move_assignable<T>>::value,
-                "");
+                == cuda::std::conjunction<cuda::std::is_nothrow_move_constructible<T>,
+                                          cuda::std::is_nothrow_move_assignable<T>>::value);
 
   { // inplace_vector<T, 0> can be move assigned
     cuda::std::inplace_vector<T, 0> input{};

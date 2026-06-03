@@ -202,8 +202,8 @@ public:
     // static_assert(dimensions <= 2, "unsupported yet.");
     //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
-    auto decorated_s = dst_memory_node.getDataStream();
-    auto op          = stream_async_op(bctx, decorated_s, prereqs);
+    auto augmented_s = dst_memory_node.getDataStream(bctx.async_resources().get_place_resources());
+    auto op          = stream_async_op(bctx, augmented_s, prereqs);
 
     if (bctx.generate_event_symbols())
     {
@@ -211,7 +211,7 @@ public:
       op.set_symbol("slice copy " + src_memory_node.to_string() + "->" + dst_memory_node.to_string());
     }
 
-    cudaStream_t s = decorated_s.stream;
+    cudaStream_t s = augmented_s.stream;
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;

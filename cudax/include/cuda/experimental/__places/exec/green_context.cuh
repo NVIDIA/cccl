@@ -126,9 +126,7 @@ inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
 /* Get the unique ID associated with a context (overloaded) */
 inline unsigned long long get_cuda_context_id(CUcontext ctx)
 {
-  unsigned long long ctx_id;
-  cuda_try(cuCtxGetId(ctx, &ctx_id));
-  return ctx_id;
+  return cuda_try<cuCtxGetId>(ctx);
 }
 
 /* Get the unique ID associated with a green context (overloaded) */
@@ -171,7 +169,7 @@ public:
 
     // First we query how many groups should be created
     unsigned int nbGroups;
-    cuda_try(cuDevSmResourceSplitByCount(NULL, &nbGroups, &input, NULL, 0, sm_count));
+    cuda_try(cuDevSmResourceSplitByCount(nullptr, &nbGroups, &input, nullptr, 0, sm_count));
 
     // Split the resources as requested
     assert(nbGroups >= 1);
@@ -319,8 +317,11 @@ public:
     return "green_ctx(id=" + ::std::to_string(get_cuda_context_id(g_ctx_)) + " dev=" + ::std::to_string(devid_) + ")";
   }
 
-  stream_pool& get_stream_pool(bool) const override
+  stream_pool& get_stream_pool(bool, exec_place_resources&, const exec_place&) const override
   {
+    // Green-context places carry their own pool (constructed from the
+    // green_ctx_view) and bypass the registry. The user is responsible for
+    // keeping the underlying CUgreenCtx alive while the pool is in use.
     return pool_;
   }
 

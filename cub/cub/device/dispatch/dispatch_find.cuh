@@ -40,7 +40,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::find
 {
 template <typename ValueType, typename OffsetT>
-__launch_bounds__(1) __global__ void init_found_pos_pointer(ValueType* found_pos_ptr, OffsetT num_items)
+__launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void init_found_pos_pointer(ValueType* found_pos_ptr, OffsetT num_items)
 {
   // we immediately trigger launching the find kernel, before waiting for a previous kernel
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -52,14 +52,14 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
 #if _CCCL_HAS_CONCEPTS()
   requires find_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
   IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
   constexpr find_policy policy = current_policy<PolicySelector>();
   using agent_find_t =
-    agent_t<policy.block_threads,
+    agent_t<policy.threads_per_block,
             policy.items_per_thread,
-            policy.vector_load_length,
+            policy.vec_size,
             policy.load_modifier,
             IteratorT,
             OffsetT,
@@ -72,8 +72,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KER
 }
 
 template <typename ValueType, typename OutputIteratorT>
-__launch_bounds__(1) __global__
-  void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
+__launch_bounds__(1)
+  _CCCL_KERNEL_ATTRIBUTES void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   *d_out = *found_pos_ptr;
@@ -106,23 +106,26 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT> && ::cuda::std::is_integral_v<output_t>
     && size_of<output_t> == sizeof(OffsetT);
 
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  const find_policy active_policy = policy_selector(arch_id);
+  const find_policy active_policy = policy_selector(cc);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  std::stringstream ss;
                  ss << active_policy;
-                 _CubLog("Dispatching DeviceFind to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 _CubLog("Dispatching DeviceFind to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
                }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+  const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
   int device_ordinal;
@@ -141,7 +144,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   auto kernel_ptr                  = find_kernel<PolicySelector, unwrapped_input_iterator_t, OffsetT, PredicateT>;
 
   int find_if_sm_occupancy;
-  if (const auto error = CubDebug(cub::MaxSmOccupancy(find_if_sm_occupancy, kernel_ptr, active_policy.block_threads)))
+  if (const auto error =
+        CubDebug(cub::MaxSmOccupancy(find_if_sm_occupancy, kernel_ptr, active_policy.threads_per_block)))
   {
     return error;
   }
@@ -177,7 +181,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
   // output iterator.
-  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+                                    1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
                                     .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
   {
     return error;
@@ -186,9 +191,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
   // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
   auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
-  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                                    findif_grid_size, active_policy.block_threads, 0, stream, true)
-                                    .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+  if (const auto error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          findif_grid_size,
+          active_policy.threads_per_block,
+          0,
+          stream,
+          /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
   {
     return error;
   }
@@ -196,7 +206,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   if constexpr (!can_write_to_output_directly)
   {
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+            1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
             .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out)))
     {
       return error;

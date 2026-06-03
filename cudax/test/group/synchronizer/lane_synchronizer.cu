@@ -33,18 +33,14 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
   // Test make_instance(...).
   {
     const auto parent_group = cudax::make_this_group(level, config);
+    const ThreadsInWarpMappingResult prev_mapping_result;
 
     const cudax::group_by mapping{2};
     const Synchronizer synchronizer{};
 
-    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group);
+    const auto mapping_result = mapping.map(parent_group, prev_mapping_result);
     const auto synchronizer_instance =
       synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
-
-    const auto this_lane_mask = cuda::ptx::get_sreg_lanemask_eq();
-    const auto another_lane_mask =
-      cuda::std::rotl(this_lane_mask, (cuda::std::countr_zero(this_lane_mask) % 2 == 0) ? 1 : -1);
-    CUDAX_CHECK(synchronizer_instance.__lane_mask_ == (this_lane_mask | another_lane_mask));
 
     // Test do_sync(...).
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, synchronizer))>);

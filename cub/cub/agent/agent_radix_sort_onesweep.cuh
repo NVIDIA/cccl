@@ -25,10 +25,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#  include <cub/agent/agent_radix_sort_histogram.cuh>
-#endif
-
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
@@ -55,7 +51,7 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
 {
   switch (algo)
@@ -68,9 +64,9 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm al
       return os << "<unknown RadixSortStoreAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           /** Number of private histograms to use in the ranker;
@@ -82,7 +78,7 @@ template <int NominalBlockThreads4B,
           BlockScanAlgorithm ScanAlgorithm,
           RadixSortStoreAlgorithm StoreAlgorithm,
           int RadixBits,
-          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   static constexpr int RANK_NUM_PARTS                      = RankNumParts;
@@ -91,28 +87,6 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(bgruber): remove
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortOnesweepAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (RANK_NUM_PARTS, RankNumParts, int),
-  (RADIX_BITS, RadixBits, int),
-  (RANK_ALGORITHM, RankAlgorithm, cub::RadixRankAlgorithm),
-  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::RadixSortStoreAlgorithm))
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 namespace detail::radix_sort
 {

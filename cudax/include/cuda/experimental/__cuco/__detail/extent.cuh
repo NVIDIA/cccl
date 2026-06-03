@@ -46,7 +46,7 @@ using __valid_extent = extent<_SizeType, dynamic_extent>;
 //!
 //! @param __ext Requested storage extent
 template <int _CgSize, int _BucketSize, class _SizeType, ::cuda::std::size_t _Extent>
-[[nodiscard]] _CCCL_API constexpr auto __make_valid_extent_double_hash(extent<_SizeType, _Extent> __ext)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_valid_extent_double_hash(extent<_SizeType, _Extent> __ext)
 {
   constexpr auto __stride = _CgSize * _BucketSize;
 
@@ -70,7 +70,7 @@ template <int _CgSize, int _BucketSize, class _SizeType, ::cuda::std::size_t _Ex
 //!
 //! @param __ext Requested storage extent
 template <class _ProbingScheme, int _BucketSize, class _SizeType, ::cuda::std::size_t _Extent>
-[[nodiscard]] _CCCL_API constexpr auto __make_valid_extent(extent<_SizeType, _Extent> __ext)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_valid_extent(extent<_SizeType, _Extent> __ext)
 {
   if constexpr (is_double_hashing<_ProbingScheme>::value)
   {
@@ -91,7 +91,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType, ::cuda::std::s
 //! @param __ext Requested storage extent
 //! @param __desired_load_factor Desired load factor (0, 1]
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
-[[nodiscard]] _CCCL_API constexpr auto __make_valid_extent(extent<_SizeType> __ext, double __desired_load_factor)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_valid_extent(extent<_SizeType> __ext, double __desired_load_factor)
 {
   if (__desired_load_factor <= 0.)
   {
@@ -113,7 +113,7 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 
 //! @brief Convenience overload taking a raw size.
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
-[[nodiscard]] _CCCL_API constexpr auto __make_valid_extent(_SizeType __size)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_valid_extent(_SizeType __size)
 {
   return __make_valid_extent<_ProbingScheme, _BucketSize, _SizeType, dynamic_extent>(extent<_SizeType>{__size});
 }
@@ -151,7 +151,7 @@ _CCCL_HIDE_FROM_ABI constexpr ::cuda::std::size_t __valid_capacity_v =
 //! Convenience wrapper over `__make_valid_extent` returning the adjusted size
 //! as a raw `_SizeType` rather than an `extent`.
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
-[[nodiscard]] _CCCL_API constexpr _SizeType __valid_capacity(_SizeType __requested)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType __valid_capacity(_SizeType __requested)
 {
   return static_cast<_SizeType>(
     __make_valid_extent<_ProbingScheme, _BucketSize>(extent<_SizeType>{__requested}).extent(0));

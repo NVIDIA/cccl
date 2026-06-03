@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 // error: expression must have a constant value annotated_ptr.h: note #2701-D: attempt to access run-time storage

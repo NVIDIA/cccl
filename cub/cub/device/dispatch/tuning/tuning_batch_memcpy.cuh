@@ -17,7 +17,7 @@
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -26,7 +26,7 @@ namespace detail::batch_memcpy
 {
 struct small_buffer_policy
 {
-  int block_threads;
+  int threads_per_block;
   int buffers_per_thread;
   int tlev_bytes_per_thread;
   bool prefer_pow2_bits;
@@ -36,10 +36,10 @@ struct small_buffer_policy
   delay_constructor_policy buff_delay_constructor;
   delay_constructor_policy block_delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const small_buffer_policy& lhs, const small_buffer_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.buffers_per_thread == rhs.buffers_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.buffers_per_thread == rhs.buffers_per_thread
         && lhs.tlev_bytes_per_thread == rhs.tlev_bytes_per_thread && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
         && lhs.block_level_tile_size == rhs.block_level_tile_size
         && lhs.warp_level_threshold == rhs.warp_level_threshold
@@ -48,50 +48,50 @@ struct small_buffer_policy
         && lhs.block_delay_constructor == rhs.block_delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const small_buffer_policy& lhs, const small_buffer_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const small_buffer_policy& policy)
   {
     return os
-        << "small_buffer_policy { .block_threads = " << policy.block_threads << ", .buffers_per_thread = "
+        << "small_buffer_policy { .threads_per_block = " << policy.threads_per_block << ", .buffers_per_thread = "
         << policy.buffers_per_thread << ", .tlev_bytes_per_thread = " << policy.tlev_bytes_per_thread
         << ", .prefer_pow2_bits = " << policy.prefer_pow2_bits << ", .block_level_tile_size = "
         << policy.block_level_tile_size << ", .warp_level_threshold = " << policy.warp_level_threshold
         << ", .block_level_threshold = " << policy.block_level_threshold << ", .buff_delay_constructor = "
         << policy.buff_delay_constructor << ", .block_delay_constructor = " << policy.block_delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct large_buffer_policy
 {
-  int block_threads;
+  int threads_per_block;
   int bytes_per_thread;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const large_buffer_policy& lhs, const large_buffer_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.bytes_per_thread == rhs.bytes_per_thread;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.bytes_per_thread == rhs.bytes_per_thread;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const large_buffer_policy& lhs, const large_buffer_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const large_buffer_policy& policy)
   {
-    return os << "large_buffer_policy { .block_threads = " << policy.block_threads
+    return os << "large_buffer_policy { .threads_per_block = " << policy.threads_per_block
               << ", .bytes_per_thread = " << policy.bytes_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct batch_memcpy_policy
@@ -99,25 +99,25 @@ struct batch_memcpy_policy
   small_buffer_policy small_buffer;
   large_buffer_policy large_buffer;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const batch_memcpy_policy& lhs, const batch_memcpy_policy& rhs)
   {
     return lhs.small_buffer == rhs.small_buffer && lhs.large_buffer == rhs.large_buffer;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(const batch_memcpy_policy& lhs, const batch_memcpy_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const batch_memcpy_policy& policy)
   {
     return os << "batch_memcpy_policy { .small_buffer = " << policy.small_buffer
               << ", .large_buffer = " << policy.large_buffer << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -127,7 +127,8 @@ concept batch_memcpy_policy_selector = policy_selector<T, batch_memcpy_policy>;
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> batch_memcpy_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> batch_memcpy_policy
   {
     const auto large = large_buffer_policy{
       256,
@@ -135,11 +136,11 @@ struct policy_selector
     };
     return batch_memcpy_policy{
       small_buffer_policy{
-        /* .block_threads = */ 128,
+        /* .threads_per_block = */ 128,
         /* .buffers_per_thread = */ 4,
         /* .tlev_bytes_per_thread = */ 8,
-        /* .prefer_pow2_bits = */ arch < ::cuda::arch_id::sm_70,
-        /* .block_level_tile_size = */ large.block_threads * large.bytes_per_thread,
+        /* .prefer_pow2_bits = */ cc < ::cuda::compute_capability{7, 0},
+        /* .block_level_tile_size = */ large.threads_per_block * large.bytes_per_thread,
         /* .warp_level_threshold = */ 128,
         /* .block_level_threshold = */ 8 * 1024,
         // BufferOffsetT and BlockOffsetT are primitive/trivially copyable

@@ -106,6 +106,15 @@ typedef struct stf_exec_place_opaque_t* stf_exec_place_handle;
 //! \brief Opaque handle to a \c data_place.
 typedef struct stf_data_place_opaque_t* stf_data_place_handle;
 
+//! \brief Opaque handle to an \c exec_place_resources registry.
+//!
+//! Handles returned by stf_exec_place_resources_create() are owned by the
+//! caller and must be released with stf_exec_place_resources_destroy().
+//! Handles returned by stf_ctx_get_place_resources() do not own the context
+//! resources, but the handle itself should still be released with
+//! stf_exec_place_resources_destroy().
+typedef struct stf_exec_place_resources_opaque_t* stf_exec_place_resources_handle;
+
 //! \brief 4D position (coordinates) for partition mapping.
 //! Layout matches C++ pos4 for use as partition function arguments/result.
 typedef struct stf_pos4
@@ -127,8 +136,10 @@ typedef struct stf_dim4
 } stf_dim4;
 
 //! \brief Partition (mapper) function: data coordinates -> grid position.
-//! Can be implemented in C or provided from Python via ctypes/cffi.
-typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
+//! Writes the result into \p *result. The out-pointer convention is used
+//! instead of return-by-value so that the signature is trivially representable
+//! in FFI frameworks (ctypes, cffi, Rust) that cannot return C structs.
+typedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
 
 //! \brief Create host execution place (CPU).
 stf_exec_place_handle stf_exec_place_host(void);
@@ -169,6 +180,27 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
 
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
+
+//! \brief Create a fresh exec_place_resources registry for standalone place-layer use.
+//!
+//! The registry lazily creates and owns stream pools for places used with
+//! stf_exec_place_pick_stream(). Destroying it releases every stream it owns.
+stf_exec_place_resources_handle stf_exec_place_resources_create(void);
+
+//! \brief Destroy a registry returned by stf_exec_place_resources_create().
+//!
+//! For handles returned by stf_ctx_get_place_resources(), this releases only
+//! the C handle wrapper and leaves the context-owned resources untouched.
+//! \p h may be NULL.
+void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
+
+//! \brief Pick a CUDA stream for \p h from the pools owned by \p res.
+//!
+//! \p for_computation is a hint: non-zero requests a compute stream, zero
+//! requests a data-transfer stream. The returned stream is owned by \p res and
+//! remains valid until \p res is destroyed, or until the owning context is
+//! finalized for a borrowed registry.
+CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation);
 
 //! \brief Host (CPU/pinned) data placement.
 stf_data_place_handle stf_data_place_host(void);
@@ -314,28 +346,184 @@ stf_ctx_handle stf_ctx_create(void);
 stf_ctx_handle stf_ctx_create_graph(void);
 
 //!
+//! \brief Opaque handle to a shared `async_resources_handle`
+//!
+//! Wraps the C++ `async_resources_handle` so callers can build one up front
+//! and share it across many `stf_ctx_create_ex` calls. Reusing a handle lets
+//! the graph backend amortize graph-instantiation cost across contexts, and
+//! lets every context share the same per-place stream pools.
+//!
+//! Ownership: the handle is caller-allocated via
+//! stf_async_resources_create() and MUST be released with
+//! stf_async_resources_destroy().
+//!
+//! Lifetime: the handle owns CUDA resources (per-place stream pools, an
+//! executable-graph cache, etc.) that are torn down synchronously by
+//! stf_async_resources_destroy(). The caller must therefore not destroy the
+//! handle while any work that could reference those resources is still
+//! pending. Concretely:
+//!   - Every context constructed with the handle must have been finalized
+//!     via stf_ctx_finalize().
+//!   - For contexts created with `has_stream != 0`, stf_ctx_finalize() is
+//!     non-blocking (see stf_ctx_finalize()): each such caller stream must
+//!     reach the point at which finalize enqueued its resource-release work
+//!     (e.g. via cudaStreamSynchronize() on every caller stream that was
+//!     ever passed in `opts.stream`) before stf_async_resources_destroy()
+//!     is called.
+
+typedef struct stf_async_resources_opaque_t* stf_async_resources_handle;
+
+//!
+//! \brief Create a shareable `async_resources_handle`
+//!
+//! \return Handle on success, NULL on allocation failure.
+//!
+//! \post Caller owns the handle and must release it with
+//!       stf_async_resources_destroy() after every context that received it
+//!       has been finalized and, for caller-stream contexts, after each such
+//!       caller stream has completed the work enqueued by
+//!       stf_ctx_finalize().
+
+stf_async_resources_handle stf_async_resources_create(void);
+
+//!
+//! \brief Destroy a handle created by stf_async_resources_create()
+//!
+//! \param h Handle to destroy. NULL is accepted (no-op).
+//!
+//! \pre Every context created with this handle has already been finalized,
+//!      and every caller stream used by such contexts has completed the work
+//!      stf_ctx_finalize() enqueued on it (e.g. via cudaStreamSynchronize()).
+//!      Destroying the handle while caller-stream work is still pending is
+//!      undefined behavior: this call synchronously tears down the
+//!      underlying CUDA resources (stream pools, cached executable graphs)
+//!      and does not itself synchronize any caller stream.
+
+void stf_async_resources_destroy(stf_async_resources_handle h);
+
+//! \brief Backend selector for stf_ctx_create_ex()
+typedef enum stf_backend_kind
+{
+  STF_BACKEND_STREAM = 0, //!< Default stream-backed backend (eager, same as stf_ctx_create())
+  STF_BACKEND_GRAPH  = 1, //!< CUDA-graph-backed backend (same as stf_ctx_create_graph())
+} stf_backend_kind;
+
+//!
+//! \brief Options for stf_ctx_create_ex()
+//!
+//! All fields are optional. Zero-initialize and set only what you need; the
+//! remaining fields keep their default meaning. Treat this struct as
+//! append-only: new knobs may be added at the end in future releases, so
+//! always zero the struct before populating it.
+
+typedef struct stf_ctx_options
+{
+  stf_backend_kind backend; //!< Backend selector (default: STF_BACKEND_STREAM)
+  int has_stream; //!< 0: no caller stream; non-zero: inherit `stream`
+  cudaStream_t stream; //!< Caller-owned stream (used iff `has_stream != 0`).
+                       //!< `cudaStream_t` is a pointer; `nullptr` is the NULL stream,
+                       //!< not a sentinel -- use `has_stream` to say "no stream".
+  stf_async_resources_handle handle; //!< Shared resources handle, or NULL for "create fresh"
+} stf_ctx_options;
+
+//!
+//! \brief Create an STF context with optional stream/handle/backend selection
+//!
+//! Unified factory covering every combination of:
+//!   - backend (stream vs CUDA graph),
+//!   - caller-provided `cudaStream_t` to inherit,
+//!   - caller-provided shared `stf_async_resources_handle`.
+//!
+//! Passing `opts == NULL` is equivalent to stf_ctx_create() (stream backend,
+//! default stream, fresh resources handle).
+//!
+//! \param opts Zero-initialized options struct, or NULL for all defaults.
+//! \return Context handle, or NULL if allocation failed.
+//!
+//! \post On success, caller must finalize with stf_ctx_finalize().
+//!
+//! \par Example (reuse one resources handle across many graph contexts):
+//! \code
+//! cudaStream_t user_stream = ...;          // caller-owned CUDA stream
+//! stf_async_resources_handle h = stf_async_resources_create();
+//! for (int i = 0; i < N; ++i) {
+//!   stf_ctx_options opts = {0};
+//!   opts.backend    = STF_BACKEND_GRAPH;
+//!   opts.has_stream = 1;           // opt-in to caller stream binding
+//!   opts.stream     = user_stream; // may be 0 for the default/NULL stream
+//!   opts.handle     = h;
+//!   stf_ctx_handle ctx = stf_ctx_create_ex(&opts);
+//!   // ... submit tasks ...
+//!   stf_ctx_finalize(ctx); // Non-blocking: see stf_ctx_finalize().
+//! }
+//! // Required before destroying `h`: stf_ctx_finalize() enqueued the
+//! // resource-release callbacks of every context on `user_stream`, and
+//! // stf_async_resources_destroy() tears down the underlying CUDA resources
+//! // synchronously. The same applies to the stream backend.
+//! cudaStreamSynchronize(user_stream);
+//! stf_async_resources_destroy(h);
+//! \endcode
+
+stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts);
+
+//!
 //! \brief Finalize STF context
 //!
-//! Waits for all pending operations to complete, performs write-back
-//! of modified data to host, and releases all associated resources.
+//! Performs write-back of modified data to host and releases all resources
+//! associated with the context. Whether the call blocks until the underlying
+//! CUDA work has actually completed depends on how the context was created:
+//!
+//!   - Contexts created with stf_ctx_create(), stf_ctx_create_graph(), or
+//!     stf_ctx_create_ex() with `has_stream == 0` block until all pending
+//!     operations have completed before returning.
+//!   - Contexts created with stf_ctx_create_ex() and `has_stream != 0`
+//!     enqueue the remaining work and the context's resource-release callback
+//!     onto the caller-provided `opts.stream`, then return without
+//!     synchronizing that stream. The context handle itself is invalid as
+//!     soon as the call returns, but the queued CUDA work, and any
+//!     resources kept alive by it (including a shared
+//!     stf_async_resources_handle), only become idle once
+//!     `opts.stream` reaches that completion point. Use
+//!     cudaStreamSynchronize() (or an event/dependency on `opts.stream`)
+//!     before observing results on the host or releasing the shared handle.
 //!
 //! \param ctx Context handle to finalize
 //!
 //! \pre ctx must be valid context handle
-//! \post All pending operations completed, resources released, ctx becomes invalid
+//! \post All pending operations are either completed (blocking case) or
+//!       enqueued on the caller stream (non-blocking case); resources are
+//!       released; ctx becomes invalid.
 //!
-//! \note This function blocks until all asynchronous operations complete
-//!
-//! \par Example:
+//! \par Example (blocking, default-created context):
 //! \code
 //! stf_ctx_handle ctx = stf_ctx_create();
 //! // ... submit tasks ...
 //! stf_ctx_finalize(ctx);  // Blocks until completion
 //! \endcode
 //!
-//! \see stf_ctx_create(), stf_ctx_create_graph(), stf_fence()
+//! \par Example (non-blocking, caller-provided stream):
+//! \code
+//! stf_ctx_options opts = {0};
+//! opts.has_stream = 1;
+//! opts.stream     = user_stream;
+//! stf_ctx_handle ctx = stf_ctx_create_ex(&opts);
+//! // ... submit tasks ...
+//! stf_ctx_finalize(ctx); // Returns before user_stream drains.
+//! cudaStreamSynchronize(user_stream); // Required before observing results.
+//! \endcode
+//!
+//! \see stf_ctx_create(), stf_ctx_create_graph(), stf_ctx_create_ex(),
+//!      stf_fence()
 
 void stf_ctx_finalize(stf_ctx_handle ctx);
+
+//! \brief Borrow the per-place stream-pool registry embedded in \p ctx.
+//!
+//! The returned handle refers to resources that remain valid until
+//! stf_ctx_finalize(ctx). Release the handle with
+//! stf_exec_place_resources_destroy(); doing so does not destroy the
+//! context-owned resources.
+stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx);
 
 //!
 //! \brief Get synchronization fence for context
@@ -362,6 +550,38 @@ void stf_ctx_finalize(stf_ctx_handle ctx);
 //! \see stf_ctx_finalize()
 
 cudaStream_t stf_fence(stf_ctx_handle ctx);
+
+//!
+//! \brief Synchronize and copy logical data contents to a host buffer
+//!
+//! Schedules a host callback that reads the logical data, synchronizes
+//! to ensure the callback completes, and copies the data into the
+//! caller-provided buffer. Unlike stf_ctx_finalize(), the context
+//! remains usable after this call, enabling iterative patterns such as
+//! convergence checks.
+//!
+//! \param ctx   Context handle
+//! \param ld    Logical data handle to read
+//! \param out   Destination host buffer
+//! \param size  Size of the destination buffer in bytes
+//! \return 0 on success, non-zero on error
+//!
+//! \pre  ctx and ld must be valid handles; out must not be NULL
+//! \pre  The first min(size, data_size) bytes of out must not overlap the
+//!       logical data range associated with ld.
+//! \post The first min(size, data_size) bytes of the logical data are
+//!       written to out.
+//!
+//! \par Example:
+//! \code
+//! int h_sum = 0;
+//! stf_ctx_wait(ctx, lSum, &h_sum, sizeof(h_sum));
+//! // h_sum now contains the result; context is still active
+//! \endcode
+//!
+//! \see stf_fence(), stf_ctx_finalize()
+
+int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size);
 
 //! \}
 

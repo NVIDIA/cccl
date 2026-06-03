@@ -7,7 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: gcc-6
+
+// UNSUPPORTED: enable-tile
+// TypeID is unsupported un tile mode
 
 // <cuda/std/tuple>
 

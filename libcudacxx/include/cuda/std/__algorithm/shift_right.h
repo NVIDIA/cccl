@@ -133,7 +133,7 @@ _CCCL_API constexpr _ForwardIterator shift_right(
     return __first;
   }
 
-  using _IterCategory = typename iterator_traits<_ForwardIterator>::iterator_category;
+  using _IterCategory = __iterator_traits_category_or_concept_t<_ForwardIterator>;
   return __shift_right(__first, __last, __n, _IterCategory());
 }
 

@@ -159,6 +159,20 @@ TEST_FUNC void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int64_t;
+    using Iter       = cuda::counting_iterator<char, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, char>);
+    static_assert(sizeof(typename IterTraits::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<short>;
     using IterTraits = Traits<Iter>;
@@ -170,6 +184,20 @@ TEST_FUNC void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int8_t;
+    using Iter       = cuda::counting_iterator<short, cuda::std::int8_t>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, short>);
+    static_assert(sizeof(typename IterTraits::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<int>;
     using IterTraits = Traits<Iter>;
@@ -187,6 +215,20 @@ TEST_FUNC void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int8_t;
+    using Iter       = cuda::counting_iterator<int, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(sizeof(typename IterTraits::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<long>;
     using IterTraits = Traits<Iter>;
@@ -199,19 +241,47 @@ TEST_FUNC void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int8_t;
+    using Iter       = cuda::counting_iterator<long, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, long>);
+    static_assert(sizeof(typename IterTraits::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<long long>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, long long>);
-    // No integer is larger than long long, so it is OK to use long long as the difference type here:
+    // No integer is larger than ptrdiff_t, so it is OK to use ptrdiff_t as the difference type here:
     // https://eel.is/c++draft/range.iota.view#1.3
-    static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(long long));
+    static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(cuda::std::ptrdiff_t));
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, widest_integer>);
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int16_t;
+    using Iter       = cuda::counting_iterator<long long, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, long long>);
+    static_assert(sizeof(typename IterTraits::difference_type) == sizeof(DiffType));
+    static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<Decrementable>;
     using IterTraits = Traits<Iter>;
@@ -220,6 +290,17 @@ TEST_FUNC void test()
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, int>);
     static_assert(cuda::std::__has_bidirectional_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int16_t;
+    using Iter       = cuda::counting_iterator<Decrementable, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, Decrementable>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::__has_bidirectional_traversal<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<Incrementable>;
     using IterTraits = Traits<Iter>;
@@ -228,10 +309,28 @@ TEST_FUNC void test()
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, int>);
     static_assert(cuda::std::__has_forward_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int8_t;
+    using Iter       = cuda::counting_iterator<Incrementable, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, Incrementable>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::__has_forward_traversal<Iter>);
+  }
+
   { // nothing to do here
     using Iter = cuda::counting_iterator<NotIncrementable>;
     static_assert(!HasIteratorCategory<Iter>);
   }
+
+  { // nothing to do here
+    using DiffType = cuda::std::int16_t;
+    using Iter     = cuda::counting_iterator<NotIncrementable, DiffType>;
+    static_assert(!HasIteratorCategory<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<BigType>;
     using IterTraits = Traits<Iter>;
@@ -240,12 +339,33 @@ TEST_FUNC void test()
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, int>);
     static_assert(cuda::std::__has_forward_traversal<Iter>);
   }
+
+  {
+    using DiffType   = cuda::std::int8_t;
+    using Iter       = cuda::counting_iterator<BigType, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, BigType>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
+    static_assert(cuda::std::__has_forward_traversal<Iter>);
+  }
+
   {
     using Iter       = cuda::counting_iterator<CharDifferenceType>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, CharDifferenceType>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, signed char>);
+    static_assert(cuda::std::__has_forward_traversal<Iter>);
+  }
+
+  {
+    using DiffType   = cuda::std::int16_t;
+    using Iter       = cuda::counting_iterator<CharDifferenceType, DiffType>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, CharDifferenceType>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, DiffType>);
     static_assert(cuda::std::__has_forward_traversal<Iter>);
   }
 }

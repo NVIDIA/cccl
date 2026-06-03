@@ -28,7 +28,7 @@
 namespace cuda::experimental::cuco::__detail
 {
 //! @brief Modular multiplication: `(__n1 * __n2) % __m` without overflow.
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
 __mod_mul(::cuda::std::uint64_t __n1, ::cuda::std::uint64_t __n2, ::cuda::std::uint64_t __m) noexcept
 {
 #if _CCCL_HAS_INT128()
@@ -53,7 +53,7 @@ __mod_mul(::cuda::std::uint64_t __n1, ::cuda::std::uint64_t __n2, ::cuda::std::u
 }
 
 //! @brief Modular exponentiation: `(__b ^ __e) % __m` via binary exponentiation.
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
 __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uint64_t __m) noexcept
 {
   ::cuda::std::uint64_t __r = 1;
@@ -74,7 +74,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 //!
 //! Given `__n - 1 == 2^__s * __d`, checks whether `__a^__d == 1 (mod __n)` or
 //! `__a^(2^__r * __d) == __n - 1 (mod __n)` for some `0 <= __r < __s`.
-[[nodiscard]] _CCCL_API constexpr bool __miller_rabin_test(
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __miller_rabin_test(
   ::cuda::std::uint64_t __n, ::cuda::std::uint64_t __a, ::cuda::std::uint64_t __d, ::cuda::std::uint32_t __s) noexcept
 {
   ::cuda::std::uint64_t __x             = __mod_pow(__a % __n, __d, __n);
@@ -100,7 +100,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 //! Uses trial division by small primes followed by Miller-Rabin with a fixed
 //! set of bases that make the test deterministic for every `uint64_t`.
 //! Bases from https://cp-algorithms.com/algebra/primality_tests.html.
-[[nodiscard]] _CCCL_API constexpr bool __is_prime(::cuda::std::uint64_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __is_prime(::cuda::std::uint64_t __n) noexcept
 {
   if (__n < 2)
   {
@@ -141,7 +141,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 //!
 //! For `__n <= 2`, returns 2. Otherwise searches odd numbers starting from
 //! `__n` (or `__n + 1` if `__n` is even).
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t __next_prime(::cuda::std::uint64_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t __next_prime(::cuda::std::uint64_t __n) noexcept
 {
   if (__n <= 2ull)
   {

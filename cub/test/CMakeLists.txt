@@ -227,6 +227,23 @@ function(
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
     endif()
 
+    if (
+      "${test_src}" MATCHES "test_future_arch\\.cu$"
+      AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+      AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "13.0.0"
+    )
+      # In future arch test, we replace __CUDA_ARCH__ and __CUDA_ARCH_LIST__ with our own values. However, nvcc
+      # preincludes <cuda_runtime.h> header, already working with __CUDA_ARCH__. So, we define the <cuda_runtime.h>'s
+      # include guard macro so we can modify the values before including the header inside the source file.
+      target_compile_definitions(${test_target} PRIVATE __CUDA_RUNTIME_H__)
+
+      # Force only 1 architecture to be compiled. It must be the newest supported architecture.
+      set_target_properties(
+        ${test_target}
+        PROPERTIES CUDA_ARCHITECTURES "121-virtual"
+      )
+    endif()
+
     if (is_fail_test)
       cccl_add_xfail_compile_target_test(
         ${test_target}

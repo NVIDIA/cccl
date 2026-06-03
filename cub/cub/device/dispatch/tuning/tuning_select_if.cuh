@@ -1593,34 +1593,36 @@ struct policy_hub
 
 struct select_if_policy
 {
-  int block_threads;
+  int threads_per_block;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const select_if_policy& lhs, const select_if_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const select_if_policy& lhs, const select_if_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const select_if_policy& lhs, const select_if_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const select_if_policy& lhs, const select_if_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const select_if_policy& p)
   {
     return os
-        << "select_if_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << "select_if_policy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -1639,7 +1641,8 @@ struct policy_selector
   SelectImpl selection_impl;
 
 private:
-  [[nodiscard]] _CCCL_API constexpr auto default_policy(CacheLoadModifier load_modifier) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_policy(CacheLoadModifier load_modifier) const
+    -> select_if_policy
   {
     constexpr int nominal_4B_items_per_thread = 10;
     const int items_per_thread =
@@ -1653,18 +1656,19 @@ private:
       delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto make_scaled_policy(
-    int block_threads,
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_scaled_policy(
+    int threads_per_block,
     int nominal_4b_items,
     BlockLoadAlgorithm load_alg,
     CacheLoadModifier load_mod,
     delay_constructor_policy delay) const -> select_if_policy
   {
     const int items_per_thread = nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
-    return select_if_policy{block_threads, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
+    return select_if_policy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm80_tuning(bool has_flags, bool keep_rejects) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm80_tuning(bool has_flags, bool keep_rejects) const
+    -> select_if_policy
   {
     // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
 
@@ -1880,7 +1884,8 @@ private:
     return default_policy(LOAD_DEFAULT);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm90_tuning(bool has_flags, bool keep_rejects) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning(bool has_flags, bool keep_rejects) const
+    -> select_if_policy
   {
     // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
 
@@ -2096,8 +2101,8 @@ private:
     return default_policy(LOAD_DEFAULT);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm100_tuning(bool has_flags, bool keep_rejects, bool may_alias) const
-    -> ::cuda::std::optional<select_if_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  get_sm100_tuning(bool has_flags, bool keep_rejects, bool may_alias) const -> ::cuda::std::optional<select_if_policy>
   {
     if (not input_is_primitive)
     {
@@ -2511,13 +2516,13 @@ private:
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
   {
     const bool has_flags    = flag_size_bytes != 0;
     const bool keep_rejects = selection_impl == SelectImpl::Partition;
     const bool may_alias    = selection_impl == SelectImpl::SelectPotentiallyInPlace;
 
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (auto policy_opt = get_sm100_tuning(has_flags, keep_rejects, may_alias))
       {
@@ -2525,17 +2530,17 @@ public:
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       return get_sm90_tuning(has_flags, keep_rejects);
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
       return default_policy(may_alias ? LOAD_CA : LOAD_LDG);
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       return get_sm80_tuning(has_flags, keep_rejects);
     }
@@ -2552,7 +2557,7 @@ template <typename InputIteratorT,
           SelectImpl SelectionOpt>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> select_if_policy
   {
     using input_t = it_value_t<InputIteratorT>;
     using flag_t  = it_value_t<FlagsInputIteratorT>;
@@ -2563,7 +2568,7 @@ struct policy_selector_from_types
       ::cuda::std::is_same_v<flag_t, NullType> ? 0 : sizeof(flag_t),
       SelectionOpt == SelectImpl::Partition ? sizeof(OffsetT) : sizeof(::cuda::std::int32_t),
       is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
-      SelectionOpt}(arch);
+      SelectionOpt}(cc);
   }
 };
 

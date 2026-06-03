@@ -71,7 +71,7 @@ enum RadixRankAlgorithm
   RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
 {
   switch (algo)
@@ -90,7 +90,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
       return os << "<unknown RadixRankAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 /** Empty callback implementation */
 template <int BINS_PER_THREAD>
@@ -149,11 +149,11 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!
 //!    __global__ void ExampleKernel(...)
 //!    {
-//!      constexpr int block_threads = 2;
+//!      constexpr int threads_per_block = 2;
 //!      constexpr int radix_bits = 5;
 //!
 //!      // Specialize BlockRadixRank for a 1D block of 2 threads
-//!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits, false>;
+//!      using block_radix_rank = cub::BlockRadixRank<threads_per_block, radix_bits, false>;
 //!      using storage_t = typename block_radix_rank::TempStorage;
 //!
 //!      // Allocate shared memory for BlockRadixRank

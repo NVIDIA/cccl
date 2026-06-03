@@ -22,10 +22,12 @@ def discover_examples():
     tests_dir = Path(__file__).parent
     examples = []
 
-    # Look for examples in both coop and compute directories
-    example_directories = ["coop/examples", "compute/examples"]
+    example_directories = [
+        ("Coop Experimental", "coop/_experimental/examples"),
+        ("Compute", "compute/examples"),
+    ]
 
-    for example_dir in example_directories:
+    for framework, example_dir in example_directories:
         example_path = tests_dir / example_dir
         if not example_path.exists():
             continue
@@ -42,20 +44,17 @@ def discover_examples():
             rel_path = python_file.relative_to(tests_dir)
 
             # Convert path to module name (OS-agnostic)
-            # Example: coop/examples/block/reduce.py -> coop.examples.block.reduce
+            # Example: coop/_experimental/examples/block/reduce.py
+            #          -> coop._experimental.examples.block.reduce
             module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display
-            parts = rel_path.parts
-            if len(parts) >= 3:
-                # e.g., coop/examples/block/reduce.py
-                framework = parts[0].title()  # Coop or Compute
-                category = parts[2].title()  # Block, Warp, Reduction, etc.
-                filename = parts[3].replace(".py", "").replace("_", " ").title()
+            parts = python_file.relative_to(example_path).parts
+            if len(parts) >= 2:
+                category = parts[0].title()  # Block, Warp, Reduction, etc.
+                filename = parts[1].replace(".py", "").replace("_", " ").title()
                 display_name = f"{framework} - {category} - {filename}"
-            elif len(parts) >= 2:
-                # e.g., coop/examples/reduce.py
-                framework = parts[0].title()
+            elif len(parts) == 1:
                 filename = parts[-1].replace(".py", "").replace("_", " ").title()
                 display_name = f"{framework} - {filename}"
             else:

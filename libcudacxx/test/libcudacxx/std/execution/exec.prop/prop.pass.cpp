@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/std/execution>
 
 // all other includes follow after <cuda/std/execution>
@@ -19,6 +22,8 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
 [[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct a_query_t
 {

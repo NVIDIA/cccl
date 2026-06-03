@@ -112,8 +112,9 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
   constexpr scan_policy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -122,7 +123,7 @@ template <typename PolicySelector>
     return num_total_threads(policy.warpspeed);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-  return policy.lookback.block_threads;
+  return policy.lookback.threads_per_block;
 }
 
 // need a variable template for clang in CUDA mode to avoid:
@@ -190,7 +191,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
   _CCCL_GRID_CONSTANT const int start_tile,
-  ScanOpT scan_op,
+  _CCCL_GRID_CONSTANT const ScanOpT scan_op,
 // nvcc 12.0 gets stuck compiling some TUs like `cub.bench.scan.exclusive.sum.base`, so only enable for newer versions
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   _CCCL_GRID_CONSTANT
@@ -227,7 +228,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       policy.load_modifier,
       policy.store_algorithm,
       policy.scan_algorithm,
-      NoScaling<policy.block_threads, policy.items_per_thread>,
+      NoScaling<policy.threads_per_block, policy.items_per_thread>,
       delay_constructor_t<policy.delay_constructor.kind,
                           policy.delay_constructor.delay,
                           policy.delay_constructor.l2_write_latency>>;

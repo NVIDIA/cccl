@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_empty.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -52,16 +52,24 @@ struct __get_tuning_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
+//! @rst
+//! Creates an environment from a pack of policy selectors that can be passed to device-wide parallel algorithms to
+//! select tunings for different target architectures. See the :ref:`policy selector documentation
+//! <cub-policy-selectors>` for more information on how algorithms can be tuned.
+//! @endrst
 template <class... _PolicySelectors>
-[[nodiscard]] _CCCL_NODEBUG_API auto __tune(_PolicySelectors...)
+[[nodiscard]] _CCCL_NODEBUG_API auto tune(_PolicySelectors...)
 {
-  static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Stateful policy selectors are not implemented");
+  static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Policy selectors must be stateless");
+  static_assert((::cuda::std::semiregular<_PolicySelectors> && ...), "Policy selectors must be semiregular types");
+  static_assert((::cuda::std::is_invocable_v<_PolicySelectors, ::cuda::compute_capability> && ...),
+                "Policy selectors must be invocable with cuda::compute_capability");
 
   // since all the tunings are stateless, let's ignore incoming parameters
 
   // we use the return type of the policy_selector as tag
   using tuning_env = ::cuda::std::execution::env<
-    ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::arch_id{})), _PolicySelectors>...>;
+    ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::compute_capability{})), _PolicySelectors>...>;
 
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }

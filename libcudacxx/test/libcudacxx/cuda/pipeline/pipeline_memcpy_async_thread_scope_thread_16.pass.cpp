@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include "pipeline_memcpy_async_thread_scope_thread.h"
 
 int main(int argc, char** argv)

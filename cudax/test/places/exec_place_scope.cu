@@ -184,6 +184,7 @@ void test_multithreaded_scopes(int ndevs)
   ::std::vector<bool> results(num_threads, false);
 
   ::std::vector<::std::thread> threads;
+  threads.reserve(num_threads);
   for (int i = 0; i < num_threads; ++i)
   {
     threads.emplace_back([&results, i, ndevs]() {
@@ -265,7 +266,7 @@ void test_stress_iterations(int ndevs)
 int main()
 {
   // Initialize CUDA
-  cuda_try(cudaFree(0));
+  cuda_try(cudaFree(nullptr));
 
   int ndevs;
   cuda_try(cudaGetDeviceCount(&ndevs));

@@ -51,19 +51,39 @@ TEST_FUNC void test_edges()
     }
     else if (cuda::std::isfinite(testcases[i].real()) && cuda::std::isinf(testcases[i].imag()))
     {
-      assert(cuda::std::isnan(r.real()));
-      assert(cuda::std::isnan(r.imag()));
+      // Per revision C11 DR471, tanh(0, inf) = (0, NaN)
+      if (testcases[i].real() == T(0))
+      {
+        assert(r.real() == T(0));
+        assert(cuda::std::signbit(r.real()) == cuda::std::signbit(testcases[i].real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
+      else
+      {
+        assert(cuda::std::isnan(r.real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
     }
     else if (cuda::std::isfinite(testcases[i].real()) && cuda::std::isnan(testcases[i].imag()))
     {
-      assert(cuda::std::isnan(r.real()));
-      assert(cuda::std::isnan(r.imag()));
+      // Per revision C11 DR471, tanh(0, NaN) = (0, NaN)
+      if (testcases[i].real() == T(0))
+      {
+        assert(r.real() == T(0));
+        assert(cuda::std::signbit(r.real()) == cuda::std::signbit(testcases[i].real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
+      else
+      {
+        assert(cuda::std::isnan(r.real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
     }
     else if (cuda::std::isinf(testcases[i].real()) && cuda::std::isfinite(testcases[i].imag()))
     {
       assert(r.real() == (testcases[i].real() > T(0) ? T(1) : -T(1)));
       assert(r.imag() == T(0));
-      assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(cuda::std::sin(T(2) * testcases[i].imag())));
+      assert(cuda::std::signbit(r.imag()) == cuda::std::signbit(testcases[i].imag()));
     }
     else if (cuda::std::isinf(testcases[i].real()) && cuda::std::isinf(testcases[i].imag()))
     {
@@ -101,19 +121,19 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test_edges<double>();
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

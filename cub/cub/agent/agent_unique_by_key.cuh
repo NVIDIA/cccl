@@ -38,7 +38,7 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
@@ -46,7 +46,7 @@ template <int BlockThreads,
           typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentUniqueByKeyPolicy
 {
-  static constexpr int BLOCK_THREADS                      = BlockThreads;
+  static constexpr int BLOCK_THREADS                      = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD                   = ItemsPerThread;
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -57,26 +57,6 @@ struct AgentUniqueByKeyPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TOOD(bgruber): remove
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  UniqueByKeyAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /******************************************************************************
  * Thread block abstractions

@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -35,6 +36,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
@@ -88,10 +90,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     return __result + __count;
   }
 
-  _CCCL_TEMPLATE(class _Policy,
-                 class _InputIterator,
-                 class _OutputIterator,
-                 class _UnaryPred = CUB_NS_QUALIFIER::detail::transform::always_true_predicate)
+  _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _UnaryPred = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator>)
   [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
     [[maybe_unused]] const _Policy& __policy,
@@ -103,12 +102,12 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(
           __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), ::cuda::std::move(__pred));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -116,9 +115,10 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

@@ -29,10 +29,6 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#  include <cub/agent/agent_radix_sort_histogram.cuh>
-#endif
-
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/max.h>
@@ -47,7 +43,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
  *
- * @tparam NominalBlockThreads4B
+ * @tparam NominalThreadsPerBlock4B
  *   Threads per thread block
  *
  * @tparam NominalItemsPerThread4B
@@ -62,12 +58,12 @@ CUB_NAMESPACE_BEGIN
  * @tparam RadixBits
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           CacheLoadModifier LoadModifier,
           int RadixBits,
-          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
   /// The number of radix bits, i.e., log2(bins)
@@ -76,25 +72,6 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
   /// Cache load modifier for reading keys
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(Bgruber): remove
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortUpsweepAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (RADIX_BITS, RadixBits, int),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /******************************************************************************
  * Thread block abstractions

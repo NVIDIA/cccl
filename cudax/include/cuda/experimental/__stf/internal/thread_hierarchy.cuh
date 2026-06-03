@@ -205,44 +205,49 @@ public:
     assert(level >= 0);
     assert(level < depth);
 
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (
-        // Check that it is legal to synchronize (use a static assertion in the future)
-        assert(may_sync(level));
+    NV_IF_TARGET(NV_IS_DEVICE, ({
+                   // Check that it is legal to synchronize (use a static assertion in the future)
+                   assert(may_sync(level));
 
-        // We compute the products of level_sizes and config in reversed order.
+                   // We compute the products of level_sizes and config in reversed order.
 
-        // This is the number of threads to synchronize
-        size_t target_size = 1;
-        for (int l = level; l < depth; l++) { target_size *= level_sizes[l]; }
+                   // This is the number of threads to synchronize
+                   size_t target_size = 1;
+                   for (int l = level; l < depth; l++)
+                   {
+                     target_size *= level_sizes[l];
+                   }
 
-        // We then compute the number of threads for each of the different
-        // scopes (system, device, blocks) ... and compare with this number of
-        // threads
+                   // We then compute the number of threads for each of the different
+                   // scopes (system, device, blocks) ... and compare with this number of
+                   // threads
 
-        // Test the different config levels
-        size_t block_scope_size = launch_config[2];
-        if (target_size == block_scope_size) {
-          cooperative_groups::this_thread_block().sync();
-          return;
-        }
+                   // Test the different config levels
+                   size_t block_scope_size = launch_config[2];
+                   if (target_size == block_scope_size)
+                   {
+                     cooperative_groups::this_thread_block().sync();
+                     return;
+                   }
 
-        size_t device_scope_size = block_scope_size * launch_config[1];
-        if (target_size == device_scope_size) {
-          cooperative_groups::this_grid().sync();
-          return;
-        }
+                   size_t device_scope_size = block_scope_size * launch_config[1];
+                   if (target_size == device_scope_size)
+                   {
+                     cooperative_groups::this_grid().sync();
+                     return;
+                   }
 
-        size_t ndevs             = launch_config[0];
-        size_t system_scope_size = device_scope_size * ndevs;
-        if (target_size == system_scope_size) {
-          cg_system.sync(devid, ndevs);
-          return;
-        }
+                   size_t ndevs             = launch_config[0];
+                   size_t system_scope_size = device_scope_size * ndevs;
+                   if (target_size == system_scope_size)
+                   {
+                     cg_system.sync(devid, ndevs);
+                     return;
+                   }
 
-        // Unsupported configuration
-        assert(0);))
+                   // Unsupported configuration
+                   assert(0);
+                 }))
   }
 
   template <typename T, typename... Others>
@@ -312,31 +317,33 @@ public:
     // scopes (system, device, blocks) ... and compare with this number of
     // threads
 
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (
-        size_t nelems = mem_sizes[level] / sizeof(T);
+    NV_IF_TARGET(NV_IS_DEVICE, ({
+                   size_t nelems = mem_sizes[level] / sizeof(T);
 
-        // Test the different config levels
-        size_t block_scope_size = launch_config[2];
-        if (target_size == block_scope_size) {
-          // Use dynamic shared memory
-          extern __shared__ T dyn_buffer[];
-          return make_slice(&dyn_buffer[0], nelems);
-        }
+                   // Test the different config levels
+                   size_t block_scope_size = launch_config[2];
+                   if (target_size == block_scope_size)
+                   {
+                     // Use dynamic shared memory
+                     extern __shared__ T dyn_buffer[];
+                     return make_slice(&dyn_buffer[0], nelems);
+                   }
 
-        size_t device_scope_size = block_scope_size * launch_config[1];
-        if (target_size == device_scope_size) {
-          // Use device memory
-          return make_slice(static_cast<T*>(device_tmp), nelems);
-        }
+                   size_t device_scope_size = block_scope_size * launch_config[1];
+                   if (target_size == device_scope_size)
+                   {
+                     // Use device memory
+                     return make_slice(static_cast<T*>(device_tmp), nelems);
+                   }
 
-        size_t ndevs             = launch_config[0];
-        size_t system_scope_size = device_scope_size * ndevs;
-        if (target_size == system_scope_size) {
-          // Use system memory (managed memory)
-          return make_slice(static_cast<T*>(system_tmp), nelems);
-        }))
+                   size_t ndevs             = launch_config[0];
+                   size_t system_scope_size = device_scope_size * ndevs;
+                   if (target_size == system_scope_size)
+                   {
+                     // Use system memory (managed memory)
+                     return make_slice(static_cast<T*>(system_tmp), nelems);
+                   }
+                 }))
 
     // Unsupported configuration : memory must be a scope boundaries
     assert(!"Unsupported configuration : memory must be a scope boundaries");

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085768: compiler hangs
+
 #include <cuda/numeric>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>

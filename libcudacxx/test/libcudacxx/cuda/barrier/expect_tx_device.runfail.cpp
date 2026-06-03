@@ -11,6 +11,9 @@
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: no_execute
 
 // <cuda/barrier>
@@ -22,7 +25,7 @@
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
-TEST_GLOBAL_VARIABLE uint64_t bar_storage;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE uint64_t bar_storage;
 
 int main(int, char**)
 {
