@@ -48,8 +48,8 @@ template <int ThreadsPerBlock,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
-using AgentAdjacentDifferencePolicy
-  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference") = detail::agent_adjacent_difference_policy;
+using AgentAdjacentDifferencePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference") =
+  detail::agent_adjacent_difference_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 namespace detail::adjacent_difference
 {

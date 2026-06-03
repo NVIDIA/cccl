@@ -49,8 +49,8 @@ template <int ThreadsPerBlock,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
-using AgentMergeSortPolicy
-  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMergeSort") = detail::agent_merge_sort_policy;
+using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMergeSort") =
+  detail::agent_merge_sort_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 //! The tuning policy for all algorithms in @ref DeviceMergeSort.
 struct MergeSortPolicy
