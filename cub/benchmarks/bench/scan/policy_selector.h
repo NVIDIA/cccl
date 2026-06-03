@@ -20,7 +20,8 @@ struct policy_selector
 #  if USES_WARPSPEED()
     return {cub::ScanAlgorithm::warpspeed,
             cub::ScanLookbackPolicy{},
-            cub::ScanWarpspeedPolicy{TUNE_NUM_REDUCE_SCAN_WARPS,
+            cub::ScanWarpspeedPolicy{
+              TUNE_NUM_REDUCE_SCAN_WARPS,
               TUNE_NUM_LOOKBACK_ITEMS,
               TUNE_ITEMS_PLUS_ONE - 1,
               TUNE_LOOKBACK_STAGES,
@@ -34,7 +35,7 @@ struct policy_selector
       TUNE_LOAD_MODIFIER,
       TUNE_STORE_ALGORITHM,
       cub::BLOCK_SCAN_WARP_SCANS,
-      delay_constructor_policy);
+      lookback_delay_policy);
 #  endif
   }
 };

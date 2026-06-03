@@ -17,7 +17,7 @@ using delay_constructor_t =
                                    TUNE_MAGIC_NS,
                                    TUNE_L2_WRITE_LATENCY_NS>;
 
-inline constexpr auto delay_constructor_policy = cub::LookbackDelayPolicy{
+inline constexpr auto lookback_delay_policy = cub::LookbackDelayPolicy{
   static_cast<cub::LookbackDelayAlgorithm>(TUNE_DELAY_CONSTRUCTOR_ID), TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS};
 
 #endif // !TUNE_BASE
