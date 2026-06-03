@@ -46,7 +46,8 @@ namespace cuda::experimental::cuco
 //! This lightweight, trivially-copyable reference is intended to be passed by value to device code
 //! for performing insert, lookup, erase, and other operations on the hash map.
 //!
-//! @note Concurrent modify and lookup is supported.
+//! @note Concurrent modify and lookup on the same map are not supported: lookups perform non-atomic
+//! loads, so a lookup must not run concurrently with an insert or erase (doing so is a data race).
 //! @note cuCollections data structures always place the slot keys on the right-hand side when
 //! invoking the key comparison predicate, i.e., `__pred(__query_key, __slot_key)`.
 //! @note `_ProbingScheme::cg_size` indicates how many threads are used to handle one independent
@@ -77,7 +78,7 @@ class static_map_ref
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "sizeof(mapped_type) must be either 4 bytes or 8 bytes.");
   static_assert(::cuda::experimental::cuco::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
-                "bitwise comparison via specialization of cuco::is_bitwise_comparable_v<Key>.");
+                "bitwise comparison via specialization of cuda::experimental::cuco::is_bitwise_comparable_v<Key>.");
 
   static constexpr bool __allows_duplicates = false;
 

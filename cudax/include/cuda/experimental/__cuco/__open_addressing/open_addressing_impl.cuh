@@ -96,11 +96,11 @@ public:
   static_assert(sizeof(_Value) <= 16, "Container does not support slot types larger than 16 bytes.");
   static_assert(::cuda::experimental::cuco::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or have been explicitly declared as safe for "
-                "bitwise comparison via specialization of cuco::is_bitwise_comparable_v<Key>.");
+                "bitwise comparison via specialization of cuda::experimental::cuco::is_bitwise_comparable_v<Key>.");
   static_assert(
     ::cuda::std::is_base_of_v<::cuda::experimental::cuco::__detail::__probing_scheme_base<_ProbingScheme::cg_size>,
                               _ProbingScheme>,
-    "ProbingScheme must inherit from cuco::detail::probing_scheme_base");
+    "ProbingScheme must inherit from cuda::experimental::cuco::__detail::__probing_scheme_base");
 
 private:
   __value_type __empty_slot_sentinel;

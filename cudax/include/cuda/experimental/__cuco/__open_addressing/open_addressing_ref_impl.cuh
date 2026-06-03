@@ -92,7 +92,7 @@ struct __bucket_probing_results
 //! @tparam Key Type used for keys. Requires `::cuda::experimental::cuco::is_bitwise_comparable_v<Key>` returning true
 //! @tparam Scope The scope in which operations will be performed by individual threads.
 //! @tparam KeyEqual Binary callable type used to compare two keys for equality
-//! @tparam ProbingScheme Probing scheme (see `include/cuco/probing_scheme.cuh` for options)
+//! @tparam ProbingScheme Probing scheme (see `cuda/experimental/__cuco/probing_scheme.cuh` for options)
 //! @tparam StorageRef Storage ref type
 //! @tparam AllowsDuplicates Flag indicating whether duplicate keys are allowed or not
 template <class _Key,
@@ -1874,7 +1874,7 @@ public:
   //!
   //! @brief Inserts the specified element with two back-to-back CAS operations.
   //!
-  //! @note This CAS can be used exclusively for `::cuda::experimental::cuco::op::insert` operations.
+  //! @note This CAS is used exclusively to implement the insert operation.
   //!
   //! @tparam Value Input type which is convertible to '__value_type'
   //!

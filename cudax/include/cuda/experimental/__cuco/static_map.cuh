@@ -48,17 +48,21 @@ namespace cuda::experimental::cuco
 {
 //! @brief A GPU-accelerated, unordered, associative container of key-value pairs with unique keys.
 //!
-//! Allows constant-time concurrent inserts, lookups, and erasure from device code.
+//! Allows constant-time inserts, lookups, and erasure from device code. Many threads may perform
+//! the same kind of operation concurrently (e.g. concurrent inserts, or concurrent lookups).
 //! Storage is bulk-allocated ahead of time and requires the user to provide sentinel values
 //! for empty and, optionally, erased keys.
 //!
-//! @note Concurrent modification and lookup is thread-safe.
+//! @note Concurrent modification (insert/erase) and lookup (find/contains) on the same map are not
+//! supported: lookups perform non-atomic loads, so a lookup that overlaps a concurrent insert or
+//! erase is a data race and results in undefined behavior. Concurrent inserts (with other inserts)
+//! and concurrent lookups (with other lookups) are supported; the two kinds must not be mixed.
 //! @note `_Capacity` is a span-style `size_t` non-type parameter. Pass `cuda::std::dynamic_extent`
 //! (the default) for runtime-sized maps; any concrete value encodes the requested slot count at
 //! compile time. The actual allocated capacity is the prime/stride-adjusted value exposed as
 //! `capacity_v` (see `compute_capacity<N>()` / `compute_capacity(size_type)`).
 //!
-//! @tparam _Key Key type. Requires `cuco::is_bitwise_comparable_v<_Key>`
+//! @tparam _Key Key type. Requires `cuda::experimental::cuco::is_bitwise_comparable_v<_Key>`
 //! @tparam _Tp Mapped value type
 //! @tparam _Capacity Requested slot count, or `cuda::std::dynamic_extent` for runtime sizing
 //! @tparam _Scope Thread scope for atomic operations
