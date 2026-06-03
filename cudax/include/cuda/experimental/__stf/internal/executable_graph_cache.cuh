@@ -60,7 +60,19 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 
   ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
 
-  cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+  // Use cudaGraphInstantiateFlagAutoFreeOnLaunch so that any cudaMallocAsync /
+  // cudaMemAllocNode allocations captured into `g` that lack a matching free
+  // node (e.g. allocations whose deallocation lives in a sibling captured
+  // region or in the user code outside the capture) are automatically reaped
+  // by the driver between launches. Without this flag, re-launching such a
+  // graph aborts with `cudaErrorInvalidValue` ("Attempting to launch a graph
+  // with unfreed allocation"). Available since CTK 11.4.
+  //
+  // TODO: this flag is currently applied unconditionally to every instantiated
+  // graph. We may instead want to expose it as a context-creation option so
+  // that callers who never re-launch popped graphs can opt out of the implicit
+  // auto-free behavior.
+  cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch));
 
   return res;
 }
