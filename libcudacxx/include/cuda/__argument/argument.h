@@ -234,7 +234,7 @@ _CCCL_API constexpr void __validate_bounds_intersection(__runtime_bounds<_Elemen
 }
 
 template <class _ElementType, class _StaticBounds>
-_CCCL_API constexpr void __validate_static_element_bounds(const _ElementType& __val) noexcept
+_CCCL_API constexpr void __validate_static_element_bounds([[maybe_unused]] const _ElementType& __val) noexcept
 {
   if constexpr (!::cuda::std::is_same_v<_StaticBounds, __no_bounds>)
   {
@@ -246,8 +246,8 @@ _CCCL_API constexpr void __validate_static_element_bounds(const _ElementType& __
 }
 
 template <class _ElementType>
-_CCCL_API constexpr void
-__validate_runtime_element_bounds(const _ElementType& __val, __runtime_bounds<_ElementType> __runtime_bounds) noexcept
+_CCCL_API constexpr void __validate_runtime_element_bounds(
+  [[maybe_unused]] const _ElementType& __val, [[maybe_unused]] __runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
   _CCCL_ASSERT((__val >= __runtime_bounds.lower()), "immediate argument value is below runtime lower bound");
   _CCCL_ASSERT((__val <= __runtime_bounds.upper()), "immediate argument value is above runtime upper bound");
