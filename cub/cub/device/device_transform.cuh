@@ -104,12 +104,12 @@ struct DeviceTransform
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
 #if _CCCL_CTK_AT_LEAST(13, 3) && defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
-    // Opt-in tile path. When every compile-time gate passes we route here
-    // and DO NOT instantiate the standard CUB transform dispatch below --
-    // under --enable-tile that path fails to compile for many (Op, T)
-    // combinations. The 16-byte alignment, num_items divisibility, and the
-    // 2^31 size cap are the caller's contract once the trait flags the
-    // (Op, T, NIn) combo as tile-eligible.
+    // Opt-in tile path. When the (Op, T, NIn) combo is trait-eligible AND
+    // the runtime alignment / divisibility / size preconditions hold, route
+    // to the tile kernel. Otherwise fall through to the standard CUB
+    // dispatch below -- CUB's existing kernels handle the unaligned tail
+    // case via their own internal logic, so misalignment is a graceful
+    // fallback, not an error.
     if constexpr (StableAddress == detail::transform::requires_stable_address::no
                   && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                   && detail::transform::tile::tile_dispatch_eligible_v<
@@ -117,16 +117,13 @@ struct DeviceTransform
                        RandomAccessIteratorOut,
                        RandomAccessIteratorsIn...>)
     {
-      if (!detail::transform::tile::runtime_preconditions_ok(inputs, output, static_cast<offset_t>(num_items)))
+      if (detail::transform::tile::runtime_preconditions_ok(inputs, output, static_cast<offset_t>(num_items)))
       {
-        return cudaErrorInvalidValue;
+        return detail::transform::tile::dispatch<TransformOp>(
+          inputs, output, static_cast<offset_t>(num_items), stream);
       }
-      return detail::transform::tile::dispatch<TransformOp>(
-        inputs, output, static_cast<offset_t>(num_items), stream);
     }
-    else
 #endif // _CCCL_CTK_AT_LEAST(13, 3) && CCCL_ENABLE_TILE_TRANSFORM_DISPATCH && _CCCL_TILE_COMPILATION()
-    {
 
     using tuning_env =
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
@@ -151,7 +148,6 @@ struct DeviceTransform
       ::cuda::std::move(transform_op),
       stream,
       policy_selector{});
-    }
   }
 
   // TODO(bgruber): we want to eventually forward the output tuple to the kernel and optimize writing multiple streams
