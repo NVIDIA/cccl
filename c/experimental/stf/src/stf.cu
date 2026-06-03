@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -891,6 +892,657 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps)
 
   auto* d = from_opaque(deps);
   return d->user_data();
+}
+
+} // extern "C"
+
+// ============================================================================
+// Stackable Context API
+// ============================================================================
+//
+// The stackable C API mirrors the modern opaque-handle convention used by the
+// regular STF C API, but reuses a few existing handle types (stf_ctx_handle,
+// stf_logical_data_handle, stf_task_handle, stf_host_launch_handle) so that
+// non-stackable accessors (stf_task_start, stf_logical_data_set_symbol via the
+// underlying context, ...) keep working transparently.  Internally the
+// pointee types differ from the regular STF objects (stackable_ctx vs context,
+// stackable_logical_data<slice<char>> vs logical_data_untyped, ...), so
+// stackable handles must be created and destroyed through the matching
+// stf_stackable_* entry points only.
+
+namespace
+{
+using stackable_ld_t    = stackable_logical_data<slice<char>>;
+using stackable_token_t = stackable_logical_data<void_interface>;
+
+// Convert the new stf_while_scope_handle / stf_repeat_scope_handle opaque
+// types to / from their concrete C++ counterparts.  Kept local to the
+// stackable section so the main to_opaque/from_opaque dispatchers stay focused
+// on the regular API.
+[[nodiscard]] auto to_opaque_while(stackable_ctx::while_graph_scope_guard* p) noexcept
+{
+  return static_cast<stf_while_scope_handle>(static_cast<void*>(p));
+}
+
+[[nodiscard]] auto* from_opaque_while(stf_while_scope_handle h) noexcept
+{
+  return static_cast<stackable_ctx::while_graph_scope_guard*>(static_cast<void*>(h));
+}
+
+[[nodiscard]] auto to_opaque_repeat(repeat_graph_scope_guard* p) noexcept
+{
+  return static_cast<stf_repeat_scope_handle>(static_cast<void*>(p));
+}
+
+[[nodiscard]] auto* from_opaque_repeat(stf_repeat_scope_handle h) noexcept
+{
+  return static_cast<repeat_graph_scope_guard*>(static_cast<void*>(h));
+}
+
+[[nodiscard]] auto to_opaque_launchable(launchable_graph_handle* p) noexcept
+{
+  return static_cast<stf_launchable_graph_handle>(static_cast<void*>(p));
+}
+
+[[nodiscard]] auto* from_opaque_launchable(stf_launchable_graph_handle h) noexcept
+{
+  return static_cast<launchable_graph_handle*>(static_cast<void*>(h));
+}
+
+// Each C shared opaque is one heap-allocated C++ `launchable_graph` by value,
+// which itself holds one std::shared_ptr to the shared state. Duplicating the
+// C handle therefore amounts to allocating a new launchable_graph that
+// copy-constructs from the original (bumping the shared_ptr refcount);
+// freeing destroys that one launchable_graph which releases its reference.
+[[nodiscard]] auto to_opaque_launchable_shared(stackable_ctx::launchable_graph* p) noexcept
+{
+  return static_cast<stf_launchable_graph_shared>(static_cast<void*>(p));
+}
+
+[[nodiscard]] auto* from_opaque_launchable_shared(stf_launchable_graph_shared h) noexcept
+{
+  return static_cast<stackable_ctx::launchable_graph*>(static_cast<void*>(h));
+}
+
+// Stackable handles are typedef-aliased to existing handle types, so the
+// generic to_opaque/from_opaque dispatchers cannot disambiguate.  Use these
+// thin local helpers instead.
+[[nodiscard]] stf_ctx_handle to_opaque_sctx(stackable_ctx* p) noexcept
+{
+  return static_cast<stf_ctx_handle>(static_cast<void*>(p));
+}
+
+[[nodiscard]] stackable_ctx* from_opaque_sctx(stf_ctx_handle h) noexcept
+{
+  return static_cast<stackable_ctx*>(static_cast<void*>(h));
+}
+
+// The C-facade stores stackable logical data behind an opaque handle.  Two
+// concrete pointee types exist: stackable_ld_t (for byte-buffer data created
+// by stf_stackable_logical_data*()) and stackable_token_t (for tokens created
+// by stf_stackable_token()).  They have distinct C++ types (different
+// stackable_logical_data<T> instantiations carrying different frozen_ld<T>
+// machinery across nested scopes), so we cannot collapse them at the opaque
+// boundary.  Instead, every stf_logical_data_handle coming from the stackable
+// API points at a tiny wrapper that records which kind of pointee it holds,
+// and every entry point dispatches through visit_sld() so the right concrete
+// type is used.
+struct stackable_ld_opaque
+{
+  bool is_token;
+  void* impl; // stackable_ld_t* if !is_token, stackable_token_t* otherwise
+};
+
+[[nodiscard]] stf_logical_data_handle to_opaque_sld(stackable_ld_opaque* w) noexcept
+{
+  return static_cast<stf_logical_data_handle>(static_cast<void*>(w));
+}
+
+[[nodiscard]] stackable_ld_opaque* from_opaque_sld_wrapper(stf_logical_data_handle h) noexcept
+{
+  return static_cast<stackable_ld_opaque*>(static_cast<void*>(h));
+}
+
+// Dispatch on the wrapper kind and forward the concrete stackable_logical_data<T>
+// reference to `f`.  Both instantiations expose the same member surface
+// (validate_access, get_ld, push, set_symbol, set_read_only, ...), so `f` is
+// a generic lambda accepting `auto&`.
+template <class F>
+decltype(auto) visit_sld(stf_logical_data_handle h, F&& f)
+{
+  auto* w = from_opaque_sld_wrapper(h);
+  return w->is_token ? f(*static_cast<stackable_token_t*>(w->impl)) : f(*static_cast<stackable_ld_t*>(w->impl));
+}
+
+#if _CCCL_CTK_AT_LEAST(12, 4)
+// Built-in condition kernel for while_cond_scalar.  Reads the head of the
+// scalar logical data, applies the requested comparison and updates the
+// conditional handle in place.  Lives outside extern "C" because it is a
+// device kernel template.
+template <typename T>
+__global__ void
+stf_stackable_while_cond_kernel(const T* value, cudaGraphConditionalHandle handle, double threshold, int op)
+{
+  const double v = static_cast<double>(*value);
+  bool result;
+  switch (op)
+  {
+    case STF_CMP_GT:
+      result = v > threshold;
+      break;
+    case STF_CMP_LT:
+      result = v < threshold;
+      break;
+    case STF_CMP_GE:
+      result = v >= threshold;
+      break;
+    case STF_CMP_LE:
+      result = v <= threshold;
+      break;
+    default:
+      result = false;
+      break;
+  }
+  cudaGraphSetConditional(handle, result ? 1 : 0);
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+} // namespace
+
+extern "C" {
+
+stf_ctx_handle stf_stackable_ctx_create(void)
+{
+  return to_opaque_sctx(stf_try_allocate([] {
+    return new stackable_ctx{};
+  }));
+}
+
+void stf_stackable_ctx_finalize(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  auto* sctx = from_opaque_sctx(ctx);
+  sctx->finalize();
+  delete sctx;
+}
+
+cudaStream_t stf_stackable_ctx_fence(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  return from_opaque_sctx(ctx)->fence();
+}
+
+void stf_stackable_push_graph(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  from_opaque_sctx(ctx)->push();
+}
+
+void stf_stackable_pop(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  from_opaque_sctx(ctx)->pop();
+}
+
+stf_launchable_graph_handle stf_stackable_pop_prologue(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  auto* sctx = from_opaque_sctx(ctx);
+  return to_opaque_launchable(stf_try_allocate([sctx] {
+    return new launchable_graph_handle(sctx->pop_prologue());
+  }));
+}
+
+void stf_stackable_pop_epilogue(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  from_opaque_sctx(ctx)->pop_epilogue();
+}
+
+void stf_launchable_graph_launch(stf_launchable_graph_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "launchable graph handle must not be null");
+  from_opaque_launchable(h)->launch();
+}
+
+cudaGraphExec_t stf_launchable_graph_exec(stf_launchable_graph_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "launchable graph handle must not be null");
+  return from_opaque_launchable(h)->exec();
+}
+
+cudaStream_t stf_launchable_graph_stream(stf_launchable_graph_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "launchable graph handle must not be null");
+  return from_opaque_launchable(h)->stream();
+}
+
+cudaGraph_t stf_launchable_graph_graph(stf_launchable_graph_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "launchable graph handle must not be null");
+  return from_opaque_launchable(h)->graph();
+}
+
+void stf_launchable_graph_destroy(stf_launchable_graph_handle h)
+{
+  // NULL is a no-op, matching the pattern used by other destroy entry points.
+  delete from_opaque_launchable(h);
+}
+
+int stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_shared* out)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  _CCCL_ASSERT(out != nullptr, "output pointer must not be null");
+  auto* sctx = from_opaque_sctx(ctx);
+  auto* p    = stf_try_allocate([sctx] {
+    return new stackable_ctx::launchable_graph(sctx->pop_prologue_shared());
+  });
+  if (p == nullptr)
+  {
+    *out = nullptr;
+    return 1;
+  }
+  *out = to_opaque_launchable_shared(p);
+  return 0;
+}
+
+int stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchable_graph_shared* out)
+{
+  _CCCL_ASSERT(h != nullptr, "shared launchable graph handle must not be null");
+  _CCCL_ASSERT(out != nullptr, "output pointer must not be null");
+  auto* src = from_opaque_launchable_shared(h);
+  auto* p   = stf_try_allocate([src] {
+    return new stackable_ctx::launchable_graph(*src); // shared_ptr copy -> bumps refcount
+  });
+  if (p == nullptr)
+  {
+    *out = nullptr;
+    return 1;
+  }
+  *out = to_opaque_launchable_shared(p);
+  return 0;
+}
+
+void stf_launchable_graph_shared_free(stf_launchable_graph_shared h)
+{
+  // NULL is a no-op, matching the pattern used by other destroy entry points.
+  // Destruction drops the shared_ptr held inside the launchable_graph; when
+  // the last C-side handle is freed the state destructor runs and triggers
+  // ctx.pop_epilogue() automatically.
+  delete from_opaque_launchable_shared(h);
+}
+
+int stf_launchable_graph_shared_valid(stf_launchable_graph_shared h)
+{
+  if (h == nullptr)
+  {
+    return 0;
+  }
+  return from_opaque_launchable_shared(h)->valid() ? 1 : 0;
+}
+
+void stf_launchable_graph_shared_launch(stf_launchable_graph_shared h)
+{
+  _CCCL_ASSERT(h != nullptr, "shared launchable graph handle must not be null");
+  from_opaque_launchable_shared(h)->launch();
+}
+
+cudaGraphExec_t stf_launchable_graph_shared_exec(stf_launchable_graph_shared h)
+{
+  _CCCL_ASSERT(h != nullptr, "shared launchable graph handle must not be null");
+  return from_opaque_launchable_shared(h)->exec();
+}
+
+cudaStream_t stf_launchable_graph_shared_stream(stf_launchable_graph_shared h)
+{
+  _CCCL_ASSERT(h != nullptr, "shared launchable graph handle must not be null");
+  return from_opaque_launchable_shared(h)->stream();
+}
+
+cudaGraph_t stf_launchable_graph_shared_graph(stf_launchable_graph_shared h)
+{
+  _CCCL_ASSERT(h != nullptr, "shared launchable graph handle must not be null");
+  return from_opaque_launchable_shared(h)->graph();
+}
+
+#if _CCCL_CTK_AT_LEAST(12, 4)
+
+stf_while_scope_handle stf_stackable_push_while(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  auto* sctx = from_opaque_sctx(ctx);
+  // default_launch_value=1 so the loop body executes at least once (matches the C++ factory).
+  return to_opaque_while(stf_try_allocate([sctx] {
+    return new stackable_ctx::while_graph_scope_guard(*sctx, /*default_launch_value=*/1);
+  }));
+}
+
+void stf_stackable_pop_while(stf_while_scope_handle scope)
+{
+  delete from_opaque_while(scope);
+}
+
+uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope)
+{
+  _CCCL_ASSERT(scope != nullptr, "while scope handle must not be null");
+  return static_cast<uint64_t>(from_opaque_while(scope)->cond_handle());
+}
+
+stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t count)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  auto* sctx = from_opaque_sctx(ctx);
+  return to_opaque_repeat(stf_try_allocate([sctx, count] {
+    return new repeat_graph_scope_guard(*sctx, count);
+  }));
+}
+
+void stf_stackable_pop_repeat(stf_repeat_scope_handle scope)
+{
+  delete from_opaque_repeat(scope);
+}
+
+void stf_stackable_while_cond_scalar(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  stf_logical_data_handle ld,
+  stf_compare_op op,
+  double threshold,
+  stf_dtype dtype)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  _CCCL_ASSERT(scope != nullptr, "while scope handle must not be null");
+  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+
+  auto* sctx                             = from_opaque_sctx(ctx);
+  auto* guard                            = from_opaque_while(scope);
+  cudaGraphConditionalHandle cond_handle = guard->cond_handle();
+
+  const int offset = sctx->get_head_offset();
+
+  // Validate (and auto-push if necessary) the read access on this scope,
+  // then materialise the untyped logical_data for the task dep.  The
+  // concrete stackable_logical_data<T> is dispatched through visit_sld()
+  // so both slice<char>-backed data and void_interface tokens resolve
+  // correctly; the while-condition kernel below only makes sense on a
+  // scalar-typed slice, but validate_access/get_ld are type-agnostic.
+  logical_data_untyped ld_ut = visit_sld(ld, [&](auto& sld) {
+    sld.validate_access(offset, *sctx, access_mode::read);
+    return logical_data_untyped{sld.get_ld(offset)};
+  });
+
+  auto& underlying_ctx = sctx->get_ctx(offset);
+  auto task            = underlying_ctx.task();
+  task.add_deps(task_dep_untyped(ld_ut, access_mode::read));
+  task.set_symbol("while_condition");
+  task.enable_capture();
+  task.start();
+
+  auto stream     = task.get_stream();
+  auto s          = task.template get<slice<const char>>(0);
+  const void* ptr = s.data_handle();
+
+  switch (dtype)
+  {
+    case STF_DTYPE_FLOAT32:
+      stf_stackable_while_cond_kernel<float>
+        <<<1, 1, 0, stream>>>(static_cast<const float*>(ptr), cond_handle, threshold, op);
+      break;
+    case STF_DTYPE_FLOAT64:
+      stf_stackable_while_cond_kernel<double>
+        <<<1, 1, 0, stream>>>(static_cast<const double*>(ptr), cond_handle, threshold, op);
+      break;
+    case STF_DTYPE_INT32:
+      stf_stackable_while_cond_kernel<int>
+        <<<1, 1, 0, stream>>>(static_cast<const int*>(ptr), cond_handle, threshold, op);
+      break;
+    case STF_DTYPE_INT64:
+      stf_stackable_while_cond_kernel<long long>
+        <<<1, 1, 0, stream>>>(static_cast<const long long*>(ptr), cond_handle, threshold, op);
+      break;
+    default:
+      _CCCL_ASSERT(false, "unsupported dtype for stf_stackable_while_cond_scalar");
+      break;
+  }
+
+  task.end();
+}
+
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+
+stf_logical_data_handle
+stf_stackable_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  _CCCL_ASSERT(dplace != nullptr, "data_place handle must not be null");
+
+  auto* sctx = from_opaque_sctx(ctx);
+  auto sld   = sctx->logical_data(make_slice(static_cast<char*>(addr), sz), *from_opaque(dplace));
+  return to_opaque_sld(stf_try_allocate([&sld] {
+    ::std::unique_ptr<stackable_ld_t> inner{new stackable_ld_t{::std::move(sld)}};
+    auto* w = new stackable_ld_opaque{false, inner.get()};
+    inner.release();
+    return w;
+  }));
+}
+
+stf_logical_data_handle stf_stackable_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+
+  auto* sctx = from_opaque_sctx(ctx);
+  auto sld   = sctx->logical_data(make_slice(static_cast<char*>(addr), sz), data_place::host());
+  return to_opaque_sld(stf_try_allocate([&sld] {
+    ::std::unique_ptr<stackable_ld_t> inner{new stackable_ld_t{::std::move(sld)}};
+    auto* w = new stackable_ld_opaque{false, inner.get()};
+    inner.release();
+    return w;
+  }));
+}
+
+stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+
+  auto* sctx = from_opaque_sctx(ctx);
+  auto sld   = sctx->logical_data(shape_of<slice<char>>(length));
+  return to_opaque_sld(stf_try_allocate([&sld] {
+    ::std::unique_ptr<stackable_ld_t> inner{new stackable_ld_t{::std::move(sld)}};
+    auto* w = new stackable_ld_opaque{false, inner.get()};
+    inner.release();
+    return w;
+  }));
+}
+
+stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handle ctx, size_t length)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+
+  auto* sctx = from_opaque_sctx(ctx);
+  auto sld   = sctx->logical_data_no_export(shape_of<slice<char>>(length));
+  return to_opaque_sld(stf_try_allocate([&sld] {
+    ::std::unique_ptr<stackable_ld_t> inner{new stackable_ld_t{::std::move(sld)}};
+    auto* w = new stackable_ld_opaque{false, inner.get()};
+    inner.release();
+    return w;
+  }));
+}
+
+stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+
+  auto* sctx = from_opaque_sctx(ctx);
+  auto token = sctx->token();
+  // Tokens use void_interface internally; the wrapper's is_token flag tells
+  // every entry point to dispatch through stackable_token_t (see visit_sld).
+  // stf_stackable_token_destroy() is still required for release so callers
+  // can match creation / destruction by name.
+  return to_opaque_sld(stf_try_allocate([&token] {
+    ::std::unique_ptr<stackable_token_t> inner{new stackable_token_t{::std::move(token)}};
+    auto* w = new stackable_ld_opaque{true, inner.get()};
+    inner.release();
+    return w;
+  }));
+}
+
+void stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
+{
+  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+  _CCCL_ASSERT(symbol != nullptr, "symbol must not be null");
+  visit_sld(ld, [symbol](auto& sld) {
+    sld.set_symbol(symbol);
+  });
+}
+
+void stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld)
+{
+  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+  visit_sld(ld, [](auto& sld) {
+    sld.set_read_only();
+  });
+}
+
+void stf_stackable_logical_data_push(stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle dplace)
+{
+  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+  visit_sld(ld, [m, dplace](auto& sld) {
+    if (dplace != nullptr)
+    {
+      sld.push(access_mode(m), *from_opaque(dplace));
+    }
+    else
+    {
+      sld.push(access_mode(m));
+    }
+  });
+}
+
+void stf_stackable_logical_data_destroy(stf_logical_data_handle ld)
+{
+  if (ld == nullptr)
+  {
+    return;
+  }
+  auto* w = from_opaque_sld_wrapper(ld);
+  _CCCL_ASSERT(!w->is_token,
+               "stf_stackable_logical_data_destroy called on a token handle; use stf_stackable_token_destroy instead");
+  delete static_cast<stackable_ld_t*>(w->impl);
+  delete w;
+}
+
+void stf_stackable_token_destroy(stf_logical_data_handle ld)
+{
+  if (ld == nullptr)
+  {
+    return;
+  }
+  auto* w = from_opaque_sld_wrapper(ld);
+  _CCCL_ASSERT(w->is_token,
+               "stf_stackable_token_destroy called on a non-token handle; use stf_stackable_logical_data_destroy");
+  delete static_cast<stackable_token_t*>(w->impl);
+  delete w;
+}
+
+stf_task_handle stf_stackable_task_create(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+
+  auto* sctx           = from_opaque_sctx(ctx);
+  const int offset     = sctx->get_head_offset();
+  auto& underlying_ctx = sctx->get_ctx(offset);
+  return to_opaque(stf_try_allocate([&underlying_ctx] {
+    return new context::unified_task<>{underlying_ctx.task()};
+  }));
+}
+
+void stf_stackable_task_add_dep(stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  _CCCL_ASSERT(t != nullptr, "task handle must not be null");
+  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+
+  auto* sctx     = from_opaque_sctx(ctx);
+  auto* task_ptr = from_opaque(t);
+
+  const int offset = sctx->get_head_offset();
+  // Validate access and auto-push data across scope boundaries before
+  // binding, dispatching on the concrete stackable_logical_data<T> kind so
+  // that slice<char>-backed data and void_interface tokens both flow through
+  // the correct freeze/unfreeze machinery.
+  logical_data_untyped ld_ut = visit_sld(ld, [&](auto& sld) {
+    sld.validate_access(offset, *sctx, access_mode(m));
+    return logical_data_untyped{sld.get_ld(offset)};
+  });
+  task_ptr->add_deps(task_dep_untyped(ld_ut, access_mode(m)));
+}
+
+void stf_stackable_task_add_dep_with_dplace(
+  stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  _CCCL_ASSERT(t != nullptr, "task handle must not be null");
+  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+  _CCCL_ASSERT(data_p != nullptr, "data_place handle must not be null");
+
+  auto* sctx     = from_opaque_sctx(ctx);
+  auto* task_ptr = from_opaque(t);
+
+  const int offset           = sctx->get_head_offset();
+  logical_data_untyped ld_ut = visit_sld(ld, [&](auto& sld) {
+    sld.validate_access(offset, *sctx, access_mode(m));
+    return logical_data_untyped{sld.get_ld(offset)};
+  });
+  task_ptr->add_deps(task_dep_untyped(ld_ut, access_mode(m), *from_opaque(data_p)));
+}
+
+stf_host_launch_handle stf_stackable_host_launch_create(stf_ctx_handle ctx)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+
+  auto* sctx           = from_opaque_sctx(ctx);
+  const int offset     = sctx->get_head_offset();
+  auto& underlying_ctx = sctx->get_ctx(offset);
+  return to_opaque(stf_try_allocate([&underlying_ctx] {
+    return new context::host_launch_builder{underlying_ctx.host_launch()};
+  }));
+}
+
+void stf_stackable_host_launch_add_dep(
+  stf_ctx_handle ctx, stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m)
+{
+  _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
+  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+
+  auto* sctx      = from_opaque_sctx(ctx);
+  auto* scope_ptr = static_cast<context::host_launch_builder*>(static_cast<void*>(h));
+
+  const int offset           = sctx->get_head_offset();
+  logical_data_untyped ld_ut = visit_sld(ld, [&](auto& sld) {
+    sld.validate_access(offset, *sctx, access_mode(m));
+    return logical_data_untyped{sld.get_ld(offset)};
+  });
+  scope_ptr->add_deps(task_dep_untyped(ld_ut, access_mode(m)));
+}
+
+void stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback)
+{
+  _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
+  _CCCL_ASSERT(callback != nullptr, "callback must not be null");
+
+  auto* scope_ptr = static_cast<context::host_launch_builder*>(static_cast<void*>(h));
+  (*scope_ptr)->*[callback](reserved::host_launch_deps& deps) {
+    callback(to_opaque(&deps));
+  };
+}
+
+void stf_stackable_host_launch_destroy(stf_host_launch_handle h)
+{
+  if (h == nullptr)
+  {
+    return;
+  }
+  delete static_cast<context::host_launch_builder*>(static_cast<void*>(h));
 }
 
 } // extern "C"
