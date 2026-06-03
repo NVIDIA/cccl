@@ -25,6 +25,7 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -455,6 +456,71 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
+
+namespace detail
+{
+// Validates stream's device is current device. Does nothing if CCCL_DISABLE_STREAM_DEVICE_CHECK is
+// defined or when being called from device code.
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t validate_stream_device(cudaStream_t stream) noexcept
+{
+#  if CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    ({
+      ::CUdevice current_device;
+      if (const auto error = ::cuda::__driver::__ctxGetDeviceNoThrow(current_device); error != cudaSuccess)
+      {
+        return error;
+      }
+
+      ::CUdevice stream_device;
+#    if _CCCL_CTK_AT_LEAST(13, 0)
+      if (const auto error = ::cuda::__driver::__streamGetDeviceNoThrow(stream_device, stream); error != cudaSuccess)
+      {
+        return error;
+      }
+#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+      {
+        ::CUcontext stream_ctx;
+        if (const auto error = ::cuda::__driver::__streamGetCtxNoThrow(stream_ctx, stream); error != cudaSuccess)
+        {
+          return error;
+        }
+
+        if (const auto error = ::cuda::__driver::__ctxPushNoThrow(stream_ctx); error != cudaSuccess)
+        {
+          return error;
+        }
+
+        const auto get_device_error = ::cuda::__driver::__ctxGetDeviceNoThrow(stream_device);
+
+        // Popping from ctx stack first even if get device failed
+        if (const auto error = ::cuda::__driver::__ctxPopNoThrow(stream_ctx); error != cudaSuccess)
+        {
+          return error;
+        }
+
+        if (get_device_error != cudaSuccess)
+        {
+          return get_device_error;
+        }
+      }
+#    endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+      _CCCL_ASSERT(current_device == stream_device, "current device must match CUB stream device");
+      if (current_device != stream_device)
+      {
+        return cudaErrorInvalidDevice;
+      }
+    }),
+    ( // device path
+      (void) stream; return cudaSuccess;));
+#  else
+  (void) stream;
+#  endif // CCCL_ENABLE_ASSERTIONS && !defined(CCCL_DISABLE_STREAM_DEVICE_CHECK)
+  return cudaSuccess;
+}
+} // namespace detail
 
 //! @brief Computes the maximum potential dynamic shared memory size per block for kernel @p kernel_ptr taking into
 //!        account the amount of kernel's static and CUDA Driver's reserved shared memory.

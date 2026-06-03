@@ -629,6 +629,11 @@ struct DispatchSegmentedRadixSort
         break;
       }
 
+      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      {
+        return error;
+      }
+
       // Create dispatch functor
       DispatchSegmentedRadixSort dispatch(
         d_temp_storage,
@@ -935,6 +940,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     return error;
   }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   const segmented_radix_sort_policy active_policy = policy_selector_t{}(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)

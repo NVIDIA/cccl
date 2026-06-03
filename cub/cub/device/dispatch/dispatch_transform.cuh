@@ -580,6 +580,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return error;
   }
 
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+  {
+    return error;
+  }
+
   return dispatch_compute_cap(
     policy_selector,
     cc,

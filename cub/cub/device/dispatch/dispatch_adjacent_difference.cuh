@@ -296,6 +296,11 @@ struct DispatchAdjacentDifference
         break;
       }
 
+      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      {
+        return error;
+      }
+
       // Create dispatch functor
       DispatchAdjacentDifference dispatch(
         d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
@@ -340,6 +345,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

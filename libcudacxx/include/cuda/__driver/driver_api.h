@@ -313,12 +313,24 @@ _CCCL_HOST_API inline void __ctxPush(::CUcontext __ctx)
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to push context", __ctx);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __ctxPushNoThrow(::CUcontext __ctx) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxPushCurrent);
+  return static_cast<cudaError_t>(__driver_fn(__ctx));
+}
+
 _CCCL_HOST_API inline ::CUcontext __ctxPop()
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxPopCurrent);
   ::CUcontext __result;
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to pop context", &__result);
   return __result;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __ctxPopNoThrow(::CUcontext& __result) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxPopCurrent);
+  return static_cast<cudaError_t>(__driver_fn(&__result));
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __ctxGetCurrent()
@@ -335,6 +347,12 @@ _CCCL_HOST_API inline ::CUcontext __ctxPop()
   ::CUdevice __result{};
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get current context", &__result);
   return __result;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __ctxGetDeviceNoThrow(::CUdevice& __result) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxGetDevice);
+  return static_cast<cudaError_t>(__driver_fn(&__result));
 }
 
 // Memory management
@@ -673,6 +691,13 @@ _CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
   return __result;
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__streamGetCtxNoThrow(::CUcontext& __result, ::CUstream __stream) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamGetCtx);
+  return static_cast<cudaError_t>(__driver_fn(__stream, &__result));
+}
+
 #  if _CCCL_CTK_AT_LEAST(12, 5)
 struct __ctx_from_stream
 {
@@ -720,6 +745,12 @@ struct __ctx_from_stream
   ::CUdevice __result{};
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get the device of the stream", __stream, &__result);
   return __result;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __streamGetDeviceNoThrow(::CUdevice& __result, ::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetDevice, cuStreamGetDevice, 12, 8);
+  return static_cast<cudaError_t>(__driver_fn(__stream, &__result));
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 

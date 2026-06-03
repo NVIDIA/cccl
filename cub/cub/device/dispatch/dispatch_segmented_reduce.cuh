@@ -438,6 +438,11 @@ struct DispatchSegmentedReduce
         break;
       }
 
+      if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+      {
+        return error;
+      }
+
       // Create dispatch functor
       DispatchSegmentedReduce dispatch(
         d_temp_storage,
@@ -535,6 +540,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // Get CC
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }
@@ -737,6 +747,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   // Get CC
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }

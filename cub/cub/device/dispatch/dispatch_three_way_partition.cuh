@@ -371,6 +371,11 @@ struct DispatchThreeWayPartitionIf
       return error;
     }
 
+    if (const auto error = CubDebug(detail::validate_stream_device(stream)))
+    {
+      return error;
+    }
+
     DispatchThreeWayPartitionIf dispatch{
       d_temp_storage,
       temp_storage_bytes,
@@ -436,6 +441,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 {
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(detail::validate_stream_device(stream)))
   {
     return error;
   }
