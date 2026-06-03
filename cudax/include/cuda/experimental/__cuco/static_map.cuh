@@ -21,11 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
-
 #include <cuda/__device/device_ref.h>
+#include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/distance.h>
@@ -1077,7 +1074,7 @@ public:
   ::cuda::std::pair<_KeyOut, _ValueOut>
   retrieve_all(_KeyOut __keys_out, _ValueOut __values_out, ::cuda::stream_ref __stream = cudaStream_t{nullptr}) const
   {
-    const auto __zipped_out_begin = thrust::make_zip_iterator(::cuda::std::tuple{__keys_out, __values_out});
+    const auto __zipped_out_begin = ::cuda::make_zip_iterator(::cuda::std::tuple{__keys_out, __values_out});
     const auto __zipped_out_end   = __impl->retrieve_all(__zipped_out_begin, __stream);
     const auto __num              = ::cuda::std::distance(__zipped_out_begin, __zipped_out_end);
     return ::cuda::std::make_pair(__keys_out + __num, __values_out + __num);

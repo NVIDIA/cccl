@@ -16,7 +16,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/sequence.h>
-#include <thrust/tuple.h>
 
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
@@ -182,9 +181,9 @@ C2H_TEST("static_map device ref APIs", "[container]")
 
     REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
-    const auto zipped  = thrust::make_zip_iterator(found_values.begin(), values.begin());
+    const auto zipped  = cuda::make_zip_iterator(cuda::std::tuple{found_values.begin(), values.begin()});
     const auto find_ok = thrust::all_of(zipped, zipped + num_keys, [] __device__(const auto& p) {
-      return thrust::get<0>(p) == thrust::get<1>(p);
+      return cuda::std::get<0>(p) == cuda::std::get<1>(p);
     });
     REQUIRE(find_ok);
   }
@@ -343,11 +342,11 @@ C2H_TEST("static_map static extent — erasure support", "[extent][static][erase
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   const auto correct = thrust::all_of(
-    thrust::make_zip_iterator(thrust::make_tuple(results.begin(), cuda::counting_iterator<int>{0})),
-    thrust::make_zip_iterator(thrust::make_tuple(results.end(), cuda::counting_iterator<int>{num_keys})),
-    [] __device__(const thrust::tuple<int, int>& t) {
-      const auto found = thrust::get<0>(t);
-      const auto key   = thrust::get<1>(t);
+    cuda::make_zip_iterator(cuda::std::tuple{results.begin(), cuda::counting_iterator<int>{0}}),
+    cuda::make_zip_iterator(cuda::std::tuple{results.end(), cuda::counting_iterator<int>{num_keys}}),
+    [] __device__(const cuda::std::tuple<int, int>& t) {
+      const auto found = cuda::std::get<0>(t);
+      const auto key   = cuda::std::get<1>(t);
       return (key % 2 == 0) ? (found == 0) : (found == 1); // even erased, odd present
     });
   REQUIRE(correct);

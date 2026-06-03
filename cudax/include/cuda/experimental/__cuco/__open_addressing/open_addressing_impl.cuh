@@ -24,11 +24,10 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_select.cuh>
 
-#include <thrust/iterator/transform_iterator.h>
-
 #include <cuda/__container/buffer.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
 #include <cuda/std/__exception/exception_macros.h>
@@ -566,7 +565,7 @@ public:
     {
       const auto __num_items = ::cuda::std::min(
         static_cast<::cuda::experimental::cuco::__detail::__index_type>(this->capacity()) - __offset, __stride);
-      const auto __begin = thrust::make_transform_iterator(
+      const auto __begin = ::cuda::make_transform_iterator(
         ::cuda::counting_iterator{static_cast<__size_type>(__offset)},
         __open_addressing::__get_slot<__has_payload, __storage_ref_type>(__storage_ref));
       const auto __is_filled = __open_addressing::__slot_is_filled<__has_payload, __key_type>{
