@@ -478,15 +478,31 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
 template <typename PolicySelector, typename AtomicOffsetT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitLookbackKernel(
   _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
-  _CCCL_GRID_CONSTANT const size_t num_lookback_items)
+  _CCCL_GRID_CONSTANT const size_t num_lookback_items,
+  _CCCL_GRID_CONSTANT int* const d_completion_counter,
+  _CCCL_GRID_CONSTANT const bool wait_for_previous)
 {
+  if (wait_for_previous)
+  {
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  }
+
   const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x; idx < num_lookback_items; idx += stride)
   {
     d_lookback[idx] = 0;
   }
-  __threadfence();
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  __syncthreads();
+
+  if (threadIdx.x == 0)
+  {
+    const int finished = atomicAdd(d_completion_counter, 1);
+    if (finished == static_cast<int>(gridDim.x) - 1)
+    {
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    }
+  }
 }
 
 template <typename PolicySelector,
@@ -555,7 +571,9 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
  * Exclusive sum kernel
  */
 template <typename PolicySelector, typename OffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(
+  _CCCL_GRID_CONSTANT OffsetT* const d_bins,
+  _CCCL_GRID_CONSTANT int* const d_completion_counter)
 {
   static constexpr radix_sort_exclusive_sum_policy policy = current_policy<PolicySelector>().exclusive_sum;
   constexpr int RADIX_BITS                                = policy.radix_bits;
@@ -593,6 +611,17 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTA
       break;
     }
     d_bins[bin_start + bin] = bins[u];
+  }
+
+  __syncthreads();
+
+  if (threadIdx.x == 0)
+  {
+    const int finished = atomicAdd(d_completion_counter, 1);
+    if (finished == static_cast<int>(gridDim.x) - 1)
+    {
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    }
   }
 }
 } // namespace detail::radix_sort
