@@ -612,11 +612,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, false>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
           d_temp_storage,
           temp_storage_bytes,
@@ -625,7 +623,7 @@ struct DeviceAdjacentDifference
           static_cast<OffsetT>(num_items),
           difference_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -699,11 +697,8 @@ struct DeviceAdjacentDifference
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeft");
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector =
-      detail::adjacent_difference::policy_selector_from_types<RandomAccessIteratorT, true>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
           d_temp_storage,
           temp_storage_bytes,
@@ -712,7 +707,7 @@ struct DeviceAdjacentDifference
           static_cast<OffsetT>(num_items),
           difference_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -800,11 +795,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, false>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
           d_temp_storage,
           temp_storage_bytes,
@@ -813,7 +806,7 @@ struct DeviceAdjacentDifference
           static_cast<OffsetT>(num_items),
           difference_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -887,11 +880,8 @@ struct DeviceAdjacentDifference
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRight");
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector =
-      detail::adjacent_difference::policy_selector_from_types<RandomAccessIteratorT, true>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
           d_temp_storage,
           temp_storage_bytes,
@@ -900,7 +890,7 @@ struct DeviceAdjacentDifference
           static_cast<OffsetT>(num_items),
           difference_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 };
