@@ -109,18 +109,18 @@ struct ScanWarpspeedPolicy
   int num_reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
   int look_ahead_items_per_thread; //!< Number of look-ahead items per thread in the lookback warp
   int items_per_thread; //!< Number of items processed per reduction and scanning thread
+
   // For the number of stages below, a positive value is taken directly, otherwise it is added to the runtime determined
   // number of stages. For example, a value of 2 means two stages. A value of -2 means runtime number of stages - 2.
   // Therefore, a value of 0 just takes the number of stages.
-  // TODO(bgruber): should we rather have two values? A stage bias (additive) and a stage scale (multiplicative)?
 
   // We do not need too many stages for lookahead since the lookahead warp is the bottleneck. As soon as it produces a
   // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
-  int lookahead_stages = 2;
+  int lookahead_stages = 2; //!< Number of pipeline stages for the lookahead squad
 
   // If one less than the number of stages, we find a small speedup compared to setting it equal to num_stages. Not sure
   // why.
-  int block_idx_stages = -1;
+  int block_idx_stages = -1; //!< Number of pipeline stages for stealing block indices
 
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
