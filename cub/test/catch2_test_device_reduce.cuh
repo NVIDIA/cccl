@@ -204,6 +204,7 @@ inline void init_default_constant(uchar3& val, int element_val = 2)
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 inline void init_default_constant(ulonglong4& val, int element_val = 2)
 {
   const auto element_init = static_cast<unsigned long long>(element_val);
