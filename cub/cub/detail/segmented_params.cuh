@@ -176,7 +176,8 @@ template <typename ParamT, typename SegmentIndexT, typename Functor>
 {
   using supported_list = typename ParamT::supported_options_t;
   auto param_value     = param.get_param(segment_id);
-  return ::cub::detail::params::dispatch_impl(param_value, supported_list{}, ::cuda::std::forward<Functor>(f));
+  return CUB_NS_QUALIFIER::detail::params::dispatch_impl(
+    param_value, supported_list{}, ::cuda::std::forward<Functor>(f));
 }
 } // namespace detail::params
 
