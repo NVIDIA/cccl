@@ -711,7 +711,7 @@ private:
         auto onesweep_kernel = kernel_source.RadixSortOnesweepKernel();
 
         if (const auto error = CubDebug(
-              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
+              launcher_factory(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream, /* use_pdl */ true)
                 .doit(
                   onesweep_kernel,
                   d_lookback,

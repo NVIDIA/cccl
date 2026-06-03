@@ -544,6 +544,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitLookbackKernel(
   {
     d_lookback[idx] = 0;
   }
+  __threadfence();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 template <typename PolicySelector,
