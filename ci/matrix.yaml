@@ -21,6 +21,11 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    # PROOF-OF-MAIN-BREAKAGE (do not merge): build ONLY thrust with old host
+    # compilers + C++17 on a pristine main checkout. If these fail with the
+    # thrust::zip_iterator iterator-concept static_asserts (added by #8845),
+    # main is broken independently of any feature PR.
+    - {jobs: ['build'], project: 'thrust', std: 17, ctk: '12.0', cxx: ['gcc7', 'msvc14.39']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
