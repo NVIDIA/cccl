@@ -117,6 +117,10 @@ struct DeviceTransform
                        RandomAccessIteratorOut,
                        RandomAccessIteratorsIn...>)
     {
+      if (!detail::transform::tile::runtime_preconditions_ok(inputs, output, static_cast<offset_t>(num_items)))
+      {
+        return cudaErrorInvalidValue;
+      }
       return detail::transform::tile::dispatch<TransformOp>(
         inputs, output, static_cast<offset_t>(num_items), stream);
     }

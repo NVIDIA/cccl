@@ -27,6 +27,7 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/__memory/is_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__type_traits/is_empty.h>
 #  include <cuda/std/__type_traits/is_trivially_default_constructible.h>
@@ -110,11 +111,37 @@ inline constexpr bool tile_dispatch_eligible_v =
   && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InIters> && ...)
   && tile_eligible_v<Op, __detail::__unwrapped_value_t<OutIter>, sizeof...(InIters)>;
 
+// Runtime predicate consulted by the cub::DeviceTransform tile hook before
+// it commits to the tile path. Mirrors how CUB's dispatch_t::CanVectorize
+// guards the vectorized kernel. The tile kernels use ct::assume_aligned<16>
+// and ct::assume_divisible<16>, so violating these at runtime is UB.
+// Returns false to tell the hook to surface cudaErrorInvalidValue.
+template <typename OutIter, typename... InIters, typename OffsetT>
+CUB_RUNTIME_FUNCTION bool
+runtime_preconditions_ok(::cuda::std::tuple<InIters...> const& inputs, OutIter output, OffsetT num_items)
+{
+  constexpr int kAlign = 16;
+  // Tile DSL's tensor_span uses uint32_t shape internally; values >= 2^32
+  // wrap to 0. Cap at 2^31 to stay below the cliff with margin.
+  constexpr OffsetT kMaxItems = OffsetT{1} << 31;
+
+  auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
+  const bool aligned_out = ::cuda::is_aligned(out_ptr, kAlign);
+  const bool aligned_in  = ::cuda::std::apply(
+    [](auto... iters) {
+      return ((::cuda::is_aligned(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(iters), kAlign)) && ...);
+    },
+    inputs);
+
+  return aligned_out && aligned_in && (num_items % kAlign) == 0 && num_items <= kMaxItems;
+}
+
 // Bridge between cub::DeviceTransform::__transform_internal and the tile
 // DeviceTransform above. Precondition: tile_dispatch_eligible_v<Op, OutIter,
-// InIters...> is true. The 16-byte pointer alignment, num_items divisibility,
-// and 2^31 size cap (the tile DSL's uint32_t extent ceiling) are the caller's
-// contract -- opting into the tile path is opting into these preconditions.
+// InIters...> is true AND runtime_preconditions_ok returned true. The kernel
+// itself assumes 16-byte pointer alignment and num_items divisibility; the
+// caller (the hook in device_transform.cuh) is responsible for checking
+// runtime_preconditions_ok first.
 //
 // The tile kernel is launched with the trait's tile_op_type (a tile-friendly
 // mirror of Op with __tile__ operator), NOT the user's Op instance -- the
