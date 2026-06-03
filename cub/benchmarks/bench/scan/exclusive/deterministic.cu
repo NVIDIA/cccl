@@ -20,7 +20,7 @@ try
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> input = generate(elements);
-  thrust::device_vector<T> output(elements);
+  thrust::device_vector<T> output(elements, thrust::no_init);
 
   const T* d_input = thrust::raw_pointer_cast(input.data());
   T* d_output      = thrust::raw_pointer_cast(output.data());

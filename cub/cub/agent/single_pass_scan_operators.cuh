@@ -1315,21 +1315,21 @@ private:
     DelayConstructorT construct_delay(tile_idx);
 
     // lane that maps to the anchor tile (tile idx multiple of 32)
-    const int batch_last_lane = (tile_idx - 1) & 31;
+    const int anchor_tile_lane = (tile_idx - 1) % detail::warp_threads;
 
     T value;
     while (true)
     {
       tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
       const int my_is_inclusive     = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
-      const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, batch_last_lane);
+      const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, anchor_tile_lane);
       if (anchor_is_inclusive)
       {
         break;
       }
     }
 
-    const int tail_flag = (static_cast<int>(threadIdx.x) == batch_last_lane);
+    const int tail_flag = (static_cast<int>(threadIdx.x) == anchor_tile_lane);
     exclusive_prefix =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
 
@@ -1338,7 +1338,7 @@ private:
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
 
       // Only anchor tiles publish INCLUSIVE; non-anchor tiles stay at PARTIAL.
-      if ((tile_idx & 31) == 0)
+      if (tile_idx % detail::warp_threads == 0)
       {
         tile_status.SetInclusive(tile_idx, inclusive_prefix);
       }

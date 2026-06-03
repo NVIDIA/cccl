@@ -26,6 +26,16 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproduci
 
   // Generate the input sizes to test for
   const int num_items = GENERATE_COPY(
+    1,
+    31,
+    32,
+    33,
+    127,
+    128,
+    129,
+    1023,
+    1024,
+    1025,
     1337,
     3000,
     1 * 31 * 128, // tile size for int64s for lookahead
@@ -72,6 +82,15 @@ C2H_TEST("DeviceScan::ExclusiveScan with run_to_run determinism matches host ref
   constexpr int max_items = 1 << 22;
 
   const int num_items = GENERATE_COPY(
+    1,
+    32,
+    33,
+    127,
+    128,
+    129,
+    1023,
+    1024,
+    1025,
     1337,
     3000,
     1 * 31 * 128,
