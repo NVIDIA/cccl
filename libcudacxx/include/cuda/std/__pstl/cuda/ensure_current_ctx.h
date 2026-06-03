@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___PSTL_CUDA_COMMON_H
-#define _CUDA_STD___PSTL_CUDA_COMMON_H
+#ifndef _CUDA_STD___PSTL_CUDA_ENSURE_CURRENT_CONTEXT_H
+#define _CUDA_STD___PSTL_CUDA_ENSURE_CURRENT_CONTEXT_H
 
 #include <cuda/std/detail/__config>
 
@@ -43,8 +43,9 @@ template <class _Policy>
   }
   else
   {
-    // If no stream was specified, we use the device 0.
-    return __ensure_current_context{device_ref{0}};
+    int __device_id;
+    ::cudaGetDevice(__device_id);
+    return __ensure_current_context{__device_id};
   }
 }
 
@@ -56,4 +57,4 @@ _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 
 #endif /// _CCCL_HAS_BACKEND_CUDA()
 
-#endif // _CUDA_STD___PSTL_CUDA_COMMON_H
+#endif // _CUDA_STD___PSTL_CUDA_ENSURE_CURRENT_CONTEXT_H
