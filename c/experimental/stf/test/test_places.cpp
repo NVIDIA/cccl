@@ -235,15 +235,15 @@ C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[t
 {
   const size_t nplaces = 2;
   stf_exec_place_handle places[2];
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    places[i] = stf_exec_place_device(0);
+    place = stf_exec_place_device(0);
   }
   stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
   REQUIRE(grid != nullptr);
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    stf_exec_place_destroy(places[i]);
+    stf_exec_place_destroy(place);
   }
 
   stf_data_place_handle composite_dplace = stf_data_place_composite(grid, blocked_mapper_1d);
