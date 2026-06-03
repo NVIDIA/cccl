@@ -104,3 +104,59 @@ TEST_CASE("cudaMalloc/cudaFree round-trip works", "[cuda_smoke][device_memory]")
   CUDART_REQUIRE(cudaFree(d_ptr));
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }
+
+// smoke test for async memory allocations from the default memory pool
+
+TEST_CASE("cudaMallocAsync from default pool works", "[cuda_smoke][async_mempool]")
+{
+  (void) cudaGetLastError();
+
+  int pools_supported = 0;
+  CUDART_REQUIRE(cudaDeviceGetAttribute(&pools_supported, cudaDevAttrMemoryPoolsSupported, 0));
+  if (!pools_supported)
+  {
+    SKIP("Device does not support memory pools (cudaDevAttrMemoryPoolsSupported == 0).");
+  }
+
+  cudaMemPool_t pool{};
+  CUDART_REQUIRE(cudaDeviceGetDefaultMemPool(&pool, 0));
+  REQUIRE(pool != nullptr);
+
+  size_t release_threshold = 0;
+  CUDART_REQUIRE(cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &release_threshold));
+
+  cudaStream_t stream{};
+  CUDART_REQUIRE(cudaStreamCreate(&stream));
+
+  constexpr int n = 256;
+
+  int* d_ptr = nullptr;
+  CUDART_REQUIRE(cudaMallocAsync(&d_ptr, n * sizeof(int), stream));
+  REQUIRE(d_ptr != nullptr);
+
+  int h_ins[n];
+  for (int i = 0; i < n; ++i)
+  {
+    h_ins[i] = i;
+  }
+  CUDART_REQUIRE(cudaMemcpyAsync(d_ptr, h_ins, n * sizeof(int), cudaMemcpyHostToDevice, stream));
+
+  increment_kernel<<<4, 64, 0, stream>>>(d_ptr, n);
+  CUDART_REQUIRE(cudaGetLastError());
+
+  int h_outs[n];
+  CUDART_REQUIRE(cudaMemcpyAsync(h_outs, d_ptr, n * sizeof(int), cudaMemcpyDeviceToHost, stream));
+
+  // Stream-ordered free (deferred until stream reaches this point)
+  CUDART_REQUIRE(cudaFreeAsync(d_ptr, stream));
+
+  CUDART_REQUIRE(cudaStreamSynchronize(stream));
+
+  for (int i = 0; i < n; ++i)
+  {
+    REQUIRE(h_outs[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaStreamDestroy(stream));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
