@@ -35,12 +35,12 @@
 #include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_impl.cuh>
-#include <cuda/experimental/__cuco/__open_addressing/types.cuh>
 #include <cuda/experimental/__cuco/__static_map/kernels.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/static_map_ref.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
+#include <cuda/experimental/__cuco/types.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -88,10 +88,6 @@ public:
   using key_equal           = _KeyEqual; ///< Key equality comparator type
   using probing_scheme_type = _ProbingScheme; ///< Probing scheme type
   using hasher              = typename probing_scheme_type::hasher; ///< Hash function type
-
-  using empty_key   = ::cuda::experimental::cuco::__open_addressing::__empty_key<_Key>; ///< Empty-key sentinel tag
-  using empty_value = ::cuda::experimental::cuco::__open_addressing::__empty_value<_Tp>; ///< Empty-payload sentinel tag
-  using erased_key  = ::cuda::experimental::cuco::__open_addressing::__erased_key<_Key>; ///< Erased-key sentinel tag
 
   static constexpr auto cg_size      = _ProbingScheme::cg_size; ///< Cooperative-group size used for probing
   static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
@@ -224,8 +220,8 @@ public:
   //! @param __stream Stream used for allocation and initialization
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
   _CCCL_HOST static_map(
-    empty_key __empty_key_sentinel,
-    empty_value __empty_value_sentinel,
+    empty_key<_Key> __empty_key_sentinel,
+    empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
     _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
@@ -252,8 +248,8 @@ public:
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
   _CCCL_HOST static_map(
     size_type __capacity,
-    empty_key __empty_key_sentinel,
-    empty_value __empty_value_sentinel,
+    empty_key<_Key> __empty_key_sentinel,
+    empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
     _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
@@ -282,8 +278,8 @@ public:
   _CCCL_HOST static_map(
     size_type __n,
     double __desired_load_factor,
-    empty_key __empty_key_sentinel,
-    empty_value __empty_value_sentinel,
+    empty_key<_Key> __empty_key_sentinel,
+    empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
     _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
@@ -310,9 +306,9 @@ public:
   //! @param __stream Stream used for allocation and initialization
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
   _CCCL_HOST static_map(
-    empty_key __empty_key_sentinel,
-    empty_value __empty_value_sentinel,
-    erased_key __erased_key_sentinel,
+    empty_key<_Key> __empty_key_sentinel,
+    empty_value<_Tp> __empty_value_sentinel,
+    erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
     _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
@@ -341,9 +337,9 @@ public:
   template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
   _CCCL_HOST static_map(
     size_type __capacity,
-    empty_key __empty_key_sentinel,
-    empty_value __empty_value_sentinel,
-    erased_key __erased_key_sentinel,
+    empty_key<_Key> __empty_key_sentinel,
+    empty_value<_Tp> __empty_value_sentinel,
+    erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
     _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),

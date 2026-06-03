@@ -30,10 +30,10 @@
 #include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
-#include <cuda/experimental/__cuco/__open_addressing/types.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
+#include <cuda/experimental/__cuco/types.cuh>
 
 #include <cooperative_groups.h>
 
@@ -93,10 +93,6 @@ public:
   using iterator            = value_type*; ///< Slot iterator
   using const_iterator      = value_type const*; ///< Const slot iterator
 
-  using empty_key   = ::cuda::experimental::cuco::__open_addressing::__empty_key<_Key>; ///< Empty-key sentinel tag
-  using empty_value = ::cuda::experimental::cuco::__open_addressing::__empty_value<_Tp>; ///< Empty-payload sentinel tag
-  using erased_key  = ::cuda::experimental::cuco::__open_addressing::__erased_key<_Key>; ///< Erased-key sentinel tag
-
   static constexpr auto cg_size      = probing_scheme_type::cg_size; ///< Cooperative-group size for probing
   static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope for atomic operations
@@ -131,8 +127,8 @@ public:
   //! @param __probing_scheme Probing scheme
   //! @param __slots Span over the slot storage; must contain `capacity()` slots
   _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
-    empty_key __empty_key_sentinel,
-    empty_value __empty_value_sentinel,
+    empty_key<_Key> __empty_key_sentinel,
+    empty_value<_Tp> __empty_value_sentinel,
     _KeyEqual const& __predicate,
     _ProbingScheme const& __probing_scheme,
     storage_span_type __slots) noexcept
@@ -151,9 +147,9 @@ public:
   //! @param __probing_scheme Probing scheme
   //! @param __slots Span over the slot storage; must contain `capacity()` slots
   _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
-    empty_key __empty_key_sentinel,
-    empty_value __empty_value_sentinel,
-    erased_key __erased_key_sentinel,
+    empty_key<_Key> __empty_key_sentinel,
+    empty_value<_Tp> __empty_value_sentinel,
+    erased_key<_Key> __erased_key_sentinel,
     _KeyEqual const& __predicate,
     _ProbingScheme const& __probing_scheme,
     storage_span_type __slots) noexcept

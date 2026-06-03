@@ -138,8 +138,9 @@ C2H_TEST("static_map device ref APIs", "[container]")
 {
   constexpr int num_keys = 128;
 
-  map_type map{
-    static_cast<::cuda::std::size_t>(num_keys * 2), map_type::empty_key{empty_key}, map_type::empty_value{empty_value}};
+  map_type map{static_cast<::cuda::std::size_t>(num_keys * 2),
+               cudax::cuco::empty_key{empty_key},
+               cudax::cuco::empty_value{empty_value}};
 
   SECTION("insert_or_assign and contains")
   {
@@ -201,7 +202,7 @@ C2H_TEST("static_map dynamic capacity — compute_capacity and capacity()", "[ex
   static_assert(dyn_map_t::ref_type::capacity_v == ::cuda::std::dynamic_extent,
                 "ref capacity_v must be dynamic_extent for dynamic maps");
 
-  dyn_map_t map{requested, dyn_map_t::empty_key{empty_key}, dyn_map_t::empty_value{empty_value}};
+  dyn_map_t map{requested, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
   REQUIRE(map.capacity() == actual_cap);
 }
 
@@ -220,7 +221,7 @@ C2H_TEST("static_map static capacity — compute_capacity and capacity_v", "[ext
   static_assert(smap_t::ref_type::capacity_v == smap_t::capacity_v,
                 "ref::capacity_v must equal the compile-time adjusted slot count");
 
-  smap_t map{smap_t::empty_key{empty_key}, smap_t::empty_value{empty_value}};
+  smap_t map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
   REQUIRE(map.capacity() == smap_t::capacity_v);
 }
 
@@ -229,7 +230,7 @@ C2H_TEST("static_map static extent — device insert and contains", "[extent][st
   constexpr int num_keys = 64;
   static_assert(static_map_512_type::capacity_v >= 512, "map must have at least 512 slots");
 
-  static_map_512_type map{static_map_512_type::empty_key{empty_key}, static_map_512_type::empty_value{empty_value}};
+  static_map_512_type map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
   thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
   thrust::transform(
@@ -262,7 +263,7 @@ C2H_TEST("static_map static extent — shared memory sizing via capacity_v", "[e
 {
   constexpr int num_keys = 64;
 
-  static_map_512_type map{static_map_512_type::empty_key{empty_key}, static_map_512_type::empty_value{empty_value}};
+  static_map_512_type map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
   thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
   thrust::transform(
@@ -303,9 +304,8 @@ C2H_TEST("static_map static extent — erasure support", "[extent][static][erase
 
   using smap_erase_t = cudax::cuco::static_map<int, int, 256>;
 
-  smap_erase_t map{smap_erase_t::empty_key{empty_key},
-                   smap_erase_t::empty_value{empty_value},
-                   smap_erase_t::erased_key{erased_sentinel}};
+  smap_erase_t map{
+    cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}, cudax::cuco::erased_key{erased_sentinel}};
 
   thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
   thrust::transform(
@@ -361,8 +361,8 @@ C2H_TEST("static_map dynamic extent — load factor constructor", "[extent][dyna
 
   map_type map{static_cast<::cuda::std::size_t>(num_elements),
                load_factor,
-               map_type::empty_key{empty_key},
-               map_type::empty_value{empty_value}};
+               cudax::cuco::empty_key{empty_key},
+               cudax::cuco::empty_value{empty_value}};
 
   // With load_factor=0.5 and 500 elements, capacity should be >= 1000
   REQUIRE(map.capacity() >= static_cast<::cuda::std::size_t>(num_elements / load_factor));
@@ -375,7 +375,7 @@ C2H_TEST("static_map dynamic capacity — runtime compute_capacity", "[extent][d
 {
   const ::cuda::std::size_t capacity = 2048;
 
-  map_type map{capacity, map_type::empty_key{empty_key}, map_type::empty_value{empty_value}};
+  map_type map{capacity, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
   const auto expected_cap = map_type::compute_capacity(capacity);
   REQUIRE(map.capacity() == expected_cap);
