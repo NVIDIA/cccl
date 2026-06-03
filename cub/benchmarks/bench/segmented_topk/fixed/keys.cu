@@ -70,7 +70,7 @@ void fixed_seg_size_topk_keys(
 
   auto segment_sizes    = ::cuda::__argument::__constant<MaxSegmentSize>{};
   auto k                = ::cuda::__argument::__constant<MaxNumSelected>{};
-  auto select_direction = cub::detail::topk::select::max;
+  auto select_direction = ::cuda::__argument::__constant<cub::detail::topk::select::max>{};
 
   state.add_element_count(elements, "NumElements");
   state.add_element_count(segment_size, "SegmentSize");

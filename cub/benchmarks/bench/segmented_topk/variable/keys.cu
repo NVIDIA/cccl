@@ -181,7 +181,7 @@ void variable_seg_size_topk_keys(nvbench::state& state,
   auto segment_sizes_param = ::cuda::__argument::__immediate_sequence{
     thrust::raw_pointer_cast(d_segment_sizes.data()), ::cuda::__argument::__bounds<1, MaxSegmentSize>()};
   auto k_param            = ::cuda::__argument::__constant<K>{};
-  auto select_direction   = cub::detail::topk::select::max;
+  auto select_direction   = ::cuda::__argument::__constant<cub::detail::topk::select::max>{};
   auto num_segments_param = ::cuda::__argument::__immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
   auto d_keys_in = cuda::make_strided_iterator(

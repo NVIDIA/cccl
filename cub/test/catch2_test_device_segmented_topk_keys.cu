@@ -269,9 +269,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
 C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
 {
-  constexpr cuda::std::int64_t segment_size                     = 8;
-  constexpr cuda::std::int64_t k                                = 5;
-  constexpr cuda::std::int64_t num_segments                     = 1;
+  constexpr cuda::std::int64_t segment_size                      = 8;
+  constexpr cuda::std::int64_t k                                 = 5;
+  constexpr cuda::std::int64_t num_segments                      = 1;
   [[maybe_unused]] constexpr cuda::std::int64_t max_segment_size = 64; // msvc warns, only used in nttp
 
   // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
@@ -286,7 +286,8 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   batched_topk_keys(
     d_keys_in_it,
     d_keys_out_it,
-    ::cuda::__argument::__immediate{segment_size, ::cuda::__argument::__bounds<cuda::std::int64_t{1}, max_segment_size>()},
+    ::cuda::__argument::__immediate{
+      segment_size, ::cuda::__argument::__bounds<cuda::std::int64_t{1}, max_segment_size>()},
     ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<cuda::std::int64_t{1}, k>()},
     cub::detail::topk::select::min,
     ::cuda::__argument::__immediate{num_segments},

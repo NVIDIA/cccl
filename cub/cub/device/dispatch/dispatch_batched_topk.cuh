@@ -31,10 +31,10 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__argument_>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
-#include <cuda/__argument_>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -49,8 +49,15 @@ namespace detail::batched_topk
 // Internal: wrap user-facing select direction into discrete param for dispatch
 // -----------------------------------------------------------------------------
 
+// Uniform (compile-time): __constant<Dir> -> single-option uniform_discrete_param.
+template <detail::topk::select Dir>
+[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::__argument::__constant<Dir>)
+{
+  return params::uniform_discrete_param<detail::topk::select, Dir>{Dir};
+}
+
 // Uniform: single enum value → uniform_discrete_param
-_CCCL_HOST_DEVICE inline auto wrap_select_direction(detail::topk::select dir)
+[[nodiscard]] _CCCL_HOST_DEVICE inline auto wrap_select_direction(detail::topk::select dir)
 {
   return params::uniform_discrete_param<detail::topk::select, detail::topk::select::max, detail::topk::select::min>{
     dir};
@@ -59,7 +66,7 @@ _CCCL_HOST_DEVICE inline auto wrap_select_direction(detail::topk::select dir)
 // Per-segment: iterator of enums → per_segment_discrete_param
 _CCCL_TEMPLATE(typename IteratorT)
 _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cv_t<IteratorT>, detail::topk::select>) )
-_CCCL_HOST_DEVICE auto wrap_select_direction(IteratorT iter)
+[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(IteratorT iter)
 {
   return params::
     per_segment_discrete_param<IteratorT, detail::topk::select, detail::topk::select::max, detail::topk::select::min>{

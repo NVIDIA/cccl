@@ -20,8 +20,8 @@
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/compute_capability.h>
 #include <cuda/__argument_>
+#include <cuda/__device/compute_capability.h>
 
 CUB_NAMESPACE_BEGIN
 

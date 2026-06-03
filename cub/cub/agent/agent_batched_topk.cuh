@@ -23,8 +23,8 @@
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__argument_>
+#include <cuda/__cmath/ceil_div.h>
 
 CUB_NAMESPACE_BEGIN
 
