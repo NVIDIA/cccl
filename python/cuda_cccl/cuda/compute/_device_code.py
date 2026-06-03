@@ -27,14 +27,13 @@ class DeviceCode:
     Args:
         bytes_: the raw blob (LTO-IR, LLVM bitcode, or C++ source bytes).
             Trailing underscore avoids shadowing the ``bytes`` builtin.
-        kind: one of ``"ltoir"`` (default), ``"llvm_ir"``, ``"cpp_source"``.
-            Determines how the v2 backend dispatches the blob; see the
-            corresponding ``CCCL_OP_*`` values in ``c/parallel.v2/.../types.h``.
+        kind: one of ``"ltoir"`` (default), ``"llvm_ir"``, ``"cpp_source"``;
+            tells the backend how to interpret ``bytes_``.
 
-    For most uses you don't construct ``DeviceCode`` directly — the JIT-compile
-    helpers (``_compile_cpp_op_code``, ``_compile_op_to_llvm_bitcode``) return
-    one, and the iterator/algorithm machinery forwards them. Construct
-    explicitly when feeding a ``RawOp`` from outside the default pipeline.
+    For most uses you don't construct ``DeviceCode`` directly — the internal
+    JIT-compile helpers return one, and the iterator/algorithm machinery
+    forwards them. Construct explicitly when feeding a ``RawOp`` from outside
+    the default pipeline.
     """
 
     bytes_: bytes

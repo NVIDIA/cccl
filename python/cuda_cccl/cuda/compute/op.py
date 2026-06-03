@@ -92,25 +92,10 @@ class _WellKnownOp(_OpAdapter):
 
 class RawOp(_OpAdapter):
     """
-    ``RawOp`` lets you supply pre-compiled device code (LLVM bitcode or LTO-IR)
-    that implements a custom operator, bypassing the default Numba-based JIT
-    pipeline.
-
-    For ``cuda.compute`` v2, **LLVM bitcode is the preferred form** — it is
-    linked into the CUB module at the LLVM IR level, so the optimizer inlines
-    the operator into kernel inner loops. LTO-IR is supported as an escape
-    hatch for callers with pre-built ``nvcc -dlto`` artifacts; LTO-IR
-    operators are routed through ``nvJitLink`` and remain a real ``CALL``
-    target in the generated SASS — functionally correct, but materially
-    worse code-gen (more registers, more spills, no cross-boundary inlining).
+    ``RawOp`` lets you supply pre-compiled device code (LTO-IR) implementing a
+    custom operator, bypassing the default Numba-based JIT pipeline.
 
     Example:
-        Supplying LLVM bitcode (the recommended v2 path):
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/raw_op/llvm_stateless.py
-            :language: python
-            :start-after: # example-begin
-
         Supplying C++ device code compiled to LTO-IR via NVRTC:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
@@ -119,15 +104,11 @@ class RawOp(_OpAdapter):
 
     Args:
         name: The ABI name of the operator.
-        ltoir: Either raw ``bytes`` (treated as LTO-IR — the legacy form) or a
-            :class:`DeviceCode` wrapping ``(bytes_, kind)`` where ``kind`` is
-            one of ``"ltoir"``, ``"llvm_ir"`` (recommended for v2), or
-            ``"cpp_source"``. The kwarg is named ``ltoir`` for historical
-            reasons; supply a ``DeviceCode`` for anything other than LTO-IR.
+        ltoir: Raw ``bytes`` of pre-compiled LTO-IR implementing the operator
+            (for example, produced by ``nvcc -dlto`` or NVRTC).
         state: Optional bytes representing the operator's state.
         state_alignment: Alignment requirement for the state bytes (default: 1).
-        extra_ltoirs: Optional list of extras to link. Each entry is either raw
-            ``bytes`` (LTO-IR) or a :class:`DeviceCode`. Forms may be mixed.
+        extra_ltoirs: Optional list of additional LTO-IR ``bytes`` to link.
 
     Notes:
         - The provided code must define a function with the specified name and the correct signature.

@@ -90,11 +90,6 @@ def compile_cpp_op_code(source: str, arch: str | None = None) -> DeviceCode:
 
     Returns a :class:`DeviceCode` wrapping the bytes and the matching format tag.
 
-    On v2 (HostJIT), C++ source is passed through as ``CCCL_OP_CPP_SOURCE`` so
-    the backend's Clang compiles it to LLVM bitcode in the same module as any
-    user-op bitcode extras — the linker then resolves cross-references at the
-    IR level. On v1, the source is pre-compiled to LTO-IR via NVRTC.
-
     Cached so identical iterator structures produce identical code bytes —
     callers can inspect ``cache_info()`` to verify symbol determinism.
     """
