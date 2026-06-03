@@ -572,12 +572,6 @@ private:
       is_overwrite_okay || num_passes <= 1 ? 0 : num_items * value_size,
       // counters
       num_portions * num_passes * sizeof(AtomicOffsetT),
-      // histogram PDL completion counter
-      sizeof(int),
-      // init-lookback PDL completion counters
-      num_portions * num_passes * sizeof(int),
-      // exclusive-sum PDL completion counter
-      sizeof(int),
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
@@ -598,28 +592,10 @@ private:
     KeyT* d_keys_tmp2         = (KeyT*) allocations[2];
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
-    int* d_histogram_ctr      = (int*) allocations[5];
-    int* d_init_lookback_ctrs = (int*) allocations[6];
-    int* d_exclusive_sum_ctr  = (int*) allocations[7];
 
     // initialization
     if (const auto error =
           CubDebug(cudaMemsetAsync(d_ctrs, 0, num_portions * num_passes * sizeof(AtomicOffsetT), stream)))
-    {
-      return error;
-    }
-
-    if (const auto error = CubDebug(cudaMemsetAsync(d_histogram_ctr, 0, sizeof(int), stream)))
-    {
-      return error;
-    }
-
-    if (const auto error = CubDebug(cudaMemsetAsync(d_init_lookback_ctrs, 0, num_portions * num_passes * sizeof(int), stream)))
-    {
-      return error;
-    }
-
-    if (const auto error = CubDebug(cudaMemsetAsync(d_exclusive_sum_ctr, 0, sizeof(int), stream)))
     {
       return error;
     }
@@ -666,7 +642,7 @@ private:
 
     if (const auto error = CubDebug(
           launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
-            .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, d_histogram_ctr, decomposer)))
+            .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer)))
     {
       return error;
     }
@@ -688,12 +664,8 @@ private:
             policy.exclusive_sum.radix_bits);
 #endif
 
-    if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream, /* use_pdl */ true)
-                                      .doit(
-                                        kernel_source.RadixSortExclusiveSumKernel(),
-                                        d_bins,
-                                        d_exclusive_sum_ctr,
-                                        /* wait_for_previous */ true)))
+    if (const auto error = CubDebug(launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream)
+                                      .doit(kernel_source.RadixSortExclusiveSumKernel(), d_bins)))
     {
       return error;
     }
@@ -725,16 +697,9 @@ private:
         constexpr int INIT_LOOKBACK_THREADS = 256;
         const int init_lookback_blocks      = static_cast<int>(
           ::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
-        const bool wait_for_exclusive_sum = pass == 0 && portion == 0;
 
-        if (const auto error = CubDebug(
-              launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream, wait_for_exclusive_sum)
-                .doit(
-                  kernel_source.RadixSortInitLookbackKernel(),
-                  d_lookback,
-                  num_lookback_items,
-                  d_init_lookback_ctrs + portion * num_passes + pass,
-                  wait_for_exclusive_sum)))
+        if (const auto error = CubDebug(launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream)
+                                          .doit(kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items)))
         {
           return error;
         }

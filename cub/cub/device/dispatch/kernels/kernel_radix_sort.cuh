@@ -459,7 +459,6 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   _CCCL_GRID_CONSTANT const int start_bit,
   _CCCL_GRID_CONSTANT const int end_bit,
-  _CCCL_GRID_CONSTANT int* const d_completion_counter,
   _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   static constexpr radix_sort_histogram_policy policy = current_policy<PolicySelector>().histogram;
@@ -474,47 +473,20 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   __shared__ typename AgentT::TempStorage temp_storage;
   AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
   agent.Process();
-
-  __syncthreads();
-
-  if (threadIdx.x == 0)
-  {
-    const int finished = atomicAdd(d_completion_counter, 1);
-    if (finished == static_cast<int>(gridDim.x) - 1)
-    {
-      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-    }
-  }
 }
 
 template <typename PolicySelector, typename AtomicOffsetT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitLookbackKernel(
   _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
-  _CCCL_GRID_CONSTANT const size_t num_lookback_items,
-  _CCCL_GRID_CONSTANT int* const d_completion_counter,
-  _CCCL_GRID_CONSTANT const bool wait_for_previous)
+  _CCCL_GRID_CONSTANT const size_t num_lookback_items)
 {
-  if (wait_for_previous)
-  {
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  }
-
   const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x; idx < num_lookback_items; idx += stride)
   {
     d_lookback[idx] = 0;
   }
-
-  __syncthreads();
-
-  if (threadIdx.x == 0)
-  {
-    const int finished = atomicAdd(d_completion_counter, 1);
-    if (finished == static_cast<int>(gridDim.x) - 1)
-    {
-      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-    }
-  }
+  __threadfence();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 template <typename PolicySelector,
@@ -583,16 +555,8 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
  * Exclusive sum kernel
  */
 template <typename PolicySelector, typename OffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(
-  _CCCL_GRID_CONSTANT OffsetT* const d_bins,
-  _CCCL_GRID_CONSTANT int* const d_completion_counter,
-  _CCCL_GRID_CONSTANT const bool wait_for_previous)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
 {
-  if (wait_for_previous)
-  {
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  }
-
   static constexpr radix_sort_exclusive_sum_policy policy = current_policy<PolicySelector>().exclusive_sum;
   constexpr int RADIX_BITS                                = policy.radix_bits;
   constexpr int RADIX_DIGITS                              = 1 << RADIX_BITS;
@@ -629,17 +593,6 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(
       break;
     }
     d_bins[bin_start + bin] = bins[u];
-  }
-
-  __syncthreads();
-
-  if (threadIdx.x == 0)
-  {
-    const int finished = atomicAdd(d_completion_counter, 1);
-    if (finished == static_cast<int>(gridDim.x) - 1)
-    {
-      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-    }
   }
 }
 } // namespace detail::radix_sort
