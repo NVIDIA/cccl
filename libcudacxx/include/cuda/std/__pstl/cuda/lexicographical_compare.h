@@ -36,6 +36,7 @@ _CCCL_DIAG_POP
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/zip_transform_iterator.h>
+#  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/lexicographical_compare.h>
@@ -120,6 +121,8 @@ struct __lex_non_equal
   }
 };
 
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
 // Resolves the final answer on device from the index found by the find pass,
 // avoiding a host round-trip and a second device reduction. `__result` holds the
 // first non-equivalent index on entry and the boolean answer (0/1) on exit:
@@ -130,12 +133,10 @@ template <class _StateIter, class _OffsetType>
 _CCCL_KERNEL_ATTRIBUTES void __lexicographical_compare_result_kernel(
   _StateIter __state_first, _OffsetType __count, bool __shorter_is_less, _OffsetType* __result)
 {
-  const _OffsetType __k = *__result;
-  *__result =
-    static_cast<_OffsetType>((__k == __count) ? __shorter_is_less : (*(__state_first + __k) == __lex_ordering::__less));
+  const _OffsetType __offset = *__result;
+  *__result                  = static_cast<_OffsetType>(
+    (__offset == __count) ? __shorter_is_less : (*(__state_first + __offset) == __lex_ordering::__less));
 }
-
-_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_backend::__cuda>
@@ -161,7 +162,7 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
     using _OffsetType   = common_type_t<iter_difference_t<_InputIter1>, iter_difference_t<_InputIter2>>;
     const auto __count1 = static_cast<_OffsetType>(::cuda::std::distance(__first1, __last1));
     const auto __count2 = static_cast<_OffsetType>(::cuda::std::distance(__first2, __last2));
-    const auto __count  = ::cuda::std::min(__count1, __count2);
+    auto __count        = ::cuda::std::min(__count1, __count2);
 
     // Lazy per-element ordering over the two input ranges, capped at the common
     // length so neither side reads past its own end.
@@ -182,6 +183,9 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
 
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
+    // Make the stream's device current for the duration of the device work.
+    ::cuda::__ensure_current_context __guard{__stream};
+
     // Single allocation: slot<0> holds the find index and then the boolean answer,
     // plus the find pass' scratch region.
     __temporary_storage<_OffsetType> __storage{__policy, __find_bytes, 1};
@@ -201,14 +205,14 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
 
     // Pass 2: resolve the answer in place on device, so only one value is copied
     // back to the host (no second reduce launch, no offset round-trip).
-    const bool __shorter_is_less = (__count1 < __count2);
+    bool __shorter_is_less = (__count1 < __count2);
     const void* __kernel =
       reinterpret_cast<const void*>(&__lexicographical_compare_result_kernel<decltype(__state_first), _OffsetType>);
     void* __kernel_args[] = {
-      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__state_first))),
-      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__count))),
-      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__shorter_is_less))),
-      const_cast<void*>(reinterpret_cast<const void*>(::cuda::std::addressof(__result_ptr)))};
+      static_cast<void*>(::cuda::std::addressof(__state_first)),
+      static_cast<void*>(::cuda::std::addressof(__count)),
+      static_cast<void*>(::cuda::std::addressof(__shorter_is_less)),
+      static_cast<void*>(::cuda::std::addressof(__result_ptr))};
     _CCCL_TRY_CUDA_API(
       ::cudaLaunchKernel,
       "__pstl_cuda_lexicographical_compare: kernel launch of result resolution failed",
@@ -257,13 +261,13 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       }
       catch (const ::cuda::cuda_error& __err)
       {
-        if (__err.status() == cudaErrorMemoryAllocation)
+        if (__err.status() == ::cudaErrorMemoryAllocation)
         {
           _CCCL_THROW(::std::bad_alloc);
         }
         else
         {
-          throw __err;
+          throw;
         }
       }
     }
