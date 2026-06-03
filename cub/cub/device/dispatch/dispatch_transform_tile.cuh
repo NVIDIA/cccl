@@ -27,11 +27,10 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#  include <cuda/__memory/is_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>
-#  include <cuda/std/__utility/declval.h>
 #  include <cuda/std/__type_traits/is_empty.h>
 #  include <cuda/std/__type_traits/is_trivially_default_constructible.h>
+#  include <cuda/std/__utility/declval.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__type_traits/remove_pointer.h>
 #  include <cuda/std/tuple>
@@ -113,21 +112,16 @@ inline constexpr bool tile_dispatch_eligible_v =
 
 // Bridge between cub::DeviceTransform::__transform_internal and the tile
 // DeviceTransform above. Precondition: tile_dispatch_eligible_v<Op, OutIter,
-// InIters...> is true. Returns true and writes the launch result when the
-// call was handled; returns false when the runtime 16-byte alignment /
-// divisibility preconditions are not satisfied (caller surfaces that as
-// cudaErrorInvalidValue -- there is no CUB fallback under --enable-tile).
+// InIters...> is true. The 16-byte pointer alignment, num_items divisibility,
+// and 2^31 size cap (the tile DSL's uint32_t extent ceiling) are the caller's
+// contract -- opting into the tile path is opting into these preconditions.
 //
 // The tile kernel is launched with the trait's tile_op_type (a tile-friendly
 // mirror of Op with __tile__ operator), NOT the user's Op instance -- the
 // user's scalar functor cannot be invoked on ct::tile arguments.
 template <typename TransformOp, typename OutIter, typename... InIters, typename OffsetT>
-CUB_RUNTIME_FUNCTION bool try_dispatch(
-  ::cuda::std::tuple<InIters...> inputs,
-  OutIter output,
-  OffsetT num_items,
-  cudaStream_t stream,
-  cudaError_t& result)
+CUB_RUNTIME_FUNCTION cudaError_t dispatch(
+  ::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, cudaStream_t stream)
 {
   auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
   auto in_ptrs = ::cuda::std::apply(
@@ -142,20 +136,8 @@ CUB_RUNTIME_FUNCTION bool try_dispatch(
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_op_type must be trivially default constructible");
 
-  constexpr int kAlign = 16;
-  const bool aligned_out = ::cuda::is_aligned(out_ptr, kAlign);
-  const bool aligned_in =
-    ::cuda::std::apply([](auto... p) { return ((::cuda::is_aligned(p, kAlign)) && ...); }, in_ptrs);
-  // Tile DSL's tensor_span uses uint32_t shape; cap at 2^31 to stay below
-  // the wraparound cliff at 2^32.
-  constexpr OffsetT kMaxItems = OffsetT{1} << 31;
-  if (!aligned_out || !aligned_in || (num_items % kAlign) != 0 || num_items > kMaxItems)
-  {
-    return false;
-  }
-  result = DeviceTransform::template Transform<0, tile_mufu_heavy_v<TransformOp>, tile_op_t>(
+  return DeviceTransform::template Transform<0, tile_mufu_heavy_v<TransformOp>, tile_op_t>(
     in_ptrs, out_ptr, static_cast<::cuda::std::int64_t>(num_items), tile_op_t{}, stream);
-  return true;
 }
 
 } // namespace detail::transform::tile

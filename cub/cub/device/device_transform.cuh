@@ -107,9 +107,9 @@ struct DeviceTransform
     // Opt-in tile path. When every compile-time gate passes we route here
     // and DO NOT instantiate the standard CUB transform dispatch below --
     // under --enable-tile that path fails to compile for many (Op, T)
-    // combinations. Runtime alignment / divisibility violations on this
-    // branch surface as cudaErrorInvalidValue; the caller is expected to
-    // satisfy the 16-byte preconditions when opting into the tile path.
+    // combinations. The 16-byte alignment, num_items divisibility, and the
+    // 2^31 size cap are the caller's contract once the trait flags the
+    // (Op, T, NIn) combo as tile-eligible.
     if constexpr (StableAddress == detail::transform::requires_stable_address::no
                   && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                   && detail::transform::tile::tile_dispatch_eligible_v<
@@ -117,13 +117,8 @@ struct DeviceTransform
                        RandomAccessIteratorOut,
                        RandomAccessIteratorsIn...>)
     {
-      cudaError_t tile_result;
-      if (detail::transform::tile::try_dispatch<TransformOp>(
-            inputs, output, static_cast<offset_t>(num_items), stream, tile_result))
-      {
-        return tile_result;
-      }
-      return cudaErrorInvalidValue;
+      return detail::transform::tile::dispatch<TransformOp>(
+        inputs, output, static_cast<offset_t>(num_items), stream);
     }
     else
 #endif // _CCCL_CTK_AT_LEAST(13, 3) && CCCL_ENABLE_TILE_TRANSFORM_DISPATCH && _CCCL_TILE_COMPILATION()
