@@ -70,6 +70,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/inplace_vector>
 #include <cuda/std/limits>
+#include <cuda/std/optional>
 #include <cuda/std/span>
 #include <cuda/std/utility>
 
@@ -508,6 +509,196 @@ private:
   }
 #endif
 
+  // ---------------------------------------------------------------------------
+  // Overflow streamer
+  // ---------------------------------------------------------------------------
+  // Re-streams the per-rank "overflow" chunks (those that do not fit in the
+  // resident SMEM region) from gmem through a small, fixed, round-robin set of
+  // `PipelineStages` streaming slots. The same object is reused for every radix
+  // pass and the final filter. It ping-pongs the iteration order across calls so
+  // the `PipelineStages` boundary chunks that one pass leaves resident in the
+  // streaming slots are reused by the next pass with no reload; in the limit
+  // where the overflow fits entirely in the streaming slots (`overflow <=
+  // PipelineStages`), the chunks are loaded once and never reloaded. The
+  // resident region is unaffected: it lives in the slots `[0, resident_slots)`,
+  // the streaming region in `[stream_slot_base, stream_slot_base +
+  // PipelineStages)`.
+  struct overflow_streamer
+  {
+    agent_batched_topk_cluster& agent;
+    key_it_t block_keys_in;
+    const key_t* block_keys_base; // unwrapped contiguous base (pipeline path only; null otherwise)
+    offset_t segment_size;
+    offset_t head_items;
+    unsigned int cluster_rank;
+    unsigned int cluster_size;
+    offset_t resident_chunks; // rank-local chunk index at which the overflow begins
+    int stream_slot_base; // SMEM slot index at which the streaming region begins
+    offset_t overflow_chunks; // number of overflow chunks for this rank (M)
+    int p_eff; // active streaming depth = min(PipelineStages, M) (>= 1)
+    bool forward = true;
+    bool primed  = false;
+
+    // Loaders are shared with the first-pass resident load: that load constructs
+    // them here (via `ensure_loaders`) and the streamer keeps reusing the very
+    // same objects for the overflow passes, continuing their Commit/Wait pipeline
+    // rather than tearing them down and re-initializing the shared `load_storage`
+    // mbarriers. During streaming, `loaders[stage]` targets the streaming slot
+    // `stream_slot_base + stage`. A `tokens` entry is engaged only while a copy is
+    // in flight (committed, not yet waited); after a wait the slot's data settles
+    // in SMEM and `pending`/`slot_chunk` keep describing it so the next ping-pong
+    // pass can reuse it without a reload.
+    ::cuda::std::inplace_vector<block_load_t, PipelineStages> loaders;
+    ::cuda::std::optional<typename block_load_t::CommitToken> tokens[PipelineStages];
+    ::cuda::std::span<key_t> pending[PipelineStages];
+    offset_t slot_chunk[PipelineStages];
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE overflow_streamer(
+      agent_batched_topk_cluster& agent_,
+      key_it_t block_keys_in_,
+      const key_t* block_keys_base_,
+      offset_t segment_size_,
+      offset_t head_items_,
+      unsigned int cluster_rank_,
+      unsigned int cluster_size_,
+      offset_t resident_chunks_,
+      int stream_slot_base_,
+      offset_t my_chunks_)
+        : agent(agent_)
+        , block_keys_in(block_keys_in_)
+        , block_keys_base(block_keys_base_)
+        , segment_size(segment_size_)
+        , head_items(head_items_)
+        , cluster_rank(cluster_rank_)
+        , cluster_size(cluster_size_)
+        , resident_chunks(resident_chunks_)
+        , stream_slot_base(stream_slot_base_)
+        , overflow_chunks((my_chunks_ > resident_chunks_) ? (my_chunks_ - resident_chunks_) : offset_t{0})
+    {
+      const int m = static_cast<int>((::cuda::std::min) (overflow_chunks, static_cast<offset_t>(PipelineStages)));
+      p_eff       = (m > 0) ? m : 1;
+    }
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE offset_t chunk_index_of(offset_t overflow_idx) const
+    {
+      return cluster_rank + (resident_chunks + overflow_idx) * static_cast<offset_t>(cluster_size);
+    }
+
+    // Grow the loader set to `count` entries (idempotent). The first-pass resident
+    // load calls this to construct the loaders, then keeps using them; the
+    // streamer reuses those same objects for the overflow passes. Each new loader
+    // binds to a distinct, previously-unused `load_storage` slot, so a live
+    // mbarrier is never re-initialized (which is why no `Invalidate()` is needed).
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ensure_loaders(int count)
+    {
+      while (static_cast<int>(loaders.size()) < count)
+      {
+        loaders.emplace_back(agent.temp_storage.load_storage[loaders.size()]);
+      }
+    }
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void issue_load(int stage, offset_t overflow_idx)
+    {
+      const offset_t chunk_idx = chunk_index_of(overflow_idx);
+      const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
+      const bool aligned_chunk = agent.is_aligned_chunk(block_keys_base, chunk);
+      char* const dst          = agent.key_slots + (stream_slot_base + stage) * slot_stride_bytes;
+      const ::cuda::std::span<const key_t> src{
+        block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(chunk.count)};
+      if (aligned_chunk)
+      {
+        pending[stage] =
+          loaders[stage].template CopyAsync<key_t, load_align_bytes>(agent.available_block_tile_buffer(dst), src);
+      }
+      else
+      {
+        pending[stage] = loaders[stage].template CopyAsync<key_t>(agent.available_block_tile_buffer(dst), src);
+      }
+      tokens[stage].emplace(loaders[stage].Commit());
+      slot_chunk[stage] = overflow_idx;
+    }
+
+    // Apply `f` to every overflow key once, in the current ping-pong direction.
+    template <typename F>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void process_pass(F&& f)
+    {
+      if (overflow_chunks == 0)
+      {
+        return;
+      }
+
+      const offset_t m = overflow_chunks;
+
+      if constexpr (use_block_load_to_shared)
+      {
+        // Normally a no-op: the resident load already built `PipelineStages >= p_eff`
+        // loaders. Only the (asserted-against) tiny-config edge would grow here.
+        ensure_loaders(p_eff);
+        const offset_t pe = static_cast<offset_t>(p_eff);
+
+        // First ever call: prime the streaming slots. Subsequent calls inherit
+        // the previous pass's resident tail, which (because the order
+        // ping-pongs) is exactly the first `p_eff` chunks of this direction.
+        if (!primed)
+        {
+          for (int i = 0; i < p_eff; ++i)
+          {
+            const offset_t o = forward ? static_cast<offset_t>(i) : (m - 1 - static_cast<offset_t>(i));
+            issue_load(static_cast<int>(o % pe), o);
+          }
+          primed = true;
+        }
+
+        for (offset_t i = 0; i < m; ++i)
+        {
+          const offset_t o = forward ? i : (m - 1 - i);
+          const int stage  = static_cast<int>(o % pe);
+          if (tokens[stage].has_value())
+          {
+            loaders[stage].Wait(::cuda::std::move(*tokens[stage]));
+            tokens[stage].reset();
+          }
+          _CCCL_ASSERT(slot_chunk[stage] == o, "overflow streamer slot/chunk mapping diverged");
+          agent.for_each_chunk_key(pending[stage], f);
+
+          // Prefetch the chunk `p_eff` visits ahead in this direction. It maps
+          // to the slot we just finished, so a barrier is required before the
+          // async copy can overwrite the data the block was just reading.
+          const offset_t ni = i + pe;
+          if (ni < m)
+          {
+            const offset_t no = forward ? ni : (m - 1 - ni);
+            __syncthreads();
+            issue_load(stage, no);
+          }
+        }
+        forward = !forward;
+      }
+      else
+      {
+        // Generic fallback: overflow keys are read straight from gmem each pass
+        // (no SMEM reuse), but the walk still snakes for L2 locality.
+        for (offset_t i = 0; i < m; ++i)
+        {
+          const offset_t o         = forward ? i : (m - 1 - i);
+          const offset_t chunk_idx = chunk_index_of(o);
+          const auto chunk         = agent.get_chunk(chunk_idx, segment_size, head_items);
+          const int iterations     = ::cuda::ceil_div(chunk.count, threads_per_block);
+          detail::transform::unrolled_for<UnrollFactor>(iterations, [&](int j) {
+            const int local = j * threads_per_block + static_cast<int>(threadIdx.x);
+            if (local < chunk.count)
+            {
+              const key_t key =
+                block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(local))];
+              f(key);
+            }
+          });
+        }
+        forward = !forward;
+      }
+    }
+  };
+
   // -------------------------------------------------------------------------
   // Per-direction implementation
   // -------------------------------------------------------------------------
@@ -547,21 +738,54 @@ private:
     // operator at the matching radix level.
     int last_pass = num_passes;
 
-    offset_t head_items = 0;
+    const key_t* block_keys_base = nullptr;
+    offset_t head_items          = 0;
     if constexpr (use_block_load_to_shared)
     {
-      auto* block_keys_base = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(block_keys_in);
-      head_items            = aligned_head_items(block_keys_base, segment_size_u32);
+      block_keys_base = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(block_keys_in);
+      head_items      = aligned_head_items(block_keys_base, segment_size_u32);
     }
     // The generic fallback does not use BlockLoadToShared's alignment hint or peeling path, so it can keep a simple
     // uniform chunking (`head_items == 0`). The two chunkings may assign keys to CTAs differently, but top-k only
     // depends on the multiset of keys covered by the cluster.
     const offset_t chunks    = num_chunks(segment_size_u32, head_items);
     const offset_t my_chunks = num_rank_chunks(chunks, cluster_rank, cluster_size);
-    // The launch coverage check reserves one extra chunk for the possible unaligned head, so every local chunk remains
-    // resident for later radix passes while only the BlockLoadToShared instances are reused round-robin.
-    _CCCL_ASSERT(my_chunks * offset_t{chunk_items} <= block_tile_capacity,
+
+    // Resident vs. streaming split. Segments that fit the all-resident coverage behave exactly as before
+    // (`resident_slots_cap == full_slots`, no streaming). Larger segments reserve the last `PipelineStages` slots of
+    // the block_tile as a round-robin streaming region and keep `full_slots - PipelineStages` slots resident; the
+    // overflow chunks are re-streamed from gmem on every pass by `streamer`. The launch coverage check still reserves
+    // one extra chunk for the possible unaligned head.
+    const offset_t full_slots = block_tile_capacity / static_cast<offset_t>(chunk_items);
+    const offset_t all_resident_capacity =
+      smem_layout_t::template cluster_tile_capacity<offset_t>(static_cast<int>(cluster_size), block_tile_capacity);
+    const bool needs_streaming = segment_size_u32 > all_resident_capacity;
+    _CCCL_ASSERT(!needs_streaming || full_slots > static_cast<offset_t>(PipelineStages),
+                 "block_tile too small to reserve a streaming region");
+    const offset_t resident_slots_cap =
+      needs_streaming
+        ? ((full_slots > static_cast<offset_t>(PipelineStages))
+             ? full_slots - static_cast<offset_t>(PipelineStages)
+             : offset_t{1})
+        : full_slots;
+    const offset_t my_resident_chunks = (::cuda::std::min) (my_chunks, resident_slots_cap);
+    // Resident chunks stay within the first `resident_slots_cap` slots; the streaming region occupies the slots
+    // `[resident_slots_cap, full_slots)`, so both regions live inside the allocated block_tile buffer.
+    _CCCL_ASSERT(my_resident_chunks * offset_t{chunk_items} <= resident_slots_cap * offset_t{chunk_items},
                  "Dynamic shared memory block_tile is too small");
+
+    // Persistent streamer for the overflow chunks; a no-op (constructs nothing) when this rank has no overflow.
+    overflow_streamer streamer(
+      *this,
+      block_keys_in,
+      block_keys_base,
+      segment_size_u32,
+      head_items,
+      cluster_rank,
+      cluster_size,
+      my_resident_chunks,
+      static_cast<int>(resident_slots_cap),
+      my_chunks);
 
     ::cuda::std::span<key_t> resident_keys;
 
@@ -584,20 +808,22 @@ private:
 
       if constexpr (use_block_load_to_shared)
       {
-        auto* block_keys_base = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(block_keys_in);
-        // BlockLoadToShared is non-copyable and non-movable; keep the active pipeline local and emplace-only.
-        ::cuda::std::inplace_vector<block_load_t, PipelineStages> loaders;
+        // BlockLoadToShared is non-copyable and non-movable. The loaders are owned by `streamer` and constructed
+        // here; the streamer then reuses these very objects for the overflow passes (continuing their Commit/Wait
+        // pipeline) instead of tearing them down and re-initializing the shared `load_storage`. The per-chunk tokens
+        // and pending spans, however, are only needed for this resident load, so they stay local.
         ::cuda::std::inplace_vector<typename block_load_t::CommitToken, PipelineStages> tokens;
         ::cuda::std::inplace_vector<::cuda::std::span<key_t>, PipelineStages> pending_spans;
-        const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_chunks));
+        const int prologue = (::cuda::std::min) (PipelineStages, static_cast<int>(my_resident_chunks));
         char* next_dst     = key_slots;
+        streamer.ensure_loaders(prologue);
 
         for (int stage = 0; stage < prologue; ++stage)
         {
           const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + static_cast<offset_t>(stage * cluster_size);
           const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
           const bool aligned_chunk = is_aligned_chunk(block_keys_base, chunk);
-          auto& loader             = loaders.emplace_back(temp_storage.load_storage[stage]);
+          auto& loader             = streamer.loaders[stage];
           const ::cuda::std::span<const key_t> src{
             block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(chunk.count)};
           if (aligned_chunk)
@@ -613,16 +839,16 @@ private:
           tokens.emplace_back(loader.Commit());
         }
 
-        for (offset_t p = 0; p < my_chunks; ++p)
+        for (offset_t p = 0; p < my_resident_chunks; ++p)
         {
           const int stage          = static_cast<int>(p % static_cast<offset_t>(prologue));
           const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
           const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-          loaders[stage].Wait(::cuda::std::move(tokens[stage]));
+          streamer.loaders[stage].Wait(::cuda::std::move(tokens[stage]));
           append_contiguous_span(resident_keys, pending_spans[stage]);
           for_each_chunk_key(pending_spans[stage], add_first_pass);
 
-          if (p + static_cast<offset_t>(prologue) < my_chunks)
+          if (p + static_cast<offset_t>(prologue) < my_resident_chunks)
           {
             const offset_t next_chunk_idx = static_cast<offset_t>(cluster_rank)
                                           + (p + static_cast<offset_t>(prologue)) * static_cast<offset_t>(cluster_size);
@@ -632,22 +858,22 @@ private:
               block_keys_base + next_chunk.offset, static_cast<::cuda::std::size_t>(next_chunk.count)};
             if (next_aligned_chunk)
             {
-              pending_spans[stage] =
-                loaders[stage].template CopyAsync<key_t, load_align_bytes>(available_block_tile_buffer(next_dst), src);
+              pending_spans[stage] = streamer.loaders[stage].template CopyAsync<key_t, load_align_bytes>(
+                available_block_tile_buffer(next_dst), src);
             }
             else
             {
               pending_spans[stage] =
-                loaders[stage].template CopyAsync<key_t>(available_block_tile_buffer(next_dst), src);
+                streamer.loaders[stage].template CopyAsync<key_t>(available_block_tile_buffer(next_dst), src);
             }
             next_dst      = span_end(pending_spans[stage]);
-            tokens[stage] = loaders[stage].Commit();
+            tokens[stage] = streamer.loaders[stage].Commit();
           }
         }
       }
       else
       {
-        for (offset_t p = 0; p < my_chunks; ++p)
+        for (offset_t p = 0; p < my_resident_chunks; ++p)
         {
           const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
           const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
@@ -665,6 +891,12 @@ private:
           });
         }
       }
+
+      // Fold the overflow chunks into the first-pass histogram. Forward direction; primes the streaming slots.
+      // The streamer reuses the resident loaders (no re-init), so this just continues their Commit/Wait pipeline;
+      // `Commit()`'s own block barrier provides the necessary synchronization.
+      streamer.process_pass(add_first_pass);
+
       const int resident_count = span_size(resident_keys);
       _CCCL_ASSERT(resident_count == 0 || static_cast<offset_t>(resident_count) <= block_tile_capacity,
                    "Dynamic shared memory block_tile is too small");
@@ -743,7 +975,7 @@ private:
         }
         else
         {
-          for (offset_t p = 0; p < my_chunks; ++p)
+          for (offset_t p = 0; p < my_resident_chunks; ++p)
           {
             const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
             const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
@@ -751,6 +983,10 @@ private:
             for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, add_hist);
           }
         }
+
+        // Re-stream the overflow chunks into this pass's histogram. Ping-pongs direction and reuses the boundary
+        // chunks left resident by the previous pass.
+        streamer.process_pass(add_hist);
       }
 
 #  ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
@@ -896,7 +1132,7 @@ private:
     }
     else
     {
-      for (offset_t p = 0; p < my_chunks; ++p)
+      for (offset_t p = 0; p < my_resident_chunks; ++p)
       {
         const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
         const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
@@ -904,6 +1140,7 @@ private:
         for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, count_selected);
       }
     }
+    streamer.process_pass(count_selected);
     __syncthreads();
 
     // Thread 0 of every block (leader block included) reserves the block's
@@ -954,7 +1191,7 @@ private:
     }
     else
     {
-      for (offset_t p = 0; p < my_chunks; ++p)
+      for (offset_t p = 0; p < my_resident_chunks; ++p)
       {
         const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
         const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
@@ -962,6 +1199,7 @@ private:
         for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
       }
     }
+    streamer.process_pass(write_selected);
 #  else
     auto write_selected = [&](const key_t& key) {
       const auto res = identify_op(key);
@@ -986,7 +1224,7 @@ private:
     }
     else
     {
-      for (offset_t p = 0; p < my_chunks; ++p)
+      for (offset_t p = 0; p < my_resident_chunks; ++p)
       {
         const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
         const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
@@ -994,6 +1232,7 @@ private:
         for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
       }
     }
+    streamer.process_pass(write_selected);
 #  endif
 
     // Final cluster barrier: hold every block in the cluster until all DSMEM
@@ -1028,17 +1267,17 @@ private:
       return;
     }
 
+    // Segments larger than the resident cluster_tile capacity are handled by re-streaming the overflow chunks from
+    // gmem (see `overflow_streamer`), so the only hard limit left is the 32-bit offset range used internally.
     bool segment_fits_offset = true;
     if constexpr (sizeof(segment_size_val_t) > sizeof(offset_t))
     {
       segment_fits_offset =
         segment_size <= static_cast<segment_size_val_t>(::cuda::std::numeric_limits<offset_t>::max());
     }
-    const auto max_cluster_tile_capacity = smem_layout_t::template cluster_tile_capacity<segment_size_val_t>(
-      static_cast<int>(cluster_blocks), block_tile_capacity);
-    if (!segment_fits_offset || segment_size > max_cluster_tile_capacity)
+    if (!segment_fits_offset)
     {
-      _CCCL_ASSERT(false, "Segment exceeds the selected cluster top-k cluster_tile capacity");
+      _CCCL_ASSERT(false, "Segment exceeds the 32-bit offset range supported by cluster top-k");
       return;
     }
 

@@ -299,9 +299,10 @@ c2h::device_vector<KeyT> compact_to_topk_batched(
   auto copy_sizes_it = cuda::make_transform_iterator(
     cuda::make_counting_iterator(0), get_output_size_op{d_offsets.cbegin(), cuda::constant_iterator(k)});
 
-  // Calculate destination offsets via prefix sum
-  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1, thrust::no_init);
-  thrust::exclusive_scan(copy_sizes_it, copy_sizes_it + num_segments + 1, d_output_offsets.begin());
+  // Calculate destination offsets via prefix sum. Scan only the `num_segments` valid sizes (each reads
+  // `offset[seg]`/`offset[seg + 1]`, which stay in bounds) into indices [1, num_segments]; index 0 stays 0.
+  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1);
+  thrust::inclusive_scan(copy_sizes_it, copy_sizes_it + num_segments, d_output_offsets.begin() + 1);
 
   OffsetT total_compacted_size = d_output_offsets.back();
   c2h::device_vector<KeyT> d_keys_out(total_compacted_size, thrust::no_init);

@@ -349,6 +349,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   static_assert(ChunkBytes % LoadAlignBytes == 0);
   static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
+  // Static-footprint estimate for the device-side CDP fallback, which cannot query `cudaFuncGetAttributes`.
+  // The host path instead uses the driver-reported `sharedSizeBytes` (see below), which is padding-aware.
   constexpr int static_smem_bytes = static_cast<int>(sizeof(typename agent_t::TempStorage));
 
   const auto max_seg_size = runtime_max_segment_size(segment_sizes);
@@ -439,32 +441,35 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       cfg.attrs            = &cluster_attr;
       cfg.numAttrs         = 1;
 
-      int max_dynamic_smem_bytes = 0;
-      if (const auto error = CubDebug(MaxPotentialDynamicSmemBytes(max_dynamic_smem_bytes, dynamic_kernel)))
-      {
-        return error;
-      }
-
-      // The table entries express the documented total per-block shared-memory budget
-      // (`cudaDevAttrMaxSharedMemoryPerBlockOptin`). The usable dynamic portion is that budget minus the
-      // kernel's static shared memory and the CUDA driver's per-block reserved shared memory, matching
-      // `MaxPotentialDynamicSmemBytes`. Subtracting the reserved bytes here keeps a documented entry (e.g. 99 KiB)
-      // from deriving a dynamic size that overshoots `max_dynamic_smem_bytes` and being discarded below.
+      // Resolve the per-block opt-in shared-memory budget and the kernel's static footprint from the driver so
+      // the dynamic-SMEM math below matches exactly what the launch permits. The table entries express the
+      // documented total per-block budget (`cudaDevAttrMaxSharedMemoryPerBlockOptin`); the usable dynamic portion
+      // is that budget minus the static footprint.
       int device_id = 0;
       if (const auto error = CubDebug(cudaGetDevice(&device_id)))
       {
         return error;
       }
-      int reserved_smem_bytes = 0;
+      int max_smem_optin_bytes = 0;
       if (const auto error =
-            CubDebug(cudaDeviceGetAttribute(&reserved_smem_bytes, cudaDevAttrReservedSharedMemoryPerBlock, device_id)))
+            CubDebug(cudaDeviceGetAttribute(&max_smem_optin_bytes, cudaDevAttrMaxSharedMemoryPerBlockOptin, device_id)))
       {
         return error;
       }
-      // TODO: subtracting `reserved` mirrors `MaxPotentialDynamicSmemBytes`, but that helper double-counts it
-      // (opt-in already excludes reserved), so this is ~`reserved` bytes too conservative. Revisit once the helper is
-      // fixed.
-      const int nondynamic_smem_bytes = static_smem_bytes + reserved_smem_bytes;
+      // Use the driver-reported static footprint (`sharedSizeBytes`) rather than `sizeof(TempStorage)`: it reflects
+      // any padding the toolchain inserts to align the dynamic shared-memory section after the static one, so the
+      // derived dynamic sizes neither overshoot the budget nor conservatively drop the top table tier.
+      cudaFuncAttributes kernel_attrs{};
+      if (const auto error = CubDebug(cudaFuncGetAttributes(&kernel_attrs, dynamic_kernel)))
+      {
+        return error;
+      }
+      // `cudaDevAttrMaxSharedMemoryPerBlockOptin` already excludes the driver's per-block reserved shared memory
+      // (opt-in == per-SM - reserved), so the dynamic budget is just the opt-in budget minus the static footprint;
+      // reserved must not be subtracted a second time.
+      const int nondynamic_smem_bytes = static_cast<int>(kernel_attrs.sharedSizeBytes);
+      const int max_dynamic_smem_bytes =
+        (max_smem_optin_bytes > nondynamic_smem_bytes) ? max_smem_optin_bytes - nondynamic_smem_bytes : 0;
 
       const auto runtime_policy = PolicySelector{}(::cuda::compute_capability{sm_version / 10});
       _CCCL_ASSERT(runtime_policy.launch_configs.size() <= max_launch_configs,
@@ -517,24 +522,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         const auto candidate_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
           candidate.cluster_blocks, candidate.block_tile_capacity);
 
-        bool candidate_can_improve_selection = false;
-        if constexpr (detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
-        {
-          // Runtime-sized segments may exceed every finite candidate, so find the largest supported fallback.
-          candidate_can_improve_selection = true;
-        }
-        else if (candidate_cluster_tile_capacity >= max_seg_size)
-        {
-          const auto selected_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
-            selected_config.cluster_blocks, selected_config.block_tile_capacity);
-          candidate_can_improve_selection =
-            selected_config.cluster_blocks == 0 || candidate_cluster_tile_capacity < selected_cluster_tile_capacity;
-        }
-        if (!candidate_can_improve_selection)
-        {
-          continue;
-        }
-
+        // Every smem-fitting candidate is considered: it may either tighten the covering selection or improve the
+        // largest-coverage fallback used for oversize segments. The table is tiny, so the extra driver queries below
+        // are negligible.
         if (const auto error = ensure_dynamic_smem_limit(candidate_dynamic_smem))
         {
           return error;
@@ -554,7 +544,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           continue;
         }
 
-        if constexpr (detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
+        // Track the largest-coverage hardware-supported config for all parameter kinds. Segments that exceed every
+        // finite candidate (always possible for per-segment sizes, and now also for static/uniform bounds) fall back
+        // to this config and re-stream the overflow from gmem in the agent.
         {
           const auto largest_supported_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
             largest_supported_config.cluster_blocks, largest_supported_config.block_tile_capacity);
@@ -565,22 +557,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           }
         }
 
+        // Among the candidates that fully cover the segment(s), keep the one with the lowest coverage.
         if (candidate_cluster_tile_capacity >= max_seg_size)
         {
-          selected_config = candidate;
+          const auto selected_cluster_tile_capacity = layout_t::template cluster_tile_capacity<max_seg_size_t>(
+            selected_config.cluster_blocks, selected_config.block_tile_capacity);
+          if (selected_config.cluster_blocks == 0 || candidate_cluster_tile_capacity < selected_cluster_tile_capacity)
+          {
+            selected_config = candidate;
+          }
         }
       }
 
       if (selected_config.cluster_blocks == 0)
       {
-        if constexpr (detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
-        {
-          selected_config = largest_supported_config;
-        }
-        else
-        {
-          return cudaErrorInvalidValue;
-        }
+        // No finite candidate covers the segment(s); fall back to the largest hardware-supported config and let the
+        // agent stream the overflow. Applies to per-segment sizes and static/uniform bounds alike.
+        selected_config = largest_supported_config;
       }
       if (selected_config.cluster_blocks == 0)
       {
@@ -644,20 +637,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }),
     ({
       // CDP path: device-side launches cannot opt in to more than portable
-      // total SMEM or non-portable cluster widths.
+      // total SMEM or non-portable cluster widths. Segments that exceed the
+      // portable resident coverage are still handled: the agent re-streams the
+      // overflow chunks from gmem.
       constexpr int portable_total_smem_bytes = 48 * 1024;
       constexpr int dynamic_smem_bytes =
         (portable_total_smem_bytes > static_smem_bytes) ? portable_total_smem_bytes - static_smem_bytes : 0;
       constexpr auto block_tile_capacity = layout_t::block_tile_capacity(dynamic_smem_bytes);
-      constexpr auto portable_cluster_tile_capacity =
-        layout_t::template cluster_tile_capacity<max_seg_size_t>(max_portable_cluster_blocks, block_tile_capacity);
-      if constexpr (!detail::params::is_per_segment_param_v<SegmentSizeParameterT>)
-      {
-        if (max_seg_size > static_cast<max_seg_size_t>(portable_cluster_tile_capacity))
-        {
-          return cudaErrorInvalidValue;
-        }
-      }
 
       const auto grid_blocks = static_cast<::cuda::std::uint64_t>(num_seg_val)
                              * static_cast<::cuda::std::uint64_t>(max_portable_cluster_blocks);

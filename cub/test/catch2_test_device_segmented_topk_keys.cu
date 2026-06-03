@@ -11,6 +11,7 @@
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/scan.h>
+#include <thrust/sequence.h>
 
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
@@ -206,14 +207,18 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr segment_size_t static_max_segment_size = 128 * 1024;
+  // `static_max_segment_size` is chosen to exceed the largest all-resident cluster coverage (~16 blocks worth of
+  // resident SMEM), so the 1 Mi-element segments force the agent's gmem-streaming overflow path (including an
+  // unaligned overflow tail via `- 31`), while the 128 Ki-element segment still runs fully resident under the same
+  // streaming-capable launch configuration.
+  constexpr segment_size_t static_max_segment_size = 1024 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
   constexpr segment_index_t num_segments           = 3;
 
   const auto direction = cub::detail::topk::select::max;
   const int pad        = GENERATE(0, 1, 3, 7);
   const segment_size_t segment_size =
-    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 1, static_max_segment_size - 31}));
+    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
   const segment_size_t max_k = (cuda::std::min) (static_max_k, segment_size);
   const segment_size_t k     = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
 
@@ -239,6 +244,90 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large fixed-size unaligned
     cub::detail::batched_topk::select_direction_uniform{direction},
     cub::detail::batched_topk::num_segments_uniform<>{num_segments},
     cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+template <typename KeyT>
+struct cast_to_key_op
+{
+  template <typename T>
+  __host__ __device__ KeyT operator()(T x) const
+  {
+    return static_cast<KeyT>(x);
+  }
+};
+
+// Yields, for each segment, a *non-contiguous* iterator over that segment's keys (an integral counting iterator
+// cast to the key type). Feeding the cluster top-k a non-contiguous key iterator makes `use_block_load_to_shared`
+// false, so the agent takes its generic (non-BlockLoadToShared) overflow-streaming path. Segment `seg` produces
+// keys [seg * segment_size, (seg + 1) * segment_size), so the flattened input equals the identity sequence and the
+// expected top-k is exact.
+template <typename KeyT, typename SegmentSizeT>
+struct counting_segment_keys_op
+{
+  SegmentSizeT segment_size;
+
+  template <typename IndexT>
+  __host__ __device__ auto operator()(IndexT seg) const
+  {
+    return cuda::make_transform_iterator(
+      cuda::make_counting_iterator(static_cast<SegmentSizeT>(seg) * segment_size), cast_to_key_op<KeyT>{});
+  }
+};
+
+TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys stream large segments through a non-contiguous key iterator",
+          "[keys][segmented][topk][device][cluster]")
+{
+  using key_t           = float;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  // The counting-iterator key source is non-contiguous, so the agent uses its generic overflow-streaming path rather
+  // than BlockLoadToShared. `static_max_segment_size` exceeds the largest all-resident cluster coverage, so the 1 Mi
+  // -element segments stream (incl. an unaligned `- 31` tail), while the 128 Ki-element segment validates the generic
+  // resident path (no streaming) through the same code. Keeping the largest total below 2^24 makes every key an exact
+  // float.
+  constexpr segment_size_t static_max_segment_size = 1024 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+  constexpr segment_index_t num_segments           = 3;
+
+  const auto direction = cub::detail::topk::select::max;
+  const segment_size_t segment_size =
+    GENERATE_COPY(values({static_max_segment_size, static_max_segment_size - 31, segment_size_t{128 * 1024}}));
+  const segment_size_t max_k     = (cuda::std::min) (static_max_k, segment_size);
+  const segment_size_t k         = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
+  const segment_size_t num_items = num_segments * segment_size;
+
+  CAPTURE(static_max_segment_size, static_max_k, segment_size, k, num_segments, direction);
+
+  // Non-contiguous input: segment `seg` is the counting iterator [seg * segment_size, (seg + 1) * segment_size).
+  auto d_keys_in = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), counting_segment_keys_op<key_t, segment_size_t>{segment_size});
+
+  // Output is a real buffer (the output iterator stays contiguous; only the input drives the streaming path).
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  batched_topk_keys(
+    d_keys_in,
+    d_keys_out,
+    cub::detail::batched_topk::segment_size_uniform<1, static_max_segment_size>{segment_size},
+    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
+    cub::detail::batched_topk::select_direction_uniform{direction},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_items});
+
+  // The flattened input is the identity sequence, so build the expected keys directly and reuse the standard
+  // sort + compact verification.
+  c2h::device_vector<key_t> expected_keys(num_items, thrust::no_init);
+  thrust::sequence(expected_keys.begin(), expected_keys.end());
 
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
@@ -308,9 +397,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}),
     get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k)});
-  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
-  thrust::exclusive_scan(
-    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  // Exclusive prefix sum of the per-segment output sizes. Scan only the `num_segments` valid sizes (each reads
+  // `offset[seg]`/`offset[seg + 1]`, staying in bounds) into indices [1, num_segments]; index 0 stays 0.
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1);
+  thrust::inclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments, compacted_offsets.begin() + 1);
   segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
@@ -358,19 +449,23 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalig
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  constexpr segment_size_t static_max_segment_size = 128 * 1024;
+  // `static_max_segment_size` exceeds the largest all-resident cluster coverage, so a single per-segment launch
+  // mixes streaming segments (the 1 Mi-element ones, one with an unaligned `- 31` overflow tail) with fully-resident
+  // segments (96 Ki + 17 and 257 elements).
+  constexpr segment_size_t static_max_segment_size = 1100 * 1024;
   constexpr segment_size_t static_max_k            = 4 * 1024;
 
   const auto direction   = cub::detail::topk::select::max;
   const int pad          = GENERATE(1, 3, 7);
   const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, static_max_k / 2, static_max_k}));
 
+  constexpr segment_size_t big_segment_size = 1024 * 1024;
   c2h::host_vector<segment_size_t> h_segment_offsets{
     0,
-    static_max_segment_size,
-    static_max_segment_size + (static_max_segment_size - 31),
-    static_max_segment_size + (static_max_segment_size - 31) + (96 * 1024 + 17),
-    static_max_segment_size + (static_max_segment_size - 31) + (96 * 1024 + 17) + 257};
+    big_segment_size,
+    big_segment_size + (big_segment_size - 31),
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17),
+    big_segment_size + (big_segment_size - 31) + (96 * 1024 + 17) + 257};
   c2h::device_vector<segment_size_t> segment_offsets = h_segment_offsets;
   const segment_index_t num_segments                 = static_cast<segment_index_t>(h_segment_offsets.size() - 1);
   const segment_size_t num_items                     = h_segment_offsets.back();
@@ -384,9 +479,11 @@ TEST_CASE("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalig
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}),
     get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k)});
-  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
-  thrust::exclusive_scan(
-    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  // Exclusive prefix sum of the per-segment output sizes. Scan only the `num_segments` valid sizes (each reads
+  // `offset[seg]`/`offset[seg + 1]`, staying in bounds) into indices [1, num_segments]; index 0 stays 0.
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1);
+  thrust::inclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments, compacted_offsets.begin() + 1);
   segment_size_t total_output_size = compacted_offsets.back();
 
   c2h::device_vector<key_t> keys_in_buffer(pad + num_items, thrust::no_init);

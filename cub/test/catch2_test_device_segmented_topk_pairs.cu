@@ -305,9 +305,11 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}),
     get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k)});
-  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
-  thrust::exclusive_scan(
-    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  // Exclusive prefix sum of the per-segment output sizes. Scan only the `num_segments` valid sizes (each reads
+  // `offset[seg]`/`offset[seg + 1]`, staying in bounds) into indices [1, num_segments]; index 0 stays 0.
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1);
+  thrust::inclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments, compacted_offsets.begin() + 1);
   segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
