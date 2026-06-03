@@ -87,7 +87,7 @@ _CCCL_HOST_API void __fill_bytes_tile(
 //! -----------------------------
 //!
 //! ``fill_bytes`` asynchronously fills the mapped elements of a device ``mdspan`` with a repeated byte pattern on the
-//! given CUDA stream. The pattern is the object representation of a 1-, 2-, or 4-byte fill value. This is a byte
+//! given CUDA stream. The pattern is the object representation of a 1-, 2-, or 4-byte value. This is a byte
 //! operation: it does not assign ``__byte_value`` as an object of the destination element type. For strided layouts,
 //! only bytes belonging to mapped destination elements are filled; padding bytes outside the mapping are left
 //! unchanged.
@@ -110,13 +110,11 @@ _CCCL_HOST_API void __fill_bytes_tile(
 //! ``cuda::std::uint8_t{0}`` or ``cuda::std::byte{0}`` for a byte pattern fill. The implementation is optimized to
 //! maximize the contiguous memory regions to fill.
 //!
-//! .. code-block:: c++
-//!
-//!    #include <cuda/experimental/fill_bytes.cuh>
-//!
-//!    using extents_t = cuda::std::dims<2>;
-//!    cuda::device_mdspan<int, extents_t> dst(dst_ptr, extents);
-//!    cuda::experimental::fill_bytes(dst, cuda::std::uint32_t{0xFF00FF00}, stream);
+//! .. literalinclude:: ../../../../test/fill_bytes/fill_bytes_mdspan_example.cu
+//!     :language: c++
+//!     :dedent:
+//!     :start-after: example-begin fill-bytes-mdspan
+//!     :end-before: example-end fill-bytes-mdspan
 //!
 //! @endrst
 //! @brief Asynchronously fills a device mdspan with a 1-, 2-, or 4-byte pattern.
