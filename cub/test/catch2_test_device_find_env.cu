@@ -11,6 +11,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 
 #include "catch2_test_env_launch_helper.h"
@@ -44,16 +45,7 @@ struct find_tuning
   }
 };
 
-// A predicate that never matches but records the block size it ran with.
-struct never_matches_t
-{
-  __device__ bool operator()(int) const
-  {
-    return false;
-  }
-};
-
-using block_size_extracting_predicate_t = block_size_extracting_op<never_matches_t>;
+using block_size_extracting_predicate_t = block_size_extracting_op<::cuda::always_false>;
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
@@ -218,7 +210,7 @@ C2H_TEST("Device FindIf can be tuned", "[find][device]", block_sizes)
 
   constexpr int num_items = 1024;
   auto d_in               = c2h::device_vector<int>(num_items, 0);
-  auto d_out              = c2h::device_vector<int>(1);
+  auto d_out              = c2h::device_vector<int>(1, thrust::no_init);
   auto d_block_size       = c2h::device_vector<unsigned int>(1, 0);
 
   block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
