@@ -174,12 +174,13 @@ public:
             class _Enable = ::cuda::std::enable_if_t<::cuda::experimental::cuco::is_tuple_like<_NewHash>::value>>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
   {
-    static_assert(::cuda::experimental::cuco::is_tuple_like<_NewHash>::value,
-                  "The given hasher must be a tuple-like object");
+    static_assert(
+      ::cuda::experimental::cuco::is_tuple_like<_NewHash>::value && ::cuda::std::tuple_size<_NewHash>::value == 2,
+      "The given hasher must be a tuple-like object with exactly two elements");
 
-    auto const [__hash1, __hash2] = ::cuda::std::tuple{__hash};
-    using __hash1_type            = ::cuda::std::decay_t<decltype(__hash1)>;
-    using __hash2_type            = ::cuda::std::decay_t<decltype(__hash2)>;
+    auto const& [__hash1, __hash2] = __hash;
+    using __hash1_type             = ::cuda::std::decay_t<decltype(__hash1)>;
+    using __hash2_type             = ::cuda::std::decay_t<decltype(__hash2)>;
     return double_hashing<cg_size, __hash1_type, __hash2_type>{__hash1, __hash2};
   }
 
