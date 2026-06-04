@@ -81,6 +81,7 @@ constexpr _CCCL_HOST_DEVICE auto __grid_size(
   return (__cg_size * __num + __stride * __block_size - 1) / (__stride * __block_size);
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Kernel>
 constexpr auto __max_occupancy_grid_size(
   ::cuda::std::int32_t __block_size, _Kernel __kernel, ::cuda::std::size_t __dynamic_shm_size = 0)
@@ -107,6 +108,7 @@ constexpr auto __max_occupancy_grid_size(
 
   return __max_active_blocks_per_multiprocessor * __num_multiprocessors;
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 //! @brief Distance helper requiring random access iterators.
 
 template <class _Iterator>
