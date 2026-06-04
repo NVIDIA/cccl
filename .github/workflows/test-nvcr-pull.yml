@@ -1,0 +1,155 @@
+# nvcr.io pull smoke test
+#
+# Goal: confirm a self-hosted runner on NVIDIA/cccl (`linux-amd64-cpu4`)
+# can authenticate to nvcr.io and `docker pull` an image. Standalone by
+# design — does NOT call the central `NVIDIA/security-workflows` reusable
+# workflow. The point is to isolate the registry-reachability and auth
+# dimension before wiring the larger malware-scan integration.
+#
+# LOG DISCIPLINE
+#   Outputs are PASS/FAIL gates only. No hostnames, no kernel strings,
+#   no `docker info` dumps, no resolved IPs, no detailed timing — Actions
+#   logs on a public repo are world-readable.
+#
+# PRE-REQS (configure on NVIDIA/cccl before triggering)
+#   Settings → Secrets and variables → Actions
+#     Secrets:
+#       NVCR_USERNAME   (usually `$oauthtoken` for an NGC API key)
+#       NVCR_PASSWORD   (the NGC API key value from ngc.nvidia.com)
+#     Variables:
+#       NVCR_IMAGE      (full image ref, e.g.
+#                        `nvcr.io/nvidian/prodsec/pulse-malware-scanner-cli:latest`)
+#   Sourcing the image through a repo variable keeps the private-namespace
+#   path out of the workflow file (and out of the public repo).
+#
+# TRIGGER
+#   - Push to the `test-nvcr-pull` branch (auto-runs).
+#   - "Run workflow" button on the Actions tab (workflow_dispatch).
+
+name: Test nvcr.io Image Pull
+
+run-name: nvcr pull test — ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - test-nvcr-pull
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pull-nvcr-image:
+    name: docker pull nvcr.io image
+    # NV self-hosted CPU runner on NVIDIA/cccl; GitHub-hosted fallback so
+    # the workflow does not error out on contributor forks where the
+    # nv-gha-runners labels do not resolve. Mirrors `secret-scan.yml`.
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu4' || 'ubuntu-latest' }}
+    env:
+      NVCR_IMAGE: ${{ vars.NVCR_IMAGE }}
+
+    steps:
+      - name: Preflight — toolchain + variable check
+        run: |
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "::error::docker CLI not found on this runner."
+            exit 1
+          fi
+          if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
+            echo "::error::docker daemon not reachable from this runner."
+            exit 1
+          fi
+          echo "docker: OK"
+
+          if [[ -z "${NVCR_IMAGE:-}" ]]; then
+            echo "::error::Repository variable NVCR_IMAGE is not set."
+            echo "Configure at: https://github.com/${GITHUB_REPOSITORY}/settings/variables/actions"
+            exit 1
+          fi
+          echo "image variable: present (value hidden)"
+          echo "::add-mask::${NVCR_IMAGE}"
+
+      - name: Network reachability — nvcr.io (PASS/FAIL only)
+        run: |
+          set -euo pipefail
+          if curl --silent --show-error --fail --max-time 15 \
+              --output /dev/null --head https://nvcr.io/v2/; then
+            echo "nvcr.io reachability (HTTPS HEAD /v2/): PASS"
+          else
+            rc=$?
+            echo "::error::nvcr.io unreachable (curl exit ${rc})."
+            exit "${rc}"
+          fi
+
+      - name: docker login nvcr.io
+        env:
+          NVCR_USERNAME: ${{ secrets.NVCR_USERNAME }}
+          NVCR_PASSWORD: ${{ secrets.NVCR_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${NVCR_USERNAME:-}" || -z "${NVCR_PASSWORD:-}" ]]; then
+            echo "::error::NVCR_USERNAME / NVCR_PASSWORD repository secrets are not set."
+            echo "Configure at: https://github.com/${GITHUB_REPOSITORY}/settings/secrets/actions"
+            exit 1
+          fi
+          if printf '%s' "${NVCR_PASSWORD}" | docker login nvcr.io \
+              --username "${NVCR_USERNAME}" --password-stdin >/dev/null 2>&1; then
+            echo "docker login nvcr.io: PASS"
+          else
+            echo "::error::docker login nvcr.io failed (auth)."
+            exit 1
+          fi
+
+      - name: docker pull (image name masked)
+        run: |
+          set -euo pipefail
+          if docker pull "${NVCR_IMAGE}" >/dev/null 2>&1; then
+            echo "docker pull: PASS"
+          else
+            rc=$?
+            echo "::error::docker pull failed (exit ${rc})."
+            exit "${rc}"
+          fi
+
+      - name: Sanity — image present locally
+        run: |
+          set -euo pipefail
+          if docker image inspect "${NVCR_IMAGE}" \
+              --format '{{.Architecture}}/{{.Os}} size={{.Size}}' \
+              > /tmp/img_meta 2>/dev/null; then
+            echo "image present: PASS ($(cat /tmp/img_meta))"
+          else
+            echo "::error::image not present locally after pull."
+            exit 1
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker logout nvcr.io >/dev/null 2>&1 || true
+          if [[ -n "${NVCR_IMAGE:-}" ]]; then
+            docker rmi "${NVCR_IMAGE}" >/dev/null 2>&1 || true
+          fi
+
+      - name: Summary (no runner identity)
+        if: always()
+        run: |
+          {
+            echo "### nvcr.io pull smoke test"
+            echo
+            echo "| Gate | Status |"
+            echo "|---|---|"
+            echo "| Repository | \`${GITHUB_REPOSITORY}\` |"
+            echo "| Branch | \`${GITHUB_REF_NAME}\` |"
+            echo "| Runner class | \`${RUNNER_OS}/${RUNNER_ARCH}\` |"
+            echo "| Job outcome | \`${{ job.status }}\` |"
+            echo
+            echo "_Gate-level PASS/FAIL is in the step logs. Runner hostname,"
+            echo "kernel, and image ref are deliberately not echoed._"
+          } >> "${GITHUB_STEP_SUMMARY}"
