@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__argument_>
+#include <cuda/argument>
 
-[[maybe_unused]] constexpr auto invalid_bounds = cuda::__argument::__static_bounds<0, 1L>{};
+[[maybe_unused]] constexpr auto invalid_bounds = cuda::argument::__static_bounds<0, 1L>{};
 
 int main(int, char**)
 {

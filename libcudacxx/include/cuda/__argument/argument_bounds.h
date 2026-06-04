@@ -122,7 +122,7 @@ inline constexpr bool __is_runtime_bounds_v<__runtime_bounds<_Tp>> = true;
 //! @tparam _Upper The static upper bound.
 //! @return A compile-time bounds object.
 template <auto _Lower, auto _Upper>
-[[nodiscard]] _CCCL_API constexpr __static_bounds<_Lower, _Upper> __bounds() noexcept
+[[nodiscard]] _CCCL_API constexpr __static_bounds<_Lower, _Upper> bounds() noexcept
 {
   return {};
 }
@@ -133,7 +133,7 @@ template <auto _Lower, auto _Upper>
 //! @param __upper The runtime upper bound.
 //! @return A runtime bounds object.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr __runtime_bounds<_Tp> __bounds(_Tp __lower, _Tp __upper) noexcept
+[[nodiscard]] _CCCL_API constexpr __runtime_bounds<_Tp> bounds(_Tp __lower, _Tp __upper) noexcept
 {
   return {__lower, __upper};
 }

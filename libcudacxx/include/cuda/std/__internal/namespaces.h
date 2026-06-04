@@ -115,8 +115,8 @@
 #define _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION _CCCL_BEGIN_NAMESPACE(cuda::execution)
 #define _CCCL_END_NAMESPACE_CUDA_EXECUTION   _CCCL_END_NAMESPACE(cuda::execution)
 
-#define _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT _CCCL_BEGIN_NAMESPACE(cuda::__argument)
-#define _CCCL_END_NAMESPACE_CUDA_ARGUMENT   _CCCL_END_NAMESPACE(cuda::__argument)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT _CCCL_BEGIN_NAMESPACE(cuda::argument)
+#define _CCCL_END_NAMESPACE_CUDA_ARGUMENT   _CCCL_END_NAMESPACE(cuda::argument)
 
 // Namespace to avoid name collisions with CPOs on clang-16 (see
 // https://godbolt.org/z/9TadonrdM for example). MSVC's ancient parser also gets confused with

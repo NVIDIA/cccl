@@ -8,13 +8,19 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/argument>
+#ifndef _CUDA_ARGUMENT_
+#define _CUDA_ARGUMENT_
 
-using arg_t = cuda::argument::immediate<unsigned char, cuda::argument::__static_bounds<0, 1000>>;
+#include <cuda/std/detail/__config>
 
-[[maybe_unused]] constexpr auto invalid_highest = cuda::argument::__traits<arg_t>::highest;
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-int main(int, char**)
-{
-  return 0;
-}
+#include <cuda/__argument/argument.h>
+
+#endif // _CUDA_ARGUMENT_

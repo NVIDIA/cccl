@@ -7,7 +7,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 
-#include <cuda/__argument_>
+#include <cuda/argument>
 #include <cuda/iterator>
 
 #include <nvbench_helper.cuh>
@@ -32,17 +32,17 @@ void decode_style_variable_topk_keys(
     static_cast<cuda::std::int64_t>(MaxSegmentSize));
   const auto input_elements  = thrust::reduce(d_segment_sizes.begin(), d_segment_sizes.end());
   const auto output_elements = static_cast<std::size_t>(num_segments) * K;
-  const auto total_num_items = ::cuda::__argument::__immediate{static_cast<cuda::std::int64_t>(input_elements)};
+  const auto total_num_items = ::cuda::argument::immediate{static_cast<cuda::std::int64_t>(input_elements)};
 
   auto in_keys_buffer = gen_data<MaxSegmentSize, K>(
     num_segments, string_to_pattern(state.get_string("Pattern")), thrust::raw_pointer_cast(d_segment_sizes.data()));
   auto out_keys_buffer = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
 
-  auto segment_sizes_param = ::cuda::__argument::__immediate_sequence{
-    thrust::raw_pointer_cast(d_segment_sizes.data()), ::cuda::__argument::__bounds<1, MaxSegmentSize>()};
-  auto k_param            = ::cuda::__argument::__constant<K>{};
-  auto select_direction   = ::cuda::__argument::__constant<cub::detail::topk::select::max>{};
-  auto num_segments_param = ::cuda::__argument::__immediate{static_cast<cuda::std::int64_t>(num_segments)};
+  auto segment_sizes_param = ::cuda::argument::immediate_sequence{
+    thrust::raw_pointer_cast(d_segment_sizes.data()), ::cuda::argument::bounds<1, MaxSegmentSize>()};
+  auto k_param            = ::cuda::argument::constant<K>{};
+  auto select_direction   = ::cuda::argument::constant<cub::detail::topk::select::max>{};
+  auto num_segments_param = ::cuda::argument::immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
   auto d_keys_in = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(in_keys_buffer.data())),

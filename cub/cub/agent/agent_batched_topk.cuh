@@ -23,8 +23,8 @@
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__argument_>
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/argument>
 
 CUB_NAMESPACE_BEGIN
 
@@ -73,8 +73,8 @@ struct agent_batched_topk_worker_per_segment
   using key_t   = it_value_t<key_it_t>;
   using value_t = it_value_t<value_it_t>;
 
-  using segment_size_val_t = typename ::cuda::__argument::__traits<SegmentSizeParameterT>::element_type;
-  using num_segments_val_t = typename ::cuda::__argument::__traits<NumSegmentsParameterT>::element_type;
+  using segment_size_val_t = typename ::cuda::argument::__traits<SegmentSizeParameterT>::element_type;
+  using num_segments_val_t = typename ::cuda::argument::__traits<NumSegmentsParameterT>::element_type;
   using counters_t         = batched_topk_counters<num_segments_val_t>;
 
   static constexpr auto policy                 = PolicyGetter{}();
@@ -95,7 +95,7 @@ struct agent_batched_topk_worker_per_segment
     multi_worker_per_segment_policy.threads_per_block * multi_worker_per_segment_policy.items_per_thread;
 
   // Check if there could be large segments present
-  static constexpr bool only_small_segments = ::cuda::__argument::__traits<SegmentSizeParameterT>::highest <= tile_size;
+  static constexpr bool only_small_segments = ::cuda::argument::__traits<SegmentSizeParameterT>::highest <= tile_size;
 
   // Check if we are dealing with keys-only or key-value pairs
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
@@ -196,8 +196,8 @@ struct agent_batched_topk_worker_per_segment
       return;
     }
 
-    constexpr bool is_full_tile = ::cuda::__argument::__traits<SegmentSizeParameterT>::is_constant
-                               && ::cuda::__argument::__traits<SegmentSizeParameterT>::lowest == tile_size;
+    constexpr bool is_full_tile = ::cuda::argument::__traits<SegmentSizeParameterT>::is_constant
+                               && ::cuda::argument::__traits<SegmentSizeParameterT>::lowest == tile_size;
 
     // Resolve Segment Parameters
     const auto segment_size = params::get_param(segment_sizes, segment_id);
