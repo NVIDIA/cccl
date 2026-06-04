@@ -520,6 +520,49 @@ template <class _TupleTypes>
 inline constexpr __select_assignment __tuple_select_const_move_assignable_v =
   ::cuda::std::__tuple_select_const_move_assignable(_TupleTypes{});
 
+template <bool _IsConst, class... _Types, class... _UTypes>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment
+__tuple_select_converting_assignable(__tuple_types<_Types...>, __tuple_types<_UTypes...>) noexcept
+{
+  if constexpr (sizeof...(_Types) != sizeof...(_UTypes))
+  { // [tuple.assign]-15.1: sizeof...(Types) equals sizeof...(UTypes) and
+    return __select_assignment::__none;
+  }
+  else if constexpr (is_same_v<tuple<_Types...>, tuple<_UTypes...>>)
+  { // Disambiguate the non-converting assignments
+    return __select_assignment::__none;
+  }
+  else if constexpr (_IsConst)
+  {
+    if constexpr ((is_assignable_v<const _Types&, _UTypes> && ...))
+    { // [tuple.assign]-18.2: is_assignable_v<const Types&, const UTypes&> is true for all i.
+      // [tuple.assign]-24.2: is_assignable_v<const Types&, UTypes> is true for all i.
+      return (is_nothrow_assignable_v<const _Types&, _UTypes> && ...)
+             ? __select_assignment::__is_nothrow
+             : __select_assignment::__may_throw;
+    }
+    else
+    {
+      return __select_assignment::__none;
+    }
+  }
+  else if constexpr ((is_assignable_v<_Types&, _UTypes> && ...))
+  { // [tuple.assign]-15.2: is_assignable_v<Types&, const UTypes&> is true for all i.
+    // [tuple.assign]-21.2: is_assignable_v<Types&, UTypes> is true for all i.
+    return (is_nothrow_assignable_v<_Types&, _UTypes> && ...)
+           ? __select_assignment::__is_nothrow
+           : __select_assignment::__may_throw;
+  }
+  else
+  {
+    return __select_assignment::__none;
+  }
+}
+
+template <bool _IsConst, class _TupleTypes, class _TupleUTypes>
+inline constexpr __select_assignment __tuple_select_converting_assignable_v =
+  ::cuda::std::__tuple_select_converting_assignable<_IsConst>(_TupleTypes{}, _TupleUTypes{});
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

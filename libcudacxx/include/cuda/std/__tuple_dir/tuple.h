@@ -369,9 +369,57 @@ public:
     return *this;
   }
 
+  // [tuple.assign]-15
+  template <class... _UTypes,
+            __select_assignment _Trait =
+              __tuple_select_converting_assignable_v<false, __tuple_types<_Tp...>, __tuple_types<const _UTypes&...>>,
+            enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr tuple& operator=(const tuple<_UTypes...>& __t) noexcept(__select_nothrow<_Trait>)
+  {
+    ::cuda::std::__memberwise_copy_assign(*this, __t, __make_tuple_indices_t<sizeof...(_Tp)>{});
+    return *this;
+  }
+
+  // [tuple.assign]-18
+  template <class... _UTypes,
+            __select_assignment _Trait =
+              __tuple_select_converting_assignable_v<true, __tuple_types<_Tp...>, __tuple_types<const _UTypes&...>>,
+            enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr const tuple& operator=(const tuple<_UTypes...>& __t) const noexcept(__select_nothrow<_Trait>)
+  {
+    ::cuda::std::__memberwise_copy_assign(*this, __t, __make_tuple_indices_t<sizeof...(_Tp)>{});
+    return *this;
+  }
+
+  // [tuple.assign]-21
+  template <class... _UTypes,
+            __select_assignment _Trait =
+              __tuple_select_converting_assignable_v<false, __tuple_types<_Tp...>, __tuple_types<_UTypes...>>,
+            enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr tuple& operator=(tuple<_UTypes...>&& __t) noexcept(__select_nothrow<_Trait>)
+  {
+    ::cuda::std::__memberwise_forward_assign(
+      *this, ::cuda::std::move(__t), __type_list<_UTypes...>(), __make_tuple_indices_t<sizeof...(_Tp)>{});
+    return *this;
+  }
+
+  // [tuple.assign]-24
+  template <class... _UTypes,
+            __select_assignment _Trait =
+              __tuple_select_converting_assignable_v<true, __tuple_types<_Tp...>, __tuple_types<_UTypes...>>,
+            enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr const tuple& operator=(tuple<_UTypes...>&& __t) const noexcept(__select_nothrow<_Trait>)
+  {
+    ::cuda::std::__memberwise_forward_assign(
+      *this, ::cuda::std::move(__t), __type_list<_UTypes...>(), __make_tuple_indices_t<sizeof...(_Tp)>{});
+    return *this;
+  }
+
   // clang-tidy is confused, we are already using enable_if_t here...
-  template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple>, int> = 0> // NOLINT(modernize-type-traits)
-  _CCCL_API inline tuple& operator=(_Tuple&& __t) noexcept(is_nothrow_assignable_v<_BaseT&, _Tuple>)
+  template <class _Tuple,
+            enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_Tuple>>, int> = 0,
+            enable_if_t<__tuple_assignable<_Tuple, tuple>, int>            = 0> // NOLINT(modernize-type-traits)
+  _CCCL_API constexpr tuple& operator=(_Tuple&& __t) noexcept(is_nothrow_assignable_v<_BaseT&, _Tuple>)
   {
     __base_.operator=(::cuda::std::forward<_Tuple>(__t));
     return *this;
