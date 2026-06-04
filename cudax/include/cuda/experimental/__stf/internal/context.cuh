@@ -326,7 +326,7 @@ public:
     cudaStream_t get_stream(size_t place_index) const
     {
       return payload->*[&](auto& self) -> cudaStream_t {
-        if constexpr (::std::is_same_v<stream_task<>, ::std::decay_t<decltype(self)>>)
+        if constexpr (::std::is_same_v<stream_task<Deps...>, ::std::decay_t<decltype(self)>>)
         {
           return self.get_stream(place_index);
         }
