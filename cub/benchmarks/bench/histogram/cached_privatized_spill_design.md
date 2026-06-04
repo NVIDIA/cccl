@@ -282,60 +282,56 @@ weaker case. The knobs already exist — no kernel changes:
 
 ## Measured results (2026-06-04, B200, single GPU)
 
-Implemented exactly as designed: spill-agnostic probe ops (`output_atomic_spill` /
-`private_block_spill` functors), `DeviceHistogramDirectAtomicKernel` templated on
-`<ProbeOp, SpillOp>`, private slab reusing the `d_privatized_histograms` temp
-allocation, Phase-4 atomic-free gather. A `CUB_HISTO_FORCE_ALGO` env hook forces any
-algorithm at any cell (`hybrid | direct_cuckoo | direct_single_probe |
-gmem_priv_gather | priv_cuckoo | priv_single_probe`) for apples-to-apples per-cell
-comparison. The output-spill path is byte-identical to before (regression-checked).
+Measured through the **fully-wired dispatch** (the proposed algorithms are
+first-class `dispatch_by_algorithm` cases with real temp-storage allocation + grid
+sizing, not an env-hook bolt-on). `CUB_HISTO_FORCE_ALGO` forces any algorithm at any
+high-bin cell for apples-to-apples comparison. The output-spill / incumbent paths are
+metric-neutral vs pre-change (4-metric harness within 0.1%: 854/626/786/637).
 
-**Correctness:** all four catch2 histogram suites pass under
-`CUB_HISTO_FORCE_ALGO=priv_cuckoo` and `priv_single_probe`
-(53 587 + 8 + 336 + 18 assertions, exit 0), plus the benchmark's inline verifier on
-every swept cell. The kernel is correct.
+**Correctness:** all four catch2 histogram suites pass on the default path AND under
+each forced algorithm — `direct_{nocache,cuckoo,single_probe}`,
+`gmem_privatized_{nocache,cuckoo,single_probe}` — at 53 587 + 8 + 336 + 18 assertions
+each, plus the benchmark's inline verifier on every swept cell.
 
 **Performance:** forced matrix = 4 binaries × {65 536, 262 144, 1 048 576} bins ×
 {concentrated:0.0, powerlaw:0.5, hash_synonym, stale_resident} × 64 M elements,
-3-sample median (data: `autocuda/results/step2_forced_matrix.csv`,
-`step3_winregion_verified.txt`). **Private-spill wins 2 of 48 cells.**
+3-sample median (data: `autocuda/results/step2_postrework_matrix.csv`).
+**The proposal (`gmem_privatized_{cuckoo,single_probe}`) wins 1 of 48 cells.**
 
-Per-binary geomean GiB/s (all bins × shapes), best output-spill vs private-spill:
+Per-binary geomean GiB/s (all bins × shapes):
 
-| binary | default (incumbent) | best output-spill | best private-spill |
-|---|---|---|---|
-| even        | 833 | 776 (direct_single_probe) | 394 |
-| range       | 663 | 673 (direct_single_probe) | 422 |
-| multi_even  | 718 | 718 | 411 |
-| multi_range | 595 | 595 | 162 |
+| binary | default | gmem_priv_nocache | direct_cuckoo | direct_single_probe | **gmem_priv_cuckoo** | **gmem_priv_single_probe** |
+|---|---|---|---|---|---|---|
+| even        | 833 | 702 | 770 | 775 | **475** | **481** |
+| range       | 663 | 525 | 667 | 673 | **402** | **422** |
+| multi_even  | 718 | 470 | 708 | 718 | **487** | **491** |
+| multi_range | 595 | 162 | 589 | 595 | **162** | **162** |
 
-Private-spill is **2–8× slower in aggregate**, and the gap widens with bin count and
+The proposal is **~1.5–4× slower in aggregate**, and the gap widens with bin count and
 channel count — the `num_blocks × num_bins × channels` slab zero-init + gather
-dominates, exactly the gather tax this doc predicted. At 1 M bins multi_range it is
-8× slower (163 vs 1347 GiB/s). The Step-0 finding stands: the cache-sizing lever is
-dead too (4096→8192 flat, →16384 craters 3–6×).
+dominates, exactly the gather tax this doc predicted.
 
-**The 2 win cells** (verified, 5-repeat CoV < 1 %) are both **multi_even,
-`powerlaw:0.5`** — the realistic multi-hot warm set:
+**The single win cell** is **multi_even 262 144 `powerlaw:0.5`** (the realistic
+multi-hot warm set): `gmem_privatized_single_probe` = **453** vs the best incumbent
+372 (`gmem_privatized_nocache`) and default 303 — **+22%**. (Wiring the proposal
+through proper dispatch sharpened this vs the earlier env-hook prototype: one cell,
+larger margin, instead of two marginal cells.) The thesis works exactly as argued: a
+warm set overflows the cache, the residual spill is frequent AND contended, and
+multi-channel amplifies the contention (3 channels racing the same output bins), so
+the contention-free private spill wins.
 
-| cell | best output-spill | private-spill | priv win |
-|---|---|---|---|
-| multi_even 65 536  powerlaw | 583 | 600 | **+3 %** |
-| multi_even 262 144 powerlaw | 304 | 324 | **+8 %** |
+But the win is **unexploitable**:
 
-This is the proposal's thesis working *exactly* as argued: a warm set that overflows
-the cache leaves a **frequent, contended** residual spill; multi-channel amplifies
-the contention (3 channels race the same output bins); contention-free private spill
-wins there. But the win is **unexploitable**:
-
-- It is **one shape of four**. On the *same* `(channels, bins)` cells, private-spill
-  *regresses* the others 15–57 % (concentrated:0.0 2234→962; hash_synonym 597→346 at
-  262 144) — the cache already absorbs their hot bins, so the gather tax is pure loss.
-- `select_algorithm` **cannot observe input shape**. Routing `(multi_even, 65 536–
-  262 144)` to private-spill would also capture concentrated / hash_synonym inputs at
-  those cells and crater them. Net over the shape mix is negative.
-- The win cells are the **lowest-throughput** cells in the matrix (300–600 GiB/s); the
-  +3–8 % is a small gain on the slow tail, not on the cases that dominate the geomean.
+- It is **one shape in one cell**. On the same `(multi_even, 262 144)` cell the
+  proposal *regresses* the other shapes badly — concentrated:0.0 2233→962 (−57%),
+  hash_synonym 597→346 (−42%) — because the cache already absorbs their hot bins, so
+  the gather tax is pure loss. At 65 536 it loses on powerlaw too (538 vs 587); at 1 M
+  it collapses (225 vs 371).
+- `select_algorithm` **cannot observe input shape**. Routing `(multi_even, 262 144)`
+  to the proposal would also catch concentrated / hash_synonym inputs there and crater
+  them. Net over the shape mix is negative.
+- The win cell is a **low-throughput** cell (~300–450 GiB/s); +22% there is a small
+  absolute gain on the slow tail, not on the cases that dominate the geomean.
 
 ## Decision
 

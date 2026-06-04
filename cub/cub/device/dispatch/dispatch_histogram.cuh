@@ -184,21 +184,23 @@ struct selector_features
 // input-distribution mix for its (channels, sample width, bin tier, pixels)
 // regime, derived by sweeping every algorithm across the benchmark matrix.
 //
-//   1. Privatized-SMEM region (num_bins <= max_dynamic_smem_bins): <=256 bins
-//      (and all byte samples) use the static smem_priv_256 kernel; above that, a
-//      single dynamic-SMEM kernel (smem_priv_dynamic). Multi-channel eligibility
-//      is more restrictive (per-block footprint + classify cost scale with the
-//      active channel count), so multi-channel RANGE / >3-channel cells past the
-//      relevant cap fall through to the high-bin region.
+//   1. Privatized-SMEM region (num_bins <= max_dynamic_smem_bins): all of these
+//      return `smem_privatized` (whole histogram on chip); dispatch_by_algorithm
+//      recovers the static <=256-bin tier vs the dynamic-SMEM tier from the bin
+//      count. Multi-channel eligibility is more restrictive (per-block footprint +
+//      classify cost scale with the active channel count), so multi-channel RANGE /
+//      >3-channel cells past the relevant cap fall through to the high-bin region.
 //
-//   2. High-bin region: the single-channel SMEM+GMEM hybrid_single_pass and the
-//      two direct-atomic caches (single_probe / cuckoo). Single-channel uses the
-//      on-chip hybrid where the histogram fits and the input amortizes its setup
-//      (the 65536 cap tier at N>4M, the 262144 mid tier once amortized), and
-//      direct atomics elsewhere. Multi-channel uses the direct-atomic caches.
-//      The cuckoo and single-probe caches measure within noise, so single-probe
-//      (the leaner probe) is the default and cuckoo serves the larger multi
-//      bin tiers.
+//   2. High-bin region: the single-channel SMEM+GMEM `gmem_privatized_nocache`
+//      (smem_split>0, the merged hybrid member) and the two DirectKernel caches
+//      (`direct_single_probe` / `direct_cuckoo`). Single-channel uses the on-chip
+//      hybrid where the histogram fits and the input amortizes its setup (the 65536
+//      cap tier at N>4M, the 262144 mid tier once amortized), and direct atomics
+//      elsewhere. Multi-channel uses the direct caches. The cuckoo and single-probe
+//      caches measure within noise, so single-probe (the leaner probe) is the
+//      default and cuckoo serves the larger multi bin tiers. (The proposed
+//      `gmem_privatized_{cuckoo,single_probe}` are never returned here — they are
+//      reachable-but-unselected; see the design doc's Decision.)
 template <bool IsByteSample>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features const& f)
 {
@@ -250,11 +252,10 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE algorithm select_algorithm(selector_features
   // High-bin region (num_bins > max_dynamic_smem_bins, i.e. one of 65536 /
   // 262144 / 1048576).
   //
-  // The choice is among four algorithms: the single-channel SMEM+GMEM
-  // `hybrid_single_pass`; the two direct-atomic-to-output kernels with a
-  // per-block cuckoo or single-probe SMEM cache (`direct_atomic_cuckoo`,
-  // `direct_atomic_single_probe`); and the cooperative privatized gather-merge
-  // `gmem_priv_gather`. The selector cannot observe input entropy (a runtime
+  // The choice is among: the single-channel SMEM+GMEM hybrid (the smem_split>0
+  // member of `gmem_privatized_nocache`); the two DirectKernel caches
+  // (`direct_cuckoo`, `direct_single_probe`); and the cooperative pure-gather (the
+  // smem_split==0 member of `gmem_privatized_nocache`). The selector cannot observe input entropy (a runtime
   // data property), so each rule picks the algorithm with the best GiB/s GEOMEAN
   // over the input-distribution mix (uniform / skewed / single-hot-bin) for that
   // (channels, sample-width, bin-tier, pixel-count) regime, measured by sweeping
