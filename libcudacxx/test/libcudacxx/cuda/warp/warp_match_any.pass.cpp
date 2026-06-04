@@ -75,7 +75,7 @@ __global__ void test_kernel()
   test_all_equal<uint64_t>();
 #if _CCCL_HAS_INT128()
   test_all_equal<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128()
   test_all_equal(char3{0, 0, 0});
   test_all_equal(array_t{0, 0, 0, 0, 0, 0});
 
