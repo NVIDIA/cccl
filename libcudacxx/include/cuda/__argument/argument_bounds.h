@@ -77,7 +77,7 @@ template <class _Tp>
 struct __runtime_bounds
 {
   _Tp __lower_ = ::cuda::std::numeric_limits<_Tp>::lowest();
-  _Tp __upper_ = ::cuda::std::numeric_limits<_Tp>::max();
+  _Tp __upper_ = (::cuda::std::numeric_limits<_Tp>::max)();
 
   constexpr __runtime_bounds() noexcept = default;
 

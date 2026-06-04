@@ -126,7 +126,7 @@ template <typename KeyInputItItT,
           typename PolicySelector = policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
                                                                it_value_t<it_value_t<ValueInputItItT>>,
                                                                ::cuda::std::int64_t,
-                                                               ::cuda::__argument::__traits<KParameterT>::max>>
+                                                               ::cuda::__argument::__traits<KParameterT>::highest>>
 #if _CCCL_HAS_CONCEPTS()
   requires batched_topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -173,7 +173,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr bool any_small_segments =
     ::cuda::__argument::__traits<SegmentSizeParameterT>::lowest <= worker_per_segment_tile_size;
   static constexpr bool only_small_segments =
-    ::cuda::__argument::__traits<SegmentSizeParameterT>::max <= worker_per_segment_tile_size;
+    ::cuda::__argument::__traits<SegmentSizeParameterT>::highest <= worker_per_segment_tile_size;
 
   // Allocation layout:
   //   only_small_segments: [0] dummy.
@@ -341,7 +341,7 @@ template <typename KeyInputItItT,
     policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
                                it_value_t<it_value_t<ValueInputItItT>>,
                                ::cuda::std::int64_t,
-                               ::cuda::__argument::__traits<KParameterT>::max>;
+                               ::cuda::__argument::__traits<KParameterT>::highest>;
   return detail::dispatch_with_env_and_tuning<default_policy_selector>(
     env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
       return dispatch(
