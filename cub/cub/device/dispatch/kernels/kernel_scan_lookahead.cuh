@@ -245,7 +245,8 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename RealInitValueT,
-          bool ForceInclusive>
+          bool ForceInclusive,
+          bool StableReductionOrder = false>
 struct lookahead_scan_closure
 {
   static constexpr ScanLookaheadPolicy policy          = current_policy<PolicySelector>().lookahead;
@@ -312,14 +313,27 @@ struct lookahead_scan_closure
 
     if (!is_first_tile)
     {
-      AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
-        specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
-      if (squad.isLeaderThread())
+      if constexpr (StableReductionOrder)
       {
-        refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
+        // The stable-order version updates idxTilePrev/AggrExclusiveCtaPrev itself
+        AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookaheadStable<lookahead_items_per_thread>(
+          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
+        if (squad.isLeaderThread())
+        {
+          refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
+        }
       }
-      AggrExclusiveCtaPrev = regAggrExclusiveCta;
-      idxTilePrev          = idxTile;
+      else
+      {
+        AccumT regAggrExclusiveCta = warpspeed::warpIncrementalLookahead<lookahead_items_per_thread>(
+          specialRegisters, params.ptrTileStates, idxTilePrev, AggrExclusiveCtaPrev, idxTile, scan_op);
+        if (squad.isLeaderThread())
+        {
+          refAggrExclusiveCtaW.data() = regAggrExclusiveCta;
+        }
+        AggrExclusiveCtaPrev = regAggrExclusiveCta;
+        idxTilePrev          = idxTile;
+      }
     }
   }
 
@@ -810,6 +824,7 @@ struct lookahead_scan_closure
 template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT,
+          bool StableReductionOrder,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -834,8 +849,15 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   }();
 
   // Dispatch each warp to its respective squad
-  using closure_t =
-    lookahead_scan_closure<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>;
+  using closure_t = lookahead_scan_closure<
+    PolicySelector,
+    InputT,
+    OutputT,
+    AccumT,
+    ScanOpT,
+    RealInitValueT,
+    ForceInclusive,
+    StableReductionOrder>;
   warpspeed::squadDispatch(
     specialRegisters, closure_t::scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
       // we load the initial value after the squad dispatch, so only the squads needing it emit an LDG
