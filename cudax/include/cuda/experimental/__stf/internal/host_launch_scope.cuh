@@ -239,7 +239,7 @@ public:
       t.set_symbol(symbol);
     }
 
-    cudaEvent_t start_event, end_event;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
 
     t.start();
