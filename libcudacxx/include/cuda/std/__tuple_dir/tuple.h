@@ -211,6 +211,7 @@ public:
 
   template <class... _UTypes,
             enable_if_t<(sizeof...(_UTypes) < sizeof...(_Tp)), int> = 0,
+            enable_if_t<(sizeof...(_UTypes) != 0), int>             = 0,
             __select_constructor _Trait                             = _VariadicConstraintsLessRank<_UTypes...>::value,
             enable_if_t<__select_explicit<_Trait>, int>             = 0>
   _CCCL_API constexpr explicit tuple(_UTypes&&... __u)
