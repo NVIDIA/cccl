@@ -578,12 +578,12 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type):
 
     if USING_V2:
         code = DeviceCode(
-            bytes_=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
+            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
             kind="llvm_ir",
         )
     else:
         ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
-        code = DeviceCode(bytes_=ltoir, kind="ltoir")
+        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     return Op(
         operator_type=OpKind.STATELESS,
@@ -917,12 +917,12 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
 
     if USING_V2:
         code = DeviceCode(
-            bytes_=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
+            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
             kind="llvm_ir",
         )
     else:
         ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
-        code = DeviceCode(bytes_=ltoir, kind="ltoir")
+        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
     # Pack all data pointers as bytes (sequentially)
     state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)

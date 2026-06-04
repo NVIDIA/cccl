@@ -208,7 +208,7 @@ cdef class Op:
     cdef bytes code_bytes
     cdef bytes state_bytes
     cdef list extra_ltoirs_list  # Python list to keep bytes alive
-    cdef list extra_code_types_list  # Python list of code_type strings (kept alive alongside)
+    cdef list extra_code_types_list  # Python list of code_type strings; kept alive in parallel with extra_ltoirs_list
     cdef const char** extra_ltoirs_ptrs
     cdef size_t* extra_ltoir_sizes_arr
     cdef cccl_op_code_type* extra_code_types_arr
@@ -260,7 +260,7 @@ cdef class Op:
 
     def __cinit__(self, /, *, name = None, operator_type = None, ltoir = None, state = None, state_alignment = 1, extra_ltoirs = None):
         # ltoir accepts either raw `bytes` (legacy — treated as LTO-IR) or a
-        # DeviceCode instance (carries its own format tag via .kind / .bytes_).
+        # DeviceCode instance (carries its own format tag via .kind / .op_bytes).
         # extra_ltoirs accepts a list of either form, mixable.
         if name is None and ltoir is None:
             name = ""
@@ -287,17 +287,17 @@ cdef class Op:
         if isinstance(ltoir, bytes):
             code_bytes = <bytes>ltoir
             code_kind = "ltoir"
-        elif hasattr(ltoir, "bytes_") and hasattr(ltoir, "kind"):
-            if not isinstance(ltoir.bytes_, bytes) or not isinstance(ltoir.kind, str):
+        elif hasattr(ltoir, "op_bytes") and hasattr(ltoir, "kind"):
+            if not isinstance(ltoir.op_bytes, bytes) or not isinstance(ltoir.kind, str):
                 raise TypeError(
-                    f"DeviceCode.bytes_ must be bytes and .kind must be str; "
-                    f"got {type(ltoir.bytes_)} and {type(ltoir.kind)}"
+                    f"DeviceCode.op_bytes must be bytes and .kind must be str; "
+                    f"got {type(ltoir.op_bytes)} and {type(ltoir.kind)}"
                 )
-            code_bytes = <bytes>ltoir.bytes_
+            code_bytes = <bytes>ltoir.op_bytes
             code_kind = <str>ltoir.kind
         else:
             raise TypeError(
-                f"ltoir must be bytes or DeviceCode-like (with bytes_ and kind "
+                f"ltoir must be bytes or DeviceCode-like (with op_bytes and kind "
                 f"attributes); got {type(ltoir)}"
             )
 
@@ -308,13 +308,13 @@ cdef class Op:
             if isinstance(el, bytes):
                 extra_bytes.append(el)
                 extra_kinds.append("ltoir")
-            elif hasattr(el, "bytes_") and hasattr(el, "kind"):
-                if not isinstance(el.bytes_, bytes) or not isinstance(el.kind, str):
+            elif hasattr(el, "op_bytes") and hasattr(el, "kind"):
+                if not isinstance(el.op_bytes, bytes) or not isinstance(el.kind, str):
                     raise TypeError(
-                        f"extra_ltoirs[{i}].bytes_ must be bytes and .kind must be str; "
-                        f"got {type(el.bytes_)} and {type(el.kind)}"
+                        f"extra_ltoirs[{i}].op_bytes must be bytes and .kind must be str; "
+                        f"got {type(el.op_bytes)} and {type(el.kind)}"
                     )
-                extra_bytes.append(el.bytes_)
+                extra_bytes.append(el.op_bytes)
                 extra_kinds.append(el.kind)
             else:
                 raise TypeError(
@@ -366,52 +366,37 @@ cdef class Op:
         return self.code_bytes
 
     @property
-    def code(self):
-        return self.code_bytes
-
-    @property
     def state_alignment(self):
         return self.op_data.alignment
-
-    @property
-    def state_typenum(self):
-        return self.op_data.type
-
-    @property
-    def extra_ltoirs(self):
-        return self.extra_ltoirs_list
 
     @property
     def code(self):
         """Return a DeviceCode wrapping this op's main code blob + its kind."""
         from cuda.compute._device_code import DeviceCode
-        return DeviceCode(bytes_=self.code_bytes, kind=self._code_kind())
+        return DeviceCode(op_bytes=self.code_bytes, kind=self._code_kind())
 
     @property
     def extra_code(self):
         """Return DeviceCode instances for each extra blob."""
         from cuda.compute._device_code import DeviceCode
         return [
-            DeviceCode(bytes_=b, kind=k)
+            DeviceCode(op_bytes=b, kind=k)
             for b, k in zip(self.extra_ltoirs_list, self.extra_code_types_list)
         ]
 
     cdef str _code_kind(self):
         cdef cccl_op_code_type t = self.op_data.code_type
+        if t == CCCL_OP_LTOIR:
+            return "ltoir"
         if t == CCCL_OP_CPP_SOURCE:
             return "cpp_source"
-        # v1 doesn't define CCCL_OP_LLVM_IR in its enum, so guard the comparison
-        # behind the helper that round-trips through _parse_code_type: any value
-        # the backend doesn't recognize falls back to "ltoir".
+        # CCCL_OP_LLVM_IR is only defined on the v2 build; _parse_code_type
+        # maps "llvm_ir" to CCCL_OP_LTOIR on v1, so we must test CCCL_OP_LTOIR
+        # first (above) before reaching here.
         if t == _parse_code_type("llvm_ir"):
             return "llvm_ir"
         return "ltoir"
 
-    def as_bytes(self):
-        "Debugging utility to view memory content of library struct"
-        cdef uint8_t[:] mem_view = bytearray(sizeof(self.op_data))
-        memcpy(&mem_view[0], &self.op_data, sizeof(self.op_data))
-        return bytes(mem_view)
 
 
 cdef class TypeInfo:

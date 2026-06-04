@@ -94,8 +94,8 @@ def compile_cpp_op_code(source: str, arch: str | None = None) -> DeviceCode:
     callers can inspect ``cache_info()`` to verify symbol determinism.
     """
     if USING_V2:
-        return DeviceCode(bytes_=source.encode("utf-8"), kind="cpp_source")
-    return DeviceCode(bytes_=compile_cpp_to_ltoir(source, arch=arch), kind="ltoir")
+        return DeviceCode(op_bytes=source.encode("utf-8"), kind="cpp_source")
+    return DeviceCode(op_bytes=compile_cpp_to_ltoir(source, arch=arch), kind="ltoir")
 
 
 def cpp_type_from_descriptor(type_desc) -> str | None:

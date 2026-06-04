@@ -9,7 +9,7 @@ get out of sync as they flow through the binding layer.
 
 Lives in its own module to keep ``op.py`` and the Cython ``_bindings_impl``
 free of import-cycle headaches: the Cython side duck-types on
-``(bytes_, kind)`` attributes and never imports the class directly.
+``(op_bytes, kind)`` attributes and never imports the class directly.
 """
 
 from __future__ import annotations
@@ -25,10 +25,9 @@ class DeviceCode:
     """A compiled-or-source device-code blob ready to hand to ``Op``.
 
     Args:
-        bytes_: the raw blob (LTO-IR, LLVM bitcode, or C++ source bytes).
-            Trailing underscore avoids shadowing the ``bytes`` builtin.
+        op_bytes: the raw blob (LTO-IR, LLVM bitcode, or C++ source bytes).
         kind: one of ``"ltoir"`` (default), ``"llvm_ir"``, ``"cpp_source"``;
-            tells the backend how to interpret ``bytes_``.
+            tells the backend how to interpret ``op_bytes``.
 
     For most uses you don't construct ``DeviceCode`` directly — the internal
     JIT-compile helpers return one, and the iterator/algorithm machinery
@@ -36,7 +35,7 @@ class DeviceCode:
     the default pipeline.
     """
 
-    bytes_: bytes
+    op_bytes: bytes
     kind: str = "ltoir"
 
     def __post_init__(self):
