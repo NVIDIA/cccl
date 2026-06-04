@@ -483,6 +483,8 @@ _CCCL_HOST_DEVICE deferred(_Arg, runtime_bounds<_Tp>, static_bounds<_Lowest, _Hi
 template <class _Arg, class _StaticBounds = no_bounds>
 struct deferred_sequence : __deferred_base<_Arg, _StaticBounds>
 {
+  static_assert(__is_sequence_v<_Arg>, "deferred sequence arguments must have a distinct element type");
+
   using __deferred_base<_Arg, _StaticBounds>::__deferred_base;
 };
 
@@ -757,6 +759,7 @@ struct __traits_impl<deferred_sequence<_Arg, _StaticBounds>>
 {
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
+  static_assert(__is_sequence_v<value_type>, "deferred sequence arguments must have a distinct element type");
   static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
                 "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
                 "values representable by the element type");
