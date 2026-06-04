@@ -39,7 +39,7 @@ private:
     worker_policy worker_per_segment_policy;
     multi_worker_policy multi_worker_per_segment_policy;
   };
-  static constexpr ::cuda::std::int64_t max_segment_size = ::cuda::__argument::__traits<SegmentSizeParameterT>::max;
+  static constexpr ::cuda::std::int64_t max_segment_size = ::cuda::__argument::__traits<SegmentSizeParameterT>::highest;
   static constexpr batched_topk_policy active_policy     = current_policy<PolicySelector>();
 
   template <int Index>
@@ -151,7 +151,7 @@ __launch_bounds__(int(
     LargeSegmentTileOffsetT>::agent_t;
 
   // Static Assertions (Constraints)
-  static_assert(agent_t::tile_size >= ::cuda::__argument::__traits<SegmentSizeParameterT>::max,
+  static_assert(agent_t::tile_size >= ::cuda::__argument::__traits<SegmentSizeParameterT>::highest,
                 "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
   static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
                 "Static shared memory per block must not exceed 48KB limit.");
