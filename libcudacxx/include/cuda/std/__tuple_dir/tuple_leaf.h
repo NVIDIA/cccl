@@ -371,6 +371,21 @@ struct __tuple_like_constructor_tag
 
 // __tuple_impl
 
+template <class _Dest, class _Source, size_t... _Indices>
+_CCCL_API constexpr void __memberwise_copy_assign(_Dest& __dest, _Source const& __source, __tuple_indices<_Indices...>)
+{
+  using ::cuda::std::get;
+  ((void) (get<_Indices>(__dest) = get<_Indices>(__source)), ...);
+}
+
+template <class _Dest, class _Source, class... _Up, size_t... _Indices>
+_CCCL_API constexpr void
+__memberwise_forward_assign(_Dest& __dest, _Source&& __source, __type_list<_Up...>, __tuple_indices<_Indices...>)
+{
+  using ::cuda::std::get;
+  ((void) (get<_Indices>(__dest) = ::cuda::std::forward<_Up>(get<_Indices>(__source))), ...);
+}
+
 template <class _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl;
 
@@ -431,11 +446,20 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, __tuple_types<_Tp...>>, int> = 0>
-  _CCCL_API inline __tuple_impl&
+  _CCCL_API constexpr __tuple_impl&
   operator=(_Tuple&& __t) noexcept(__tuple_nothrow_assignable<_Tuple, __tuple_types<_Tp...>>)
   {
     using ::cuda::std::get;
-    (__tuple_leaf<_Indx, _Tp>::operator=(::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(get<_Indx>(__t))), ...);
+    (__tuple_leaf<_Indx, _Tp>::operator=(get<_Indx>(::cuda::std::forward<_Tuple>(__t))), ...);
+    return *this;
+  }
+
+  template <class _Tuple>
+  _CCCL_API constexpr const __tuple_impl& operator=(_Tuple&& __t) const
+    noexcept(__tuple_nothrow_assignable<_Tuple, __tuple_types<const _Tp...>>)
+  {
+    using ::cuda::std::get;
+    (__tuple_leaf<_Indx, _Tp>::operator=(get<_Indx>(::cuda::std::forward<_Tuple>(__t))), ...);
     return *this;
   }
 

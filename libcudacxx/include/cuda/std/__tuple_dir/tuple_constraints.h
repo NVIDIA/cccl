@@ -46,8 +46,10 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/lazy.h>
@@ -461,6 +463,62 @@ _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(__tuple_types<_Types...>, _
   -> _TupleComparableTraits<__tuple_types<_Types...>, __tuple_types<_UTypes...>>;
 template <class>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_is_comparable(...) noexcept -> _InvalidTupleComparison;
+
+enum class __select_assignment
+{
+  __none,
+  __is_nothrow,
+  __may_throw,
+};
+
+template <__select_assignment _Trait>
+inline constexpr bool __select_assignable = _Trait != __select_assignment::__none;
+template <__select_assignment _Trait>
+inline constexpr bool __select_nothrow = _Trait == __select_assignment::__is_nothrow;
+
+template <class... _Types>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment
+__tuple_select_const_copy_assignable(__tuple_types<_Types...>) noexcept
+{
+  if constexpr (!(is_copy_assignable_v<const _Types> && ...))
+  { // [tuple.assign]-5: is_copy_assignable_v<const Types> is true for all i.
+    return __select_assignment::__none;
+  }
+  else if constexpr ((is_nothrow_copy_assignable_v<const _Types> && ...))
+  {
+    return __select_assignment::__is_nothrow;
+  }
+  else
+  {
+    return __select_assignment::__may_throw;
+  }
+}
+
+template <class _TupleTypes>
+inline constexpr __select_assignment __tuple_select_const_copy_assignable_v =
+  ::cuda::std::__tuple_select_const_copy_assignable(_TupleTypes{});
+
+template <class... _Types>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment
+__tuple_select_const_move_assignable(__tuple_types<_Types...>) noexcept
+{
+  if constexpr (!(is_assignable_v<const _Types&, _Types> && ...))
+  { // [tuple.assign]-12: is_assignable_v<const Types&, Types> is true for all i.
+    return __select_assignment::__none;
+  }
+  else if constexpr ((is_nothrow_assignable_v<const _Types&, _Types> && ...))
+  {
+    return __select_assignment::__is_nothrow;
+  }
+  else
+  {
+    return __select_assignment::__may_throw;
+  }
+}
+
+template <class _TupleTypes>
+inline constexpr __select_assignment __tuple_select_const_move_assignable_v =
+  ::cuda::std::__tuple_select_const_move_assignable(_TupleTypes{});
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -346,8 +346,28 @@ public:
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
 
+  // [tuple.assign]
   _CCCL_HIDE_FROM_ABI tuple& operator=(const tuple& __t) = default;
   _CCCL_HIDE_FROM_ABI tuple& operator=(tuple&& __t)      = default;
+
+  // [tuple.assign]-5
+  template <__select_assignment _Trait = __tuple_select_const_copy_assignable_v<__tuple_types<_Tp...>>,
+            enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr const tuple& operator=(const tuple& __t) const noexcept(__select_nothrow<_Trait>)
+  {
+    ::cuda::std::__memberwise_copy_assign(*this, __t, __make_tuple_indices_t<sizeof...(_Tp)>{});
+    return *this;
+  }
+
+  // [tuple.assign]-12
+  template <__select_assignment _Trait = __tuple_select_const_move_assignable_v<__tuple_types<_Tp...>>,
+            enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr const tuple& operator=(tuple&& __t) const noexcept(__select_nothrow<_Trait>)
+  {
+    ::cuda::std::__memberwise_forward_assign(
+      *this, ::cuda::std::move(__t), __type_list<_Tp...>(), __make_tuple_indices_t<sizeof...(_Tp)>{});
+    return *this;
+  }
 
   // clang-tidy is confused, we are already using enable_if_t here...
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple>, int> = 0> // NOLINT(modernize-type-traits)
