@@ -279,13 +279,13 @@ public:
 
     if (!eg)
     {
-      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, [](cudaGraphExec_t* p) {
-        cudaGraphExecDestroy(*p);
-      });
+      eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+              cudaGraphExecDestroy(*p);
+            }};
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, 0);
 
       cached_exec_graphs[stream].push_back(eg);
     }
@@ -335,14 +335,13 @@ public:
 
     if (!eg)
     {
-      auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-        cudaGraphExecDestroy(*pGraphExec);
-      };
-      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, cudaGraphExecDeleter);
+      eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+              cudaGraphExecDestroy(*p);
+            }};
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
+      *eg = cuda_try<cudaGraphInstantiateWithFlags>(*gctx_graph, 0);
 
       cached_exec_graphs[stream].push_back(eg);
     }

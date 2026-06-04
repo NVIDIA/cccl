@@ -52,8 +52,8 @@ class scheduler
 {
 public:
   scheduler()
+      : num_devices(cuda_try<cudaGetDeviceCount>())
   {
-    num_devices = cuda_try<cudaGetDeviceCount>();
     assert(num_devices > 0);
   }
 

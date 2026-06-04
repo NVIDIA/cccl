@@ -53,14 +53,11 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
 // Instantiate a CUDA graph
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
-  // Custom deleter specifically for cudaGraphExec_t
-  auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-    cudaGraphExecDestroy(*pGraphExec);
-  };
+  ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+                                           cudaGraphExecDestroy(*p);
+                                         }};
 
-  ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
-
-  cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, 0);
 
   return res;
 }
