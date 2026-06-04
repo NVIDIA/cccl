@@ -1,6 +1,9 @@
 # Design proposal: SMEM cache front-end for the GMEM-privatized histogram
 
-**Status:** proposal / unbuilt
+**Status:** IMPLEMENTED + MEASURED (2026-06-04, B200) → **verdict: do not promote.**
+The spill-agnostic refactor is kept (clean, zero-cost, removes real duplication); the
+private-spill kernel is correct but loses to the incumbents in every measured cell and
+stays env-hook-only (unselected), like `gmem_priv_gather`. See "Measured results" below.
 **Scope:** high-bin histogram sweep (single-channel first), bins ≤ 65 536.
 
 ## Summary
@@ -234,6 +237,78 @@ weaker case. The knobs already exist — no kernel changes:
    `direct_{cuckoo,single_probe}`.
 4. Promote into `select_algorithm` only for cells where it is the geomean winner;
    otherwise leave it selectable-but-unselected (like `gmem_priv_gather` today).
+
+## Measured results (2026-06-04, B200, single GPU)
+
+Implemented exactly as designed: spill-agnostic probe ops (`output_atomic_spill` /
+`private_block_spill` functors), `DeviceHistogramDirectAtomicKernel` templated on
+`<ProbeOp, SpillOp>`, private slab reusing the `d_privatized_histograms` temp
+allocation, Phase-4 atomic-free gather. A `CUB_HISTO_FORCE_ALGO` env hook forces any
+algorithm at any cell (`hybrid | direct_cuckoo | direct_single_probe |
+gmem_priv_gather | priv_cuckoo | priv_single_probe`) for apples-to-apples per-cell
+comparison. The output-spill path is byte-identical to before (regression-checked).
+
+**Correctness:** all four catch2 histogram suites pass under
+`CUB_HISTO_FORCE_ALGO=priv_cuckoo` and `priv_single_probe`
+(53 587 + 8 + 336 + 18 assertions, exit 0), plus the benchmark's inline verifier on
+every swept cell. The kernel is correct.
+
+**Performance:** forced matrix = 4 binaries × {65 536, 262 144, 1 048 576} bins ×
+{concentrated:0.0, powerlaw:0.5, hash_synonym, stale_resident} × 64 M elements,
+3-sample median (data: `autocuda/results/step2_forced_matrix.csv`,
+`step3_winregion_verified.txt`). **Private-spill wins 2 of 48 cells.**
+
+Per-binary geomean GiB/s (all bins × shapes), best output-spill vs private-spill:
+
+| binary | default (incumbent) | best output-spill | best private-spill |
+|---|---|---|---|
+| even        | 833 | 776 (direct_single_probe) | 394 |
+| range       | 663 | 673 (direct_single_probe) | 422 |
+| multi_even  | 718 | 718 | 411 |
+| multi_range | 595 | 595 | 162 |
+
+Private-spill is **2–8× slower in aggregate**, and the gap widens with bin count and
+channel count — the `num_blocks × num_bins × channels` slab zero-init + gather
+dominates, exactly the gather tax this doc predicted. At 1 M bins multi_range it is
+8× slower (163 vs 1347 GiB/s). The Step-0 finding stands: the cache-sizing lever is
+dead too (4096→8192 flat, →16384 craters 3–6×).
+
+**The 2 win cells** (verified, 5-repeat CoV < 1 %) are both **multi_even,
+`powerlaw:0.5`** — the realistic multi-hot warm set:
+
+| cell | best output-spill | private-spill | priv win |
+|---|---|---|---|
+| multi_even 65 536  powerlaw | 583 | 600 | **+3 %** |
+| multi_even 262 144 powerlaw | 304 | 324 | **+8 %** |
+
+This is the proposal's thesis working *exactly* as argued: a warm set that overflows
+the cache leaves a **frequent, contended** residual spill; multi-channel amplifies
+the contention (3 channels race the same output bins); contention-free private spill
+wins there. But the win is **unexploitable**:
+
+- It is **one shape of four**. On the *same* `(channels, bins)` cells, private-spill
+  *regresses* the others 15–57 % (concentrated:0.0 2234→962; hash_synonym 597→346 at
+  262 144) — the cache already absorbs their hot bins, so the gather tax is pure loss.
+- `select_algorithm` **cannot observe input shape**. Routing `(multi_even, 65 536–
+  262 144)` to private-spill would also capture concentrated / hash_synonym inputs at
+  those cells and crater them. Net over the shape mix is negative.
+- The win cells are the **lowest-throughput** cells in the matrix (300–600 GiB/s); the
+  +3–8 % is a small gain on the slow tail, not on the cases that dominate the geomean.
+
+## Decision
+
+**Do not promote `priv_{cuckoo,single_probe}` into `select_algorithm`.** The
+private-spill kernel is correct and occasionally optimal, but only on a shape the
+selector can't detect, at a margin that the same routing erases elsewhere. It stays
+**selectable-but-unselected** behind `CUB_HISTO_FORCE_ALGO`, exactly the status of
+`gmem_priv_gather`.
+
+**Keep the spill-agnostic refactor.** It is zero-cost (output-spill codegen
+byte-identical, regression-checked), it makes the (cache × spill) matrix expressible
+without kernel duplication, and it leaves a correct, tested private-spill kernel one
+selector-rule away should a future arch shift the balance (e.g. cheaper grid-sync /
+gather, or a shape-aware dispatch signal) — the design doc's "third corner" is now
+built and measured, not hypothetical.
 
 ## Risks / open questions
 

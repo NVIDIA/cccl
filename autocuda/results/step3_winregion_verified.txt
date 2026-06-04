@@ -1,0 +1,19 @@
+Verified priv-spill win region (multi_even, 64M elts, 5-repeat CoV<1%, B200):
+
+The ONLY cells where private-spill beats every output-spill variant:
+  multi_even 65536  powerlaw:0.5 : priv ~600  vs best-output 583  (+3%)
+  multi_even 262144 powerlaw:0.5 : priv ~323.6 vs best-output 286  (+13% vs default; +8% vs 3-repeat best-output 304)
+
+On the SAME (channels,bins) cells, priv-spill REGRESSES the other shapes badly:
+  65536  concentrated:0.0 2231->1892 (-15%)  hash_synonym 742->526 (-29%)  stale_resident 456->431 (-5%)
+  262144 concentrated:0.0 2234->962  (-57%)  hash_synonym 597->346 (-42%)  stale_resident 457->363 (-21%)
+
+MECHANISM (proposal's thesis, confirmed): powerlaw = multi-hot warm set that overflows the cache;
+the residual spill is frequent AND contended across blocks/channels on the shared output. Multi-channel
+amplifies (3 channels race the same output bins). Contention-free private spill wins there. But the
+cache already absorbs the hottest bins, so on concentrated (1 hot bin, fully cached) and hash_synonym
+(collisions handled) priv's gather tax is pure loss.
+
+UNEXPLOITABLE by the selector: select_algorithm cannot observe input shape, so routing
+(multi_even, 65536-262144) to priv would also capture concentrated/hash_synonym inputs and regress them
+15-57%. Net over the shape mix is negative. => keep unselected.
