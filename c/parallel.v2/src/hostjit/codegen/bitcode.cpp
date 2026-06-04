@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <stdexcept>
 #include <string_view>
 
 #include <hostjit/codegen/bitcode.hpp>
@@ -154,9 +155,11 @@ void BitcodeCollector::add_op_code(cccl_op_t& op, const std::string& name)
       auto extra_name    = name + "_extra" + std::to_string(extra_counter++);
       const auto* data   = op.extra_ltoirs[i];
       const auto data_sz = op.extra_ltoir_sizes[i];
-      // Dispatch on the caller-declared extra type. NULL extra_code_types means
-      // "all extras are LTO-IR" (zero-init compat for callers pre-dating the field).
-      const cccl_op_code_type t = op.extra_code_types ? op.extra_code_types[i] : CCCL_OP_LTOIR;
+      if (!op.extra_code_types)
+      {
+        throw std::runtime_error("cccl_op_t: extra_code_types must be non-null when num_extra_ltoirs > 0");
+      }
+      const cccl_op_code_type t = op.extra_code_types[i];
       if (t == CCCL_OP_CPP_SOURCE)
       {
         compile_and_add(data, data_sz, extra_name);
@@ -183,10 +186,14 @@ void BitcodeCollector::add_op(cccl_op_t op, const std::string& label)
   {
     if (op.extra_ltoirs[i] && op.extra_ltoir_sizes[i] > 0)
     {
-      auto extra_name           = label + "_extra" + std::to_string(extra_counter++);
-      const auto* data          = op.extra_ltoirs[i];
-      const auto data_sz        = op.extra_ltoir_sizes[i];
-      const cccl_op_code_type t = op.extra_code_types ? op.extra_code_types[i] : CCCL_OP_LTOIR;
+      auto extra_name    = label + "_extra" + std::to_string(extra_counter++);
+      const auto* data   = op.extra_ltoirs[i];
+      const auto data_sz = op.extra_ltoir_sizes[i];
+      if (!op.extra_code_types)
+      {
+        throw std::runtime_error("cccl_op_t: extra_code_types must be non-null when num_extra_ltoirs > 0");
+      }
+      const cccl_op_code_type t = op.extra_code_types[i];
       if (t == CCCL_OP_CPP_SOURCE)
       {
         compile_and_add(data, data_sz, extra_name);
