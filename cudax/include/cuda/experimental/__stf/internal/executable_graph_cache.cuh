@@ -54,7 +54,7 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
   ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-                                           cudaGraphExecDestroy(*p);
+                                           cuda_safe_call(cudaGraphExecDestroy(*p));
                                          }};
 
   *res = cuda_try<cudaGraphInstantiateWithFlags>(g, 0);

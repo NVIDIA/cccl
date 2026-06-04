@@ -280,7 +280,7 @@ public:
     if (!eg)
     {
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cudaGraphExecDestroy(*p);
+              cuda_safe_call(cudaGraphExecDestroy(*p));
             }};
 
       dump_algorithm(gctx_graph);
@@ -336,7 +336,7 @@ public:
     if (!eg)
     {
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cudaGraphExecDestroy(*p);
+              cuda_safe_call(cudaGraphExecDestroy(*p));
             }};
 
       dump_algorithm(gctx_graph);
@@ -357,7 +357,7 @@ private:
     {
       static int print_to_dot_cnt = 0; // Warning: not thread-safe
       ::std::string filename      = "algo_" + symbol + "_" + ::std::to_string(print_to_dot_cnt++) + ".dot";
-      cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+      cuda_safe_call(cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
     }
   }
 
