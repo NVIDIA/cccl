@@ -23,21 +23,32 @@
 #   path out of the workflow file (and out of the public repo).
 #
 # TRIGGER
-#   - Push to the `test-nvcr-pull` branch (auto-runs).
-#   - "Run workflow" button on the Actions tab (workflow_dispatch).
+#   Mirrors the cccl-canonical PR-driven model used by `secret-scan.yml`:
+#     - Open a PR from a fork against NVIDIA/cccl; copy-pr-bot mirrors it
+#       to a `pull-request/N` branch on the upstream repo and the workflow
+#       runs there with upstream secret context (so any org-/repo-level
+#       nvcr.io credentials resolve). This is the only path that exercises
+#       the NVIDIA self-hosted runners.
+#     - "Run workflow" button on the Actions tab (workflow_dispatch).
+#   `main` is intentionally NOT triggered — this is a smoke test, not a
+#   continuous scan. If/when this graduates, add `main` to mirror
+#   `secret-scan.yml` verbatim.
 
 name: Test nvcr.io Image Pull
 
 run-name: nvcr pull test — ${{ github.ref_name }}
 
 on:
-  workflow_dispatch:
   push:
     branches:
-      - test-nvcr-pull
+      # copy-pr-bot mirror branches — matches the trigger model used by
+      # `secret-scan.yml` and `ci-workflow-pull-request.yml` so this scan
+      # runs in the same trust context as the rest of cccl CI.
+      - "pull-request/[0-9]+"
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -75,6 +86,54 @@ jobs:
           echo "image variable: present (value hidden)"
           echo "::add-mask::${NVCR_IMAGE}"
 
+      - name: Probe candidate registry-secret names (presence only)
+        # Purely diagnostic: enumerates plausible names so the first run
+        # tells us which secrets are actually configured for this repo
+        # (covers org-level visibility too — anything that resolves at
+        # runtime shows as SET, even if we couldn't see it via gh CLI).
+        # No values, no lengths — just SET / unset. GitHub also masks
+        # secret values automatically, but echoing literals avoids even
+        # the masked-token noise in logs.
+        env:
+          NVCR_USERNAME: ${{ secrets.NVCR_USERNAME }}
+          NVCR_PASSWORD: ${{ secrets.NVCR_PASSWORD }}
+          NGC_API_KEY: ${{ secrets.NGC_API_KEY }}
+          NGC_CLI_API_KEY: ${{ secrets.NGC_CLI_API_KEY }}
+          NGC_USERNAME: ${{ secrets.NGC_USERNAME }}
+          NGC_PASSWORD: ${{ secrets.NGC_PASSWORD }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          NVIDIA_REGISTRY_USER: ${{ secrets.NVIDIA_REGISTRY_USER }}
+          NVIDIA_REGISTRY_TOKEN: ${{ secrets.NVIDIA_REGISTRY_TOKEN }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          probe() {
+            local name="$1"
+            local val
+            val="$(printenv "${name}" 2>/dev/null || true)"
+            if [[ -n "${val}" ]]; then
+              echo "  ${name}: SET"
+            else
+              echo "  ${name}: unset"
+            fi
+          }
+          echo "Candidate secret presence (visible to this run on ${GITHUB_REPOSITORY}):"
+          for n in \
+              NVCR_USERNAME NVCR_PASSWORD \
+              NGC_API_KEY NGC_CLI_API_KEY NGC_USERNAME NGC_PASSWORD \
+              DOCKER_USERNAME DOCKER_PASSWORD \
+              NVIDIA_REGISTRY_USER NVIDIA_REGISTRY_TOKEN \
+              REGISTRY_USERNAME REGISTRY_PASSWORD; do
+            probe "${n}"
+          done
+          echo
+          echo "Note: 'unset' means the secret is not visible to this workflow run."
+          echo "Org-level secrets may still exist but be scoped to a different"
+          echo "repo selection. Confirm with the org / repo admin if SET=0 across"
+          echo "the whole list."
+
       - name: Network reachability — nvcr.io (PASS/FAIL only)
         run: |
           set -euo pipefail
@@ -86,6 +145,67 @@ jobs:
             echo "::error::nvcr.io unreachable (curl exit ${rc})."
             exit "${rc}"
           fi
+
+      - name: Anonymous manifest probe (is the image public?)
+        # Hits the OCI/Docker manifest endpoint with NO auth. Tells us
+        # whether anonymous pull is possible — useful both as a quick
+        # answer ("do we even need creds?") and as a diagnostic when
+        # auth is failing (separates "auth misconfigured" from
+        # "image private + no creds + can't pull period").
+        # HTTP semantics on nvcr.io:
+        #   200      → publicly readable, no auth required
+        #   401/403  → image exists, auth required
+        #   404      → image not found, OR private + registry returns 404
+        #              to anonymous reads (common policy)
+        #   other    → unclear, check logs
+        run: |
+          set -euo pipefail
+          img="${NVCR_IMAGE}"
+          if [[ "${img}" != nvcr.io/* ]]; then
+            echo "::warning::NVCR_IMAGE is not on nvcr.io, skipping probe."
+            echo "ANON_RESULT=skipped" >> "${GITHUB_ENV}"
+            exit 0
+          fi
+          img="${img#nvcr.io/}"
+          if [[ "${img}" == *@* ]]; then
+            img_path="${img%@*}"
+            img_ref="${img##*@}"
+          elif [[ "${img}" == *:* ]]; then
+            img_path="${img%:*}"
+            img_ref="${img##*:}"
+          else
+            img_path="${img}"
+            img_ref="latest"
+          fi
+          echo "::add-mask::${img_path}"
+
+          code="$(curl --silent --show-error --max-time 15 \
+              --output /dev/null --write-out '%{http_code}' \
+              --header 'Accept: application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json' \
+              "https://nvcr.io/v2/${img_path}/manifests/${img_ref}" 2>/dev/null || echo '000')"
+
+          case "${code}" in
+            200)
+              echo "anonymous manifest fetch: PASS (HTTP 200) — image is publicly readable; auth is OPTIONAL"
+              echo "ANON_RESULT=public" >> "${GITHUB_ENV}"
+              ;;
+            401|403)
+              echo "anonymous manifest fetch: BLOCKED (HTTP ${code}) — auth REQUIRED"
+              echo "ANON_RESULT=auth-required" >> "${GITHUB_ENV}"
+              ;;
+            404)
+              echo "anonymous manifest fetch: HTTP 404 — either the image path/tag is wrong, or this registry returns 404 to anonymous reads on private images (common policy on nvcr.io for nvidian/* namespace)"
+              echo "ANON_RESULT=not-found-or-private" >> "${GITHUB_ENV}"
+              ;;
+            000)
+              echo "anonymous manifest fetch: network failure (no HTTP response)"
+              echo "ANON_RESULT=network-error" >> "${GITHUB_ENV}"
+              ;;
+            *)
+              echo "anonymous manifest fetch: HTTP ${code} (unclear)"
+              echo "ANON_RESULT=unclear-${code}" >> "${GITHUB_ENV}"
+              ;;
+          esac
 
       - name: docker login nvcr.io
         env:
@@ -148,8 +268,10 @@ jobs:
             echo "| Repository | \`${GITHUB_REPOSITORY}\` |"
             echo "| Branch | \`${GITHUB_REF_NAME}\` |"
             echo "| Runner class | \`${RUNNER_OS}/${RUNNER_ARCH}\` |"
+            echo "| Anonymous-pull capability | \`${ANON_RESULT:-not-evaluated}\` |"
             echo "| Job outcome | \`${{ job.status }}\` |"
             echo
-            echo "_Gate-level PASS/FAIL is in the step logs. Runner hostname,"
-            echo "kernel, and image ref are deliberately not echoed._"
+            echo "_Step logs contain per-gate PASS/FAIL plus the candidate"
+            echo "registry-secret presence probe. Runner hostname, kernel,_"
+            echo "_and image ref are deliberately not echoed._"
           } >> "${GITHUB_STEP_SUMMARY}"
