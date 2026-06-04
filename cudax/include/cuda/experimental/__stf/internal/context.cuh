@@ -1566,7 +1566,7 @@ UNITTEST("context task")
 
   ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
     // no-op
-    cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
+    cuda_safe_call(cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s));
   };
 
   ctx.finalize();
