@@ -133,7 +133,37 @@ dominates (the exact cost the high-bin `Direct` path was built to avoid).
 Target **single-channel, bins ≤ 65 536** (hybrid's regime). Multi-channel multiplies
 the private histogram by channel count — defer.
 
-## Cache sizing: an open question for BOTH cache kernels
+## Cache sizing: RESOLVED by Step 0 measurement (2026-06-04, B200)
+
+Step 0 ran the no-code `CUB_HISTO_FORCE_SLOTS` sweep on the existing `Direct` kernel
+(single-channel even+range, bins ∈ {262144, 1048576}, elements 64M, shapes
+{concentrated:0.0, powerlaw:0.5, hash_synonym, stale_resident}, 3 repeats, CoV≈0).
+Raw data: `autocuda/results/step0_direct_slot_sweep.txt`. Result — the "more SMEM,
+lower occupancy" premise is **falsified for `Direct`**:
+
+- **4096 → 8192/auto: flat** in 15/16 cells (within ±1%). The growth the sizer *does*
+  allow (it stops at the occupancy-free point) buys ~nothing on skewed inputs.
+- **Forcing past the occupancy-free point (→16384, where occupancy collapses):
+  catastrophic 3–6× cliff** in every cell (e.g. even/1M/powerlaw 555→165 GiB/s;
+  range/1M/hash_synonym 475→79). The occupancy-preserving sizer is exactly right.
+- Lone exception: even/1M/stale_resident 4096→8192 = +2% (486→496), an adversarial
+  floor, not a real workload — noise-adjacent and not worth a sizing change.
+
+**Consequence for the proposal:** the *cache-sizing* lever is dead — for `Direct` and,
+by the near-symmetry argued below, almost certainly for `GmemPrivatized` too. What Step
+0 did **not** test is the proposal's *other, orthogonal* claim: **contention-free spill**
+(miss → block-scope private copy vs `Direct`'s device-scope atomic to the shared
+output). That is independent of cache size and remains open. It can only pay where the
+miss stream is **both frequent and contended** — i.e. the adversarial shapes where hot
+traffic provably escapes the cache (`hash_synonym`: 32 hot bins on one slot → 31
+permanently-missing hot bins; `stale_resident`: working set thrashes the cache). The
+revised, narrowed thesis the prototype must test: *does private-spill rescue the
+adversarial-shape floors that `Direct`'s contended spill craters, without losing the
+non-adversarial cells to the gather tax?*
+
+The original open-question text is kept below for context, now answered for `Direct`.
+
+## Cache sizing: the original open question (now answered for Direct)
 
 The existing `direct_atomic` sizer grows the cache only while occupancy stays at the
 floor occupancy ("free SMEM"), then stops. It **never tests growing past that point**
