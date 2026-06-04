@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "util/nvjitlink.h"
 #include <cccl/c/for.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
@@ -115,34 +116,44 @@ try
 
   std::string lowered_name;
 
-  nvrtc_linkable_list linkable_list;
-  nvrtc_linkable_list_appender appender{linkable_list};
+  // kernel-only mode: extract kernel LTOIR without linking the operator in.
+  // Only custom ops (non-empty name) with no LTOIR trigger this; well-known ops (name="") do not.
+  const bool kernel_only = (op.code_size == 0) && (op.name != nullptr) && (op.name[0] != '\0');
 
-  appender.append_operation(op);
-
-  if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
-  {
-    appender.append_operation(d_data.advance);
-    appender.append_operation(d_data.dereference);
-  }
-
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{device_for_kernel, name})
       ->add_expression({for_kernel_name})
       ->compile_program({args.data(), args.size()})
-      ->get_name({for_kernel_name, lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({for_kernel_name, lowered_name});
 
   auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(lowered_name));
 
   build_ptr->cc                         = cc;
-  build_ptr->payload                    = (void*) result.data.release();
-  build_ptr->payload_size               = result.size;
-  build_ptr->payload_kind               = CCCL_PAYLOAD_CUBIN;
   build_ptr->static_kernel_lowered_name = kernel_name.release();
+
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->payload            = ltoir_data.release();
+    build_ptr->payload_size       = ltoir_size;
+    build_ptr->payload_kind       = CCCL_PAYLOAD_LTOIR;
+  }
+  else
+  {
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+    appender.append_operation(op);
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
+    {
+      appender.append_operation(d_data.advance);
+      appender.append_operation(d_data.dereference);
+    }
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->payload       = (void*) result.data.release();
+    build_ptr->payload_size  = result.size;
+    build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
+  }
 
   return CUDA_SUCCESS;
 }
@@ -175,6 +186,49 @@ try
 }
 catch (...)
 {
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_for_link_ltoir(
+  cccl_device_for_build_result_t* build_ptr, const void** input_blobs, const size_t* input_sizes, size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  if (build_ptr->payload != nullptr && build_ptr->payload_size > 0 && build_ptr->payload_kind == CCCL_PAYLOAD_LTOIR)
+  {
+    all_blobs.push_back(build_ptr->payload);
+    all_sizes.push_back(build_ptr->payload_size);
+  }
+  if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    if (input_blobs[i] == nullptr || input_sizes[i] == 0)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_for_link_ltoir(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 

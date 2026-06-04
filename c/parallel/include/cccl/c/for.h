@@ -72,6 +72,9 @@ CCCL_C_API CUresult cccl_device_for_compile(
 
 CCCL_C_API CUresult cccl_device_for_load(cccl_device_for_build_result_t* build);
 
+CCCL_C_API CUresult cccl_device_for_link_ltoir(
+  cccl_device_for_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
+
 CCCL_C_API CUresult cccl_device_for(
   cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream stream);
 
