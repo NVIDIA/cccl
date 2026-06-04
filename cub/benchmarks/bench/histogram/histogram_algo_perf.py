@@ -135,14 +135,56 @@ def draw_perf(ax, series, title):
     return any_pts
 
 
-def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos, outpath):
-    """One PNG: characterization top row + per-element-count perf grid."""
+def draw_hitrate(ax, hr_algo_cells, shape, elements_list, title):
+    """Cache hit rate (%) vs #bins, one series per #elements. hr_algo_cells is
+    keyed 'Bins|Elements|InputShape' -> {rate,hits,misses}."""
+    ax.set_title(title, fontsize=9)
+    ax.set_xlabel("# bins")
+    ax.set_ylabel("cache hit rate (%)")
+    ax.set_xscale("log", base=2)
+    any_pts = False
+    all_bins = set()
+    cmap = plt.cm.viridis
+    for i, elements in enumerate(elements_list):
+        pts = []
+        for key, rec in hr_algo_cells.items():
+            b, e, sh = key.split("|")
+            if int(e) == elements and sh == shape:
+                pts.append((int(b), rec["rate"] * 100.0))
+        pts.sort()
+        if pts:
+            any_pts = True
+            xb = [p[0] for p in pts]; yv = [p[1] for p in pts]
+            all_bins.update(xb)
+            ax.plot(xb, yv, marker="o", ms=5, lw=1.8,
+                    color=cmap(0.1 + 0.8 * i / max(1, len(elements_list) - 1)),
+                    label=fmt_elements(elements))
+    ax.grid(True, which="both", linestyle=":", alpha=0.4)
+    if all_bins:
+        ax.set_xticks(sorted(all_bins))
+        ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: fmt_bins(int(round(v)))))
+    ax.tick_params(axis="x", labelsize=7, rotation=45)
+    if any_pts:
+        ax.set_ylim(-2, 102)
+        ax.legend(fontsize=7, title="# elements", title_fontsize=7)
+    else:
+        ax.text(0.5, 0.5, "no hit-rate data", ha="center", va="center",
+                transform=ax.transAxes, fontsize=9, color="gray")
+    return any_pts
+
+
+def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos, outpath, hr_for_binary=None):
+    """One PNG: characterization top row + per-element-count perf grid, and (when
+    hit-rate data is supplied) a final row with cuckoo and single-probe cache
+    hit-rate vs #bins (one series per #elements)."""
     bins, counts, char_bins = C.char_input(shape)
+    hr_for_binary = hr_for_binary or {}
+    has_hr = bool(hr_for_binary.get("direct_atomic_cuckoo") or hr_for_binary.get("direct_atomic_single_probe"))
 
     ncols = 3
     nperf = len(elements_list)
     perf_rows = (nperf + ncols - 1) // ncols
-    nrows = 1 + perf_rows
+    nrows = 1 + perf_rows + (1 if has_hr else 0)
 
     fig = plt.figure(figsize=(5.4 * ncols, 4.1 * nrows))
     gs = fig.add_gridspec(nrows, ncols)
@@ -150,10 +192,11 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     transform, channels = BINARY_META[binary_label]
     head = f"{transform.upper()} · {channels}-channel · {sample}  —  InputShape: {shape}  ({C.SHAPE_BLURB.get(shape, '')})"
     head = "\n".join(textwrap.wrap(head, width=120))
+    hr_note = "   bottom row: SMEM-cache hit rate vs #bins (series = #elements)" if has_hr else ""
     fig.suptitle(
         f"{head}\n"
         f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
-        f"below: GiB/s vs #bins per input size — one line per algorithm (markers = measured points)",
+        f"middle: GiB/s vs #bins per input size — one line per algorithm{hr_note}",
         fontsize=12,
     )
 
@@ -175,6 +218,19 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
             ax.text(0.5, 0.5, "no data\n(all cells skipped)", ha="center", va="center",
                     transform=ax.transAxes, fontsize=9, color="gray")
 
+    if has_hr:
+        hr_row = 1 + perf_rows
+        draw_hitrate(fig.add_subplot(gs[hr_row, 0]), hr_for_binary.get("direct_atomic_cuckoo", {}),
+                     shape, elements_list, "cuckoo cache — hit rate vs #bins")
+        draw_hitrate(fig.add_subplot(gs[hr_row, 1]), hr_for_binary.get("direct_atomic_single_probe", {}),
+                     shape, elements_list, "single-probe cache — hit rate vs #bins")
+        # third column of the hit-rate row: short explainer
+        ax = fig.add_subplot(gs[hr_row, 2]); ax.axis("off")
+        ax.text(0.5, 0.5, "hit = contribution absorbed in the\nSMEM cache (block-scope add)\n"
+                          "miss = spilled to a GMEM atomic\n\n(hit rate is sample-type\nindependent; measured on a\n"
+                          "separate instrumented build)",
+                ha="center", va="center", fontsize=9, color="#333")
+
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
     plt.close(fig)
@@ -183,13 +239,22 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results", default="sweep_results_6shape.json",
-                    help="per-cell sweep JSON (keyed by binary -> algo -> 'SampleT|Elements|Bins|InputShape')")
+                    help="per-cell perf sweep JSON (binary -> algo -> 'SampleT|Elements|Bins|InputShape')")
+    ap.add_argument("--hitrate", default="hitrate_results.json",
+                    help="per-cell hit-rate sweep JSON (binary -> algo -> 'Bins|Elements|InputShape' -> {rate}); "
+                         "optional, adds two cache-hit-rate panels per image when present")
     ap.add_argument("--outdir", default="algo_perf_figs", help="output directory for the per-shape PNGs")
     args = ap.parse_args()
 
     if not os.path.exists(args.results):
         raise SystemExit(f"missing results JSON: {args.results} (pass --results)")
     data = json.load(open(args.results))
+    hitrate = {}
+    if args.hitrate and os.path.exists(args.hitrate):
+        hitrate = json.load(open(args.hitrate))
+        print(f"hit-rate data: {args.hitrate}")
+    else:
+        print(f"(no hit-rate JSON at {args.hitrate}; hit-rate panels skipped)")
 
     os.makedirs(args.outdir, exist_ok=True)
     written = []
@@ -211,9 +276,10 @@ def main():
             # Render every shape present in the data for this binary.
             shapes = sorted({k.split("|")[3] for cells in per_algo_cells.values() for k in cells},
                             key=lambda s: (C.SHAPES.index(s) if s in C.SHAPES else 999, s))
+            hr_for_binary = hitrate.get(binary_label, {})
             for shape in shapes:
                 outpath = os.path.join(folder, f"{shape.replace(':', '_')}.png")
-                render_one(binary_label, per_algo_cells, sample, shape, elements, algos, outpath)
+                render_one(binary_label, per_algo_cells, sample, shape, elements, algos, outpath, hr_for_binary)
                 written.append(outpath)
 
     print(f"Wrote {len(written)} images under {args.outdir}")
