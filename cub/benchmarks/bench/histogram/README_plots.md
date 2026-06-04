@@ -52,12 +52,31 @@ line per algorithm, per element count.
 and omitted from the multi-channel folders.
 
 ```
-python histogram_algo_perf.py --results sweep_results.json --outdir algo_perf_figs
+python histogram_algo_perf.py --results sweep_results.json \
+    [--hitrate hitrate_results.json] --outdir algo_perf_figs
 ```
 
 The sweep JSON is produced by a scratch driver that forces each candidate via a
 `CUB_HISTO_FORCE_ALGO` env hook (sweep-only scaffolding, not shipped) and validates
 forced==launched from `CUB_HISTO_LOG_LAUNCH` output. The two scripts here only
 consume the resulting JSON.
+
+### Optional: SMEM-cache hit-rate panels (two-pass sweep)
+The cached high-bin kernels (`cuckoo`, `single_probe`) can be built with
+`-DCUB_HISTO_TRACK_HITRATE=1` to count, per launch, the contributions ABSORBED in
+the SMEM cache (a block-scope `atomicAdd` — a hit) vs SPILLED to a GMEM atomic (a
+miss), weighted by the warp-coalesced contribution so the rate is over input
+elements. The instrumentation is **zero-cost when the macro is off** (no extra
+`apply()` args, no accumulators — SASS-identical to the uninstrumented,
+register-pinned kernel); the host reads the grid-wide totals back via
+`cudaMemcpyFromSymbol` and prints `[hitrate] ...` under `CUB_HISTO_LOG_HITRATE=1`.
+
+Because the readback adds overhead, the parameter space is swept **twice**: once
+with the normal binaries for performance (`sweep_results.json`), and once with the
+`*.hitrate` binaries for hit rate (`hitrate_results.json`). The hit-rate pass uses
+NVBench `--profile` (one measured launch per cell — hit/miss counts are
+deterministic) and a single sample type (hit rate is sample-type-independent). When
+`--hitrate` is supplied, each per-shape image gains a bottom row: **cuckoo hit-rate
+vs #bins** and **single-probe hit-rate vs #bins**, each with **#elements as series**.
 
 Both scripts need `numpy` + `matplotlib`.
