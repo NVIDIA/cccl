@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cstdio>
 #include <format>
 #include <memory>
 #include <utility>

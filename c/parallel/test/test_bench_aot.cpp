@@ -53,14 +53,17 @@ static void print_header(int sm_major, int sm_minor, unsigned long long n)
 
 static void print_row(const char* algo, double jit_ms, double link_ms, double full_ms)
 {
+  auto speedup = [](double baseline, double t) -> double {
+    return t > 0.0 ? baseline / t : 0.0;
+  };
   std::printf(
     "  %-30s  %7.1f ms      %7.3f ms (%4.0fx)   %7.3f ms (%4.0fx)\n",
     algo,
     jit_ms,
     link_ms,
-    jit_ms / link_ms,
+    speedup(jit_ms, link_ms),
     full_ms,
-    jit_ms / full_ms);
+    speedup(jit_ms, full_ms));
   std::fflush(stdout);
 }
 
