@@ -190,6 +190,9 @@ cudax_add_catch2_test(test_target coop.reduce.this_block
 cudax_add_catch2_test(test_target coop.reduce.this_cluster
     coop/reduce/this_cluster.cu
 )
+cudax_add_catch2_test(test_target coop.reduce.this_grid
+    coop/reduce/this_grid.cu
+)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
