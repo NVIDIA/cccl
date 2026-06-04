@@ -85,7 +85,7 @@ __global__ void test_kernel()
   test_grouped<uint64_t>();
 #if _CCCL_HAS_INT128()
   test_grouped<__uint128_t>();
-#endif
+#endif // _CCCL_HAS_INT128() 
   test_grouped(char3{0, 0, 0}, char3{1, 1, 1});
   test_grouped(array_t{0, 0, 0, 0, 0, 0}, array_t{1, 1, 1, 1, 1, 1});
 }
