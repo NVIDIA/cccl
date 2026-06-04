@@ -175,7 +175,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int
 spread_out_items_per_thread(Offset num_items, Policy policy, int items_per_thread, int sm_count, int max_occupancy)
 {
   const int items_per_thread_evenly_spread = static_cast<int>(
-    (::cuda::std::min) (Offset{items_per_thread},
+    (::cuda::std::min) (static_cast<Offset>(items_per_thread),
                         ::cuda::ceil_div(num_items, sm_count * policy.threads_per_block * max_occupancy)));
   const int items_per_thread_clamped =
     ::cuda::std::clamp(items_per_thread_evenly_spread, policy.min_items_per_thread, policy.max_items_per_thread);
@@ -195,7 +195,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   cudaStream_t stream,
   PolicyGetter policy_getter,
   KernelSource kernel_source,
-  KernelLauncherFactory launcher_factory)
+  KernelLauncherFactory launcher_factory,
+  ::cuda::compute_capability cc)
   -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, nullptr)), decltype(kernel_source.TransformKernel()), int>>
 {
@@ -269,11 +270,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
 
-  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
+  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, static_cast<Offset>(tile_size)));
   // config->smem_size is 16 bytes larger than needed for UBLKCP because it's the total SMEM size, but 16 bytes are
   // occupied by static shared memory and padding. But let's not complicate things.
   return ::cuda::std::make_tuple(
-    launcher_factory(grid_dim, threads_per_block, dyn_smem_size, stream, true), kernel_source.TransformKernel(), ipt);
+    launcher_factory(
+      grid_dim, threads_per_block, dyn_smem_size, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0}),
+    kernel_source.TransformKernel(),
+    ipt);
 }
 
 template <typename Offset,
@@ -298,10 +302,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   cuda::std::index_sequence<Is...>,
   PolicyGetter policy_getter,
   KernelSource kernel_source,
-  KernelLauncherFactory launcher_factory)
+  KernelLauncherFactory launcher_factory,
+  ::cuda::compute_capability cc)
 {
   auto ret = configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
-    num_items, alignment, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory);
+    num_items, alignment, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory, cc);
   if (!ret)
   {
     return ret.error();
@@ -339,7 +344,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   ::cuda::std::index_sequence<Is...>,
   PolicyGetter policy_getter,
   KernelSource kernel_source,
-  KernelLauncherFactory launcher_factory)
+  KernelLauncherFactory launcher_factory,
+  ::cuda::compute_capability cc)
 {
   CUB_DETAIL_CONSTEXPR_ISH const transform_policy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH const int threads_per_block =
@@ -407,9 +413,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   }
   _CCCL_ASSERT(ipt, "");
   const int tile_size = threads_per_block * ipt.value();
-  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
+  const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, static_cast<Offset>(tile_size)));
   return CubDebug(
-    launcher_factory(grid_dim, threads_per_block, 0, stream, true)
+    launcher_factory(
+      grid_dim, threads_per_block, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
       .doit(kernel_source.TransformKernel(),
             num_items,
             ipt.value(),
@@ -490,7 +497,8 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         seq,
         policy_getter,
         kernel_source,
-        launcher_factory);
+        launcher_factory,
+        cc);
     }
     else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy.algorithm)
     {
@@ -509,7 +517,8 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         seq,
         policy_getter,
         kernel_source,
-        launcher_factory);
+        launcher_factory,
+        cc);
     }
     else
     {
@@ -523,7 +532,8 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         seq,
         policy_getter,
         kernel_source,
-        launcher_factory);
+        launcher_factory,
+        cc);
     }
   }
 };
@@ -556,9 +566,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  static_assert(
-    ::cuda::std::is_same_v<Offset, ::cuda::std::int32_t> || ::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
-    "cub::DeviceTransform is only tested and tuned for 32-bit or 64-bit signed offset types");
+  static_assert(::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
+                "cub::DeviceTransform is only tested and tuned for int64_t");
 
   if (num_items == 0)
   {

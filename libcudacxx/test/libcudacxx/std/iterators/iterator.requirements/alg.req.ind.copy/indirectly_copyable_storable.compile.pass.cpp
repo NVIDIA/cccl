@@ -72,11 +72,9 @@ struct NoLvalueAssignment
 
 static_assert(cuda::std::indirectly_writable<NoLvalueAssignment, cuda::std::iter_reference_t<NoLvalueAssignment>>);
 static_assert(!cuda::std::indirectly_writable<NoLvalueAssignment, cuda::std::iter_value_t<NoLvalueAssignment>&>);
-static_assert(cuda::std::indirectly_writable<NoLvalueAssignment, const cuda::std::iter_value_t<NoLvalueAssignment>&>,
-              "");
+static_assert(cuda::std::indirectly_writable<NoLvalueAssignment, const cuda::std::iter_value_t<NoLvalueAssignment>&>);
 static_assert(cuda::std::indirectly_writable<NoLvalueAssignment, cuda::std::iter_value_t<NoLvalueAssignment>&&>);
-static_assert(cuda::std::indirectly_writable<NoLvalueAssignment, const cuda::std::iter_value_t<NoLvalueAssignment>&&>,
-              "");
+static_assert(cuda::std::indirectly_writable<NoLvalueAssignment, const cuda::std::iter_value_t<NoLvalueAssignment>&&>);
 static_assert(!cuda::std::indirectly_copyable_storable<NoLvalueAssignment, NoLvalueAssignment>);
 
 // The dereference operator returns a different type from `value_type` and the reference type cannot be assigned from a
@@ -103,17 +101,15 @@ struct NoConstLvalueAssignment
 };
 
 static_assert(
-  cuda::std::indirectly_writable<NoConstLvalueAssignment, cuda::std::iter_reference_t<NoConstLvalueAssignment>>, "");
+  cuda::std::indirectly_writable<NoConstLvalueAssignment, cuda::std::iter_reference_t<NoConstLvalueAssignment>>);
 static_assert(
-  cuda::std::indirectly_writable<NoConstLvalueAssignment, cuda::std::iter_value_t<NoConstLvalueAssignment>&>, "");
+  cuda::std::indirectly_writable<NoConstLvalueAssignment, cuda::std::iter_value_t<NoConstLvalueAssignment>&>);
 static_assert(
-  !cuda::std::indirectly_writable<NoConstLvalueAssignment, const cuda::std::iter_value_t<NoConstLvalueAssignment>&>,
-  "");
+  !cuda::std::indirectly_writable<NoConstLvalueAssignment, const cuda::std::iter_value_t<NoConstLvalueAssignment>&>);
 static_assert(
-  cuda::std::indirectly_writable<NoConstLvalueAssignment, cuda::std::iter_value_t<NoConstLvalueAssignment>&&>, "");
+  cuda::std::indirectly_writable<NoConstLvalueAssignment, cuda::std::iter_value_t<NoConstLvalueAssignment>&&>);
 static_assert(
-  cuda::std::indirectly_writable<NoConstLvalueAssignment, const cuda::std::iter_value_t<NoConstLvalueAssignment>&&>,
-  "");
+  cuda::std::indirectly_writable<NoConstLvalueAssignment, const cuda::std::iter_value_t<NoConstLvalueAssignment>&&>);
 static_assert(!cuda::std::indirectly_copyable_storable<NoConstLvalueAssignment, NoConstLvalueAssignment>);
 
 // The dereference operator returns a different type from `value_type` and the reference type cannot be assigned from a
@@ -141,11 +137,9 @@ struct NoRvalueAssignment
 
 static_assert(cuda::std::indirectly_writable<NoRvalueAssignment, cuda::std::iter_reference_t<NoRvalueAssignment>>);
 static_assert(cuda::std::indirectly_writable<NoRvalueAssignment, cuda::std::iter_value_t<NoRvalueAssignment>&>);
-static_assert(cuda::std::indirectly_writable<NoRvalueAssignment, const cuda::std::iter_value_t<NoRvalueAssignment>&>,
-              "");
+static_assert(cuda::std::indirectly_writable<NoRvalueAssignment, const cuda::std::iter_value_t<NoRvalueAssignment>&>);
 static_assert(!cuda::std::indirectly_writable<NoRvalueAssignment, cuda::std::iter_value_t<NoRvalueAssignment>&&>);
-static_assert(cuda::std::indirectly_writable<NoRvalueAssignment, const cuda::std::iter_value_t<NoRvalueAssignment>&&>,
-              "");
+static_assert(cuda::std::indirectly_writable<NoRvalueAssignment, const cuda::std::iter_value_t<NoRvalueAssignment>&&>);
 static_assert(!cuda::std::indirectly_copyable_storable<NoRvalueAssignment, NoRvalueAssignment>);
 
 // The dereference operator returns a different type from `value_type` and the reference type cannot be assigned from a
@@ -172,16 +166,15 @@ struct NoConstRvalueAssignment
 };
 
 static_assert(
-  cuda::std::indirectly_writable<NoConstRvalueAssignment, cuda::std::iter_reference_t<NoConstRvalueAssignment>>, "");
+  cuda::std::indirectly_writable<NoConstRvalueAssignment, cuda::std::iter_reference_t<NoConstRvalueAssignment>>);
 static_assert(
-  cuda::std::indirectly_writable<NoConstRvalueAssignment, cuda::std::iter_value_t<NoConstRvalueAssignment>&>, "");
+  cuda::std::indirectly_writable<NoConstRvalueAssignment, cuda::std::iter_value_t<NoConstRvalueAssignment>&>);
 static_assert(
-  cuda::std::indirectly_writable<NoConstRvalueAssignment, const cuda::std::iter_value_t<NoConstRvalueAssignment>&>, "");
+  cuda::std::indirectly_writable<NoConstRvalueAssignment, const cuda::std::iter_value_t<NoConstRvalueAssignment>&>);
 static_assert(
-  cuda::std::indirectly_writable<NoConstRvalueAssignment, cuda::std::iter_value_t<NoConstRvalueAssignment>&&>, "");
+  cuda::std::indirectly_writable<NoConstRvalueAssignment, cuda::std::iter_value_t<NoConstRvalueAssignment>&&>);
 static_assert(
-  !cuda::std::indirectly_writable<NoConstRvalueAssignment, const cuda::std::iter_value_t<NoConstRvalueAssignment>&&>,
-  "");
+  !cuda::std::indirectly_writable<NoConstRvalueAssignment, const cuda::std::iter_value_t<NoConstRvalueAssignment>&&>);
 static_assert(!cuda::std::indirectly_copyable_storable<NoConstRvalueAssignment, NoConstRvalueAssignment>);
 
 struct DeletedCopyCtor
@@ -235,8 +228,7 @@ struct DeletedNonconstCopyAssignment
   DeletedNonconstCopyAssignment& operator=(DeletedNonconstCopyAssignment const&) = default;
   DeletedNonconstCopyAssignment& operator=(DeletedNonconstCopyAssignment&)       = delete;
 };
-static_assert(!cuda::std::indirectly_copyable_storable<DeletedNonconstCopyAssignment*, DeletedNonconstCopyAssignment*>,
-              "");
+static_assert(!cuda::std::indirectly_copyable_storable<DeletedNonconstCopyAssignment*, DeletedNonconstCopyAssignment*>);
 #endif // TEST_STD_VER > 2017 || !TEST_COMPILER(MSVC)
 
 struct DeletedMoveAssignment
@@ -319,8 +311,7 @@ struct basic_common_reference<NotConstructibleFromRefIn::ReferenceType, NotConst
 } // namespace cuda::std
 
 static_assert(
-  cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>,
-  "");
+  cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>);
 
 struct AssignableFromAnything
 {
@@ -369,7 +360,7 @@ struct basic_common_reference<NotAssignableFromRefIn::ReferenceType, NotAssignab
 } // namespace cuda::std
 
 static_assert(
-  cuda::std::common_reference_with<NotAssignableFromRefIn::ValueType&, NotAssignableFromRefIn::ReferenceType&>, "");
+  cuda::std::common_reference_with<NotAssignableFromRefIn::ValueType&, NotAssignableFromRefIn::ReferenceType&>);
 
 // A type that can't be assigned from its own reference isn't `indirectly_copyable_storable`, even when assigning it
 // to a type that can be assigned from anything.
