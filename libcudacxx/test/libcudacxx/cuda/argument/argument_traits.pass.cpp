@@ -151,12 +151,12 @@ TEST_FUNC void test()
   static_assert(cuda::argument::__traits<float>::lowest == cuda::std::numeric_limits<float>::lowest());
   static_assert(cuda::argument::__traits<float>::highest == (cuda::std::numeric_limits<float>::max)());
   static_assert(
-    cuda::argument::__traits<const cuda::argument::immediate<int, cuda::argument::__static_bounds<1, 8>>>::lowest == 1);
+    cuda::argument::__traits<const cuda::argument::immediate<int, cuda::argument::static_bounds<1, 8>>>::lowest == 1);
   static_assert(
-    cuda::argument::__traits<cuda::argument::immediate<int, cuda::argument::__static_bounds<1, 8>>&>::highest == 8);
+    cuda::argument::__traits<cuda::argument::immediate<int, cuda::argument::static_bounds<1, 8>>&>::highest == 8);
   static_assert(
     cuda::argument::__traits<
-      cuda::argument::immediate_sequence<cuda::std::span<int>, cuda::argument::__static_bounds<1, 8>>>::highest
+      cuda::argument::immediate_sequence<cuda::std::span<int>, cuda::argument::static_bounds<1, 8>>>::highest
     == 8);
 #if TEST_HAS_CLASS_NTTP
   static_assert(

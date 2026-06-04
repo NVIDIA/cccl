@@ -10,7 +10,7 @@
 
 #include <cuda/argument>
 
-using arg_t = cuda::argument::immediate<unsigned char, cuda::argument::__static_bounds<0, 1000>>;
+using arg_t = cuda::argument::immediate<unsigned char, cuda::argument::static_bounds<0, 1000>>;
 
 [[maybe_unused]] constexpr auto invalid_highest = cuda::argument::__traits<arg_t>::highest;
 

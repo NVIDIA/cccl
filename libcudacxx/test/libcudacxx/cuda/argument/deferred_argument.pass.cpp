@@ -41,7 +41,7 @@ TEST_FUNC constexpr bool test()
   // Deferred single value via pointer
   {
     int val     = 42;
-    using def_t = cuda::argument::deferred<int*, cuda::argument::__static_bounds<0, 100>>;
+    using def_t = cuda::argument::deferred<int*, cuda::argument::static_bounds<0, 100>>;
     static_assert(cuda::argument::__traits<def_t>::lowest == 0);
     static_assert(cuda::argument::__traits<def_t>::highest == 100);
     // Also verify construction works

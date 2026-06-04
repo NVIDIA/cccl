@@ -34,7 +34,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT
 
 //! @brief Sentinel type indicating no bounds are present.
-struct __no_bounds
+struct no_bounds
 {};
 
 // =====================================================================
@@ -48,7 +48,7 @@ struct __no_bounds
 //! @tparam _Lower The static lower bound.
 //! @tparam _Upper The static upper bound.
 template <auto _Lower, auto _Upper>
-struct __static_bounds
+struct static_bounds
 {
   static_assert(::cuda::std::is_same_v<decltype(_Lower), decltype(_Upper)>,
                 "Static bounds endpoints must have the same type");
@@ -67,7 +67,7 @@ struct __static_bounds
 template <class _Tp>
 inline constexpr bool __is_static_bounds_v = false;
 template <auto _Lower, auto _Upper>
-inline constexpr bool __is_static_bounds_v<__static_bounds<_Lower, _Upper>> = true;
+inline constexpr bool __is_static_bounds_v<static_bounds<_Lower, _Upper>> = true;
 
 // =====================================================================
 // runtime_bounds
@@ -77,14 +77,14 @@ inline constexpr bool __is_static_bounds_v<__static_bounds<_Lower, _Upper>> = tr
 //!
 //! @tparam _Tp The value type of the bounds.
 template <class _Tp>
-struct __runtime_bounds
+struct runtime_bounds
 {
   _Tp __lower_ = ::cuda::std::numeric_limits<_Tp>::lowest();
   _Tp __upper_ = (::cuda::std::numeric_limits<_Tp>::max)();
 
-  constexpr __runtime_bounds() noexcept = default;
+  constexpr runtime_bounds() noexcept = default;
 
-  _CCCL_API constexpr __runtime_bounds(_Tp __lower, _Tp __upper) noexcept
+  _CCCL_API constexpr runtime_bounds(_Tp __lower, _Tp __upper) noexcept
       : __lower_(__lower)
       , __upper_(__upper)
   {
@@ -104,13 +104,13 @@ struct __runtime_bounds
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Tp>
-_CCCL_HOST_DEVICE __runtime_bounds(_Tp, _Tp) -> __runtime_bounds<_Tp>;
+_CCCL_HOST_DEVICE runtime_bounds(_Tp, _Tp) -> runtime_bounds<_Tp>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 template <class _Tp>
 inline constexpr bool __is_runtime_bounds_v = false;
 template <class _Tp>
-inline constexpr bool __is_runtime_bounds_v<__runtime_bounds<_Tp>> = true;
+inline constexpr bool __is_runtime_bounds_v<runtime_bounds<_Tp>> = true;
 
 // =====================================================================
 // bounds — factory functions
@@ -122,7 +122,7 @@ inline constexpr bool __is_runtime_bounds_v<__runtime_bounds<_Tp>> = true;
 //! @tparam _Upper The static upper bound.
 //! @return A compile-time bounds object.
 template <auto _Lower, auto _Upper>
-[[nodiscard]] _CCCL_API constexpr __static_bounds<_Lower, _Upper> bounds() noexcept
+[[nodiscard]] _CCCL_API constexpr static_bounds<_Lower, _Upper> bounds() noexcept
 {
   return {};
 }
@@ -133,7 +133,7 @@ template <auto _Lower, auto _Upper>
 //! @param __upper The runtime upper bound.
 //! @return A runtime bounds object.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr __runtime_bounds<_Tp> bounds(_Tp __lower, _Tp __upper) noexcept
+[[nodiscard]] _CCCL_API constexpr runtime_bounds<_Tp> bounds(_Tp __lower, _Tp __upper) noexcept
 {
   return {__lower, __upper};
 }

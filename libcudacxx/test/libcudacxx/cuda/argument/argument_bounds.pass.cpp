@@ -20,21 +20,21 @@ TEST_FUNC constexpr bool test()
 
   // Basic static bounds
   {
-    constexpr auto b = cuda::argument::__static_bounds<1, 4096>{};
+    constexpr auto b = cuda::argument::static_bounds<1, 4096>{};
     static_assert(b.lower() == 1);
     static_assert(b.upper() == 4096);
   }
 
   // Exact static bounds
   {
-    constexpr auto b = cuda::argument::__static_bounds<42, 42>{};
+    constexpr auto b = cuda::argument::static_bounds<42, 42>{};
     static_assert(b.lower() == 42);
     static_assert(b.upper() == 42);
   }
 
   // Long type deduced from NTTPs
   {
-    static_assert(cuda::std::is_same_v<decltype(cuda::argument::__static_bounds<0L, 1000L>::lower()), long>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::argument::static_bounds<0L, 1000L>::lower()), long>);
   }
 
 #if TEST_HAS_CLASS_NTTP
@@ -52,7 +52,7 @@ TEST_FUNC constexpr bool test()
 
   // Basic runtime bounds
   {
-    auto b = cuda::argument::__runtime_bounds{10, 100};
+    auto b = cuda::argument::runtime_bounds{10, 100};
     assert(b.lower() == 10);
     assert(b.upper() == 100);
     assert(b.__lower_ == 10);
@@ -86,10 +86,10 @@ TEST_FUNC constexpr bool test()
 
   // Static and runtime bounds intersection
   {
-    static_assert(cuda::argument::__has_bounds_intersection<int, cuda::argument::__static_bounds<1, 100>>(
-      cuda::argument::__runtime_bounds<int>{50, 200}));
-    static_assert(!cuda::argument::__has_bounds_intersection<int, cuda::argument::__static_bounds<100, 200>>(
-      cuda::argument::__runtime_bounds<int>{0, 50}));
+    static_assert(cuda::argument::__has_bounds_intersection<int, cuda::argument::static_bounds<1, 100>>(
+      cuda::argument::runtime_bounds<int>{50, 200}));
+    static_assert(!cuda::argument::__has_bounds_intersection<int, cuda::argument::static_bounds<100, 200>>(
+      cuda::argument::runtime_bounds<int>{0, 50}));
   }
 
   // Non-bounds type
