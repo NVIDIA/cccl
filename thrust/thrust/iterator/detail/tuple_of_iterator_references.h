@@ -18,6 +18,7 @@
 
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
@@ -210,6 +211,30 @@ template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
     : tuple_element<Id, tuple<Ts...>>
 {};
+
+template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+struct basic_common_reference<
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<_TTypes...>,
+  tuple<_UTypes...>,
+  _TQual,
+  _UQual,
+  enable_if_t<
+    THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<::cuda::std::tuple<_TTypes...>, ::cuda::std::tuple<_UTypes...>>>>
+{
+  using type _CCCL_NODEBUG_ALIAS = tuple<_UTypes...>;
+};
+
+template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+struct basic_common_reference<
+  tuple<_TTypes...>,
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<_UTypes...>,
+  _TQual,
+  _UQual,
+  enable_if_t<
+    THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<::cuda::std::tuple<_TTypes...>, ::cuda::std::tuple<_UTypes...>>>>
+{
+  using type _CCCL_NODEBUG_ALIAS = tuple<_TTypes...>;
+};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
