@@ -506,7 +506,7 @@ public:
           // F64). That shrinks the live samples/bins arrays enough for ptxas to
           // hold the kernel in <= 32 registers WITHOUT spilling (forcing 32 regs
           // at t_scale(16) instead spills and regresses), which together with the
-          // DeviceHistogramSmemPrivKernel __launch_bounds__ min-blocks=2 hint admits
+          // DeviceHistogramSmemPrivatizedKernel __launch_bounds__ min-blocks=2 hint admits
           // a 2nd resident CTA on the register-limited low-bin even tiers (where
           // registers, not SMEM, gate occupancy). rle=true is load-bearing
           // (dropping the same-bin RLE coalescing collapses the multi-channel even
