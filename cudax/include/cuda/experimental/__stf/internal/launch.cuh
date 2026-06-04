@@ -124,16 +124,21 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
       th.set_device_tmp(th_dev_tmp_ptr);
     }
 
+    // Free the temporary device memory on the way out, even if the launch throws.
+    // cuda_safe_call (not cuda_try) because SCOPE(exit) is noexcept.
+    SCOPE(exit)
+    {
+      if (th_dev_tmp_ptr)
+      {
+        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+      }
+    };
+
     auto kernel_args = tuple_prepend(mv(th), mv(arg));
     using args_type  = decltype(kernel_args);
     void* all_args[] = {&f, &kernel_args};
 
     cuda_launcher(interpreted_policy, reserved::launch_kernel<Fun, args_type>, all_args, stream);
-
-    if (th_mem_config[1] > 0)
-    {
-      cuda_try<cudaFreeAsync>(th_dev_tmp_ptr, stream);
-    }
   };
 }
 
