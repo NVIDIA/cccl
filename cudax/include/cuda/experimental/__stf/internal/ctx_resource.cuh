@@ -106,8 +106,10 @@ public:
     // Batch all callback resources into a single host callback for efficiency
     if (!callback_resources.empty())
     {
-      // Transfer ownership of callback resources to the callback
-      auto* callback_list = new ::std::vector<::std::shared_ptr<ctx_resource>>(mv(callback_resources));
+      // Transfer ownership of callback resources to the callback. Held in a
+      // unique_ptr until the callback is successfully enqueued so a throw from
+      // cudaStreamAddCallback does not leak the list.
+      auto callback_list = ::std::make_unique<::std::vector<::std::shared_ptr<ctx_resource>>>(mv(callback_resources));
 
       // Add a single host callback using lambda that will release all callback resources
       auto release_lambda = [](cudaStream_t /*stream*/, cudaError_t /*status*/, void* userData) -> void {
@@ -123,7 +125,8 @@ public:
         delete resources;
       };
 
-      cuda_safe_call(cudaStreamAddCallback(stream, release_lambda, callback_list, 0));
+      cuda_try<cudaStreamAddCallback>(stream, release_lambda, callback_list.get(), 0);
+      callback_list.release();
     }
 
     // Mark as released to prevent double release

@@ -235,11 +235,11 @@ public:
     size_t nedges;
     size_t nnodes;
 
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+    cuda_try(cudaGraphGetNodes(g, nullptr, &nnodes));
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     _CCCL_ASSERT(pimpl, "async_resources_handle is not initialized");

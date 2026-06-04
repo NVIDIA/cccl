@@ -1121,18 +1121,17 @@ UNITTEST("context resources released on finalize non blocking")
     }
   };
 
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
 
   bool released = false;
   context ctx(stream, async_resources_handle());
   ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
   ctx.finalize(); // non-blocking: context was created with user stream
   EXPECT(!released); // not yet, callback not run
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try<cudaStreamSynchronize>(stream);
   EXPECT(released);
 
-  cuda_safe_call(cudaStreamDestroy(stream));
+  cuda_try<cudaStreamDestroy>(stream);
 };
 
 UNITTEST("context import_resources_from")
@@ -1182,8 +1181,7 @@ UNITTEST("context graph and stage")
 
 UNITTEST("context with arguments")
 {
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
 
   async_resources_handle h;
 
@@ -1199,7 +1197,7 @@ UNITTEST("context with arguments")
   context ctx4 = graph_ctx(stream, h);
   ctx4.finalize();
 
-  cuda_safe_call(cudaStreamDestroy(stream));
+  cuda_try<cudaStreamDestroy>(stream);
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
@@ -1706,8 +1704,7 @@ UNITTEST("make_tuple_indexwise")
 
 UNITTEST("cuda stream place")
 {
-  cudaStream_t user_stream;
-  cuda_safe_call(cudaStreamCreate(&user_stream));
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
 
   context ctx;
 
@@ -1726,16 +1723,14 @@ UNITTEST("cuda stream place")
 
 UNITTEST("cuda stream place multi-gpu")
 {
-  cudaStream_t user_stream;
-
   // Create a CUDA stream in a different device (if available)
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   // use the last device
-  int target_dev_id = ndevices - 1;
+  const int target_dev_id = ndevices - 1;
 
-  cuda_safe_call(cudaSetDevice(target_dev_id));
-  cuda_safe_call(cudaStreamCreate(&user_stream));
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try<cudaSetDevice>(target_dev_id);
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
+  cuda_try<cudaSetDevice>(0);
 
   context ctx;
 
@@ -1826,8 +1821,7 @@ UNITTEST("get_stream graph")
   cudaStream_t s = t.get_stream();
   // We are not capturing so there is no stream associated
   EXPECT(s == nullptr);
-  cudaGraphNode_t n;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
   t.end();
 
   auto t2 = ctx.task(token.rw());

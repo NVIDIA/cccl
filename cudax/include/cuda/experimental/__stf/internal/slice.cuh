@@ -31,8 +31,10 @@
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <iostream>
+#include <vector>
 
 namespace cuda::experimental::stf
 {
@@ -820,13 +822,31 @@ bool pin(mdspan<T, P...>& s)
     return false;
   }
 
+  // pin() is all-or-nothing: if any region fails to pin, roll back the ones we
+  // already pinned so the slice is left unpinned (matching the early-return
+  // above, which treats the base address as a proxy for the whole slice).
+  // unpin_memory never throws (it aborts at most), so it is safe in SCOPE(fail).
+  ::std::vector<T*> pinned;
+  SCOPE(fail)
+  {
+    for (T* p : pinned)
+    {
+      unpin_memory(p);
+    }
+  };
+
+  const auto pin_one = [&pinned](T* ptr, size_t n) {
+    cuda_try(pin_memory(ptr, n));
+    pinned.push_back(ptr);
+  };
+
   if constexpr (rank == 0)
   {
-    cuda_safe_call(pin_memory(s.data_handle(), 1));
+    pin_one(s.data_handle(), 1);
   }
   else if constexpr (rank == 1)
   {
-    cuda_safe_call(pin_memory(s.data_handle(), s.extent(0)));
+    pin_one(s.data_handle(), s.extent(0));
   }
   else if constexpr (rank == 2)
   {
@@ -835,12 +855,12 @@ bool pin(mdspan<T, P...>& s)
       case 1:
         for (size_t index_1 = 0; index_1 < s.extent(1); index_1++)
         {
-          cuda_safe_call(pin_memory(&s(0, index_1) + index_1 * s.stride(1), s.extent(0)));
+          pin_one(&s(0, index_1) + index_1 * s.stride(1), s.extent(0));
         }
         break;
       case 2:
         // fprintf(stderr, "PIN 2D - contiguous\n");
-        cuda_safe_call(pin_memory(s.data_handle(), s.extent(0) * s.extent(1)));
+        pin_one(s.data_handle(), s.extent(0) * s.extent(1));
         break;
       default:
         assert(false);
@@ -858,19 +878,19 @@ bool pin(mdspan<T, P...>& s)
           for (size_t index_1 = 0; index_1 < s.extent(1); index_1++)
           {
             // fprintf(stderr, "ADDR %d,%d,0 = %p \n", index_2, index_1, &s(index_2, index_1, 0));
-            cuda_safe_call(pin_memory(&s(0, index_1, index_2), s.extent(0)));
+            pin_one(&s(0, index_1, index_2), s.extent(0));
           }
         }
         break;
       case 2:
         for (size_t index_2 = 0; index_2 < s.extent(2); index_2++)
         {
-          cuda_safe_call(pin_memory(&s(0, 0, index_2), s.extent(0) * s.extent(1)));
+          pin_one(&s(0, 0, index_2), s.extent(0) * s.extent(1));
         }
         break;
       case 3:
         // fprintf(stderr, "PIN 3D - contiguous\n");
-        cuda_safe_call(pin_memory(s.data_handle(), s.extent(0) * s.extent(1) * s.extent(2)));
+        pin_one(s.data_handle(), s.extent(0) * s.extent(1) * s.extent(2));
         break;
       default:
         assert(false);
