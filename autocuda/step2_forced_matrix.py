@@ -24,8 +24,7 @@ BINARIES = {
     "multi_range": "cub.bench.histogram.multi.range.base",
 }
 # Algorithms to force. "" = selector default (the incumbent).
-ALGOS = ["", "hybrid", "direct_cuckoo", "direct_single_probe", "gmem_priv_gather",
-         "priv_cuckoo", "priv_single_probe"]
+ALGOS = ["", "gmem_privatized_nocache", "direct_cuckoo", "direct_single_probe", "gmem_privatized_cuckoo", "gmem_privatized_single_probe"]
 
 # Focused on the proposal's window + the adjacent high-bin tail it was predicted
 # to lose. 65536 = hybrid's regime (the target); 262144/1048576 = high-bin tail.
