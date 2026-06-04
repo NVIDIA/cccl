@@ -79,9 +79,8 @@ struct DeviceRadixSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortExclusiveSumKernel, DeviceRadixSortExclusiveSumKernel<PolicySelector, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(
-    RadixSortInitBinsAndCountersKernel,
-    DeviceRadixSortInitKernel<PolicySelector, true, false, int, OffsetT>);
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitBinsAndCountersKernel,
+                           DeviceRadixSortInitKernel<PolicySelector, true, false, int, OffsetT>);
 
   CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel,
                            DeviceRadixSortInitKernel<PolicySelector, false, true, int, int>);
@@ -603,8 +602,8 @@ private:
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
-    int device  = -1;
-    int num_sms = 0;
+    int device                     = -1;
+    int num_sms                    = 0;
 
     if (const auto error = CubDebug(cudaGetDevice(&device)))
     {
@@ -731,30 +730,27 @@ private:
         PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
           ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
-        PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
+        PortionOffsetT num_blocks       = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
         const size_t num_lookback_items = static_cast<size_t>(num_blocks) * RADIX_DIGITS;
 
         if (use_pdl)
         {
           constexpr int INIT_LOOKBACK_THREADS = 256;
-          const int init_lookback_blocks      = static_cast<int>(
-            ::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
+          const int init_lookback_blocks =
+            static_cast<int>(::cuda::ceil_div(num_lookback_items, static_cast<size_t>(INIT_LOOKBACK_THREADS)));
 
-          if (const auto error =
-                CubDebug(launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream, use_pdl)
-                           .doit(
-                             kernel_source.RadixSortInitLookbackKernel(),
-                             d_lookback,
-                             num_lookback_items,
-                             d_lookback,
-                             size_t{0})))
+          if (const auto error = CubDebug(
+                launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream, use_pdl)
+                  .doit(
+                    kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items, d_lookback, size_t{0})))
           {
             return error;
           }
         }
         else
         {
-          if (const auto error = CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
+          if (const auto error =
+                CubDebug(cudaMemsetAsync(d_lookback, 0, num_lookback_items * sizeof(AtomicOffsetT), stream)))
           {
             return error;
           }

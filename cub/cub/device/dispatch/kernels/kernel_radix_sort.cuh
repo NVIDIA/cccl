@@ -475,11 +475,7 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   agent.Process();
 }
 
-template <typename PolicySelector,
-          bool TRIGGER_AT_START,
-          bool FENCE_BEFORE_END_TRIGGER,
-          typename InitT0,
-          typename InitT1>
+template <typename PolicySelector, bool TRIGGER_AT_START, bool FENCE_BEFORE_END_TRIGGER, typename InitT0, typename InitT1>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
   _CCCL_GRID_CONSTANT InitT0* const d_items0,
   _CCCL_GRID_CONSTANT const size_t num_items0,
