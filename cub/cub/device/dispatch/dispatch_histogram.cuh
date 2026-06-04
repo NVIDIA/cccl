@@ -99,7 +99,7 @@ static constexpr int hybrid_smem_split_bin_single_channel = 49152;
 //
 // Every dispatch decision in this file goes through the `algorithm` enum and
 // the `select_algorithm` function below. The per-algorithm dispatch helpers
-// (`dispatch<>`, `dispatch_hybrid_single_pass_staging_smem`) stay; they are
+// (`dispatch<>`, `dispatch_gmem_privatized_hybrid`) stay; they are
 // launchers, not pickers. To add or retire a kernel, add an enumerator here,
 // teach `select_algorithm` when to pick it, and add a `case` to
 // `dispatch_by_algorithm`.
@@ -954,10 +954,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // (`private_block_spill`) into THIS block's private GMEM slab instead of
       // device-scope into the shared output; a Phase-4 atomic-free gather then
       // merges the slabs. The slab reuses the `d_privatized_histograms` temp
-      // allocation already sized at `num_thread_blocks * num_bins`. Experimental:
-      // currently reachable only via the host env hook `CUB_HISTO_FORCE_ALGO`
-      // (priv_cuckoo / priv_single_probe), never auto-selected -- so a normal
-      // dispatch is byte-identical to before. See cached_privatized_spill_design.md.
+      // allocation already sized at `num_thread_blocks * num_bins`. Reached via
+      // `direct_atomic_cache_mode` 3 (cuckoo) / 4 (single-probe), which
+      // dispatch_by_algorithm sets for the first-class algorithm enumerators
+      // `gmem_privatized_{cuckoo,single_probe}` (and the CUB_HISTO_FORCE_ALGO hook).
+      // `select_algorithm` never returns them (measured to lose outside one
+      // multi_even/powerlaw cell, unexploitable by a shape-blind selector), so they
+      // are selectable-but-unselected -- a normal dispatch is byte-identical to
+      // before. See cached_privatized_spill_design.md.
       auto direct_atomic_priv_cuckoo_kernel_ptr =
         &DeviceHistogramDirectKernel<PolicySelector,
                                            PRIVATIZED_SMEM_BINS,
@@ -1890,7 +1894,7 @@ template <int NUM_CHANNELS,
           typename PolicySelector,
           typename KernelSource,
           typename KernelLauncherFactory>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_staging_smem(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_gmem_privatized_hybrid(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
@@ -2210,7 +2214,7 @@ public:
 // the launch geometry. The hybrid launcher ignores `num_privatized_levels`.
 //
 // On hybrid setup failure (`cudaErrorNotSupported` from
-// `dispatch_hybrid_single_pass_staging_smem`), this helper falls through to
+// `dispatch_gmem_privatized_hybrid`), this helper falls through to
 // the GMEM-priv path so users do not see a hard error on devices/conditions
 // where hybrid's cooperative launch cannot be set up.
 template <int NUM_CHANNELS,
@@ -2363,7 +2367,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       if constexpr (NUM_ACTIVE_CHANNELS == 1)
       {
         const auto status =
-          dispatch_hybrid_single_pass_staging_smem<NUM_CHANNELS,
+          dispatch_gmem_privatized_hybrid<NUM_CHANNELS,
                                                    NUM_ACTIVE_CHANNELS,
                                                    hybrid_smem_split_bin_single_channel,
                                                    hybrid_smem_bins_max_single_channel>(

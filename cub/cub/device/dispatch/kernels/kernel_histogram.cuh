@@ -3000,7 +3000,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // ---------------------------------------------------------------------
   // Phase 4 (private-spill variant only): grid-sync so every block's slab
   // writes are visible, then an atomic-free gather sums the per-block slabs
-  // into the shared output. Mirrors DeviceHistogramGmemPrivatizedKernel(HybridSplit=false).s
+  // into the shared output. Mirrors DeviceHistogramGmemPrivatizedKernel's
   // gather: each thread owns a slice of OUTPUT bins and column-sums across
   // blocks, turning num_blocks * num_bins contended atomics into plain
   // reads + one write per bin.
