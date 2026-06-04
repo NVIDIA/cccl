@@ -221,7 +221,7 @@ struct basic_common_reference<
   enable_if_t<
     THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<::cuda::std::tuple<_TTypes...>, ::cuda::std::tuple<_UTypes...>>>>
 {
-  using type _CCCL_NODEBUG_ALIAS = tuple<_UTypes...>;
+  using type _CCCL_NODEBUG_ALIAS = tuple<_UQual<_UTypes>...>;
 };
 
 template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
@@ -233,7 +233,7 @@ struct basic_common_reference<
   enable_if_t<
     THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<::cuda::std::tuple<_TTypes...>, ::cuda::std::tuple<_UTypes...>>>>
 {
-  using type _CCCL_NODEBUG_ALIAS = tuple<_TTypes...>;
+  using type _CCCL_NODEBUG_ALIAS = tuple<_TQual<_TTypes>...>;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
