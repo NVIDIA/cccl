@@ -1,21 +1,35 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Grayscale: RGB pixel -> luminance.  Uses a 3-component pixel type.
-// CUB stores rgb_t<float> (12 bytes) packed; tile may or may not accept this as an
-// element type.  If tile rejects rgb_t<float>, this bench will fail to compile —
-// we'll then fall back to treating R/G/B as three separate float streams.
+// Grayscale: RGB pixel -> luminance via three separate input streams.
+// Custom rgb_to_y op self-registers its tile substitute via tile_eligible<>.
 
 #include <nvbench/nvbench.cuh>
-#include <cub/device/dispatch/dispatch_transform_tile.cuh>
-#include "bench_init.cuh"
+
+#include <cub/device/device_transform.cuh>
+
 #include <cuda_runtime.h>
 #include <cuda/std/tuple>
 #include <vector>
 
-// Three-stream version (R, G, B as separate input arrays).
-// Computationally equivalent to CUB's packed rgb_t version.
+#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#  include <cuda_tile.h>
+#endif
+
+#include "bench_init.cuh"
+
 struct rgb_to_y {
+    template <class R, class G, class B>
+    __host__ __device__ auto operator()(R r, G g, B b) const {
+        constexpr float w_r = 0.2989f;
+        constexpr float w_g = 0.587f;
+        constexpr float w_b = 0.114f;
+        return w_r * r + w_g * g + w_b * b;
+    }
+};
+
+#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+struct tile_rgb_to_y {
     template <class R, class G, class B>
     __tile__ auto operator()(R r, G g, B b) const {
         constexpr float w_r = 0.2989f;
@@ -24,6 +38,14 @@ struct rgb_to_y {
         return w_r * r + w_g * g + w_b * b;
     }
 };
+
+CUB_NAMESPACE_BEGIN
+namespace detail::transform::tile
+{
+template <class T> struct tile_eligible<rgb_to_y, T, 3> : ::cuda::std::true_type { using tile_op_type = tile_rgb_to_y; };
+} // namespace detail::transform::tile
+CUB_NAMESPACE_END
+#endif
 
 template <typename T>
 void grayscale(nvbench::state& state, nvbench::type_list<T>) {
@@ -39,7 +61,7 @@ void grayscale(nvbench::state& state, nvbench::type_list<T>) {
     state.add_global_memory_reads<T>(3 * n);   // matches CUB's rgb_t<T> = 3*sizeof(T)
     state.add_global_memory_writes<T>(n);
     state.exec([&](nvbench::launch& launch) {
-        cub_tile::DeviceTransform::Transform(
+        cub::DeviceTransform::Transform(
             ::cuda::std::make_tuple(r, g, b), out, n, rgb_to_y{}, launch.get_stream());
     });
     cudaFree(r); cudaFree(g); cudaFree(b); cudaFree(out);

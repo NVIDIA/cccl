@@ -1,22 +1,42 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Pure copy bench (identity transform) — tile side.
-// Isolates the load/store path from any arithmetic on top: useful for
-// catching narrow-type store wars (e.g. byte stores capping BW).
+// Pure copy bench (identity transform). Custom identity op self-registers
+// its tile substitute via tile_eligible<>; under --enable-tile + the
+// dispatch macro this routes to the tile load_masked/store_masked path,
+// otherwise it falls through to CUB's standard transform.
 
 #include <nvbench/nvbench.cuh>
-#include <cub/device/dispatch/dispatch_transform_tile.cuh>
+
+#include <cub/device/device_transform.cuh>
+
 #include <cuda_runtime.h>
 #include <cuda/std/tuple>
 #include <vector>
 #include <cstdint>
 
+#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#  include <cuda_tile.h>
+#endif
+
 #include "bench_init.cuh"
 
 struct identity {
+    template <class T> __host__ __device__ auto operator()(T v) const { return v; }
+};
+
+#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+struct tile_identity {
     template <class T> __tile__ auto operator()(T v) const { return v; }
 };
+
+CUB_NAMESPACE_BEGIN
+namespace detail::transform::tile
+{
+template <class T> struct tile_eligible<identity, T, 1> : ::cuda::std::true_type { using tile_op_type = tile_identity; };
+} // namespace detail::transform::tile
+CUB_NAMESPACE_END
+#endif
 
 template <typename T>
 void copy(nvbench::state& state, nvbench::type_list<T>) {
@@ -28,7 +48,7 @@ void copy(nvbench::state& state, nvbench::type_list<T>) {
     state.add_global_memory_reads<T>(n);
     state.add_global_memory_writes<T>(n);
     state.exec([&](nvbench::launch& launch) {
-        cub_tile::DeviceTransform::Transform(
+        cub::DeviceTransform::Transform(
             ::cuda::std::make_tuple(in), out, n, identity{}, launch.get_stream());
     });
     cudaFree(in); cudaFree(out);

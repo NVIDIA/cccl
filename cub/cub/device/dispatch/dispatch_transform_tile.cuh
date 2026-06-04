@@ -171,12 +171,4 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch(
 
 CUB_NAMESPACE_END
 
-// Compatibility shim. Existing benches and tests still call
-// cub_tile::DeviceTransform; once they move to cub::DeviceTransform with named
-// functors and the trait dispatch, this alias can be removed.
-namespace cub_tile
-{
-using DeviceTransform = ::cub::detail::transform::tile::DeviceTransform;
-} // namespace cub_tile
-
 #endif // _CCCL_CTK_AT_LEAST(13, 3)

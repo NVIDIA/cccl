@@ -1,51 +1,128 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// PyTorch ops on tile.  Uses ct::tanh / ct::sin / ct::exp / ct::select.
+// PyTorch-style ops via cub::DeviceTransform::Transform. Each custom op
+// self-registers a tile substitute through tile_eligible<>, so the dispatch
+// hook routes them to the tile kernel under --enable-tile + the
+// CCCL_ENABLE_TILE_TRANSFORM_DISPATCH macro. MUFU-heavy ops also opt into
+// tile_mufu_heavy<> so the tile policy picker caps items/thread at the
+// vector width on sub-4-byte types.
 
 #include <nvbench/nvbench.cuh>
-#include <cub/device/dispatch/dispatch_transform_tile.cuh>
+
+#include <cub/device/device_transform.cuh>
+
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
 #include <cuda_bf16.h>
+#include <cuda/std/cmath>
 #include <cuda/std/tuple>
 #include <vector>
 
+#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+#  include <cuda_tile.h>
+#endif
+
 #include "bench_init.cuh"
 
-namespace ct = cuda::tiles;
+// ========================================================================
+// Scalar ops (the types the user passes to cub::DeviceTransform::Transform).
+// Sub-4-byte input types compute in float and cast back, matching the tile
+// substitute below.
+// ========================================================================
+template <class T> __host__ __device__ float to_f(T v) { return static_cast<float>(v); }
+template <class T> __host__ __device__ T from_f(float f) { return static_cast<T>(f); }
 
-// --- Unary --- (compute in float, cast back so the same ops work for __half/__bf16/float)
+struct relu_op    { template <class T> __host__ __device__ T operator()(T v) const {
+    float f = to_f(v); return from_f<T>(f > 0.0f ? f : 0.0f); } };
+struct sigmoid_op { template <class T> __host__ __device__ T operator()(T v) const {
+    float f = to_f(v); return from_f<T>(1.0f / (1.0f + ::cuda::std::exp(-f))); } };
+struct tanh_op    { template <class T> __host__ __device__ T operator()(T v) const {
+    return from_f<T>(::cuda::std::tanh(to_f(v))); } };
+struct gelu_op    { template <class T> __host__ __device__ T operator()(T v) const {
+    constexpr float k0 = 0.7978845608028654f, k1 = 0.044715f;
+    float f = to_f(v);
+    return from_f<T>(0.5f * f * (1.0f + ::cuda::std::tanh(k0 * (f + k1 * f * f * f)))); } };
+struct sin_op     { template <class T> __host__ __device__ T operator()(T v) const {
+    return from_f<T>(::cuda::std::sin(to_f(v))); } };
+struct exp_op     { template <class T> __host__ __device__ T operator()(T v) const {
+    return from_f<T>(::cuda::std::exp(to_f(v))); } };
+
+struct binary_add  { template <class A, class B> __host__ __device__ auto operator()(A a, B b) const { return a + b; } };
+struct binary_sub  { template <class A, class B> __host__ __device__ auto operator()(A a, B b) const { return a - b; } };
+struct binary_mul  { template <class A, class B> __host__ __device__ auto operator()(A a, B b) const { return a * b; } };
+struct binary_div  { template <class A, class B> __host__ __device__ auto operator()(A a, B b) const { return a / b; } };
+struct binary_le   { template <class A, class B> __host__ __device__ A operator()(A a, B b) const { return static_cast<A>(a <= b); } };
+struct binary_ge   { template <class A, class B> __host__ __device__ A operator()(A a, B b) const { return static_cast<A>(a >= b); } };
+struct binary_fmin { template <class A, class B> __host__ __device__ auto operator()(A a, B b) const { return a < b ? a : b; } };
+struct binary_fmax { template <class A, class B> __host__ __device__ auto operator()(A a, B b) const { return a > b ? a : b; } };
+
+// ========================================================================
+// Tile substitutes + trait registration. Only compiled under tile mode.
+// ========================================================================
+#if defined(CCCL_ENABLE_TILE_TRANSFORM_DISPATCH) && _CCCL_TILE_COMPILATION()
+namespace ct = ::cuda::tiles;
+
 template <class T> __tile__ auto as_float(T v) { return ct::element_cast<float>(v); }
 template <class T, class F> __tile__ auto from_float(F f) { return ct::element_cast<ct::tile_element_t<T>>(f); }
 
-struct relu_op    { template <class T> __tile__ auto operator()(T v) const {
+struct tile_relu    { template <class T> __tile__ auto operator()(T v) const {
     auto f = as_float(v); return from_float<T>(ct::select(f > 0.0f, f, f - f)); } };
-struct sigmoid_op { template <class T> __tile__ auto operator()(T v) const {
+struct tile_sigmoid { template <class T> __tile__ auto operator()(T v) const {
     auto f = as_float(v); return from_float<T>(1.0f / (1.0f + ct::exp(-f))); } };
-struct tanh_op    { template <class T> __tile__ auto operator()(T v) const {
+struct tile_tanh    { template <class T> __tile__ auto operator()(T v) const {
     return from_float<T>(ct::tanh(as_float(v))); } };
-struct gelu_op    { template <class T> __tile__ auto operator()(T v) const {
+struct tile_gelu    { template <class T> __tile__ auto operator()(T v) const {
     constexpr float k0 = 0.7978845608028654f, k1 = 0.044715f;
     auto f = as_float(v);
     return from_float<T>(0.5f * f * (1.0f + ct::tanh(k0 * (f + k1 * f * f * f)))); } };
-struct sin_op { template <class T> __tile__ auto operator()(T v) const { return from_float<T>(ct::sin(as_float(v))); } };
-struct exp_op { template <class T> __tile__ auto operator()(T v) const { return from_float<T>(ct::exp(as_float(v))); } };
+struct tile_sin     { template <class T> __tile__ auto operator()(T v) const { return from_float<T>(ct::sin(as_float(v))); } };
+struct tile_exp     { template <class T> __tile__ auto operator()(T v) const { return from_float<T>(ct::exp(as_float(v))); } };
 
-// --- Binary ---
-struct binary_add  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a + b; } };
-struct binary_sub  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a - b; } };
-struct binary_mul  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a * b; } };
-struct binary_div  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a / b; } };
-// le/ge: cast the bool result tile to A's element type so it fits the float output buffer
-//        (CUB does the same implicit cast via its iterator path).
-struct binary_le   { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::element_cast<ct::tile_element_t<A>>(a <= b); } };
-struct binary_ge   { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::element_cast<ct::tile_element_t<A>>(a >= b); } };
-struct binary_fmin { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::select(a < b, a, b); } };
-struct binary_fmax { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::select(a > b, a, b); } };
+struct tile_binary_add  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a + b; } };
+struct tile_binary_sub  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a - b; } };
+struct tile_binary_mul  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a * b; } };
+struct tile_binary_div  { template <class A, class B> __tile__ auto operator()(A a, B b) const { return a / b; } };
+struct tile_binary_le   { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::element_cast<ct::tile_element_t<A>>(a <= b); } };
+struct tile_binary_ge   { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::element_cast<ct::tile_element_t<A>>(a >= b); } };
+struct tile_binary_fmin { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::select(a < b, a, b); } };
+struct tile_binary_fmax { template <class A, class B> __tile__ auto operator()(A a, B b) const { return ct::select(a > b, a, b); } };
 
+CUB_NAMESPACE_BEGIN
+namespace detail::transform::tile
+{
+// Unary
+template <class T> struct tile_eligible<relu_op,    T, 1> : ::cuda::std::true_type { using tile_op_type = tile_relu;    };
+template <class T> struct tile_eligible<sigmoid_op, T, 1> : ::cuda::std::true_type { using tile_op_type = tile_sigmoid; };
+template <class T> struct tile_eligible<tanh_op,    T, 1> : ::cuda::std::true_type { using tile_op_type = tile_tanh;    };
+template <class T> struct tile_eligible<gelu_op,    T, 1> : ::cuda::std::true_type { using tile_op_type = tile_gelu;    };
+template <class T> struct tile_eligible<sin_op,     T, 1> : ::cuda::std::true_type { using tile_op_type = tile_sin;     };
+template <class T> struct tile_eligible<exp_op,     T, 1> : ::cuda::std::true_type { using tile_op_type = tile_exp;     };
 
-template <typename Op, typename T, bool MufuHeavy = false>
+// MUFU-heavy unary ops: hint to tile policy picker to cap items/thread at vector width on sub-4-byte types.
+template <> struct tile_mufu_heavy<sigmoid_op> : ::cuda::std::true_type {};
+template <> struct tile_mufu_heavy<tanh_op>    : ::cuda::std::true_type {};
+template <> struct tile_mufu_heavy<gelu_op>    : ::cuda::std::true_type {};
+template <> struct tile_mufu_heavy<sin_op>     : ::cuda::std::true_type {};
+template <> struct tile_mufu_heavy<exp_op>     : ::cuda::std::true_type {};
+
+// Binary
+template <class T> struct tile_eligible<binary_add,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_add;  };
+template <class T> struct tile_eligible<binary_sub,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_sub;  };
+template <class T> struct tile_eligible<binary_mul,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_mul;  };
+template <class T> struct tile_eligible<binary_div,  T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_div;  };
+template <class T> struct tile_eligible<binary_le,   T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_le;   };
+template <class T> struct tile_eligible<binary_ge,   T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_ge;   };
+template <class T> struct tile_eligible<binary_fmin, T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_fmin; };
+template <class T> struct tile_eligible<binary_fmax, T, 2> : ::cuda::std::true_type { using tile_op_type = tile_binary_fmax; };
+} // namespace detail::transform::tile
+CUB_NAMESPACE_END
+#endif
+
+// ========================================================================
+// Bench harness.
+// ========================================================================
+template <typename Op, typename T>
 void run_unary(nvbench::state& state) {
     const auto n = state.get_int64("Elements{io}");
     T *in, *out;
@@ -55,7 +132,7 @@ void run_unary(nvbench::state& state) {
     state.add_global_memory_reads<T>(n);
     state.add_global_memory_writes<T>(n);
     state.exec([&](nvbench::launch& launch) {
-        cub_tile::DeviceTransform::Transform<0, MufuHeavy>(
+        cub::DeviceTransform::Transform(
             ::cuda::std::make_tuple(in), out, n, Op{}, launch.get_stream());
     });
     cudaFree(in); cudaFree(out);
@@ -73,7 +150,7 @@ void run_binary(nvbench::state& state) {
     state.add_global_memory_reads<T>(2*n);
     state.add_global_memory_writes<T>(n);
     state.exec([&](nvbench::launch& launch) {
-        cub_tile::DeviceTransform::Transform(
+        cub::DeviceTransform::Transform(
             ::cuda::std::make_tuple(a, b), out, n, Op{}, launch.get_stream());
     });
     cudaFree(a); cudaFree(b); cudaFree(out);
@@ -82,18 +159,16 @@ void run_binary(nvbench::state& state) {
 using element_types = nvbench::type_list<__half, __nv_bfloat16, float>;
 inline auto pt_sizes = std::vector<nvbench::int64_t>{16, 20, 24, 28, 31};
 
-#define UNARY_BENCH(name, op, mufu) \
-    template <typename T> void name##_bench(nvbench::state& state, nvbench::type_list<T>) { run_unary<op, T, mufu>(state); } \
+#define UNARY_BENCH(name, op) \
+    template <typename T> void name##_bench(nvbench::state& state, nvbench::type_list<T>) { run_unary<op, T>(state); } \
     NVBENCH_BENCH_TYPES(name##_bench, NVBENCH_TYPE_AXES(element_types)).set_name("tile_" #name).add_int64_power_of_two_axis("Elements{io}", pt_sizes);
 
-// MufuHeavy hint set for ops dominated by MUFU intrinsics (exp/tanh/sin/cos).
-// relu is just compare+select, so no hint.
-UNARY_BENCH(relu,    relu_op,    false)
-UNARY_BENCH(sigmoid, sigmoid_op, true)
-UNARY_BENCH(tanh,    tanh_op,    true)
-UNARY_BENCH(gelu,    gelu_op,    true)
-UNARY_BENCH(sin,     sin_op,     true)
-UNARY_BENCH(exp,     exp_op,     true)
+UNARY_BENCH(relu,    relu_op)
+UNARY_BENCH(sigmoid, sigmoid_op)
+UNARY_BENCH(tanh,    tanh_op)
+UNARY_BENCH(gelu,    gelu_op)
+UNARY_BENCH(sin,     sin_op)
+UNARY_BENCH(exp,     exp_op)
 
 #define BINARY_BENCH(name, op) \
     template <typename T> void name##_bench(nvbench::state& state, nvbench::type_list<T>) { run_binary<op, T>(state); } \
