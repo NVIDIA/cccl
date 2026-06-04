@@ -23,7 +23,7 @@ int main(int, char**)
   static_assert(cuda::std::is_integral<Rep>::value);
   static_assert(cuda::std::numeric_limits<Rep>::digits >= 20);
   static_assert(
-    cuda::std::is_same_v<Period, cuda::std::ratio_divide<cuda::std::chrono::years::period, cuda::std::ratio<12>>>, "");
+    cuda::std::is_same_v<Period, cuda::std::ratio_divide<cuda::std::chrono::years::period, cuda::std::ratio<12>>>);
 
   return 0;
 }

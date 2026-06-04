@@ -11,7 +11,9 @@
 #include <cuda/experimental/places.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -358,9 +360,10 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
   auto* grid_ptr = from_opaque(grid);
-  // Distinct function pointer types (C typedef vs C++ alias); not convertible via static_cast under nvcc.
-  partition_fn_t cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp                  = stf_try_allocate([cpp_mapper, grid_ptr] {
+  // Distinct function pointer types (C typedef vs C++ alias) are not
+  // convertible via static_cast under nvcc.
+  const auto cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
+  auto* dp              = stf_try_allocate([cpp_mapper, grid_ptr] {
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);
@@ -408,6 +411,75 @@ stf_ctx_handle stf_ctx_create_graph(void)
   }));
 }
 
+// Opaque bridge types for the extern-C `async_resources_handle` wrapper.
+// `async_resources_handle` is defined in cudax and not listed in the generic
+// `to_opaque/from_opaque` registry above, so we just reinterpret the pointer
+// directly here.
+namespace
+{
+inline stf_async_resources_handle async_resources_to_opaque(async_resources_handle* p) noexcept
+{
+  return reinterpret_cast<stf_async_resources_handle>(p);
+}
+
+inline async_resources_handle* async_resources_from_opaque(stf_async_resources_handle h) noexcept
+{
+  return reinterpret_cast<async_resources_handle*>(h);
+}
+} // namespace
+
+stf_async_resources_handle stf_async_resources_create(void)
+{
+  return async_resources_to_opaque(stf_try_allocate([] {
+    return new async_resources_handle{};
+  }));
+}
+
+void stf_async_resources_destroy(stf_async_resources_handle h)
+{
+  delete async_resources_from_opaque(h);
+}
+
+stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts)
+{
+  // NULL opts matches stf_ctx_create().
+  const stf_ctx_options defaults{};
+  const stf_ctx_options& o = opts ? *opts : defaults;
+
+  const bool has_stream           = (o.has_stream != 0);
+  const async_resources_handle ah = o.handle ? *async_resources_from_opaque(o.handle) : async_resources_handle{nullptr};
+
+  // C++ overloads distinguish "caller supplied a stream" from "use the
+  // default constructor". `cudaStream_t` is pointer-like, so a separate flag is
+  // required to let callers intentionally bind the CUDA default stream.
+  return to_opaque(stf_try_allocate([&]() -> context* {
+    switch (o.backend)
+    {
+      case STF_BACKEND_GRAPH:
+        if (has_stream)
+        {
+          return new context{graph_ctx(o.stream, ah)};
+        }
+        if (o.handle != nullptr)
+        {
+          return new context{graph_ctx(ah)};
+        }
+        return new context{graph_ctx()};
+      case STF_BACKEND_STREAM:
+      default:
+        if (has_stream)
+        {
+          return new context{stream_ctx(o.stream, ah)};
+        }
+        if (o.handle != nullptr)
+        {
+          return new context{stream_ctx(ah)};
+        }
+        return new context{};
+    }
+  }));
+}
+
 void stf_ctx_finalize(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
@@ -430,6 +502,51 @@ cudaStream_t stf_fence(stf_ctx_handle ctx)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   auto* context_ptr = from_opaque(ctx);
   return context_ptr->fence();
+}
+
+int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size)
+{
+  if (ctx == nullptr || ld == nullptr || out == nullptr)
+  {
+    return 1;
+  }
+
+  try
+  {
+    auto* context_ptr = from_opaque(ctx);
+    auto* ld_ptr      = from_opaque(ld);
+
+    void* dst  = out;
+    size_t cap = size;
+
+    auto builder = context_ptr->host_launch();
+    builder.add_deps(task_dep_untyped(*ld_ptr, access_mode::read));
+    builder.set_symbol("wait");
+    builder->*[dst, cap](reserved::host_launch_deps& deps) {
+      auto data      = deps.get<slice<char>>(0);
+      size_t copy_sz = ::std::min(cap, static_cast<size_t>(data.extent(0)));
+      // The destination must not overlap the logical data range: in practice the
+      // logical data is backed by storage that is allocated independently from the
+      // caller's readback buffer, so use uintptr_t comparisons (relational pointer
+      // comparison across unrelated allocations is unspecified) to encode that
+      // contract.
+      const auto src_begin = reinterpret_cast<::std::uintptr_t>(data.data_handle());
+      const auto src_end   = src_begin + copy_sz;
+      const auto dst_begin = reinterpret_cast<::std::uintptr_t>(dst);
+      const auto dst_end   = dst_begin + copy_sz;
+      _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
+                   "stf_ctx_wait destination buffer must not overlap the logical data range");
+      ::std::memcpy(dst, data.data_handle(), copy_sz);
+    };
+
+    cudaStream_t fence_stream = context_ptr->fence();
+    cuda_safe_call(cudaStreamSynchronize(fence_stream));
+    return 0;
+  }
+  catch (...)
+  {
+    return 1;
+  }
 }
 
 stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)

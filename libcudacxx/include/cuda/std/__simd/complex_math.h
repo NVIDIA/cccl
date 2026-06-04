@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 struct __fn_real
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return __z.real();
   }
@@ -53,7 +53,7 @@ struct __fn_real
 struct __fn_imag
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return __z.imag();
   }
@@ -62,7 +62,7 @@ struct __fn_imag
 struct __fn_abs
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::abs(__z);
   }
@@ -71,7 +71,7 @@ struct __fn_abs
 struct __fn_arg
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::arg(__z);
   }
@@ -80,7 +80,7 @@ struct __fn_arg
 struct __fn_norm
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::norm(__z);
   }
@@ -89,7 +89,7 @@ struct __fn_norm
 struct __fn_conj
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::conj(__z);
   }
@@ -98,7 +98,7 @@ struct __fn_conj
 struct __fn_proj
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::proj(__z);
   }
@@ -107,7 +107,7 @@ struct __fn_proj
 struct __fn_exp
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::exp(__z);
   }
@@ -116,7 +116,7 @@ struct __fn_exp
 struct __fn_log
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::log(__z);
   }
@@ -125,7 +125,7 @@ struct __fn_log
 struct __fn_log10
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::log10(__z);
   }
@@ -134,7 +134,7 @@ struct __fn_log10
 struct __fn_sqrt
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::sqrt(__z);
   }
@@ -143,7 +143,7 @@ struct __fn_sqrt
 struct __fn_sin
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::sin(__z);
   }
@@ -152,7 +152,7 @@ struct __fn_sin
 struct __fn_asin
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::asin(__z);
   }
@@ -161,7 +161,7 @@ struct __fn_asin
 struct __fn_cos
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::cos(__z);
   }
@@ -170,7 +170,7 @@ struct __fn_cos
 struct __fn_acos
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::acos(__z);
   }
@@ -179,7 +179,7 @@ struct __fn_acos
 struct __fn_tan
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::tan(__z);
   }
@@ -188,7 +188,7 @@ struct __fn_tan
 struct __fn_atan
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::atan(__z);
   }
@@ -197,7 +197,7 @@ struct __fn_atan
 struct __fn_sinh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::sinh(__z);
   }
@@ -206,7 +206,7 @@ struct __fn_sinh
 struct __fn_asinh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::asinh(__z);
   }
@@ -215,7 +215,7 @@ struct __fn_asinh
 struct __fn_cosh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::cosh(__z);
   }
@@ -224,7 +224,7 @@ struct __fn_cosh
 struct __fn_acosh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::acosh(__z);
   }
@@ -233,7 +233,7 @@ struct __fn_acosh
 struct __fn_tanh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::tanh(__z);
   }
@@ -242,7 +242,7 @@ struct __fn_tanh
 struct __fn_atanh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
   {
     return ::cuda::std::atanh(__z);
   }
@@ -256,7 +256,7 @@ struct __gen_complex_apply_unary
   _Func __func_ = {};
 
   template <typename _Idx>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Idx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Idx) const
   {
     return __func_(__v_[__simd_size_type{_Idx::value}]);
   }
@@ -271,7 +271,7 @@ struct __gen_complex_apply_binary
   _Func __func_ = {};
 
   template <typename _Idx>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Idx) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Idx) const
   {
     return __func_(__x_[__simd_size_type{_Idx::value}], __y_[__simd_size_type{_Idx::value}]);
   }
@@ -281,7 +281,7 @@ struct __gen_complex_apply_binary
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
 real(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
   using __vec_t    = basic_vec<_Tp, _Abi>;
@@ -291,7 +291,7 @@ real(const basic_vec<_Tp, _Abi>& __v) noexcept
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
 imag(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
   using __vec_t    = basic_vec<_Tp, _Abi>;
@@ -301,7 +301,7 @@ imag(const basic_vec<_Tp, _Abi>& __v) noexcept
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
 abs(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t    = basic_vec<_Tp, _Abi>;
@@ -311,7 +311,7 @@ abs(const basic_vec<_Tp, _Abi>& __v)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
 arg(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t    = basic_vec<_Tp, _Abi>;
@@ -321,7 +321,7 @@ arg(const basic_vec<_Tp, _Abi>& __v)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr rebind_t<__simd_complex_value_type_t<_Tp>, basic_vec<_Tp, _Abi>>
 norm(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t    = basic_vec<_Tp, _Abi>;
@@ -333,7 +333,7 @@ norm(const basic_vec<_Tp, _Abi>& __v)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> conj(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> conj(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_conj>{__v}};
@@ -341,7 +341,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> proj(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> proj(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_proj>{__v}};
@@ -349,7 +349,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> exp(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> exp(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_exp>{__v}};
@@ -357,7 +357,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> log(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> log(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_log>{__v}};
@@ -365,7 +365,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> log10(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> log10(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_log10>{__v}};
@@ -373,7 +373,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> sqrt(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> sqrt(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_sqrt>{__v}};
@@ -381,7 +381,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> sin(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> sin(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_sin>{__v}};
@@ -389,7 +389,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> asin(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> asin(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_asin>{__v}};
@@ -397,7 +397,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> cos(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> cos(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_cos>{__v}};
@@ -405,7 +405,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> acos(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> acos(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_acos>{__v}};
@@ -413,7 +413,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> tan(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> tan(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_tan>{__v}};
@@ -421,7 +421,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> atan(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> atan(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_atan>{__v}};
@@ -429,7 +429,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> sinh(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> sinh(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_sinh>{__v}};
@@ -437,7 +437,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> asinh(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> asinh(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_asinh>{__v}};
@@ -445,7 +445,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> cosh(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> cosh(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_cosh>{__v}};
@@ -453,7 +453,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> acosh(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> acosh(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_acosh>{__v}};
@@ -461,7 +461,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> tanh(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> tanh(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_tanh>{__v}};
@@ -469,7 +469,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi> atanh(const basic_vec<_Tp, _Abi>& __v)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> atanh(const basic_vec<_Tp, _Abi>& __v)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;
   return __vec_t{__gen_complex_apply_unary<__vec_t, __fn_atanh>{__v}};
@@ -480,7 +480,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 struct __fn_polar_binary
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __rho, const _Tp& __theta) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __rho, const _Tp& __theta) const
   {
     return ::cuda::std::polar(__rho, __theta);
   }
@@ -489,7 +489,7 @@ struct __fn_polar_binary
 struct __fn_pow_binary
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __x, const _Tp& __y) const
   {
     return ::cuda::std::pow(__x, __y);
   }
@@ -499,7 +499,7 @@ struct __fn_pow_binary
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(::cuda::is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API rebind_t<::cuda::std::complex<_Tp>, basic_vec<_Tp, _Abi>>
+[[nodiscard]] _CCCL_HOST_DEVICE_API rebind_t<::cuda::std::complex<_Tp>, basic_vec<_Tp, _Abi>>
 polar(const basic_vec<_Tp, _Abi>& __x, const basic_vec<_Tp, _Abi>& __y = {})
 {
   using __vec_t    = basic_vec<_Tp, _Abi>;
@@ -509,7 +509,7 @@ polar(const basic_vec<_Tp, _Abi>& __x, const basic_vec<_Tp, _Abi>& __y = {})
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr basic_vec<_Tp, _Abi>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi>
 pow(const basic_vec<_Tp, _Abi>& __x, const basic_vec<_Tp, _Abi>& __y)
 {
   using __vec_t = basic_vec<_Tp, _Abi>;

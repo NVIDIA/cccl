@@ -131,12 +131,10 @@ TEST_FUNC constexpr bool test()
   static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D, D>>>::value);
   // wrong type in general: note the map constructor does NOT convert, since it takes by const&
   static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D>>>::value);
-  static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<unsigned, 3, D, D>>>::value,
-                "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<unsigned, 3, D, D>>>::value);
 
   // test non-constructibility from wrong handle_type
-  static_assert(!cuda::std::is_constructible<mds_t, const float*, mapping_t<cuda::std::extents<int, 3, D, D>>>::value,
-                "");
+  static_assert(!cuda::std::is_constructible<mds_t, const float*, mapping_t<cuda::std::extents<int, 3, D, D>>>::value);
 
   return true;
 }

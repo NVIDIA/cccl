@@ -53,7 +53,11 @@ function(add_bench_dir bench_dir)
     target_link_libraries(${bench_name} PRIVATE cudax.compiler_interface)
     target_compile_options(
       ${bench_name}
-      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+      PRIVATE
+        "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+        # cudax.compiler_interface enables assertions for tests/examples; benchmarks should measure release behavior.
+        "$<$<COMPILE_LANGUAGE:CUDA>:-UCCCL_ENABLE_ASSERTIONS>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-UCCCL_ENABLE_ASSERTIONS>"
     )
   endforeach()
 endfunction()
