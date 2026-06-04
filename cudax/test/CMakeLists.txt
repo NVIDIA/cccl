@@ -90,6 +90,11 @@ cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
 )
 
+cudax_add_catch2_test(test_target fill_bytes
+    fill_bytes/fill_bytes_mdspan.cu
+    fill_bytes/fill_bytes_mdspan_example.cu
+)
+
 cudax_add_catch2_test(test_target copy
     copy/copy.cu
     copy/copy_edge_cases.cu
@@ -184,6 +189,9 @@ cudax_add_catch2_test(test_target coop.reduce.this_block
 )
 cudax_add_catch2_test(test_target coop.reduce.this_cluster
     coop/reduce/this_cluster.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_grid
+    coop/reduce/this_grid.cu
 )
 
 if (cudax_ENABLE_CUFILE)
