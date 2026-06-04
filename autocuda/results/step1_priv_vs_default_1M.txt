@@ -1,0 +1,16 @@
+Step 1 head-to-head: private-spill vs default, single-channel EVEN, 1048576 bins, 64M elts, 3-sample (B200)
+(direct-atomic path IS selected here; verifier active, all exit 0 = correct counts)
+
+shape             default(single_probe,output-spill)   priv_cuckoo   priv_single_probe
+concentrated:0.0  1944.8                                272.3         272.4
+powerlaw:0.5       548.4                                165.5         164.9
+hash_synonym       622.7                                169.9         170.0
+stale_resident     495.8                                196.3         196.2
+
+VERDICT: private-spill is 3-7x SLOWER at 1M bins. The priv numbers match the Step-0
+occupancy-collapse cliff (16384-slot row: 272/165/170/196) almost exactly -> the
+num_blocks*num_bins slab zero-init + gather dominates, exactly the gather tax the
+design doc predicted fatal at high bins. Correctness verified (exit 0).
+
+NEXT: the proposal's real target is bins<=65536 (hybrid's regime), where direct-atomic
+is NOT selected -> need to make priv-spill reachable at 65536 to test vs hybrid.

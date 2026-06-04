@@ -49,6 +49,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include <nv/target>
 
@@ -918,6 +919,66 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const void* direct_atomic_single_probe_kernel_ptr_void =
         reinterpret_cast<const void*>(direct_atomic_single_probe_kernel_ptr);
 
+      // PRIVATIZED-SPILL variants (design proposal `gmem_privatized_{cuckoo,
+      // single_probe}`): same cache front-end, but a cache MISS spills block-scope
+      // (`private_block_spill`) into THIS block's private GMEM slab instead of
+      // device-scope into the shared output; a Phase-4 atomic-free gather then
+      // merges the slabs. The slab reuses the `d_privatized_histograms` temp
+      // allocation already sized at `num_thread_blocks * num_bins`. Experimental:
+      // currently reachable only via the host env hook `CUB_HISTO_FORCE_ALGO`
+      // (priv_cuckoo / priv_single_probe), never auto-selected -- so a normal
+      // dispatch is byte-identical to before. See cached_privatized_spill_design.md.
+      auto direct_atomic_priv_cuckoo_kernel_ptr =
+        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                           PRIVATIZED_SMEM_BINS,
+                                           NUM_CHANNELS,
+                                           NUM_ACTIVE_CHANNELS,
+                                           SampleIteratorT,
+                                           CounterT,
+                                           privatized_decode_op_t,
+                                           output_decode_op_t,
+                                           OffsetT,
+                                           cuckoo_cache_probe<>,
+                                           private_block_spill>;
+      auto direct_atomic_priv_single_probe_kernel_ptr =
+        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+                                           PRIVATIZED_SMEM_BINS,
+                                           NUM_CHANNELS,
+                                           NUM_ACTIVE_CHANNELS,
+                                           SampleIteratorT,
+                                           CounterT,
+                                           privatized_decode_op_t,
+                                           output_decode_op_t,
+                                           OffsetT,
+                                           single_probe_cache,
+                                           private_block_spill>;
+      const void* direct_atomic_priv_cuckoo_kernel_ptr_void =
+        reinterpret_cast<const void*>(direct_atomic_priv_cuckoo_kernel_ptr);
+      const void* direct_atomic_priv_single_probe_kernel_ptr_void =
+        reinterpret_cast<const void*>(direct_atomic_priv_single_probe_kernel_ptr);
+
+      // Host env hook (experimental sweep): force the private-spill variant.
+      //   CUB_HISTO_FORCE_ALGO=priv_cuckoo        -> cuckoo cache + private spill
+      //   CUB_HISTO_FORCE_ALGO=priv_single_probe  -> single-probe cache + private spill
+      // Any other value (or unset) leaves the normal output-spill selection.
+      int force_priv_spill = 0; // 0 none, 1 cuckoo, 2 single-probe
+#if _CCCL_HOSTED()
+      NV_IF_TARGET(NV_IS_HOST, ({
+                     if (const char* env = ::std::getenv("CUB_HISTO_FORCE_ALGO"))
+                     {
+                       if (::std::strcmp(env, "priv_cuckoo") == 0)
+                       {
+                         force_priv_spill = 1;
+                       }
+                       else if (::std::strcmp(env, "priv_single_probe") == 0)
+                       {
+                         force_priv_spill = 2;
+                       }
+                     }
+                   }));
+#endif // _CCCL_HOSTED()
+      const bool use_private_spill = (force_priv_spill != 0);
+
       // Pick the active direct-atomic kernel per the cache mode. The three
       // variants (single-probe, 2-probe cuckoo, 2-probe-gated cuckoo) are all
       // PRIVATIZED_SMEM_BINS==0 host-init cooperative kernels with the same
@@ -937,9 +998,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       const bool use_gated_cuckoo =
         (!use_single_probe_cache) && (max_num_output_bins >= kSecondProbeBinThreshold);
       const void* active_direct_atomic_kernel_ptr_void =
-        use_single_probe_cache ? direct_atomic_single_probe_kernel_ptr_void
-        : use_gated_cuckoo     ? direct_atomic_noprobe2_kernel_ptr_void
-                               : direct_atomic_kernel_ptr_void;
+        (force_priv_spill == 1) ? direct_atomic_priv_cuckoo_kernel_ptr_void
+        : (force_priv_spill == 2) ? direct_atomic_priv_single_probe_kernel_ptr_void
+        : use_single_probe_cache ? direct_atomic_single_probe_kernel_ptr_void
+        : use_gated_cuckoo       ? direct_atomic_noprobe2_kernel_ptr_void
+                                 : direct_atomic_kernel_ptr_void;
 
       int device_ordinal = 0;
       if (cudaGetDevice(&device_ordinal) != cudaSuccess)
@@ -1201,7 +1264,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         persistent_sm_occupancy = 0;
       }
       const auto direct_occ_err =
-        use_single_probe_cache
+        (force_priv_spill == 1)
+          ? launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,
+                                            direct_atomic_priv_cuckoo_kernel_ptr,
+                                            direct_atomic_threads_per_block,
+                                            cuckoo_cache_smem_bytes)
+          : (force_priv_spill == 2)
+          ? launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,
+                                            direct_atomic_priv_single_probe_kernel_ptr,
+                                            direct_atomic_threads_per_block,
+                                            cuckoo_cache_smem_bytes)
+          : use_single_probe_cache
           ? launcher_factory.MaxSmOccupancy(direct_atomic_sm_occupancy,
                                             direct_atomic_single_probe_kernel_ptr,
                                             direct_atomic_threads_per_block,
@@ -1242,7 +1315,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // that would process zero pixels) and never shrinking below the sweep
       // grid.
       dim3 direct_atomic_grid_dims = persistent_grid_dims;
-      if (use_direct_atomic_to_output && direct_atomic_capacity > num_thread_blocks)
+      // Private-spill must NOT grow the grid: its per-block slab is sized for
+      // exactly `num_thread_blocks` (= persistent_grid_dims), and the kernel
+      // indexes/gathers slabs by `block_id < blocks_per_grid`. A larger grid
+      // would write past the slab. So only the output-spill variants grow.
+      if (use_direct_atomic_to_output && !use_private_spill && direct_atomic_capacity > num_thread_blocks)
       {
         // Upper bound on useful blocks for the grid-stride direct-atomic kernel:
         // one thread per pixel needs ceil(total_pixels / block_size) blocks;
@@ -1274,7 +1351,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           // For the very-high-bin GMEM-privatized path, dispatch the
           // direct-atomic kernel instead of the gather-merge persistent
           // kernel. It needs only the output histograms, the privatized
-          // decode op, and the input geometry.
+          // decode op, and the input geometry. The private-spill variant takes
+          // one EXTRA trailing arg: the per-block private slab base
+          // (`d_privatized_histograms_wrapper`, already allocated above). The
+          // output-spill variants ignore it (kernel default arg), but a
+          // cooperative launch marshals args positionally, so we pass a distinct
+          // arg array per variant.
           void* direct_kernel_args[] = {
             const_cast<void*>(static_cast<const void*>(&d_samples)),
             const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
@@ -1284,11 +1366,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             const_cast<void*>(static_cast<const void*>(&num_rows)),
             const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
             const_cast<void*>(static_cast<const void*>(&cache_slots_per_channel))};
+          void* direct_kernel_args_priv[] = {
+            const_cast<void*>(static_cast<const void*>(&d_samples)),
+            const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
+            const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
+            const_cast<void*>(static_cast<const void*>(&second_level_array)),
+            const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
+            const_cast<void*>(static_cast<const void*>(&num_rows)),
+            const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
+            const_cast<void*>(static_cast<const void*>(&cache_slots_per_channel)),
+            const_cast<void*>(static_cast<const void*>(&d_privatized_histograms_wrapper))};
           coop_status = cudaLaunchCooperativeKernel(
             active_direct_atomic_kernel_ptr_void,
             direct_atomic_grid_dims,
             dim3{static_cast<unsigned int>(direct_atomic_threads_per_block)},
-            direct_kernel_args,
+            use_private_spill ? direct_kernel_args_priv : direct_kernel_args,
             /*sharedMem=*/static_cast<size_t>(cuckoo_cache_smem_bytes),
             stream);
         }
@@ -2102,6 +2194,50 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
+  // Experimental sweep hook: CUB_HISTO_FORCE_ALGO overrides `select_algorithm`'s
+  // pick so EVERY algorithm can be measured at EVERY cell (apples-to-apples per
+  // cell), not just the one the selector happens to choose. Accepted values:
+  //   hybrid            -> hybrid_single_pass (single-channel only)
+  //   direct_cuckoo     -> direct-atomic cuckoo cache, output spill
+  //   direct_single_probe -> direct-atomic single-probe cache, output spill
+  //   gmem_priv_gather  -> per-block GMEM-privatized + gather (no cache)
+  //   priv_cuckoo       -> cuckoo cache + private_block_spill (PROPOSAL)
+  //   priv_single_probe -> single-probe cache + private_block_spill (PROPOSAL)
+  // The priv_* and direct_* values route to the PRIVATIZED_SMEM_BINS==0 case; the
+  // deeper `dispatch<>` hook reads the same env var to pick the exact kernel
+  // (cache variant + spill policy). Off by default -> normal dispatch unchanged.
+  // Some forced (algo, cell) pairs may be illegal (e.g. hybrid needs the bin
+  // count to fit its SMEM split, direct-atomic needs a cooperative launch that
+  // fits); those fall through to their built-in fallback, so a forced run that
+  // silently lands on a different kernel should be cross-checked with
+  // CUB_HISTO_DEBUG_SLOTS (nonzero => a direct-atomic kernel actually ran).
+  // See cached_privatized_spill_design.md.
+#if _CCCL_HOSTED()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 if (const char* env = ::std::getenv("CUB_HISTO_FORCE_ALGO"))
+                 {
+                   if (::std::strcmp(env, "hybrid") == 0)
+                   {
+                     algo = algorithm::hybrid_single_pass;
+                   }
+                   else if (::std::strcmp(env, "direct_cuckoo") == 0 || ::std::strcmp(env, "priv_cuckoo") == 0
+                            || ::std::strcmp(env, "priv_single_probe") == 0)
+                   {
+                     // priv_* land here too; the deeper dispatch<> hook swaps in the
+                     // private-spill kernel and the single-probe-vs-cuckoo cache.
+                     algo = algorithm::direct_atomic_cuckoo;
+                   }
+                   else if (::std::strcmp(env, "direct_single_probe") == 0)
+                   {
+                     algo = algorithm::direct_atomic_single_probe;
+                   }
+                   else if (::std::strcmp(env, "gmem_priv_gather") == 0)
+                   {
+                     algo = algorithm::gmem_priv_gather;
+                   }
+                 }
+               }));
+#endif // _CCCL_HOSTED()
   switch (algo)
   {
     case algorithm::smem_priv_256: {

@@ -1939,13 +1939,52 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! A cache hit/claim bumps a block-scope count; a miss spills one device-scope
 //! atomic to `output[bin]`.
 
+//! Spill functors: where a cache MISS (or flush) deposits its contribution. The
+//! probe ops below are templated on one of these so the cache strategy (cuckoo /
+//! single-probe) is orthogonal to the spill target. Two instantiations:
+//!
+//!   output_atomic_spill  -- device-scope atomicAdd straight to the SHARED output
+//!     histogram. This is the "direct atomic" commit; a hot-bin spill contends
+//!     across every block. Used by DeviceHistogramDirectAtomicKernel.
+//!
+//!   private_block_spill  -- block-scope atomicAdd_block into THIS block's PRIVATE
+//!     GMEM histogram (a per-block slab). Uncontended across blocks; a later
+//!     grid-sync + atomic-free gather merges the slabs into the output. Used by
+//!     the privatized-spill variant of the same kernel.
+//!
+//! `target` is the per-channel base the kernel hands the probe (the shared output
+//! for output_atomic_spill, this block's slab base for private_block_spill), so the
+//! probe body is identical for both; only the atomic scope differs.
+struct output_atomic_spill
+{
+  template <typename CounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(CounterT* target, int bin, CounterT contribution)
+  {
+    atomicAdd(&target[bin], contribution);
+  }
+};
+
+struct private_block_spill
+{
+  template <typename CounterT>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void spill(CounterT* target, int bin, CounterT contribution)
+  {
+    atomicAdd_block(&target[bin], contribution);
+  }
+};
+
 //! 2-hash cuckoo cache update: on a primary-slot collision, try a secondary slot
 //! before spilling. `DisableSecondProbe` compiles the secondary probe out for the
 //! very-high-bin tier (hit rate ~0, so the second key read is pure waste).
+//!
+//! `SpillOp` (defaulted to output_atomic_spill, keeping every existing caller
+//! byte-identical) selects where a miss deposits its contribution: the shared
+//! output (device-scope) or this block's private slab (block-scope). `output` is
+//! whichever per-channel base the kernel passes for that spill policy.
 template <bool DisableSecondProbe = false>
 struct cuckoo_cache_probe
 {
-  template <typename CounterT>
+  template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
   apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
   {
@@ -1967,8 +2006,8 @@ struct cuckoo_cache_probe
       }
       else if constexpr (DisableSecondProbe)
       {
-        // High-bin tier: no secondary probe -- spill directly to GMEM.
-        atomicAdd(&output[bin], contribution);
+        // High-bin tier: no secondary probe -- spill.
+        SpillOp::spill(output, bin, contribution);
       }
       else
       {
@@ -1989,20 +2028,20 @@ struct cuckoo_cache_probe
           }
           else
           {
-            atomicAdd(&output[bin], contribution);
+            SpillOp::spill(output, bin, contribution);
           }
         }
         else
         {
-          atomicAdd(&output[bin], contribution);
+          SpillOp::spill(output, bin, contribution);
         }
       }
     }
     else if constexpr (DisableSecondProbe)
     {
-      // High-bin tier: primary occupied by a different bin -> spill to GMEM
-      // without a secondary probe.
-      atomicAdd(&output[bin], contribution);
+      // High-bin tier: primary occupied by a different bin -> spill without a
+      // secondary probe.
+      SpillOp::spill(output, bin, contribution);
     }
     else
     {
@@ -2023,12 +2062,12 @@ struct cuckoo_cache_probe
         }
         else
         {
-          atomicAdd(&output[bin], contribution);
+          SpillOp::spill(output, bin, contribution);
         }
       }
       else
       {
-        atomicAdd(&output[bin], contribution);
+        SpillOp::spill(output, bin, contribution);
       }
     }
   }
@@ -2039,7 +2078,7 @@ struct cuckoo_cache_probe
 //! counts where the cache holds almost nothing.
 struct single_probe_cache
 {
-  template <typename CounterT>
+  template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
   apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
   {
@@ -2064,14 +2103,14 @@ struct single_probe_cache
         }
         else
         {
-          // Lost the claim race to a different bin: go straight to GMEM.
-          atomicAdd(&output[bin], contribution);
+          // Lost the claim race to a different bin: spill.
+          SpillOp::spill(output, bin, contribution);
         }
       }
       else
       {
-        // Collision (slot owned by another bin): single GMEM atomic.
-        atomicAdd(&output[bin], contribution);
+        // Collision (slot owned by another bin): single spill.
+        SpillOp::spill(output, bin, contribution);
       }
     }
     else
@@ -2117,8 +2156,8 @@ struct single_probe_cache
       if (!done)
       {
         // All ways occupied by other live bins (or every empty way lost its CAS
-        // race): single GMEM atomic. Correctness: contribution added once.
-        atomicAdd(&output[bin], contribution);
+        // race): single spill. Correctness: contribution added once.
+        SpillOp::spill(output, bin, contribution);
       }
     }
   }
@@ -2169,7 +2208,8 @@ template <typename PolicySelector,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          typename ProbeOp = cuckoo_cache_probe<>>
+          typename ProbeOp = cuckoo_cache_probe<>,
+          typename SpillOp = output_atomic_spill>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -2182,27 +2222,79 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
     _CCCL_GRID_CONSTANT const OffsetT num_rows,
     _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
-    _CCCL_GRID_CONSTANT const int cache_slots_per_channel)
+    _CCCL_GRID_CONSTANT const int cache_slots_per_channel,
+    // Private-spill variant only (SpillOp == private_block_spill): per-channel
+    // base of the ALL-BLOCKS private histogram slab; this block owns the slice
+    // [block_id * num_bins, (block_id+1) * num_bins). Unused (and may be empty
+    // null pointers) for the default output-spill variant.
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_private_histograms_wrapper = {})
 {
   namespace cg = ::cooperative_groups;
 
   cg::grid_group grid = cg::this_grid();
 
+  // Compile-time spill policy. With private_block_spill, cache misses (and the
+  // post-sweep flush) deposit block-scope into THIS block's private GMEM slab
+  // rather than device-scope into the shared output; a Phase-4 atomic-free
+  // gather then sums the per-block slabs into the output. Boundedness note: a
+  // cache miss can hit ANY bin, so each block's slab must be full-size
+  // (num_bins), giving a num_blocks * num_bins footprint (see design doc).
+  constexpr bool kPrivateSpill = ::cuda::std::is_same_v<SpillOp, private_block_spill>;
+
   // ---------------------------------------------------------------------
-  // Phase 1: zero the output histograms via a grid-wide stride loop.
+  // Phase 1: zero the spill destination via a grid-wide stride loop. For the
+  // output-spill variant that is the shared output histogram; for the
+  // private-spill variant it is this grid's per-block private slabs (the
+  // output is written, not accumulated, by the Phase-4 gather, so it needs no
+  // pre-zero there).
   // ---------------------------------------------------------------------
   const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
   const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
   const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
 
+  // Per-channel spill target for THIS block: the shared output, or this block's
+  // private slab slice (base + block_id * num_bins). Hoisted once; the hot-path
+  // probe and the flush both spill through it.
+  CounterT* spill_target[NumActiveChannels];
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
-    const int channel_bins = num_output_bins_wrapper[ch];
-    for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
+    if constexpr (kPrivateSpill)
     {
-      d_output_histograms_wrapper[ch][bin] = 0;
+      spill_target[ch] =
+        d_private_histograms_wrapper[ch] + static_cast<size_t>(block_id) * num_output_bins_wrapper[ch];
+    }
+    else
+    {
+      spill_target[ch] = d_output_histograms_wrapper[ch];
+    }
+  }
+
+  if constexpr (kPrivateSpill)
+  {
+    // Zero every block's own private slab (num_blocks * num_bins words total,
+    // grid-strided). The shared output is written by the gather, not accumulated.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      const size_t slab_words = static_cast<size_t>(blocks_per_grid) * num_output_bins_wrapper[ch];
+      for (size_t i = tid_global; i < slab_words; i += total_threads)
+      {
+        d_private_histograms_wrapper[ch][i] = 0;
+      }
+    }
+  }
+  else
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      const int channel_bins = num_output_bins_wrapper[ch];
+      for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
+      {
+        d_output_histograms_wrapper[ch][bin] = 0;
+      }
     }
   }
 
@@ -2401,8 +2493,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // warp_coalesce knob can drive it once per peer group (leader) or once per
       // valid lane without duplicating the body.
       auto update = [&](int bin, CounterT contribution) {
-        ProbeOp::apply(
-          s_cache_keys[ch], s_cache_counts[ch], d_output_histograms_wrapper[ch], bin, contribution, cache_mask, cache_slot_log2);
+        ProbeOp::template apply<CounterT, SpillOp>(
+          s_cache_keys[ch], s_cache_counts[ch], spill_target[ch], bin, contribution, cache_mask, cache_slot_log2);
       };
 
       // Warp-coalesce same-bin lanes into one cache update (gated by the
@@ -2614,10 +2706,13 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       }
     }
 
-    // After the sweep, flush every cache slot to the global histogram. Each
-    // slot's total is the sum of its `kCountReplicas` replicas. The block
-    // barrier ensures every leader's atomicAdd_block has finished before the
-    // flush reads the replicas.
+    // After the sweep, flush every cache slot to the spill target (shared output
+    // for output-spill; this block's private slab for private-spill). Each slot's
+    // total is the sum of its `kCountReplicas` replicas. The block barrier ensures
+    // every leader's atomicAdd_block has finished before the flush reads the
+    // replicas. For the private-spill variant the flush is block-scope and
+    // uncontended (each block owns its slab slice), so the SpillOp scope applies
+    // here too.
     __syncthreads();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -2636,7 +2731,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
           }
           if (cnt > CounterT{0})
           {
-            atomicAdd(&d_output_histograms_wrapper[ch][key], cnt);
+            SpillOp::spill(spill_target[ch], key, cnt);
           }
         }
       }
@@ -2669,8 +2764,37 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         const int num_bins = num_output_bins_wrapper[ch];
         if (bin >= 0 && bin < num_bins)
         {
-          atomicAdd(&d_output_histograms_wrapper[ch][bin], CounterT{1});
+          SpillOp::spill(spill_target[ch], bin, CounterT{1});
         }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Phase 4 (private-spill variant only): grid-sync so every block's slab
+  // writes are visible, then an atomic-free gather sums the per-block slabs
+  // into the shared output. Mirrors DeviceHistogramGmemPrivGatherKernel's
+  // gather: each thread owns a slice of OUTPUT bins and column-sums across
+  // blocks, turning num_blocks * num_bins contended atomics into plain
+  // reads + one write per bin.
+  // ---------------------------------------------------------------------
+  if constexpr (kPrivateSpill)
+  {
+    grid.sync();
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      const unsigned int num_bins_u = static_cast<unsigned int>(num_output_bins_wrapper[ch]);
+      const CounterT* base          = d_private_histograms_wrapper[ch];
+      CounterT* d_out               = d_output_histograms_wrapper[ch];
+      for (unsigned int bin = tid_global; bin < num_bins_u; bin += total_threads)
+      {
+        CounterT total = 0;
+        for (unsigned int b = 0; b < blocks_per_grid; ++b)
+        {
+          total += base[static_cast<size_t>(b) * num_bins_u + bin];
+        }
+        d_out[bin] = total;
       }
     }
   }
