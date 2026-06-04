@@ -74,7 +74,7 @@ namespace detail::histogram
 // Set-associativity for the SINGLE-PROBE direct-atomic SMEM cache.
 //
 // The single-probe cache (the `single_probe_cache` probe op of
-// DeviceHistogramDirectAtomicKernel) is direct-mapped: each bin hashes to exactly
+// DeviceHistogramDirectKernel) is direct-mapped: each bin hashes to exactly
 // ONE slot, and a slot collision (slot owned by another bin) is an IMMEDIATE GMEM
 // spill -- no second chance. That
 // single-slot conflict miss is the residual loss once Fibonacci hashing and
@@ -153,6 +153,55 @@ _CCCL_DEVICE _CCCL_FORCEINLINE const SampleValueT* SampleNativePointer(SampleIte
     return NativePointer(itr);
   }
   _CCCL_UNREACHABLE();
+}
+
+//! @brief Atomic-free gather-merge of a per-block GMEM-privatized slab into the
+//! output histogram (one channel, one contiguous bin range).
+//!
+//! Every block holds its own private copy of `count` consecutive output bins at
+//! `slab_base + block * slab_stride`. This sums those copies across all blocks
+//! into `out[out_offset + i]` with plain reads + one write per bin, turning the
+//! `num_blocks * count` cross-block `atomicAdd`s the privatized path would
+//! otherwise need into contention-free loads. A grid-wide barrier MUST have been
+//! issued by the caller before this runs (so every block's slab writes are
+//! visible). Each thread of the cooperative grid owns a grid-strided slice of the
+//! `count` output bins.
+//!
+//! This is the single source for the column-sum reduce shared by the privatized
+//! sweep kernels (`DeviceHistogramGmemPrivatizedKernel` -- the merged hybrid /
+//! gather kernel -- and the direct kernel's private-spill Phase 4); previously the
+//! same loop was open-coded in the GMEM-priv gather kernel and the hybrid kernel.
+//!
+//! @param out          Output histogram base for this channel.
+//! @param out_offset   First output bin this gather writes (0 for the primary
+//!                     region; `split` for the hybrid secondary region).
+//! @param slab_base    Base of the all-blocks private slab for this channel.
+//! @param slab_stride  Per-block stride within the slab (bins each block owns).
+//! @param count        Number of bins to gather (== slab_stride for the simple
+//!                     case; the hybrid secondary size for the tail region).
+//! @param blocks_per_grid Number of co-resident blocks.
+//! @param tid_global   Global thread id within the cooperative grid.
+//! @param total_threads Total threads in the cooperative grid.
+template <typename CounterT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void gather_privatized_slab(
+  CounterT* out,
+  unsigned int out_offset,
+  const CounterT* slab_base,
+  unsigned int slab_stride,
+  unsigned int count,
+  unsigned int blocks_per_grid,
+  unsigned int tid_global,
+  unsigned int total_threads)
+{
+  for (unsigned int i = tid_global; i < count; i += total_threads)
+  {
+    CounterT total = 0;
+    for (unsigned int b = 0; b < blocks_per_grid; ++b)
+    {
+      total += slab_base[static_cast<size_t>(b) * slab_stride + i];
+    }
+    out[out_offset + i] = total;
+  }
 }
 
 //! @brief Self-contained "round-up" / libdivide-style fast unsigned division
@@ -1436,7 +1485,7 @@ template <typename PolicySelector,
 // multi-channel policies and falls back to minBlocks=0 for the narrow fallback.
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
                   (current_policy<PolicySelector>().threads_per_block >= 512) ? 2 : 0)
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivatizedKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -1607,7 +1656,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivDeviceInitKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivatizedDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -1714,7 +1763,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! eliminating the separate `DeviceHistogramInitKernel` launch and its
 //! associated launch overhead.
 //!
-//! This is the host-init variant: it mirrors `DeviceHistogramSmemPrivKernel`'s
+//! This is the host-init variant: it mirrors `DeviceHistogramSmemPrivatizedKernel`'s
 //! interface and accepts pre-initialized decode operators, plus the
 //! `max_num_output_bins` argument used to bound the output-histogram
 //! initialization stride loop.
@@ -1737,6 +1786,72 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //!
 //! Phase 3 (block-local): each block runs the standard `AgentHistogram`
 //! pipeline (`InitBinCounters`, `ConsumeTiles`, `StoreOutput`).
+//! Unified GMEM-privatized histogram sweep kernel — the design doc's
+//! `GmemPrivatizedKernel<NoCache, smem_split>`, merging what used to be two
+//! separate kernels:
+//!
+//!   * `smem_split == 0`  → pure GMEM privatization. Every block privatizes the
+//!     WHOLE histogram in a per-block GMEM slab; a grid.sync + Phase-4
+//!     `gather_privatized_slab` merges. (Was `DeviceHistogramGmemPrivGatherKernel`.)
+//!   * `smem_split  > 0`  → hybrid SMEM+GMEM. Bins `[0, smem_split)` accumulate in
+//!     per-block dynamic SMEM, the tail `[smem_split, smem_split+secondary)` in a
+//!     per-block GMEM secondary slab; both flush to staging slabs, then a grid.sync
+//!     + two `gather_privatized_slab` calls merge primary and secondary regions.
+//!     (Was `DeviceHistogramHybridSinglePassKernel`.)
+//!
+//! The two paths share one name, the `UseDynamicSmemHistogram` AgentHistogram, and
+//! the gather helper; `smem_split` (a runtime grid-constant) selects the body. The
+//! `HybridSplit` non-type template parameter mirrors `smem_split>0` at compile time
+//! so the dead path is pruned and the launch bound can pin the hybrid member to 1
+//! block/SM (its ~192 KB dyn-SMEM allocation forbids a 2nd resident CTA) while the
+//! pure-gather member keeps the looser `minBlocks=0` hint. `smem_split` must be 0
+//! iff `HybridSplit==false`.
+//!
+//! Must be launched cooperatively (`cudaLaunchCooperativeKernel`): all blocks must
+//! be co-resident for `grid_group::sync()`. The dispatch layer verifies the grid
+//! fits before selecting this kernel.
+//!
+//! Args used by BOTH paths: `d_samples`, `num_output_bins_wrapper`,
+//! `d_output_histograms_wrapper`, decode ops, input geometry, `tile_queue`.
+//! Pure-gather (`HybridSplit==false`) additionally uses
+//! `num_privatized_bins_wrapper`, `d_privatized_histograms_wrapper`,
+//! `max_num_output_bins`. Hybrid (`HybridSplit==true`) additionally uses
+//! `d_secondary_histograms_wrapper`, `smem_split`, `secondary_size` (and treats
+//! `d_privatized_histograms_wrapper` as the PRIMARY staging slab).
+//! Unified GMEM-privatized histogram sweep kernel — the design doc's
+//! `GmemPrivatizedKernel<NoCache, smem_split>`. ONE kernel; the `HybridSplit`
+//! non-type template parameter (mirroring `smem_split > 0`) selects the body via
+//! `if constexpr`, so each instantiation contains only its own path:
+//!
+//!   * `HybridSplit == false` (`smem_split == 0`)  → pure GMEM privatization. Every
+//!     block privatizes the WHOLE histogram in a per-block GMEM slab; grid.sync +
+//!     the shared `gather_privatized_slab` helper merges. (Was the standalone
+//!     gather kernel.)
+//!   * `HybridSplit == true`  (`smem_split  > 0`)  → hybrid SMEM+GMEM. Bins
+//!     `[0, smem_split)` accumulate in per-block dynamic SMEM, the tail
+//!     `[smem_split, smem_split + secondary_size)` in a per-block GMEM secondary
+//!     slab; both flush to staging slabs, then grid.sync + a fused primary+secondary
+//!     reduce merges into the output. (Was the standalone hybrid kernel.) The fused
+//!     single-loop reduce is kept verbatim here rather than calling
+//!     `gather_privatized_slab` twice: the two-call form measured a ~5% regression
+//!     on this hot path (B200, even/65536/concentrated), so it stays open-coded.
+//!
+//! The launch bound pins the hybrid instantiation to 1 block/SM (its ~192 KB
+//! dyn-SMEM allocation forbids a 2nd resident CTA) while the pure-gather
+//! instantiation keeps the looser `minBlocks=0` hint. Each `HybridSplit` value is
+//! a distinct `__global__`, so the dead branch is pruned and never costs the other.
+//!
+//! Must be launched cooperatively (`cudaLaunchCooperativeKernel`): all blocks must
+//! be co-resident for `grid_group::sync()`. The dispatch layer verifies the grid
+//! fits before selecting this kernel.
+//!
+//! Args used by BOTH paths: `d_samples`, `num_output_bins_wrapper`,
+//! `d_output_histograms_wrapper`, decode ops, input geometry, `tile_queue`.
+//! Pure-gather additionally uses `num_privatized_bins_wrapper`,
+//! `d_privatized_histograms_wrapper`, `max_num_output_bins`. Hybrid additionally
+//! uses `d_secondary_histograms_wrapper`, `smem_split`, `secondary_size` (and
+//! treats `num_output_bins_wrapper` as the split-sized primary bin count and
+//! `d_privatized_histograms_wrapper` as the PRIMARY staging slab).
 template <typename PolicySelector,
           int PrivatizedSmemBins,
           int NumChannels,
@@ -1745,12 +1860,13 @@ template <typename PolicySelector,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          bool HybridSplit = false>
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramGmemPrivGatherKernel(
+__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), HybridSplit ? 1 : 0)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramGmemPrivatizedKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -1763,55 +1879,24 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
     _CCCL_GRID_CONSTANT const int tiles_per_row,
     GridQueue<int> tile_queue,
-    _CCCL_GRID_CONSTANT const int max_num_output_bins)
+    _CCCL_GRID_CONSTANT const int max_num_output_bins,
+    // Hybrid-only (HybridSplit==true): per-block SECONDARY (tail) staging slab,
+    // the SMEM split point, and the secondary region size. Unused for the
+    // pure-gather instantiation (defaulted so its launch arg array is unchanged).
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_secondary_histograms_wrapper = {},
+    _CCCL_GRID_CONSTANT const int smem_split                                        = 0,
+    _CCCL_GRID_CONSTANT const int secondary_size                                    = 0)
 {
   static constexpr histogram_policy hp = current_policy<PolicySelector>();
 
   namespace cg = ::cooperative_groups;
-
   cg::grid_group grid = cg::this_grid();
 
-  // ---------------------------------------------------------------------
-  // Phase 1: zero the output histograms via a grid-wide stride loop, and
-  // reset the work-stealing drain counter on a single thread.
-  // ---------------------------------------------------------------------
   const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
   const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
   const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
 
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    const int channel_bins = num_output_bins_wrapper[ch];
-    for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
-    {
-      d_output_histograms_wrapper[ch][bin] = 0;
-    }
-  }
-
-  if (tid_global == 0)
-  {
-    // Reset the drain counter so that the sweep phase below can use the
-    // queue as a shared work-stealing counter when work-stealing is enabled.
-    GridQueue<int> queue = tile_queue;
-    queue.ResetDrain();
-  }
-
-  // ---------------------------------------------------------------------
-  // Phase 2: grid-wide synchronization so that all output-histogram zeros
-  // and the drain-counter reset are visible to every block before the
-  // sweep+store phase begins.
-  // ---------------------------------------------------------------------
-  grid.sync();
-
-  // ---------------------------------------------------------------------
-  // Phase 3: standard AgentHistogram sweep — InitBinCounters (zero
-  // privatized counters) and ConsumeTiles (atomic-add into privatized
-  // counters). For the GMEM-privatized path (PrivatizedSmemBins == 0)
-  // each block's privatized histogram lives in global memory at
-  // `d_privatized_histograms[ch] + block_id * num_privatized_bins[ch]`.
-  // ---------------------------------------------------------------------
   using AgentHistogramPolicyT =
     AgentHistogramPolicy<hp.threads_per_block,
                          hp.pixels_per_thread,
@@ -1821,117 +1906,235 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
                          hp.mem_preference,
                          hp.work_stealing,
                          hp.vec_size>;
-  using AgentHistogramT =
-    AgentHistogram<AgentHistogramPolicyT,
-                   PrivatizedSmemBins,
-                   NumChannels,
-                   NumActiveChannels,
-                   SampleIteratorT,
-                   CounterT,
-                   PrivatizedDecodeOpT,
-                   OutputDecodeOpT,
-                   OffsetT>;
 
-  __shared__ typename AgentHistogramT::TempStorage temp_storage;
-
-  // The agent stores the per-channel base pointer of this block's privatized
-  // histogram in `d_privatized_histograms`, which it sets in its constructor
-  // by adding `block_id * num_privatized_bins[ch]`. We need the per-channel
-  // base of the *all-blocks* privatized array later for the gather merge,
-  // so save it here before constructing the agent.
-  CounterT* d_privatized_base[NumActiveChannels];
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  if constexpr (!HybridSplit)
   {
-    d_privatized_base[ch] = d_privatized_histograms_wrapper[ch];
-  }
+    // =================== smem_split == 0 : pure-gather path ===================
+    (void) d_secondary_histograms_wrapper;
+    (void) smem_split;
+    (void) secondary_size;
 
-  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
-  // interpolation state out of the per-sample classify. No-op for EVEN /
-  // byte-sample decode ops.
-  OutputDecodeOpT output_decode_op[NumActiveChannels];
-  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    output_decode_op[ch] = output_decode_op_wrapper[ch];
-    privatized_decode_op[ch] = privatized_decode_op_wrapper[ch];
-    output_decode_op[ch].PrecomputeOnDevice();
-    privatized_decode_op[ch].PrecomputeOnDevice();
-  }
-
-  {
-    AgentHistogramT agent(
-      temp_storage,
-      d_samples,
-      num_output_bins_wrapper.data(),
-      num_privatized_bins_wrapper.data(),
-      d_output_histograms_wrapper.data(),
-      d_privatized_histograms_wrapper.data(),
-      output_decode_op,
-      privatized_decode_op);
-
-    // Initialize per-block privatized counters
-    agent.InitBinCounters();
-
-    // Consume input tiles
-    agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
-
-    if constexpr (PrivatizedSmemBins != 0)
-    {
-      // Block-private SMEM path: privatized counters are in shared memory
-      // and are lost when the block exits, so the merge into the output
-      // histograms must happen here using the agent's standard
-      // atomic-add `StoreOutput`.
-      agent.StoreOutput();
-    }
-  }
-
-  if constexpr (PrivatizedSmemBins == 0)
-  {
-    // GMEM-privatized merge: every block's privatized histogram is now in
-    // global memory at `d_privatized_base[ch] + block_id * num_privatized_bins[ch]`.
-    // We need a grid-wide barrier so every block's `ConsumeTiles` writes are
-    // visible to every other block before the gather merge below.
-    grid.sync();
-
-    // Phase 4: gather-merge. Each thread takes a slice of OUTPUT bins and
-    // sums the corresponding privatized counters across all blocks, writing
-    // the total to the output histogram. This converts the original
-    // `num_blocks * num_output_bins` atomicAdds into plain reads + writes,
-    // eliminating cross-block atomic contention on the output histogram.
-    //
-    // This optimization assumes that `num_privatized_bins == num_output_bins`
-    // and that `output_decode_op` is the identity (PassThruTransform), which
-    // is the case for the host-init non-byte-sample dispatch path that
-    // selects `PRIVATIZED_SMEM_BINS = 0` for `max_num_output_bins > 256`.
+    // Phase 1: zero the output histograms + reset the work-stealing drain counter.
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      const int num_bins             = num_privatized_bins_wrapper[ch];
-      const CounterT* base           = d_privatized_base[ch];
-      CounterT* d_out                = d_output_histograms_wrapper[ch];
-      const unsigned int num_bins_u  = static_cast<unsigned int>(num_bins);
-      for (unsigned int bin = tid_global; bin < num_bins_u; bin += total_threads)
+      const int channel_bins = num_output_bins_wrapper[ch];
+      for (unsigned int bin = tid_global; bin < static_cast<unsigned int>(channel_bins); bin += total_threads)
       {
-        CounterT total = 0;
-        for (unsigned int b = 0; b < blocks_per_grid; ++b)
-        {
-          total += base[b * num_bins_u + bin];
-        }
-        d_out[bin] = total;
+        d_output_histograms_wrapper[ch][bin] = 0;
       }
     }
-  }
+    if (tid_global == 0)
+    {
+      GridQueue<int> queue = tile_queue;
+      queue.ResetDrain();
+    }
 
-  // Emit the trigger so any PDL-launched downstream kernel in the stream
-  // sees a completion signal. (Cooperative launches typically do not use
-  // PDL, so this is a no-op in the common case.)
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    // Phase 2: make the zeros + drain reset visible to every block.
+    grid.sync();
+
+    // Phase 3: AgentHistogram sweep. For the GMEM-privatized path each block's
+    // privatized histogram lives at `d_privatized_histograms[ch] + block_id * num_privatized_bins[ch]`.
+    using AgentHistogramT =
+      AgentHistogram<AgentHistogramPolicyT,
+                     PrivatizedSmemBins,
+                     NumChannels,
+                     NumActiveChannels,
+                     SampleIteratorT,
+                     CounterT,
+                     PrivatizedDecodeOpT,
+                     OutputDecodeOpT,
+                     OffsetT>;
+
+    __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+    // Save the per-channel all-blocks privatized base before the agent ctor
+    // offsets it by block_id, for the gather merge.
+    CounterT* d_privatized_base[NumActiveChannels];
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      d_privatized_base[ch] = d_privatized_histograms_wrapper[ch];
+    }
+
+    OutputDecodeOpT output_decode_op[NumActiveChannels];
+    PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      output_decode_op[ch]     = output_decode_op_wrapper[ch];
+      privatized_decode_op[ch] = privatized_decode_op_wrapper[ch];
+      output_decode_op[ch].PrecomputeOnDevice();
+      privatized_decode_op[ch].PrecomputeOnDevice();
+    }
+
+    {
+      AgentHistogramT agent(
+        temp_storage,
+        d_samples,
+        num_output_bins_wrapper.data(),
+        num_privatized_bins_wrapper.data(),
+        d_output_histograms_wrapper.data(),
+        d_privatized_histograms_wrapper.data(),
+        output_decode_op,
+        privatized_decode_op);
+
+      agent.InitBinCounters();
+      agent.ConsumeTiles(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+
+      if constexpr (PrivatizedSmemBins != 0)
+      {
+        agent.StoreOutput();
+      }
+    }
+
+    if constexpr (PrivatizedSmemBins == 0)
+    {
+      // Grid-wide barrier so every block's ConsumeTiles writes are visible, then
+      // Phase 4 gather-merge via the shared helper (turns num_blocks * num_bins
+      // contended atomics into plain reads + one write per bin).
+      grid.sync();
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        const unsigned int num_bins_u = static_cast<unsigned int>(num_privatized_bins_wrapper[ch]);
+        gather_privatized_slab<CounterT>(
+          d_output_histograms_wrapper[ch],
+          /*out_offset=*/0u,
+          d_privatized_base[ch],
+          /*slab_stride=*/num_bins_u,
+          /*count=*/num_bins_u,
+          blocks_per_grid,
+          tid_global,
+          total_threads);
+      }
+    }
+
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  }
+  else
+  {
+    // ===================== smem_split > 0 : hybrid path =====================
+    // Here `num_output_bins_wrapper` carries the split-sized primary bin count,
+    // `d_privatized_histograms_wrapper` is the PRIMARY staging slab, and
+    // `d_secondary_histograms_wrapper` is the secondary (tail) staging slab.
+    (void) num_privatized_bins_wrapper;
+    (void) max_num_output_bins;
+
+    using AgentHistogramT =
+      AgentHistogram<AgentHistogramPolicyT,
+                     PrivatizedSmemBins,
+                     NumChannels,
+                     NumActiveChannels,
+                     SampleIteratorT,
+                     CounterT,
+                     PrivatizedDecodeOpT,
+                     OutputDecodeOpT,
+                     OffsetT,
+                     /* UseDynamicSmemHistogram = */ true>;
+
+    __shared__ typename AgentHistogramT::TempStorage temp_storage;
+
+    extern __shared__ unsigned char dyn_smem_raw[];
+    CounterT* dyn_smem_histograms = reinterpret_cast<CounterT*>(dyn_smem_raw);
+
+    CounterT* d_primary_base[NumActiveChannels];
+    CounterT* d_secondary_base[NumActiveChannels];
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      d_primary_base[ch]   = d_privatized_histograms_wrapper[ch];
+      d_secondary_base[ch] = d_secondary_histograms_wrapper[ch];
+    }
+
+    // Drain-reset + grid.sync only when work stealing is enabled.
+    if constexpr (hp.work_stealing)
+    {
+      if (tid_global == 0)
+      {
+        GridQueue<int> queue = tile_queue;
+        queue.ResetDrain();
+      }
+      grid.sync();
+    }
+
+    OutputDecodeOpT output_decode_op[NumActiveChannels];
+    PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      output_decode_op[ch]     = output_decode_op_wrapper[ch];
+      privatized_decode_op[ch] = privatized_decode_op_wrapper[ch];
+      output_decode_op[ch].PrecomputeOnDevice();
+      privatized_decode_op[ch].PrecomputeOnDevice();
+    }
+
+    // Single sweep with hybrid accumulation.
+    {
+      AgentHistogramT agent(
+        temp_storage,
+        d_samples,
+        num_output_bins_wrapper.data(),
+        num_output_bins_wrapper.data(),
+        d_output_histograms_wrapper.data(),
+        d_privatized_histograms_wrapper.data(),
+        d_secondary_histograms_wrapper.data(),
+        output_decode_op,
+        privatized_decode_op,
+        dyn_smem_histograms,
+        smem_split,
+        secondary_size);
+
+      agent.InitBinCountersHybrid();
+      agent.ConsumeTilesHybrid(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
+      agent.StoreHybridSmemToStagingSlab();
+    }
+
+    // grid-wide sync: all blocks' primary+secondary staging-slab writes visible.
+    grid.sync();
+
+    // Atomic-free reduce: primary slab -> output[0..split), secondary slab ->
+    // output[split..split+secondary). Fused single-loop form (NOT the two-call
+    // gather_privatized_slab helper, which measured ~5% slower on this hot path).
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      CounterT* d_out                             = d_output_histograms_wrapper[ch];
+      const CounterT* __restrict__ primary_base   = d_primary_base[ch];
+      const CounterT* __restrict__ secondary_base = d_secondary_base[ch];
+      const unsigned int split_u                  = static_cast<unsigned int>(smem_split);
+      const unsigned int sec_u                    = static_cast<unsigned int>(secondary_size);
+      const unsigned int total_bins               = split_u + sec_u;
+
+      for (unsigned int bin = tid_global; bin < total_bins; bin += total_threads)
+      {
+        CounterT total = 0;
+        if (bin < split_u)
+        {
+          for (unsigned int b = 0; b < blocks_per_grid; ++b)
+          {
+            total += primary_base[b * split_u + bin];
+          }
+          d_out[bin] = total;
+        }
+        else
+        {
+          const unsigned int gbin = bin - split_u;
+          for (unsigned int b = 0; b < blocks_per_grid; ++b)
+          {
+            total += secondary_base[b * sec_u + gbin];
+          }
+          d_out[bin] = total;
+        }
+      }
+    }
+
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  }
 }
 
 //! Per-block SMEM cache update operators for the direct-atomic histogram kernel.
-//! `DeviceHistogramDirectAtomicKernel` is templated on one of these and calls
+//! `DeviceHistogramDirectKernel` is templated on one of these and calls
 //! `ProbeOp::apply(...)` for each (bin, contribution); the cache policy is thus a
 //! pluggable op rather than a branch in the kernel. Each operator receives this
 //! channel's key array, this warp's replica count array, this channel's GMEM
@@ -1945,7 +2148,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //!
 //!   output_atomic_spill  -- device-scope atomicAdd straight to the SHARED output
 //!     histogram. This is the "direct atomic" commit; a hot-bin spill contends
-//!     across every block. Used by DeviceHistogramDirectAtomicKernel.
+//!     across every block. Used by DeviceHistogramDirectKernel.
 //!
 //!   private_block_spill  -- block-scope atomicAdd_block into THIS block's PRIVATE
 //!     GMEM histogram (a per-block slab). Uncontended across blocks; a later
@@ -2163,6 +2366,30 @@ struct single_probe_cache
   }
 };
 
+//! No-cache combiner: the SMEM key-probe cache is disabled entirely. Every
+//! (warp-coalesced) bin spills straight through `SpillOp` -- to the shared output
+//! (`output_atomic_spill`) for the `Direct` kernel's `NoCache` combiner, or to
+//! this block's private slab (`private_block_spill`) for the `GmemPrivatized`
+//! kernel's `NoCache` combiner. The `keys` / `counts` / hash arguments are
+//! ignored, so a `NoCache` kernel that passes a zero-sized cache allocates no
+//! SMEM cache. This is the third member of `Combiner ∈ {NoCache, Cuckoo,
+//! SingleProbe}` from the design doc: it isolates the combiner's contribution
+//! (no on-chip combining) and is the building block of `direct_nocache` and of
+//! the `GmemPrivatized<NoCache>` family (= `gmem_priv_gather` / `hybrid`).
+struct no_cache_probe
+{
+  template <typename CounterT, typename SpillOp = output_atomic_spill>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
+  {
+    (void) keys;
+    (void) counts;
+    (void) cache_mask;
+    (void) cache_slot_log2;
+    SpillOp::spill(output, bin, contribution);
+  }
+};
+
 //! Persistent grid-resident histogram sweep kernel that fuses output-histogram
 //! initialization with a direct-atomic sweep. For the very-high-bin
 //! GMEM-privatized path the per-block privatization storage is so large
@@ -2186,7 +2413,7 @@ struct single_probe_cache
 //! (`cudaLaunchCooperativeKernel`) so that all blocks are co-resident on
 //! the device, which is a precondition of `grid_group::sync()`.
 //!
-//! Unlike `DeviceHistogramGmemPrivGatherKernel`, this kernel does not
+//! Unlike `DeviceHistogramGmemPrivatizedKernel`, this kernel does not
 //! use `AgentHistogram`. The agent's `AccumulatePixels` uses
 //! `atomicAdd_block` (block-scope), which is undefined for memory shared
 //! across blocks. We therefore implement a small stand-alone sweep that
@@ -2214,7 +2441,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectAtomicKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramDirectKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
@@ -2773,7 +3000,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   // ---------------------------------------------------------------------
   // Phase 4 (private-spill variant only): grid-sync so every block's slab
   // writes are visible, then an atomic-free gather sums the per-block slabs
-  // into the shared output. Mirrors DeviceHistogramGmemPrivGatherKernel's
+  // into the shared output. Mirrors DeviceHistogramGmemPrivatizedKernel(HybridSplit=false).s
   // gather: each thread owns a slice of OUTPUT bins and column-sums across
   // blocks, turning num_blocks * num_bins contended atomics into plain
   // reads + one write per bin.
@@ -2785,17 +3012,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       const unsigned int num_bins_u = static_cast<unsigned int>(num_output_bins_wrapper[ch]);
-      const CounterT* base          = d_private_histograms_wrapper[ch];
-      CounterT* d_out               = d_output_histograms_wrapper[ch];
-      for (unsigned int bin = tid_global; bin < num_bins_u; bin += total_threads)
-      {
-        CounterT total = 0;
-        for (unsigned int b = 0; b < blocks_per_grid; ++b)
-        {
-          total += base[static_cast<size_t>(b) * num_bins_u + bin];
-        }
-        d_out[bin] = total;
-      }
+      gather_privatized_slab<CounterT>(
+        d_output_histograms_wrapper[ch],
+        /*out_offset=*/0u,
+        d_private_histograms_wrapper[ch],
+        /*slab_stride=*/num_bins_u,
+        /*count=*/num_bins_u,
+        blocks_per_grid,
+        tid_global,
+        total_threads);
     }
   }
 
@@ -2835,7 +3060,7 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 // minBlocks=2 hint; the dispatch sizes the grid by this kernel's own sm_occupancy.
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivDynamicKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSmemPrivatizedDynamicKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -2908,203 +3133,6 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
   // Direct per-block atomic merge to the global output histogram (no staging
   // slab, no combine kernel).
   agent.StoreOutput();
-
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-}
-
-//! Single-launch hybrid SMEM+GMEM fused staging+combine sweep kernel.
-//!
-//! Eliminates the 2x sample re-read of the dual-chunk kernel by handling both
-//! "chunks" of the privatized-bin space in a single sweep:
-//!  - Bins `[0, hybrid_split_bin)` accumulate in per-block dyn-SMEM (size
-//!    hybrid_split_bin * NumActiveChannels * sizeof(CounterT) bytes).
-//!  - Bins `[hybrid_split_bin, hybrid_split_bin + hybrid_secondary_size)`
-//!    accumulate in a per-block per-channel GMEM staging slab via
-//!    `atomicAdd_block` (CTA-scoped).
-//!
-//! Using the un-chunked decode op, each sample is classified ONCE; the agent
-//! routes the resulting bin to either SMEM or per-block GMEM in a single pass.
-//! After the sweep, this block's SMEM histogram is flushed to its primary GMEM
-//! staging slab, the grid syncs, and the cross-block atomic-free reduce gathers
-//! both regions into the final output histogram.
-//!
-//! Trade vs the dual-chunk kernel:
-//!  - 1x sample reads instead of 2x (eliminates the second sweep).
-//!  - 1x un-chunked classify per sample instead of 2x chunked classifies.
-//!  - 1x SMEM atomic OR 1x per-block-GMEM atomic per sample (instead of 1x SMEM
-//!    atomic per chunk; net same number of atomics).
-//!
-//! The kernel must be launched cooperatively (`cudaLaunchCooperativeKernel`)
-//! so that all blocks are co-resident on the device, which is a precondition of
-//! `grid_group::sync()`.
-template <typename PolicySelector,
-          int PrivatizedSmemBins,
-          int NumChannels,
-          int NumActiveChannels,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename PrivatizedDecodeOpT,
-          typename OutputDecodeOpT,
-          typename OffsetT>
-#if _CCCL_HAS_CONCEPTS()
-  requires histogram_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
-// __launch_bounds__(N, 1): hybrid is limited to 1 block/SM by the 56000-bin SMEM
-// allocation (~224 KB/CTA on B200), so the minBlocks=1 hint lets the compiler use
-// more registers per thread (no need to budget for 2 blocks/SM SMEM-fit).
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 1)
-  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramHybridSinglePassKernel(
-    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_smem_bins_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_gmem_bins_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_primary_staging_wrapper,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_secondary_staging_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
-    _CCCL_GRID_CONSTANT const int hybrid_split_bin,
-    _CCCL_GRID_CONSTANT const int hybrid_secondary_size,
-    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
-    _CCCL_GRID_CONSTANT const OffsetT num_rows,
-    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
-    _CCCL_GRID_CONSTANT const int tiles_per_row,
-    GridQueue<int> tile_queue)
-{
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
-
-  namespace cg = ::cooperative_groups;
-
-  cg::grid_group grid = cg::this_grid();
-
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.threads_per_block,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size>;
-  using AgentHistogramT =
-    AgentHistogram<AgentHistogramPolicyT,
-                   PrivatizedSmemBins,
-                   NumChannels,
-                   NumActiveChannels,
-                   SampleIteratorT,
-                   CounterT,
-                   PrivatizedDecodeOpT,
-                   OutputDecodeOpT,
-                   OffsetT,
-                   /* UseDynamicSmemHistogram = */ true>;
-
-  __shared__ typename AgentHistogramT::TempStorage temp_storage;
-
-  extern __shared__ unsigned char dyn_smem_raw[];
-  CounterT* dyn_smem_histograms = reinterpret_cast<CounterT*>(dyn_smem_raw);
-
-  // Save the per-channel bases of the all-blocks staging slabs BEFORE the agent
-  // constructor offsets them by `block_id * num_*_bins[ch]`.
-  CounterT* d_primary_base[NumActiveChannels];
-  CounterT* d_secondary_base[NumActiveChannels];
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    d_primary_base[ch]   = d_primary_staging_wrapper[ch];
-    d_secondary_base[ch] = d_secondary_staging_wrapper[ch];
-  }
-
-  const unsigned int blocks_per_grid = gridDim.x * gridDim.y * gridDim.z;
-  const unsigned int block_id        = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
-  const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
-  const unsigned int total_threads   = blocks_per_grid * blockDim.x;
-
-  // Drain-reset + grid.sync are only needed when the policy enables work stealing
-  // (the drain counter is consumed by the WS even-share-then-steal loop). For
-  // even-share-only policies the drain queue is never read, so we can elide both
-  // the reset and the grid.sync, saving one grid-wide barrier (~5 us on B200).
-  if constexpr (hp.work_stealing)
-  {
-    if (tid_global == 0)
-    {
-      GridQueue<int> queue = tile_queue;
-      queue.ResetDrain();
-    }
-    grid.sync();
-  }
-
-  // Host-init path: hoist the RANGE SearchTransform's loop-invariant
-  // interpolation state out of the per-sample classify. No-op for EVEN /
-  // byte-sample decode ops.
-  OutputDecodeOpT output_decode_op[NumActiveChannels];
-  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    output_decode_op[ch] = output_decode_op_wrapper[ch];
-    privatized_decode_op[ch] = privatized_decode_op_wrapper[ch];
-    output_decode_op[ch].PrecomputeOnDevice();
-    privatized_decode_op[ch].PrecomputeOnDevice();
-  }
-
-  // Single sweep with hybrid accumulation.
-  {
-    AgentHistogramT agent(
-      temp_storage,
-      d_samples,
-      num_smem_bins_wrapper.data(),
-      num_smem_bins_wrapper.data(),
-      d_output_histograms_wrapper.data(),
-      d_primary_staging_wrapper.data(),
-      d_secondary_staging_wrapper.data(),
-      output_decode_op,
-      privatized_decode_op,
-      dyn_smem_histograms,
-      hybrid_split_bin,
-      hybrid_secondary_size);
-
-    agent.InitBinCountersHybrid();
-    agent.ConsumeTilesHybrid(num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue);
-    agent.StoreHybridSmemToStagingSlab();
-  }
-
-  // grid-wide sync: all blocks' primary+secondary staging-slab writes visible to every block.
-  grid.sync();
-
-  // Atomic-free reduce: for each channel, gather the primary slab into output[0..split)
-  // and the secondary slab into output[split..split+secondary). Both are simple column-sum
-  // reductions across blocks.
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ch = 0; ch < NumActiveChannels; ++ch)
-  {
-    CounterT* d_out                             = d_output_histograms_wrapper[ch];
-    const CounterT* __restrict__ primary_base   = d_primary_base[ch];
-    const CounterT* __restrict__ secondary_base = d_secondary_base[ch];
-    const unsigned int split_u                  = static_cast<unsigned int>(hybrid_split_bin);
-    const unsigned int sec_u                    = static_cast<unsigned int>(hybrid_secondary_size);
-    const unsigned int total_bins               = split_u + sec_u;
-
-    for (unsigned int bin = tid_global; bin < total_bins; bin += total_threads)
-    {
-      CounterT total = 0;
-      if (bin < split_u)
-      {
-        for (unsigned int b = 0; b < blocks_per_grid; ++b)
-        {
-          total += primary_base[b * split_u + bin];
-        }
-        d_out[bin] = total;
-      }
-      else
-      {
-        const unsigned int gbin = bin - split_u;
-        for (unsigned int b = 0; b < blocks_per_grid; ++b)
-        {
-          total += secondary_base[b * sec_u + gbin];
-        }
-        d_out[bin] = total;
-      }
-    }
-  }
 
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }

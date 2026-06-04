@@ -61,7 +61,7 @@ struct histogram_kernel_source
             typename SecondLevelArrayT,
             bool IsEven,
             bool IsByteSample>
-  CUkernel HistogramSmemPrivDeviceInitKernel() const
+  CUkernel HistogramSmemPrivatizedDeviceInitKernel() const
   {
     return build.sweep_kernel;
   }
@@ -144,7 +144,7 @@ std::string get_sweep_kernel_name(
       : std::format("cuda::std::array<const {0}*, {1}>", level_t, num_active_channels);
 
   return std::format(
-    "cub::detail::histogram::DeviceHistogramSmemPrivDeviceInitKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
+    "cub::detail::histogram::DeviceHistogramSmemPrivatizedDeviceInitKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
     "{10}, {11}>",
     chained_policy_t,
     privatized_smem_bins,

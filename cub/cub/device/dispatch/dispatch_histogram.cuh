@@ -336,9 +336,9 @@ struct DeviceHistogramKernelSource
 
   /// Returns the default histogram sweep kernel that receives pre-initialized decode operators from the host.
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivKernel()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivatizedKernel()
   {
-    return &DeviceHistogramSmemPrivKernel<
+    return &DeviceHistogramSmemPrivatizedKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -357,7 +357,7 @@ struct DeviceHistogramKernelSource
             typename SecondLevelArrayT,
             bool IsEven,
             bool IsByteSample>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivDeviceInitKernel()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivatizedDeviceInitKernel()
   {
     // For DispatchEven, we use the scale transform to convert samples to
     // privatized bins and pass-thru transform to convert privatized bins to
@@ -376,7 +376,7 @@ struct DeviceHistogramKernelSource
     using OutputDecodeOpT =
       ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
 
-    return &DeviceHistogramSmemPrivDeviceInitKernel<
+    return &DeviceHistogramSmemPrivatizedDeviceInitKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -395,9 +395,9 @@ struct DeviceHistogramKernelSource
   /// privatized histogram directly into the global output via atomicAdd
   /// (no staging slabs, no combine kernel). Host must launch the init kernel first.
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivDynamicKernel()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivatizedDynamicKernel()
   {
-    return &DeviceHistogramSmemPrivDynamicKernel<
+    return &DeviceHistogramSmemPrivatizedDynamicKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -416,9 +416,11 @@ struct DeviceHistogramKernelSource
   /// each sample once into the full bin space.
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto
-  HistogramHybridSinglePassKernel()
+  HistogramGmemPrivatizedHybridKernel()
   {
-    return &DeviceHistogramHybridSinglePassKernel<
+    // Hybrid instantiation of the unified GmemPrivatized kernel (HybridSplit=true,
+    // smem_split>0): SMEM primary range + GMEM secondary tail + fused reduce.
+    return &DeviceHistogramGmemPrivatizedKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
@@ -427,7 +429,8 @@ struct DeviceHistogramKernelSource
       CounterT,
       PrivatizedDecodeOpT,
       OutputDecodeOpT,
-      OffsetT>;
+      OffsetT,
+      /*HybridSplit=*/true>;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
@@ -527,7 +530,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   bool disable_direct_atomic = false,
   // Cache policy for the direct-atomic-to-output kernel (only consulted when
   // the direct-atomic path is taken, i.e. !disable_direct_atomic). Both select
-  // the same DeviceHistogramDirectAtomicKernel with a different probe op:
+  // the same DeviceHistogramDirectKernel with a different probe op:
   //   0 -> 2-hash cuckoo cache (cuckoo_cache_probe)
   //   1 -> single-probe direct-mapped cache (single_probe_cache)
   // The two share the same dynamic-SMEM cache layout and the dispatch-chosen
@@ -572,7 +575,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-      return kernel_source.template HistogramSmemPrivDynamicKernel<
+      return kernel_source.template HistogramSmemPrivatizedDynamicKernel<
              PolicySelector,
              PRIVATIZED_SMEM_BINS,
              privatized_decode_op_t,
@@ -580,7 +583,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
     else if constexpr (IsDeviceInit)
     {
-      return kernel_source.template HistogramSmemPrivDeviceInitKernel<
+      return kernel_source.template HistogramSmemPrivatizedDeviceInitKernel<
              PolicySelector,
              PRIVATIZED_SMEM_BINS,
              FirstLevelArrayT,
@@ -593,7 +596,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
       return kernel_source
-        .template HistogramSmemPrivKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
+        .template HistogramSmemPrivatizedKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
     }
   }();
 
@@ -810,7 +813,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // nvcc emits the device-side kernel during device compilation. The
       // launch itself runs only once via `cudaLaunchCooperativeKernel`
       // below so `grid.sync()` works.
-      auto persistent_kernel_ptr = &DeviceHistogramGmemPrivGatherKernel<PolicySelector,
+      // GmemPrivatized kernel, pure-gather member (smem_split=0): the NoCache /
+      // split=0 member of the GmemPrivatized family (was GmemPrivGatherKernel).
+      auto persistent_kernel_ptr = &DeviceHistogramGmemPrivatizedKernel<PolicySelector,
                                                                          PRIVATIZED_SMEM_BINS,
                                                                          NUM_CHANNELS,
                                                                          NUM_ACTIVE_CHANNELS,
@@ -830,15 +835,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `cudaErrorInvalidResourceHandle`.
       if (false)
       {
-        DeviceHistogramGmemPrivGatherKernel<PolicySelector,
-                                             PRIVATIZED_SMEM_BINS,
-                                             NUM_CHANNELS,
-                                             NUM_ACTIVE_CHANNELS,
-                                             SampleIteratorT,
-                                             CounterT,
-                                             privatized_decode_op_t,
-                                             output_decode_op_t,
-                                             OffsetT>
+        DeviceHistogramGmemPrivatizedKernel<PolicySelector,
+                                            PRIVATIZED_SMEM_BINS,
+                                            NUM_CHANNELS,
+                                            NUM_ACTIVE_CHANNELS,
+                                            SampleIteratorT,
+                                            CounterT,
+                                            privatized_decode_op_t,
+                                            output_decode_op_t,
+                                            OffsetT>
           <<<persistent_grid_dims, dim3{static_cast<unsigned int>(threads_per_block)}, 0, stream>>>(
             d_samples,
             num_output_bins_wrapper,
@@ -859,7 +864,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // and writes atomically to the output histograms. Used only when
       // `use_direct_atomic_to_output` is true (see threshold above).
       auto direct_atomic_kernel_ptr =
-        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+        &DeviceHistogramDirectKernel<PolicySelector,
                                            PRIVATIZED_SMEM_BINS,
                                            NUM_CHANNELS,
                                            NUM_ACTIVE_CHANNELS,
@@ -884,7 +889,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // it). The 2-probe kernel above is kept for the moderate-bin tier where the
       // secondary slot raises the hit rate.
       auto direct_atomic_noprobe2_kernel_ptr =
-        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+        &DeviceHistogramDirectKernel<PolicySelector,
                                            PRIVATIZED_SMEM_BINS,
                                            NUM_CHANNELS,
                                            NUM_ACTIVE_CHANNELS,
@@ -906,7 +911,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // `direct_atomic_cache_mode == 1` (the huge-N single-channel high-bin
       // route picked by the unified selector as direct_atomic_single_probe).
       auto direct_atomic_single_probe_kernel_ptr =
-        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+        &DeviceHistogramDirectKernel<PolicySelector,
                                            PRIVATIZED_SMEM_BINS,
                                            NUM_CHANNELS,
                                            NUM_ACTIVE_CHANNELS,
@@ -929,7 +934,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // (priv_cuckoo / priv_single_probe), never auto-selected -- so a normal
       // dispatch is byte-identical to before. See cached_privatized_spill_design.md.
       auto direct_atomic_priv_cuckoo_kernel_ptr =
-        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+        &DeviceHistogramDirectKernel<PolicySelector,
                                            PRIVATIZED_SMEM_BINS,
                                            NUM_CHANNELS,
                                            NUM_ACTIVE_CHANNELS,
@@ -941,7 +946,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                                            cuckoo_cache_probe<>,
                                            private_block_spill>;
       auto direct_atomic_priv_single_probe_kernel_ptr =
-        &DeviceHistogramDirectAtomicKernel<PolicySelector,
+        &DeviceHistogramDirectKernel<PolicySelector,
                                            PRIVATIZED_SMEM_BINS,
                                            NUM_CHANNELS,
                                            NUM_ACTIVE_CHANNELS,
@@ -1183,7 +1188,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
       if (false)
       {
-        DeviceHistogramDirectAtomicKernel<PolicySelector,
+        DeviceHistogramDirectKernel<PolicySelector,
                                           PRIVATIZED_SMEM_BINS,
                                           NUM_CHANNELS,
                                           NUM_ACTIVE_CHANNELS,
@@ -1202,7 +1207,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_rows,
             row_stride_samples,
             cache_slots_per_channel);
-        DeviceHistogramDirectAtomicKernel<PolicySelector,
+        DeviceHistogramDirectKernel<PolicySelector,
                                           PRIVATIZED_SMEM_BINS,
                                           NUM_CHANNELS,
                                           NUM_ACTIVE_CHANNELS,
@@ -1223,7 +1228,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             cache_slots_per_channel);
         // Force device-side emission of the second-probe-gated cuckoo variant so
         // `cudaLaunchCooperativeKernel` can resolve its device entry.
-        DeviceHistogramDirectAtomicKernel<PolicySelector,
+        DeviceHistogramDirectKernel<PolicySelector,
                                           PRIVATIZED_SMEM_BINS,
                                           NUM_CHANNELS,
                                           NUM_ACTIVE_CHANNELS,
@@ -1386,6 +1391,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         }
         else
         {
+          // Pure-gather instantiation of the unified GmemPrivatized kernel
+          // (HybridSplit=false, smem_split=0). The kernel has 16 params; the 3
+          // hybrid-only trailing ones (d_secondary, smem_split, secondary_size) are
+          // unused here but MUST be physically present — cudaLaunchCooperativeKernel
+          // marshals positionally and ignores C++ defaults.
+          ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> gather_no_secondary{};
+          int gather_zero_split     = 0;
+          int gather_zero_secondary = 0;
           void* kernel_args[] = {
             const_cast<void*>(static_cast<const void*>(&d_samples)),
             const_cast<void*>(static_cast<const void*>(&num_output_bins_wrapper)),
@@ -1399,7 +1412,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
             const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
             const_cast<void*>(static_cast<const void*>(&tile_queue)),
-            const_cast<void*>(static_cast<const void*>(&max_num_output_bins))};
+            const_cast<void*>(static_cast<const void*>(&max_num_output_bins)),
+            const_cast<void*>(static_cast<const void*>(&gather_no_secondary)),
+            const_cast<void*>(static_cast<const void*>(&gather_zero_split)),
+            const_cast<void*>(static_cast<const void*>(&gather_zero_secondary))};
           coop_status = cudaLaunchCooperativeKernel(
             reinterpret_cast<const void*>(persistent_kernel_ptr),
             persistent_grid_dims,
@@ -1918,7 +1934,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   // Calculate occupancy and grid size.
   int fused_sm_occupancy = 0;
   auto fused_hybrid_kernel_ptr =
-    kernel_source.template HistogramHybridSinglePassKernel<
+    kernel_source.template HistogramGmemPrivatizedHybridKernel<
       PolicySelector,
       kPrivatizedSmemBins,
       InnerPrivatizedDecodeOpT,
@@ -1930,30 +1946,37 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   // fails with cudaErrorInvalidResourceHandle).
   if (false)
   {
-    DeviceHistogramHybridSinglePassKernel<PolicySelector,
-                                                                          kPrivatizedSmemBins,
-                                                                          NUM_CHANNELS,
-                                                                          NUM_ACTIVE_CHANNELS,
-                                                                          SampleIteratorT,
-                                                                          CounterT,
-                                                                          InnerPrivatizedDecodeOpT,
-                                                                          OutputDecodeOpT,
-                                                                          OffsetT>
+    // Dead instantiation of the unified GmemPrivatized kernel, HybridSplit=true.
+    // Unified arg order: (samples, num_output_bins[=split-sized], num_privatized_bins,
+    // d_output, d_privatized[=primary], output_decode, priv_decode, geometry...,
+    // tiles_per_row, tile_queue, max_num_output_bins, d_secondary, smem_split,
+    // secondary_size).
+    DeviceHistogramGmemPrivatizedKernel<PolicySelector,
+                                        kPrivatizedSmemBins,
+                                        NUM_CHANNELS,
+                                        NUM_ACTIVE_CHANNELS,
+                                        SampleIteratorT,
+                                        CounterT,
+                                        InnerPrivatizedDecodeOpT,
+                                        OutputDecodeOpT,
+                                        OffsetT,
+                                        /*HybridSplit=*/true>
       <<<1, 1, 0, stream>>>(d_samples,
                             ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>{},
                             ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>{},
                             ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
                             ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
-                            ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
                             ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>{},
                             ::cuda::std::array<InnerPrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>{},
-                            int{},
-                            int{},
                             num_row_pixels,
                             num_rows,
                             row_stride_samples,
                             int{},
-                            GridQueue<int>{nullptr});
+                            GridQueue<int>{nullptr},
+                            int{},
+                            ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS>{},
+                            int{},
+                            int{});
   }
 
   if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(
@@ -2045,22 +2068,32 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_hybrid_single_pass_s
   dim3 grid_dims(num_thread_blocks, 1, 1);
   dim3 block_dims(threads_per_block, 1, 1);
 
+  // Args for the unified GmemPrivatized kernel, HybridSplit=true. Unified arg
+  // order (16 args; cudaLaunchCooperativeKernel marshals positionally and ignores
+  // C++ defaults, so all must be present):
+  //   samples, num_output_bins[=split-sized num_smem_bins], num_privatized_bins
+  //   [unused by hybrid; pass num_smem too], d_output, d_privatized[=PRIMARY
+  //   staging], output_decode, priv_decode, num_row_pixels, num_rows,
+  //   row_stride_samples, tiles_per_row, tile_queue, max_num_output_bins[unused],
+  //   d_secondary[=SECONDARY staging], smem_split, secondary_size.
+  const int hybrid_max_num_output_bins = hybrid_split_bin + hybrid_secondary_size;
   void* kernel_args[] = {
     const_cast<void*>(static_cast<const void*>(&d_samples)),
     const_cast<void*>(static_cast<const void*>(&num_smem_bins_wrapper)),
     const_cast<void*>(static_cast<const void*>(&num_gmem_bins_wrapper)),
     const_cast<void*>(static_cast<const void*>(&d_output_histograms)),
     const_cast<void*>(static_cast<const void*>(&d_primary_staging_array)),
-    const_cast<void*>(static_cast<const void*>(&d_secondary_staging_array)),
     const_cast<void*>(static_cast<const void*>(&output_decode_op)),
     const_cast<void*>(static_cast<const void*>(&inner_privatized_decode_op)),
-    const_cast<void*>(static_cast<const void*>(&hybrid_split_bin)),
-    const_cast<void*>(static_cast<const void*>(&hybrid_secondary_size)),
     const_cast<void*>(static_cast<const void*>(&num_row_pixels)),
     const_cast<void*>(static_cast<const void*>(&num_rows)),
     const_cast<void*>(static_cast<const void*>(&row_stride_samples)),
     const_cast<void*>(static_cast<const void*>(&tiles_per_row)),
-    const_cast<void*>(static_cast<const void*>(&tile_queue))};
+    const_cast<void*>(static_cast<const void*>(&tile_queue)),
+    const_cast<void*>(static_cast<const void*>(&hybrid_max_num_output_bins)),
+    const_cast<void*>(static_cast<const void*>(&d_secondary_staging_array)),
+    const_cast<void*>(static_cast<const void*>(&hybrid_split_bin)),
+    const_cast<void*>(static_cast<const void*>(&hybrid_secondary_size))};
 
   cudaError_t launch_error = cudaLaunchCooperativeKernel(
     reinterpret_cast<const void*>(fused_hybrid_kernel_ptr),
