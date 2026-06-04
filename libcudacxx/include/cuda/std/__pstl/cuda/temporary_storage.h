@@ -32,6 +32,7 @@
 #  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -116,8 +117,7 @@ class __temporary_storage
   //! @brief Helper function to retrieve a memory resource from a policy
   //!        In contrast to `__call_or` it does not require us to always call .device() on the stream
   template <class _Policy>
-  [[nodiscard]] _CCCL_HOST_API static ::cuda::mr::resource_ref<>
-  __get_memory_resource_or(const _Policy& __policy) noexcept
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::mr::resource_ref<> __get_memory_resource_or(const _Policy& __policy)
   {
     if constexpr (__is_callable_v<::cuda::mr::get_memory_resource_t, const _Policy&>)
     {
@@ -140,8 +140,11 @@ class __temporary_storage
       return ::cuda::device_default_memory_pool(::cuda::get_stream(__policy).device());
     }
     else
-    { // no stream no memory resource, assume device 0
-      return ::cuda::device_default_memory_pool(0);
+    {
+      // If no stream was specified, use the current device.
+      int __curr_device{};
+      _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
+      return ::cuda::device_default_memory_pool(__curr_device);
     }
   }
 

@@ -137,36 +137,37 @@ TEST_FUNC void test()
       cuda::std::array<int, 3>>);
 #endif // TEST_HAS_CLASS_NTTP
 
-  // --- argument_traits: lowest / max ---
+  // --- argument_traits: lowest / highest ---
 
   static_assert(cuda::__argument::__traits<int>::lowest == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::__argument::__traits<int>::max == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::__argument::__traits<int>::highest == (cuda::std::numeric_limits<int>::max)());
   static_assert(cuda::__argument::__traits<const int>::lowest == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::__argument::__traits<int&>::max == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::__argument::__traits<int&>::highest == (cuda::std::numeric_limits<int>::max)());
   static_assert(cuda::__argument::__traits<float>::lowest == cuda::std::numeric_limits<float>::lowest());
-  static_assert(cuda::__argument::__traits<float>::max == cuda::std::numeric_limits<float>::max());
+  static_assert(cuda::__argument::__traits<float>::highest == (cuda::std::numeric_limits<float>::max)());
   static_assert(
     cuda::__argument::__traits<const cuda::__argument::__immediate<int, cuda::__argument::__static_bounds<1, 8>>>::lowest
     == 1);
   static_assert(
-    cuda::__argument::__traits<cuda::__argument::__immediate<int, cuda::__argument::__static_bounds<1, 8>>&>::max == 8);
+    cuda::__argument::__traits<cuda::__argument::__immediate<int, cuda::__argument::__static_bounds<1, 8>>&>::highest
+    == 8);
   static_assert(
     cuda::__argument::__traits<
-      cuda::__argument::__immediate_sequence<cuda::std::span<int>, cuda::__argument::__static_bounds<1, 8>>>::max
+      cuda::__argument::__immediate_sequence<cuda::std::span<int>, cuda::__argument::__static_bounds<1, 8>>>::highest
     == 8);
 #if TEST_HAS_CLASS_NTTP
   static_assert(
     cuda::__argument::__traits<cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{3, 1, 2}>>::lowest == 1);
   static_assert(
-    cuda::__argument::__traits<cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{3, 1, 2}>>::max == 3);
+    cuda::__argument::__traits<cuda::__argument::__constant_sequence<cuda::std::array<int, 3>{3, 1, 2}>>::highest == 3);
 #endif // TEST_HAS_CLASS_NTTP
 
   // --- Free function bounds on plain values ---
 
   static_assert(cuda::__argument::__lowest_(42) == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::__argument::__max_(42) == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::__argument::__highest_(42) == (cuda::std::numeric_limits<int>::max)());
   static_assert(cuda::__argument::__lowest_(1.0f) == cuda::std::numeric_limits<float>::lowest());
-  static_assert(cuda::__argument::__max_(1.0f) == cuda::std::numeric_limits<float>::max());
+  static_assert(cuda::__argument::__highest_(1.0f) == (cuda::std::numeric_limits<float>::max)());
 
   // --- Scalar and sequence wrappers expose distinct single-value traits ---
 
