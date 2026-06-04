@@ -13,7 +13,6 @@
 #include <cub/device/device_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 
-#include <chrono>
 #include <cstdio>
 #include <format>
 #include <mutex>
@@ -387,24 +386,14 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  auto t0 = std::chrono::steady_clock::now();
   check(cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0));
-  const double load_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
   try
   {
-    auto tk = std::chrono::steady_clock::now();
     check(
       cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, build_ptr->block_sort_kernel_lowered_name));
     check(
       cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, build_ptr->partition_kernel_lowered_name));
     check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, build_ptr->merge_kernel_lowered_name));
-    const double kget_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tk).count();
-    std::fprintf(stderr,
-                 "    [merge_sort.load] cuLibraryLoadData: %.3f ms  3x cuLibraryGetKernel: %.3f ms (payload=%zu B)\n",
-                 load_ms,
-                 kget_ms,
-                 build_ptr->payload_size);
-    std::fflush(stderr);
   }
   catch (...)
   {
@@ -620,22 +609,7 @@ try
     all_blobs.push_back(input_blobs[i]);
     all_sizes.push_back(input_sizes[i]);
   }
-  size_t total_in = 0;
-  for (auto s : all_sizes)
-  {
-    total_in += s;
-  }
-  auto t0                  = std::chrono::steady_clock::now();
   auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
-  const double nvjit_ms    = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
-  std::fprintf(
-    stderr,
-    "    [merge_sort.link_ltoir] nvjitlink_link: %.3f ms  (in: %zu blobs, %zu B; out: %zu B)\n",
-    nvjit_ms,
-    all_blobs.size(),
-    total_in,
-    cubin_size);
-  std::fflush(stderr);
   delete[] static_cast<char*>(build_ptr->payload);
   build_ptr->payload      = nullptr;
   build_ptr->payload_size = 0;

@@ -19,7 +19,7 @@
 
 // Links LTO-IR blobs via nvJitLink → returns SASS cubin (PTX fallback if SASS unavailable).
 // Caller owns the returned buffer.
-inline std::pair<std::unique_ptr<char[]>, size_t>
+[[nodiscard]] inline std::pair<std::unique_ptr<char[]>, size_t>
 nvjitlink_link(const void** blobs, const size_t* sizes, size_t num, int cc_major, int cc_minor)
 {
   const std::string arch = std::format("-arch=sm_{}{}", cc_major, cc_minor);
