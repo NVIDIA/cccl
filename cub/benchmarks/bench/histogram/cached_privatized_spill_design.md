@@ -1,164 +1,223 @@
-# Design proposal: SMEM write-combining cache on the privatized-gather path
+# Design proposal: SMEM cache front-end for the GMEM-privatized histogram
 
 **Status:** proposal / unbuilt
-**Scope:** high-bin histogram sweep (the tier where `hybrid_single_pass` and the
-direct-atomic caches compete), single-channel first.
+**Scope:** high-bin histogram sweep (single-channel first), bins ≤ 65 536.
 
 ## Summary
 
-Put the **adaptive SMEM hash cache** (cuckoo / single-probe) in front of the
-**per-block privatized GMEM histogram**: cache hits combine in SMEM, cache
-**misses** spill **block-scope** (`atomicAdd_block`) into the block's private GMEM
-slab, then the existing grid-sync + atomic-free gather sums the slabs into the
-output.
+Add an **associative SMEM cache** (cuckoo / single-probe) as a write-combining
+front-end to the **per-block GMEM-privatized** histogram. Cache hits combine in
+SMEM; misses spill **block-scope** (`atomicAdd_block`) into the block's private GMEM
+histogram; the existing grid-sync + atomic-free gather merges the private copies
+into the output.
 
-The cache is hot-aware (unlike hybrid's static bin-range split) **and** its spill is
-contention-free (unlike the direct-atomic cache's device-scope atomic to the shared
-output).
+This is hot-aware on-chip combining (unlike the privatized kernel's static SMEM
+tier) **with** a contention-free spill (unlike the direct kernel's device-scope
+atomic to the shared output). It is the empty cell in the kernel matrix below: the
+direct kernel's cache front-end crossed with the privatized kernel's backing store.
 
-## Naming: this is NOT a direct-atomic variant
+## Naming scheme
 
-The cache and the **spill target** are two independent axes that the current code
-conflates. "Direct atomic" is the name of one spill choice — a **device-scope
-`atomicAdd` to the shared output** — so a privatized-spill path must not be called
-direct-atomic; the name would assert the opposite of what it does.
+Three sweep kernels, divided by **where increments land**. The on-chip combiner is a
+template argument, not part of the kernel name.
 
-| Axis | Values |
-|---|---|
-| **On-chip combiner** | none · static bin-range (hybrid) · **adaptive hash cache** (cuckoo / single-probe) |
-| **Spill target** | **device-scope → shared output** (= "direct atomic") · **block-scope → per-block private slab → gather** (= "privatized") |
+- **`DirectKernel<Combiner>`** — commits each increment device-scope to the **shared
+  output** (this is the honest meaning of today's "direct atomic"). No private copy.
+- **`SmemPrivatizedKernel`** — whole histogram lives **on-chip**; atomic-merge to
+  output. Low bins only. Retains a compile-time static-SMEM specialization for the
+  fixed 256-bin tier (the hot byte-sample image path); larger sizes use dynamic SMEM.
+- **`GmemPrivatizedKernel<Combiner, smem_split>`** — per-block histogram in **GMEM**,
+  gather-merged. SMEM is a front-end: either a static low-bin tier (`smem_split`
+  bins, no tags, no misses) **or** an associative cache (`Combiner`). Always dynamic
+  SMEM.
 
-The spill axis names the kernel **family**. So:
+`Combiner ∈ {NoCache, Cuckoo, SingleProbe}`. `smem_split` = number of low-index bins
+held in SMEM (only meaningful for `NoCache`, where it is a static direct-mapped tier).
 
-- `direct_atomic_*` = cache → **device-scope** spill to output. Name stays honest; **untouched** by this proposal.
-- `gmem_priv_gather` = **block-scope** spill to private slab → gather. **This is the home** of the proposed path.
-
-The proposal is therefore: **add the SMEM cache as an optional front-end to
-`gmem_priv_gather`** — not a new spill mode on the direct-atomic kernel. The shared,
-reused code is the **cache component**, which crosses both families.
-
-## Motivation
-
-| Path | On-chip combiner | Spill | Footprint |
+| Proposed enum | Proposed kernel (instantiation) | Today's enum | Today's kernel |
 |---|---|---|---|
-| `hybrid_single_pass` | **static** bin-range `[0,split)` → SMEM | block-scope → GMEM tail → gather | bounded (`num_blocks × secondary`) |
-| `direct_atomic_{cuckoo,single_probe}` | **adaptive** hash cache | **device-scope** → shared output (contended) | none |
-| `gmem_priv_gather` *(today)* | **none** | block-scope → private slab → gather | full (`num_blocks × num_bins`) |
-| **proposed** = `gmem_priv_gather` **+ cache** | **adaptive** hash cache | block-scope → private slab → gather | full (`num_blocks × num_bins`) |
+| `direct_nocache` | `DirectKernel<NoCache>` | *(none)* | `DirectAtomicKernel<no_cache_probe>` *(uncommitted ablation)* |
+| `direct_cuckoo` | `DirectKernel<Cuckoo>` | `direct_atomic_cuckoo` | `DirectAtomicKernel<cuckoo_cache_probe>` |
+| `direct_single_probe` | `DirectKernel<SingleProbe>` | `direct_atomic_single_probe` | `DirectAtomicKernel<single_probe_cache>` |
+| `smem_privatized` | `SmemPrivatizedKernel` *(static)* | `smem_priv_256` | `SmemPrivKernel` |
+| `smem_privatized` | `SmemPrivatizedKernel` *(dynamic)* | `smem_priv_dynamic` | `SmemPrivDynamicKernel` |
+| `gmem_privatized_nocache` | `GmemPrivatizedKernel<NoCache, split=0>` | `gmem_priv_gather` | `GmemPrivGatherKernel` |
+| `gmem_privatized_nocache` | `GmemPrivatizedKernel<NoCache, split>0>` | `hybrid_single_pass` | `HybridSinglePassKernel` |
+| **`gmem_privatized_cuckoo`** | **`GmemPrivatizedKernel<Cuckoo, split=0>`** | **— proposed —** | **— proposed —** |
+| **`gmem_privatized_single_probe`** | **`GmemPrivatizedKernel<SingleProbe, split=0>`** | **— proposed —** | **— proposed —** |
 
-Hybrid's SMEM tier is hotness-blind: it dedicates 49 152 slots to bins `[0,split)`
-by index. On inputs whose hot bins are **scattered across the range**, those slots
-sit on cold low-index bins while the hot bins pay GMEM-tier bandwidth. The
-direct-atomic cache *is* hot-aware, but its miss is a contended device-scope atomic
-on the shared output. `gmem_priv_gather` spills contention-free but has **no**
-on-chip combiner at all, so every sample pays a GMEM round-trip — which is why
-tuning currently never selects it.
+(Kernel names elide the `DeviceHistogram` prefix for width.) The proposal is the
+bottom two rows.
 
-The proposed path is the missing combination: hot-aware on-chip combining **and**
-contention-free spill. It is literally `gmem_priv_gather` with the direct-atomic
-kernel's cache bolted onto its block-scope accumulation.
+## Two consolidations this naming makes obvious
 
-## Anti-redundancy: extract the cache as a shared component
+1. **`hybrid` and `gmem_priv_gather` are one kernel.** Verified in
+   `AccumulatePixelsHybrid` (`agent_histogram.cuh:514-607`): hybrid routes a sample
+   to SMEM when `bin < split` and to the per-block private GMEM slab otherwise —
+   **both via `atomicAdd_block`** — then gathers over both regions. That is exactly
+   `gmem_priv_gather` (all bins in GMEM) with the low `split` bins promoted to SMEM.
+   Same backing store, same commit; only the storage tier of the low bins differs.
+   They collapse into `GmemPrivatizedKernel<NoCache, smem_split>`: `split=0` is the
+   old gather kernel, `split>0` is hybrid.
 
-Today the SMEM cache is welded into `DeviceHistogramDirectAtomicKernel`, and each
-probe op (`cuckoo_cache_probe`, `single_probe_cache`, `no_cache_probe`) **hardcodes**
-its miss as `atomicAdd(&output[bin], …)` — the device-scope-to-output spill.
+2. **The proposed kernel reuses both halves of existing kernels.** Its combiner is
+   the same `ProbeOp` the `Direct` kernels use; its backing store + gather phase are
+   the same the `GmemPrivatized<NoCache>` instantiations use. Building it is wiring,
+   not new machinery (see Anti-redundancy).
 
-Factor two things out:
+## The proposed algorithm
 
-1. **A spill functor**, so the probe op stops hardcoding the destination:
-   - `output_atomic_spill` → `atomicAdd(&output[bin], …)`        *(direct-atomic; current behavior)*
-   - `private_block_spill` → `atomicAdd_block(&slab[bin], …)`    *(privatized; new)*
+`gmem_privatized_cuckoo` / `gmem_privatized_single_probe`: take the cuckoo /
+single-probe SMEM cache out of the `Direct` kernel and re-point its **miss** from
+`atomicAdd(&output[bin], …)` (device-scope, shared output) to
+`atomicAdd_block(&private_histogram[bin], …)` (block-scope, per-block copy), then let
+the existing gather merge the copies.
 
-   The probe ops (hash, slot, CAS, hit-combine, flush) become **spill-agnostic** and
-   are reused verbatim by both families. 3 probes × 2 spills = 6 behaviors from
-   3 + 2 small ops, no kernel duplication.
+Why the gap is worth filling:
 
-2. **The gather-merge `__device__` helper.** The
-   `for bin: total += base[b*num_bins + bin]; out[bin]=total` loop already lives in
-   `DeviceHistogramGmemPrivGatherKernel` (Phase 4) and in
-   `DeviceHistogramHybridSinglePassKernel` (the atomic-free reduce). Extract one
-   helper and call it from both — this removes **existing** duplication, and the
-   proposed path reuses it for free.
+- **`hybrid`'s SMEM tier is hotness-blind** — it dedicates ~49 152 slots to bins
+  `[0, split)` by index. On inputs whose hot bins are **scattered across the range**,
+  those slots sit on cold low-index bins while the hot bins pay the GMEM tier.
+- **`direct_{cuckoo,single_probe}` is hot-aware but its miss is contended** — a
+  device-scope atomic on the shared output, the expensive event the cache exists to
+  avoid.
+- **`gmem_priv_gather` spills contention-free but has no on-chip combiner** — every
+  sample pays a GMEM round-trip, which is why tuning never selects it.
 
-With those two extractions, the proposed path is **not a new kernel**. It is
-`gmem_priv_gather` instantiated with `{cuckoo | single_probe}` instead of the
-implicit `no_cache`, sharing the cache component with the direct-atomic kernel and
-the gather helper with hybrid.
+The proposed path is the missing combination: **hot-aware combining + contention-free
+spill**. It should win where hybrid is weakest (sparse / scattered hot bins) and lose
+where the active set is dense in `[0, split)` (hybrid's dedicated 4 B/slot mapping
+holds ~12× more bins than an 8–20 B tagged slot, with no CAS/hash/flush). The net
+winner per input shape is an empirical question for the sweep, not an a-priori one.
 
-### Where the cache lives so it serves both kernels
+## Anti-redundancy
 
-The cache front-end (probe + slot storage + init + flush) is the unit shared across
-families. Two realistic structures:
+Two extractions remove existing duplication and make the proposal free:
 
-- **(recommended) shared cache component, two kernels keep their own sweep.** The
-  direct-atomic standalone sweep (vectorized loads, warp-coalesce, MRU bracket
-  cache, software pipeline) and the `gmem_priv_gather` sweep stay separate; both
-  `#include` the same cache component, parameterized by their spill functor.
-  Minimal blast radius, both kernel names stay honest.
-- **(more aggressive) one spill-neutral sweep kernel** parameterized by
-  `<ProbeOp, SpillOp>`, with `direct_atomic` and `privatized` as the two spill
-  policies. Maximally unifying — it would let `gmem_priv_gather` reuse the *good*
-  (direct-atomic) sweep engine rather than its AgentHistogram path — but it renames
-  the kernel and reworks the enum vocabulary right after the team consolidated it
-  (`6a44b33f58`). Defer unless the sweep bodies prove near-identical.
+1. **Spill-agnostic probe ops.** Today each probe op (`cuckoo_cache_probe`,
+   `single_probe_cache`, `no_cache_probe`) hardcodes its miss as
+   `atomicAdd(&output[bin], …)`. Replace that with a `Spill` functor argument:
+   - `output_spill` → `atomicAdd(&output[bin], …)`        *(used by `DirectKernel`)*
+   - `private_spill` → `atomicAdd_block(&priv[bin], …)`   *(used by `GmemPrivatizedKernel`)*
 
-Start with the recommended structure; promote to the aggressive one only if a sweep
-shows `gmem_priv_gather`'s sweep is the bottleneck and the engines converge.
+   The probe ops (hash, slot, CAS, hit-combine, flush) become reusable verbatim
+   across both kernels. 3 combiners × 2 landings = 6 behaviors from 3 + 2 small ops.
+
+2. **Shared gather-merge helper.** The
+   `for bin: total += base[b*num_bins + bin]; out[bin] = total` reduce already exists
+   twice — `GmemPrivGatherKernel` (Phase 4) and `HybridSinglePassKernel` (the
+   atomic-free reduce). Extract one `__device__` helper; all `GmemPrivatized`
+   instantiations call it.
+
+The cache's dynamic-SMEM sizing (`cache_tuning::slots_floor`, occupancy-preserving
+growth) is reused **as a starting point** from the direct-atomic sizer — but whether
+that sizing is right for either kernel is an open question (see Cache sizing below).
 
 ## Dispatch integration
 
-Add `algorithm::gmem_priv_gather_cuckoo` / `…_single_probe` (or a `cache_mode`
-sub-field on `gmem_priv_gather`, mirroring `direct_atomic_cache_mode`). These select
-`gmem_priv_gather`'s existing temp-storage allocation (`num_blocks × num_bins ×
-sizeof(CounterT)`) plus the cache's dynamic-SMEM sizing
-(`cache_tuning::slots_floor` / occupancy-preserving growth — reused unchanged from
-the direct-atomic sizer). No new sizing logic.
-
-`select_algorithm` gains a rule, scoped to the tier in the next section, that picks
-the cached-gather path over hybrid / direct-atomic where it is the geomean winner.
+Add `algorithm::gmem_privatized_cuckoo` / `…_single_probe` and a `select_algorithm`
+rule scoped to the tier below. When selected, dispatch allocates the same
+`num_blocks × num_bins × sizeof(CounterT)` private-histogram temp storage that
+`gmem_priv_gather` uses, plus the cache's dynamic-SMEM reservation. No new sizing
+logic; the combiner and `smem_split` are template arguments threaded through the
+existing `GmemPrivatized` launch path.
 
 ## Scope / when selected
 
-Footprint bounds applicability: an adaptive cache can miss on **any** bin, so the
-privatized slab must be **full-size** (`num_blocks × num_bins`) — boundedness and
-hotness-blindness were the *same* decision in hybrid. At ~256 blocks:
+An associative cache can miss on **any** bin, so the private histogram must be
+**full-size** (`num_blocks × num_bins`) — boundedness and hotness-blindness were the
+same decision in hybrid. At ~256 blocks: 65 536 bins → ~64 MB (fine);
+1 048 576 bins → ~1 GB plus a gather that re-reads it all, where the init+gather tax
+dominates (the exact cost the high-bin `Direct` path was built to avoid).
 
-- 65 536 bins → ~64 MB slab: fine.
-- 1 048 576 bins → ~1 GB slab + a gather that re-reads it all: the init+gather tax
-  dominates (the exact cost the high-bin direct-atomic path was built to avoid).
+Target **single-channel, bins ≤ 65 536** (hybrid's regime). Multi-channel multiplies
+the private histogram by channel count — defer.
 
-So target **single-channel, bins ≤ 65 536** (hybrid's regime) and below.
-Multi-channel multiplies the slab by channel count — defer.
+## Cache sizing: an open question for BOTH cache kernels
+
+The existing `direct_atomic` sizer grows the cache only while occupancy stays at the
+floor occupancy ("free SMEM"), then stops. It **never tests growing past that point**
+at the cost of occupancy, so the code is silent on whether a bigger cache at lower
+occupancy would win. Its occupancy-preserving rule is a *geomean-over-the-input-mix,
+multi-channel* bet (most inputs gain nothing from extra slots, and occupancy matters
+on average) — not a proof that more SMEM never helps a *specific* skewed input.
+
+For a skewed input whose **hot set exceeds the slot floor**, growing the cache at the
+cost of occupancy plausibly helps — and this argument applies to **`Direct` and
+`GmemPrivatized` alike**, not just the proposed kernel:
+
+- More slots → more of the hot set is cached → fewer spills (identical mechanism in
+  both kernels).
+- Growth simultaneously *removes* misses and *lowers* occupancy — and for a kernel
+  that is latency-bound **on its misses**, the freed warps were hiding misses that no
+  longer exist. The lever partly self-justifies.
+
+The two kernels differ only at the margins, and the effects nearly cancel:
+
+| | `Direct` + cache | `GmemPrivatized` + cache |
+|---|---|---|
+| Occupancy cost of growth | **higher** — remaining misses are *contended* device atoms, more warp-hungry to hide | lower — misses are uncontended (block-scope into the cache-resident private copy) |
+| Benefit per captured bin | **higher** — each cached bin removes a *contended* spill | lower — removes only a cheap uncontended spill |
+| Gather rebate from lower occupancy | none (no gather) | **yes** — fewer blocks ⇒ smaller `num_blocks × num_bins` init + gather |
+
+The first two rows pull opposite ways and roughly cancel, so there is **no clean
+"only GmemPrivatized wants a big cache" asymmetry**. The one durable difference is the
+gather rebate: lower occupancy shrinks `GmemPrivatized`'s dominant overhead, while
+`Direct` gets nothing back for lost occupancy. That nudges `GmemPrivatized` toward a
+larger-cache / lower-occupancy operating point — but it is a weak, bin-count-limited
+effect, not a qualitative split.
+
+Growth is net-negative for *either* kernel only when it fails to raise the hit rate:
+the hot set already fits the floor (most inputs), or it is so large nothing helps
+(uniform ~1M bins, cache ≈0% effective at any size). Neither is the scattered-
+moderate-hot-set regime this kernel targets.
+
+**Conclusion:** treat "grow the cache past the occupancy-free point" as an unresolved,
+measurable question for both cache kernels, not as settled by the current sizer. The
+prerequisite sweep below tests it directly.
 
 ## Evaluation plan
 
-Use the existing sweep harness in the `hist-sweep-viz` worktree:
+Use the sweep harness in the `hist-sweep-viz` worktree.
 
-1. Add `private_block_spill`, make the probe ops spill-agnostic, and add the cache
-   front-end + gather to the `gmem_priv_gather` path.
-2. Force-select via the env hook (`sweep_force_is(...)` / `CUB_HISTO_FORCE_SLOTS`) —
-   no tuning changes yet.
-3. Sweep the input-shape axis (uniform / constant / skewed / **scattered hot bins**)
-   × bin count {16 384, 65 536} against `hybrid_single_pass` and
-   `direct_atomic_{cuckoo,single_probe}`.
+**Step 0 (prerequisite — no new code): does a bigger cache at lower occupancy help
+the EXISTING `direct_{cuckoo,single_probe}` kernel?** This gates the whole proposal.
+If forcing the cache past the occupancy-free point never helps even `Direct`, the
+"more SMEM, less occupancy" premise is dead and `GmemPrivatized`+cache inherits a
+weaker case. The knobs already exist — no kernel changes:
+  - `CUB_HISTO_FORCE_SLOTS` to push slots past the sizer's free point;
+  - the `minBlocks` launch-bound hint (or `CUB_HISTO_FORCE_DA_THREADS`) to force the
+    low-occupancy operating point;
+  - sweep on **skewed / scattered-hot-bin** inputs at 16 384 / 65 536 bins;
+  - capture `ncu` L2-atomic-latency and cache-hit-rate counters to confirm *why* it
+    moves, not just that it moves.
+  Run this for `Direct` first; if it shows a win band, repeat the same forced sweep
+  for `GmemPrivatized`+cache once it exists (step 2) to test the gather-rebate edge.
+
+1. Make the probe ops spill-agnostic; add `private_spill`; wire the cache front-end +
+   shared gather into the `GmemPrivatized` path.
+2. Force-select via the env hook (`sweep_force_is(...)` / `CUB_HISTO_FORCE_SLOTS`); no
+   tuning changes yet. Sweep the cache size × occupancy operating point for the new
+   kernel as in Step 0, not just the occupancy-preserving default.
+3. Sweep input shape (uniform / constant / skewed / **scattered hot bins**) ×
+   bin count {16 384, 65 536} against `hybrid_single_pass` and
+   `direct_{cuckoo,single_probe}`.
 4. Promote into `select_algorithm` only for cells where it is the geomean winner;
-   otherwise keep it selectable-but-unselected.
+   otherwise leave it selectable-but-unselected (like `gmem_priv_gather` today).
 
 ## Risks / open questions
 
-- **Gather tax vs contention saved.** Below the contention regime the gather may
-  cost more than the device-scope atomics it removes; the sweep decides. This is the
-  same reason `gmem_priv_gather` is unselected today — the cache has to tip it.
-- **Does the cache rescue `gmem_priv_gather` at all?** If the privatized spill was
-  never the bottleneck (the *absence* of on-chip combining was), adding a cache may
-  make it competitive — or may just confirm hybrid/direct-atomic already cover the
-  space. Acceptable either way: worst case we've A/B-tested the cache's value
-  against a contention-free spill.
-- **Slab zeroing** adds a Phase-1 cost proportional to `num_blocks × num_bins`,
-  partly hidden behind the cooperative launch but not free.
-- **Win region exists?** If dense-`[0,split)` inputs dominate the benchmark mix,
-  hybrid's dedicated 4 B/slot mapping (holds ~12× more bins than an 8–20 B tagged
-  slot, no CAS/hash/flush) wins every cell and this stays unselected. The value then
-  is closing the (combiner × spill) matrix and giving `gmem_priv_gather` a reason to
-  exist.
+- **Gather tax vs contention saved.** Below the contention regime the gather may cost
+  more than the device-scope atomics it removes — the same reason `gmem_priv_gather`
+  is unselected today. The cache has to tip that balance; the sweep decides.
+- **Does the cache rescue the privatized path at all?** If the bottleneck was the
+  *absence* of combining (not the spill), the cache may make it competitive — or just
+  confirm hybrid / direct already cover the space. Either outcome is informative.
+- **Static-SMEM specialization.** Keeping `SmemPrivatizedKernel`'s compile-time
+  256-bin static path (the hot byte-sample image case) means `smem_privatized` is one
+  enum but two codegen paths; do not let the unification force that tier onto dynamic
+  SMEM.
+- **Win region may be empty.** If dense-`[0, split)` inputs dominate the benchmark
+  mix, hybrid wins every measured cell and this stays unselected. The residual value
+  is then closing the (combiner × landing) matrix and giving the privatized-cache
+  cell a measured verdict.
