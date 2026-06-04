@@ -80,44 +80,6 @@ inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Typ
 template <class... _Types>
 inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Types> && ...);
 
-// Traits forwarding to `__tuple_types`
-template <class, class>
-inline constexpr bool __tuple_types_same_size = false;
-
-template <class... _Types, class... _UTypes>
-inline constexpr bool __tuple_types_same_size<__tuple_types<_Types...>, __tuple_types<_UTypes...>> =
-  sizeof...(_Types) == sizeof...(_UTypes);
-
-// __tuple_assignable
-template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
-inline constexpr bool __tuple_types_assignable = false;
-
-template <class... _From, class... _To>
-inline constexpr bool __tuple_types_assignable<__tuple_types<_From...>, __tuple_types<_To...>, true> =
-  (is_assignable_v<_To, _From> && ...);
-
-template <class _From, class _To, bool = __tuple_like_ext<remove_reference_t<_From>>, bool = __tuple_like_ext<_To>>
-inline constexpr bool __tuple_assignable = false;
-
-template <class _From, class _To>
-inline constexpr bool __tuple_assignable<_From, _To, true, true> =
-  __tuple_types_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
-
-// __tuple_nothrow_assignable
-template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
-inline constexpr bool __tuple_types_nothrow_assignable = false;
-
-template <class... _From, class... _To>
-inline constexpr bool __tuple_types_nothrow_assignable<__tuple_types<_From...>, __tuple_types<_To...>, true> =
-  (is_nothrow_assignable_v<_To, _From> && ...);
-
-template <class _From, class _To, bool = __tuple_assignable<_From, _To>>
-inline constexpr bool __tuple_nothrow_assignable = false;
-
-template <class _From, class _To>
-inline constexpr bool __tuple_nothrow_assignable<_From, _To, true> =
-  __tuple_types_nothrow_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
-
 // __tuple_like_with_size
 template <class _Tuple, size_t _ExpectedSize, bool = __tuple_like<_Tuple>>
 inline constexpr bool __tuple_like_with_size = false;
