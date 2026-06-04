@@ -367,10 +367,11 @@ public:
       {
         cudaGetDevice(&device); // We will use this to force it during the next run
         // Events must be created here to avoid issues with multi-gpu.
-        // cudaEventCreate keeps the runtime-status form: it is an overload set
-        // (cuda_runtime.h adds a flags overload), so cuda_try<cudaEventCreate> cannot name it.
-        cuda_try(cudaEventCreate(&start_event));
-        cuda_try(cudaEventCreate(&end_event));
+        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
+        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         cuda_try<cudaEventRecord>(start_event, t.get_stream());
       }
     }
