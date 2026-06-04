@@ -275,6 +275,10 @@ __tuple_select_variadic_constructible_less_rank(__tuple_types<_Types...>, __tupl
   {
     return __select_constructor::__none;
   }
+  else if constexpr (sizeof...(_UTypes) == 0)
+  {
+    return __select_constructor::__none;
+  }
   else
   {
     using __arg_list       = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
