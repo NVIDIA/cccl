@@ -7,22 +7,24 @@
 //
 //===----------------------------------------------------------------------===//
 
+// REQUIRES: enable-tile
+
 #include <cuda/std/cassert>
 #include <cuda/std/variant>
 
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_DEVICE_FUNC void test()
+TEST_TILE_FUNC void test()
 {
-  using variant = cuda::std::variant<device_only_type>;
+  using variant = cuda::std::variant<tile_only_type>;
   { // default construction
     variant default_constructed{};
     assert(cuda::std::get<0>(default_constructed) == 0);
   }
 
   { // value initialization
-    variant value_initialization{device_only_type{42}};
+    variant value_initialization{tile_only_type{42}};
     assert(cuda::std::get<0>(value_initialization) == 42);
   }
 
@@ -32,7 +34,7 @@ TEST_DEVICE_FUNC void test()
   }
 
   { // in_place_type_t initialization
-    variant in_place_initialization{cuda::std::in_place_type_t<device_only_type>{}, 42};
+    variant in_place_initialization{cuda::std::in_place_type_t<tile_only_type>{}, 42};
     assert(cuda::std::get<0>(in_place_initialization) == 42);
   }
 
@@ -43,7 +45,7 @@ TEST_DEVICE_FUNC void test()
 
   { // in_place_type_t initializer_list initialization
     variant init_list_initialization{
-      cuda::std::in_place_type_t<device_only_type>{}, cuda::std::initializer_list<int>{}, 42};
+      cuda::std::in_place_type_t<tile_only_type>{}, cuda::std::initializer_list<int>{}, 42};
     assert(cuda::std::get<0>(init_list_initialization) == 42);
   }
 
@@ -73,7 +75,7 @@ TEST_DEVICE_FUNC void test()
 
   { // emplace
     variant var{42};
-    var.emplace<device_only_type>(42);
+    var.emplace<tile_only_type>(42);
     assert(cuda::std::get<0>(var) == 42);
   }
 
@@ -85,7 +87,7 @@ TEST_DEVICE_FUNC void test()
 
   { // emplace init list
     variant var{42};
-    var.emplace<device_only_type>(cuda::std::initializer_list<int>{}, 42);
+    var.emplace<tile_only_type>(cuda::std::initializer_list<int>{}, 42);
     assert(cuda::std::get<0>(var) == 42);
   }
 
@@ -113,7 +115,7 @@ TEST_DEVICE_FUNC void test()
   }
 }
 
-__global__ void test_kernel()
+__tile_global__ void test_kernel()
 {
   test();
 }

@@ -7,15 +7,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+// REQUIRES: enable-tile
+
 #include <cuda/std/cassert>
 #include <cuda/std/expected>
 
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_DEVICE_FUNC void test()
+TEST_TILE_FUNC void test()
 {
-  using unexpected = cuda::std::unexpected<device_only_type>;
+  using unexpected = cuda::std::unexpected<tile_only_type>;
   { // in_place zero initialization
     unexpected in_place_zero_initialization{cuda::std::in_place};
     assert(in_place_zero_initialization.error() == 0);
@@ -75,7 +77,7 @@ TEST_DEVICE_FUNC void test()
   }
 }
 
-__global__ void test_kernel()
+__tile_global__ void test_kernel()
 {
   test();
 }

@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// REQUIRES: enable-tile
+
 // We cannot suppress execution checks in cuda::std::construct_at
 // UNSUPPORTED: clang-14
 
@@ -18,7 +20,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_DEVICE_FUNC void test()
+TEST_TILE_FUNC void test()
 {
   using optional = cuda::std::optional<T>;
   { // default construction
@@ -104,20 +106,20 @@ TEST_DEVICE_FUNC void test()
 
   { // comparison with type
     optional opt{val};
-    assert(opt == device_only_type{val});
-    assert(device_only_type{val} == opt);
-    assert(opt != device_only_type{other_val});
-    assert(device_only_type{other_val} != opt);
+    assert(opt == tile_only_type{val});
+    assert(tile_only_type{val} == opt);
+    assert(opt != tile_only_type{other_val});
+    assert(tile_only_type{other_val} != opt);
 
-    assert(opt < device_only_type{other_val});
-    assert(device_only_type{7} < opt);
-    assert(opt <= device_only_type{other_val});
-    assert(device_only_type{7} <= opt);
+    assert(opt < tile_only_type{other_val});
+    assert(tile_only_type{7} < opt);
+    assert(opt <= tile_only_type{other_val});
+    assert(tile_only_type{7} <= opt);
 
-    assert(opt > device_only_type{7});
-    assert(device_only_type{other_val} > opt);
-    assert(opt >= device_only_type{7});
-    assert(device_only_type{other_val} >= opt);
+    assert(opt > tile_only_type{7});
+    assert(tile_only_type{other_val} > opt);
+    assert(opt >= tile_only_type{7});
+    assert(tile_only_type{other_val} >= opt);
   }
 
   { // swap
@@ -133,13 +135,13 @@ TEST_DEVICE_FUNC void test()
   }
 }
 
-TEST_DEVICE_FUNC void test()
+TEST_TILE_FUNC void test()
 {
-  test<device_only_type>();
-  test<device_only_type&>();
+  test<tile_only_type>();
+  test<tile_only_type&>();
 }
 
-__global__ void test_kernel()
+__tile_global__ void test_kernel()
 {
   test();
 }

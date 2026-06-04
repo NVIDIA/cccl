@@ -7,7 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// We cannot suppress execution checks in cuda::std::construct_at
+// REQUIRES: enable-tile
+
 // UNSUPPORTED: clang-14
 
 #include <cuda/std/cassert>
@@ -17,31 +18,17 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_DEVICE_FUNC void test()
+TEST_TILE_FUNC void test()
 {
-  using expected = cuda::std::expected<device_only_type, device_only_type>;
+  using expected = cuda::std::expected<void, tile_only_type>;
   { // default construction
     expected default_constructed{};
     assert(default_constructed.has_value());
-    assert(*default_constructed == 0);
   }
 
   { // in_place zero initialization
     expected in_place_zero_initialization{cuda::std::in_place};
     assert(in_place_zero_initialization.has_value());
-    assert(*in_place_zero_initialization == 0);
-  }
-
-  { // in_place initialization
-    expected in_place_initialization{cuda::std::in_place, 42};
-    assert(in_place_initialization.has_value());
-    assert(*in_place_initialization == 42);
-  }
-
-  { // initializer_list initialization
-    expected init_list_initialization{cuda::std::in_place, cuda::std::initializer_list<int>{}, 42};
-    assert(init_list_initialization.has_value());
-    assert(*init_list_initialization == 42);
   }
 
   { // unexpect zero initialization
@@ -56,54 +43,43 @@ TEST_DEVICE_FUNC void test()
     assert(in_place_initialization.error() == 42);
   }
 
-  { // initializer_list initialization
+  { // unexpect initializer_list initialization
     expected init_list_initialization{cuda::std::unexpect, cuda::std::initializer_list<int>{}, 42};
     assert(!init_list_initialization.has_value());
     assert(init_list_initialization.error() == 42);
   }
 
-  { // value initialization
-    expected value_initialization{42};
-    assert(value_initialization.has_value());
-    assert(*value_initialization == 42);
-  }
-
   { // copy construction
-    expected input{42};
+    expected input{cuda::std::in_place};
     expected dest{input};
     assert(dest.has_value());
-    assert(*dest == 42);
   }
 
   { // move construction
-    expected input{42};
+    expected input{cuda::std::in_place};
     expected dest{cuda::std::move(input)};
     assert(dest.has_value());
-    assert(*dest == 42);
   }
 
   { // assignment, value to value
-    expected input{42};
-    expected dest{1337};
+    expected input{cuda::std::in_place};
+    expected dest{cuda::std::in_place};
     dest = input;
     assert(dest.has_value());
-    assert(*dest == 42);
   }
 
   { // assignment, value to empty
-    expected input{42};
+    expected input{cuda::std::in_place};
     expected dest{};
     dest = input;
     assert(dest.has_value());
-    assert(*dest == 42);
   }
 
   { // assignment, empty to value
     expected input{};
-    expected dest{1337};
+    expected dest{cuda::std::in_place};
     dest = input;
     assert(dest.has_value());
-    assert(*dest == 0);
   }
 
   { // assignment, empty to empty
@@ -111,23 +87,21 @@ TEST_DEVICE_FUNC void test()
     expected dest{};
     dest = input;
     assert(dest.has_value());
-    assert(*dest == 0);
   }
 
   { // assignment, error to value
     expected input{cuda::std::unexpect, 42};
-    expected dest{1337};
+    expected dest{cuda::std::in_place};
     dest = input;
     assert(!dest.has_value());
     assert(dest.error() == 42);
   }
 
   { // assignment, value to error
-    expected input{42};
+    expected input{cuda::std::in_place};
     expected dest{cuda::std::unexpect, 1337};
     dest = input;
     assert(dest.has_value());
-    assert(*dest == 42);
   }
 
   { // assignment, error to error
@@ -139,10 +113,10 @@ TEST_DEVICE_FUNC void test()
   }
 
   { // comparison with expected with value
-    expected lhs{42};
-    expected rhs{1337};
-    assert(!(lhs == rhs));
-    assert(lhs != rhs);
+    expected lhs{cuda::std::in_place};
+    expected rhs{cuda::std::in_place};
+    assert(lhs == rhs);
+    assert(!(lhs != rhs));
   }
 
   { // comparison with expected with error
@@ -152,48 +126,40 @@ TEST_DEVICE_FUNC void test()
     assert(lhs != rhs);
   }
 
-  { // comparison with type and value
-    expected expect{42};
-    assert(expect == device_only_type{42});
-    assert(device_only_type{42} == expect);
-    assert(expect != device_only_type{1337});
-    assert(device_only_type{1337} != expect);
-  }
-
   { // comparison with type and error
     expected expect{cuda::std::unexpect, 42};
-    assert(expect == cuda::std::unexpected<device_only_type>{42});
-    assert(cuda::std::unexpected<device_only_type>{42} == expect);
-    assert(expect != cuda::std::unexpected<device_only_type>{1337});
-    assert(cuda::std::unexpected<device_only_type>{1337} != expect);
+    assert(expect == cuda::std::unexpected<tile_only_type>{42});
+    assert(cuda::std::unexpected<tile_only_type>{42} == expect);
+    assert(expect != cuda::std::unexpected<tile_only_type>{1337});
+    assert(cuda::std::unexpected<tile_only_type>{1337} != expect);
   }
 
   { // swap
-    expected lhs{42};
-    expected rhs{1337};
-    lhs.swap(rhs);
-    assert(*lhs == 1337);
-    assert(*rhs == 42);
-
-    swap(lhs, rhs);
-    assert(*lhs == 42);
-    assert(*rhs == 1337);
-  }
-
-  { // swap cross error
-    expected lhs{42};
+    expected lhs{cuda::std::unexpect, 42};
     expected rhs{cuda::std::unexpect, 1337};
     lhs.swap(rhs);
     assert(lhs.error() == 1337);
-    assert(*rhs == 42);
+    assert(rhs.error() == 42);
 
     swap(lhs, rhs);
-    assert(*lhs == 42);
+    assert(lhs.error() == 42);
+    assert(rhs.error() == 1337);
+  }
+
+  { // swap cross error
+    expected lhs{cuda::std::in_place};
+    expected rhs{cuda::std::unexpect, 1337};
+    lhs.swap(rhs);
+    assert(lhs.error() == 1337);
+    assert(rhs.has_value());
+
+    swap(lhs, rhs);
+    assert(lhs.has_value());
     assert(rhs.error() == 1337);
   }
 }
 
-__global__ void test_kernel()
+__tile_global__ void test_kernel()
 {
   test();
 }

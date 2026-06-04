@@ -7,22 +7,24 @@
 //
 //===----------------------------------------------------------------------===//
 
+// REQUIRES: enable-tile
+
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_DEVICE_FUNC void test()
+TEST_TILE_FUNC void test()
 {
-  using tuple = cuda::std::tuple<device_only_type>;
+  using tuple = cuda::std::tuple<tile_only_type>;
   { // default construction
     tuple default_constructed{};
     assert(cuda::std::get<0>(default_constructed) == 0);
   }
 
   { // value initialization
-    tuple value_initialization{device_only_type{42}};
+    tuple value_initialization{tile_only_type{42}};
     assert(cuda::std::get<0>(value_initialization) == 42);
   }
 
@@ -74,7 +76,7 @@ TEST_DEVICE_FUNC void test()
   }
 }
 
-__global__ void test_kernel()
+__tile_global__ void test_kernel()
 {
   test();
 }

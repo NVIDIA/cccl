@@ -16,7 +16,6 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-#if _CCCL_DEVICE_COMPILATION()
 TEST_DEVICE_FUNC void test()
 {
   using expected = cuda::std::expected<void, device_only_type>;
@@ -157,10 +156,14 @@ TEST_DEVICE_FUNC void test()
     assert(rhs.error() == 1337);
   }
 }
-#endif // _CCCL_DEVICE_COMPILATION()
+
+__global__ void test_kernel()
+{
+  test();
+}
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(NV_IS_DEVICE, (test();))
+  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>();))
   return 0;
 }

@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// REQUIRES: enable-tile
+
 // We cannot suppress execution checks in cuda::std::construct_at
 // UNSUPPORTED: clang-14
 
@@ -17,9 +19,9 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_DEVICE_FUNC void test()
+TEST_TILE_FUNC void test()
 {
-  using expected = cuda::std::expected<device_only_type, device_only_type>;
+  using expected = cuda::std::expected<tile_only_type, tile_only_type>;
   { // default construction
     expected default_constructed{};
     assert(default_constructed.has_value());
@@ -154,18 +156,18 @@ TEST_DEVICE_FUNC void test()
 
   { // comparison with type and value
     expected expect{42};
-    assert(expect == device_only_type{42});
-    assert(device_only_type{42} == expect);
-    assert(expect != device_only_type{1337});
-    assert(device_only_type{1337} != expect);
+    assert(expect == tile_only_type{42});
+    assert(tile_only_type{42} == expect);
+    assert(expect != tile_only_type{1337});
+    assert(tile_only_type{1337} != expect);
   }
 
   { // comparison with type and error
     expected expect{cuda::std::unexpect, 42};
-    assert(expect == cuda::std::unexpected<device_only_type>{42});
-    assert(cuda::std::unexpected<device_only_type>{42} == expect);
-    assert(expect != cuda::std::unexpected<device_only_type>{1337});
-    assert(cuda::std::unexpected<device_only_type>{1337} != expect);
+    assert(expect == cuda::std::unexpected<tile_only_type>{42});
+    assert(cuda::std::unexpected<tile_only_type>{42} == expect);
+    assert(expect != cuda::std::unexpected<tile_only_type>{1337});
+    assert(cuda::std::unexpected<tile_only_type>{1337} != expect);
   }
 
   { // swap
@@ -193,7 +195,7 @@ TEST_DEVICE_FUNC void test()
   }
 }
 
-__global__ void test_kernel()
+__tile_global__ void test_kernel()
 {
   test();
 }
