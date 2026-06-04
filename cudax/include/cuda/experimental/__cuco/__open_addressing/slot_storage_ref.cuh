@@ -51,6 +51,10 @@ struct __slot_storage_ref
 {
   using __size_type = ::cuda::std::size_t;
 
+  static_assert(_BucketSize > 0, "_BucketSize must be greater than zero");
+  static_assert(_Extent == ::cuda::std::dynamic_extent || _Extent % _BucketSize == 0,
+                "Static _Extent must be divisible by _BucketSize");
+
   // Bucket count: static when `_Extent` is, dynamic otherwise.
   static constexpr __size_type __num_buckets_v =
     (_Extent == ::cuda::std::dynamic_extent) ? ::cuda::std::dynamic_extent : (_Extent / _BucketSize);

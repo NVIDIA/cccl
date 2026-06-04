@@ -343,11 +343,11 @@ public:
   template <class CG>
   _CCCL_DEVICE constexpr void initialize(CG __tile) noexcept
   {
-    auto __tid          = __tile.thread_rank();
-    const auto __extent = static_cast<__size_type>(this->extent());
+    auto __tid             = __tile.thread_rank();
+    const auto __num_slots = this->capacity();
 
     auto* const __slots_ptr = this->storage_ref().data();
-    while (__tid < __extent)
+    while (__tid < __num_slots)
     {
       __slots_ptr[__tid] = this->empty_slot_sentinel();
       __tid += __tile.size();

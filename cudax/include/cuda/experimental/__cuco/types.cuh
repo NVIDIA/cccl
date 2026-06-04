@@ -33,19 +33,19 @@ namespace cuda::experimental::cuco
 template <class _Key>
 struct empty_key : public ::cuda::experimental::cuco::__strong_type<_Key>
 {
-  _CCCL_HOST_DEVICE_API explicit constexpr empty_key(_Key __value)
+  _CCCL_HOST_DEVICE_API explicit constexpr empty_key(_Key __value) noexcept
       : ::cuda::experimental::cuco::__strong_type<_Key>(__value)
   {}
 };
 
 //! @brief Strong type wrapper for an empty value sentinel.
 //!
-//! @tparam _T The mapped value type
-template <class _T>
-struct empty_value : public ::cuda::experimental::cuco::__strong_type<_T>
+//! @tparam _Tp The mapped value type
+template <class _Tp>
+struct empty_value : public ::cuda::experimental::cuco::__strong_type<_Tp>
 {
-  _CCCL_HOST_DEVICE_API explicit constexpr empty_value(_T __value)
-      : ::cuda::experimental::cuco::__strong_type<_T>(__value)
+  _CCCL_HOST_DEVICE_API explicit constexpr empty_value(_Tp __value) noexcept
+      : ::cuda::experimental::cuco::__strong_type<_Tp>(__value)
   {}
 };
 
@@ -55,7 +55,7 @@ struct empty_value : public ::cuda::experimental::cuco::__strong_type<_T>
 template <class _Key>
 struct erased_key : public ::cuda::experimental::cuco::__strong_type<_Key>
 {
-  _CCCL_HOST_DEVICE_API explicit constexpr erased_key(_Key __value)
+  _CCCL_HOST_DEVICE_API explicit constexpr erased_key(_Key __value) noexcept
       : ::cuda::experimental::cuco::__strong_type<_Key>(__value)
   {}
 };

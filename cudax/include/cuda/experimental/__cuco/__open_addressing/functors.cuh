@@ -69,25 +69,29 @@ struct __slot_is_filled
   {}
 
   template <class _Slot>
-  _CCCL_DEVICE constexpr bool operator()(_Slot __slot) const noexcept
+  _CCCL_DEVICE static constexpr auto __slot_key(_Slot __slot) noexcept
   {
-    const auto __key = [&]() {
-      if constexpr (_HasPayload)
+    if constexpr (_HasPayload)
+    {
+      if constexpr (::cuda::experimental::cuco::__detail::__is_pair_like<_Slot>::value)
       {
-        if constexpr (::cuda::experimental::cuco::__detail::__is_pair_like<_Slot>::value)
-        {
-          return ::cuda::std::get<0>(__slot);
-        }
-        else
-        {
-          return __slot.first;
-        }
+        return ::cuda::std::get<0>(__slot);
       }
       else
       {
-        return __slot;
+        return __slot.first;
       }
-    }();
+    }
+    else
+    {
+      return __slot;
+    }
+  }
+
+  template <class _Slot>
+  _CCCL_DEVICE constexpr bool operator()(_Slot __slot) const noexcept
+  {
+    const auto __key = __slot_key(__slot);
 
     return !(__detail::__bitwise_compare(__key, __empty_sentinel)
              || __detail::__bitwise_compare(__key, __erased_sentinel));

@@ -380,10 +380,11 @@ __count(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n
     {
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
         ::cooperative_groups::this_thread_block());
-      auto __count_val = __ref.count(__tile, *(__first + __idx));
+      const auto __tile_count = ::cooperative_groups::reduce(
+        __tile, __ref.count(__tile, *(__first + __idx)), ::cooperative_groups::plus<typename _Ref::size_type>());
       if (__tile.thread_rank() == 0)
       {
-        __thread_count += __count_val;
+        __thread_count += __tile_count;
       }
     }
     __idx += __loop_stride;

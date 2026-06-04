@@ -535,12 +535,19 @@ public:
     __impl.make_copy(__tile, __memory_to_use);
     using __new_ref_type    = static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
     auto __new_storage_span = typename __new_ref_type::storage_span_type{__memory_to_use, capacity()};
-    return __new_ref_type{
-      empty_key{empty_key_sentinel()},
-      empty_value{empty_value_sentinel()},
-      key_eq(),
-      __impl.probing_scheme(),
-      __new_storage_span};
+    return ::cuda::experimental::cuco::__detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __new_ref_type{empty_key{empty_key_sentinel()},
+                            empty_value{empty_value_sentinel()},
+                            key_eq(),
+                            __impl.probing_scheme(),
+                            __new_storage_span}
+           : __new_ref_type{
+               empty_key{empty_key_sentinel()},
+               empty_value{empty_value_sentinel()},
+               erased_key{erased_key_sentinel()},
+               key_eq(),
+               __impl.probing_scheme(),
+               __new_storage_span};
   }
 
   //! @brief Initializes the map storage using `__tile`. Synchronizes the tile.
@@ -553,20 +560,41 @@ public:
   template <class _NewKeyEqual>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto rebind_key_eq(_NewKeyEqual const& __key_equal) const noexcept
   {
-    return static_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>{
-      empty_key{empty_key_sentinel()},
-      empty_value{empty_value_sentinel()},
-      __key_equal,
-      __impl.probing_scheme(),
-      storage_span()};
+    using __new_ref_type = static_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
+    return ::cuda::experimental::cuco::__detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __new_ref_type{empty_key{empty_key_sentinel()},
+                            empty_value{empty_value_sentinel()},
+                            __key_equal,
+                            __impl.probing_scheme(),
+                            storage_span()}
+           : __new_ref_type{
+               empty_key{empty_key_sentinel()},
+               empty_value{empty_value_sentinel()},
+               erased_key{erased_key_sentinel()},
+               __key_equal,
+               __impl.probing_scheme(),
+               storage_span()};
   }
 
   template <class _NewHash>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto rebind_hash_function(_NewHash const& __hash) const
   {
-    auto __new_probing = _ProbingScheme{__hash};
-    return static_map_ref<_Key, _Tp, _Scope, _KeyEqual, decltype(__new_probing), _BucketSize, _Capacity>{
-      empty_key{empty_key_sentinel()}, empty_value{empty_value_sentinel()}, key_eq(), __new_probing, storage_span()};
+    auto __new_probing = __impl.probing_scheme().rebind_hash_function(__hash);
+    using __new_ref_type =
+      static_map_ref<_Key, _Tp, _Scope, _KeyEqual, decltype(__new_probing), _BucketSize, _Capacity>;
+    return ::cuda::experimental::cuco::__detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __new_ref_type{empty_key{empty_key_sentinel()},
+                            empty_value{empty_value_sentinel()},
+                            key_eq(),
+                            __new_probing,
+                            storage_span()}
+           : __new_ref_type{
+               empty_key{empty_key_sentinel()},
+               empty_value{empty_value_sentinel()},
+               erased_key{erased_key_sentinel()},
+               key_eq(),
+               __new_probing,
+               storage_span()};
   }
 };
 } // namespace cuda::experimental::cuco

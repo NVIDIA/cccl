@@ -152,6 +152,10 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   while (!__is_prime(__n))
   {
+    if (__n > ~0ull - 2ull)
+    {
+      return __n;
+    }
     __n += 2ull;
   }
 

@@ -140,34 +140,29 @@ private:
   }
 
   //! @brief Allocates and zeros a single device counter using the memory resource.
-  [[nodiscard]] _CCCL_HOST __size_type* __make_counter(::cuda::stream_ref __stream) const
+  //! @brief Allocates and zero-initializes an RAII device counter.
+  [[nodiscard]] _CCCL_HOST ::cuda::device_buffer<__size_type> __make_counter(::cuda::stream_ref __stream) const
   {
-    auto* __counter = static_cast<__size_type*>(__memory_resource.allocate(__stream, sizeof(__size_type)));
+    ::cuda::device_buffer<__size_type> __counter{__stream, __memory_resource, 1, ::cuda::no_init};
     _CCCL_TRY_CUDA_API(
-      cudaMemsetAsync, "Failed to zero device counter", __counter, 0, sizeof(__size_type), __stream.get());
+      cudaMemsetAsync, "Failed to zero device counter", __counter.data(), 0, sizeof(__size_type), __stream.get());
     return __counter;
   }
 
-  //! @brief Frees a device counter allocated by `__make_counter`.
-  _CCCL_HOST void __free_counter(__size_type* __counter, ::cuda::stream_ref __stream) const
-  {
-    __memory_resource.deallocate(__stream, __counter, sizeof(__size_type));
-  }
-
-  //! @brief Reads a device counter to host and frees it.
-  [[nodiscard]] _CCCL_HOST __size_type __read_counter(__size_type* __counter, ::cuda::stream_ref __stream) const
+  //! @brief Reads a device counter to host.
+  [[nodiscard]] _CCCL_HOST __size_type
+  __read_counter(const ::cuda::device_buffer<__size_type>& __counter, ::cuda::stream_ref __stream) const
   {
     __size_type __result;
     _CCCL_TRY_CUDA_API(
       cudaMemcpyAsync,
       "Failed to copy counter to host",
       &__result,
-      __counter,
+      __counter.data(),
       sizeof(__size_type),
       cudaMemcpyDeviceToHost,
       __stream.get());
     __stream.sync();
-    __free_counter(__counter, __stream);
     return __result;
   }
 
@@ -188,13 +183,13 @@ private:
       return 0;
     }
 
-    auto* __counter = __make_counter(__stream);
+    auto __counter = __make_counter(__stream);
 
     const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
     __open_addressing::__count<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __as_atomic(__counter), __container_ref);
+        __first, __num_keys, __as_atomic(__counter.data()), __container_ref);
 
     return __read_counter(__counter, __stream);
   }
@@ -234,7 +229,7 @@ private:
       return {__output_probe, __output_match};
     }
 
-    auto* __counter = __make_counter(__stream);
+    auto __counter = __make_counter(__stream);
 
     constexpr auto __block_size  = ::cuda::experimental::cuco::__detail::__default_block_size();
     constexpr auto __grid_stride = 1;
@@ -242,7 +237,7 @@ private:
       ::cuda::experimental::cuco::__detail::__grid_size(__n, __cg_size, __grid_stride, __block_size);
 
     __open_addressing::__retrieve<__block_size><<<__grid_size, __block_size, 0, __stream.get()>>>(
-      __first, __n, __output_probe, __output_match, __as_atomic(__counter), __container_ref);
+      __first, __n, __output_probe, __output_match, __as_atomic(__counter.data()), __container_ref);
 
     const auto __num_retrieved = __read_counter(__counter, __stream);
     return {__output_probe + __num_retrieved, __output_match + __num_retrieved};
@@ -368,13 +363,13 @@ public:
       return 0;
     }
 
-    auto* __counter = __make_counter(__stream);
+    auto __counter = __make_counter(__stream);
 
     const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
 
     __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __as_atomic(__counter), __container_ref);
+        __first, __num_keys, __stencil, __pred, __as_atomic(__counter.data()), __container_ref);
 
     return __read_counter(__counter, __stream);
   }
@@ -556,7 +551,7 @@ public:
 
     ::cuda::experimental::cuco::__detail::__index_type __h_num_out{0};
 
-    auto* __d_num_out = static_cast<__size_type*>(__memory_resource.allocate(__stream, sizeof(__size_type)));
+    ::cuda::device_buffer<__size_type> __d_num_out{__stream, __memory_resource, 1, ::cuda::no_init};
 
     auto const __storage_ref = this->storage_ref();
 
@@ -575,7 +570,7 @@ public:
       ::cuda::std::size_t __temp_storage_bytes = 0;
 
       _CCCL_TRY_CUDA_API(
-        cudaMemsetAsync, "Failed to zero device counter", __d_num_out, 0, sizeof(__size_type), __stream.get());
+        cudaMemsetAsync, "Failed to zero device counter", __d_num_out.data(), 0, sizeof(__size_type), __stream.get());
 
       _CCCL_TRY_CUDA_API(
         cub::DeviceSelect::If,
@@ -584,33 +579,31 @@ public:
         __temp_storage_bytes,
         __begin,
         __output_begin + __h_num_out,
-        __d_num_out,
+        __d_num_out.data(),
         static_cast<::cuda::std::int32_t>(__num_items),
         __is_filled,
         __stream.get());
 
-      auto* __d_temp_storage = static_cast<char*>(__memory_resource.allocate(__stream, __temp_storage_bytes));
+      ::cuda::device_buffer<char> __d_temp_storage{__stream, __memory_resource, __temp_storage_bytes, ::cuda::no_init};
 
       _CCCL_TRY_CUDA_API(
         cub::DeviceSelect::If,
         "Failed in DeviceSelect::If",
-        __d_temp_storage,
+        __d_temp_storage.data(),
         __temp_storage_bytes,
         __begin,
         __output_begin + __h_num_out,
-        __d_num_out,
+        __d_num_out.data(),
         static_cast<::cuda::std::int32_t>(__num_items),
         __is_filled,
         __stream.get());
-
-      __memory_resource.deallocate(__stream, __d_temp_storage, __temp_storage_bytes);
 
       __size_type __temp_count{};
       _CCCL_TRY_CUDA_API(
         cudaMemcpyAsync,
         "Failed to copy counter to host",
         &__temp_count,
-        __d_num_out,
+        __d_num_out.data(),
         sizeof(__size_type),
         cudaMemcpyDeviceToHost,
         __stream.get());
@@ -618,7 +611,6 @@ public:
       __h_num_out += __temp_count;
     }
 
-    __memory_resource.deallocate(__stream, __d_num_out, sizeof(__size_type));
     return __output_begin + __h_num_out;
   }
 
@@ -672,7 +664,7 @@ public:
   //! @brief Returns the number of filled slots in the container.
   [[nodiscard]] _CCCL_HOST __size_type size(::cuda::stream_ref __stream) const
   {
-    auto* __counter = __make_counter(__stream);
+    auto __counter = __make_counter(__stream);
 
     const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(
       static_cast<::cuda::experimental::cuco::__detail::__index_type>(this->capacity()));
@@ -681,7 +673,7 @@ public:
 
     __open_addressing::__size<::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        this->storage_ref(), __is_filled, __as_atomic(__counter));
+        this->storage_ref(), __is_filled, __as_atomic(__counter.data()));
 
     return __read_counter(__counter, __stream);
   }

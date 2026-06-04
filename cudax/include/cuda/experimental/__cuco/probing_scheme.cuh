@@ -159,8 +159,8 @@ public:
   //!
   //! @param __hash Hasher tuple
   _CCCL_HOST_DEVICE_API constexpr double_hashing(const ::cuda::std::tuple<_Hash1, _Hash2>& __hash)
-      : __hash1{__hash.first}
-      , __hash2{__hash.second}
+      : __hash1{::cuda::std::get<0>(__hash)}
+      , __hash2{::cuda::std::get<1>(__hash)}
   {}
 
   //! @brief Makes a copy of the current probing scheme with the given hasher.
