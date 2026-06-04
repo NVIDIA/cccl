@@ -415,13 +415,31 @@ public:
     return *this;
   }
 
-  // clang-tidy is confused, we are already using enable_if_t here...
-  template <class _Tuple,
-            enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_Tuple>>, int> = 0,
-            enable_if_t<__tuple_assignable<_Tuple, tuple>, int>            = 0> // NOLINT(modernize-type-traits)
-  _CCCL_API constexpr tuple& operator=(_Tuple&& __t) noexcept(is_nothrow_assignable_v<_BaseT&, _Tuple>)
+  // [tuple.assign]-39
+  template <
+    class _UTuple,
+    enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
+    __select_assignment _Trait =
+      __tuple_select_tuple_like_assignable_v<false, _UTuple, __tuple_types<_Tp...>, __make_tuple_indices_t<sizeof...(_Tp)>>,
+    enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr tuple& operator=(_UTuple&& __t) noexcept(__select_nothrow<_Trait>)
   {
-    __base_.operator=(::cuda::std::forward<_Tuple>(__t));
+    ::cuda::std::__memberwise_tuple_assign(
+      *this, ::cuda::std::forward<_UTuple>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{});
+    return *this;
+  }
+
+  // [tuple.assign]-42
+  template <
+    class _UTuple,
+    enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
+    __select_assignment _Trait =
+      __tuple_select_tuple_like_assignable_v<true, _UTuple, __tuple_types<_Tp...>, __make_tuple_indices_t<sizeof...(_Tp)>>,
+    enable_if_t<__select_assignable<_Trait>, int> = 0>
+  _CCCL_API constexpr const tuple& operator=(_UTuple&& __t) const noexcept(__select_nothrow<_Trait>)
+  {
+    ::cuda::std::__memberwise_tuple_assign(
+      *this, ::cuda::std::forward<_UTuple>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{});
     return *this;
   }
 
@@ -532,18 +550,35 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 public:
   _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept = default;
   template <class _Alloc>
-  _CCCL_API inline tuple(allocator_arg_t, const _Alloc&) noexcept
+  _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&) noexcept
   {}
   template <class _Alloc>
-  _CCCL_API inline tuple(allocator_arg_t, const _Alloc&, const tuple&) noexcept
+  _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, const tuple&) noexcept
   {}
   template <class _Up>
-  _CCCL_API inline tuple(array<_Up, 0>) noexcept
+  _CCCL_API constexpr tuple(array<_Up, 0>) noexcept
   {}
   template <class _Alloc, class _Up>
-  _CCCL_API inline tuple(allocator_arg_t, const _Alloc&, array<_Up, 0>) noexcept
+  _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, array<_Up, 0>) noexcept
   {}
-  _CCCL_API inline void swap(tuple&) noexcept {}
+
+  template <class _UTuple,
+            enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
+            enable_if_t<__tuple_like_with_size<_UTuple, 0>, int>            = 0>
+  _CCCL_API constexpr tuple& operator=(_UTuple&&) noexcept
+  {
+    return *this;
+  }
+
+  template <class _UTuple,
+            enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
+            enable_if_t<__tuple_like_with_size<_UTuple, 0>, int>            = 0>
+  _CCCL_API constexpr const tuple& operator=(_UTuple&&) const noexcept
+  {
+    return *this;
+  }
+
+  _CCCL_API constexpr void swap(tuple&) noexcept {}
 
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(const tuple&, const tuple&) noexcept
   {

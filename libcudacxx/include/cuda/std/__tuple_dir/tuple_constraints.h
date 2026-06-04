@@ -563,6 +563,54 @@ template <bool _IsConst, class _TupleTypes, class _TupleUTypes>
 inline constexpr __select_assignment __tuple_select_converting_assignable_v =
   ::cuda::std::__tuple_select_converting_assignable<_IsConst>(_TupleTypes{}, _TupleUTypes{});
 
+_CCCL_EXEC_CHECK_DISABLE
+template <bool _IsConst, class _UTuple, class... _Types, size_t... _Indices>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __select_assignment
+__tuple_select_tuple_like_assignable(__tuple_types<_Types...>, __tuple_indices<_Indices...>) noexcept
+{
+  using ::cuda::std::get;
+  if constexpr (is_same_v<remove_cvref_t<_UTuple>, tuple<_Types...>>)
+  { // [tuple.assign]-39.1: different-from<UTuple, tuple>
+    return __select_assignment::__none;
+  }
+  else if constexpr (__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UTuple>>)
+  { // [tuple.assign]-39.2: remove_cvref_t<UTuple> is not a specialization of ranges​::​subrange,
+    return __select_assignment::__none;
+  }
+  else if constexpr (!__tuple_like_with_size<_UTuple, sizeof...(_Types)>)
+  { // [tuple.assign]-39.3: sizeof...(Types) equals tuple_size_v<remove_cvref_t<UTuple>>, and
+    return __select_assignment::__none;
+  }
+  else if constexpr (_IsConst)
+  {
+    if constexpr ((is_assignable_v<const _Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...))
+    { // [tuple.assign]-42.4: is_assignable_v<const T_i&, decltype(get<i>(std​::​forward<UTuple>(u)))> is true for
+      // all i
+      return (is_nothrow_assignable_v<const _Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...)
+             ? __select_assignment::__is_nothrow
+             : __select_assignment::__may_throw;
+    }
+    else
+    {
+      return __select_assignment::__none;
+    }
+  }
+  else if constexpr ((is_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...))
+  { // [tuple.assign]-39.4: is_assignable_v<T_i&, decltype(get<i>(std​::​forward<UTuple>(u)))> is true for all i
+    return (is_nothrow_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...)
+           ? __select_assignment::__is_nothrow
+           : __select_assignment::__may_throw;
+  }
+  else
+  {
+    return __select_assignment::__none;
+  }
+}
+
+template <bool _IsConst, class _UTuple, class _TupleTypes, class _TupleIndices>
+inline constexpr __select_assignment __tuple_select_tuple_like_assignable_v =
+  ::cuda::std::__tuple_select_tuple_like_assignable<_IsConst, _UTuple>(_TupleTypes{}, _TupleIndices{});
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
