@@ -396,12 +396,31 @@ inline constexpr __select_constructor __tuple_select_tuple_like_constructible_v 
   ::cuda::std::__tuple_select_tuple_like_constructible<_UTuple>(_TupleTypes{}, _TupleIndices{});
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class _UTuple, class... _Types, size_t... _Indices>
+template <class _UTuple, class _Type, class... _Types, size_t _Index, size_t... _Indices>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
-__tuple_nothrow_tuple_like_constructible(__tuple_types<_Types...>, __tuple_indices<_Indices...>) noexcept
+__tuple_nothrow_tuple_like_constructible(__tuple_types<_Type, _Types...>, __tuple_indices<_Index, _Indices...>) noexcept
 {
   using ::cuda::std::get;
-  return (is_nothrow_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+  if constexpr (!is_nothrow_constructible_v<_Type, decltype(get<_Index>(::cuda::std::declval<_UTuple>()))>)
+  {
+    return false;
+  }
+  else if constexpr (sizeof...(_Types) != 0)
+  {
+    return ::cuda::std::__tuple_nothrow_tuple_like_constructible<_UTuple>(
+      __tuple_types<_Types...>{}, __tuple_indices<_Indices...>{});
+  }
+  else
+  {
+    return true;
+  }
+}
+
+template <class _UTuple>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
+__tuple_nothrow_tuple_like_constructible(__tuple_types<>, __tuple_indices<>) noexcept
+{
+  return true;
 }
 
 template <class _UTuple, class _TupleTypes, class _TupleIndices>
