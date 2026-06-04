@@ -97,6 +97,14 @@ TEST_FUNC constexpr bool test()
     static_assert(!cuda::argument::__is_bounds_v<int>);
   }
 
+  // Bounds types accepted by argument wrapper template parameters
+  {
+    static_assert(cuda::argument::__valid_static_bounds_v<int, cuda::argument::no_bounds>);
+    static_assert(cuda::argument::__valid_static_bounds_v<int, cuda::argument::static_bounds<1, 8>>);
+    static_assert(!cuda::argument::__valid_static_bounds_v<int, cuda::argument::runtime_bounds<int>>);
+    static_assert(!cuda::argument::__valid_static_bounds_v<int, int>);
+  }
+
   return true;
 }
 

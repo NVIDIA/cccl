@@ -163,7 +163,10 @@ _CCCL_API constexpr bool __static_bound_in_range() noexcept
 }
 
 template <class _ElementType, class _StaticBounds>
-inline constexpr bool __valid_static_bounds_v = true;
+inline constexpr bool __valid_static_bounds_v = false;
+
+template <class _ElementType>
+inline constexpr bool __valid_static_bounds_v<_ElementType, no_bounds> = true;
 
 template <class _ElementType, auto _Lowest, auto _Highest>
 inline constexpr bool __valid_static_bounds_v<_ElementType, static_bounds<_Lowest, _Highest>> =
@@ -220,7 +223,8 @@ template <class _ElementType, class _StaticBounds>
 _CCCL_API constexpr void __validate_bounds_intersection(runtime_bounds<_ElementType> __runtime_bounds) noexcept
 {
   static_assert(__valid_static_bounds_v<_ElementType, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
   _CCCL_VERIFY((__has_bounds_intersection<_ElementType, _StaticBounds>(__runtime_bounds)),
                "static and runtime argument bounds do not intersect");
 }
@@ -258,7 +262,8 @@ struct immediate
   using __element_type = __element_type_of_t<_Arg>;
 
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
 
   _Arg __arg_;
 
@@ -305,7 +310,8 @@ struct immediate_sequence
 
   static_assert(__is_sequence_v<_Arg>, "immediate sequence arguments must have a distinct element type");
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
 
   _Arg __arg_;
   runtime_bounds<__element_type> __runtime_bounds_{};
@@ -403,7 +409,8 @@ struct __deferred_base
   using __element_type = __element_type_of_t<_Arg>;
 
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
 
   _Arg __arg_;
   runtime_bounds<__element_type> __runtime_bounds_{};
@@ -689,7 +696,8 @@ struct __traits_impl<immediate<_Arg, _StaticBounds>>
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
 
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
@@ -718,7 +726,8 @@ struct __traits_impl<immediate_sequence<_Arg, _StaticBounds>>
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__is_sequence_v<value_type>, "immediate sequence arguments must have a distinct element type");
   static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
 
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
@@ -733,7 +742,8 @@ struct __traits_impl<deferred<_Arg, _StaticBounds>>
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
 
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = true;
@@ -748,7 +758,8 @@ struct __traits_impl<deferred_sequence<_Arg, _StaticBounds>>
   using value_type   = _Arg;
   using element_type = __element_type_of_t<_Arg>;
   static_assert(__valid_static_bounds_v<element_type, _StaticBounds>,
-                "static argument bounds cannot be represented by the element type");
+                "argument wrapper bounds type must be cuda::argument::no_bounds or cuda::argument::static_bounds with "
+                "values representable by the element type");
 
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = true;
