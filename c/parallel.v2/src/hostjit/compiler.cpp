@@ -598,7 +598,7 @@ public:
                 // traffic). ptxas does this promotion on the v1/LTO path; the
                 // LLVM-NVPTX path needs full-unroll-then-SROA at the IR level.
                 static const bool unroll_tuned = [] {
-                  auto& opts = llvm::cl::getRegisteredOptions();
+                  auto& opts   = llvm::cl::getRegisteredOptions();
                   auto set_opt = [&](llvm::StringRef name, llvm::StringRef value) {
                     auto it = opts.find(name);
                     if (it != opts.end())
