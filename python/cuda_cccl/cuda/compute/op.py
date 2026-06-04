@@ -238,7 +238,7 @@ cache_with_registered_key_functions.register(
     type(lambda: None), lambda func: CachableFunction(func)
 )
 
-cache_with_registered_key_functions.register(RawOp, lambda op: (op._identity))
+cache_with_registered_key_functions.register(RawOp, lambda op: op._identity)
 
 
 __all__ = [
