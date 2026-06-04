@@ -95,7 +95,7 @@ struct agent_batched_topk_worker_per_segment
     multi_worker_per_segment_policy.threads_per_block * multi_worker_per_segment_policy.items_per_thread;
 
   // Check if there could be large segments present
-  static constexpr bool only_small_segments = ::cuda::__argument::__traits<SegmentSizeParameterT>::max <= tile_size;
+  static constexpr bool only_small_segments = ::cuda::__argument::__traits<SegmentSizeParameterT>::highest <= tile_size;
 
   // Check if we are dealing with keys-only or key-value pairs
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
@@ -224,7 +224,7 @@ struct agent_batched_topk_worker_per_segment
       const key_t padding_key =
         (direction == detail::topk::select::max)
           ? ::cuda::std::numeric_limits<key_t>::lowest()
-          : ::cuda::std::numeric_limits<key_t>::max();
+          : (::cuda::std::numeric_limits<key_t>::max)();
 
       // Dereference iterator-of-iterators to get the segment specific iterator
       auto block_keys_in = d_key_segments_it[segment_id];

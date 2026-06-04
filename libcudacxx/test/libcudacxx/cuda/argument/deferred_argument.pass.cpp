@@ -25,7 +25,7 @@ TEST_FUNC constexpr bool test()
     auto def = cuda::__argument::__deferred{cuda::std::span<int, 1>{&val, 1}};
     assert(cuda::__argument::__unwrap(def)[0] == 42);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == cuda::std::numeric_limits<int>::lowest());
-    static_assert(cuda::__argument::__traits<decltype(def)>::max == cuda::std::numeric_limits<int>::max());
+    static_assert(cuda::__argument::__traits<decltype(def)>::highest == (cuda::std::numeric_limits<int>::max)());
   }
 
   // Deferred single value with static bounds
@@ -34,7 +34,7 @@ TEST_FUNC constexpr bool test()
     auto def = cuda::__argument::__deferred{cuda::std::span<int, 1>{&val, 1}, cuda::__argument::__bounds<1, 1000>()};
     assert(cuda::__argument::__unwrap(def)[0] == 42);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 1);
-    static_assert(cuda::__argument::__traits<decltype(def)>::max == 1000);
+    static_assert(cuda::__argument::__traits<decltype(def)>::highest == 1000);
   }
 
   // Deferred single value via pointer
@@ -42,7 +42,7 @@ TEST_FUNC constexpr bool test()
     int val     = 42;
     using def_t = cuda::__argument::__deferred<int*, cuda::__argument::__static_bounds<0, 100>>;
     static_assert(cuda::__argument::__traits<def_t>::lowest == 0);
-    static_assert(cuda::__argument::__traits<def_t>::max == 100);
+    static_assert(cuda::__argument::__traits<def_t>::highest == 100);
     // Also verify construction works
     auto def = cuda::__argument::__deferred{&val, cuda::__argument::__bounds<0, 100>()};
     assert(cuda::__argument::__unwrap(def) == &val);
@@ -54,7 +54,7 @@ TEST_FUNC constexpr bool test()
     auto def = cuda::__argument::__deferred{it, cuda::__argument::__bounds<0, 100>()};
     assert(cuda::__argument::__unwrap(def)[0] == 42);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 0);
-    static_assert(cuda::__argument::__traits<decltype(def)>::max == 100);
+    static_assert(cuda::__argument::__traits<decltype(def)>::highest == 100);
     static_assert(cuda::__argument::__traits<decltype(def)>::is_single_value);
   }
 
@@ -64,9 +64,9 @@ TEST_FUNC constexpr bool test()
     auto def = cuda::__argument::__deferred{
       cuda::std::span<int, 1>{&val, 1}, cuda::__argument::__bounds(5, 100), cuda::__argument::__bounds<1, 256>()};
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 1);
-    static_assert(cuda::__argument::__traits<decltype(def)>::max == 256);
+    static_assert(cuda::__argument::__traits<decltype(def)>::highest == 256);
     assert(cuda::__argument::__lowest_(def) == 5);
-    assert(cuda::__argument::__max_(def) == 100);
+    assert(cuda::__argument::__highest_(def) == 100);
   }
 
   // Deferred sequence via fancy iterator
@@ -76,7 +76,7 @@ TEST_FUNC constexpr bool test()
     assert(cuda::__argument::__unwrap(def)[0] == 10);
     assert(cuda::__argument::__unwrap(def)[2] == 12);
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 0);
-    static_assert(cuda::__argument::__traits<decltype(def)>::max == 100);
+    static_assert(cuda::__argument::__traits<decltype(def)>::highest == 100);
     static_assert(!cuda::__argument::__traits<decltype(def)>::is_single_value);
   }
 
@@ -87,7 +87,7 @@ TEST_FUNC constexpr bool test()
       cuda::std::span<int>{arr, 4}, cuda::__argument::__bounds<1, 4096>(), cuda::__argument::__bounds(5, 100)};
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 1);
     assert(cuda::__argument::__lowest_(def) == 5);
-    assert(cuda::__argument::__max_(def) == 100);
+    assert(cuda::__argument::__highest_(def) == 100);
   }
 
   // Deferred sequence with both bounds, runtime bounds first
@@ -96,9 +96,9 @@ TEST_FUNC constexpr bool test()
     auto def   = cuda::__argument::__deferred_sequence{
       cuda::std::span<int>{arr, 4}, cuda::__argument::__bounds(5, 100), cuda::__argument::__bounds<1, 4096>()};
     static_assert(cuda::__argument::__traits<decltype(def)>::lowest == 1);
-    static_assert(cuda::__argument::__traits<decltype(def)>::max == 4096);
+    static_assert(cuda::__argument::__traits<decltype(def)>::highest == 4096);
     assert(cuda::__argument::__lowest_(def) == 5);
-    assert(cuda::__argument::__max_(def) == 100);
+    assert(cuda::__argument::__highest_(def) == 100);
   }
 
   // Traits: deferred is single value
