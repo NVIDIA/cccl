@@ -363,14 +363,14 @@ public:
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
 
-    int device;
-    cudaEvent_t start_event, end_event;
+    int device              = -1;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
 
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
-        cudaGetDevice(&device); // We will use this to force it during the next run
+        device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
         // Events must be created here to avoid issues with multi-gpu.
         // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
         // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
