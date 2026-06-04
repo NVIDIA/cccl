@@ -280,6 +280,74 @@ weaker case. The knobs already exist — no kernel changes:
 4. Promote into `select_algorithm` only for cells where it is the geomean winner;
    otherwise leave it selectable-but-unselected (like `gmem_priv_gather` today).
 
+## Measured results (2026-06-04, B200, single GPU)
+
+Measured through the **fully-wired dispatch** (the proposed algorithms are
+first-class `dispatch_by_algorithm` cases with real temp-storage allocation + grid
+sizing, not an env-hook bolt-on). `CUB_HISTO_FORCE_ALGO` forces any algorithm at any
+high-bin cell for apples-to-apples comparison. The output-spill / incumbent paths are
+metric-neutral vs pre-change (4-metric harness within 0.1%: 854/626/786/637).
+
+**Correctness:** all four catch2 histogram suites pass on the default path AND under
+each forced algorithm — `direct_{nocache,cuckoo,single_probe}`,
+`gmem_privatized_{nocache,cuckoo,single_probe}` — at 53 587 + 8 + 336 + 18 assertions
+each, plus the benchmark's inline verifier on every swept cell.
+
+**Performance:** forced matrix = 4 binaries × {65 536, 262 144, 1 048 576} bins ×
+{concentrated:0.0, powerlaw:0.5, hash_synonym, stale_resident} × 64 M elements,
+3-sample median (data: `autocuda/results/step2_postrework_matrix.csv`).
+**The proposal (`gmem_privatized_{cuckoo,single_probe}`) wins 1 of 48 cells.**
+
+Per-binary geomean GiB/s (all bins × shapes):
+
+| binary | default | gmem_priv_nocache | direct_cuckoo | direct_single_probe | **gmem_priv_cuckoo** | **gmem_priv_single_probe** |
+|---|---|---|---|---|---|---|
+| even        | 833 | 702 | 770 | 775 | **475** | **481** |
+| range       | 663 | 525 | 667 | 673 | **402** | **422** |
+| multi_even  | 718 | 470 | 708 | 718 | **487** | **491** |
+| multi_range | 595 | 162 | 589 | 595 | **162** | **162** |
+
+The proposal is **~1.5–4× slower in aggregate**, and the gap widens with bin count and
+channel count — the `num_blocks × num_bins × channels` slab zero-init + gather
+dominates, exactly the gather tax this doc predicted.
+
+**The single win cell** is **multi_even 262 144 `powerlaw:0.5`** (the realistic
+multi-hot warm set): `gmem_privatized_single_probe` = **453** vs the best incumbent
+372 (`gmem_privatized_nocache`) and default 303 — **+22%**. (Wiring the proposal
+through proper dispatch sharpened this vs the earlier env-hook prototype: one cell,
+larger margin, instead of two marginal cells.) The thesis works exactly as argued: a
+warm set overflows the cache, the residual spill is frequent AND contended, and
+multi-channel amplifies the contention (3 channels racing the same output bins), so
+the contention-free private spill wins.
+
+But the win is **unexploitable**:
+
+- It is **one shape in one cell**. On the same `(multi_even, 262 144)` cell the
+  proposal *regresses* the other shapes badly — concentrated:0.0 2233→962 (−57%),
+  hash_synonym 597→346 (−42%) — because the cache already absorbs their hot bins, so
+  the gather tax is pure loss. At 65 536 it loses on powerlaw too (538 vs 587); at 1 M
+  it collapses (225 vs 371).
+- `select_algorithm` **cannot observe input shape**. Routing `(multi_even, 262 144)`
+  to the proposal would also catch concentrated / hash_synonym inputs there and crater
+  them. Net over the shape mix is negative.
+- The win cell is a **low-throughput** cell (~300–450 GiB/s); +22% there is a small
+  absolute gain on the slow tail, not on the cases that dominate the geomean.
+
+## Decision
+
+**Do not promote `priv_{cuckoo,single_probe}` into `select_algorithm`.** The
+private-spill kernel is correct and occasionally optimal, but only on a shape the
+selector can't detect, at a margin that the same routing erases elsewhere. It stays
+**selectable-but-unselected** behind `CUB_HISTO_FORCE_ALGO`, exactly the status of
+`gmem_priv_gather`.
+
+**Keep the spill-agnostic refactor.** It is zero-cost (output-spill codegen
+byte-identical, regression-checked), it makes the (cache × spill) matrix expressible
+without kernel duplication, and it leaves a correct, tested private-spill kernel one
+selector-rule away should a future arch shift the balance (e.g. cheaper grid-sync /
+gather, or a shape-aware dispatch signal) — the design doc's "third corner" is now
+built and measured, not hypothetical.
+
 ## Risks / open questions
 
 - **Gather tax vs contention saved.** Below the contention regime the gather may cost
