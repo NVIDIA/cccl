@@ -289,7 +289,13 @@ public:
     {
       // --- Untyped dispatch path ---
       auto* resolved = new ::std::pair<Fun, host_launch_deps>{::std::forward<Fun>(f), host_launch_deps{}};
-      auto& hld      = resolved->second;
+      // Whenever we pass ownership we assigned nullptr to resolved.
+      SCOPE(fail)
+      {
+        delete resolved;
+      };
+
+      auto& hld = resolved->second;
 
       const size_t ndeps = deps.size();
       hld.lds_.resize(ndeps);
@@ -303,20 +309,16 @@ public:
       hld.dtor_          = user_data_dtor_;
       user_data_dtor_    = nullptr;
 
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
-      {
-        using wrapper_type = ::std::remove_reference_t<decltype(*resolved)>;
-        auto resource      = ::std::make_shared<host_callback_args_resource<wrapper_type>>(resolved);
-        ctx.add_resource(mv(resource));
-      }
-
       auto callback = [](void* raw) {
         auto* w = static_cast<decltype(resolved)>(raw);
-        w->first(w->second);
-        if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+        SCOPE(exit)
         {
-          delete w;
-        }
+          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+          {
+            delete w;
+          }
+        };
+        w->first(w->second);
       };
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
@@ -324,17 +326,21 @@ public:
         cudaHostNodeParams params = {.fn = callback, .userData = resolved};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
+        // The node now references `resolved`; hand ownership to a ctx resource
+        // that deletes it (in release_in_callback) when the ctx is released.
+        using wrapper_type = ::std::remove_reference_t<decltype(*resolved)>;
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(resolved));
       }
       else
       {
-        // The callback owns `resolved` once enqueued; delete it if the enqueue
-        // throws so it does not leak.
-        SCOPE(fail)
-        {
-          delete resolved;
-        };
+        // For a stream the callback owns `resolved` once the launch succeeds.
         cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, resolved);
       }
+      // Ownership has transferred (to the ctx resource for graph, or to the
+      // callback for stream). These enqueues are asynchronous, so on a throw
+      // above the callback has not run and SCOPE(fail) still owns `resolved`;
+      // past this point disarm it.
+      resolved = nullptr;
     }
     else
     {
@@ -350,16 +356,20 @@ public:
         }
       }();
       auto* wrapper = new ::std::pair<Fun, decltype(payload)>{::std::forward<Fun>(f), mv(payload)};
-
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+      SCOPE(fail)
       {
-        using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
-        auto resource      = ::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper);
-        ctx.add_resource(mv(resource));
-      }
+        delete wrapper;
+      };
 
       auto callback = [](void* untyped_wrapper) {
         auto w = static_cast<decltype(wrapper)>(untyped_wrapper);
+        SCOPE(exit)
+        {
+          if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+          {
+            delete w;
+          }
+        };
 
         constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
         constexpr bool fun_invocable_task_non_void_deps =
@@ -376,11 +386,6 @@ public:
         {
           ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
         }
-
-        if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
-        {
-          delete w;
-        }
       };
 
       if constexpr (::std::is_same_v<Ctx, graph_ctx>)
@@ -388,17 +393,16 @@ public:
         cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
+        // Transfer ownership only after the node references `wrapper`, so a throw
+        // from cudaGraphAddHostNode leaves SCOPE(fail) as the sole owner.
+        using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper));
       }
       else
       {
-        // The callback owns `wrapper` once enqueued; delete it if the enqueue
-        // throws so it does not leak.
-        SCOPE(fail)
-        {
-          delete wrapper;
-        };
         cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, wrapper);
       }
+      wrapper = nullptr;
     }
   }
 
