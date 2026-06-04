@@ -81,9 +81,10 @@ struct DeviceRadixSortKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortInitBinsAndCountersKernel,
-    DeviceRadixSortInitBinsAndCountersKernel<PolicySelector, OffsetT, int>);
+    DeviceRadixSortInitKernel<PolicySelector, true, false, int, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel, DeviceRadixSortInitLookbackKernel<PolicySelector, int>);
+  CUB_DEFINE_KERNEL_GETTER(RadixSortInitLookbackKernel,
+                           DeviceRadixSortInitKernel<PolicySelector, false, true, int, int>);
 
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
@@ -597,7 +598,8 @@ private:
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
     AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
 
-    const bool use_pdl = true;
+    constexpr OffsetT PDL_MAX_ITEMS = static_cast<OffsetT>(1) << 20;
+    const bool use_pdl              = num_items <= PDL_MAX_ITEMS;
 
     const size_t num_counter_items = static_cast<size_t>(num_portions) * num_passes;
     const size_t num_bin_items     = static_cast<size_t>(num_passes) * RADIX_DIGITS;
@@ -740,7 +742,12 @@ private:
 
           if (const auto error =
                 CubDebug(launcher_factory(init_lookback_blocks, INIT_LOOKBACK_THREADS, 0, stream, use_pdl)
-                           .doit(kernel_source.RadixSortInitLookbackKernel(), d_lookback, num_lookback_items)))
+                           .doit(
+                             kernel_source.RadixSortInitLookbackKernel(),
+                             d_lookback,
+                             num_lookback_items,
+                             d_lookback,
+                             size_t{0})))
           {
             return error;
           }

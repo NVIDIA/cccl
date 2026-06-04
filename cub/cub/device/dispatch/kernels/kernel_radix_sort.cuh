@@ -475,42 +475,46 @@ __launch_bounds__(current_policy<PolicySelector>().histogram.threads_per_block) 
   agent.Process();
 }
 
-template <typename PolicySelector, typename OffsetT, typename AtomicOffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitBinsAndCountersKernel(
-  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_ctrs,
-  _CCCL_GRID_CONSTANT const size_t num_counter_items,
-  _CCCL_GRID_CONSTANT OffsetT* const d_bins,
-  _CCCL_GRID_CONSTANT const size_t num_bin_items)
+template <typename PolicySelector,
+          bool TRIGGER_AT_START,
+          bool FENCE_BEFORE_END_TRIGGER,
+          typename InitT0,
+          typename InitT1>
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
+  _CCCL_GRID_CONSTANT InitT0* const d_items0,
+  _CCCL_GRID_CONSTANT const size_t num_items0,
+  _CCCL_GRID_CONSTANT InitT1* const d_items1,
+  _CCCL_GRID_CONSTANT const size_t num_items1)
 {
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  if constexpr (TRIGGER_AT_START)
+  {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  }
 
   const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-       idx < ::cuda::std::max(num_counter_items, num_bin_items);
+       idx < ::cuda::std::max(num_items0, num_items1);
        idx += stride)
   {
-    if (idx < num_counter_items)
+    if (idx < num_items0)
     {
-      d_ctrs[idx] = 0;
+      d_items0[idx] = 0;
     }
-    if (idx < num_bin_items)
+    if (idx < num_items1)
     {
-      d_bins[idx] = 0;
+      d_items1[idx] = 0;
     }
   }
-}
 
-template <typename PolicySelector, typename AtomicOffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitLookbackKernel(
-  _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback, _CCCL_GRID_CONSTANT const size_t num_lookback_items)
-{
-  const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
-  for (size_t idx = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x; idx < num_lookback_items; idx += stride)
+  if constexpr (FENCE_BEFORE_END_TRIGGER)
   {
-    d_lookback[idx] = 0;
+    __threadfence();
   }
-  __threadfence();
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  if constexpr (!TRIGGER_AT_START)
+  {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  }
 }
 
 template <typename PolicySelector,
