@@ -21,7 +21,7 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 .. note::
 
   The underlying CUDA intrinsic does not provide memory ordering.
-  
+
 **Parameters**
 
 - ``data``: data to compare.
