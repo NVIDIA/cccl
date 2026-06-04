@@ -24,6 +24,7 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__memory_pool/device_memory_pool.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
@@ -127,6 +128,14 @@ private:
     __stream.sync();
   }
 
+  //! @brief Returns the default memory pool of the current device.
+  [[nodiscard]] _CCCL_HOST static ::cuda::device_memory_pool_ref __default_memory_resource()
+  {
+    int __device = 0;
+    _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to query the current device", &__device);
+    return ::cuda::device_default_memory_pool(::cuda::device_ref{__device});
+  }
+
   //! @brief Dispatches __insert_or_apply with optional shared-memory acceleration.
   template <bool _HasInit, int32_t _CgSize, class _InputIt, class _InitType, class _OpType>
   void __dispatch_insert_or_apply(
@@ -224,7 +233,7 @@ public:
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+    _MemoryResource __mr                   = __default_memory_resource(),
     ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
       : __impl{::cuda::std::make_unique<__impl_type>(
           _Capacity,
@@ -252,7 +261,7 @@ public:
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+    _MemoryResource __mr                   = __default_memory_resource(),
     ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
       : __impl{::cuda::std::make_unique<__impl_type>(
           __capacity,
@@ -282,7 +291,7 @@ public:
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+    _MemoryResource __mr                   = __default_memory_resource(),
     ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
       : __impl{::cuda::std::make_unique<__impl_type>(
           __n,
@@ -311,7 +320,7 @@ public:
     erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+    _MemoryResource __mr                   = __default_memory_resource(),
     ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
       : __impl{::cuda::std::make_unique<__impl_type>(
           _Capacity,
@@ -342,7 +351,7 @@ public:
     erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {},
-    _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+    _MemoryResource __mr                   = __default_memory_resource(),
     ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
       : __impl{::cuda::std::make_unique<__impl_type>(
           __capacity,
