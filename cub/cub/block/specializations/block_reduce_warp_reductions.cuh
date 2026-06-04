@@ -196,42 +196,35 @@ struct BlockReduceWarpReductions
       {
         const int num_warps = FullTile ? warps : ::cuda::ceil_div(num_valid, logical_warp_size);
 
-        if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
+        constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
+        T val;
+        if constexpr (has_identity)
         {
-          const T id  = ::cuda::identity_element<ReductionOp, T>();
-          const T val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : id;
-          NV_IF_ELSE_TARGET(
-            NV_PROVIDES_SM_80, (return ::cub::detail::reduce_op_sync(val, 0xFFFFFFFFu, reduction_op);), ({
-              constexpr int logical_lanes = ::cuda::next_power_of_two(warps);
-              NullType dummy_storage;
-              WarpReduceShfl<T, logical_lanes> warp_reduce(dummy_storage);
-              warp_aggregate = warp_reduce.template Reduce<true>(val, num_warps, reduction_op);
-            }))
+          const T id = ::cuda::identity_element<ReductionOp, T>();
+          val        = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : id;
         }
         else
         {
-          // Shuffle-based tree over next_power_of_two(warps) lanes.
-          constexpr int logical_lanes = ::cuda::next_power_of_two(warps);
+          val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : T{};
+        }
 
-          constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
-          T val;
-          if constexpr (has_identity)
-          {
-            const T id = ::cuda::identity_element<ReductionOp, T>();
-            val        = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : id;
-          }
-          else
-          {
-            val = (lane_id < num_warps) ? temp_storage.warp_aggregates[lane_id] : T{};
-          }
+        constexpr int logical_lanes = ::cuda::next_power_of_two(warps);
+        NullType dummy_storage;
+        WarpReduceShfl<T, logical_lanes> warp_reduce(dummy_storage);
 
+        if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
+        {
+          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, //
+                            (return ::cub::detail::reduce_op_sync(val, 0xFFFFFFFFu, reduction_op);),
+                            ({ warp_aggregate = warp_reduce.template Reduce<true>(val, num_warps, reduction_op); }))
+        }
+        else
+        {
           // When we have an identity element, every lane in the logical warp holds a valid value
           // (real or identity), so we can take the all-lanes-valid fast path. Otherwise, fall back
           // to the partial-valid form which uses num_warps as the last lane.
           constexpr bool all_lanes_valid = has_identity || (FullTile && (warps == logical_lanes));
-          NullType dummy_storage;
-          WarpReduceShfl<T, logical_lanes> warp_reduce(dummy_storage);
-          warp_aggregate = warp_reduce.template Reduce<all_lanes_valid>(val, num_warps, reduction_op);
+          warp_aggregate                 = warp_reduce.template Reduce<all_lanes_valid>(val, num_warps, reduction_op);
         }
       }
       return warp_aggregate;
