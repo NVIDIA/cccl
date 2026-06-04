@@ -105,6 +105,22 @@ std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t, std
   return std::format("cub::detail::radix_sort::DeviceRadixSortExclusiveSumKernel<{0}, {1}>", chained_policy_t, offset_t);
 }
 
+std::string get_init_kernel_name(
+  std::string_view chained_policy_t,
+  bool trigger_at_start,
+  bool fence_before_end_trigger,
+  std::string_view init_t0,
+  std::string_view init_t1)
+{
+  return std::format(
+    "cub::detail::radix_sort::DeviceRadixSortInitKernel<{0}, {1}, {2}, {3}, {4}>",
+    chained_policy_t,
+    trigger_at_start ? "true" : "false",
+    fence_before_end_trigger ? "true" : "false",
+    init_t0,
+    init_t1);
+}
+
 std::string get_onesweep_kernel_name(
   std::string_view chained_policy_t,
   cccl_sort_order_t sort_order,
@@ -164,6 +180,16 @@ struct radix_sort_kernel_source
   CUkernel RadixSortExclusiveSumKernel() const
   {
     return build.exclusive_sum_kernel;
+  }
+
+  CUkernel RadixSortInitBinsAndCountersKernel() const
+  {
+    return build.init_bins_and_counters_kernel;
+  }
+
+  CUkernel RadixSortInitLookbackKernel() const
+  {
+    return build.init_lookback_kernel;
   }
 
   CUkernel RadixSortOnesweepKernel() const
@@ -289,6 +315,9 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
   std::string histogram_kernel_name =
     radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp, offset_t);
   std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t, offset_t);
+  std::string init_bins_and_counters_kernel_name =
+    radix_sort::get_init_kernel_name(chained_policy_t, true, false, "int", offset_t);
+  std::string init_lookback_kernel_name = radix_sort::get_init_kernel_name(chained_policy_t, false, true, "int", "int");
   std::string onesweep_kernel_name =
     radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
   std::string single_tile_kernel_lowered_name;
@@ -299,6 +328,8 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
   std::string alt_downsweep_kernel_lowered_name;
   std::string histogram_kernel_lowered_name;
   std::string exclusive_sum_kernel_lowered_name;
+  std::string init_bins_and_counters_kernel_lowered_name;
+  std::string init_lookback_kernel_lowered_name;
   std::string onesweep_kernel_lowered_name;
 
   const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
@@ -336,6 +367,8 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
       ->add_expression({alt_downsweep_kernel_name})
       ->add_expression({histogram_kernel_name})
       ->add_expression({exclusive_sum_kernel_name})
+      ->add_expression({init_bins_and_counters_kernel_name})
+      ->add_expression({init_lookback_kernel_name})
       ->add_expression({onesweep_kernel_name})
       ->compile_program({args.data(), args.size()})
       ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
@@ -346,6 +379,8 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
       ->get_name({alt_downsweep_kernel_name, alt_downsweep_kernel_lowered_name})
       ->get_name({histogram_kernel_name, histogram_kernel_lowered_name})
       ->get_name({exclusive_sum_kernel_name, exclusive_sum_kernel_lowered_name})
+      ->get_name({init_bins_and_counters_kernel_name, init_bins_and_counters_kernel_lowered_name})
+      ->get_name({init_lookback_kernel_name, init_lookback_kernel_lowered_name})
       ->get_name({onesweep_kernel_name, onesweep_kernel_lowered_name})
       ->link_program()
       ->add_link_list(linkable_list)
@@ -364,6 +399,10 @@ static_assert(device_radix_sort_policy()(current_tuning_cc()) == {6}, "Host gene
   check(cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, histogram_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(
     &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(
+    &build_ptr->init_bins_and_counters_kernel, build_ptr->library, init_bins_and_counters_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(
+    &build_ptr->init_lookback_kernel, build_ptr->library, init_lookback_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
 
   build_ptr->cc             = cc_major * 10 + cc_minor;

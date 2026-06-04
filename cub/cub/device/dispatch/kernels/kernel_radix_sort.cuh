@@ -416,7 +416,7 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
       values,
       current_bit,
       end_bit,
-      bool_constant_v<Order == SortOrder::Descending>,
+      bool_constant_v < Order == SortOrder::Descending >,
       bool_constant_v<KEYS_ONLY>,
       decomposer);
 
@@ -488,6 +488,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
 {
   if constexpr (TRIGGER_AT_START)
   {
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 
@@ -513,6 +514,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
 
   if constexpr (!TRIGGER_AT_START)
   {
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 }
