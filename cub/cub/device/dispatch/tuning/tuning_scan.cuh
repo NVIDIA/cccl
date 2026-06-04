@@ -876,6 +876,7 @@ struct policy_selector
   bool accum_is_primitive_or_trivially_copy_constructible;
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
+  bool require_stable_reduction_order = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_warpspeed_policy() const -> scan_warpspeed_policy
   {
@@ -1034,6 +1035,7 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
+    if (!require_stable_reduction_order)
     {
       const auto warpspeed_policy_opt = get_warpspeed_policy(cc);
       if (warpspeed_policy_opt && can_use_warpspeed(cc, *warpspeed_policy_opt))
@@ -1442,7 +1444,12 @@ struct benchmark_match_for_policy_selector<
 };
 
 // stateless version which can be passed to kernels
-template <typename InputIteratorT, typename OutputIteratorT, typename AccumT, typename OffsetT, typename ScanOpT>
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename AccumT,
+          typename OffsetT,
+          typename ScanOpT,
+          bool StableReductionOrder = false>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> scan_policy
@@ -1473,7 +1480,8 @@ struct policy_selector_from_types
       ::cuda::is_trivially_copyable_v<OutputValueT>,
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
-      benchmark_match};
+      benchmark_match,
+      StableReductionOrder};
     return policies(cc);
   }
 };
