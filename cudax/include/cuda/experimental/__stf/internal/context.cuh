@@ -1122,6 +1122,10 @@ UNITTEST("context resources released on finalize non blocking")
   };
 
   const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call(cudaStreamDestroy(stream));
+  };
 
   bool released = false;
   context ctx(stream, async_resources_handle());
@@ -1130,8 +1134,6 @@ UNITTEST("context resources released on finalize non blocking")
   EXPECT(!released); // not yet, callback not run
   cuda_try<cudaStreamSynchronize>(stream);
   EXPECT(released);
-
-  cuda_try<cudaStreamDestroy>(stream);
 };
 
 UNITTEST("context import_resources_from")
@@ -1182,6 +1184,10 @@ UNITTEST("context graph and stage")
 UNITTEST("context with arguments")
 {
   const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call(cudaStreamDestroy(stream));
+  };
 
   async_resources_handle h;
 
@@ -1196,8 +1202,6 @@ UNITTEST("context with arguments")
 
   context ctx4 = graph_ctx(stream, h);
   ctx4.finalize();
-
-  cuda_try<cudaStreamDestroy>(stream);
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
