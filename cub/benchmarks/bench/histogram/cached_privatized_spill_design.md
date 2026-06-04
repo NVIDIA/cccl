@@ -1,9 +1,13 @@
 # Design proposal: SMEM cache front-end for the GMEM-privatized histogram
 
-**Status:** IMPLEMENTED + MEASURED (2026-06-04, B200) → **verdict: do not promote.**
-The spill-agnostic refactor is kept (clean, zero-cost, removes real duplication); the
-private-spill kernel is correct but loses to the incumbents in every measured cell and
-stays env-hook-only (unselected), like `gmem_priv_gather`. See "Measured results" below.
+**Status:** FULLY IMPLEMENTED (2026-06-04, B200). The ENTIRE design doc is built:
+the kernel rename scheme (`DirectKernel`/`SmemPrivatized*`/`GmemPrivatized*`), the
+`Combiner ∈ {NoCache, Cuckoo, SingleProbe}` axis, the hybrid↔gather merge into one
+`GmemPrivatizedKernel<…, HybridSplit>`, the shared gather helper, the renamed
+`algorithm` enum, and the proposed `gmem_privatized_{cuckoo,single_probe}` wired as
+first-class (reachable, selectable-but-unselected) dispatch cases. Default selection is
+metric-neutral; all catch2 suites pass for every algorithm; the C-parallel NVRTC
+contract compiles. See "Implementation status" and "Measured results" below.
 **Scope:** high-bin histogram sweep (single-channel first), bins ≤ 65 536.
 
 ## Summary
@@ -18,6 +22,44 @@ This is hot-aware on-chip combining (unlike the privatized kernel's static SMEM
 tier) **with** a contention-free spill (unlike the direct kernel's device-scope
 atomic to the shared output). It is the empty cell in the kernel matrix below: the
 direct kernel's cache front-end crossed with the privatized kernel's backing store.
+
+## Implementation status (what was built)
+
+Every item in this doc is implemented in `cub/cub/device/dispatch/` (kernels +
+dispatch) and `c/parallel/src/histogram.cu` (NVRTC name strings):
+
+- **Kernel renames** (Naming scheme table): `DeviceHistogramDirectAtomicKernel →
+  DeviceHistogramDirectKernel`; `DeviceHistogramSmemPriv{,Dynamic,DeviceInit}Kernel
+  → …SmemPrivatized{,Dynamic,DeviceInit}…`. `DeviceHistogramInitKernel` kept (an
+  output-zeroing helper orthogonal to the combiner×commit taxonomy; renaming it
+  would only churn the C-parallel NVRTC contract for no clarity gain).
+- **Combiner axis**: `Combiner ∈ {no_cache_probe, cuckoo_cache_probe<>,
+  single_probe_cache}`, all spill-agnostic (templated on a `SpillOp` ∈
+  {`output_atomic_spill`, `private_block_spill`}).
+- **Consolidation #1 (hybrid ↔ gather merge)**: one
+  `DeviceHistogramGmemPrivatizedKernel<…, bool HybridSplit>`. `HybridSplit=false`
+  (smem_split=0) is the pure GMEM-privatized gather; `HybridSplit=true`
+  (smem_split>0) is the SMEM-primary + GMEM-tail hybrid. `if constexpr` selects the
+  body; the hybrid branch keeps its fused primary+secondary reduce loop (the shared
+  helper's two-call form measured ~5% slower there — see Measured results).
+- **Anti-redundancy #2**: one `gather_privatized_slab` `__device__` helper; the
+  pure-gather member and the DirectKernel private-spill Phase-4 both call it.
+- **Enum rename**: `smem_priv_256` + `smem_priv_dynamic` → `smem_privatized`;
+  `hybrid_single_pass` + `gmem_priv_gather` → `gmem_privatized_nocache`;
+  `direct_atomic_cuckoo/_single_probe` → `direct_cuckoo/direct_single_probe`; added
+  `direct_nocache`, `gmem_privatized_cuckoo`, `gmem_privatized_single_probe`.
+  `dispatch_by_algorithm` recovers the merged tiers (static/dynamic; hybrid/gather)
+  at runtime from the bin count / smem_split.
+- **Proposal wired**: `gmem_privatized_{cuckoo,single_probe}` are first-class
+  `dispatch_by_algorithm` cases (the DirectKernel cache front-ends re-pointed to
+  `private_block_spill` + the gather). `select_algorithm` never returns them
+  (per Decision), but they are reachable via dispatch and the `CUB_HISTO_FORCE_ALGO`
+  env hook for sweeps.
+
+**Validation**: default selection is metric-neutral (4-metric harness within 0.1% of
+pre-change: 854/626/786/637); all four catch2 suites pass on the default path AND
+under each forced algorithm (53 587 + 8 + 336 + 18 assertions); the C-parallel
+`histogram.cu` object compiles against the renamed NVRTC strings.
 
 ## Naming scheme
 
