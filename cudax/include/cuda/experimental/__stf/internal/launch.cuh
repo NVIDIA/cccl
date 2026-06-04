@@ -64,7 +64,7 @@ void cuda_launcher(interpreted_spec interpreted_policy, Fun&& f, void** args, St
   lconfig.dynamicSmemBytes = mem_config[2];
   lconfig.stream           = stream;
 
-  cuda_safe_call(cudaLaunchKernelExC(&lconfig, (void*) f, args));
+  cuda_try<cudaLaunchKernelExC>(&lconfig, (void*) f, args);
 }
 
 template <typename interpreted_spec, typename Fun>
@@ -81,7 +81,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
   kconfig.kernelParams   = args;
   kconfig.sharedMemBytes = static_cast<int>(mem_config[2]);
 
-  cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
+  n = cuda_try<cudaGraphAddKernelNode>(g, nullptr, 0, &kconfig);
 
   // Enable cooperative kernel if necessary by updating the node attributes
 
@@ -89,7 +89,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
 
   cudaKernelNodeAttrValue val;
   val.cooperative = cooperative_kernel ? 1 : 0;
-  cuda_safe_call(cudaGraphKernelNodeSetAttribute(n, cudaKernelNodeAttributeCooperative, &val));
+  cuda_try<cudaGraphKernelNodeSetAttribute>(n, cudaKernelNodeAttributeCooperative, &val);
 }
 
 template <typename Fun, typename interpreted_spec, typename Arg>
@@ -120,7 +120,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     if (th_mem_config[1] > 0)
     {
-      cuda_safe_call(cudaMallocAsync(&th_dev_tmp_ptr, th_mem_config[1], stream));
+      cuda_try(cudaMallocAsync(&th_dev_tmp_ptr, th_mem_config[1], stream));
       th.set_device_tmp(th_dev_tmp_ptr);
     }
 
@@ -132,7 +132,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     if (th_mem_config[1] > 0)
     {
-      cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+      cuda_try<cudaFreeAsync>(th_dev_tmp_ptr, stream);
     }
   };
 }
@@ -366,10 +366,12 @@ public:
       if (record_time)
       {
         cudaGetDevice(&device); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+        // Events must be created here to avoid issues with multi-gpu.
+        // cudaEventCreate keeps the runtime-status form: it is an overload set
+        // (cuda_runtime.h adds a flags overload), so cuda_try<cudaEventCreate> cannot name it.
+        cuda_try(cudaEventCreate(&start_event));
+        cuda_try(cudaEventCreate(&end_event));
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
       }
     }
 
@@ -405,6 +407,9 @@ public:
 
         if (record_time)
         {
+          // These run inside the enclosing SCOPE(exit) body, which is noexcept;
+          // keep cuda_safe_call so a CUDA error aborts rather than throwing
+          // through the guard (which would call std::terminate).
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
 

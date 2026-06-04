@@ -247,9 +247,11 @@ public:
     {
       if (record_time)
       {
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags
+        // overload), so it keeps the runtime-status cuda_try form.
+        cuda_try(cudaEventCreate(&start_event));
+        cuda_try(cudaEventCreate(&end_event));
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
       }
     }
 
@@ -260,6 +262,8 @@ public:
       {
         if (record_time)
         {
+          // Inside the noexcept SCOPE(exit) body; keep cuda_safe_call so a CUDA
+          // error aborts rather than throwing through the guard.
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
 
@@ -318,11 +322,17 @@ public:
       {
         cudaHostNodeParams params = {.fn = callback, .userData = resolved};
         auto lock                 = t.lock_ctx_graph();
-        cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
+        t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
       }
       else
       {
-        cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, resolved));
+        // The callback owns `resolved` once enqueued; delete it if the enqueue
+        // throws so it does not leak.
+        SCOPE(fail)
+        {
+          delete resolved;
+        };
+        cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, resolved);
       }
     }
     else
@@ -376,11 +386,17 @@ public:
       {
         cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
         auto lock                 = t.lock_ctx_graph();
-        cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
+        t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
       }
       else
       {
-        cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, wrapper));
+        // The callback owns `wrapper` once enqueued; delete it if the enqueue
+        // throws so it does not leak.
+        SCOPE(fail)
+        {
+          delete wrapper;
+        };
+        cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, wrapper);
       }
     }
   }
