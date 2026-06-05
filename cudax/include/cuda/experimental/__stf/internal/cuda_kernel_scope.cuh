@@ -157,7 +157,7 @@ struct cuda_kernel_desc
         sharedMem,
         stream,
         args_ptr.data(),
-        nullptr));
+        nullptr);
     }
   }
 
