@@ -17,8 +17,8 @@ if [[ -n "${CCACHE_DIR:-}" ]]; then
   export CMAKE_CXX_COMPILER_LAUNCHER=ccache
   export CMAKE_CUDA_COMPILER_LAUNCHER=ccache
   echo "ccache enabled: CCACHE_DIR=${CCACHE_DIR}"
-  ccache --version 2>&1 | head -1
-  ccache --show-stats 2>&1 | head -5
+  ccache --version 2>&1 | head -1 || true
+  ccache --show-stats 2>&1 | head -5 || true
 fi
 echo -e "#!/usr/bin/env bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
 # shellcheck disable=SC1091

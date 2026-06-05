@@ -151,6 +151,13 @@ static CUresult call_scan_init(
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
+  // Guard against ABI mismatch: this path uses the 8-arg scan_init_fn_t
+  // (with init pointer). Calling it with a build result compiled for
+  // CCCL_NO_INIT (7-arg scan_no_init_fn_t) would be undefined behaviour.
+  if (build.init_kind == CCCL_NO_INIT)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   auto fn          = reinterpret_cast<scan_init_fn_t>(build.scan_fn);
   const int status = fn(
     d_temp_storage,
@@ -262,6 +269,13 @@ CUresult cccl_device_inclusive_scan_no_init(
 try
 {
   if (!build.scan_fn)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  // Guard against ABI mismatch: this path uses the 7-arg scan_no_init_fn_t.
+  // A build result compiled with an init value stores an 8-arg scan_init_fn_t;
+  // casting it here would be undefined behaviour.
+  if (build.init_kind != CCCL_NO_INIT)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

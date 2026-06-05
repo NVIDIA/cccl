@@ -108,9 +108,14 @@ def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
     parts = [re.sub(r"(?m)^target datalayout =.*\n", "", p) for p in parts]
 
     modules = []
-    for part in parts:
-        m = llvm.parse_assembly(part)
-        m.verify()
+    for i, part in enumerate(parts):
+        try:
+            m = llvm.parse_assembly(part)
+            m.verify()
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to parse LLVM IR module {i} for '{target_name}': {exc}"
+            ) from exc
         modules.append(m)
 
     main = modules[0]
