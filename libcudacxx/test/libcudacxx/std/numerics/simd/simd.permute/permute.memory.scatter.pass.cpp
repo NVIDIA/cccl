@@ -49,7 +49,7 @@ TEST_FUNC constexpr void test_partial_scatter_unmasked()
   // identity indices: arr[i] == src[i]
   {
     cuda::std::array<T, N> arr{};
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     simd::partial_scatter_to(src, arr, indices);
     assert(src == arr);
@@ -101,7 +101,7 @@ TEST_FUNC constexpr void test_partial_scatter_masked()
   // mask all-false: no stores
   {
     cuda::std::array<T, N> arr{};
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask all_false(false);
     simd::partial_scatter_to(src, arr, all_false, indices);
@@ -110,7 +110,7 @@ TEST_FUNC constexpr void test_partial_scatter_masked()
   // mask all-true + identity: arr == src
   {
     cuda::std::array<T, N> arr{};
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask all_true(true);
     simd::partial_scatter_to(src, arr, all_true, indices);
@@ -120,7 +120,7 @@ TEST_FUNC constexpr void test_partial_scatter_masked()
   if constexpr (N >= 2)
   {
     cuda::std::array<T, N> arr{};
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask even_mask(is_even{});
     simd::partial_scatter_to(src, arr, even_mask, indices);
@@ -167,7 +167,7 @@ TEST_FUNC constexpr void test_unchecked_scatter()
   // identity (unmasked)
   {
     cuda::std::array<T, N> arr{};
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     simd::unchecked_scatter_to(src, arr, indices);
     assert(src == arr);
@@ -186,7 +186,7 @@ TEST_FUNC constexpr void test_unchecked_scatter()
   // identity (masked, all-true)
   {
     cuda::std::array<T, N> arr{};
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask all_true(true);
     simd::unchecked_scatter_to(src, arr, all_true, indices);
@@ -196,7 +196,7 @@ TEST_FUNC constexpr void test_unchecked_scatter()
   if constexpr (N >= 2)
   {
     cuda::std::array<T, N> arr{};
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask even_mask(is_even{});
     simd::unchecked_scatter_to(src, arr, even_mask, indices);

@@ -45,7 +45,7 @@ TEST_FUNC constexpr void test_partial_gather_unmasked()
 
   // identity
   {
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Vec vec = simd::partial_gather_from(buf, indices);
     static_assert(cuda::std::is_same_v<decltype(vec), Vec>);
@@ -96,7 +96,7 @@ TEST_FUNC constexpr void test_partial_gather_masked()
 
   // mask all-true + identity indices
   {
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask all_true(true);
     Vec vec = simd::partial_gather_from(buf, all_true, indices);
@@ -104,7 +104,7 @@ TEST_FUNC constexpr void test_partial_gather_masked()
   }
   // mask all-false: every component becomes T{}
   {
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask all_false(false);
     Vec vec = simd::partial_gather_from(buf, all_false, indices);
@@ -116,7 +116,7 @@ TEST_FUNC constexpr void test_partial_gather_masked()
   // alternating mask: selected lanes load, unselected become T{}
   if constexpr (N >= 2)
   {
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask even_mask(is_even{});
     Vec vec = simd::partial_gather_from(buf, even_mask, indices);
@@ -162,7 +162,7 @@ TEST_FUNC constexpr void test_unchecked_gather()
 
   // identity (unmasked)
   {
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Vec vec = simd::unchecked_gather_from(buf, indices);
     static_assert(cuda::std::is_same_v<decltype(vec), Vec>);
@@ -180,7 +180,7 @@ TEST_FUNC constexpr void test_unchecked_gather()
   }
   // identity (masked, all-true)
   {
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask all_true(true);
     Vec vec = simd::unchecked_gather_from(buf, all_true, indices);
@@ -189,7 +189,7 @@ TEST_FUNC constexpr void test_unchecked_gather()
   // masked, alternating: unselected lanes get T{}; selected lanes must be in-range
   if constexpr (N >= 2)
   {
-    auto idx = make_iota_array<int, N>();
+    auto idx = make_iota_array<int, N, 0>();
     Ind indices(idx);
     Mask even_mask(is_even{});
     Vec vec = simd::unchecked_gather_from(buf, even_mask, indices);
