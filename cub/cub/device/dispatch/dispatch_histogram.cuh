@@ -371,47 +371,6 @@ struct DeviceHistogramKernelSource
       OffsetT>;
   }
 
-  /// Returns the device-init histogram sweep kernel that initializes decode operators from level arrays in the kernel.
-  template <typename PolicyT,
-            int PRIVATIZED_SMEM_BINS,
-            typename FirstLevelArrayT,
-            typename SecondLevelArrayT,
-            bool IsEven,
-            bool IsByteSample>
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSmemPrivatizedDeviceInitKernel()
-  {
-    // For DispatchEven, we use the scale transform to convert samples to
-    // privatized bins and pass-thru transform to convert privatized bins to
-    // output bins, vice verse for byte samples.
-
-    // For DispatchRange, we use the search transform to convert samples to
-    // privatized bins and scale transform to convert privatized bins to output bins,
-    // vice verse for byte samples.
-
-    using DecodeOpT = ::cuda::std::conditional_t<IsEven,
-                                                 typename TransformsT::ScaleTransform,
-                                                 typename TransformsT::template SearchTransform<const LevelT*>>;
-
-    using PrivatizedDecodeOpT =
-      ::cuda::std::conditional_t<IsByteSample, typename TransformsT::PassThruTransform, DecodeOpT>;
-    using OutputDecodeOpT =
-      ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
-
-    return &DeviceHistogramSmemPrivatizedDeviceInitKernel<
-      PolicyT,
-      PRIVATIZED_SMEM_BINS,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
-      SampleIteratorT,
-      CounterT,
-      FirstLevelArrayT,
-      SecondLevelArrayT,
-      PrivatizedDecodeOpT,
-      OutputDecodeOpT,
-      OffsetT,
-      IsEven>;
-  }
-
   /// Host-init dynamic-SMEM, NON-staging variant: merges each block's dyn-SMEM
   /// privatized histogram directly into the global output via atomicAdd
   /// (no staging slabs, no combine kernel). Host must launch the init kernel first.
@@ -515,6 +474,14 @@ template <int NUM_CHANNELS,
           bool IsDeviceInit,
           bool IsEven,
           bool IsByteSample,
+          // When true, the cooperative GMEM-privatized / direct-atomic launch block
+          // (and its kernel instantiations) is compiled out, leaving only the
+          // non-cooperative init+sweep path. The C Parallel Library sets this for
+          // its host-init entry: it JIT-compiles a single sweep kernel and cannot
+          // instantiate the cooperative kernels against type-erased decode ops.
+          // Placed among the leading non-type params so callers can specify it
+          // positionally (the trailing type params are deduced from arguments).
+          bool DisableCooperative,
           typename SampleIteratorT,
           typename CounterT,
           typename FirstLevelArrayT,
@@ -602,18 +569,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
              privatized_decode_op_t,
              output_decode_op_t>();
     }
-    else if constexpr (IsDeviceInit)
-    {
-      return kernel_source.template HistogramSmemPrivatizedDeviceInitKernel<
-             PolicySelector,
-             PRIVATIZED_SMEM_BINS,
-             FirstLevelArrayT,
-             SecondLevelArrayT,
-             IsEven,
-             IsByteSample>();
-    }
     else
     {
+      // Host-init: decode ops are pre-built (by the host CUB dispatch_even/range,
+      // or by the C Parallel Library's host-side tag dispatch) and passed by value.
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
       return kernel_source
@@ -821,7 +780,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // no benefit, so we keep the legacy two-kernel sequence there.
   bool launched_persistent = false;
 #if _CCCL_HOSTED()
-  if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
+  if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && !DisableCooperative)
   {
     if (blocks_per_row > 0 && blocks_per_col > 0)
     {
@@ -1191,11 +1150,39 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // Make sure the ACTIVE kernel's dynamic-SMEM attribute matches the final
       // chosen size (the sizing loop above may have left a larger size set on a
       // rejected candidate). Set it on whichever kernel `direct_atomic_cache_mode`
-      // selected (0-4).
-      if (launcher_factory.set_max_dynamic_smem_size_for(active_direct_atomic_kernel_ptr_void, cuckoo_cache_smem_bytes)
-          != cudaSuccess)
+      // selected (0-4). Use the typed kernel pointer (the launcher's
+      // set_max_dynamic_smem_size_for takes the kernel handle type, which differs
+      // between the CUDA-runtime and CUDA-driver launchers).
+      auto set_active_smem = [&](auto kernel_ptr) {
+        if (launcher_factory.set_max_dynamic_smem_size_for(kernel_ptr, cuckoo_cache_smem_bytes) != cudaSuccess)
+        {
+          (void) cudaGetLastError();
+        }
+      };
+      switch (direct_atomic_cache_mode)
       {
-        (void) cudaGetLastError();
+        case 4:
+          set_active_smem(direct_atomic_priv_single_probe_kernel_ptr);
+          break;
+        case 3:
+          set_active_smem(direct_atomic_priv_cuckoo_kernel_ptr);
+          break;
+        case 2:
+          set_active_smem(direct_atomic_no_cache_kernel_ptr);
+          break;
+        case 1:
+          set_active_smem(direct_atomic_single_probe_kernel_ptr);
+          break;
+        default:
+          if (use_gated_cuckoo)
+          {
+            set_active_smem(direct_atomic_noprobe2_kernel_ptr);
+          }
+          else
+          {
+            set_active_smem(direct_atomic_kernel_ptr);
+          }
+          break;
       }
 
       if (false)
@@ -1561,53 +1548,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 // in the benchmark, which indicates that we need to re-tune the algorithm. This is why we kept the two dispatch paths
 // (host init and device init) separate. We should think about merging them back together later on.
 
+
 /**
- * Dispatch routine for HistogramEven with device-side decode operator initialization,
- * specialized for sample types larger than 8-bit.
- * This variant initializes the decode operators inside the kernel from level bounds.
+ * HOST-INIT HistogramEven dispatch for the C Parallel Library (no device-init).
  *
- * @param d_temp_storage
- *   Device-accessible allocation of temporary storage.
- *   When nullptr, the required allocation size is written to
- *   `temp_storage_bytes` and no work is done.
+ * Takes PRE-BUILT decode operators (constructed host-side by the caller --
+ * C-parallel builds the real `Transforms<LevelT,OffsetT,SampleT>::ScaleTransform`
+ * via a runtime type-tag dispatch and hands their bytes through
+ * `OutputDecodeOpArrayT` / `PrivatizedDecodeOpArrayT` holders). It then routes
+ * through `dispatch<..., IsDeviceInit=false>`, i.e. the host-init
+ * `DeviceHistogramSmemPrivatizedKernel`, which is why C-parallel needs no
+ * device-side decode-op initialization kernel.
  *
- * @param temp_storage_bytes
- *   Reference to size in bytes of `d_temp_storage` allocation
- *
- * @param d_samples
- *   The pointer to the input sequence of sample items.
- *   The samples from different channels are assumed to be interleaved
- *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
- *
- * @param d_output_histograms
- *   The pointers to the histogram counter output arrays, one for each active channel.
- *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
- *   `num_output_levels[i] - 1`.
- *
- * @param num_output_levels
- *   The number of bin level boundaries for delineating histogram samples in each active channel.
- *   Implies that the number of bins for channel<sub><em>i</em></sub> is
- *   `num_output_levels[i] - 1`.
- *
- * @param lower_level
- *   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
- *
- * @param upper_level
- *   The upper sample value bound (exclusive) for the highest histogram bin in each active
- * channel.
- *
- * @param num_row_pixels
- *   The number of multi-channel pixels per row in the region of interest
- *
- * @param num_rows
- *   The number of rows in the region of interest
- *
- * @param row_stride_samples
- *   The number of samples between starts of consecutive rows in the region of interest
- *
- * @param stream
- *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
- *
+ * The decode-op holders only need a working `operator&` (yielding the bytes the
+ * kernel reads as its grid-constant decode-op argument); their static `value_type`
+ * is unused on the host (C-parallel names the JIT kernel + decode-op types itself).
  */
 template <
   int NUM_CHANNELS,
@@ -1617,258 +1572,86 @@ template <
   typename LevelT,
   typename OffsetT,
   typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource =
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
-  typename LowerLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
-  typename UpperLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device_init(
+  typename OutputDecodeOpArrayT,
+  typename PrivatizedDecodeOpArrayT,
+  typename SampleT               = it_value_t<SampleIteratorT>,
+  typename KernelSource          = DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_host_init(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
   ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
-  LowerLevelArrayT lower_level,
-  UpperLevelArrayT upper_level,
+  // Pre-built decode-op holders (host-constructed). For non-byte EVEN:
+  // output = PassThruTransform array, privatized = ScaleTransform array.
+  OutputDecodeOpArrayT output_decode_op,
+  PrivatizedDecodeOpArrayT privatized_decode_op,
   OffsetT num_row_pixels,
   OffsetT num_rows,
   OffsetT row_stride_samples,
   cudaStream_t stream,
-  ::cuda::std::false_type /*is_byte_sample*/,
+  bool is_byte_sample                    = false,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
   int max_levels = num_output_levels[0];
-
   for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
   {
-    int num_levels = num_output_levels[channel];
-    if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
+    if (num_output_levels[channel] > max_levels)
     {
-      // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
-      // an overflow of the bin computation, in which case a subsequent algorithm
-      // invocation will also fail
-      if (!d_temp_storage)
-      {
-        temp_storage_bytes = 1U;
-      }
-      return cudaErrorInvalidValue;
-    }
-
-    if (num_levels > max_levels)
-    {
-      max_levels = num_levels;
+      max_levels = num_output_levels[channel];
     }
   }
-  int max_num_output_bins = max_levels - 1;
+  const int max_num_output_bins = max_levels - 1;
+
+  // num_privatized_levels: for BYTE samples the privatized op is a 256-entry
+  // pass-thru staging histogram (257 levels), reduced to the output bins by the
+  // ScaleTransform OUTPUT op. For non-byte EVEN the privatized op IS the
+  // ScaleTransform (privatized bins == output bins), so privatized == output.
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels = num_output_levels;
+  if (is_byte_sample)
+  {
+    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+    {
+      num_privatized_levels[channel] = 257;
+    }
+  }
+
+  const auto run = [&](auto privatized_smem_bins) {
+    constexpr int PRIVATIZED_SMEM_BINS = decltype(privatized_smem_bins)::value;
+    return CubDebug((detail::histogram::dispatch<
+                     NUM_CHANNELS,
+                     NUM_ACTIVE_CHANNELS,
+                     PRIVATIZED_SMEM_BINS,
+                     false, // IsDeviceInit -> host-init kernels
+                     false, // IsEven (unused for host-init)
+                     false, // IsByteSample (unused for host-init)
+                     true // DisableCooperative -> C-parallel: non-cooperative init+sweep only
+                     >(d_temp_storage,
+                       temp_storage_bytes,
+                       d_samples,
+                       d_output_histograms,
+                       num_privatized_levels,
+                       num_output_levels,
+                       output_decode_op,
+                       privatized_decode_op,
+                       max_num_output_bins,
+                       num_row_pixels,
+                       num_rows,
+                       row_stride_samples,
+                       stream,
+                       policy_selector,
+                       kernel_source,
+                       launcher_factory)));
+  };
 
   if (max_num_output_bins > detail::histogram::max_privatized_smem_bins)
   {
-    // Dispatch shared-privatized approach
-    constexpr int PRIVATIZED_SMEM_BINS = 0;
-
-    if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NUM_CHANNELS,
-                                       NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
-                                       /* IsDeviceInit = */ true,
-                                       /* IsEven = */ true,
-                                       /* IsByteSample = */ false>(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_output_levels,
-            num_output_levels,
-            upper_level,
-            lower_level,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            policy_selector,
-            kernel_source,
-            launcher_factory))))
-    {
-      return error;
-    }
+    return run(::cuda::std::integral_constant<int, 0>{});
   }
-  else
-  {
-    // Dispatch shared-privatized approach
-    constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::max_privatized_smem_bins;
-
-    if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NUM_CHANNELS,
-                                       NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
-                                       /* IsDeviceInit = */ true,
-                                       /* IsEven = */ true,
-                                       /* IsByteSample = */ false>(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_output_levels,
-            num_output_levels,
-            upper_level,
-            lower_level,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            policy_selector,
-            kernel_source,
-            launcher_factory))))
-    {
-      return error;
-    }
-  }
-
-  return cudaSuccess;
-}
-
-/**
- * Dispatch routine for HistogramEven with device-side decode operator initialization,
- * specialized for 8-bit sample types
- * (computes 256-bin privatized histograms and then reduces to user-specified levels).
- * This variant initializes the decode operators inside the kernel from level bounds.
- *
- * @param d_temp_storage
- *   Device-accessible allocation of temporary storage.
- *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
- *   no work is done.
- *
- * @param temp_storage_bytes
- *   Reference to size in bytes of `d_temp_storage` allocation
- *
- * @param d_samples
- *   The pointer to the input sequence of sample items. The samples from different channels are
- *   assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of
- *   four RGBA 8-bit samples).
- *
- * @param d_output_histograms
- *   The pointers to the histogram counter output arrays, one for each active channel.
- *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
- *   `num_output_levels[i] - 1`.
- *
- * @param num_output_levels
- *   The number of bin level boundaries for delineating histogram samples in each active channel.
- *   Implies that the number of bins for channel<sub><em>i</em></sub> is
- *   `num_output_levels[i] - 1`.
- *
- * @param lower_level
- *   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
- *
- * @param upper_level
- *   The upper sample value bound (exclusive) for the highest histogram bin in each active
- * channel.
- *
- * @param num_row_pixels
- *   The number of multi-channel pixels per row in the region of interest
- *
- * @param num_rows
- *   The number of rows in the region of interest
- *
- * @param row_stride_samples
- *   The number of samples between starts of consecutive rows in the region of interest
- *
- * @param stream
- *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
- *
- */
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource =
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
-  typename LowerLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
-  typename UpperLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device_init(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  SampleIteratorT d_samples,
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
-  LowerLevelArrayT lower_level,
-  UpperLevelArrayT upper_level,
-  OffsetT num_row_pixels,
-  OffsetT num_rows,
-  OffsetT row_stride_samples,
-  cudaStream_t stream,
-  ::cuda::std::true_type /*is_byte_sample*/,
-  PolicySelector policy_selector         = {},
-  KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {})
-{
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-  int max_levels = num_output_levels[0];
-
-  for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-  {
-    num_privatized_levels[channel] = 257;
-
-    int num_levels = num_output_levels[channel];
-    if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
-    {
-      // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
-      // an overflow of the bin computation, in which case a subsequent algorithm
-      // invocation will also fail
-      if (!d_temp_storage)
-      {
-        temp_storage_bytes = 1U;
-      }
-      return cudaErrorInvalidValue;
-    }
-
-    if (num_levels > max_levels)
-    {
-      max_levels = num_levels;
-    }
-  }
-  int max_num_output_bins = max_levels - 1;
-
-  constexpr int PRIVATIZED_SMEM_BINS = 256;
-
-  if (const auto error = CubDebug(
-        (detail::histogram::dispatch<NUM_CHANNELS,
-                                     NUM_ACTIVE_CHANNELS,
-                                     PRIVATIZED_SMEM_BINS,
-                                     /* IsDeviceInit = */ true,
-                                     /* IsEven = */ true,
-                                     /* IsByteSample = */ true>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_samples,
-          d_output_histograms,
-          num_privatized_levels,
-          num_output_levels,
-          upper_level,
-          lower_level,
-          max_num_output_bins,
-          num_row_pixels,
-          num_rows,
-          row_stride_samples,
-          stream,
-          policy_selector,
-          kernel_source,
-          launcher_factory))))
-  {
-    return error;
-  }
-
-  return cudaSuccess;
+  return run(::cuda::std::integral_constant<int, detail::histogram::max_privatized_smem_bins>{});
 }
 
 // Hybrid SMEM+GMEM single-pass dispatch helper.
@@ -2322,7 +2105,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       if (max_num_output_bins <= max_privatized_smem_bins)
       {
         constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-        return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+        return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -2341,7 +2124,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
           launcher_factory);
       }
       constexpr int PRIVATIZED_SMEM_BINS = max_dynamic_smem_bins;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,
@@ -2394,7 +2177,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       // Pure-gather member: disable_direct_atomic=true routes dispatch<> to the
       // GmemPrivatized gather kernel (HybridSplit=false).
       constexpr int PRIVATIZED_SMEM_BINS = 0;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,
@@ -2437,7 +2220,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
         : (algo == algorithm::direct_nocache)               ? 2
         : (algo == algorithm::gmem_privatized_cuckoo)       ? 3
         : /* algorithm::gmem_privatized_single_probe */       4;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,
@@ -2520,28 +2303,30 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     constexpr int PRIVATIZED_SMEM_BINS = 256;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NUM_CHANNELS,
-                                       NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
-                                       /* IsDeviceInit = */ false,
-                                       /* IsEven = (unused for host-init) */ false,
-                                       /* IsByteSample = (unused for host-init) */ false>(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_privatized_levels,
-            num_output_levels,
-            output_decode_op,
-            privatized_decode_op,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            policy_selector,
-            kernel_source,
-            launcher_factory))))
+          (detail::histogram::dispatch<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            PRIVATIZED_SMEM_BINS,
+            false, // IsDeviceInit
+            false, // IsEven (unused for host-init)
+            false, // IsByteSample (unused for host-init)
+            false // DisableCooperative (regular CUB host-init keeps the cooperative path)
+            >(d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_privatized_levels,
+              num_output_levels,
+              output_decode_op,
+              privatized_decode_op,
+              max_num_output_bins,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
     {
       return error;
     }
@@ -2676,12 +2461,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     constexpr int PRIVATIZED_SMEM_BINS = 256;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NUM_CHANNELS,
-                                       NUM_ACTIVE_CHANNELS,
-                                       PRIVATIZED_SMEM_BINS,
-                                       /* IsDeviceInit = */ false,
-                                       /* IsEven = */ false,
-                                       /* IsByteSample = */ false>(
+          (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,

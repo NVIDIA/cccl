@@ -55,13 +55,8 @@ struct histogram_kernel_source
     return build.init_kernel;
   }
 
-  template <typename PolicyT,
-            int PRIVATIZED_SMEM_BINS,
-            typename FirstLevelArrayT,
-            typename SecondLevelArrayT,
-            bool IsEven,
-            bool IsByteSample>
-  CUkernel HistogramSmemPrivatizedDeviceInitKernel() const
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  CUkernel HistogramSmemPrivatizedKernel() const
   {
     return build.sweep_kernel;
   }
@@ -134,30 +129,23 @@ std::string get_sweep_kernel_name(
     std::swap(privatized_decode_op_t, output_decode_op_t);
   }
 
-  const std::string first_level_array_t =
-    is_evenly_segmented
-      ? std::format("cuda::std::array<{0}, {1}>", level_t, num_active_channels)
-      : std::format("cuda::std::array<int, {0}>", num_active_channels);
-  const std::string second_level_array_t =
-    is_evenly_segmented
-      ? std::format("cuda::std::array<{0}, {1}>", level_t, num_active_channels)
-      : std::format("cuda::std::array<const {0}*, {1}>", level_t, num_active_channels);
-
+  // HOST-INIT sweep kernel (no device-init): DeviceHistogramSmemPrivatizedKernel.
+  // Its template params are <PolicySelector, PrivatizedSmemBins, NumChannels,
+  // NumActiveChannels, SampleIteratorT, CounterT, PrivatizedDecodeOpT,
+  // OutputDecodeOpT, OffsetT> -- it receives PRE-BUILT decode ops (constructed
+  // host-side by build_scale_transform_bytes), so there are no level-array /
+  // IsEven / IsByteSample template params.
   return std::format(
-    "cub::detail::histogram::DeviceHistogramSmemPrivatizedDeviceInitKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
-    "{10}, {11}>",
+    "cub::detail::histogram::DeviceHistogramSmemPrivatizedKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
     chained_policy_t,
     privatized_smem_bins,
     num_channels,
     num_active_channels,
     samples_iterator_t,
     counter_t,
-    first_level_array_t,
-    second_level_array_t,
     privatized_decode_op_t,
     output_decode_op_t,
-    offset_t,
-    is_evenly_segmented ? "true" : "false");
+    offset_t);
 }
 
 template <typename T>
@@ -192,6 +180,162 @@ uint64_t get_integral_range(cccl_type_enum type, const void* lower, const void* 
       throw std::runtime_error("get_integral_range: unsupported type");
   }
 }
+
+// ---------------------------------------------------------------------------
+// Host-side decode-op construction (so C-parallel uses the HOST-INIT histogram
+// sweep kernel, never the device-init variant).
+//
+// The host-init `DeviceHistogramSmemPrivatizedKernel` takes the per-channel
+// decode operator (`Transforms<LevelT,OffsetT,SampleT>::ScaleTransform` for the
+// EVEN path) BY VALUE as a `_CCCL_GRID_CONSTANT` argument. C-parallel's dispatch
+// is compiled with type-erased `indirect_arg_t`, so it cannot name `ScaleTransform`
+// at compile time -- but `histogram.cu` is an nvcc TU with the CUB headers, so we
+// can instantiate the REAL transform behind a runtime (sample-type, level-type)
+// tag dispatch, call its host-runnable `Init`, and hand the resulting POD bytes to
+// the kernel. This is the same "tag -> real type" idiom as `get_integral_range`
+// above, extended to the 2-D (sample, level) matrix because `ScaleTransform`'s
+// layout depends on `CommonT = common_type<LevelT,SampleT>`.
+//
+// We build the whole `cuda::std::array<ScaleTransform, NumActiveChannels>` into a
+// byte buffer; `scale_transform_arg_t` (below) owns it and its `operator&` yields
+// the buffer address, exactly like `indirect_arg_t`, so the existing launcher
+// marshals it as the kernel's grid-constant decode-op argument.
+
+// Build array<ScaleTransform<L,O,S>, N> bytes for the given (already typed) L,S.
+template <typename SampleT, typename LevelT, int NumActiveChannels, typename OffsetT>
+std::vector<char> build_scale_transform_bytes_typed(
+  const std::vector<int>& num_output_levels, const void* lower, const void* upper)
+{
+  using TransformsT = cub::detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
+  using ScaleT      = typename TransformsT::ScaleTransform;
+  using ArrayT      = ::cuda::std::array<ScaleT, NumActiveChannels>;
+
+  ArrayT ops{};
+  // The C histogram_even API takes a single scalar lower/upper level, broadcast
+  // across active channels (the C histogram_even API takes one scalar
+  // lower/upper pair, applied to every channel).
+  const LevelT lo = *static_cast<const LevelT*>(lower);
+  const LevelT up = *static_cast<const LevelT*>(upper);
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
+  {
+    // EVEN: ScaleTransform::Init(num_levels, max_level, min_level).
+    ops[ch].Init(num_output_levels[ch], up, lo);
+  }
+  std::vector<char> bytes(sizeof(ArrayT));
+  std::memcpy(bytes.data(), &ops, sizeof(ArrayT));
+  return bytes;
+}
+
+// Tag-dispatch on the LEVEL type (inner), given an already-resolved sample type.
+template <typename SampleT, int NumActiveChannels, typename OffsetT>
+std::vector<char> build_scale_transform_bytes_level(
+  cccl_type_enum level_type, const std::vector<int>& num_output_levels, const void* lower, const void* upper)
+{
+  switch (level_type)
+  {
+    case CCCL_INT8:
+      return build_scale_transform_bytes_typed<SampleT, int8_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_UINT8:
+      return build_scale_transform_bytes_typed<SampleT, uint8_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_INT16:
+      return build_scale_transform_bytes_typed<SampleT, int16_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_UINT16:
+      return build_scale_transform_bytes_typed<SampleT, uint16_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_INT32:
+      return build_scale_transform_bytes_typed<SampleT, int32_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_UINT32:
+      return build_scale_transform_bytes_typed<SampleT, uint32_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_INT64:
+      return build_scale_transform_bytes_typed<SampleT, int64_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_UINT64:
+      return build_scale_transform_bytes_typed<SampleT, uint64_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_FLOAT32:
+      return build_scale_transform_bytes_typed<SampleT, float, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+    case CCCL_FLOAT64:
+      return build_scale_transform_bytes_typed<SampleT, double, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+#if _CCCL_HAS_NVFP16()
+    case CCCL_FLOAT16:
+      return build_scale_transform_bytes_typed<SampleT, __half, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+#endif
+    default:
+      throw std::runtime_error("histogram: unsupported level type for host-side decode-op build");
+  }
+}
+
+// Tag-dispatch on the SAMPLE type (outer).
+template <int NumActiveChannels, typename OffsetT>
+std::vector<char> build_scale_transform_bytes(
+  cccl_type_enum sample_type,
+  cccl_type_enum level_type,
+  const std::vector<int>& num_output_levels,
+  const void* lower,
+  const void* upper)
+{
+  switch (sample_type)
+  {
+    case CCCL_INT8:
+      return build_scale_transform_bytes_level<int8_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_UINT8:
+      return build_scale_transform_bytes_level<uint8_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_INT16:
+      return build_scale_transform_bytes_level<int16_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_UINT16:
+      return build_scale_transform_bytes_level<uint16_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_INT32:
+      return build_scale_transform_bytes_level<int32_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_UINT32:
+      return build_scale_transform_bytes_level<uint32_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_INT64:
+      return build_scale_transform_bytes_level<int64_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_UINT64:
+      return build_scale_transform_bytes_level<uint64_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_FLOAT32:
+      return build_scale_transform_bytes_level<float, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+    case CCCL_FLOAT64:
+      return build_scale_transform_bytes_level<double, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+#if _CCCL_HAS_NVFP16()
+    case CCCL_FLOAT16:
+      return build_scale_transform_bytes_level<__half, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+#endif
+    default:
+      throw std::runtime_error("histogram: unsupported sample type for host-side decode-op build");
+  }
+}
+
+// Build array<PassThruTransform, N> bytes. PassThruTransform is (near-)empty and
+// type-independent in layout, so we use the int/int instantiation; its size
+// matches what the kernel expects for any LevelT/SampleT (a single dummy byte +
+// padding, or empty). Output decode op for the non-byte EVEN host-init path.
+template <int NumActiveChannels>
+std::vector<char> build_passthru_transform_bytes()
+{
+  using TransformsT = cub::detail::histogram::Transforms<int, OffsetT, int>;
+  using PassThruT   = typename TransformsT::PassThruTransform;
+  using ArrayT      = ::cuda::std::array<PassThruT, NumActiveChannels>;
+  ArrayT ops{};
+  std::vector<char> bytes(sizeof(ArrayT));
+  std::memcpy(bytes.data(), &ops, sizeof(ArrayT));
+  return bytes;
+}
+
+// Owns the host-built decode-op bytes and presents them to the launcher like
+// indirect_arg_t: `operator&` returns the buffer address, from which the driver
+// copies the kernel's grid-constant decode-op parameter (whose true size is the
+// JIT-compiled `array<ScaleTransform,N>`; our buffer is exactly that size). The
+// launcher takes args by const-ref, so `operator&` is const.
+struct decode_op_arg_t
+{
+  // `dispatch<>` reads `FirstLevelArrayT::value_type` to name the decode-op type
+  // for the host-init accessor; for C-parallel that accessor ignores its template
+  // args (it returns the JIT-built sweep kernel), so a placeholder suffices.
+  using value_type = indirect_arg_t;
+
+  std::vector<char> bytes;
+  void* operator&() const
+  {
+    return const_cast<void*>(static_cast<const void*>(bytes.data()));
+  }
+};
 
 // Check for overflow before type erasure, using actual integer values
 // Returns true if overflow may occur
@@ -561,10 +705,29 @@ CUresult cccl_device_histogram_even_impl(
     ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
       static_cast<indirect_arg_t*>(d_output_histograms.state)};
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr{*static_cast<int*>(num_output_levels.state)};
-    indirect_arg_t upper_level_arg{upper_level};
-    indirect_arg_t lower_level_arg{lower_level};
 
-    auto exec_status = cub::detail::histogram::__dispatch_even_device_init<
+    // HOST-INIT path (no device-init kernel): build the real decode ops host-side
+    // via a (sample,level) type-tag dispatch. The ScaleTransform does the
+    // even-bin classify; PassThruTransform is the trivial identity. The kernel
+    // reads them as grid-constant args; `decode_op_arg_t::operator&` yields the
+    // bytes, just like `indirect_arg_t`.
+    //
+    // Decode-op assignment mirrors cub::detail::histogram::dispatch_even:
+    //   non-byte EVEN: privatized = ScaleTransform, output = PassThruTransform
+    //                  (privatized bins == output bins).
+    //   byte sample:   privatized = PassThruTransform (256-entry staging),
+    //                  output = ScaleTransform; always the 256-bin tier.
+    histogram::decode_op_arg_t scale_arg{
+      histogram::build_scale_transform_bytes<NUM_ACTIVE_CHANNELS, OffsetT>(
+        build.sample_type.type, build.level_type.type, {num_output_levels_arr[0]}, lower_level.state, upper_level.state)};
+    histogram::decode_op_arg_t passthru_arg{histogram::build_passthru_transform_bytes<NUM_ACTIVE_CHANNELS>()};
+
+    // For byte samples the ScaleTransform is the OUTPUT op and PassThru is
+    // privatized; otherwise ScaleTransform is privatized and PassThru is output.
+    histogram::decode_op_arg_t& output_decode_op_arg     = is_byte_sample::value ? scale_arg : passthru_arg;
+    histogram::decode_op_arg_t& privatized_decode_op_arg = is_byte_sample::value ? passthru_arg : scale_arg;
+
+    auto exec_status = cub::detail::histogram::__dispatch_even_host_init<
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t, // SampleIteratorT
@@ -572,6 +735,8 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t, // LevelT
       OffsetT, // OffsetT
       cub::detail::histogram::policy_selector, // PolicySelector
+      histogram::decode_op_arg_t&, // OutputDecodeOpArrayT (holder)
+      histogram::decode_op_arg_t&, // PrivatizedDecodeOpArrayT (holder)
       indirect_arg_t, // SampleT
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
@@ -580,13 +745,13 @@ CUresult cccl_device_histogram_even_impl(
         d_samples,
         d_output_histogram_arr,
         num_output_levels_arr,
-        lower_level_arg,
-        upper_level_arg,
+        output_decode_op_arg,
+        privatized_decode_op_arg,
         num_row_pixels,
         num_rows,
         row_stride_samples,
         stream,
-        is_byte_sample{},
+        is_byte_sample::value,
         *reinterpret_cast<cub::detail::histogram::policy_selector*>(build.runtime_policy),
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
