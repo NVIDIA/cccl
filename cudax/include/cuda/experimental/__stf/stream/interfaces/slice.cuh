@@ -232,11 +232,13 @@ public:
 
     if constexpr (dimensions == 0)
     {
-      cuda_try<cudaMemcpyAsync>(dst_ptr, src_ptr, sizeof(T), kind, s);
+      // cudaMemcpyAsync is an overload set (cuda_runtime.h adds an alternate-spelling
+      // wrapper), so it keeps the runtime-status cuda_try form.
+      cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
     }
     else if constexpr (dimensions == 1)
     {
-      cuda_try<cudaMemcpyAsync>(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s);
+      cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
     }
     else if constexpr (dimensions == 2)
     {
@@ -255,7 +257,7 @@ public:
       // We only support higher dimensions if they are contiguous !
       if ((contiguous_dims(src_instance) == dimensions) && (contiguous_dims(dst_instance) == dimensions))
       {
-        cuda_try<cudaMemcpyAsync>(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s);
+        cuda_try(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
       }
       else
       {
