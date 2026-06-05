@@ -10,7 +10,7 @@
 
 #include <cuda/argument>
 
-using arg_t = cuda::argument::immediate<int, cuda::argument::runtime_bounds<int>>;
+using arg_t = cuda::args::immediate<int, cuda::args::runtime_bounds<int>>;
 
 [[maybe_unused]] arg_t invalid_arg{0};
 

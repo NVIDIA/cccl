@@ -10,7 +10,7 @@
 
 #include <cuda/argument>
 
-[[maybe_unused]] cuda::argument::deferred_sequence<int> invalid_arg{0};
+[[maybe_unused]] cuda::args::deferred_sequence<int> invalid_arg{0};
 
 int main(int, char**)
 {

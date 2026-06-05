@@ -10,7 +10,7 @@
 
 #include <cuda/argument>
 
-using traits = cuda::argument::__traits<cuda::argument::deferred_sequence<int>>;
+using traits = cuda::args::__traits<cuda::args::deferred_sequence<int>>;
 
 [[maybe_unused]] constexpr bool invalid_traits = traits::is_deferred;
 

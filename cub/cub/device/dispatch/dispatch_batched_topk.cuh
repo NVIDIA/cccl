@@ -50,16 +50,16 @@ namespace detail::batched_topk
 // Internal: wrap the compile-time select direction into a discrete param for dispatch
 // -----------------------------------------------------------------------------
 
-// The selection direction is compile-time only: callers pass `::cuda::argument::constant<Dir>`, which maps to a
+// The selection direction is compile-time only: callers pass `::cuda::args::constant<Dir>`, which maps to a
 // value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
 // can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
-template <detail::topk::select Dir>
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::argument::constant<Dir>)
+template <detail::topk::select Dir, class _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, _Tp>)
 {
   return params::static_discrete_param<detail::topk::select, Dir>{};
 }
 
-// The selection direction is intentionally a compile-time constant: only `::cuda::argument::constant<Dir>` is
+// The selection direction is intentionally a compile-time constant: only `::cuda::args::constant<Dir>` is
 // accepted (the overload above maps it to a value-less static_discrete_param). This catch-all documents that
 // deliberate limitation and rejects anything else (e.g. a runtime `detail::topk::select` or a per-segment iterator of
 // directions) with a clear diagnostic. It is an intent/documentation guard rather than a user-facing one: callers
@@ -71,7 +71,7 @@ template <typename SelectDirectionT>
   static_assert(::cuda::std::__always_false_v<SelectDirectionT>,
                 "DeviceBatchedTopK currently supports only compile-time selection directions: the min/max entry "
                 "points (DeviceBatchedTopK::{Max,Min}{Keys,Pairs}) dispatch with a "
-                "::cuda::argument::constant<Dir>; runtime or per-segment directions are "
+                "::cuda::args::constant<Dir>; runtime or per-segment directions are "
                 "intentionally not supported");
   // Unreachable (the static_assert above always fires); keeps the return type well-formed so the only diagnostic is
   // the message above.
@@ -131,7 +131,7 @@ template <typename KeyInputItItT,
           typename PolicySelector = policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
                                                                it_value_t<it_value_t<ValueInputItItT>>,
                                                                ::cuda::std::int64_t,
-                                                               ::cuda::argument::__traits<KParameterT>::highest>>
+                                                               ::cuda::args::__traits<KParameterT>::highest>>
 #if _CCCL_HAS_CONCEPTS()
   requires batched_topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -150,7 +150,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
-  using large_segment_tile_offset_t = typename ::cuda::argument::__traits<TotalNumItemsGuaranteeT>::element_type;
+  using large_segment_tile_offset_t = typename ::cuda::args::__traits<TotalNumItemsGuaranteeT>::element_type;
 
   // Wrap the raw enum into the internal discrete param type
   auto select_directions          = wrap_select_direction(select_direction);
@@ -176,9 +176,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr int worker_per_segment_tile_size =
     worker_per_segment_policy.threads_per_block * worker_per_segment_policy.items_per_thread;
   static constexpr bool any_small_segments =
-    ::cuda::argument::__traits<SegmentSizeParameterT>::lowest <= worker_per_segment_tile_size;
+    ::cuda::args::__traits<SegmentSizeParameterT>::lowest <= worker_per_segment_tile_size;
   static constexpr bool only_small_segments =
-    ::cuda::argument::__traits<SegmentSizeParameterT>::highest <= worker_per_segment_tile_size;
+    ::cuda::args::__traits<SegmentSizeParameterT>::highest <= worker_per_segment_tile_size;
 
   // Allocation layout:
   //   only_small_segments: [0] dummy.
@@ -188,7 +188,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr int allocations_array_size     = only_small_segments ? 1 : (any_small_segments ? 3 : 2);
   size_t allocation_sizes[allocations_array_size] = {1};
 
-  using num_segments_val_t         = typename ::cuda::argument::__traits<NumSegmentsParameterT>::element_type;
+  using num_segments_val_t         = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
   using counters_t                 = batched_topk_counters<num_segments_val_t>;
   using segment_size_scan_offset_t = detail::choose_offset_t<num_segments_val_t>;
   using segment_size_scan_input_op_t =
@@ -244,7 +244,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // TODO (elstehle): support number of segments provided by device-accessible iterator
   // Only uniform number of segments are supported (i.e., we need to resolve the number of segments on the host)
-  static_assert(::cuda::argument::__traits<NumSegmentsParameterT>::is_single_value,
+  static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value,
                 "Only uniform segment sizes are currently supported.");
 
   if constexpr (any_small_segments)
@@ -346,7 +346,7 @@ template <typename KeyInputItItT,
     policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
                                it_value_t<it_value_t<ValueInputItItT>>,
                                ::cuda::std::int64_t,
-                               ::cuda::argument::__traits<KParameterT>::highest>;
+                               ::cuda::args::__traits<KParameterT>::highest>;
   return detail::dispatch_with_env_and_tuning<default_policy_selector>(
     env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
       return dispatch(

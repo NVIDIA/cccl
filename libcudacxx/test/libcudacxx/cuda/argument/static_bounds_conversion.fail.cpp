@@ -10,9 +10,9 @@
 
 #include <cuda/argument>
 
-using arg_t = cuda::argument::immediate<unsigned char, cuda::argument::static_bounds<0, 1000>>;
+using arg_t = cuda::args::immediate<unsigned char, cuda::args::static_bounds<0, 1000>>;
 
-[[maybe_unused]] constexpr auto invalid_highest = cuda::argument::__traits<arg_t>::highest;
+[[maybe_unused]] constexpr auto invalid_highest = cuda::args::__traits<arg_t>::highest;
 
 int main(int, char**)
 {
