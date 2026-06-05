@@ -136,26 +136,27 @@ _CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> O
 //!
 //! @param[in] stream
 //!   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-template <typename OverrideAccumT = nondeterministic_no_override,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitValueT        = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-          typename TransformOpT = ::cuda::std::identity,
-          typename AccumT = decltype(select_nondeterministic_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
-            static_cast<OverrideAccumT*>(nullptr))),
-          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource   = DeviceReduceNondeterministicKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitValueT,
-              AccumT,
-              TransformOpT>,
-          typename KernelLauncherFactory = TripleChevronFactory>
+template <
+  typename OverrideAccumT = nondeterministic_no_override,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitValueT   = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+  typename TransformOpT = ::cuda::std::identity,
+  typename AccumT = decltype(select_nondeterministic_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
+    static_cast<OverrideAccumT*>(nullptr))),
+  typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource   = DeviceReduceNondeterministicKernelSource<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      OffsetT,
+      ReductionOpT,
+      InitValueT,
+      AccumT,
+      TransformOpT>,
+  typename KernelLauncherFactory = TripleChevronFactory>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_nondeterministic_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()

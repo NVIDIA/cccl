@@ -306,7 +306,7 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
          "[reduce][deterministic]",
          test_types)
 {
-  using type   = typename c2h::get<0, TestType>;
+  using type         = typename c2h::get<0, TestType>;
   using init_value_t = type;
 
   const auto env          = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
@@ -326,8 +326,8 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
     {
       c2h::device_vector<type> d_output(1);
 
-      auto error =
-        cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_value_t{}, env);
+      auto error = cub::DeviceReduce::Reduce(
+        d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_value_t{}, env);
       REQUIRE(error == cudaSuccess);
 
       c2h::host_vector<type> h_input = d_input;
@@ -385,8 +385,8 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
 
     init_value_t init_value{cuda::std::numeric_limits<init_value_t>::max()};
 
-    auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::minimum<init_value_t>{}, init_value, env);
+    auto error = cub::DeviceReduce::Reduce(
+      d_input.begin(), d_output.begin(), num_items, cuda::minimum<init_value_t>{}, init_value, env);
     REQUIRE(error == cudaSuccess);
 
     c2h::host_vector<type> h_input = d_input;
@@ -403,8 +403,8 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
 
     init_value_t init_value{cuda::std::numeric_limits<init_value_t>::min()};
 
-    auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_value_t>{}, init_value, env);
+    auto error = cub::DeviceReduce::Reduce(
+      d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_value_t>{}, init_value, env);
     REQUIRE(error == cudaSuccess);
 
     c2h::host_vector<type> h_input = d_input;

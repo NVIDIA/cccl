@@ -13,9 +13,9 @@ template <typename T, typename OffsetT>
 static void exclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
-  using init_value_t    = T;
-  using offset_t  = OffsetT;
-  using scan_op_t = ::cuda::std::plus<T>;
+  using init_value_t = T;
+  using offset_t     = OffsetT;
+  using scan_op_t    = ::cuda::std::plus<T>;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 

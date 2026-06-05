@@ -329,7 +329,7 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
     // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT      = detail::choose_offset_t<NumItemsT>;
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
@@ -415,7 +415,8 @@ struct DeviceScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
+    return scan_impl_env(
+      d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
   }
 
   //! @rst

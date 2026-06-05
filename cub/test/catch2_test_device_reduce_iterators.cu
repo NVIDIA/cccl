@@ -71,7 +71,7 @@ C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   init_default_constant(default_constant);
   auto in_it = cuda::constant_iterator(default_constant);
 
-  using op_t   = cuda::std::plus<>;
+  using op_t         = cuda::std::plus<>;
   using init_value_t = output_t;
 
   // Binary reduction operator
@@ -110,7 +110,7 @@ C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device
   init_default_constant(default_constant);
   auto in_it = cuda::constant_iterator(default_constant);
 
-  using op_t   = cuda::std::plus<>;
+  using op_t         = cuda::std::plus<>;
   using init_value_t = output_t;
 
   // Binary reduction operator

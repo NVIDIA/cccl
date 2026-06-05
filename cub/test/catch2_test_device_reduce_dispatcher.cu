@@ -41,11 +41,11 @@ struct policy_hub_t
 
 C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][device]", value_types)
 {
-  using T        = c2h::get<0, TestType>;
-  using offset_t = int32_t;
-  using init_value_t   = T;
-  using op_t     = cuda::std::plus<>;
-  using accum_t  = cuda::std::__accumulator_t<op_t, T, T>;
+  using T            = c2h::get<0, TestType>;
+  using offset_t     = int32_t;
+  using init_value_t = T;
+  using op_t         = cuda::std::plus<>;
+  using accum_t      = cuda::std::__accumulator_t<op_t, T, T>;
 
   const int num_items = 12'345;
 

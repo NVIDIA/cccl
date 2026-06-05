@@ -37,7 +37,7 @@ struct square_t
 template <typename T, typename OffsetT>
 void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using init_value_t         = T;
+  using init_value_t   = T;
   using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<T>;
 

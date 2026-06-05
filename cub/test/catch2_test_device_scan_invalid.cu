@@ -260,7 +260,7 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_value_t        = output_t;
+    using init_value_t  = output_t;
     c2h::device_vector<init_value_t> d_initial_value{init_value};
     const auto future_init_value = cub::FutureValue<init_value_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(d_in_it, d_out_it, scan_op, future_init_value, num_items);

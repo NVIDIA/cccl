@@ -217,15 +217,23 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   auto* raw_ptr = thrust::raw_pointer_cast(d_output.data());
 
-  using output_it_t = decltype(raw_ptr);
-  using init_value_t      = type;
-  using accum_t     = type;
-  using transform_t = square_t<type>;
+  using output_it_t  = decltype(raw_ptr);
+  using init_value_t = type;
+  using accum_t      = type;
+  using transform_t  = square_t<type>;
 
   std::size_t temp_storage_bytes{};
 
   auto error = cub::detail::reduce_nondeterministic::dispatch(
-    nullptr, temp_storage_bytes, input, raw_ptr, num_items, cuda::std::plus<type>{}, init_value_t{}, nullptr, transform_t{});
+    nullptr,
+    temp_storage_bytes,
+    input,
+    raw_ptr,
+    num_items,
+    cuda::std::plus<type>{},
+    init_value_t{},
+    nullptr,
+    transform_t{});
   REQUIRE(error == cudaSuccess);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);

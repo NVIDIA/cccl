@@ -53,7 +53,14 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
-      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, static_cast<OffsetT>(elements), op_t{}, init_value_t{}, env);
+      cub::DeviceReduce::Reduce,
+      "Reduce failed",
+      d_in,
+      d_out,
+      static_cast<OffsetT>(elements),
+      op_t{},
+      init_value_t{},
+      env);
   });
 }
 

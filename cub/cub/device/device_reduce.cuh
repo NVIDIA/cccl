@@ -254,7 +254,12 @@ private:
             typename NumItemsT,
             typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __minmax_reduce(
-    InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, ReductionOpT reduction_op, InitValueT init, EnvT env)
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    InitValueT init,
+    EnvT env)
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
@@ -765,10 +770,10 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
-    using OffsetT  = detail::choose_offset_t<NumItemsT>; // Signed integer type for global offsets
-    using InputT   = detail::it_value_t<InputIteratorT>;
+    using OffsetT      = detail::choose_offset_t<NumItemsT>; // Signed integer type for global offsets
+    using InputT       = detail::it_value_t<InputIteratorT>;
     using init_value_t = InputT;
-    using limits_t = ::cuda::std::numeric_limits<init_value_t>;
+    using limits_t     = ::cuda::std::numeric_limits<init_value_t>;
 #ifndef CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
     static_assert(limits_t::is_specialized,
                   "cub::DeviceReduce::Min uses cuda::std::numeric_limits<InputIteratorT::value_type>::max() as initial "
@@ -1398,10 +1403,10 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
     // Signed integer type for global offsets
-    using OffsetT  = detail::choose_offset_t<NumItemsT>;
-    using InputT   = detail::it_value_t<InputIteratorT>;
+    using OffsetT      = detail::choose_offset_t<NumItemsT>;
+    using InputT       = detail::it_value_t<InputIteratorT>;
     using init_value_t = InputT;
-    using limits_t = ::cuda::std::numeric_limits<init_value_t>;
+    using limits_t     = ::cuda::std::numeric_limits<init_value_t>;
 #ifndef CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
     static_assert(limits_t::is_specialized,
                   "cub::DeviceReduce::Max uses cuda::std::numeric_limits<InputIteratorT::value_type>::lowest() as "

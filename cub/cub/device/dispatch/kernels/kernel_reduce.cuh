@@ -50,7 +50,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitValueT unwrap_empty_problem_init(InitVal
 }
 
 template <class InitValueT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitValueT unwrap_empty_problem_init(empty_problem_init_t<InitValueT> empty_problem_init)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitValueT
+unwrap_empty_problem_init(empty_problem_init_t<InitValueT> empty_problem_init)
 {
   return empty_problem_init.init;
 }
@@ -77,8 +78,8 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, I
  * @param block_aggregate Aggregate value computed by the block
  */
 template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
-_CCCL_HOST_DEVICE void
-finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitValueT>, AccumT block_aggregate)
+_CCCL_HOST_DEVICE void finalize_and_store_aggregate(
+  OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitValueT>, AccumT block_aggregate)
 {
   *d_out = block_aggregate;
 }

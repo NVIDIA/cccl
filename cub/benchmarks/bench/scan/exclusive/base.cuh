@@ -15,7 +15,7 @@ template <typename T, typename OffsetT>
 static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
-  using init_value_t                   = T;
+  using init_value_t             = T;
   using accum_t [[maybe_unused]] = ::cuda::std::__accumulator_t<op_t, init_value_t, T>;
   using offset_t                 = cub::detail::choose_offset_t<OffsetT>;
 #if USES_WARPSPEED()

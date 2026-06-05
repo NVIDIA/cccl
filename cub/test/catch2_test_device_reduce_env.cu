@@ -401,7 +401,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
-  using init_value_t        = accumulator_t;
+  using init_value_t  = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
   auto d_in             = cuda::constant_iterator(1.0f);
@@ -529,7 +529,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
-  using init_value_t        = accumulator_t;
+  using init_value_t  = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
   auto d_in             = cuda::constant_iterator(1.0f);
@@ -653,7 +653,7 @@ C2H_TEST("Device reduce not_guaranteed falls back when output type differs from 
   using output_t      = cuda::std::uint8_t;
   using accumulator_t = int;
   using op_t          = cuda::std::plus<>;
-  using init_value_t        = input_t;
+  using init_value_t  = input_t;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
@@ -708,7 +708,7 @@ C2H_TEST("Device sum not_guaranteed falls back when output type differs from acc
   using output_t      = cuda::std::uint8_t;
   using accumulator_t = int;
   using op_t          = cuda::std::plus<>;
-  using init_value_t        = output_t;
+  using init_value_t  = output_t;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;

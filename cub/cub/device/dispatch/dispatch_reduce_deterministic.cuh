@@ -46,8 +46,8 @@ template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
 
 template <typename InitValueT, typename InputIteratorT, typename TransformOpT>
-using accum_t =
-  ::cuda::std::__accumulator_t<::cuda::std::plus<>, InitValueT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
+using accum_t = ::cuda::std::
+  __accumulator_t<::cuda::std::plus<>, InitValueT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
 
 template <typename FloatType = float, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
@@ -333,7 +333,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   OffsetT num_items,
-  InitValueT init                             = {},
+  InitValueT init                        = {},
   cudaStream_t stream                    = {},
   TransformOpT transform_op              = {},
   PolicySelector policy_selector         = {},

@@ -38,7 +38,7 @@ struct policy_selector
 template <typename T, typename OffsetT>
 void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using op_t   = cuda::std::plus<>;
+  using op_t         = cuda::std::plus<>;
   using init_value_t = T;
 
   // Retrieve axis parameters
@@ -67,7 +67,14 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
-      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, static_cast<OffsetT>(elements), op_t{}, init_value_t{}, env);
+      cub::DeviceReduce::Reduce,
+      "Reduce failed",
+      d_in,
+      d_out,
+      static_cast<OffsetT>(elements),
+      op_t{},
+      init_value_t{},
+      env);
   });
 }
 

@@ -140,24 +140,25 @@ struct policy_selector_from_hub
  * @tparam InitValueT
  *   Initial value type
  */
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitValueT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>,
-          typename TransformOpT = ::cuda::std::identity,
-          typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::reduce::DeviceReduceKernelSource<
-            detail::reduce::policy_selector_from_hub<PolicyHub>,
-            InputIteratorT,
-            OutputIteratorT,
-            OffsetT,
-            ReductionOpT,
-            InitValueT,
-            AccumT,
-            TransformOpT>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitValueT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
+  typename AccumT     = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>,
+  typename TransformOpT = ::cuda::std::identity,
+  typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource = detail::reduce::DeviceReduceKernelSource<
+    detail::reduce::policy_selector_from_hub<PolicyHub>,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ReductionOpT,
+    InitValueT,
+    AccumT,
+    TransformOpT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchReduce
 {
   //---------------------------------------------------------------------------
@@ -719,20 +720,26 @@ template <typename InputIteratorT,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
 _CCCL_HOST_DEVICE_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
-template <
-  typename OverrideAccumT = use_default,
-  typename InputIteratorT,
-  typename OutputIteratorT,
-  typename OffsetT,
-  typename ReductionOpT,
-  typename InitValueT        = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-  typename TransformOpT = ::cuda::std::identity,
-  typename AccumT =
-    decltype(select_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(static_cast<OverrideAccumT*>(nullptr))),
-  typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
-  typename KernelSource =
-    DeviceReduceKernelSource<PolicySelector, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitValueT, AccumT, TransformOpT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <typename OverrideAccumT = use_default,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+          typename TransformOpT   = ::cuda::std::identity,
+          typename AccumT         = decltype(select_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
+            static_cast<OverrideAccumT*>(nullptr))),
+          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource   = DeviceReduceKernelSource<
+              PolicySelector,
+              InputIteratorT,
+              OutputIteratorT,
+              OffsetT,
+              ReductionOpT,
+              InitValueT,
+              AccumT,
+              TransformOpT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()

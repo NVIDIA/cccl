@@ -93,7 +93,7 @@ private:
     using input_value_t  = cub::detail::it_value_t<InputIteratorT>;
     using output_tuple_t = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<offset_t, input_value_t>>;
     using accum_t        = output_tuple_t;
-    using init_value_t         = detail::reduce::empty_problem_init_t<accum_t>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<accum_t>;
     using output_key_t   = typename output_tuple_t::first_type;
     using output_value_t = typename output_tuple_t::second_type;
 
@@ -830,9 +830,9 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
-    using init_value_t  = OutputT;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OutputT      = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+    using init_value_t = OutputT;
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
@@ -942,11 +942,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Sum");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
-    using init_value_t  = OutputT;
-    using op_t    = ::cuda::std::plus<>;
-    using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OutputT      = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+    using init_value_t = OutputT;
+    using op_t         = ::cuda::std::plus<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
     return variable_size_env_impl<AccumT, OffsetT>(
       d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, op_t{}, init_value_t{}, env);
@@ -1018,7 +1018,15 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
     using init_value_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     return fixed_size_impl(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, ::cuda::std::plus{}, init_value_t{}, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::std::plus{},
+      init_value_t{},
+      stream);
   }
 
   //! @rst
@@ -1192,9 +1200,9 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = detail::it_value_t<InputIteratorT>;
-    using init_value_t  = InputT;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
@@ -1306,17 +1314,24 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Min");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = detail::it_value_t<InputIteratorT>;
-    using init_value_t  = InputT;
-    using op_t    = ::cuda::minimum<>;
-    using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
+    using op_t         = ::cuda::minimum<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
     return variable_size_env_impl<AccumT, OffsetT>(
-      d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, op_t{}, ::cuda::std::numeric_limits<init_value_t>::max(), env);
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      op_t{},
+      ::cuda::std::numeric_limits<init_value_t>::max(),
+      env);
   }
 
   //! @rst
@@ -1594,7 +1609,7 @@ public:
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
     using OverrideAccumT = OutputTupleT;
-    using init_value_t = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
     static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
@@ -1732,7 +1747,7 @@ public:
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
     using OverrideAccumT = OutputTupleT;
-    using init_value_t = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
     static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
@@ -1978,9 +1993,9 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = cub::detail::it_value_t<InputIteratorT>;
-    using init_value_t  = InputT;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
 
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
@@ -2093,11 +2108,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Max");
 
-    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = cub::detail::it_value_t<InputIteratorT>;
-    using init_value_t  = InputT;
-    using op_t    = ::cuda::maximum<>;
-    using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
+    using OffsetT      = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using InputT       = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = InputT;
+    using op_t         = ::cuda::maximum<>;
+    using AccumT       = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_value_t>;
 
     static_assert(::cuda::std::numeric_limits<init_value_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
@@ -2387,7 +2402,7 @@ public:
     using InputValueT    = cub::detail::it_value_t<InputIteratorT>;
     using OutputTupleT   = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OverrideOffsetT, InputValueT>>;
     using OverrideAccumT = OutputTupleT;
-    using init_value_t = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
 
@@ -2525,7 +2540,7 @@ public:
     using InputValueT    = cub::detail::it_value_t<InputIteratorT>;
     using OutputTupleT   = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OverrideOffsetT, InputValueT>>;
     using OverrideAccumT = OutputTupleT;
-    using init_value_t = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using init_value_t   = detail::reduce::empty_problem_init_t<OverrideAccumT>;
     using OutputKeyT     = typename OutputTupleT::Key;
     using OutputValueT   = typename OutputTupleT::Value;
 

@@ -44,9 +44,9 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
   static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
 
-  using output_t = cuda::std::conditional_t<is_argmin, cuda::std::pair<int, T>, T>;
-  using accum_t  = output_t;
-  using init_value_t   = cuda::std::conditional_t<is_argmin, cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
+  using output_t     = cuda::std::conditional_t<is_argmin, cuda::std::pair<int, T>, T>;
+  using accum_t      = output_t;
+  using init_value_t = cuda::std::conditional_t<is_argmin, cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
 
   // Retrieve axis parameters
   const size_t num_elements = static_cast<size_t>(state.get_int64("Elements{io}"));

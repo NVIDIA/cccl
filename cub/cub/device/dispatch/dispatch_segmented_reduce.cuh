@@ -138,26 +138,27 @@ public:
  * @tparam InitValueT
  *   value type
  */
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitValueT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>,
-          typename PolicyHub    = detail::segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::segmented_reduce::DeviceSegmentedReduceKernelSource<
-            detail::segmented_reduce::policy_selector_from_hub<PolicyHub, AccumT, OffsetT, ReductionOpT>,
-            InputIteratorT,
-            OutputIteratorT,
-            BeginOffsetIteratorT,
-            EndOffsetIteratorT,
-            OffsetT,
-            ReductionOpT,
-            InitValueT,
-            AccumT>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename BeginOffsetIteratorT,
+  typename EndOffsetIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitValueT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
+  typename AccumT     = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>,
+  typename PolicyHub  = detail::segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource = detail::segmented_reduce::DeviceSegmentedReduceKernelSource<
+    detail::segmented_reduce::policy_selector_from_hub<PolicyHub, AccumT, OffsetT, ReductionOpT>,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorT,
+    EndOffsetIteratorT,
+    OffsetT,
+    ReductionOpT,
+    InitValueT,
+    AccumT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -677,7 +678,14 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(
     FixedSizeSegmentedReduceKernel,
-    DeviceFixedSizeSegmentedReduceKernel<PolicySelector, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitValueT, AccumT>)
+    DeviceFixedSizeSegmentedReduceKernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      OffsetT,
+      ReductionOpT,
+      InitValueT,
+      AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     FixedSizeSegmentedReduceKernelFinal,
@@ -694,7 +702,7 @@ template <typename OverrideAccumT = use_default,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitValueT          = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+          typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
           typename AccumT         = decltype(select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
             static_cast<OverrideAccumT*>(nullptr))),
           typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
