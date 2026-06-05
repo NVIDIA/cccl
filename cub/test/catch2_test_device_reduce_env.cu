@@ -119,15 +119,8 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 
 TEST_CASE("Device Sum works with default environment", "[reduce][device]")
 {
-  using num_items_t = int;
-  using value_t     = int;
-
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
-  int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
-
+  using num_items_t     = int;
+  using value_t         = int;
   num_items_t num_items = 1;
 
   auto d_in  = cuda::constant_iterator(value_t{1});
@@ -408,13 +401,13 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
-  using init_t        = accumulator_t;
+  using init_value_t  = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
-  init_t init = 0;
+  init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
@@ -434,7 +427,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             decltype(d_out.begin()),
             offset_t,
             op_t,
-            init_t,
+            init_value_t,
             accumulator_t,
             transform_t>),
         reinterpret_cast<void*>(
@@ -446,7 +439,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             decltype(d_out.begin()),
             int, // always used with int offset
             op_t,
-            init_t,
+            init_value_t,
             accumulator_t>)};
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
@@ -474,7 +467,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
           decltype(raw_ptr),
           offset_t,
           op_t,
-          init_t,
+          init_value_t,
           accumulator_t,
           transform_t>)};
     }
@@ -488,7 +481,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 
       REQUIRE(cudaSuccess
               == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
+                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
                   nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
@@ -496,7 +489,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
         decltype(d_in),
         output_it_t,
         reduction_op_t,
-        init_t,
+        init_value_t,
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
@@ -506,7 +499,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
         deterministic_accum_t*,
         output_it_t,
         reduction_op_t,
-        init_t,
+        init_value_t,
         deterministic_accum_t,
         transform_t>;
       // TODO(bgruber): enable this when we have Catch2 3.13+
@@ -536,13 +529,13 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
-  using init_t        = accumulator_t;
+  using init_value_t  = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
-  [[maybe_unused]] init_t init = 0;
+  [[maybe_unused]] init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
@@ -560,7 +553,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             decltype(d_out.begin()),
             offset_t,
             op_t,
-            init_t,
+            init_value_t,
             accumulator_t,
             transform_t>),
         reinterpret_cast<void*>(
@@ -572,7 +565,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             decltype(d_out.begin()),
             int, // always used with int offset
             op_t,
-            init_t,
+            init_value_t,
             accumulator_t>)};
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
@@ -600,7 +593,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
           decltype(raw_ptr),
           offset_t,
           op_t,
-          init_t,
+          init_value_t,
           accumulator_t,
           transform_t>)};
     }
@@ -614,7 +607,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
 
       REQUIRE(cudaSuccess
               == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
+                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
                   nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
@@ -622,7 +615,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
         decltype(d_in),
         output_it_t,
         reduction_op_t,
-        init_t,
+        init_value_t,
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
@@ -632,7 +625,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
         deterministic_accum_t*,
         output_it_t,
         reduction_op_t,
-        init_t,
+        init_value_t,
         deterministic_accum_t,
         transform_t>;
       // TODO(bgruber): enable this when we have Catch2 3.13+
@@ -652,6 +645,114 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   device_reduce_sum(d_in, d_out.begin(), num_items, env);
 
   REQUIRE(d_out[0] == num_items);
+}
+
+C2H_TEST("Device reduce not_guaranteed falls back when output type differs from accumulator", "[reduce][device]")
+{
+  using input_t       = cuda::std::uint8_t;
+  using output_t      = cuda::std::uint8_t;
+  using accumulator_t = int;
+  using op_t          = cuda::std::plus<>;
+  using init_value_t  = input_t;
+  using num_items_t   = int;
+  using offset_t      = cub::detail::choose_offset_t<num_items_t>;
+  using transform_t   = cuda::std::identity;
+
+  auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
+  auto d_out            = thrust::device_vector<output_t>(1);
+  num_items_t num_items = static_cast<num_items_t>(d_in.size());
+  init_value_t init{};
+  size_t expected_bytes_allocated{};
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::Reduce(
+            nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items, op_t{}, init));
+
+  using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+  auto kernels   = cuda::std::array<void*, 3>{
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+          policy_t,
+          decltype(d_in.begin()),
+          decltype(d_out.begin()),
+          offset_t,
+          op_t,
+          init_value_t,
+          accumulator_t,
+          transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::
+        DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+          policy_t,
+          accumulator_t*,
+          decltype(d_out.begin()),
+          int, // always used with int offset
+          op_t,
+          init_value_t,
+          accumulator_t>)};
+
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          allowed_kernels(kernels),
+                          expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce(d_in.begin(), d_out.begin(), num_items, op_t{}, init, env);
+
+  REQUIRE(d_out[0] == output_t{6});
+}
+
+C2H_TEST("Device sum not_guaranteed falls back when output type differs from accumulator", "[reduce][device]")
+{
+  using input_t       = cuda::std::uint8_t;
+  using output_t      = cuda::std::uint8_t;
+  using accumulator_t = int;
+  using op_t          = cuda::std::plus<>;
+  using init_value_t  = output_t;
+  using num_items_t   = int;
+  using offset_t      = cub::detail::choose_offset_t<num_items_t>;
+  using transform_t   = cuda::std::identity;
+
+  auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
+  auto d_out            = thrust::device_vector<output_t>(1);
+  num_items_t num_items = static_cast<num_items_t>(d_in.size());
+  size_t expected_bytes_allocated{};
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items));
+
+  using policy_t = cub::detail::reduce::policy_selector_from_types<accumulator_t, offset_t, op_t>;
+  auto kernels   = cuda::std::array<void*, 3>{
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+          policy_t,
+          decltype(d_in.begin()),
+          decltype(d_out.begin()),
+          offset_t,
+          op_t,
+          init_value_t,
+          accumulator_t,
+          transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::
+        DeviceReduceKernel<policy_t, decltype(d_in.begin()), offset_t, op_t, accumulator_t, transform_t>),
+    reinterpret_cast<void*>(
+      cub::detail::reduce::DeviceReduceSingleTileKernel<
+          policy_t,
+          accumulator_t*,
+          decltype(d_out.begin()),
+          int, // always used with int offset
+          op_t,
+          init_value_t,
+          accumulator_t>)};
+
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                          allowed_kernels(kernels),
+                          expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce_sum(d_in.begin(), d_out.begin(), num_items, env);
+
+  REQUIRE(d_out[0] == output_t{6});
 }
 
 #if TEST_LAUNCH == 0

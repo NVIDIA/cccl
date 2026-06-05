@@ -66,9 +66,8 @@ struct move_only_iterator
 };
 
 static_assert(cuda::std::movable<move_only_iterator> && !cuda::std::copyable<move_only_iterator>
-                && cuda::std::input_or_output_iterator<move_only_iterator>
-                && !cuda::std::sentinel_for<move_only_iterator, move_only_iterator>,
-              "");
+              && cuda::std::input_or_output_iterator<move_only_iterator>
+              && !cuda::std::sentinel_for<move_only_iterator, move_only_iterator>);
 
 int main(int, char**)
 {

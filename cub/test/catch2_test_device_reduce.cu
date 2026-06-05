@@ -26,6 +26,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -145,9 +146,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_t{});
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_value_t{});
 
     // Verify result
     REQUIRE(expected_result == out_result[0]);

@@ -17,6 +17,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -58,9 +59,10 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     const ThreadsInWarpMappingResult prev_mapping_result;
     const cudax::composite_mapping mapping{mapping1, mapping2};
 
-    static_assert(cudax::__group_mapping_result<decltype(mapping.map(parent_group, prev_mapping_result))>);
+    static_assert(
+      cudax::__group_mapping_result<decltype(mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
-    auto result  = mapping.map(parent_group, prev_mapping_result);
+    auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
     using Result = decltype(result);
 
     const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
@@ -80,6 +82,9 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(Result::static_count() == cuda::std::dynamic_extent);
     CHECK(result.count() == ((rank_in_warp % 4 > 0) ? 3 : 1));
     CHECK(result.rank() == ((rank_in_warp % 4 > 0) ? (rank_in_warp % 4 - 1) : 0));
+
+    const auto lane_mask_ref = ((rank_in_warp % 4 > 0) ? 0b1110u : 0b0001u) << ((rank_in_warp / 4) * 4);
+    CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
 
     CHECK(result.is_valid());
     static_assert(Result::is_always_exhaustive());

@@ -10,7 +10,7 @@
 
 /**
  * @file
- * @brief Stream pool and decorated stream types used by places.
+ * @brief Stream pool and augmented stream types used by places.
  *
  * Definitions of stream_pool::next() live in places.cuh (because we need to
  * activate the place to create a stream in the appropriate CUDA context).
@@ -45,6 +45,21 @@ using ::cuda::experimental::stf::mv;
 class exec_place;
 
 /**
+ * @brief Is @p stream currently participating in a CUDA graph capture?
+ *
+ * Returns `false` for `nullptr` (the legacy default stream is never
+ * capturing). `cudaStreamIsCapturing` is itself capture-safe, so this can be
+ * called from contexts where most other driver queries (`cuStreamGetId`,
+ * `cudaStreamGetDevice`, ...) would be rejected with
+ * `cudaErrorStreamCaptureUnsupported` and would *invalidate* the in-flight
+ * capture.
+ */
+[[nodiscard]] inline bool is_stream_capturing(cudaStream_t stream)
+{
+  return cuda_try<cudaStreamIsCapturing>(stream) != cudaStreamCaptureStatusNone;
+}
+
+/**
  * @brief Computes the CUDA device in which the stream was created
  */
 inline int get_device_from_stream(cudaStream_t stream)
@@ -54,24 +69,20 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-  auto capture_status = cudaStreamCaptureStatusNone;
-  if (cudaStreamIsCapturing(stream, &capture_status) == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
+  // participating in capture. Use the active device, which is the device on
+  // which the capture is being constructed.
+  if (is_stream_capturing(stream))
   {
-    // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
-    // participating in capture. Use the active device, which is the device on
-    // which the capture is being constructed.
     return cuda_try<cudaGetDevice>();
   }
 
 #if _CCCL_CTK_AT_LEAST(12, 8)
-  int device = 0;
-  cuda_try(cudaStreamGetDevice(stream, &device));
-  return device;
+  return cuda_try<cudaStreamGetDevice>(stream);
 #else
   auto stream_driver = CUstream(stream);
 
-  CUcontext ctx;
-  cuda_try(cuStreamGetCtx(stream_driver, &ctx));
+  CUcontext ctx = cuda_try<cuStreamGetCtx>(stream_driver);
 
   cuda_try(cuCtxPushCurrent(ctx));
   CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
@@ -100,38 +111,40 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
   {
     return k_no_stream_id;
   }
-  cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
-  const cudaError_t cap_err              = cudaStreamIsCapturing(stream, &capture_status);
-  if (cap_err == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  if (is_stream_capturing(stream))
   {
     return k_no_stream_id;
   }
-  unsigned long long id = 0;
-  cuda_try(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
+  unsigned long long id = cuda_try<cuStreamGetId>(reinterpret_cast<CUstream>(stream));
   _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
   return id;
 }
 
 /**
- * @brief A class to store a CUDA stream along with metadata
+ * @brief A CUDA stream augmented with its pre-resolved driver identity and home device.
  *
- * It contains
+ * Carries:
  *  - the stream itself,
- *  - the stream's unique ID from the CUDA driver (cuStreamGetId), or k_no_stream_id if no stream,
- *  - the device index in which the stream resides
+ *  - the stream's unique ID from the CUDA driver (cuStreamGetId), or k_no_stream_id when unknown,
+ *  - the device index on which the stream resides.
+ *
+ * The id and device are looked up at construction so downstream consumers
+ * (the stream-reuse logic in stream_task, the (src_id, dst_id)-keyed sync-skip
+ * cache in async_resources_handle, etc.) never have to re-pay the driver
+ * round-trip and can use the augmented stream as a cache key.
  */
-struct decorated_stream
+struct augmented_stream
 {
-  decorated_stream() = default;
+  augmented_stream() = default;
 
-  decorated_stream(cudaStream_t stream, unsigned long long id, int dev_id = -1)
+  augmented_stream(cudaStream_t stream, unsigned long long id, int dev_id = -1)
       : stream(stream)
       , id(id)
       , dev_id(dev_id)
   {}
 
   /** Construct from stream only; id is from cuStreamGetId, dev_id is -1 (filled lazily when needed). */
-  explicit decorated_stream(cudaStream_t stream)
+  explicit augmented_stream(cudaStream_t stream)
       : stream(stream)
       , id(get_stream_id(stream))
       , dev_id(-1)
@@ -157,17 +170,43 @@ class stream_pool
   struct impl
   {
     explicit impl(size_t n)
-        : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
+        : payload(n, augmented_stream(nullptr, k_no_stream_id, -1))
     {}
 
-    // Construct from a decorated stream, this is used to create a stream pool with a single stream.
-    explicit impl(decorated_stream ds)
+    // Construct from an augmented stream, this is used to create a stream pool with a single stream.
+    explicit impl(augmented_stream ds)
         : payload(1, mv(ds))
+        , externally_owned(true)
     {}
+
+    // Release every stream the pool has lazily created. Externally-owned
+    // single-stream pools wrap user streams and must leave them alone.
+    ~impl() noexcept
+    {
+      if (externally_owned)
+      {
+        return;
+      }
+
+      for (auto& ds : payload)
+      {
+        if (ds.stream != nullptr)
+        {
+          // Stream destruction can fail during CUDA runtime teardown; the
+          // destructor has no useful way to report or recover from that.
+          (void) cudaStreamDestroy(ds.stream);
+          ds.stream = nullptr;
+        }
+      }
+    }
+
+    impl(const impl&)            = delete;
+    impl& operator=(const impl&) = delete;
 
     mutable ::std::mutex mtx;
-    ::std::vector<decorated_stream> payload;
-    size_t index = 0;
+    ::std::vector<augmented_stream> payload;
+    size_t index          = 0;
+    bool externally_owned = false;
   };
 
   ::std::shared_ptr<impl> pimpl;
@@ -179,8 +218,8 @@ public:
       : pimpl(::std::make_shared<impl>(n))
   {}
 
-  // Construct from a decorated stream, this is used to create a stream pool with a single stream.
-  explicit stream_pool(decorated_stream ds)
+  // Construct from an augmented stream, this is used to create a stream pool with a single stream.
+  explicit stream_pool(augmented_stream ds)
       : pimpl(::std::make_shared<impl>(mv(ds)))
   {}
 
@@ -193,9 +232,9 @@ public:
    * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
    * place.create_stream(). Defined in places.cuh so the pool can use exec_place_scope and exec_place::create_stream().
    */
-  decorated_stream next(const exec_place& place);
+  augmented_stream next(const exec_place& place);
 
-  using iterator = ::std::vector<decorated_stream>::iterator;
+  using iterator = ::std::vector<augmented_stream>::iterator;
   iterator begin()
   {
     return pimpl->payload.begin();
@@ -213,7 +252,7 @@ public:
    */
   size_t size() const
   {
-    ::std::lock_guard<::std::mutex> locker(pimpl->mtx); // NOLINT(modernize-use-scoped-lock)
+    ::std::scoped_lock locker(pimpl->mtx);
     return pimpl->payload.size();
   }
 

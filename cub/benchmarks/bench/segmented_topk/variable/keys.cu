@@ -8,6 +8,7 @@
 #include <thrust/reduce.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__argument_>
 #include <cuda/iterator>
 #include <cuda/random>
 #include <cuda/std/algorithm>
@@ -171,20 +172,17 @@ void variable_seg_size_topk_keys(nvbench::state& state,
     static_cast<cuda::std::int64_t>(MaxSegmentSize));
   const auto input_elements  = thrust::reduce(d_segment_sizes.begin(), d_segment_sizes.end());
   const auto output_elements = static_cast<std::size_t>(num_segments) * K;
-  const auto total_num_items =
-    cub::detail::batched_topk::total_num_items_guarantee<1, cuda::std::numeric_limits<cuda::std::int64_t>::max()>{
-      static_cast<cuda::std::int64_t>(input_elements)};
+  const auto total_num_items = ::cuda::__argument::__immediate{static_cast<cuda::std::int64_t>(input_elements)};
 
   auto in_keys_buffer = gen_data<MaxSegmentSize, K>(
     num_segments, string_to_pattern(state.get_string("Pattern")), thrust::raw_pointer_cast(d_segment_sizes.data()));
   auto out_keys_buffer = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
 
-  cub::detail::batched_topk::segment_size_per_segment<const cuda::std::int64_t*, 1, MaxSegmentSize> segment_sizes_param{
-    thrust::raw_pointer_cast(d_segment_sizes.data())};
-  cub::detail::batched_topk::k_static<K> k_param{};
-  cub::detail::batched_topk::select_direction_static<cub::detail::topk::select::max> select_directions{};
-  cub::detail::batched_topk::num_segments_uniform<> num_segments_uniform_param{
-    static_cast<cuda::std::int64_t>(num_segments)};
+  auto segment_sizes_param = ::cuda::__argument::__immediate_sequence{
+    thrust::raw_pointer_cast(d_segment_sizes.data()), ::cuda::__argument::__bounds<1, MaxSegmentSize>()};
+  auto k_param            = ::cuda::__argument::__constant<K>{};
+  auto select_direction   = ::cuda::__argument::__constant<cub::detail::topk::select::max>{};
+  auto num_segments_param = ::cuda::__argument::__immediate{static_cast<cuda::std::int64_t>(num_segments)};
 
   auto d_keys_in = cuda::make_strided_iterator(
     cuda::make_counting_iterator(thrust::raw_pointer_cast(in_keys_buffer.data())),
@@ -197,38 +195,23 @@ void variable_seg_size_topk_keys(nvbench::state& state,
   state.add_global_memory_reads<KeyT>(input_elements, "InputKeys");
   state.add_global_memory_writes<KeyT>(output_elements, "OutputKeys");
 
-  size_t temp_size{};
-  cub::detail::batched_topk::dispatch(
-    nullptr,
-    temp_size,
-    d_keys_in,
-    d_keys_out,
-    static_cast<cub::NullType**>(nullptr),
-    static_cast<cub::NullType**>(nullptr),
-    segment_sizes_param,
-    k_param,
-    select_directions,
-    num_segments_uniform_param,
-    total_num_items,
-    nullptr);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::batched_topk::dispatch(
-      temp_storage,
-      temp_size,
+    auto env = cub_bench_env(alloc, launch);
+    // TODO(bgruber): call the public API once available
+    _CCCL_TRY_CUDA_API(
+      cub::detail::batched_topk::dispatch_with_env,
+      "batched topk failed",
       d_keys_in,
       d_keys_out,
       static_cast<cub::NullType**>(nullptr),
       static_cast<cub::NullType**>(nullptr),
       segment_sizes_param,
       k_param,
-      select_directions,
-      num_segments_uniform_param,
+      select_direction,
+      num_segments_param,
       total_num_items,
-      launch.get_stream());
+      env);
   });
 }
 

@@ -17,8 +17,7 @@
 #include "test_macros.h"
 
 static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::ignore)>::value
-                && cuda::std::is_empty<decltype(cuda::std::ignore)>::value,
-              "");
+              && cuda::std::is_empty<decltype(cuda::std::ignore)>::value);
 
 // constexpr variables are unavailable before 11.3
 [[nodiscard]] TEST_FUNC constexpr int test_nodiscard()

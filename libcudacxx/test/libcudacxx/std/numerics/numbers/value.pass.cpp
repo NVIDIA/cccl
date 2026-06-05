@@ -109,7 +109,7 @@ TEST_FUNC void test_ext_fp()
 #if !TEST_COMPILER(MSVC)
   // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on
   // Windows"
-#  if _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
   // __half constants
   assert(cuda::std::numbers::e_v<__half> == __half{2.7182817f});
   assert(cuda::std::numbers::log2e_v<__half> == __half{1.442695f});
@@ -124,9 +124,9 @@ TEST_FUNC void test_ext_fp()
   assert(cuda::std::numbers::inv_sqrt3_v<__half> == __half{0.57735026f});
   assert(cuda::std::numbers::egamma_v<__half> == __half{0.5772157f});
   assert(cuda::std::numbers::phi_v<__half> == __half{1.618034f});
-#  endif // _LIBCUDACXX_HAS_NVFP16()
+#  endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
 
-#  if _LIBCUDACXX_HAS_NVBF16()
+#  if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
   assert(cuda::std::numbers::e_v<__nv_bfloat16> == __nv_bfloat16{2.7182817f});
   assert(cuda::std::numbers::log2e_v<__nv_bfloat16> == __nv_bfloat16{1.442695f});
   assert(cuda::std::numbers::log10e_v<__nv_bfloat16> == __nv_bfloat16{0.4342945f});
@@ -140,7 +140,7 @@ TEST_FUNC void test_ext_fp()
   assert(cuda::std::numbers::inv_sqrt3_v<__nv_bfloat16> == __nv_bfloat16{0.57735026f});
   assert(cuda::std::numbers::egamma_v<__nv_bfloat16> == __nv_bfloat16{0.5772157f});
   assert(cuda::std::numbers::phi_v<__nv_bfloat16> == __nv_bfloat16{1.618034f});
-#  endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
 #endif // !TEST_COMPILER(MSVC)
 }
 
