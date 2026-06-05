@@ -51,6 +51,7 @@ struct C
   using const_void_pointer = CPtr<const void>;
 };
 
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 template <class T>
 struct D
 {
@@ -59,6 +60,7 @@ struct D
 private:
   using const_void_pointer = int;
 };
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
 int main(int, char**)
 {
@@ -66,6 +68,8 @@ int main(int, char**)
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char>>::const_void_pointer, const void*>::value));
   static_assert(
     (cuda::std::is_same<cuda::std::allocator_traits<C<char>>::const_void_pointer, CPtr<const void>>::value));
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char>>::const_void_pointer, const void*>::value));
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
   return 0;
 }
