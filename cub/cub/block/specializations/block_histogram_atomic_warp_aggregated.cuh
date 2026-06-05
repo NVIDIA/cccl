@@ -49,69 +49,40 @@ struct BlockHistogramAtomicWarpAggregated
   struct TempStorage
   {};
 
-  int linear_tid;
   int warp_id;
 
   //! Constructor
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockHistogramAtomicWarpAggregated(TempStorage& temp_storage)
-      : linear_tid(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
-      , warp_id(linear_tid / warp_threads)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockHistogramAtomicWarpAggregated(TempStorage&)
+      : warp_id(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ) / warp_threads)
   {}
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::uint32_t NativePeerMaskImpl(unsigned bin) const
   {
-    if constexpr (full_warps)
-    {
-      return ::__match_any_sync(full_warp_mask, bin);
-    }
-    else
-    {
-      if (warp_id == partial_warp_id)
-      {
-        const ::cuda::std::uint32_t active_mask = ::__activemask();
-        return ::__match_any_sync(active_mask, bin);
-      }
-
-      return ::__match_any_sync(full_warp_mask, bin);
-    }
+    const auto active_mask = (full_warps || warp_id != partial_warp_id) ? full_warp_mask : ::__activemask();
+    return ::__match_any_sync(active_mask, bin);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::uint32_t NativePeerMask(unsigned bin) const
   {
-    ::cuda::std::uint32_t peer_mask;
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_70, (peer_mask = this->NativePeerMaskImpl(bin);), (peer_mask = this->BallotPeerMask(bin);));
-
-    return peer_mask;
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return NativePeerMaskImpl(bin);), (return BallotPeerMask(bin);));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::uint32_t BallotPeerMask(unsigned bin) const
   {
-    if constexpr (full_warps)
-    {
-      return cub::MatchAny<bin_bits>(bin);
-    }
-    else
-    {
-      if (warp_id == partial_warp_id)
-      {
-        constexpr auto partial_warp_mask = (::cuda::std::uint32_t{1} << partial_warp_threads) - 1;
-        return cub::MatchAny<bin_bits>(bin) & partial_warp_mask;
-      }
-
-      return cub::MatchAny<bin_bits>(bin);
-    }
+    constexpr auto partial_warp_mask = (::cuda::std::uint32_t{1} << partial_warp_threads) - 1;
+    const auto warp_mask             = (full_warps || warp_id != partial_warp_id) ? full_warp_mask : partial_warp_mask;
+    return cub::MatchAny<bin_bits>(bin) & warp_mask;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::uint32_t PeerMask(unsigned bin) const
   {
     if constexpr (use_ballot_peer_mask)
     {
-      return this->BallotPeerMask(bin);
+      return BallotPeerMask(bin);
     }
     else
     {
-      return this->NativePeerMask(bin);
+      return NativePeerMask(bin);
     }
   }
 
@@ -150,7 +121,7 @@ struct BlockHistogramAtomicWarpAggregated
       if (::cuda::ptx::get_sreg_laneid() == leader)
       {
         const auto count = static_cast<CounterT>(::cuda::std::popcount(peer_mask));
-        this->Add(histogram[bin], count);
+        Add(histogram[bin], count);
       }
     }
   }

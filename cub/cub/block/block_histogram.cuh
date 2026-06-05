@@ -75,16 +75,13 @@ enum BlockHistogramAlgorithm
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! Use warp-level match primitives in conjunction with warp-aggregated
-  //! atomic addition to update counts directly.
+  //! Use warp-level match primitives with warp-aggregated atomic addition to update counts directly.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! This algorithm reduces per-warp contention when multiple lanes update
-  //! the same bin counter. In the most extreme case, where each lane in a
-  //! warp updates the same bin, it reduces the number of atomic operations
-  //! from 32 to 1.
+  //! This algorithm reduces per-warp contention when multiple lanes update the same bin counter. In the most
+  //! extreme case, where each lane in a warp updates the same bin, it reduces atomic operations from 32 to 1.
   //!
   //! @endrst
   BLOCK_HISTO_ATOMIC_WARP_AGGREGATED,

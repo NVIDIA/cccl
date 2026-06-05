@@ -123,6 +123,11 @@ using algorithms =
                       cub::BLOCK_HISTO_SORT,
                       cub::BLOCK_HISTO_ATOMIC,
                       cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED>;
+using warp_aggregated_algorithm =
+  c2h::enum_type_list<cub::BlockHistogramAlgorithm, cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED>;
+using composite_items_per_thread        = c2h::enum_type_list<int, 3>;
+using global_composite_threads_in_block = c2h::enum_type_list<int, 64>;
+using shared_composite_threads_in_block = c2h::enum_type_list<int, 33>;
 
 template <class TestType>
 struct params_t
@@ -235,55 +240,63 @@ C2H_TEST("Block histogram can be computed with random input",
   REQUIRE(h_reference == d_histogram);
 }
 
-TEST_CASE("Block histogram warp-aggregated composite updates a global histogram from multiple blocks",
-          "[histogram][block]")
+C2H_TEST("Block histogram warp-aggregated composite updates a global histogram from multiple blocks",
+         "[histogram][block]",
+         types,
+         composite_items_per_thread,
+         global_composite_threads_in_block,
+         bins,
+         warp_aggregated_algorithm)
 {
-  using sample_t = std::uint16_t;
+  using params   = params_t<TestType>;
+  using sample_t = typename params::sample_t;
 
-  static constexpr int items_per_thread = 3;
-  static constexpr int threads_in_block = 64;
-  static constexpr int num_blocks       = 5;
-  static constexpr int num_bins         = TEST_BINS;
-  static constexpr int num_samples      = num_blocks * threads_in_block * items_per_thread;
+  static constexpr int num_blocks  = 5;
+  static constexpr int num_samples = num_blocks * params::num_samples;
 
   c2h::host_vector<sample_t> h_samples(num_samples);
   for (int i = 0; i < num_samples; ++i)
   {
-    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % num_bins);
+    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % params::bins);
   }
 
-  auto h_reference = compute_host_reference(num_bins, h_samples);
+  auto h_reference = compute_host_reference(params::bins, h_samples);
 
   c2h::device_vector<sample_t> d_samples = h_samples;
-  c2h::device_vector<int> d_histogram(num_bins, 0);
+  c2h::device_vector<int> d_histogram(params::bins, 0);
 
-  block_histogram_composite<items_per_thread, threads_in_block, num_bins>(d_samples, d_histogram, num_blocks);
+  block_histogram_composite<params::items_per_thread, params::threads_in_block, params::bins>(
+    d_samples, d_histogram, num_blocks);
 
   REQUIRE(h_reference == d_histogram);
 }
 
-TEST_CASE("Block histogram warp-aggregated composite updates a shared histogram from a partial warp block",
-          "[histogram][block]")
+C2H_TEST("Block histogram warp-aggregated composite updates a shared histogram from a partial warp block",
+         "[histogram][block]",
+         types,
+         composite_items_per_thread,
+         shared_composite_threads_in_block,
+         bins,
+         warp_aggregated_algorithm)
 {
-  using sample_t = std::uint16_t;
+  using params   = params_t<TestType>;
+  using sample_t = typename params::sample_t;
 
-  static constexpr int items_per_thread = 3;
-  static constexpr int threads_in_block = 33;
-  static constexpr int num_bins         = TEST_BINS;
-  static constexpr int num_samples      = threads_in_block * items_per_thread;
+  static constexpr int num_samples = params::num_samples;
 
   c2h::host_vector<sample_t> h_samples(num_samples);
   for (int i = 0; i < num_samples; ++i)
   {
-    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % num_bins);
+    h_samples[static_cast<std::size_t>(i)] = static_cast<sample_t>(i % params::bins);
   }
 
-  auto h_reference = compute_host_reference(num_bins, h_samples);
+  auto h_reference = compute_host_reference(params::bins, h_samples);
 
   c2h::device_vector<sample_t> d_samples = h_samples;
-  c2h::device_vector<int> d_histogram(num_bins, 0);
+  c2h::device_vector<int> d_histogram(params::bins, 0);
 
-  block_histogram_composite_shared<items_per_thread, threads_in_block, num_bins>(d_samples, d_histogram);
+  block_histogram_composite_shared<params::items_per_thread, params::threads_in_block, params::bins>(
+    d_samples, d_histogram);
 
   REQUIRE(h_reference == d_histogram);
 }
