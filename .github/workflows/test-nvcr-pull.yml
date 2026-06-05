@@ -1,38 +1,22 @@
-# nvcr.io public-image pull smoke test
+# nvcr.io image pull + size — single-job smoke test.
 #
-#   Goal: confirm the NVIDIA/cccl self-hosted runner pool can pull a
-#   canonical public NVIDIA image from nvcr.io. Validates the runner →
-#   nvcr.io network path and matches the dominant pattern used across
-#   NVIDIA OSS GHA workflows (TensorRT-LLM, apex, NeMo, NVFlare, etc.):
-#   anonymous pull from the public nvcr.io/nvidia/* namespace.
+# Pulls a specific nvcr.io image and reports its on-disk size. Does
+# not include `docker login` — relies on whatever credentials the
+# runner is configured with (the Packer-baked NGC pull-secret on
+# nv-gha-runners, if present). A failure with an auth error is
+# itself useful signal that the runner is not pre-configured for
+# the target namespace.
 #
-#   No registry credentials are required. No secrets are referenced.
-#   This test is deliberately scoped to the public nvcr.io/nvidia/*
-#   namespace — private-namespace authentication is out of scope and
-#   tracked separately.
-#
-# LOG DISCIPLINE
-#   PASS/FAIL gates only. No hostnames, no kernel strings, no docker
-#   info dumps, no resolved IPs — Actions logs on a public repo are
-#   world-readable.
-#
-# TRIGGER
-#   - Open a PR against NVIDIA/cccl from a fork. copy-pr-bot (already
-#     configured for cccl) mirrors the PR head to a `pull-request/N`
-#     branch on the upstream repo, and the workflow runs there on
-#     `linux-amd64-cpu4` (self-hosted) with upstream context. Same
-#     trust model as `secret-scan.yml`.
-#   - "Run workflow" button on the Actions tab (workflow_dispatch).
+# Triggers: same as `secret-scan.yml` — copy-pr-bot mirror branches
+# (`pull-request/[0-9]+`) on NVIDIA/cccl + workflow_dispatch.
 
-name: Test nvcr.io Image Pull (public)
+name: nvcr image pull + size
 
-run-name: nvcr public-pull test — ${{ github.ref_name }}
+run-name: nvcr pull — ${{ github.ref_name }}
 
 on:
   push:
     branches:
-      # copy-pr-bot mirror branches — same trigger model as
-      # secret-scan.yml and ci-workflow-pull-request.yml.
       - "pull-request/[0-9]+"
   workflow_dispatch:
 
@@ -44,116 +28,27 @@ permissions:
   contents: read
 
 jobs:
-  pull-nvcr-image:
-    name: docker pull nvcr.io public image
+  pull-and-size:
+    name: docker pull + size
     # NV self-hosted CPU runner on NVIDIA/cccl; GitHub-hosted fallback
-    # so the workflow does not error out on contributor forks where
-    # nv-gha-runners labels do not resolve. Mirrors `secret-scan.yml`.
+    # on contributor forks where nv-gha-runners labels do not resolve.
     runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu4' || 'ubuntu-latest' }}
     env:
-      # Canonical public NVIDIA round-trip test image. Public namespace
-      # (nvcr.io/nvidia/*); no auth required. Small (~80 MB) for a fast
-      # smoke test. Same image NGC docs recommend for verifying nvcr.io
-      # connectivity end-to-end.
-      NVCR_IMAGE: nvcr.io/nvidia/cuda:12.4.0-base-ubuntu22.04
+      NVCR_IMAGE: nvcr.io/nvidian/prodsec/pulse-trufflehog:1.33
 
     steps:
-      - name: Preflight — docker available
+      - name: docker pull
+        run: docker pull "${NVCR_IMAGE}"
+
+      - name: Report size
         run: |
           set -euo pipefail
-          if ! command -v docker >/dev/null 2>&1; then
-            echo "::error::docker CLI not found on this runner."
-            exit 1
-          fi
-          if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
-            echo "::error::docker daemon not reachable from this runner."
-            exit 1
-          fi
-          echo "docker: OK"
-
-      - name: Network reachability — nvcr.io
-        # Accepts ANY HTTP response from nvcr.io as PASS — the goal is
-        # purely "the runner can reach the registry over the network".
-        # HTTP 401 on `/v2/` is *expected* per OCI Distribution Spec:
-        # the endpoint returns a Bearer-token auth challenge, and the
-        # docker client follows that challenge automatically (anonymous
-        # token for public images). A plain `curl --fail` would treat
-        # 401 as failure, which is misleading — we only fail here on
-        # actual network errors (no HTTP response at all).
-        run: |
-          set -euo pipefail
-          code="$(curl --silent --max-time 15 \
-              --output /dev/null --write-out '%{http_code}' \
-              --head https://nvcr.io/v2/ || echo '000')"
-          case "${code}" in
-            000)
-              echo "::error::nvcr.io unreachable (no HTTP response)."
-              exit 1
-              ;;
-            2*|401|403)
-              echo "nvcr.io reachable: PASS (HTTP ${code}; 401 is the expected OCI auth challenge)"
-              ;;
-            5*)
-              echo "::error::nvcr.io reachable but server error (HTTP ${code})."
-              exit 1
-              ;;
-            *)
-              echo "::warning::nvcr.io reachable but unexpected HTTP ${code}"
-              ;;
-          esac
-
-      # NOTE: no standalone manifest probe. nvcr.io returns 401 on the
-      # manifest endpoint to unauthenticated clients (OCI auth challenge,
-      # same reason as `/v2/` above) — a plain HTTP probe is therefore
-      # not a reliable public-vs-private signal on this registry. The
-      # functional test is `docker pull` below, which handles the full
-      # token-dance correctly and is the ground truth for "can this
-      # runner pull this image".
-
-      - name: docker pull (anonymous)
-        run: |
-          set -euo pipefail
-          if docker pull "${NVCR_IMAGE}" >/dev/null 2>&1; then
-            echo "docker pull: PASS"
-          else
-            rc=$?
-            echo "::error::docker pull failed (exit ${rc})."
-            exit "${rc}"
-          fi
-
-      - name: Sanity — image present locally
-        run: |
-          set -euo pipefail
-          if docker image inspect "${NVCR_IMAGE}" \
-              --format '{{.Architecture}}/{{.Os}} size={{.Size}}' \
-              > /tmp/img_meta 2>/dev/null; then
-            echo "image present: PASS ($(cat /tmp/img_meta))"
-          else
-            echo "::error::image not present locally after pull."
-            exit 1
-          fi
+          bytes=$(docker image inspect "${NVCR_IMAGE}" --format '{{.Size}}')
+          mib=$(awk -v b="${bytes}" 'BEGIN { printf "%.1f", b/1024/1024 }')
+          gib=$(awk -v b="${bytes}" 'BEGIN { printf "%.2f", b/1024/1024/1024 }')
+          echo "Image: ${NVCR_IMAGE}"
+          echo "Size:  ${bytes} bytes  (${mib} MiB / ${gib} GiB)"
 
       - name: Cleanup
         if: always()
-        run: |
-          if [[ -n "${NVCR_IMAGE:-}" ]]; then
-            docker rmi "${NVCR_IMAGE}" >/dev/null 2>&1 || true
-          fi
-
-      - name: Summary (no runner identity)
-        if: always()
-        run: |
-          {
-            echo "### nvcr.io public-image pull smoke test"
-            echo
-            echo "| Field | Value |"
-            echo "|---|---|"
-            echo "| Repository | \`${GITHUB_REPOSITORY}\` |"
-            echo "| Branch | \`${GITHUB_REF_NAME}\` |"
-            echo "| Runner class | \`${RUNNER_OS}/${RUNNER_ARCH}\` |"
-            echo "| Image | \`${NVCR_IMAGE}\` |"
-            echo "| Job outcome | \`${{ job.status }}\` |"
-            echo
-            echo "_Step logs contain per-gate PASS/FAIL. Runner hostname,_"
-            echo "_kernel, daemon config, and resolved IPs are deliberately not echoed._"
-          } >> "${GITHUB_STEP_SUMMARY}"
+        run: docker rmi "${NVCR_IMAGE}" >/dev/null 2>&1 || true
