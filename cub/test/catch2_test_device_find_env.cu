@@ -11,6 +11,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 
 #include "catch2_test_env_launch_helper.h"
@@ -33,6 +34,21 @@ struct is_greater_than_t
     return value > threshold;
   }
 };
+
+// A policy selector that forces a specific block size, so a test can verify the tuning was applied.
+template <int ThreadsPerBlock>
+struct find_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::find::find_policy
+  {
+    return {ThreadsPerBlock, 4, 4, cub::LOAD_LDG};
+  }
+};
+
+using block_size_extracting_predicate_t = block_size_extracting_op<::cuda::always_false>;
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
 #if TEST_LAUNCH == 0
 
@@ -186,3 +202,24 @@ C2H_TEST("Device UpperBound uses environment", "[find][device]")
   c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
+
+#if TEST_LAUNCH != 1
+C2H_TEST("Device FindIf can be tuned", "[find][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  constexpr int num_items = 1024;
+  auto d_in               = c2h::device_vector<int>(num_items, 0);
+  auto d_out              = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_block_size       = c2h::device_vector<unsigned int>(1, 0);
+
+  block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto env = cuda::execution::tune(find_tuning<static_cast<int>(target_block_size)>{});
+
+  device_find_if(d_in.begin(), d_out.begin(), predicate, num_items, env);
+
+  REQUIRE(d_out[0] == num_items); // predicate never matches
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+#endif // TEST_LAUNCH != 1
