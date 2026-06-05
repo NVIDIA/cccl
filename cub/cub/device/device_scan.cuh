@@ -137,10 +137,10 @@ struct DeviceScan
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
 
-    using requested_determinism_t =
+    using requested_determinism_t = ::cuda::execution::determinism::__validate_no_tie_break_t<
       ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::not_guaranteed_t>;
+                                                  ::cuda::execution::determinism::not_guaranteed_t>>;
 
     using accum_t =
       ::cuda::std::__accumulator_t<ScanOpT,
