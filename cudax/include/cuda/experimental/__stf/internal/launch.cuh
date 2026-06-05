@@ -365,21 +365,10 @@ public:
 
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
-
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-    {
-      if (record_time)
-      {
-        device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu.
-        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
-        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
-        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
-        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
-        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
-        cuda_try<cudaEventRecord>(start_event, t.get_stream());
-      }
-    }
+    // Set only once both timing events exist and the start event has been recorded.
+    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
+    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
+    bool timing_active = false;
 
     const size_t grid_size = e_place.size();
 
@@ -411,7 +400,7 @@ public:
           deallocateManagedMemory(hostMemoryArrivedList, grid_size, t.get_stream());
         }
 
-        if (record_time)
+        if (timing_active)
         {
           // These run inside the enclosing SCOPE(exit) body, which is noexcept;
           // keep cuda_safe_call so a CUDA error aborts rather than throwing
@@ -436,6 +425,22 @@ public:
 
       t.clear();
     };
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu.
+        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
+        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
+        timing_active = true;
+      }
+    }
 
     /* Should only be allocated / deallocated if the last level used is system wide. Unnecessary and wasteful
      * otherwise. */

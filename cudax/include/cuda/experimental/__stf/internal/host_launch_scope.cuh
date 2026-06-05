@@ -241,28 +241,19 @@ public:
 
     cudaEvent_t start_event = nullptr, end_event = nullptr;
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+    // Set only once both timing events exist and the start event has been recorded.
+    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
+    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
+    bool timing_active = false;
 
     t.start();
-
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-    {
-      if (record_time)
-      {
-        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
-        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
-        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
-        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
-        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
-        cuda_try<cudaEventRecord>(start_event, t.get_stream());
-      }
-    }
 
     SCOPE(exit)
     {
       t.end_uncleared();
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
-        if (record_time)
+        if (timing_active)
         {
           // Inside the noexcept SCOPE(exit) body; keep cuda_safe_call so a CUDA
           // error aborts rather than throwing through the guard.
@@ -285,6 +276,20 @@ public:
       }
       t.clear();
     };
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
+        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
+        timing_active = true;
+      }
+    }
 
     if constexpr (fun_invocable_untyped)
     {
