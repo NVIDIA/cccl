@@ -71,42 +71,44 @@ jobs:
           fi
           echo "docker: OK"
 
-      - name: Network reachability — nvcr.io (PASS/FAIL only)
+      - name: Network reachability — nvcr.io
+        # Accepts ANY HTTP response from nvcr.io as PASS — the goal is
+        # purely "the runner can reach the registry over the network".
+        # HTTP 401 on `/v2/` is *expected* per OCI Distribution Spec:
+        # the endpoint returns a Bearer-token auth challenge, and the
+        # docker client follows that challenge automatically (anonymous
+        # token for public images). A plain `curl --fail` would treat
+        # 401 as failure, which is misleading — we only fail here on
+        # actual network errors (no HTTP response at all).
         run: |
           set -euo pipefail
-          if curl --silent --show-error --fail --max-time 15 \
-              --output /dev/null --head https://nvcr.io/v2/; then
-            echo "nvcr.io reachability (HTTPS HEAD /v2/): PASS"
-          else
-            rc=$?
-            echo "::error::nvcr.io unreachable (curl exit ${rc})."
-            exit "${rc}"
-          fi
-
-      - name: Anonymous manifest probe (HTTP 200 expected)
-        # Hits the OCI/Docker manifest endpoint with NO auth. For an
-        # image in the public nvcr.io/nvidia/* namespace this MUST
-        # return 200; anything else is a real signal and fails the
-        # test. Cheaper than a full layer pull as a pre-check.
-        run: |
-          set -euo pipefail
-          img="${NVCR_IMAGE#nvcr.io/}"
-          if [[ "${img}" == *@* ]]; then
-            img_path="${img%@*}"; img_ref="${img##*@}"
-          elif [[ "${img}" == *:* ]]; then
-            img_path="${img%:*}"; img_ref="${img##*:}"
-          else
-            img_path="${img}"; img_ref="latest"
-          fi
-          code="$(curl --silent --show-error --max-time 15 \
+          code="$(curl --silent --max-time 15 \
               --output /dev/null --write-out '%{http_code}' \
-              --header 'Accept: application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json' \
-              "https://nvcr.io/v2/${img_path}/manifests/${img_ref}" 2>/dev/null || echo '000')"
+              --head https://nvcr.io/v2/ || echo '000')"
           case "${code}" in
-            200) echo "anonymous manifest fetch: PASS (HTTP 200)" ;;
-            *)   echo "::error::anonymous manifest fetch: HTTP ${code} (expected 200 for public namespace)"
-                 exit 1 ;;
+            000)
+              echo "::error::nvcr.io unreachable (no HTTP response)."
+              exit 1
+              ;;
+            2*|401|403)
+              echo "nvcr.io reachable: PASS (HTTP ${code}; 401 is the expected OCI auth challenge)"
+              ;;
+            5*)
+              echo "::error::nvcr.io reachable but server error (HTTP ${code})."
+              exit 1
+              ;;
+            *)
+              echo "::warning::nvcr.io reachable but unexpected HTTP ${code}"
+              ;;
           esac
+
+      # NOTE: no standalone manifest probe. nvcr.io returns 401 on the
+      # manifest endpoint to unauthenticated clients (OCI auth challenge,
+      # same reason as `/v2/` above) — a plain HTTP probe is therefore
+      # not a reliable public-vs-private signal on this registry. The
+      # functional test is `docker pull` below, which handles the full
+      # token-dance correctly and is the ground truth for "can this
+      # runner pull this image".
 
       - name: docker pull (anonymous)
         run: |
