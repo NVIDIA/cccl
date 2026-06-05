@@ -232,15 +232,15 @@ public:
 
     if constexpr (dimensions == 0)
     {
-      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, sizeof(T), kind, s));
+      cuda_try<cudaMemcpyAsync>(dst_ptr, src_ptr, sizeof(T), kind, s);
     }
     else if constexpr (dimensions == 1)
     {
-      cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s));
+      cuda_try<cudaMemcpyAsync>(dst_ptr, src_ptr, b.extent(0) * sizeof(T), kind, s);
     }
     else if constexpr (dimensions == 2)
     {
-      cuda_safe_call(cudaMemcpy2DAsync(
+      cuda_try<cudaMemcpy2DAsync>(
         dst_ptr,
         dst_instance.stride(1) * sizeof(T),
         src_ptr,
@@ -248,14 +248,14 @@ public:
         b.extent(0) * sizeof(T),
         b.extent(1),
         kind,
-        s));
+        s);
     }
     else
     {
       // We only support higher dimensions if they are contiguous !
       if ((contiguous_dims(src_instance) == dimensions) && (contiguous_dims(dst_instance) == dimensions))
       {
-        cuda_safe_call(cudaMemcpyAsync(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s));
+        cuda_try<cudaMemcpyAsync>(dst_ptr, src_ptr, b.size() * sizeof(T), kind, s);
       }
       else
       {
@@ -281,8 +281,7 @@ public:
   {
     auto s = this->instance(instance_id);
 
-    cudaPointerAttributes attributes{};
-    cuda_safe_call(cudaPointerGetAttributes(&attributes, s.data_handle()));
+    const auto attributes = cuda_try<cudaPointerGetAttributes>(s.data_handle());
 
     // Implicitly converted to an optional
     return attributes.type;
