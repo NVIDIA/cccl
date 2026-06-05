@@ -121,7 +121,6 @@ public:
   using __storage_ref_type    = _StorageRef; ///< Type of storage ref
   using __bucket_type         = typename __storage_ref_type::__bucket_type; ///< Bucket type
   using __value_type          = typename __storage_ref_type::__value_type; ///< Storage element type
-  using __extent_type         = typename __storage_ref_type::__extent_type; ///< Extent type
   using __size_type           = typename __storage_ref_type::__size_type; ///< Probing scheme size type
   using __key_equal           = _KeyEqual; ///< Type of key equality binary callable
   using __iterator            = typename __storage_ref_type::__iterator; ///< Slot iterator type
@@ -266,15 +265,6 @@ public:
   }
 
   //!
-  //! @brief Gets the bucket extent of the current storage.
-  //!
-  //! @return The bucket extent.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __extent_type extent() const noexcept
-  {
-    return __storage_ref.extent();
-  }
-
-  //!
   //! @brief Returns an iterator to one past the last slot.
   //!
   //! @return An iterator to one past the last slot
@@ -308,7 +298,8 @@ public:
     const auto __val = this->__heterogeneous_value(__value);
     const auto __key = this->__extract_key(__val);
 
-    auto __probing_iter   = __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.extent());
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_descriptor());
     const auto __init_idx = *__probing_iter;
 
     while (true)
@@ -376,7 +367,7 @@ public:
     const auto __val = this->__heterogeneous_value(__value);
     const auto __key = this->__extract_key(__val);
     auto __probing_iter =
-      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.extent());
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_descriptor());
     const auto __init_idx = *__probing_iter;
 
     while (true)
@@ -484,7 +475,8 @@ public:
   [[nodiscard]] _CCCL_DEVICE bool contains(_ProbeKey __key) const noexcept
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
-    auto __probing_iter   = __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.extent());
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_descriptor());
     const auto __init_idx = *__probing_iter;
 
     while (true)
@@ -531,7 +523,7 @@ public:
   contains(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     auto __probing_iter =
-      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.extent());
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_descriptor());
     const auto __init_idx = *__probing_iter;
 
     while (true)

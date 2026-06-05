@@ -27,9 +27,9 @@
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
+#include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
@@ -44,10 +44,10 @@ namespace cuda::experimental::cuco
 //! @brief Device non-owning reference type for `static_map`.
 //!
 //! This lightweight, trivially-copyable reference is intended to be passed by value to device code
-//! for performing insert, lookup, erase, and other operations on the hash map.
+//! for performing insert and lookup operations on the hash map.
 //!
 //! @note Concurrent modify and lookup on the same map are not supported: lookups perform non-atomic
-//! loads, so a lookup must not run concurrently with an insert or erase (doing so is a data race).
+//! loads, so a lookup must not run concurrently with an insert (doing so is a data race).
 //! @note cuCollections data structures always place the slot keys on the right-hand side when
 //! invoking the key comparison predicate, i.e., `__pred(__query_key, __slot_key)`.
 //! @note `_ProbingScheme::cg_size` indicates how many threads are used to handle one independent
@@ -82,6 +82,10 @@ class static_map_ref
 
   static constexpr bool __allows_duplicates = false;
 
+  static_assert(_Capacity == ::cuda::experimental::cuco::dynamic_extent
+                  || ::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
+                "Capacity must be a valid open-addressing capacity; obtain it via cuco::make_valid_capacity");
+
 public:
   using key_type            = _Key; ///< Key type
   using mapped_type         = _Tp; ///< Payload (mapped value) type
@@ -98,8 +102,7 @@ public:
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope for atomic operations
 
   //! @brief Compile-time adjusted slot count; `cuda::std::dynamic_extent` when `_Capacity` is dynamic.
-  static constexpr size_type capacity_v =
-    ::cuda::experimental::cuco::__detail::__valid_capacity_v<_ProbingScheme, _BucketSize, _Capacity>;
+  static constexpr size_type capacity_v = _Capacity;
 
   //! @brief Slot-storage span type. For static `_Capacity`, the span carries the adjusted
   //! `capacity_v` extent at compile time; for dynamic `_Capacity`, the extent is dynamic.
@@ -110,8 +113,29 @@ private:
   // receives the adjusted `capacity_v`, so when `_Capacity` is static the bucket count
   // travels through the storage's `__extent_type` at compile time and the probing
   // iterator's modular reduction folds to a constant.
+  using __capacity_descriptor_type = ::cuda::experimental::cuco::valid_capacity<_ProbingScheme, _BucketSize, _Capacity>;
   using __storage_ref_type =
-    ::cuda::experimental::cuco::__open_addressing::__slot_storage_ref<value_type, _BucketSize, capacity_v>;
+    ::cuda::experimental::cuco::__open_addressing::__slot_storage_ref<value_type, __capacity_descriptor_type>;
+
+  //! @brief Builds the validated capacity descriptor for the given slot span.
+  //!
+  //! @param __slots Span over the slot storage
+  //!
+  //! @return The capacity descriptor (static value folds from the type; dynamic is validated)
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr __capacity_descriptor_type
+  __as_capacity(storage_span_type __slots) noexcept
+  {
+    if constexpr (_Capacity == ::cuda::experimental::cuco::dynamic_extent)
+    {
+      _CCCL_ASSERT((::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(__slots.size())),
+                   "storage size is not a valid capacity");
+      return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__slots.size());
+    }
+    else
+    {
+      return __capacity_descriptor_type{};
+    }
+  }
 
   using __impl_type = ::cuda::experimental::cuco::__open_addressing::
     __open_addressing_ref_impl<_Key, _Scope, _KeyEqual, _ProbingScheme, __storage_ref_type, __allows_duplicates>;
@@ -135,7 +159,7 @@ public:
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                __predicate,
                __probing_scheme,
-               __storage_ref_type{__slots.data(), __slots.size() / _BucketSize}}
+               __storage_ref_type{__slots.data(), __as_capacity(__slots)}}
   {}
 
   //! @brief Constructs a ref with erasure support.
@@ -157,7 +181,7 @@ public:
                key_type(__erased_key_sentinel),
                __predicate,
                __probing_scheme,
-               __storage_ref_type{__slots.data(), __slots.size() / _BucketSize}}
+               __storage_ref_type{__slots.data(), __as_capacity(__slots)}}
   {}
 
   // ===== Accessors =====

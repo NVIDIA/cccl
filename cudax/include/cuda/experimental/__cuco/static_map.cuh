@@ -29,9 +29,9 @@
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
-#include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_impl.cuh>
+#include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/static_map_ref.cuh>
@@ -44,19 +44,18 @@ namespace cuda::experimental::cuco
 {
 //! @brief A GPU-accelerated, unordered, associative container of key-value pairs with unique keys.
 //!
-//! Allows constant-time inserts, lookups, and erasure from device code. Many threads may perform
+//! Allows constant-time inserts and lookups from device code. Many threads may perform
 //! the same kind of operation concurrently (e.g. concurrent inserts, or concurrent lookups).
 //! Storage is bulk-allocated ahead of time and requires the user to provide sentinel values
 //! for empty and, optionally, erased keys.
 //!
-//! @note Concurrent modification (insert/erase) and lookup (find/contains) on the same map are not
-//! supported: lookups perform non-atomic loads, so a lookup that overlaps a concurrent insert or
-//! erase is a data race and results in undefined behavior. Concurrent inserts (with other inserts)
+//! @note Concurrent modification (insert) and lookup (contains) on the same map are not
+//! supported: lookups perform non-atomic loads, so a lookup that overlaps a concurrent insert
+//! is a data race and results in undefined behavior. Concurrent inserts (with other inserts)
 //! and concurrent lookups (with other lookups) are supported; the two kinds must not be mixed.
-//! @note `_Capacity` is a span-style `size_t` non-type parameter. Pass `cuda::std::dynamic_extent`
-//! (the default) for runtime-sized maps; any concrete value encodes the requested slot count at
-//! compile time. The actual allocated capacity is the prime/stride-adjusted value exposed as
-//! `capacity_v` (see `compute_capacity<N>()` / `compute_capacity(size_type)`).
+//! @note `_Capacity` is a span-style `size_t` non-type parameter holding the *valid* (post-rounding)
+//! slot count, or `cuda::std::dynamic_extent` (the default) for runtime-sized maps. Obtain a valid
+//! value with `cuco::make_valid_capacity` / `cuco::next_valid_capacity`.
 //!
 //! @tparam _Key Key type. Requires `cuda::experimental::cuco::is_bitwise_comparable_v<_Key>`
 //! @tparam _Tp Mapped value type
@@ -89,22 +88,12 @@ public:
   static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope for atomic operations
 
-  //! @brief Compile-time adjusted capacity for a static requested slot count `_N`.
-  template <::cuda::std::size_t _N, ::cuda::std::enable_if_t<_N != ::cuda::std::dynamic_extent, int> = 0>
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr size_type compute_capacity() noexcept
-  {
-    return ::cuda::experimental::cuco::__detail::__valid_extent_v<_ProbingScheme, _BucketSize, _N>;
-  }
+  static_assert(_Capacity == ::cuda::experimental::cuco::dynamic_extent
+                  || ::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(_Capacity),
+                "Capacity must be a valid open-addressing capacity; obtain it via cuco::make_valid_capacity");
 
-  //! @brief Runtime-adjusted capacity for a requested slot count.
-  [[nodiscard]] _CCCL_HOST static size_type compute_capacity(size_type __n)
-  {
-    return ::cuda::experimental::cuco::__detail::__valid_capacity<_ProbingScheme, _BucketSize>(__n);
-  }
-
-  //! @brief Compile-time adjusted capacity; `cuda::std::dynamic_extent` for dynamic maps.
-  static constexpr size_type capacity_v =
-    ::cuda::experimental::cuco::__detail::__valid_capacity_v<_ProbingScheme, _BucketSize, _Capacity>;
+  //! @brief Valid (post-rounding) slot count; `cuda::std::dynamic_extent` for dynamic maps.
+  static constexpr size_type capacity_v = _Capacity;
 
   using ref_type = static_map_ref<_Key, _Tp, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>; ///< Device
                                                                                                          ///< non-owning

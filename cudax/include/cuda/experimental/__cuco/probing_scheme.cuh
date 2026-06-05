@@ -73,44 +73,44 @@ public:
   //!
   //! @tparam _BucketSize Size of the bucket
   //! @tparam _ProbeKey Type of probing key
-  //! @tparam _Extent Type of extent
+  //! @tparam _Capacity Capacity descriptor type
   //!
   //! @param __probe_key The probing key
-  //! @param __upper_bound Upper bound of the iteration
+  //! @param __cap Capacity descriptor bounding the iteration
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
-  template <int _BucketSize, class _ProbeKey, class _Extent>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept
+  template <int _BucketSize, class _ProbeKey, class _Capacity>
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
   {
-    using __size_type        = typename _Extent::index_type;
-    __size_type const __init = __hash(__probe_key) % (__upper_bound.extent(0) / _BucketSize) * _BucketSize;
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
-      __init, static_cast<__size_type>(_BucketSize), __upper_bound};
+    using __size_type        = typename _Capacity::size_type;
+    __size_type const __init = __hash(__probe_key) % (__cap.capacity() / _BucketSize) * _BucketSize;
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{
+      __init, static_cast<__size_type>(_BucketSize), __cap};
   }
 
   //! @brief Returns a cooperative group based probing iterator.
   //!
   //! @tparam _BucketSize Size of the bucket
   //! @tparam _ProbeKey Type of probing key
-  //! @tparam _Extent Type of extent
+  //! @tparam _Capacity Capacity descriptor type
   //! @tparam _ParentCG Type of parent cooperative group
   //!
   //! @param __group The cooperative group used to generate the probing iterator
   //! @param __probe_key The probing key
-  //! @param __upper_bound Upper bound of the iteration
+  //! @param __cap Capacity descriptor bounding the iteration
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
-  template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
+  template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
   _CCCL_HOST_DEVICE_API constexpr auto
   make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                 _ProbeKey __probe_key,
-                _Extent __upper_bound) const noexcept
+                _Capacity __cap) const noexcept
   {
-    using __size_type              = typename _Extent::index_type;
+    using __size_type              = typename _Capacity::size_type;
     constexpr __size_type __stride = cg_size * _BucketSize;
-    __size_type const __init       = __hash(__probe_key) % (__upper_bound.extent(0) / __stride) * __stride
+    __size_type const __init       = __hash(__probe_key) % (__cap.capacity() / __stride) * __stride
                              + static_cast<__size_type>(__group.thread_rank() * _BucketSize);
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{__init, __stride, __upper_bound};
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{__init, __stride, __cap};
   }
 
   //! @brief Gets the function used to hash keys.
@@ -188,48 +188,48 @@ public:
   //!
   //! @tparam _BucketSize Size of the bucket
   //! @tparam _ProbeKey Type of probing key
-  //! @tparam _Extent Type of extent
+  //! @tparam _Capacity Capacity descriptor type
   //!
   //! @param __probe_key The probing key
-  //! @param __upper_bound Upper bound of the iteration
+  //! @param __cap Capacity descriptor bounding the iteration
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
-  template <int _BucketSize, class _ProbeKey, class _Extent>
-  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept
+  template <int _BucketSize, class _ProbeKey, class _Capacity>
+  _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
   {
-    using __size_type = typename _Extent::index_type;
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
-      static_cast<__size_type>(__hash1(__probe_key)) % (__upper_bound.extent(0) / _BucketSize) * _BucketSize,
-      static_cast<__size_type>((__hash2(__probe_key) % (__upper_bound.extent(0) / _BucketSize - 1) + 1) * _BucketSize),
-      __upper_bound};
+    using __size_type = typename _Capacity::size_type;
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{
+      static_cast<__size_type>(__hash1(__probe_key)) % (__cap.capacity() / _BucketSize) * _BucketSize,
+      static_cast<__size_type>((__hash2(__probe_key) % (__cap.capacity() / _BucketSize - 1) + 1) * _BucketSize),
+      __cap};
   }
 
   //! @brief Returns a cooperative group based probing iterator.
   //!
   //! @tparam _BucketSize Size of the bucket
   //! @tparam _ProbeKey Type of probing key
-  //! @tparam _Extent Type of extent
+  //! @tparam _Capacity Capacity descriptor type
   //! @tparam _ParentCG Type of parent cooperative group
   //!
   //! @param __group The cooperative group used to generate the probing iterator
   //! @param __probe_key The probing key
-  //! @param __upper_bound Upper bound of the iteration
+  //! @param __cap Capacity descriptor bounding the iteration
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
-  template <int _BucketSize, class _ProbeKey, class _Extent, class _ParentCG>
+  template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
   _CCCL_HOST_DEVICE_API constexpr auto
   make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                 _ProbeKey __probe_key,
-                _Extent __upper_bound) const noexcept
+                _Capacity __cap) const noexcept
   {
-    using __size_type              = typename _Extent::index_type;
+    using __size_type              = typename _Capacity::size_type;
     constexpr __size_type __stride = cg_size * _BucketSize;
 
-    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
-      static_cast<__size_type>(__hash1(__probe_key)) % (__upper_bound.extent(0) / __stride) * __stride
+    return ::cuda::experimental::cuco::__detail::__probing_iterator<_Capacity>{
+      static_cast<__size_type>(__hash1(__probe_key)) % (__cap.capacity() / __stride) * __stride
         + static_cast<__size_type>(__group.thread_rank() * _BucketSize),
-      static_cast<__size_type>((__hash2(__probe_key) % (__upper_bound.extent(0) / __stride - 1) + 1) * __stride),
-      __upper_bound};
+      static_cast<__size_type>((__hash2(__probe_key) % (__cap.capacity() / __stride - 1) + 1) * __stride),
+      __cap};
   }
 
   //! @brief Gets the functions used to hash keys.

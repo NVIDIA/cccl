@@ -29,11 +29,11 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__detail/types.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/__open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
+#include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 #include <cuda/experimental/__cuco/traits.hpp>
 
@@ -73,10 +73,10 @@ public:
   using __value_type          = _Value;
   using __probing_scheme_type = _ProbingScheme;
   using __hasher              = typename __probing_scheme_type::hasher;
-  using __extent_type         = ::cuda::std::extents<::cuda::std::size_t, ::cuda::std::dynamic_extent>;
   using __size_type           = ::cuda::std::size_t;
   using __key_equal           = _KeyEqual;
-  using __storage_ref_type    = __slot_storage_ref<__value_type, _BucketSize>;
+  using __storage_ref_type =
+    __slot_storage_ref<__value_type, ::cuda::experimental::cuco::valid_capacity<_ProbingScheme, _BucketSize>>;
 
   static constexpr auto __has_payload  = !::cuda::std::is_same_v<_Key, _Value>;
   static constexpr auto __cg_size      = _ProbingScheme::cg_size;
@@ -105,16 +105,15 @@ private:
   //! @brief Computes the actual number of buckets given a requested capacity.
   [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __requested_capacity)
   {
-    return ::cuda::experimental::cuco::__detail::__valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity);
+    return ::cuda::experimental::cuco::next_valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity)
+         / _BucketSize;
   }
 
   //! @brief Computes the number of buckets for a given number of keys and load factor.
   [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __n, double __load_factor)
   {
-    return static_cast<__size_type>(
-      ::cuda::experimental::cuco::__detail::__make_valid_extent<_ProbingScheme, _BucketSize>(
-        ::cuda::experimental::cuco::extent<__size_type>{__n}, __load_factor)
-        .extent(0));
+    return ::cuda::experimental::cuco::next_valid_capacity<_ProbingScheme, _BucketSize>(__n, __load_factor)
+         / _BucketSize;
   }
 
   //! @brief Extracts the key from a slot.
@@ -362,7 +361,9 @@ public:
   //! @brief Returns a non-owning reference to the stored slots.
   [[nodiscard]] _CCCL_HOST constexpr __storage_ref_type storage_ref() const noexcept
   {
-    return __storage_ref_type{const_cast<__value_type*>(__slots.data()), __num_buckets};
+    return __storage_ref_type{
+      const_cast<__value_type*>(__slots.data()),
+      ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(this->capacity())};
   }
 };
 } // namespace cuda::experimental::cuco::__open_addressing

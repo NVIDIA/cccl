@@ -37,19 +37,21 @@ public:
 
 //! @brief Probing iterator class.
 //!
-//! @tparam _Extent Extent type
-template <class _Extent>
+//! Yields slot offsets and wraps modulo the total capacity (in slots) via the capacity descriptor.
+//!
+//! @tparam _Capacity Capacity descriptor type (a `cuco::valid_capacity`)
+template <class _Capacity>
 class __probing_iterator
 {
 public:
-  using __extent_type = _Extent;
-  using __size_type   = typename __extent_type::index_type;
+  using __capacity_type = _Capacity;
+  using __size_type     = typename _Capacity::size_type;
 
   _CCCL_HOST_DEVICE_API constexpr __probing_iterator(
-    __size_type __start, __size_type __step, __extent_type __upper_bound) noexcept
+    __size_type __start, __size_type __step, _Capacity __capacity) noexcept
       : __curr_index{__start}
       , __step_size{__step}
-      , __upper_bound{__upper_bound}
+      , __capacity_{__capacity}
   {}
 
   _CCCL_HOST_DEVICE_API constexpr auto operator*() const noexcept
@@ -59,7 +61,7 @@ public:
 
   _CCCL_HOST_DEVICE_API constexpr auto operator++() noexcept
   {
-    __curr_index = (__curr_index + __step_size) % __upper_bound.extent(0);
+    __curr_index = (__curr_index + __step_size) % __capacity_;
     return *this;
   }
 
@@ -73,7 +75,7 @@ public:
 private:
   __size_type __curr_index;
   __size_type __step_size;
-  __extent_type __upper_bound;
+  _CCCL_NO_UNIQUE_ADDRESS _Capacity __capacity_;
 };
 } // namespace cuda::experimental::cuco::__detail
 

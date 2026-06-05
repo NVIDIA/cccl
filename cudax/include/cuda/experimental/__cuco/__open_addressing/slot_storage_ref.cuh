@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -31,77 +30,62 @@ namespace cuda::experimental::cuco::__open_addressing
 {
 //! @brief Lightweight non-owning reference to a contiguous slot array with bucket abstraction.
 //!
-//! Provides indexing into the slot array organized as buckets. The probing scheme produces
-//! bucket indices; within each bucket there are `_BucketSize` value-typed slots.
-//!
-//! `_Extent` is the *actual* (prime/stride-adjusted) total slot count, mirroring
-//! `cuda::std::span<T, _Extent>` semantics. Public-facing `static_map`/`static_map_ref`
-//! types take a *requested* `_Capacity` template argument and pass the adjusted
-//! `capacity_v` here. When `_Extent` is static, the bucket count is encoded in the
-//! storage's `__extent_type` at compile time, so the probing iterator's modular reduction
-//! by `num_buckets` folds to a constant. Owning containers that allocate at runtime use
-//! the default (dynamic) `_Extent`.
+//! Provides indexing into the slot array organized as buckets; within each bucket there are
+//! `bucket_size` value-typed slots. The total slot count is carried by a `cuco::valid_capacity`
+//! descriptor, so a static capacity folds the probing reduction to a constant while a dynamic
+//! capacity stores the slot count. The probing layer works in slot offsets bounded by `capacity()`.
 //!
 //! @tparam _Value The slot value type (e.g. `::cuda::std::pair<Key, T>`)
-//! @tparam _BucketSize Number of slots per bucket (compile-time constant)
-//! @tparam _Extent Actual total slot count, or `cuda::std::dynamic_extent` for runtime
-//! sizing. Must be divisible by `_BucketSize` when static.
-template <class _Value, int _BucketSize, ::cuda::std::size_t _Extent = ::cuda::std::dynamic_extent>
+//! @tparam _CapacityDescriptor The `cuco::valid_capacity` descriptor type carrying the slot count
+template <class _Value, class _CapacityDescriptor>
 struct __slot_storage_ref
 {
-  using __size_type = ::cuda::std::size_t;
+  using __size_type           = ::cuda::std::size_t;
+  using __value_type          = _Value;
+  using __capacity_descriptor = _CapacityDescriptor;
+  using __iterator            = _Value*;
+  using __const_iterator      = const _Value*;
 
-  static_assert(_BucketSize > 0, "_BucketSize must be greater than zero");
-  static_assert(_Extent == ::cuda::std::dynamic_extent || _Extent % _BucketSize == 0,
-                "Static _Extent must be divisible by _BucketSize");
+  static constexpr int __bucket_size = _CapacityDescriptor::bucket_size;
 
-  // Bucket count: static when `_Extent` is, dynamic otherwise.
-  static constexpr __size_type __num_buckets_v =
-    (_Extent == ::cuda::std::dynamic_extent) ? ::cuda::std::dynamic_extent : (_Extent / _BucketSize);
+  using __bucket_type = ::cuda::std::span<_Value, __bucket_size>;
 
-  using __value_type     = _Value;
-  using __extent_type    = ::cuda::std::extents<__size_type, __num_buckets_v>;
-  using __iterator       = _Value*;
-  using __const_iterator = const _Value*;
-  using __bucket_type    = ::cuda::std::span<_Value, _BucketSize>;
-
-  static constexpr int __bucket_size = _BucketSize;
+  static_assert(__bucket_size > 0, "bucket size must be greater than zero");
 
   _Value* __data_;
-  __extent_type __num_buckets_;
+  _CCCL_NO_UNIQUE_ADDRESS __capacity_descriptor __capacity_;
 
   //! @brief Constructs a slot storage ref.
   //!
   //! @param __data Pointer to the first slot
-  //! @param __num_buckets Number of buckets (total slots = __num_buckets * _BucketSize). Must
-  //! equal the static bucket count when `_Extent` is static.
-  _CCCL_HOST_DEVICE constexpr __slot_storage_ref(_Value* __data, __size_type __num_buckets) noexcept
+  //! @param __capacity Validated capacity descriptor (total slots = `__capacity.capacity()`)
+  _CCCL_HOST_DEVICE constexpr __slot_storage_ref(_Value* __data, __capacity_descriptor __capacity) noexcept
       : __data_{__data}
-      , __num_buckets_{__num_buckets}
+      , __capacity_{__capacity}
   {}
 
   //! @brief Returns the bucket at position `__i`.
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __bucket_type operator[](__size_type __i) const noexcept
   {
-    return __bucket_type{__data_ + __i * _BucketSize, static_cast<typename __bucket_type::size_type>(_BucketSize)};
+    return __bucket_type{__data_ + __i * __bucket_size, static_cast<typename __bucket_type::size_type>(__bucket_size)};
   }
 
   //! @brief Returns the total number of slots.
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __size_type capacity() const noexcept
   {
-    return static_cast<__size_type>(__num_buckets_.extent(0)) * _BucketSize;
+    return __capacity_.capacity();
   }
 
-  //! @brief Returns the number of buckets, as an extent object.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __extent_type extent() const noexcept
-  {
-    return __num_buckets_;
-  }
-
-  //! @brief Returns the number of buckets as a raw value.
+  //! @brief Returns the number of buckets.
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __size_type num_buckets() const noexcept
   {
-    return static_cast<__size_type>(__num_buckets_.extent(0));
+    return __capacity_.num_buckets();
+  }
+
+  //! @brief Returns the validated capacity descriptor (used as the probing reduction bound).
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __capacity_descriptor capacity_descriptor() const noexcept
+  {
+    return __capacity_;
   }
 
   //! @brief Returns a pointer to the underlying slot array.

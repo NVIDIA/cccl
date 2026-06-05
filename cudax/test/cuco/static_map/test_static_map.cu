@@ -18,7 +18,9 @@
 
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
+#include <cuda/std/type_traits>
 
+#include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/static_map.cuh>
 
 #include <testing.cuh>
@@ -34,11 +36,17 @@ constexpr int empty_value = -1;
 using map_type = cudax::cuco::static_map<int, int>;
 
 // ---------------------------------------------------------------------------
-// Compile-time (static) capacity map: 512 requested slots.
-// The actual capacity is static_map_512_type::capacity_v.
-// For linear_probing<1> with stride=1 this equals 512.
+// Static-capacity map. `_Capacity` must be a *valid* slot count, so it is computed from the probing
+// scheme and bucket size first and only then used to name the map type — never hand-written as a
+// guessed literal. These match this map's default configuration (linear probing, cg_size 1,
+// bucket_size 1).
 // ---------------------------------------------------------------------------
-using static_map_512_type = cudax::cuco::static_map<int, int, 512>;
+using default_probing               = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
+inline constexpr int default_bucket = 1;
+
+inline constexpr ::cuda::std::size_t static_capacity =
+  cudax::cuco::next_valid_capacity<default_probing, default_bucket>(::cuda::std::size_t{512});
+using static_map_512_type = cudax::cuco::static_map<int, int, static_capacity>;
 
 // ---------------------------------------------------------------------------
 // Device kernels (all operate through the ref type)
@@ -135,12 +143,13 @@ C2H_TEST("static_map device ref APIs", "[container]")
   }
 }
 
-C2H_TEST("static_map dynamic capacity — compute_capacity and capacity()", "[extent][dynamic]")
+C2H_TEST("static_map dynamic capacity — valid capacity and capacity()", "[extent][dynamic]")
 {
   constexpr ::cuda::std::size_t requested = 1000;
   using dyn_map_t                         = cudax::cuco::static_map<int, int>;
 
-  const auto actual_cap = dyn_map_t::compute_capacity(requested);
+  const auto actual_cap =
+    cudax::cuco::next_valid_capacity<dyn_map_t::probing_scheme_type, dyn_map_t::bucket_size>(requested);
   REQUIRE(actual_cap >= requested);
 
   static_assert(dyn_map_t::capacity_v == ::cuda::std::dynamic_extent,
@@ -152,23 +161,24 @@ C2H_TEST("static_map dynamic capacity — compute_capacity and capacity()", "[ex
   REQUIRE(map.capacity() == actual_cap);
 }
 
-C2H_TEST("static_map static capacity — compute_capacity and capacity_v", "[extent][static]")
+C2H_TEST("static_map static capacity — valid capacity and capacity_v", "[extent][static]")
 {
-  constexpr ::cuda::std::size_t N = 512;
-  using smap_t                    = cudax::cuco::static_map<int, int, N>;
+  // Double hashing rounds a requested slot count up to a prime-cycle capacity, so the valid capacity
+  // must be computed from the probing scheme and bucket size before it can name a static map type.
+  using probing        = cudax::cuco::double_hashing<1, cudax::cuco::hash<int>>;
+  constexpr int bucket = 1;
 
-  // compute_capacity is callable at compile time
-  constexpr auto computed = smap_t::template compute_capacity<N>();
-  static_assert(computed >= N, "compute_capacity() result must be >= N at compile time");
-  static_assert(smap_t::capacity_v != ::cuda::std::dynamic_extent,
-                "capacity_v must carry a compile-time value for static capacity");
-  static_assert(computed == smap_t::capacity_v,
-                "compile-time compute_capacity() and capacity_v must encode the same slot count");
-  static_assert(smap_t::ref_type::capacity_v == smap_t::capacity_v,
-                "ref::capacity_v must equal the compile-time adjusted slot count");
+  constexpr ::cuda::std::size_t requested = 1000;
+  constexpr auto valid                    = cudax::cuco::next_valid_capacity<probing, bucket>(requested);
+  static_assert(valid > requested, "1000 is not a valid double-hashing capacity; it rounds up");
+
+  using smap_t =
+    cudax::cuco::static_map<int, int, valid, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing, 1>;
+  static_assert(smap_t::capacity_v == valid, "the map type carries the valid capacity, not the request");
+  static_assert(smap_t::ref_type::capacity_v == valid, "the ref carries the same valid capacity");
 
   smap_t map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
-  REQUIRE(map.capacity() == smap_t::capacity_v);
+  REQUIRE(map.capacity() == valid);
 }
 
 C2H_TEST("static_map static extent — device insert and contains", "[extent][static]")
@@ -248,7 +258,10 @@ C2H_TEST("static_map static extent — erased_key constructor", "[extent][static
   constexpr int erased_sentinel = -2;
   constexpr int num_keys        = 32;
 
-  using smap_erase_t = cudax::cuco::static_map<int, int, 256>;
+  // Compute the valid capacity before naming the map type (the default linear scheme here).
+  constexpr ::cuda::std::size_t erase_capacity =
+    cudax::cuco::next_valid_capacity<default_probing, default_bucket>(::cuda::std::size_t{256});
+  using smap_erase_t = cudax::cuco::static_map<int, int, erase_capacity>;
 
   smap_erase_t map{
     cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}, cudax::cuco::erased_key{erased_sentinel}};
@@ -295,15 +308,46 @@ C2H_TEST("static_map dynamic extent — load factor constructor", "[extent][dyna
 }
 
 // ---------------------------------------------------------------------------
-// Test: dynamic capacity constructor with runtime compute_capacity overload
+// Test: dynamic capacity constructor with runtime valid-capacity rounding
 // ---------------------------------------------------------------------------
-C2H_TEST("static_map dynamic capacity — runtime compute_capacity", "[extent][dynamic]")
+C2H_TEST("static_map dynamic capacity — runtime valid capacity", "[extent][dynamic]")
 {
   const ::cuda::std::size_t capacity = 2048;
 
   map_type map{capacity, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
-  const auto expected_cap = map_type::compute_capacity(capacity);
+  const auto expected_cap =
+    cudax::cuco::next_valid_capacity<map_type::probing_scheme_type, map_type::bucket_size>(capacity);
   REQUIRE(map.capacity() == expected_cap);
   REQUIRE(map.capacity() >= capacity);
+}
+
+// ---------------------------------------------------------------------------
+// Test: valid_capacity descriptor and capacity factories
+// ---------------------------------------------------------------------------
+C2H_TEST("static_map capacity descriptor and factories", "[capacity]")
+{
+  using probing        = cudax::cuco::double_hashing<1, cudax::cuco::hash<int>>;
+  constexpr int bucket = 1;
+
+  static_assert(cudax::cuco::is_double_hashing_v<probing>, "scheme is double hashing");
+
+  // next_valid_capacity rounds up and is idempotent; is_valid_capacity is derived from it
+  constexpr auto valid = cudax::cuco::next_valid_capacity<probing, bucket>(::cuda::std::size_t{1000});
+  static_assert(valid >= 1000, "rounds up");
+  static_assert(cudax::cuco::is_valid_capacity<probing, bucket>(valid), "result is valid");
+  static_assert(cudax::cuco::next_valid_capacity<probing, bucket>(valid) == valid, "idempotent");
+
+  // canonical types: equal-rounding requests share one descriptor type
+  using a = cudax::cuco::valid_capacity_for_t<probing, bucket, 1000>;
+  using b = cudax::cuco::valid_capacity_for_t<probing, bucket, 1008>;
+  static_assert(::cuda::std::is_same_v<a, b>, "equal-rounding requests are the same type");
+  static_assert(a{}.capacity() == valid, "static descriptor capacity folds to the valid value");
+  static_assert(a::bucket_size == bucket && a::cg_size == 1, "descriptor exposes bucket and cg size");
+
+  // runtime factory + operator%
+  const auto cap = cudax::cuco::make_valid_capacity<probing, bucket>(::cuda::std::size_t{1000});
+  REQUIRE(cap.capacity() == valid);
+  REQUIRE(cap.num_buckets() == valid); // bucket_size == 1
+  REQUIRE((valid + 3) % cap == ::cuda::std::size_t{3});
 }
