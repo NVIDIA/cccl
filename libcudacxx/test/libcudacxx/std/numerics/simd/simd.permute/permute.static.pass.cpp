@@ -26,6 +26,10 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+<<<<<<< simd-memory-permute
+=======
+#include <cuda/std/utility>
+>>>>>>> main
 
 #include "../simd_test_utils.h"
 #include "test_macros.h"
@@ -241,6 +245,46 @@ TEST_FUNC constexpr void test_sentinels_properties()
 
 //----------------------------------------------------------------------------------------------------------------------
 
+<<<<<<< simd-memory-permute
+=======
+// C++ spec: static permute selects the two argument operator when it is well-formed, but it should be rejected because
+// it doesn't return an integral type
+struct two_arg_non_integral_gen
+{
+  template <typename I, typename S>
+  TEST_FUNC constexpr double operator()(I, S) const
+  {
+    return 0.0;
+  }
+
+  template <typename I>
+  TEST_FUNC constexpr ptrdiff_t operator()(I i) const
+  {
+    return i;
+  }
+};
+
+template <typename Vec, typename IdxMap, typename = void>
+struct has_static_permute : cuda::std::false_type
+{};
+
+template <typename Vec, typename IdxMap>
+struct has_static_permute<
+  Vec,
+  IdxMap,
+  cuda::std::void_t<decltype(simd::permute(cuda::std::declval<const Vec&>(), cuda::std::declval<IdxMap>()))>>
+    : cuda::std::true_type
+{};
+
+TEST_FUNC constexpr void test_constraints()
+{
+  using Vec = simd::basic_vec<int, simd::fixed_size<4>>;
+  static_assert(!has_static_permute<Vec, two_arg_non_integral_gen>::value);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+>>>>>>> main
 TEST_FUNC constexpr void test_noexcept()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
@@ -260,6 +304,10 @@ TEST_FUNC constexpr void test_noexcept()
 TEST_FUNC constexpr bool test_fixed_type()
 {
   test_sentinels_properties();
+<<<<<<< simd-memory-permute
+=======
+  test_constraints();
+>>>>>>> main
   test_noexcept();
   test_mask<1, 4>();
   test_mask<4, 4>();

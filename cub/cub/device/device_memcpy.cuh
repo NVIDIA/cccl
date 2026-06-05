@@ -252,12 +252,14 @@ struct DeviceMemcpy
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
 
-    using BlockOffsetT = uint32_t;
+    using BlockOffsetT            = uint32_t;
+    using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
-        storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+          storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
+      });
   }
 };
 

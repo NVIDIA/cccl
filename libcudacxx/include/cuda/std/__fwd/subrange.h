@@ -56,6 +56,16 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class>
+inline constexpr bool __is_cuda_std_ranges_subrange_v = false;
+
+template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
+inline constexpr bool __is_cuda_std_ranges_subrange_v<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___FWD_SUBRANGE_H

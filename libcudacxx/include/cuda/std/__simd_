@@ -23,12 +23,22 @@
 
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/algorithm.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/basic_vec.h>
+#include <cuda/std/__simd/bit.h>
+#include <cuda/std/__simd/complex_math.h>
+#include <cuda/std/__simd/creation.h>
 #include <cuda/std/__simd/flag.h>
+<<<<<<< simd-memory-permute
 #include <cuda/std/__simd/permute.h>
 #include <cuda/std/__simd/permute_memory.h>
+=======
+#include <cuda/std/__simd/load.h>
+#include <cuda/std/__simd/permute.h>
+>>>>>>> main
 #include <cuda/std/__simd/reductions.h>
+#include <cuda/std/__simd/store.h>
 #include <cuda/std/__simd/type_traits.h>
 
 #endif // _CUDA_STD_SIMD

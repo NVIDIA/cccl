@@ -63,11 +63,16 @@ public:
     ctx.increment_task_count();
   }
 
-  stream_task(const stream_task<>&)              = default;
-  stream_task<>& operator=(const stream_task<>&) = default;
-  ~stream_task()                                 = default;
-
-  // movable ??
+  // Tasks are move-only: a task wrapper owns per-instance in-flight state
+  // (capture stream, frontier, done nodes, held mutex during stream capture)
+  // on top of the pimpl `task` base, so copying it has no meaningful semantics.
+  // Contexts (`stream_ctx`, `graph_ctx`, `context`) are pimpl handles and
+  // remain copyable.
+  stream_task(const stream_task&)              = delete;
+  stream_task<>& operator=(const stream_task&) = delete;
+  stream_task(stream_task&&)                   = default;
+  stream_task<>& operator=(stream_task&&)      = default;
+  ~stream_task()                               = default;
 
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
@@ -102,7 +107,7 @@ public:
     // We don't need to find a stream from the pool in this case
     automatic_stream = false;
     // -1 identifies streams which are not from our internal pool
-    dstream = decorated_stream(s);
+    dstream = augmented_stream(s);
     return *this;
   }
 
@@ -149,11 +154,11 @@ public:
             if (e->outbound_deps == 0)
             {
               auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
-              decorated_stream candidate = se->get_decorated_stream();
+              augmented_stream candidate = se->get_augmented_stream();
 
               if (candidate.id != k_no_stream_id)
               {
-                for (const decorated_stream& pool_s : pool)
+                for (const augmented_stream& pool_s : pool)
                 {
                   if (candidate.id == pool_s.id)
                   {
@@ -380,7 +385,7 @@ public:
 
 private:
   // Make all streams depend on streams[0]
-  static void insert_dependencies(::std::vector<decorated_stream>& streams)
+  static void insert_dependencies(::std::vector<augmented_stream>& streams)
   {
     if (streams.size() < 2)
     {
@@ -438,8 +443,8 @@ private:
   bool automatic_stream = true; // `true` if the stream is automatically fetched from the internal pool
 
   // Stream and their unique id (if applicable)
-  decorated_stream dstream;
-  ::std::vector<decorated_stream> stream_grid;
+  augmented_stream dstream;
+  ::std::vector<augmented_stream> stream_grid;
 
   // TODO rename to submitted_ops
   stream_async_op submitted_events;
@@ -462,8 +467,8 @@ protected:
  * execution place can be set in the constructor and also dynamically. An invocation of `->*` takes place on the last
  * set execution place.
  *
- * It is possible to copy or move this task into a `stream_task<>` by implicit conversion. Subsequently, the
- * obtained object can be used with dynamic dependencies.
+ * It is possible to move this task into a `stream_task<>` by implicit conversion (copying is disabled because
+ * `stream_task<>` is move-only). Subsequently, the obtained object can be used with dynamic dependencies.
  */
 template <typename... Data>
 class stream_task

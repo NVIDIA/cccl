@@ -83,15 +83,15 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
 
 inline std::string compile(const std::string& source)
 {
-  // compile source to LTO-IR using nvrtc
-
+  // Compile source to LTO-IR via NVRTC. v2 tests use the same path as v1;
+  // the v2 backend then routes the LTO-IR through nvJitLink at link time.
   nvrtcProgram prog;
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
   // TEST_CTK_PATH needed to include cuda_fp16.h
-  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", TEST_CTK_PATH};
+  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", "-D__NV_NO_VECTOR_DEPRECATION_DIAG", TEST_CTK_PATH};
 
-  if (nvrtcCompileProgram(prog, 4, options) != NVRTC_SUCCESS)
+  if (nvrtcCompileProgram(prog, 5, options) != NVRTC_SUCCESS)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
@@ -110,6 +110,20 @@ inline std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
   return std::string(ltoir.data(), ltoir_size);
+}
+
+// Helper to construct a cccl_build_config that works for both v1 (4-field)
+// and v2 (6-field) struct layouts. Uses value-init + explicit assignments so
+// v2's enable_pch / verbose get zero-initialized rather than left undefined.
+inline cccl_build_config
+make_build_config(const char** extra_flags, size_t num_flags, const char** extra_dirs, size_t num_dirs)
+{
+  cccl_build_config config{};
+  config.extra_compile_flags     = extra_flags;
+  config.num_extra_compile_flags = num_flags;
+  config.extra_include_dirs      = extra_dirs;
+  config.num_extra_include_dirs  = num_dirs;
+  return config;
 }
 
 template <class T>

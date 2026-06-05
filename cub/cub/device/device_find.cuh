@@ -116,10 +116,10 @@ struct DeviceFind
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
-  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the element
-  //! of said range which **is not** ordered **before** ``value``.
+  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the
+  //! **first** element of said range which **is not** ordered **before** ``value``.
   //!
-  //! - The range ``[first, last)`` must be sorted consistently with ``comp``.
+  //! - The range ``[d_range, d_range + range_num_items)`` must be sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.3.0
   //!
@@ -236,8 +236,8 @@ struct DeviceFind
   //!
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
   //! ``[d_range, d_range + range_num_items)``,
-  //! using ``comp`` as the comparator to find the iterator to the element of said range which **is** ordered
-  //! **after** ``value``.
+  //! using ``comp`` as the comparator to find the iterator to the **first** element of said range which **is**
+  //! ordered **after** ``value``.
   //!
   //! - The range ``[d_range, d_range + range_num_items)`` must be sorted consistently with ``comp``.
   //!
@@ -352,6 +352,11 @@ struct DeviceFind
   //! @rst
   //! Finds the first element in the input sequence that satisfies the given predicate.
   //!
+  //! - The search terminates at the first element where the predicate evaluates to true.
+  //! - The index of the found element is written to ``d_out``.
+  //! - If no element satisfies the predicate, ``num_items`` is written to ``d_out``.
+  //! - The range ``[d_out, d_out + 1)`` shall not overlap ``[d_in, d_in + num_items)`` in any way.
+  //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
   //!
@@ -360,11 +365,7 @@ struct DeviceFind
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - The search terminates at the first element where the predicate evaluates to true.
-  //! - The index of the found element is written to ``d_out``.
-  //! - If no element satisfies the predicate, ``num_items`` is written to ``d_out``.
-  //! - The range ``[d_out, d_out + 1)`` shall not overlap ``[d_in, d_in + num_items)`` in any way.
-  //!
+
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -427,15 +428,19 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::find::dispatch(storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream);
-    });
+    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::find::dispatch(
+          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
+      });
   }
 
   //! @rst
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
-  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the element
-  //! of said range which **is not** ordered **before** ``value``.
+  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the
+  //! **first** element of said range which **is not** ordered **before** ``value``.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
@@ -554,8 +559,8 @@ struct DeviceFind
   //! @rst
   //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
   //! ``[d_range, d_range + range_num_items)``,
-  //! using ``comp`` as the comparator to find the iterator to the element of said range which **is** ordered
-  //! **after** ``value``.
+  //! using ``comp`` as the comparator to find the iterator to the **first** element of said range which **is**
+  //! ordered **after** ``value``.
   //!
   //! .. versionadded:: 3.4.0
   //!    First appears in CUDA Toolkit 13.4.
