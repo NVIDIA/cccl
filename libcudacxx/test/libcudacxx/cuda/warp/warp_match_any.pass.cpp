@@ -65,10 +65,9 @@ TEST_DEVICE_FUNC void test_grouped(T valueA = T{}, T valueB = T{1})
   }
 }
 
-__global__ void test_kernel()
+TEST_DEVICE_FUNC void test()
 {
   using array_t = cuda::std::array<char, 6>;
-
   test_all_equal<uint8_t>();
   test_all_equal<uint16_t>();
   test_all_equal<uint32_t>();
@@ -85,13 +84,13 @@ __global__ void test_kernel()
   test_grouped<uint64_t>();
 #if _CCCL_HAS_INT128()
   test_grouped<__uint128_t>();
-#endif // _CCCL_HAS_INT128() 
+#endif // _CCCL_HAS_INT128()
   test_grouped(char3{0, 0, 0}, char3{1, 1, 1});
   test_grouped(array_t{0, 0, 0, 0, 0, 0}, array_t{1, 1, 1, 1, 1, 1});
 }
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 32>>>();))
+  NV_DISPATCH_TARGET(NV_IS_HOST, (cuda_thread_count = 32;), NV_IS_DEVICE, (test();))
   return 0;
 }
