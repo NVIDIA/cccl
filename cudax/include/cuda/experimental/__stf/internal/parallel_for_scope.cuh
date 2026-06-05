@@ -746,7 +746,7 @@ public:
 
         // This new node will depend on the previous in the chain (allocation)
         auto lock    = t.lock_ctx_graph();
-        t.get_node() = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), NULL, 0, &kernel_params);
+        t.get_node() = cuda_try<cudaGraphAddKernelNode>(t.get_ctx_graph(), nullptr, 0, &kernel_params);
       }
 
       return;
