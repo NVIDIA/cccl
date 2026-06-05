@@ -278,6 +278,10 @@ C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[t
   REQUIRE(s0 != nullptr);
   REQUIRE(s1 != nullptr);
 
+  // Out-of-range linear index must report an error rather than reading past the stream grid.
+  CUstream s_oob;
+  REQUIRE(stf_task_get_custream_at_index(t, 2, &s_oob) != 0);
+
   stf_task_end(t);
   stf_task_destroy(t);
 
