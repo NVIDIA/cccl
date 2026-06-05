@@ -148,6 +148,11 @@ void BitcodeCollector::add_op_code(cccl_op_t& op, const std::string& name)
 
   // Also link any extra modules (child iterator ops, numba-compiled ops).
   int extra_counter = 0;
+  if (op.num_extra_ltoirs > 0 && (!op.extra_ltoirs || !op.extra_ltoir_sizes))
+  {
+    throw std::runtime_error("cccl_op_t: extra_ltoirs and extra_ltoir_sizes must be non-null when num_extra_ltoirs > "
+                             "0");
+  }
   for (size_t i = 0; i < op.num_extra_ltoirs; ++i)
   {
     if (op.extra_ltoirs[i] && op.extra_ltoir_sizes[i] > 0)
@@ -182,6 +187,11 @@ void BitcodeCollector::add_op(cccl_op_t op, const std::string& label)
 
   // Always process extras with per-entry dispatch.
   int extra_counter = 0;
+  if (op.num_extra_ltoirs > 0 && (!op.extra_ltoirs || !op.extra_ltoir_sizes))
+  {
+    throw std::runtime_error("cccl_op_t: extra_ltoirs and extra_ltoir_sizes must be non-null when num_extra_ltoirs > "
+                             "0");
+  }
   for (size_t i = 0; i < op.num_extra_ltoirs; ++i)
   {
     if (op.extra_ltoirs[i] && op.extra_ltoir_sizes[i] > 0)
