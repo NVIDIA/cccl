@@ -57,7 +57,7 @@ struct __element_type_from_member_iterator
 template <class _Tp>
 struct __element_type_from_member_iterator<_Tp, ::cuda::std::void_t<::cuda::std::iter_value_t<typename _Tp::iterator>>>
 {
-  using type = ::cuda::std::iter_value_t<typename _Tp::iterator>;
+  using type = ::cuda::std::remove_cvref_t<::cuda::std::iter_value_t<typename _Tp::iterator>>;
 };
 
 // Fallback: element type is the type itself.
@@ -68,7 +68,7 @@ struct __element_type_of : __element_type_from_member_iterator<_Tp>
 template <class _Tp>
 struct __element_type_of<_Tp, ::cuda::std::void_t<::cuda::std::iter_value_t<_Tp>>>
 {
-  using type = ::cuda::std::iter_value_t<_Tp>;
+  using type = ::cuda::std::remove_cvref_t<::cuda::std::iter_value_t<_Tp>>;
 };
 
 template <class _Tp>
