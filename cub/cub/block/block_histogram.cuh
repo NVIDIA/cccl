@@ -75,13 +75,20 @@ enum BlockHistogramAlgorithm
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! Use warp-level match primitives with warp-aggregated atomic addition to update counts directly.
+  //! Use warp-level match primitives to combine updates to the same bin within each warp. One elected lane
+  //! performs an atomic add with the number of matching lanes.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! This algorithm reduces per-warp contention when multiple lanes update the same bin counter. In the most
-  //! extreme case, where each lane in a warp updates the same bin, it reduces atomic operations from 32 to 1.
+  //! This algorithm targets histograms whose counters are in global memory and whose samples are concentrated into
+  //! relatively few bins. In that case, reducing multiple contended atomic updates to one update can reduce
+  //! global-memory atomic pressure.
+  //!
+  //! The extra warp-level peer-mask, leader-election, and population-count work adds instruction overhead. If the
+  //! counters are in shared memory, prefer cub::BLOCK_HISTO_ATOMIC. If most lanes update different bins, the direct
+  //! atomic algorithm is also the better starting point. In the most contended case, where every lane in a warp
+  //! updates the same bin, this algorithm reduces atomic operations from one per lane to one per warp.
   //!
   //! @endrst
   BLOCK_HISTO_ATOMIC_WARP_AGGREGATED,
@@ -142,8 +149,11 @@ enum BlockHistogramAlgorithm
 //!
 //! - @granularity
 //! - All input values must fall between ``[0, Bins)``, or behavior is undefined.
-//! - The histogram output can be constructed in shared or device-accessible memory
+//! - The histogram output can be constructed in shared or global memory
 //! - See ``cub::BlockHistogramAlgorithm`` for performance details regarding algorithmic alternatives
+//! - ``cub::BLOCK_HISTO_ATOMIC_WARP_AGGREGATED`` is primarily useful when the histogram output is in global memory
+//!   and many lanes in a warp update the same bins. For shared-memory histograms, prefer
+//!   ``cub::BLOCK_HISTO_ATOMIC``.
 //!
 //! Re-using dynamically allocating shared memory
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -316,7 +326,7 @@ public:
   }
 
   //! @rst
-  //! Constructs a block-wide histogram in shared/device-accessible memory.
+  //! Constructs a block-wide histogram in shared or global memory.
   //! Each thread contributes an array of input elements.
   //!
   //! .. versionadded:: 2.2.0
@@ -362,7 +372,7 @@ public:
   //!   Calling thread's input values to histogram
   //!
   //! @param[out] histogram
-  //!   Reference to shared/device-accessible memory histogram
+  //!   Reference to shared or global memory histogram
   template <typename CounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
@@ -376,7 +386,7 @@ public:
   }
 
   //! @rst
-  //! Updates an existing block-wide histogram in shared/device-accessible memory.
+  //! Updates an existing block-wide histogram in shared or global memory.
   //! Each thread composites an array of input elements.
   //!
   //! .. versionadded:: 2.2.0
@@ -426,7 +436,7 @@ public:
   //!   Calling thread's input values to histogram
   //!
   //! @param[out] histogram
-  //!   Reference to shared/device-accessible memory histogram
+  //!   Reference to shared or global memory histogram
   template <typename CounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
