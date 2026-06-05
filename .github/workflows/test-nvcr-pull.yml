@@ -33,6 +33,11 @@ jobs:
     # NV self-hosted CPU runner on NVIDIA/cccl; GitHub-hosted fallback
     # on contributor forks where nv-gha-runners labels do not resolve.
     runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu4' || 'ubuntu-latest' }}
+    # Cap stuck pulls / registry hangs so a wedged job doesn't sit on a
+    # self-hosted runner indefinitely. 15 min covers a multi-GB image
+    # pull on a busy runner with headroom; well under GitHub's default
+    # 6-hour job timeout.
+    timeout-minutes: 15
     env:
       NVCR_IMAGE: nvcr.io/nvidian/prodsec/pulse-trufflehog:1.33
 
@@ -51,4 +56,21 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker rmi "${NVCR_IMAGE}" >/dev/null 2>&1 || true
+        # Only attempt removal if the image is actually present locally.
+        # If the pull failed (e.g. auth error on a private namespace),
+        # `docker rmi` would fail with "no such image" — that's expected,
+        # not a real disk-growth signal, so we skip silently. If the
+        # image IS present and `rmi` fails, that's a genuine problem on
+        # a self-hosted runner (leaks layers across runs) — surface as
+        # a warning so it shows up in the run log.
+        run: |
+          set -euo pipefail
+          if ! docker image inspect "${NVCR_IMAGE}" >/dev/null 2>&1; then
+            echo "cleanup: image not present locally (likely pull failed); nothing to remove"
+            exit 0
+          fi
+          if ! docker rmi "${NVCR_IMAGE}" >/dev/null 2>&1; then
+            echo "::warning::cleanup: failed to remove ${NVCR_IMAGE} from runner cache; manual cleanup may be needed to avoid disk growth on this runner"
+          else
+            echo "cleanup: removed ${NVCR_IMAGE}"
+          fi
