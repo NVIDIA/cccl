@@ -353,9 +353,9 @@ C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = c2h::device_vector<float>(num_items);
 
-  using init_t = float;
+  using init_value_t = float;
 
-  init_t init{42.0f};
+  init_value_t init{42.0f};
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
