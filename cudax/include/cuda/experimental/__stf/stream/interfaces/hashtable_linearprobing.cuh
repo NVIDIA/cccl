@@ -78,7 +78,9 @@ public:
     size_t sz               = this->shape.get_capacity() * sizeof(reserved::KeyValue);
 
     // NAIVE method !
-    cuda_try<cudaMemcpyAsync>((void*) dst, (void*) src, sz, kind, s);
+    // cudaMemcpyAsync is an overload set (cuda_runtime.h alternate-spelling wrapper),
+    // so it keeps the runtime-status cuda_try form.
+    cuda_try(cudaMemcpyAsync((void*) dst, (void*) src, sz, kind, s));
   }
 
   void stream_data_allocate(
