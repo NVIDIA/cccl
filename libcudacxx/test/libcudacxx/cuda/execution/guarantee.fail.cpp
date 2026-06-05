@@ -10,6 +10,8 @@
 
 #include <cuda/execution.guarantee.h>
 
+#include "test_macros.h"
+
 [[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query_t
 {
 } query{};

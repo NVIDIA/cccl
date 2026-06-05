@@ -10,6 +10,8 @@
 
 #include <cuda/execution.max_total_num_items.h>
 
+#include "test_macros.h"
+
 TEST_FUNC void test()
 {
   // The bound must be of integral type: a floating-point argument has no viable overload.
