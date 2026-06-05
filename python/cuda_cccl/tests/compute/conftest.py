@@ -136,7 +136,7 @@ def _backend_uses_v2() -> bool:
 # (parametrized id, e.g. "test_foo[int32]") OR on the bare function name. Add
 # a one-line reason for each so it's clear why it's deferred rather than fixed.
 _V2_BROKEN_TESTS = {
-    "test_segmented_sort_op_kind": "cudaErrorMisalignedAddress at runtime; v2 segmented_sort path",
+    "test_segmented_sort_op_kind": "cudaErrorMisalignedAddress: iterator-state alignment bug in v2 segmented_sort path (file a tracking issue)",
 }
 
 

@@ -90,9 +90,12 @@ typedef enum cccl_op_kind_t
 
 typedef enum cccl_op_code_type
 {
-  CCCL_OP_LTOIR = 0, // Pre-compiled LTO-IR (escape hatch for callers with nvcc -dlto artifacts). LTO-IR ops
-                     // cannot be inlined into the CUB kernel and pay a real CALL on every iteration; prefer
-                     // CCCL_OP_LLVM_IR for any new code.
+  CCCL_OP_LTOIR = 0, // Pre-compiled LTO-IR (escape hatch for callers with existing nvcc -dlto artifacts).
+                     // LTO-IR is a binary container passed to nvJitLink at the PTX level — the LLVM optimizer
+                     // never sees it, so the operator cannot be inlined into the CUB kernel and pays a real
+                     // CALL on every iteration. CCCL_OP_LLVM_IR feeds LLVM's bitcode linker instead, which
+                     // merges the operator into the CUB module before PTX codegen and enables full inlining.
+                     // Prefer CCCL_OP_LLVM_IR or CCCL_OP_CPP_SOURCE for any new code.
   CCCL_OP_CPP_SOURCE = 1, // C++ source code (compiled to LLVM bitcode by hostjit's Clang).
   CCCL_OP_LLVM_IR    = 2 // LLVM bitcode (recommended) — merges into the CUB module before PTX gen, so inlines.
 } cccl_op_code_type;

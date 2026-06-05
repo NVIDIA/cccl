@@ -46,6 +46,10 @@ CUresult cccl_device_scan_build_ex(
   cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -92,7 +96,7 @@ try
 }
 catch (const std::exception& exc)
 {
-  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_build(): %s\n", exc.what());
+  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_build_ex(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 
