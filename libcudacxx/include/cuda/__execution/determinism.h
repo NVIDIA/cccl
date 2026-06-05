@@ -85,8 +85,12 @@ struct __determinism_holder_t : __requirement
   }
 
   //! @brief Attaches a tie-break preference to this (deterministic) guarantee.
+  //! @param[in] __preference Tag selecting the tie-break preference to attach (e.g.
+  //! `tie_break::prefer_smaller_index`). Only its type is used, the value is ignored.
+  //! @return The same deterministic guarantee, now carrying the requested tie-break preference.
   template <__tie_break_t _Preference>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(__tie_break_holder_t<_Preference>) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto
+  operator()([[maybe_unused]] __tie_break_holder_t<_Preference> __preference) const noexcept
     -> __determinism_holder_t<_Guarantee, _Preference>
   {
     static_assert(_Guarantee != __determinism_t::__not_guaranteed,
