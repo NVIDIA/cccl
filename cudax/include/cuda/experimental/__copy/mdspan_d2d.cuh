@@ -44,7 +44,6 @@
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/remove_cvref.h>
 
 #  include <cuda/experimental/__copy/copy_contiguous.cuh>
 #  include <cuda/experimental/__copy/copy_optimized.cuh>
@@ -230,12 +229,22 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       }
     }
     // (4) transpose case (rank capped to avoid excessive register pressure in the kernel)
-    if constexpr (__max_rank <= cudax::__max_shared_mem_kernel_rank)
+    if constexpr (__max_rank >= 2 && __max_rank <= cudax::__max_shared_mem_kernel_rank)
     {
-      if (cudax::__use_shared_mem_kernel(__src_normalized, __dst_normalized))
+      if (__src_simplified.__rank == 2) // Optimize when the actual rank is 2
+      {
+        const auto __src_rank2 = cudax::__narrow_raw_tensor_rank<2>(__src_simplified);
+        const auto __dst_rank2 = cudax::__narrow_raw_tensor_rank<2>(__dst_simplified);
+        if (cudax::__use_shared_mem_kernel(__src_rank2, __dst_rank2))
+        {
+          cudax::__launch_copy_shared_mem_kernel(__src_rank2, __dst_rank2, __stream, __src.accessor(), __dst.accessor());
+          return;
+        }
+      }
+      if (cudax::__use_shared_mem_kernel(__src_simplified, __dst_simplified))
       {
         cudax::__launch_copy_shared_mem_kernel(
-          __src_normalized, __dst_normalized, __stream, __src.accessor(), __dst.accessor());
+          __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
         return;
       }
     }
