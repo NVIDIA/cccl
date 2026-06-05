@@ -37,6 +37,8 @@
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_radix_sort.cuh>
 #include <cub/block/block_reduce.cuh>
+#include <cub/block/block_reduce_broadcast.cuh>
+#include <cub/block/block_row_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 // #include <cub/block/block_shift.cuh>
@@ -80,11 +82,10 @@
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_reduce_batched.cuh>
+#include <cub/warp/warp_reduce_batched_broadcast.cuh>
+#include <cub/warp/warp_reduce_broadcast.cuh>
 #include <cub/warp/warp_scan.cuh>
 #include <cub/warp/warp_store.cuh>
-
-// Experimental
-#include <cub/experimental/coop_collectives.cuh>
 
 // Iterator
 #include <cub/iterator/arg_index_input_iterator.cuh>

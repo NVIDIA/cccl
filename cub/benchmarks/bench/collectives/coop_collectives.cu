@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/block/block_reduce_broadcast.cuh>
+#include <cub/block/block_row_reduce.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/experimental/coop_collectives.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_reduce_batched.cuh>
+#include <cub/warp/warp_reduce_batched_broadcast.cuh>
+#include <cub/warp/warp_reduce_broadcast.cuh>
 #include <cub/warp/warp_scan.cuh>
 #include <cub/warp/warp_utils.cuh>
 
@@ -51,7 +54,7 @@ struct warp_reduce_coop_broadcast_t
 {
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
   {
-    using warp_reduce_t = cub::experimental::WarpReduceBroadcast<T>;
+    using warp_reduce_t = cub::WarpReduceBroadcast<T>;
     __shared__ typename warp_reduce_t::TempStorage temp_storage[32];
 
     const int warp_id = static_cast<int>(threadIdx.x) / cub::detail::warp_threads;
@@ -84,7 +87,7 @@ struct warp_reduce_coop_broadcast4_t
 {
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
   {
-    using warp_reduce_t = cub::experimental::WarpReduceBroadcast<T, 4>;
+    using warp_reduce_t = cub::WarpReduceBroadcast<T, 4>;
     __shared__ typename warp_reduce_t::TempStorage temp_storage[32];
 
     const int warp_id = static_cast<int>(threadIdx.x) / cub::detail::warp_threads;
@@ -145,7 +148,7 @@ struct warp_reduce_serial_batched_broadcast4_t
 {
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
   {
-    using warp_reduce_t = cub::experimental::WarpReduceBroadcast<T, 4>;
+    using warp_reduce_t = cub::WarpReduceBroadcast<T, 4>;
     __shared__ typename warp_reduce_t::TempStorage temp_storage[Batches][32];
 
     const int warp_id = static_cast<int>(threadIdx.x) / cub::detail::warp_threads;
@@ -165,7 +168,7 @@ struct warp_reduce_batched_broadcast4_t
 {
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
   {
-    using warp_reduce_t = cub::experimental::WarpReduceBatchedBroadcast<T, Batches, 4>;
+    using warp_reduce_t = cub::WarpReduceBatchedBroadcast<T, Batches, 4>;
     __shared__ typename warp_reduce_t::TempStorage temp_storage[32];
 
     const int warp_id = static_cast<int>(threadIdx.x) / cub::detail::warp_threads;
@@ -214,7 +217,7 @@ struct block_reduce_coop_broadcast_t
 {
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
   {
-    using block_reduce_t = cub::experimental::BlockReduceBroadcast<T, 256>;
+    using block_reduce_t = cub::BlockReduceBroadcast<T, 256>;
     __shared__ typename block_reduce_t::TempStorage temp_storage;
 
     return block_reduce_t{temp_storage}.Sum(thread_data);
@@ -226,7 +229,19 @@ struct block_row_reduce_t
 {
   _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
   {
-    using row_reduce_t = cub::experimental::BlockRowReduce<T, 4, 2>;
+    using row_reduce_t = cub::BlockRowReduce<T, 4, 2>;
+    __shared__ typename row_reduce_t::TempStorage temp_storage;
+
+    return row_reduce_t{temp_storage}.Sum(thread_data);
+  }
+};
+
+template <typename T>
+struct block_row_reduce_warp_broadcast_t
+{
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T thread_data) const
+  {
+    using row_reduce_t = cub::BlockRowReduceWarpBroadcast<T, 4, 2>;
     __shared__ typename row_reduce_t::TempStorage temp_storage;
 
     return row_reduce_t{temp_storage}.Sum(thread_data);
@@ -360,6 +375,12 @@ void block_row_reduce(nvbench::state& state, nvbench::type_list<T> type)
 }
 
 template <typename T>
+void block_row_reduce_warp_broadcast(nvbench::state& state, nvbench::type_list<T> type)
+{
+  bench_collective<256, 64, block_row_reduce_warp_broadcast_t>(state, type);
+}
+
+template <typename T>
 void warp_block_scan(nvbench::state& state, nvbench::type_list<T> type)
 {
   bench_collective<256, 64, warp_block_scan_t>(state, type);
@@ -411,6 +432,10 @@ NVBENCH_BENCH_TYPES(block_reduce_coop_broadcast, NVBENCH_TYPE_AXES(value_types))
 
 NVBENCH_BENCH_TYPES(block_row_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("block_row_reduce")
+  .set_type_axes_names({"T{ct}"});
+
+NVBENCH_BENCH_TYPES(block_row_reduce_warp_broadcast, NVBENCH_TYPE_AXES(value_types))
+  .set_name("block_row_reduce_warp_broadcast")
   .set_type_axes_names({"T{ct}"});
 
 NVBENCH_BENCH_TYPES(warp_block_scan, NVBENCH_TYPE_AXES(value_types))
