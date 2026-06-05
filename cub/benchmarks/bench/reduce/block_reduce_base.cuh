@@ -20,14 +20,7 @@ struct benchmark_op_t
     using BlockReduce = cub::BlockReduce<T, BlockThreads, cub::BLOCK_REDUCE_WARP_REDUCTIONS>;
     using TempStorage = typename BlockReduce::TempStorage;
     __shared__ TempStorage temp_storage;
-    T agg = BlockReduce{temp_storage}.Reduce(thread_data, op_t{});
-    __shared__ T broadcast;
-    if (threadIdx.x == 0)
-    {
-      broadcast = agg;
-    }
-    __syncthreads();
-    return broadcast;
+    return BlockReduce{temp_storage}.Reduce(thread_data, op_t{});
   }
 };
 

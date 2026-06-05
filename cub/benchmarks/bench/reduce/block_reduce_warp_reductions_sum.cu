@@ -32,4 +32,4 @@ using value_types = nvbench::type_list<
   cuda::std::complex<double>>;
 
 using op_t = ::cuda::std::plus<>;
-#include "block_reduce_warp_reductions_base.cuh"
+#include "block_reduce_base.cuh"

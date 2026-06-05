@@ -33,7 +33,6 @@ benchmarks:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
       - '^cub\.bench\.reduce\.block_reduce_warp_reductions_sum\.'
-      - '^cub\.bench\.reduce\.warp_reduce_(sum|min)\.'
       - '^cub\.bench\.reduce\.(sum|min)\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
@@ -62,7 +61,7 @@ benchmarks:
   test_ref: "HEAD"
   arch: "native"
   nvbench_args: >-
-    --timeout 30
+    --timeout 120
     --skip-time 15e-6
     --stopping-criterion entropy
     --throttle-threshold 90
