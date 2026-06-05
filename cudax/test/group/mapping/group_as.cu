@@ -105,11 +105,12 @@ __device__ void test_group_as(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
@@ -206,11 +207,12 @@ __device__ void test_group_as(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{ns};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
@@ -329,11 +331,12 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
@@ -435,11 +438,12 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{ns, cudax::non_exhaustive};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);

@@ -74,11 +74,12 @@ __device__ void test_group_by(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
@@ -147,11 +148,12 @@ __device__ void test_group_by(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{N};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
@@ -223,11 +225,12 @@ __device__ void test_group_by_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{cudax::non_exhaustive};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
@@ -301,11 +304,12 @@ __device__ void test_group_by_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{N, cudax::non_exhaustive};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
