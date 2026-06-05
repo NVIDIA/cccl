@@ -64,7 +64,7 @@ bitcode = bytes(mod.as_bitcode())
 # rather than the default LTO-IR. (Raw `bytes` is accepted too and treated
 # as LTO-IR — the legacy form.)
 multiply_op = RawOp(
-    ltoir=DeviceCode(bytes_=bitcode, kind="llvm_ir"),
+    ltoir=DeviceCode(op_bytes=bitcode, kind="llvm_ir"),
     name="multiply_op",
 )
 
