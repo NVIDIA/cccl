@@ -468,19 +468,22 @@ struct DeviceHistogramKernelSource
   }
 };
 
+// This `dispatch<>` is the HOST-INIT histogram sweep dispatcher: it receives
+// pre-built decode operators (constructed host-side by `dispatch_even` /
+// `dispatch_range`, or by the C Parallel Library's tag-dispatch) and launches the
+// init + privatized-SMEM-sweep (or, for PRIVATIZED_SMEM_BINS==0, the high-bin
+// direct-atomic / GMEM-privatized kernels). The former device-init variant (which
+// built decode ops inside the kernel from raw level arrays) has been removed, so
+// there is no longer an `IsDeviceInit` / `IsEven` / `IsByteSample` switch here --
+// those only fed the deleted device-init branch.
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           int PRIVATIZED_SMEM_BINS,
-          bool IsDeviceInit,
-          bool IsEven,
-          bool IsByteSample,
           // When true, the cooperative GMEM-privatized / direct-atomic launch block
           // (and its kernel instantiations) is compiled out, leaving only the
           // non-cooperative init+sweep path. The C Parallel Library sets this for
           // its host-init entry: it JIT-compiles a single sweep kernel and cannot
           // instantiate the cooperative kernels against type-erased decode ops.
-          // Placed among the leading non-type params so callers can specify it
-          // positionally (the trailing type params are deduced from arguments).
           bool DisableCooperative,
           typename SampleIteratorT,
           typename CounterT,
@@ -694,21 +697,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   constexpr int direct_atomic_bin_threshold_multi  = 16384;
   const int direct_atomic_bin_threshold =
     (NUM_ACTIVE_CHANNELS > 1) ? direct_atomic_bin_threshold_multi : direct_atomic_bin_threshold_single;
-  // When the unified selector explicitly requested the single-probe
-  // direct-atomic cache (`direct_atomic_cache_mode == 1`), it has already
-  // decided the direct-atomic path is wanted; the legacy bin-count threshold
-  // (used by callers that don't route through the selector) must not veto it.
-  // The IsDeviceInit / PRIVATIZED_SMEM_BINS / disable_direct_atomic guards
-  // still apply (the single-probe kernel is a host-init, PRIVATIZED_SMEM_BINS==0
-  // cooperative kernel exactly like the cuckoo one).
   // Any non-default cache mode (1=single-probe, 2=no-cache, 3/4=private-spill) is an
   // explicit selector/dispatch request for the DirectKernel family, so the legacy
   // bin-count threshold must not veto it. (Mode 0 = cuckoo output-spill keeps the
-  // threshold gate for callers that don't route through select_algorithm.)
+  // threshold gate for callers that don't route through select_algorithm.) The
+  // PRIVATIZED_SMEM_BINS==0 / disable_direct_atomic guards still apply.
   const bool selector_forces_direct_atomic = (direct_atomic_cache_mode != 0);
   const bool use_direct_atomic_to_output =
 #if _CCCL_HOSTED()
-    (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && !disable_direct_atomic
+    (PRIVATIZED_SMEM_BINS == 0 && !disable_direct_atomic
      && (selector_forces_direct_atomic || max_num_output_bins >= direct_atomic_bin_threshold));
 #else
     false;
@@ -780,7 +777,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // no benefit, so we keep the legacy two-kernel sequence there.
   bool launched_persistent = false;
 #if _CCCL_HOSTED()
-  if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && !DisableCooperative)
+  if constexpr (PRIVATIZED_SMEM_BINS == 0 && !DisableCooperative)
   {
     if (blocks_per_row > 0 && blocks_per_col > 0)
     {
@@ -1556,9 +1553,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
  * C-parallel builds the real `Transforms<LevelT,OffsetT,SampleT>::ScaleTransform`
  * via a runtime type-tag dispatch and hands their bytes through
  * `OutputDecodeOpArrayT` / `PrivatizedDecodeOpArrayT` holders). It then routes
- * through `dispatch<..., IsDeviceInit=false>`, i.e. the host-init
- * `DeviceHistogramSmemPrivatizedKernel`, which is why C-parallel needs no
- * device-side decode-op initialization kernel.
+ * through the host-init `dispatch<>` / `DeviceHistogramSmemPrivatizedKernel`, which
+ * is why C-parallel needs no device-side decode-op initialization kernel.
  *
  * The decode-op holders only need a working `operator&` (yielding the bytes the
  * kernel reads as its grid-constant decode-op argument); their static `value_type`
@@ -1625,9 +1621,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_host_i
                      NUM_CHANNELS,
                      NUM_ACTIVE_CHANNELS,
                      PRIVATIZED_SMEM_BINS,
-                     false, // IsDeviceInit -> host-init kernels
-                     false, // IsEven (unused for host-init)
-                     false, // IsByteSample (unused for host-init)
                      true // DisableCooperative -> C-parallel: non-cooperative init+sweep only
                      >(d_temp_storage,
                        temp_storage_bytes,
@@ -2105,7 +2098,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       if (max_num_output_bins <= max_privatized_smem_bins)
       {
         constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-        return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
+        return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, /*DisableCooperative=*/false>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -2124,7 +2117,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
           launcher_factory);
       }
       constexpr int PRIVATIZED_SMEM_BINS = max_dynamic_smem_bins;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, /*DisableCooperative=*/false>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,
@@ -2177,7 +2170,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
       // Pure-gather member: disable_direct_atomic=true routes dispatch<> to the
       // GmemPrivatized gather kernel (HybridSplit=false).
       constexpr int PRIVATIZED_SMEM_BINS = 0;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, /*DisableCooperative=*/false>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,
@@ -2220,7 +2213,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_by_algorithm(
         : (algo == algorithm::direct_nocache)               ? 2
         : (algo == algorithm::gmem_privatized_cuckoo)       ? 3
         : /* algorithm::gmem_privatized_single_probe */       4;
-      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
+      return dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, /*DisableCooperative=*/false>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,
@@ -2307,9 +2300,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             PRIVATIZED_SMEM_BINS,
-            false, // IsDeviceInit
-            false, // IsEven (unused for host-init)
-            false, // IsByteSample (unused for host-init)
             false // DisableCooperative (regular CUB host-init keeps the cooperative path)
             >(d_temp_storage,
               temp_storage_bytes,
@@ -2461,7 +2451,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     constexpr int PRIVATIZED_SMEM_BINS = 256;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false, false>(
+          (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, /*DisableCooperative=*/false>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
