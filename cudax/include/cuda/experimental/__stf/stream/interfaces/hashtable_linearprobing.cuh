@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/internal/hashtable_linearprobing.cuh>
 #include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -77,7 +78,7 @@ public:
     size_t sz               = this->shape.get_capacity() * sizeof(reserved::KeyValue);
 
     // NAIVE method !
-    cuda_safe_call(cudaMemcpyAsync((void*) dst, (void*) src, sz, kind, s));
+    cuda_try<cudaMemcpyAsync>((void*) dst, (void*) src, sz, kind, s);
   }
 
   void stream_data_allocate(
@@ -95,18 +96,26 @@ public:
 
     if (memory_node.is_host())
     {
-      // Fallback to a synchronous method
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      cuda_safe_call(cudaHostAlloc(&base_ptr, s, cudaHostAllocMapped));
+      // Fallback to a synchronous method. cudaHostAlloc is an overload set
+      // (cuda_runtime.h templated wrapper), so it keeps the runtime-status form.
+      cuda_try<cudaStreamSynchronize>(stream);
+      cuda_try(cudaHostAlloc(&base_ptr, s, cudaHostAllocMapped));
       memset(base_ptr, 0xff, s);
     }
     else
     {
-      cuda_safe_call(cudaMallocAsync(&base_ptr, s, stream));
+      // cudaMallocAsync is an overload set (templated wrapper), so it keeps the
+      // runtime-status form.
+      cuda_try(cudaMallocAsync(&base_ptr, s, stream));
+      // Free the buffer if the initialization below throws.
+      SCOPE(fail)
+      {
+        cuda_safe_call(cudaFreeAsync(base_ptr, stream));
+      };
 
       // We also need to initialize the hashtable
       static_assert(reserved::kEmpty == 0xffffffff, "memset expected kEmpty=0xffffffff");
-      cuda_safe_call(cudaMemsetAsync(base_ptr, 0xff, s, stream));
+      cuda_try<cudaMemsetAsync>(base_ptr, 0xff, s, stream);
     }
 
     local_desc.addr = base_ptr;
@@ -123,12 +132,12 @@ public:
     if (memory_node.is_host())
     {
       // Fallback to a synchronous method
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      cuda_safe_call(cudaFreeHost(local_desc.addr));
+      cuda_try<cudaStreamSynchronize>(stream);
+      cuda_try<cudaFreeHost>(local_desc.addr);
     }
     else
     {
-      cuda_safe_call(cudaFreeAsync(local_desc.addr, stream));
+      cuda_try<cudaFreeAsync>(local_desc.addr, stream);
     }
     local_desc.addr = nullptr; // not strictly necessary, but helps debugging
   }
