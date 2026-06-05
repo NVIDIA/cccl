@@ -27,7 +27,7 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#  include <cuda/__memory/is_aligned.h>
+#  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__type_traits/is_empty.h>
 #  include <cuda/std/__type_traits/is_trivially_default_constructible.h>
@@ -120,20 +120,23 @@ template <typename OutIter, typename... InIters, typename OffsetT>
 CUB_RUNTIME_FUNCTION bool
 runtime_preconditions_ok(::cuda::std::tuple<InIters...> const& inputs, OutIter output, OffsetT num_items)
 {
-  constexpr int kAlign = 16;
-  // Tile DSL's tensor_span uses uint32_t shape internally; values >= 2^32
-  // wrap to 0. Cap at 2^31 to stay below the cliff with margin.
-  constexpr OffsetT kMaxItems = OffsetT{1} << 31;
+  // Pointer alignment is in bytes (for LDG.E.128); the kernel's
+  // ct::assume_divisible<N> applies to num_items as an element count. These
+  // are both 16 today by coincidence but live on different axes.
+  constexpr int byte_align    = 16;
+  constexpr int items_divisor = 16;
 
   auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);
-  const bool aligned_out = ::cuda::is_aligned(out_ptr, kAlign);
+  const bool aligned_out = ::cuda::std::is_sufficiently_aligned<byte_align>(out_ptr);
   const bool aligned_in  = ::cuda::std::apply(
     [](auto... iters) {
-      return ((::cuda::is_aligned(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(iters), kAlign)) && ...);
+      return ((::cuda::std::is_sufficiently_aligned<byte_align>(
+                THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(iters)))
+              && ...);
     },
     inputs);
 
-  return aligned_out && aligned_in && (num_items % kAlign) == 0 && num_items <= kMaxItems;
+  return aligned_out && aligned_in && (num_items % items_divisor) == 0;
 }
 
 // Bridge between cub::DeviceTransform::__transform_internal and the tile

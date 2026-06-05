@@ -41,12 +41,14 @@ transform_kernel(int64_t num_items_, Out* __restrict__ out_, const Ins* __restri
   auto num_items = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items_));
   auto out       = ct::assume_aligned<16>(out_);
 
-  auto out_span = ct::tensor_span{out, ct::extents{num_items}};
+  // Explicit int64_t element type on the extent; CTAD would deduce uint32_t
+  // and wrap at 2^32. Using int64_t lets us drop the 2^31 runtime cap.
+  auto out_span = ct::tensor_span{out, ct::extents<int64_t, ct::dynamic_extent>{num_items}};
   auto out_view = ct::partition_view{out_span, ct::shape<TileSize>{}};
 
   auto load_one = [bx, num_items](auto* ptr_) {
     auto ptr  = ct::assume_aligned<16>(ptr_);
-    auto span = ct::tensor_span{ptr, ct::extents{num_items}};
+    auto span = ct::tensor_span{ptr, ct::extents<int64_t, ct::dynamic_extent>{num_items}};
     auto view = ct::partition_view{span, ct::shape<TileSize>{}};
     return view.load_masked(bx);
   };
@@ -63,7 +65,8 @@ __tile_global__ void fill_kernel(int64_t num_items_, T* __restrict__ out_, T val
   auto num_items = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items_));
   auto out       = ct::assume_aligned<16>(out_);
 
-  auto out_span = ct::tensor_span{out, ct::extents{num_items}};
+  // Explicit int64_t element type on the extent (see transform_kernel above).
+  auto out_span = ct::tensor_span{out, ct::extents<int64_t, ct::dynamic_extent>{num_items}};
   auto out_view = ct::partition_view{out_span, ct::shape<TileSize>{}};
   using tile_t  = ct::tile<T, ct::shape<TileSize>>;
   out_view.store_masked(ct::full<tile_t>(value), bx);
