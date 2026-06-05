@@ -33,8 +33,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 //!
 //! A guarantee is a promise that the caller makes to an algorithm about its input or the problem being solved (e.g. an
 //! upper bound on the total number of items). Algorithms may exploit guarantees to select faster code paths or smaller
-//! intermediate types. This is the dual of @c cuda::execution::__requirement, which describes a property that the caller
-//! demands from the algorithm. Unlike requirements, guarantees may be stateful, i.e. they may carry a runtime value.
+//! intermediate types. This is the dual of @c cuda::execution::__requirement, which describes a property that the
+//! caller demands from the algorithm. Unlike requirements, guarantees may be stateful, i.e. they may carry a runtime
+//! value.
 class __guarantee
 {};
 
@@ -61,8 +62,8 @@ _CCCL_GLOBAL_CONSTANT auto __get_guarantees = __get_guarantees_t{};
 //! @brief Bundles a pack of guarantees into an environment that can be passed to device-wide parallel algorithms.
 //!
 //! The returned property is keyed by @c __get_guarantees_t so that individual guarantees are only visible to algorithms
-//! through the guarantees environment, mirroring how @c cuda::execution::require exposes requirements. Each guarantee is
-//! stored by value, preserving any runtime state it carries.
+//! through the guarantees environment, mirroring how @c cuda::execution::require exposes requirements. Each guarantee
+//! is stored by value, preserving any runtime state it carries.
 template <class... _Guarantees>
 [[nodiscard]] _CCCL_NODEBUG_API auto guarantee(_Guarantees... __guarantees)
 {

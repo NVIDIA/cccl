@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/execution.max_total_num_items.h>
-
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
