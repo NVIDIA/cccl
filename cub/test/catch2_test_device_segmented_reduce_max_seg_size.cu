@@ -29,7 +29,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
 
   using op_t    = cuda::std::plus<>;
   using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
-  using init_t  = input_t;
+  using init_value_t  = input_t;
 
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
@@ -97,7 +97,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     d_offsets_it,
     d_offsets_it + 1,
     op_t{},
-    init_t{},
+    init_value_t{},
     guaranteed_max_seg_size,
     nullptr,
     cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
@@ -114,7 +114,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     d_offsets_it,
     d_offsets_it + 1,
     op_t{},
-    init_t{},
+    init_value_t{},
     guaranteed_max_seg_size,
     nullptr,
     cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});

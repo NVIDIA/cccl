@@ -72,19 +72,19 @@ C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   auto in_it = cuda::constant_iterator(default_constant);
 
   using op_t   = cuda::std::plus<>;
-  using init_t = output_t;
+  using init_value_t = output_t;
 
   // Binary reduction operator
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t            = cuda::std::__accumulator_t<op_t, item_t, init_t>;
+  using accum_t            = cuda::std::__accumulator_t<op_t, item_t, init_value_t>;
   output_t expected_result = compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
   // Run test
   c2h::device_vector<output_t> out_result(num_segments);
   auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-  device_reduce(in_it, d_out_it, num_items, reduction_op, init_t{});
+  device_reduce(in_it, d_out_it, num_items, reduction_op, init_value_t{});
 
   // Verify result
   REQUIRE(expected_result == out_result[0]);
@@ -111,11 +111,11 @@ C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device
   auto in_it = cuda::constant_iterator(default_constant);
 
   using op_t   = cuda::std::plus<>;
-  using init_t = output_t;
+  using init_value_t = output_t;
 
   // Binary reduction operator
   auto reduction_op = op_t{};
 
   // Run test
-  device_reduce(in_it, cuda::discard_iterator(), num_items, reduction_op, init_t{});
+  device_reduce(in_it, cuda::discard_iterator(), num_items, reduction_op, init_value_t{});
 }

@@ -173,8 +173,8 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
-    using init_t = value_t;
-    device_exclusive_scan_by_key(d_keys_it, values_in_it, out_values.begin(), scan_op, init_t{}, num_items, eq_op_t{});
+    using init_value_t = value_t;
+    device_exclusive_scan_by_key(d_keys_it, values_in_it, out_values.begin(), scan_op, init_value_t{}, num_items, eq_op_t{});
 
     // Verify result
     REQUIRE(expected_result == out_values);

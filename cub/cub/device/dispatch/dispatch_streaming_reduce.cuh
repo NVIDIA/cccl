@@ -152,7 +152,7 @@ struct unzip_and_write_arg_extremum_op
 //   The streaming reduction requires two overloads, one used for selecting the extremum within one partition and one
 //   for selecting the extremum across partitions.
 //
-// @tparam InitT
+// @tparam InitValueT
 //   Initial value type
 //
 // @tparam PolicySelector

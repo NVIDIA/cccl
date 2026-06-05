@@ -39,7 +39,7 @@ template <typename T, typename OffsetT>
 void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using op_t   = cuda::std::plus<>;
-  using init_t = T;
+  using init_value_t = T;
 
   // Retrieve axis parameters
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -63,11 +63,11 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::require(cuda::execution::determinism::not_guaranteed)
 #if !TUNE_BASE
         ,
-      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<op_t, T, init_t>>{})
+      cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<op_t, T, init_value_t>>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
-      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, static_cast<OffsetT>(elements), op_t{}, init_t{}, env);
+      cub::DeviceReduce::Reduce, "Reduce failed", d_in, d_out, static_cast<OffsetT>(elements), op_t{}, init_value_t{}, env);
   });
 }
 

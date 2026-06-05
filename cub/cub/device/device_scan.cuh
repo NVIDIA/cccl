@@ -330,10 +330,10 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
-    InitT init_value{};
+    init_value_t init_value{};
 
     return detail::scan::dispatch(
       d_temp_storage,
@@ -341,7 +341,7 @@ struct DeviceScan
       d_in,
       d_out,
       ::cuda::std::plus<>{},
-      detail::InputValue<InitT>(init_value),
+      detail::InputValue<init_value_t>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -412,10 +412,10 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
-    using init_t = cub::detail::it_value_t<InputIteratorT>;
-    init_t init_value{};
+    using init_value_t = cub::detail::it_value_t<InputIteratorT>;
+    init_value_t init_value{};
 
-    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_t>(init_value), num_items, env);
+    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
   }
 
   //! @rst
@@ -2415,8 +2415,8 @@ struct DeviceScan
     cudaStream_t stream     = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
-    using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    init_t init_value{};
+    using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+    init_value_t init_value{};
     return scan_by_key_impl<::cuda::std::execution::env<>>(
       d_temp_storage,
       temp_storage_bytes,
@@ -2983,7 +2983,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
-    using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+    using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return scan_by_key_impl<tuning_t>(
@@ -2994,7 +2994,7 @@ struct DeviceScan
         d_values_out,
         equality_op,
         ::cuda::std::plus<>{},
-        init_t{},
+        init_value_t{},
         num_items,
         stream);
     });

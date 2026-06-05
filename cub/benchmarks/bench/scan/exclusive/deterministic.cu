@@ -13,7 +13,7 @@ template <typename T, typename OffsetT>
 static void exclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
-  using init_t    = T;
+  using init_value_t    = T;
   using offset_t  = OffsetT;
   using scan_op_t = ::cuda::std::plus<T>;
 
@@ -38,7 +38,7 @@ try
       d_input,
       d_output,
       scan_op_t{},
-      init_t{},
+      init_value_t{},
       static_cast<offset_t>(elements),
       env);
   });
