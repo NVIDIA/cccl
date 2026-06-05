@@ -243,7 +243,7 @@ TEST_FUNC constexpr bool operator==(const simd::basic_vec<T, Abi>& vec, const cu
   static_assert(simd::basic_vec<T, Abi>::size() == static_cast<int>(N));
   for (size_t i = 0; i < N; ++i)
   {
-    if (vec[static_cast<int>(i)] != arr[i])
+    if (vec[i] != arr[i])
     {
       return false;
     }
