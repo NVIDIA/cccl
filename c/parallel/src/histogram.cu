@@ -197,7 +197,7 @@ uint64_t get_integral_range(cccl_type_enum type, const void* lower, const void* 
 // layout depends on `CommonT = common_type<LevelT,SampleT>`.
 //
 // We build the whole `cuda::std::array<ScaleTransform, NumActiveChannels>` into a
-// byte buffer; `scale_transform_arg_t` (below) owns it and its `operator&` yields
+// byte buffer; `decode_op_arg_t` (below) owns it and its `operator&` yields
 // the buffer address, exactly like `indirect_arg_t`, so the existing launcher
 // marshals it as the kernel's grid-constant decode-op argument.
 
