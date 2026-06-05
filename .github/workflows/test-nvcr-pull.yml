@@ -1,0 +1,157 @@
+# nvcr.io public-image pull smoke test
+#
+#   Goal: confirm the NVIDIA/cccl self-hosted runner pool can pull a
+#   canonical public NVIDIA image from nvcr.io. Validates the runner →
+#   nvcr.io network path and matches the dominant pattern used across
+#   NVIDIA OSS GHA workflows (TensorRT-LLM, apex, NeMo, NVFlare, etc.):
+#   anonymous pull from the public nvcr.io/nvidia/* namespace.
+#
+#   No registry credentials are required. No secrets are referenced.
+#   This test is deliberately scoped to the public nvcr.io/nvidia/*
+#   namespace — private-namespace authentication is out of scope and
+#   tracked separately.
+#
+# LOG DISCIPLINE
+#   PASS/FAIL gates only. No hostnames, no kernel strings, no docker
+#   info dumps, no resolved IPs — Actions logs on a public repo are
+#   world-readable.
+#
+# TRIGGER
+#   - Open a PR against NVIDIA/cccl from a fork. copy-pr-bot (already
+#     configured for cccl) mirrors the PR head to a `pull-request/N`
+#     branch on the upstream repo, and the workflow runs there on
+#     `linux-amd64-cpu4` (self-hosted) with upstream context. Same
+#     trust model as `secret-scan.yml`.
+#   - "Run workflow" button on the Actions tab (workflow_dispatch).
+
+name: Test nvcr.io Image Pull (public)
+
+run-name: nvcr public-pull test — ${{ github.ref_name }}
+
+on:
+  push:
+    branches:
+      # copy-pr-bot mirror branches — same trigger model as
+      # secret-scan.yml and ci-workflow-pull-request.yml.
+      - "pull-request/[0-9]+"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pull-nvcr-image:
+    name: docker pull nvcr.io public image
+    # NV self-hosted CPU runner on NVIDIA/cccl; GitHub-hosted fallback
+    # so the workflow does not error out on contributor forks where
+    # nv-gha-runners labels do not resolve. Mirrors `secret-scan.yml`.
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu4' || 'ubuntu-latest' }}
+    env:
+      # Canonical public NVIDIA round-trip test image. Public namespace
+      # (nvcr.io/nvidia/*); no auth required. Small (~80 MB) for a fast
+      # smoke test. Same image NGC docs recommend for verifying nvcr.io
+      # connectivity end-to-end.
+      NVCR_IMAGE: nvcr.io/nvidia/cuda:12.4.0-base-ubuntu22.04
+
+    steps:
+      - name: Preflight — docker available
+        run: |
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "::error::docker CLI not found on this runner."
+            exit 1
+          fi
+          if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
+            echo "::error::docker daemon not reachable from this runner."
+            exit 1
+          fi
+          echo "docker: OK"
+
+      - name: Network reachability — nvcr.io (PASS/FAIL only)
+        run: |
+          set -euo pipefail
+          if curl --silent --show-error --fail --max-time 15 \
+              --output /dev/null --head https://nvcr.io/v2/; then
+            echo "nvcr.io reachability (HTTPS HEAD /v2/): PASS"
+          else
+            rc=$?
+            echo "::error::nvcr.io unreachable (curl exit ${rc})."
+            exit "${rc}"
+          fi
+
+      - name: Anonymous manifest probe (HTTP 200 expected)
+        # Hits the OCI/Docker manifest endpoint with NO auth. For an
+        # image in the public nvcr.io/nvidia/* namespace this MUST
+        # return 200; anything else is a real signal and fails the
+        # test. Cheaper than a full layer pull as a pre-check.
+        run: |
+          set -euo pipefail
+          img="${NVCR_IMAGE#nvcr.io/}"
+          if [[ "${img}" == *@* ]]; then
+            img_path="${img%@*}"; img_ref="${img##*@}"
+          elif [[ "${img}" == *:* ]]; then
+            img_path="${img%:*}"; img_ref="${img##*:}"
+          else
+            img_path="${img}"; img_ref="latest"
+          fi
+          code="$(curl --silent --show-error --max-time 15 \
+              --output /dev/null --write-out '%{http_code}' \
+              --header 'Accept: application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json' \
+              "https://nvcr.io/v2/${img_path}/manifests/${img_ref}" 2>/dev/null || echo '000')"
+          case "${code}" in
+            200) echo "anonymous manifest fetch: PASS (HTTP 200)" ;;
+            *)   echo "::error::anonymous manifest fetch: HTTP ${code} (expected 200 for public namespace)"
+                 exit 1 ;;
+          esac
+
+      - name: docker pull (anonymous)
+        run: |
+          set -euo pipefail
+          if docker pull "${NVCR_IMAGE}" >/dev/null 2>&1; then
+            echo "docker pull: PASS"
+          else
+            rc=$?
+            echo "::error::docker pull failed (exit ${rc})."
+            exit "${rc}"
+          fi
+
+      - name: Sanity — image present locally
+        run: |
+          set -euo pipefail
+          if docker image inspect "${NVCR_IMAGE}" \
+              --format '{{.Architecture}}/{{.Os}} size={{.Size}}' \
+              > /tmp/img_meta 2>/dev/null; then
+            echo "image present: PASS ($(cat /tmp/img_meta))"
+          else
+            echo "::error::image not present locally after pull."
+            exit 1
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [[ -n "${NVCR_IMAGE:-}" ]]; then
+            docker rmi "${NVCR_IMAGE}" >/dev/null 2>&1 || true
+          fi
+
+      - name: Summary (no runner identity)
+        if: always()
+        run: |
+          {
+            echo "### nvcr.io public-image pull smoke test"
+            echo
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Repository | \`${GITHUB_REPOSITORY}\` |"
+            echo "| Branch | \`${GITHUB_REF_NAME}\` |"
+            echo "| Runner class | \`${RUNNER_OS}/${RUNNER_ARCH}\` |"
+            echo "| Image | \`${NVCR_IMAGE}\` |"
+            echo "| Job outcome | \`${{ job.status }}\` |"
+            echo
+            echo "_Step logs contain per-gate PASS/FAIL. Runner hostname,_"
+            echo "_kernel, daemon config, and resolved IPs are deliberately not echoed._"
+          } >> "${GITHUB_STEP_SUMMARY}"
