@@ -105,8 +105,11 @@ cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem
 
   res.max_block_size = occupancy_res.block_size;
 
-  /* Compute the maximum block size (not the optimal size) */
-  const auto attrs     = cuda_try<cudaFuncGetAttributes>(f);
+  /* Compute the maximum block size (not the optimal size).
+   * cudaFuncGetAttributes is an overload set (cuda_runtime.h templated wrapper),
+   * so it keeps the runtime-status cuda_try form. */
+  cudaFuncAttributes attrs{};
+  cuda_try(cudaFuncGetAttributes(&attrs, f));
   res.block_size_limit = attrs.maxThreadsPerBlock;
 
   return res;
