@@ -21,26 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/device_for.cuh>
-#include <cub/device/device_select.cuh>
-
 #include <cuda/__container/buffer.h>
 #include <cuda/__iterator/constant_iterator.h>
-#include <cuda/__iterator/counting_iterator.h>
-#include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
-#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/functional>
-#include <cuda/std/limits>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/extent.cuh>
 #include <cuda/experimental/__cuco/__detail/types.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
-#include <cuda/experimental/__cuco/__open_addressing/functors.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
@@ -139,7 +130,6 @@ private:
     }
   }
 
-  //! @brief Allocates and zeros a single device counter using the memory resource.
   //! @brief Allocates and zero-initializes an RAII device counter.
   [[nodiscard]] _CCCL_HOST ::cuda::device_buffer<__size_type> __make_counter(::cuda::stream_ref __stream) const
   {
@@ -170,77 +160,6 @@ private:
   [[nodiscard]] _CCCL_HOST static auto __as_atomic(__size_type* __ptr) noexcept
   {
     return reinterpret_cast<::cuda::atomic<__size_type, _Scope>*>(__ptr);
-  }
-
-  //! @brief Private total-count implementation.
-  template <class _InputIt, class _Ref>
-  [[nodiscard]] _CCCL_HOST __size_type
-  __count(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) const
-  {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
-    if (__num_keys == 0)
-    {
-      return 0;
-    }
-
-    auto __counter = __make_counter(__stream);
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__count<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __as_atomic(__counter.data()), __container_ref);
-
-    return __read_counter(__counter, __stream);
-  }
-
-  //! @brief Private per-key count implementation.
-  template <class _InputIt, class _OutputIt, class _Ref>
-  _CCCL_HOST void __count_each(
-    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
-    const noexcept
-  {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
-    if (__num_keys == 0)
-    {
-      return;
-    }
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__count_each<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __output_begin, __container_ref);
-  }
-
-  //! @brief Private retrieve implementation.
-  template <class _InputProbeIt, class _OutputProbeIt, class _OutputMatchIt, class _Ref>
-  _CCCL_HOST ::cuda::std::pair<_OutputProbeIt, _OutputMatchIt> __retrieve_impl(
-    _InputProbeIt __first,
-    _InputProbeIt __last,
-    _OutputProbeIt __output_probe,
-    _OutputMatchIt __output_match,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) const
-  {
-    const auto __n = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
-    if (__n == 0)
-    {
-      return {__output_probe, __output_match};
-    }
-
-    auto __counter = __make_counter(__stream);
-
-    constexpr auto __block_size  = ::cuda::experimental::cuco::__detail::__default_block_size();
-    constexpr auto __grid_stride = 1;
-    const auto __grid_size =
-      ::cuda::experimental::cuco::__detail::__grid_size(__n, __cg_size, __grid_stride, __block_size);
-
-    __open_addressing::__retrieve<__block_size><<<__grid_size, __block_size, 0, __stream.get()>>>(
-      __first, __n, __output_probe, __output_match, __as_atomic(__counter.data()), __container_ref);
-
-    const auto __num_retrieved = __read_counter(__counter, __stream);
-    return {__output_probe + __num_retrieved, __output_match + __num_retrieved};
   }
 
 public:
@@ -334,29 +253,6 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST __size_type insert(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
   {
-    const auto __always_true = ::cuda::constant_iterator<bool>{true};
-    return this->insert_if(__first, __last, __always_true, ::cuda::std::identity{}, __container_ref, __stream);
-  }
-
-  //! @brief Asynchronously inserts keys in `[first, last)`.
-  template <class _InputIt, class _Ref>
-  _CCCL_HOST void
-  insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) noexcept
-  {
-    const auto __always_true = ::cuda::constant_iterator<bool>{true};
-    this->insert_if_async(__first, __last, __always_true, ::cuda::std::identity{}, __container_ref, __stream);
-  }
-
-  //! @brief Conditionally inserts keys and returns the number of successful insertions.
-  template <class _InputIt, class _StencilIt, class _Predicate, class _Ref>
-  _CCCL_HOST __size_type insert_if(
-    _InputIt __first,
-    _InputIt __last,
-    _StencilIt __stencil,
-    _Predicate __pred,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream)
-  {
     const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
     if (__num_keys == 0)
     {
@@ -369,20 +265,20 @@ public:
 
     __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __as_atomic(__counter.data()), __container_ref);
+        __first,
+        __num_keys,
+        ::cuda::constant_iterator<bool>{true},
+        ::cuda::std::identity{},
+        __as_atomic(__counter.data()),
+        __container_ref);
 
     return __read_counter(__counter, __stream);
   }
 
-  //! @brief Asynchronously inserts keys conditionally (no counting).
-  template <class _InputIt, class _StencilIt, class _Predicate, class _Ref>
-  _CCCL_HOST void insert_if_async(
-    _InputIt __first,
-    _InputIt __last,
-    _StencilIt __stencil,
-    _Predicate __pred,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) noexcept
+  //! @brief Asynchronously inserts keys in `[first, last)`.
+  template <class _InputIt, class _Ref>
+  _CCCL_HOST void
+  insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) noexcept
   {
     const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -394,52 +290,7 @@ public:
 
     __open_addressing::__insert_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __container_ref);
-  }
-
-  //! @brief Asynchronously inserts keys and returns iterators to inserted slots.
-  template <class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
-  _CCCL_HOST void insert_and_find_async(
-    _InputIt __first,
-    _InputIt __last,
-    _FoundIt __found_begin,
-    _InsertedIt __inserted_begin,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) noexcept
-  {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
-    if (__num_keys == 0)
-    {
-      return;
-    }
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__insert_and_find<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __found_begin, __inserted_begin, __container_ref);
-  }
-
-  //! @brief Asynchronously erases keys in `[first, last)`.
-  template <class _InputIt, class _Ref>
-  _CCCL_HOST void erase_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
-  {
-    if (this->empty_key_sentinel() == this->erased_key_sentinel())
-    {
-      _CCCL_THROW(::std::invalid_argument, "The empty key sentinel and erased key sentinel cannot be the same value.");
-    }
-
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
-    if (__num_keys == 0)
-    {
-      return;
-    }
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__erase<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __container_ref);
+        __first, __num_keys, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
   }
 
   //! @brief Asynchronously checks if keys in `[first, last)` exist in the container.
@@ -447,22 +298,6 @@ public:
   _CCCL_HOST void contains_async(
     _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
     const noexcept
-  {
-    const auto __always_true = ::cuda::constant_iterator<bool>{true};
-    this->contains_if_async(
-      __first, __last, __always_true, ::cuda::std::identity{}, __output_begin, __container_ref, __stream);
-  }
-
-  //! @brief Asynchronously checks if keys exist, filtered by a stencil.
-  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
-  _CCCL_HOST void contains_if_async(
-    _InputIt __first,
-    _InputIt __last,
-    _StencilIt __stencil,
-    _Predicate __pred,
-    _OutputIt __output_begin,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) const noexcept
   {
     const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
     if (__num_keys == 0)
@@ -474,264 +309,12 @@ public:
 
     __open_addressing::__contains_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
       <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-  }
-
-  //! @brief Asynchronously finds keys in `[first, last)`.
-  template <class _InputIt, class _OutputIt, class _Ref>
-  _CCCL_HOST void find_async(
-    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
-    const noexcept
-  {
-    const auto __always_true = ::cuda::constant_iterator<bool>{true};
-    this->find_if_async(
-      __first, __last, __always_true, ::cuda::std::identity{}, __output_begin, __container_ref, __stream);
-  }
-
-  //! @brief Asynchronously finds keys, filtered by a stencil.
-  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
-  _CCCL_HOST void find_if_async(
-    _InputIt __first,
-    _InputIt __last,
-    _StencilIt __stencil,
-    _Predicate __pred,
-    _OutputIt __output_begin,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) const noexcept
-  {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
-    if (__num_keys == 0)
-    {
-      return;
-    }
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__find_if_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-  }
-
-  //! @brief Retrieves matching pairs (inner join).
-  template <class _InputProbeIt, class _OutputProbeIt, class _OutputMatchIt, class _Ref>
-  _CCCL_HOST ::cuda::std::pair<_OutputProbeIt, _OutputMatchIt> retrieve(
-    _InputProbeIt __first,
-    _InputProbeIt __last,
-    _OutputProbeIt __output_probe,
-    _OutputMatchIt __output_match,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) const
-  {
-    return this->__retrieve_impl(__first, __last, __output_probe, __output_match, __container_ref, __stream);
-  }
-
-  //! @brief Returns the total number of matches for keys in `[first, last)`.
-  template <class _InputIt, class _Ref>
-  [[nodiscard]] _CCCL_HOST __size_type
-  count(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) const
-  {
-    return this->__count(__first, __last, __container_ref, __stream);
-  }
-
-  //! @brief Outputs per-key match counts.
-  template <class _InputIt, class _OutputIt, class _Ref>
-  _CCCL_HOST void count_each(
-    _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
-    const noexcept
-  {
-    this->__count_each(__first, __last, __output_begin, __container_ref, __stream);
-  }
-
-  //! @brief Retrieves all non-empty slots.
-  template <class _OutputIt>
-  [[nodiscard]] _CCCL_HOST _OutputIt retrieve_all(_OutputIt __output_begin, ::cuda::stream_ref __stream) const
-  {
-    constexpr ::cuda::experimental::cuco::__detail::__index_type __stride =
-      ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-
-    ::cuda::experimental::cuco::__detail::__index_type __h_num_out{0};
-
-    ::cuda::device_buffer<__size_type> __d_num_out{__stream, __memory_resource, 1, ::cuda::no_init};
-
-    auto const __storage_ref = this->storage_ref();
-
-    for (::cuda::experimental::cuco::__detail::__index_type __offset = 0;
-         __offset < static_cast<::cuda::experimental::cuco::__detail::__index_type>(this->capacity());
-         __offset += __stride)
-    {
-      const auto __num_items = ::cuda::std::min(
-        static_cast<::cuda::experimental::cuco::__detail::__index_type>(this->capacity()) - __offset, __stride);
-      const auto __begin = ::cuda::make_transform_iterator(
-        ::cuda::counting_iterator{static_cast<__size_type>(__offset)},
-        __open_addressing::__get_slot<__has_payload, __storage_ref_type>(__storage_ref));
-      const auto __is_filled = __open_addressing::__slot_is_filled<__has_payload, __key_type>{
-        this->empty_key_sentinel(), this->erased_key_sentinel()};
-
-      ::cuda::std::size_t __temp_storage_bytes = 0;
-
-      _CCCL_TRY_CUDA_API(
-        cudaMemsetAsync, "Failed to zero device counter", __d_num_out.data(), 0, sizeof(__size_type), __stream.get());
-
-      _CCCL_TRY_CUDA_API(
-        cub::DeviceSelect::If,
-        "Failed to compute temp storage for DeviceSelect::If",
-        nullptr,
-        __temp_storage_bytes,
-        __begin,
-        __output_begin + __h_num_out,
-        __d_num_out.data(),
-        static_cast<::cuda::std::int32_t>(__num_items),
-        __is_filled,
-        __stream.get());
-
-      ::cuda::device_buffer<char> __d_temp_storage{__stream, __memory_resource, __temp_storage_bytes, ::cuda::no_init};
-
-      _CCCL_TRY_CUDA_API(
-        cub::DeviceSelect::If,
-        "Failed in DeviceSelect::If",
-        __d_temp_storage.data(),
-        __temp_storage_bytes,
-        __begin,
-        __output_begin + __h_num_out,
-        __d_num_out.data(),
-        static_cast<::cuda::std::int32_t>(__num_items),
-        __is_filled,
-        __stream.get());
-
-      __size_type __temp_count{};
-      _CCCL_TRY_CUDA_API(
-        cudaMemcpyAsync,
-        "Failed to copy counter to host",
-        &__temp_count,
-        __d_num_out.data(),
-        sizeof(__size_type),
-        cudaMemcpyDeviceToHost,
-        __stream.get());
-      __stream.sync();
-      __h_num_out += __temp_count;
-    }
-
-    return __output_begin + __h_num_out;
-  }
-
-  //! @brief Asynchronously applies a callback to all filled slots.
-  template <class _CallbackOp>
-  _CCCL_HOST void for_each_async(_CallbackOp&& __callback_op, ::cuda::stream_ref __stream) const
-  {
-    const auto __is_filled = __open_addressing::__slot_is_filled<__has_payload, __key_type>{
-      this->empty_key_sentinel(), this->erased_key_sentinel()};
-
-    auto __sref     = this->storage_ref();
-    const auto __n  = static_cast<__size_type>(__sref.capacity());
-    const auto __op = [__callback_op, __is_filled, __data = __sref.data()] _CCCL_DEVICE(::cuda::std::size_t __idx) {
-      auto __slot = *(__data + __idx);
-      if (__is_filled(__slot))
-      {
-        __callback_op(__slot);
-      }
-    };
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(
-      static_cast<::cuda::experimental::cuco::__detail::__index_type>(__n));
-    _CCCL_TRY_CUDA_API(
-      cub::DeviceFor::ForEachCopyN,
-      "Failed in DeviceFor::ForEachCopyN",
-      ::cuda::counting_iterator<__size_type>{0},
-      static_cast<__size_type>(__n),
-      __op,
-      __stream.get());
-  }
-
-  //! @brief Asynchronously applies a callback for each key in `[first, last)`.
-  template <class _InputIt, class _CallbackOp, class _Ref>
-  _CCCL_HOST void for_each_async(
-    _InputIt __first, _InputIt __last, _CallbackOp&& __callback_op, _Ref __container_ref, ::cuda::stream_ref __stream)
-    const noexcept
-  {
-    const auto __num_keys = ::cuda::experimental::cuco::__detail::__distance(__first, __last);
-    if (__num_keys == 0)
-    {
-      return;
-    }
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__for_each_n<__cg_size, ::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        __first, __num_keys, ::cuda::std::forward<_CallbackOp>(__callback_op), __container_ref);
-  }
-
-  //! @brief Returns the number of filled slots in the container.
-  [[nodiscard]] _CCCL_HOST __size_type size(::cuda::stream_ref __stream) const
-  {
-    auto __counter = __make_counter(__stream);
-
-    const auto __grid_size = ::cuda::experimental::cuco::__detail::__grid_size(
-      static_cast<::cuda::experimental::cuco::__detail::__index_type>(this->capacity()));
-    const auto __is_filled = __open_addressing::__slot_is_filled<__has_payload, __key_type>{
-      this->empty_key_sentinel(), this->erased_key_sentinel()};
-
-    __open_addressing::__size<::cuda::experimental::cuco::__detail::__default_block_size()>
-      <<<__grid_size, ::cuda::experimental::cuco::__detail::__default_block_size(), 0, __stream.get()>>>(
-        this->storage_ref(), __is_filled, __as_atomic(__counter.data()));
-
-    return __read_counter(__counter, __stream);
-  }
-
-  //! @brief Rehashes using the current capacity.
-  template <class _Container>
-  _CCCL_HOST void rehash(_Container const& __container, ::cuda::stream_ref __stream)
-  {
-    this->rehash_async(__container, __stream);
-    __stream.sync();
-  }
-
-  //! @brief Rehashes with a new capacity.
-  template <class _Container>
-  _CCCL_HOST void rehash(__size_type __new_capacity, _Container const& __container, ::cuda::stream_ref __stream)
-  {
-    this->rehash_async(__new_capacity, __container, __stream);
-    __stream.sync();
-  }
-
-  //! @brief Asynchronously rehashes using the current capacity.
-  template <class _Container>
-  _CCCL_HOST void rehash_async(_Container const& __container, ::cuda::stream_ref __stream)
-  {
-    this->rehash_async(this->capacity(), __container, __stream);
-  }
-
-  //! @brief Asynchronously rehashes with a new capacity.
-  template <class _Container>
-  _CCCL_HOST void rehash_async(__size_type __new_capacity, _Container const& __container, ::cuda::stream_ref __stream)
-  {
-    auto const __new_num_buckets = __compute_num_buckets(__new_capacity);
-
-    // Create new storage; old data is in __new_slots after swap
-    auto __new_slots = ::cuda::device_buffer<__value_type>{
-      __stream, __memory_resource, __new_num_buckets * _BucketSize, ::cuda::no_init};
-    __slots.swap(__new_slots);
-
-    auto const __old_num_buckets = __num_buckets;
-    __num_buckets                = __new_num_buckets;
-    this->clear_async(__stream);
-
-    if (__old_num_buckets == 0)
-    {
-      return;
-    }
-
-    auto const __old_ref   = __storage_ref_type{__new_slots.data(), __old_num_buckets};
-    const auto __is_filled = __open_addressing::__slot_is_filled<__has_payload, __key_type>{
-      this->empty_key_sentinel(), this->erased_key_sentinel()};
-
-    constexpr auto __block_size = ::cuda::experimental::cuco::__detail::__default_block_size();
-    constexpr auto __stride     = ::cuda::experimental::cuco::__detail::__default_stride();
-    const auto __grid_size      = ::cuda::experimental::cuco::__detail::__grid_size(
-      static_cast<::cuda::experimental::cuco::__detail::__index_type>(__old_num_buckets), 1, __stride, __block_size);
-
-    __open_addressing::__rehash<__block_size>
-      <<<__grid_size, __block_size, 0, __stream.get()>>>(__old_ref, __container.ref(), __is_filled);
+        __first,
+        __num_keys,
+        ::cuda::constant_iterator<bool>{true},
+        ::cuda::std::identity{},
+        __output_begin,
+        __container_ref);
   }
 
   //! @brief Returns the total number of slots.

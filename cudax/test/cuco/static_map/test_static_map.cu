@@ -18,7 +18,6 @@
 
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
-#include <cuda/std/tuple>
 
 #include <cuda/experimental/__cuco/static_map.cuh>
 
@@ -51,44 +50,6 @@ __global__ void contains_kernel(map_type::ref_type ref, const int* keys, int* re
   if (idx < n)
   {
     results[idx] = ref.contains(keys[idx]) ? 1 : 0;
-  }
-}
-
-__global__ void find_kernel(map_type::ref_type ref, const int* keys, int* results, int n)
-{
-  const auto idx = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
-  if (idx < n)
-  {
-    auto it      = ref.find(keys[idx]);
-    results[idx] = (it == ref.end()) ? empty_value : it->second;
-  }
-}
-
-__global__ void insert_or_assign_kernel(map_type::ref_type ref, const ::cuda::std::pair<int, int>* pairs, int n)
-{
-  const auto idx = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
-  if (idx < n)
-  {
-    ref.insert_or_assign(pairs[idx]);
-  }
-}
-
-struct add_op
-{
-  __device__ void operator()(int& existing, int value) const
-  {
-    ::cuda::atomic_ref<int, ::cuda::thread_scope_device> atomic{existing};
-    atomic.fetch_add(value, ::cuda::memory_order_relaxed);
-  }
-};
-
-__global__ void
-insert_or_apply_kernel(map_type::ref_type ref, const ::cuda::std::pair<int, int>* pairs, int n, add_op op)
-{
-  const auto idx = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
-  if (idx < n)
-  {
-    ref.insert_or_apply(pairs[idx], op);
   }
 }
 
@@ -142,14 +103,12 @@ C2H_TEST("static_map device ref APIs", "[container]")
                cudax::cuco::empty_key{empty_key},
                cudax::cuco::empty_value{empty_value}};
 
-  SECTION("insert_or_assign and contains")
+  SECTION("insert and contains")
   {
     map.clear();
 
     thrust::device_vector<int> keys(num_keys);
-    thrust::device_vector<int> values(num_keys);
     thrust::sequence(keys.begin(), keys.end(), int{0});
-    thrust::sequence(values.begin(), values.end(), int{0});
 
     thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
     thrust::transform(
@@ -157,14 +116,12 @@ C2H_TEST("static_map device ref APIs", "[container]")
         return ::cuda::std::pair<int, int>{i, i};
       });
 
+    map.insert(pairs.begin(), pairs.end());
+
     auto ref = map.ref();
 
     const int block_size = 128;
     const int grid_size  = (num_keys + block_size - 1) / block_size;
-
-    insert_or_assign_kernel<<<grid_size, block_size>>>(ref, pairs.data().get(), num_keys);
-
-    REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
     thrust::device_vector<int> contains_results(num_keys, 0);
     contains_kernel<<<grid_size, block_size>>>(ref, keys.data().get(), contains_results.data().get(), num_keys);
@@ -175,17 +132,6 @@ C2H_TEST("static_map device ref APIs", "[container]")
       return value == 1;
     });
     REQUIRE(contains_ok);
-
-    thrust::device_vector<int> found_values(num_keys, empty_value);
-    find_kernel<<<grid_size, block_size>>>(ref, keys.data().get(), found_values.data().get(), num_keys);
-
-    REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
-
-    const auto zipped  = cuda::make_zip_iterator(cuda::std::tuple{found_values.begin(), values.begin()});
-    const auto find_ok = thrust::all_of(zipped, zipped + num_keys, [] __device__(const auto& p) {
-      return cuda::std::get<0>(p) == cuda::std::get<1>(p);
-    });
-    REQUIRE(find_ok);
   }
 }
 
@@ -295,9 +241,9 @@ C2H_TEST("static_map static extent — shared memory sizing via capacity_v", "[e
 }
 
 // ---------------------------------------------------------------------------
-// Test: static-extent map with erasure support
+// Test: static-extent map constructed with an erased-key sentinel
 // ---------------------------------------------------------------------------
-C2H_TEST("static_map static extent — erasure support", "[extent][static][erase]")
+C2H_TEST("static_map static extent — erased_key constructor", "[extent][static][erase]")
 {
   constexpr int erased_sentinel = -2;
   constexpr int num_keys        = 32;
@@ -313,23 +259,8 @@ C2H_TEST("static_map static extent — erasure support", "[extent][static][erase
       return ::cuda::std::pair<int, int>{i, i};
     });
 
-  // Insert all keys
   map.insert(pairs.begin(), pairs.end());
-  REQUIRE(map.size() == static_cast<::cuda::std::size_t>(num_keys));
 
-  // Erase even keys
-  thrust::device_vector<int> even_keys(num_keys / 2);
-  thrust::transform(
-    cuda::counting_iterator<int>{0},
-    cuda::counting_iterator<int>{num_keys / 2},
-    even_keys.begin(),
-    [] __device__(int i) {
-      return i * 2;
-    });
-
-  map.erase(even_keys.begin(), even_keys.end());
-
-  // Verify odd keys still present, even keys gone
   auto ref = map.ref();
 
   thrust::device_vector<int> all_keys(num_keys);
@@ -340,15 +271,10 @@ C2H_TEST("static_map static extent — erasure support", "[extent][static][erase
     <<<(num_keys + 127) / 128, 128>>>(ref, all_keys.data().get(), results.data().get(), num_keys);
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
-  const auto correct = thrust::all_of(
-    cuda::make_zip_iterator(cuda::std::tuple{results.begin(), cuda::counting_iterator<int>{0}}),
-    cuda::make_zip_iterator(cuda::std::tuple{results.end(), cuda::counting_iterator<int>{num_keys}}),
-    [] __device__(const cuda::std::tuple<int, int>& t) {
-      const auto found = cuda::std::get<0>(t);
-      const auto key   = cuda::std::get<1>(t);
-      return (key % 2 == 0) ? (found == 0) : (found == 1); // even erased, odd present
-    });
-  REQUIRE(correct);
+  const auto all_found = thrust::all_of(results.begin(), results.end(), [] __device__(int v) {
+    return v == 1;
+  });
+  REQUIRE(all_found);
 }
 
 // ---------------------------------------------------------------------------
