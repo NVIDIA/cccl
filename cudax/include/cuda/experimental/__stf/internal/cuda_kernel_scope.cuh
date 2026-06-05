@@ -396,14 +396,10 @@ public:
     {
       if (record_time)
       {
-        // Event-timing teardown: kept as cuda_safe_call (abort on error) since this
-        // is measurement cleanup, mirroring the noexcept SCOPE(exit) timing path
-        // in parallel_for_scope.
-        cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
+        cuda_try<cudaEventRecord>(end_event, t.get_stream());
+        cuda_try<cudaEventSynchronize>(end_event);
 
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+        const float milliseconds = cuda_try<cudaEventElapsedTime>(start_event, end_event);
 
         auto& dot = *ctx.get_dot();
         if (dot.is_tracing())
