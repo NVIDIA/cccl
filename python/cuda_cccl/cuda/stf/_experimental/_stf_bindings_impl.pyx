@@ -1012,6 +1012,22 @@ cdef class exec_place:
             raise RuntimeError(f"failed to create green_ctx exec_place for index {view._idx}")
         return p
 
+    @staticmethod
+    def from_handle(uintptr_t handle):
+        """Wrap an existing ``stf_exec_place_handle`` (as an integer).
+
+        Takes ownership of the handle: the returned :class:`exec_place`
+        frees it via ``stf_exec_place_destroy`` on destruction. Intended
+        for extensibility layers (e.g. custom places built through the
+        STF C API) that produce a handle out of band and want to hand it
+        to the Python runtime.
+        """
+        if handle == 0:
+            raise ValueError("exec_place.from_handle received a null handle")
+        cdef exec_place p = exec_place.__new__(exec_place)
+        p._h = <stf_exec_place_handle>handle
+        return p
+
     @property
     def kind(self) -> str:
         if stf_exec_place_is_host(self._h):
@@ -1179,7 +1195,10 @@ cdef class exec_place_grid(exec_place):
 
         converted = []
         for i in range(n):
-            ep = <exec_place?>places[i]
+            place = places[i]
+            if not isinstance(place, exec_place) and hasattr(place, "_as_stf_exec_place"):
+                place = place._as_stf_exec_place()
+            ep = <exec_place?>place
             converted.append(ep)
             c_places[i] = ep._h
 
@@ -1267,6 +1286,21 @@ cdef class data_place:
         p._h = stf_data_place_green_ctx(helper._h, view._idx)
         if p._h == NULL:
             raise RuntimeError(f"failed to create green_ctx data_place for index {view._idx}")
+        return p
+
+    @staticmethod
+    def from_handle(uintptr_t handle):
+        """Wrap an existing ``stf_data_place_handle`` (as an integer).
+
+        Takes ownership of the handle: the returned :class:`data_place`
+        frees it via ``stf_data_place_destroy`` on destruction. Intended
+        for extensibility layers that produce a handle through the STF C
+        API and want to hand it to the Python runtime.
+        """
+        if handle == 0:
+            raise ValueError("data_place.from_handle received a null handle")
+        cdef data_place p = data_place.__new__(data_place)
+        p._h = <stf_data_place_handle>handle
         return p
 
     @staticmethod
@@ -2194,6 +2228,16 @@ cdef class context:
                       raise ValueError("Only one exec_place can be given")
                 t.set_exec_place(d)
                 exec_place_set = True
+            elif hasattr(d, "_as_stf_exec_place"):
+                if exec_place_set:
+                    raise ValueError("Only one exec_place can be given")
+                converted = d._as_stf_exec_place()
+                if not isinstance(converted, exec_place):
+                    raise TypeError(
+                        "_as_stf_exec_place() must return a cuda.stf exec_place"
+                    )
+                t.set_exec_place(converted)
+                exec_place_set = True
             else:
                 raise TypeError(
                     "Arguments must be dependency objects or an exec_place"
@@ -2226,6 +2270,16 @@ cdef class context:
                 if exec_place_set:
                     raise ValueError("Only one exec_place can be given")
                 k.set_exec_place(d)
+                exec_place_set = True
+            elif hasattr(d, "_as_stf_exec_place"):
+                if exec_place_set:
+                    raise ValueError("Only one exec_place can be given")
+                converted = d._as_stf_exec_place()
+                if not isinstance(converted, exec_place):
+                    raise TypeError(
+                        "_as_stf_exec_place() must return a cuda.stf exec_place"
+                    )
+                k.set_exec_place(converted)
                 exec_place_set = True
             else:
                 raise TypeError(
@@ -3123,6 +3177,14 @@ cdef class stackable_context:
                 if exec_place_set:
                     raise ValueError("Only one exec_place can be given")
                 t.set_exec_place(d)
+                exec_place_set = True
+            elif hasattr(d, "_as_stf_exec_place"):
+                if exec_place_set:
+                    raise ValueError("Only one exec_place can be given")
+                converted = d._as_stf_exec_place()
+                if not isinstance(converted, exec_place):
+                    raise TypeError("_as_stf_exec_place() must return a cuda.stf exec_place")
+                t.set_exec_place(converted)
                 exec_place_set = True
             else:
                 raise TypeError("Arguments must be dependency objects or an exec_place")
