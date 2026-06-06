@@ -47,6 +47,22 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// Determines whether each element of a tuple_of_iterator_references can actually construct the
+// corresponding tuple element. The tuple_of_iterator_references converting constructor below is
+// otherwise unconstrained on element convertibility, so is_constructible would report true even for
+// ill-formed conversions (e.g. tuple_of_iterator_references<const int&> -> tuple<int&>) and then
+// hard-error when the delegating constructor body is instantiated -- which happens during a
+// contiguous_iterator concept check on a thrust zip_iterator under GCC 9.
+template <class _TupleTypes, class _TupleOfIteratorReferences, class _Indices>
+inline constexpr bool __tuple_of_iterator_references_constructible_v = false;
+
+template <class... _Tp, class _TupleOfIteratorReferences, size_t... _Indices>
+inline constexpr bool __tuple_of_iterator_references_constructible_v<__tuple_types<_Tp...>,
+                                                                     _TupleOfIteratorReferences,
+                                                                     __tuple_indices<_Indices...>> =
+  (is_constructible_v<_Tp, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_TupleOfIteratorReferences>()))>
+   && ...);
+
 template <class... _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
 {
@@ -225,7 +241,11 @@ public:
             // NOLINTBEGIN(modernize-type-traits)
             enable_if_t<__is_tuple_of_iterator_references_v<_TupleOfIteratorReferences>, int> = 0,
             // NOLINTEND(modernize-type-traits)
-            enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
+            enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0,
+            enable_if_t<__tuple_of_iterator_references_constructible_v<__tuple_types<_Tp...>,
+                                                                       _TupleOfIteratorReferences,
+                                                                       __make_tuple_indices_t<sizeof...(_Tp)>>,
+                        int>                                                                    = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
       : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t), __make_tuple_indices_t<sizeof...(_Tp)>{})
   {}

@@ -168,7 +168,12 @@ public:
 
   template <
     class... Us,
-    ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
+    ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0,
+    // Structure compatibility alone is not enough: each held reference must actually convert to the
+    // requested element, otherwise this operator is selected for ill-formed conversions such as
+    // tuple_of_iterator_references<const int&> -> tuple<int&>, which then hard-errors in the body
+    // (e.g. during a contiguous_iterator concept check on a zip_iterator under GCC 9).
+    ::cuda::std::enable_if_t<(::cuda::std::is_convertible_v<Ts, Us> && ...), int> = 0>
   _CCCL_HOST_DEVICE constexpr operator ::cuda::std::tuple<Us...>() const
   {
     return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
