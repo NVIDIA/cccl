@@ -299,7 +299,7 @@ public:
     const auto __key = this->__extract_key(__val);
 
     auto __probing_iter =
-      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_descriptor());
+      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
     const auto __init_idx = *__probing_iter;
 
     while (true)
@@ -367,7 +367,7 @@ public:
     const auto __val = this->__heterogeneous_value(__value);
     const auto __key = this->__extract_key(__val);
     auto __probing_iter =
-      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_descriptor());
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
     const auto __init_idx = *__probing_iter;
 
     while (true)
@@ -476,7 +476,7 @@ public:
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
     auto __probing_iter =
-      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_descriptor());
+      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
     const auto __init_idx = *__probing_iter;
 
     while (true)
@@ -523,7 +523,7 @@ public:
   contains(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     auto __probing_iter =
-      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_descriptor());
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
     const auto __init_idx = *__probing_iter;
 
     while (true)

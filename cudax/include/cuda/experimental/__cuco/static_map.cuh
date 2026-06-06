@@ -29,6 +29,7 @@
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
+#include <cuda/experimental/__cuco/__detail/types.cuh>
 #include <cuda/experimental/__cuco/__detail/utils.hpp>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_impl.cuh>
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -55,7 +56,7 @@ namespace cuda::experimental::cuco
 //! and concurrent lookups (with other lookups) are supported; the two kinds must not be mixed.
 //! @note `_Capacity` is a span-style `size_t` non-type parameter holding the *valid* (post-rounding)
 //! slot count, or `cuda::std::dynamic_extent` (the default) for runtime-sized maps. Obtain a valid
-//! value with `cuco::make_valid_capacity` / `cuco::next_valid_capacity`.
+//! value with `cuco::make_valid_capacity`.
 //!
 //! @tparam _Key Key type. Requires `cuda::experimental::cuco::is_bitwise_comparable_v<_Key>`
 //! @tparam _Tp Mapped value type

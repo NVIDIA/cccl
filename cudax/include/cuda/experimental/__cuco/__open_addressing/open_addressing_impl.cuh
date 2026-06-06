@@ -75,8 +75,7 @@ public:
   using __hasher              = typename __probing_scheme_type::hasher;
   using __size_type           = ::cuda::std::size_t;
   using __key_equal           = _KeyEqual;
-  using __storage_ref_type =
-    __slot_storage_ref<__value_type, ::cuda::experimental::cuco::valid_capacity<_ProbingScheme, _BucketSize>>;
+  using __storage_ref_type    = __slot_storage_ref<__value_type, _BucketSize>;
 
   static constexpr auto __has_payload  = !::cuda::std::is_same_v<_Key, _Value>;
   static constexpr auto __cg_size      = _ProbingScheme::cg_size;
@@ -102,17 +101,17 @@ private:
   __size_type __num_buckets;
   ::cuda::device_buffer<__value_type> __slots;
 
-  //! @brief Computes the actual number of buckets given a requested capacity.
+  //! @brief Computes the number of buckets for a requested capacity.
   [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __requested_capacity)
   {
-    return ::cuda::experimental::cuco::next_valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity)
+    return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__requested_capacity)
          / _BucketSize;
   }
 
   //! @brief Computes the number of buckets for a given number of keys and load factor.
   [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __n, double __load_factor)
   {
-    return ::cuda::experimental::cuco::next_valid_capacity<_ProbingScheme, _BucketSize>(__n, __load_factor)
+    return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__n, __load_factor)
          / _BucketSize;
   }
 
@@ -361,9 +360,7 @@ public:
   //! @brief Returns a non-owning reference to the stored slots.
   [[nodiscard]] _CCCL_HOST constexpr __storage_ref_type storage_ref() const noexcept
   {
-    return __storage_ref_type{
-      const_cast<__value_type*>(__slots.data()),
-      ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(this->capacity())};
+    return __storage_ref_type{const_cast<__value_type*>(__slots.data()), this->capacity()};
   }
 };
 } // namespace cuda::experimental::cuco::__open_addressing

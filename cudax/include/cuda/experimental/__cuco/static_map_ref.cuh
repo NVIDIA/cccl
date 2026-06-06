@@ -27,6 +27,7 @@
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__cuco/__detail/bitwise_compare.cuh>
+#include <cuda/experimental/__cuco/__detail/types.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/__open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -109,32 +110,26 @@ public:
   using storage_span_type = ::cuda::std::span<value_type, capacity_v>;
 
 private:
-  // Internal adapter to the open-addressing impl. The storage's `_Extent` template arg
-  // receives the adjusted `capacity_v`, so when `_Capacity` is static the bucket count
-  // travels through the storage's `__extent_type` at compile time and the probing
-  // iterator's modular reduction folds to a constant.
-  using __capacity_descriptor_type = ::cuda::experimental::cuco::valid_capacity<_ProbingScheme, _BucketSize, _Capacity>;
+  // Internal adapter to the open-addressing impl. The storage's `_Capacity` template arg receives
+  // the (already valid) `capacity_v`, so when `_Capacity` is static the slot count travels through
+  // the storage's extent at compile time and the probing iterator's modular reduction folds to a
+  // constant.
   using __storage_ref_type =
-    ::cuda::experimental::cuco::__open_addressing::__slot_storage_ref<value_type, __capacity_descriptor_type>;
+    ::cuda::experimental::cuco::__open_addressing::__slot_storage_ref<value_type, _BucketSize, capacity_v>;
 
-  //! @brief Builds the validated capacity descriptor for the given slot span.
+  //! @brief Returns the slot count of the given span, validating it for the dynamic case.
   //!
   //! @param __slots Span over the slot storage
   //!
-  //! @return The capacity descriptor (static value folds from the type; dynamic is validated)
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr __capacity_descriptor_type
-  __as_capacity(storage_span_type __slots) noexcept
+  //! @return The total slot count
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr size_type __checked_capacity(storage_span_type __slots) noexcept
   {
     if constexpr (_Capacity == ::cuda::experimental::cuco::dynamic_extent)
     {
       _CCCL_ASSERT((::cuda::experimental::cuco::is_valid_capacity<_ProbingScheme, _BucketSize>(__slots.size())),
                    "storage size is not a valid capacity");
-      return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__slots.size());
     }
-    else
-    {
-      return __capacity_descriptor_type{};
-    }
+    return __slots.size();
   }
 
   using __impl_type = ::cuda::experimental::cuco::__open_addressing::
@@ -159,7 +154,7 @@ public:
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                __predicate,
                __probing_scheme,
-               __storage_ref_type{__slots.data(), __as_capacity(__slots)}}
+               __storage_ref_type{__slots.data(), __checked_capacity(__slots)}}
   {}
 
   //! @brief Constructs a ref with erasure support.
@@ -181,7 +176,7 @@ public:
                key_type(__erased_key_sentinel),
                __predicate,
                __probing_scheme,
-               __storage_ref_type{__slots.data(), __as_capacity(__slots)}}
+               __storage_ref_type{__slots.data(), __checked_capacity(__slots)}}
   {}
 
   // ===== Accessors =====
