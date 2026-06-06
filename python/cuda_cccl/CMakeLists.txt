@@ -38,6 +38,15 @@ if (NOT WIN32)
   set(CCCL_ENABLE_UNSTABLE ON)
   set(CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING OFF)
   set(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
+
+  # Enabling CCCL_ENABLE_UNSTABLE pulls cudax into a full developer build whose
+  # tests/examples/header-tests default to ON. None of those are installed into
+  # the wheel, so building them is wasted work. Mirror the C STF treatment above
+  # and disable them; only the cudax::cudax target (used by cccl.c.experimental.stf)
+  # is needed here.
+  set(cudax_ENABLE_TESTING OFF)
+  set(cudax_ENABLE_EXAMPLES OFF)
+  set(cudax_ENABLE_HEADER_TESTING OFF)
 endif()
 
 # Just install the rest:
