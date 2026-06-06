@@ -174,6 +174,27 @@ if (NOT WIN32)
     DESTINATION "${_stf_install_dir}/cccl"
   )
 
+  # Ship the C STF public header(s) into the same include root as the other CCCL
+  # headers so consumers can `#include <cccl/c/experimental/stf/stf.h>`.
+  install(
+    DIRECTORY ${_cccl_root}/c/experimental/stf/include/cccl
+    DESTINATION cuda/cccl/headers/include
+    FILES_MATCHING
+    PATTERN "*.h"
+  )
+
+  # Ship the cudax headers (e.g. cuda/experimental/places.cuh, stf.cuh) needed
+  # to compile C++/CUDA code against the STF C library. We install them
+  # explicitly rather than via cudax_ENABLE_INSTALL_RULES: that option's default
+  # is evaluated (in cmake/install/cudax.cmake) before CCCL_ENABLE_CUDAX is
+  # defined, so it cannot be reliably enabled from here.
+  install(
+    DIRECTORY ${_cccl_root}/cudax/include/cuda
+    DESTINATION cuda/cccl/headers/include
+    FILES_MATCHING
+    PATTERN "*.cuh"
+  )
+
   set(
     stf_pyx_source_file
     "${cuda_cccl_SOURCE_DIR}/cuda/stf/_experimental/_stf_bindings_impl.pyx"
