@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 def _memcpy(dst: int, src: int, nbytes: int, kind: int):
     """cudaMemcpy wrapper.  *kind*: 1=H2D, 2=D2H, 3=D2D."""
-    err = cudart.cudaMemcpy(
+    (err,) = cudart.cudaMemcpy(
         dst,
         src,
         nbytes,
