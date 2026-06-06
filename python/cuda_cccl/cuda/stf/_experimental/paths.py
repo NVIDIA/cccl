@@ -16,13 +16,13 @@ header ``cccl/c/experimental/stf/stf.h`` and the cudax headers
 
 from __future__ import annotations
 
-import sys
 from functools import lru_cache
 from importlib.resources import as_file, files
 from pathlib import Path
 
 from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
 from cuda.cccl.headers import get_include_paths as _get_cccl_include_paths
+from cuda.cccl.headers.include_paths import iter_site_roots
 
 # Shared library produced by the cccl.c.experimental.stf target (Linux-only).
 _STF_LIBRARY_NAME = "libcccl.c.experimental.stf.so"
@@ -36,7 +36,7 @@ def get_include_paths():
     (``cccl/c/experimental/stf/stf.h``) and the cudax headers
     (``cuda/experimental/*.cuh``), in addition to libcudacxx/CUB/Thrust.
     """
-    return _get_cccl_include_paths()
+    return _get_cccl_include_paths(probe_file="cuda/experimental/places.cuh")
 
 
 @lru_cache()
@@ -49,10 +49,10 @@ def get_library_dir() -> Path:
 
     if not (lib_dir / _STF_LIBRARY_NAME).exists():
         # Editable installs serve the .py files from the source tree but place
-        # compiled artifacts elsewhere; fall back to scanning sys.path (mirrors
-        # cuda.cccl.headers.include_paths.get_include_paths).
-        for sp in sys.path:
-            candidate = Path(sp).resolve() / "cuda" / "stf" / "_experimental" / rel
+        # compiled artifacts elsewhere; fall back to scanning the candidate site
+        # roots (handles pip build isolation, see iter_site_roots).
+        for root in iter_site_roots():
+            candidate = root / "cuda" / "stf" / "_experimental" / rel
             if (candidate / _STF_LIBRARY_NAME).exists():
                 lib_dir = candidate
                 break
