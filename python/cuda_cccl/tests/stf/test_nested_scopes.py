@@ -479,8 +479,8 @@ def test_repeat_with_while_inside_pytorch():
       repeat iter 1: while converges X to ~2.0, target becomes 3.0
       repeat iter 2: while converges X to ~3.0, target becomes 4.0
     """
-    import torch
-    from pytorch_task import pytorch_task
+    torch = pytest.importorskip("torch")
+    from cuda.stf._experimental.interop.pytorch import pytorch_task
 
     n = 256
     X_host = np.zeros(n, dtype=np.float64)
@@ -528,8 +528,8 @@ def test_while_with_repeat_inside_pytorch():
             X += 0.1
           residual = max(|target - X|)
     """
-    import torch
-    from pytorch_task import pytorch_task
+    torch = pytest.importorskip("torch")
+    from cuda.stf._experimental.interop.pytorch import pytorch_task
 
     n = 256
     X_host = np.zeros(n, dtype=np.float64)
