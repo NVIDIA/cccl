@@ -105,7 +105,7 @@ TEST_CASE("cudaMalloc/cudaFree round-trip works", "[cuda_smoke][device_memory]")
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }
 
-// smoke test for pinned (page-locked) host memory: basic round-trip
+// smoke test for pinned host memory
 
 TEST_CASE("cudaMallocHost round-trip works", "[cuda_smoke][pinned_memory]")
 {
@@ -142,8 +142,7 @@ TEST_CASE("cudaMallocHost round-trip works", "[cuda_smoke][pinned_memory]")
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }
 
-// smoke test for mapped (zero-copy) pinned host memory: the device accesses
-// host memory directly through a device pointer, no explicit cudaMemcpy
+// smoke test for mapped pinned host memory
 
 TEST_CASE("cudaHostAlloc mapped (zero-copy) works", "[cuda_smoke][pinned_memory][mapped]")
 {
@@ -171,11 +170,11 @@ TEST_CASE("cudaHostAlloc mapped (zero-copy) works", "[cuda_smoke][pinned_memory]
   CUDART_REQUIRE(cudaHostGetDevicePointer(&d_view, h_mapped, 0));
   REQUIRE(d_view != nullptr);
 
-  increment_kernel<<<4, 64>>>(d_view, n); // device writes host memory directly
+  increment_kernel<<<4, 64>>>(d_view, n);
   CUDART_REQUIRE(cudaGetLastError());
   CUDART_REQUIRE(cudaDeviceSynchronize());
 
-  for (int i = 0; i < n; ++i) // host read-back, no memcpy
+  for (int i = 0; i < n; ++i)
   {
     REQUIRE(h_mapped[i] == i + 1);
   }
