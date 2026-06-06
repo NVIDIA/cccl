@@ -180,11 +180,11 @@ def test_scope_with_cuda_compute():
 
         h_init = np.array([0.0], dtype=np.float32)
         cuda.compute.reduce_into(
-            input_cai,
-            output_cai,
-            OpKind.PLUS,
-            n,
-            h_init,
+            d_in=input_cai,
+            d_out=output_cai,
+            op=OpKind.PLUS,
+            num_items=n,
+            h_init=h_init,
             stream=stream,
         )
 
@@ -281,11 +281,11 @@ def test_device_array_with_cuda_compute():
         h_init = np.array([0.0], dtype=np.float64)
 
         cuda.compute.reduce_into(
-            d_in,
-            d_out,
-            OpKind.PLUS,
-            256,
-            h_init,
+            d_in=d_in,
+            d_out=d_out,
+            op=OpKind.PLUS,
+            num_items=256,
+            h_init=h_init,
             stream=stream,
         )
 
