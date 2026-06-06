@@ -224,7 +224,7 @@ struct BlockReduceWarpReductions
         if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
         {
           NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, //
-                            (return ::cub::detail::reduce_op_sync(val, 0xFFFFFFFFu, reduction_op);),
+                            (return cub::detail::reduce_op_sync(val, 0xFFFFFFFFu, reduction_op);),
                             ({ warp_aggregate = warp_reduce.template Reduce<true>(val, num_warps, reduction_op); }))
         }
         else
