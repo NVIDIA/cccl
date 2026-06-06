@@ -104,3 +104,82 @@ TEST_CASE("cudaMalloc/cudaFree round-trip works", "[cuda_smoke][device_memory]")
   CUDART_REQUIRE(cudaFree(d_ptr));
   REQUIRE(cudaGetLastError() == cudaSuccess);
 }
+
+// smoke test for pinned (page-locked) host memory: basic round-trip
+
+TEST_CASE("cudaMallocHost round-trip works", "[cuda_smoke][pinned_memory]")
+{
+  (void) cudaGetLastError();
+
+  constexpr int n = 256;
+
+  int* h_pinned = nullptr;
+  CUDART_REQUIRE(cudaMallocHost(&h_pinned, n * sizeof(int)));
+  REQUIRE(h_pinned != nullptr);
+
+  int* d_ptr = nullptr;
+  CUDART_REQUIRE(cudaMalloc(&d_ptr, n * sizeof(int)));
+  REQUIRE(d_ptr != nullptr);
+
+  for (int i = 0; i < n; ++i)
+  {
+    h_pinned[i] = i;
+  }
+  CUDART_REQUIRE(cudaMemcpy(d_ptr, h_pinned, n * sizeof(int), cudaMemcpyHostToDevice));
+
+  increment_kernel<<<4, 64>>>(d_ptr, n);
+  CUDART_REQUIRE(cudaGetLastError());
+  CUDART_REQUIRE(cudaDeviceSynchronize());
+
+  CUDART_REQUIRE(cudaMemcpy(h_pinned, d_ptr, n * sizeof(int), cudaMemcpyDeviceToHost));
+  for (int i = 0; i < n; ++i)
+  {
+    REQUIRE(h_pinned[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaFree(d_ptr));
+  CUDART_REQUIRE(cudaFreeHost(h_pinned));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
+
+// smoke test for mapped (zero-copy) pinned host memory: the device accesses
+// host memory directly through a device pointer, no explicit cudaMemcpy
+
+TEST_CASE("cudaHostAlloc mapped (zero-copy) works", "[cuda_smoke][pinned_memory][mapped]")
+{
+  (void) cudaGetLastError();
+
+  int can_map = 0;
+  CUDART_REQUIRE(cudaDeviceGetAttribute(&can_map, cudaDevAttrCanMapHostMemory, 0));
+  if (!can_map)
+  {
+    SKIP("Device cannot map host memory (cudaDevAttrCanMapHostMemory == 0).");
+  }
+
+  constexpr int n = 256;
+
+  int* h_mapped = nullptr;
+  CUDART_REQUIRE(cudaHostAlloc(&h_mapped, n * sizeof(int), cudaHostAllocMapped));
+  REQUIRE(h_mapped != nullptr);
+
+  for (int i = 0; i < n; ++i)
+  {
+    h_mapped[i] = i;
+  }
+
+  int* d_view = nullptr;
+  CUDART_REQUIRE(cudaHostGetDevicePointer(&d_view, h_mapped, 0));
+  REQUIRE(d_view != nullptr);
+
+  increment_kernel<<<4, 64>>>(d_view, n); // device writes host memory directly
+  CUDART_REQUIRE(cudaGetLastError());
+  CUDART_REQUIRE(cudaDeviceSynchronize());
+
+  for (int i = 0; i < n; ++i) // host read-back, no memcpy
+  {
+    REQUIRE(h_mapped[i] == i + 1);
+  }
+
+  CUDART_REQUIRE(cudaFreeHost(h_mapped));
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+}
