@@ -36,6 +36,7 @@ TEST_FUNC void test()
     using holder_t       = cuda::std::remove_cvref_t<decltype(guarantee)>;
     static_assert(sizeof(holder_t::element_type) == 8);
     static_assert(holder_t::static_highest == 5'000'000'000);
+    assert(guarantee.highest() == 5'000'000'000);
   }
 
   // The element type can be selected explicitly through the literal type.
@@ -43,6 +44,7 @@ TEST_FUNC void test()
     const auto guarantee = exec::max_total_num_items<cuda::std::int16_t{1000}>();
     using holder_t       = cuda::std::remove_cvref_t<decltype(guarantee)>;
     static_assert(cuda::std::is_same_v<holder_t::element_type, cuda::std::int16_t>);
+    assert(guarantee.highest() == 1000);
   }
 
   // (b) runtime upper bound: the element type is inferred from the argument, the static bound spans the whole type.
