@@ -158,7 +158,7 @@ NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_of
      "powerlaw:0.5",
      "zipf:1.0",
      "hash_synonym",
-     "capacity_cliff",
      "stale_resident",
      "temporal_phases",
-     "strided_sweep"});
+     "strided_sweep",
+     "sawtooth"});
