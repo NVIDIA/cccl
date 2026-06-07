@@ -171,7 +171,7 @@ public:
 
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     // Skip the synchronization for threads that are not part of this group.
     if constexpr (!_MappingResult::is_always_exhaustive())
@@ -184,7 +184,7 @@ public:
     __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_);
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     // Skip the synchronization for threads that are not part of this group.
     if constexpr (!_MappingResult::is_always_exhaustive())
