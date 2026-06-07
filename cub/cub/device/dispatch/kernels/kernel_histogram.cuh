@@ -100,6 +100,42 @@ namespace detail::histogram
 #  define CUB_HISTO_SINGLE_PROBE_WAYS 1
 #endif
 
+// Optional SMEM-cache HIT-RATE instrumentation for the direct-atomic cached
+// kernels (cuckoo / single-probe / no-cache). A "hit" is a contribution absorbed
+// in the SMEM cache (a block-scope atomicAdd to `counts`); a "miss" is a
+// contribution spilled to a device-scope GMEM atomicAdd on `output`. Both are
+// weighted by the (warp-coalesced) contribution so the rate is over input
+// ELEMENTS, not probe calls.
+//
+// DISABLED BY DEFAULT (CUB_HISTO_TRACK_HITRATE == 0): the probe ops take no extra
+// arguments, do no extra work, and the kernel declares no accumulators -- the SASS
+// is byte-for-byte identical to the uninstrumented kernel (these kernels are
+// register-pinned, so this is required, not cosmetic). When enabled (a separate
+// build), each ProbeOp::apply takes two thread-local accumulator references and
+// bumps them at the single hit / miss site on every code path; the kernel reduces
+// them into __device__ globals at exit, which the host reads back via
+// cudaMemcpyFromSymbol. See histogram_hitrate_sweep.py / build_hitrate_variants.sh.
+#ifndef CUB_HISTO_TRACK_HITRATE
+#  define CUB_HISTO_TRACK_HITRATE 0
+#endif
+
+#if CUB_HISTO_TRACK_HITRATE
+// Grid-wide hit / miss accumulators (contribution-weighted). Zeroed by the host
+// before launch and read back after via cudaMemcpyFromSymbol.
+_CCCL_DEVICE unsigned long long g_cub_histo_cache_hits   = 0;
+_CCCL_DEVICE unsigned long long g_cub_histo_cache_misses = 0;
+// Extra apply() parameters (thread-local accumulators) and the per-site bumps.
+#  define CUB_HISTO_HITRATE_PARAMS , unsigned long long &hit_acc, unsigned long long &miss_acc
+#  define CUB_HISTO_HITRATE_ARGS , hit_acc, miss_acc
+#  define CUB_HISTO_HIT(c) (hit_acc += static_cast<unsigned long long>(c))
+#  define CUB_HISTO_MISS(c) (miss_acc += static_cast<unsigned long long>(c))
+#else
+#  define CUB_HISTO_HITRATE_PARAMS
+#  define CUB_HISTO_HITRATE_ARGS
+#  define CUB_HISTO_HIT(c) ((void) 0)
+#  define CUB_HISTO_MISS(c) ((void) 0)
+#endif
+
 _CCCL_DEVICE _CCCL_FORCEINLINE int
 cache_slot_from_hash(unsigned int product, int cache_mask, int cache_slot_log2)
 {
@@ -1991,7 +2027,8 @@ struct cuckoo_cache_probe
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
+  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2
+        CUB_HISTO_HITRATE_PARAMS)
   {
     const unsigned int hash1 = static_cast<unsigned int>(bin) * 2654435761u;
     const int slot1          = cache_slot_from_hash(hash1, cache_mask, cache_slot_log2);
@@ -2000,6 +2037,7 @@ struct cuckoo_cache_probe
     {
       // Primary hit: bump cache count.
       atomicAdd_block(&counts[slot1], contribution);
+      CUB_HISTO_HIT(contribution);
     }
     else if (existing_key1 == -1)
     {
@@ -2008,11 +2046,13 @@ struct cuckoo_cache_probe
       if (prev == -1 || prev == bin)
       {
         atomicAdd_block(&counts[slot1], contribution);
+        CUB_HISTO_HIT(contribution);
       }
       else if constexpr (DisableSecondProbe)
       {
         // High-bin tier: no secondary probe -- spill.
         SpillOp::spill(output, bin, contribution);
+        CUB_HISTO_MISS(contribution);
       }
       else
       {
@@ -2023,6 +2063,7 @@ struct cuckoo_cache_probe
         if (existing_key2 == bin)
         {
           atomicAdd_block(&counts[slot2], contribution);
+          CUB_HISTO_HIT(contribution);
         }
         else if (existing_key2 == -1)
         {
@@ -2030,15 +2071,18 @@ struct cuckoo_cache_probe
           if (prev2 == -1 || prev2 == bin)
           {
             atomicAdd_block(&counts[slot2], contribution);
+            CUB_HISTO_HIT(contribution);
           }
           else
           {
             SpillOp::spill(output, bin, contribution);
+            CUB_HISTO_MISS(contribution);
           }
         }
         else
         {
           SpillOp::spill(output, bin, contribution);
+          CUB_HISTO_MISS(contribution);
         }
       }
     }
@@ -2047,6 +2091,7 @@ struct cuckoo_cache_probe
       // High-bin tier: primary occupied by a different bin -> spill without a
       // secondary probe.
       SpillOp::spill(output, bin, contribution);
+      CUB_HISTO_MISS(contribution);
     }
     else
     {
@@ -2057,6 +2102,7 @@ struct cuckoo_cache_probe
       if (existing_key2 == bin)
       {
         atomicAdd_block(&counts[slot2], contribution);
+        CUB_HISTO_HIT(contribution);
       }
       else if (existing_key2 == -1)
       {
@@ -2064,15 +2110,18 @@ struct cuckoo_cache_probe
         if (prev2 == -1 || prev2 == bin)
         {
           atomicAdd_block(&counts[slot2], contribution);
+          CUB_HISTO_HIT(contribution);
         }
         else
         {
           SpillOp::spill(output, bin, contribution);
+          CUB_HISTO_MISS(contribution);
         }
       }
       else
       {
         SpillOp::spill(output, bin, contribution);
+        CUB_HISTO_MISS(contribution);
       }
     }
   }
@@ -2085,7 +2134,8 @@ struct single_probe_cache
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
+  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2
+        CUB_HISTO_HITRATE_PARAMS)
   {
     const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
     if constexpr (CUB_HISTO_SINGLE_PROBE_WAYS == 1)
@@ -2097,6 +2147,7 @@ struct single_probe_cache
       {
         // Hit: bump cache count (block-scope atomic, ~10x cheaper).
         atomicAdd_block(&counts[slot], contribution);
+        CUB_HISTO_HIT(contribution);
       }
       else if (existing_key == -1)
       {
@@ -2105,17 +2156,20 @@ struct single_probe_cache
         if (prev == -1 || prev == bin)
         {
           atomicAdd_block(&counts[slot], contribution);
+          CUB_HISTO_HIT(contribution);
         }
         else
         {
           // Lost the claim race to a different bin: spill.
           SpillOp::spill(output, bin, contribution);
+          CUB_HISTO_MISS(contribution);
         }
       }
       else
       {
         // Collision (slot owned by another bin): single spill.
         SpillOp::spill(output, bin, contribution);
+        CUB_HISTO_MISS(contribution);
       }
     }
     else
@@ -2140,6 +2194,7 @@ struct single_probe_cache
         if (!done && keys[base + w] == bin)
         {
           atomicAdd_block(&counts[base + w], contribution);
+          CUB_HISTO_HIT(contribution);
           done = true;
         }
       }
@@ -2154,6 +2209,7 @@ struct single_probe_cache
           if (prev == -1 || prev == bin)
           {
             atomicAdd_block(&counts[base + w], contribution);
+            CUB_HISTO_HIT(contribution);
             done = true;
           }
         }
@@ -2163,6 +2219,7 @@ struct single_probe_cache
         // All ways occupied by other live bins (or every empty way lost its CAS
         // race): single spill. Correctness: contribution added once.
         SpillOp::spill(output, bin, contribution);
+        CUB_HISTO_MISS(contribution);
       }
     }
   }
@@ -2182,13 +2239,15 @@ struct no_cache_probe
 {
   template <typename CounterT, typename SpillOp = output_atomic_spill>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
-  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2)
+  apply(int* keys, CounterT* counts, CounterT* output, int bin, CounterT contribution, int cache_mask, int cache_slot_log2
+        CUB_HISTO_HITRATE_PARAMS)
   {
     (void) keys;
     (void) counts;
     (void) cache_mask;
     (void) cache_slot_log2;
     SpillOp::spill(output, bin, contribution);
+    CUB_HISTO_MISS(contribution);
   }
 };
 
@@ -2493,6 +2552,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
   constexpr bool kUseMruCache = (NumActiveChannels == 1) && PrivatizedDecodeOpT::is_range_transform;
   typename PrivatizedDecodeOpT::BracketCacheT mru[NumActiveChannels];
 
+#if CUB_HISTO_TRACK_HITRATE
+  // Per-thread, contribution-weighted hit / miss accumulators (captured by the
+  // probe lambda below; reduced into the grid-wide __device__ globals at exit).
+  // Only the cached fast path (num_rows == 1) probes the cache; the rare slow
+  // path is uncached, so it is not counted (and the benchmark never takes it).
+  unsigned long long hit_acc  = 0;
+  unsigned long long miss_acc = 0;
+#endif
+
   if (num_rows == 1)
   {
     // Pixel sweep parameters: every thread strides over the whole pixel
@@ -2523,7 +2591,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
       // valid lane without duplicating the body.
       auto update = [&](int bin, CounterT contribution) {
         ProbeOp::template apply<CounterT, SpillOp>(
-          s_cache_keys[ch], s_cache_counts[ch], spill_target[ch], bin, contribution, cache_mask, cache_slot_log2);
+          s_cache_keys[ch], s_cache_counts[ch], spill_target[ch], bin, contribution, cache_mask,
+          cache_slot_log2 CUB_HISTO_HITRATE_ARGS);
       };
 
       // Warp-coalesce same-bin lanes into one cache update (gated by the
@@ -2825,6 +2894,21 @@ __launch_bounds__(int(current_policy<PolicySelector>().direct_atomic_threads()))
         total_threads);
     }
   }
+
+#if CUB_HISTO_TRACK_HITRATE
+  // Reduce per-thread hit/miss accumulators into the grid-wide globals. One atomic
+  // per thread, instrumented build only; the host zeroes the globals before launch
+  // and reads them back after. (The slow path above is uncached and never taken by
+  // the benchmark, so hit_acc/miss_acc reflect only the cached fast path.)
+  if (hit_acc)
+  {
+    atomicAdd(&g_cub_histo_cache_hits, hit_acc);
+  }
+  if (miss_acc)
+  {
+    atomicAdd(&g_cub_histo_cache_misses, miss_acc);
+  }
+#endif
 
   // Emit the trigger so any PDL-launched downstream kernel in the stream
   // sees a completion signal. (Cooperative launches typically do not use
