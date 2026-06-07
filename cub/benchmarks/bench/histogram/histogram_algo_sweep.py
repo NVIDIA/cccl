@@ -75,15 +75,24 @@ HIGH_BIN_THRESHOLD = 4096
 DEFAULT_BINS = [256, 2048, 8192, 32768, 65536, 262144, 1048576]
 DEFAULT_ELEMENTS = [1 << 24, 1 << 28]  # 16M, 256M
 DEFAULT_SAMPLES = ["I32"]
+# Full shape set, matching the input-shape characterization figures: the
+# concentrated and powerlaw families are swept across their entropy knob (not just
+# the endpoints) so the perf grid covers the same inputs the characterization does.
 DEFAULT_SHAPES = [
     "concentrated:1.0",
+    "concentrated:0.75",
+    "concentrated:0.5",
+    "concentrated:0.25",
     "concentrated:0.0",
+    "powerlaw:0.75",
     "powerlaw:0.5",
+    "powerlaw:0.25",
     "zipf:1.0",
     "hash_synonym",
     "stale_resident",
     "temporal_phases",
     "strided_sweep",
+    "sawtooth",
 ]
 
 # InputShape generators comparable against the `main` series. This is now ALL

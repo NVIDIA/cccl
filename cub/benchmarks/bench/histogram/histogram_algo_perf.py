@@ -135,50 +135,71 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
 
 
 def draw_perf(ax, series, title):
+    """Plot speedup-vs-upstream-`main` for each algorithm: y = (algo GiB/s) / (main
+    GiB/s) at each bin count, log y, with main as the y=1 baseline line and the
+    shipping `default`'s gain shaded above it. If no `main` baseline is present for
+    this cell, fall back to plotting absolute GiB/s (log y)."""
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
-    ax.set_ylabel("GiB/s (log)")
     ax.set_xscale("log", base=2)
-    # Log y: the upstream `main` baseline can be 30x slower than the branch at high
-    # bins; on a linear axis it is pinned to ~0 and unreadable. Log y keeps the slow
-    # baseline visible AND makes the multiplicative speedup (vertical gap) the
-    # eye-level quantity.
     ax.set_yscale("log")
     any_pts = False
-    drawn = [a for a in ALGO_ORDER if a in series and len(series[a][0])]
-    # cuckoo / single-probe / no-cache often land on nearly the same curve, so each
-    # series carries its own color/marker/linestyle/linewidth (the reference series
-    # -- default, main -- are wider/dashed and drawn last so they sit on top).
-    for i, algo in enumerate(drawn):
-        color, marker, label, ls, lw = ALGO_STYLE[algo]
-        xb, yv = series[algo]
-        any_pts = True
-        # Reference series (default, main) get larger markers, full opacity, and the
-        # highest zorder so they read clearly over the candidate-algorithm cluster.
-        is_ref = algo in ("default", "main")
-        ax.plot(xb, yv, color=color, marker=marker, markersize=10 if is_ref else 6,
-                lw=lw, linestyle=ls, alpha=1.0 if is_ref else 0.8,
-                label=label, zorder=(20 if is_ref else 3 + i))
-    # Shade the speedup region between the upstream `main` baseline and the shipping
-    # `default` so the gap reads even at small panel size (and where main's thin line
-    # would otherwise hug the bottom). Only where both series share bin points.
-    if "main" in series and "default" in series:
+
+    # Baseline = upstream main. Map bin -> main GiB/s for this (sample, elements, shape).
+    baseline = None
+    if "main" in series and len(series["main"][0]):
         mb, mv = series["main"]
-        db, dv = series["default"]
-        common = sorted(set(int(x) for x in mb) & set(int(x) for x in db))
-        if common:
-            mmap = {int(x): y for x, y in zip(mb, mv)}
-            dmap = {int(x): y for x, y in zip(db, dv)}
-            xs = np.array(common)
-            lo = np.array([mmap[x] for x in common])
-            hi = np.array([dmap[x] for x in common])
-            ax.fill_between(xs, lo, hi, where=(hi >= lo), color="#e6194B", alpha=0.08,
-                            zorder=1, label="_nolegend_")
+        baseline = {int(x): y for x, y in zip(mb, mv) if y > 0}
+
+    if baseline:
+        ax.set_ylabel("speedup vs upstream main (log)")
+        # Every algorithm EXCEPT main, divided by main at the shared bin points.
+        drawn = [a for a in ALGO_ORDER if a != "main" and a in series and len(series[a][0])]
+        for i, algo in enumerate(drawn):
+            color, marker, label, ls, lw = ALGO_STYLE[algo]
+            xb, yv = series[algo]
+            pts = [(int(x), y / baseline[int(x)]) for x, y in zip(xb, yv) if int(x) in baseline]
+            if not pts:
+                continue
+            any_pts = True
+            xs = np.array([p[0] for p in pts])
+            sp = np.array([p[1] for p in pts])
+            is_ref = (algo == "default")
+            ax.plot(xs, sp, color=color, marker=marker, markersize=10 if is_ref else 6,
+                    lw=lw, linestyle=ls, alpha=1.0 if is_ref else 0.8,
+                    label=label, zorder=(20 if is_ref else 3 + i))
+        # Baseline reference: main is 1x by definition. Draw it as the styled main line.
+        b_color, _, _, b_ls, b_lw = ALGO_STYLE["main"]
+        ax.axhline(1.0, color=b_color, linestyle=b_ls, lw=b_lw, alpha=1.0,
+                   zorder=19, label="upstream main (baseline, 1×)")
+        # Shade the shipping default's gain over the baseline (between 1x and default).
+        if "default" in series and len(series["default"][0]):
+            db, dv = series["default"]
+            dpts = sorted((int(x), y / baseline[int(x)]) for x, y in zip(db, dv) if int(x) in baseline)
+            if dpts:
+                xs = np.array([p[0] for p in dpts])
+                hi = np.array([p[1] for p in dpts])
+                ax.fill_between(xs, 1.0, hi, where=(hi >= 1.0), color="#2ca02c", alpha=0.10,
+                                zorder=1, label="_nolegend_")
+                ax.fill_between(xs, hi, 1.0, where=(hi < 1.0), color="#d62728", alpha=0.10,
+                                zorder=1, label="_nolegend_")
+    else:
+        # No baseline for this cell -> absolute GiB/s (log y).
+        ax.set_ylabel("GiB/s (log)")
+        drawn = [a for a in ALGO_ORDER if a in series and len(series[a][0])]
+        for i, algo in enumerate(drawn):
+            color, marker, label, ls, lw = ALGO_STYLE[algo]
+            xb, yv = series[algo]
+            any_pts = True
+            is_ref = algo in ("default", "main")
+            ax.plot(xb, yv, color=color, marker=marker, markersize=10 if is_ref else 6,
+                    lw=lw, linestyle=ls, alpha=1.0 if is_ref else 0.8,
+                    label=label, zorder=(20 if is_ref else 3 + i))
+
     ax.grid(True, which="both", linestyle=":", alpha=0.4)
     ax.set_xticks(sorted({int(b) for s in series.values() for b in s[0]}))
     ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: fmt_bins(int(round(v)))))
     ax.tick_params(axis="x", labelsize=7, rotation=45)
-    # log y: leave matplotlib's autoscaled positive limits (a bottom=0 is invalid).
     return any_pts
 
 
@@ -243,7 +264,8 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     fig.suptitle(
         f"{head}\n"
         f"top: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})   "
-        f"middle: GiB/s vs #bins per input size — one line per algorithm{hr_note}",
+        f"middle: speedup vs upstream main (log) vs #bins per input size — one line per algorithm, "
+        f"main = 1x baseline{hr_note}",
         fontsize=12,
     )
 
