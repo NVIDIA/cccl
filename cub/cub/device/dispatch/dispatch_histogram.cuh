@@ -1388,6 +1388,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         cudaError_t coop_status = cudaSuccess;
         if (use_direct_atomic_to_output)
         {
+#if CUB_HISTO_TRACK_HITRATE
+          // Zero the grid-wide cache hit/miss accumulators before this (single)
+          // cooperative launch so the read-back below reflects only this launch.
+          // Instrumented build only (CUB_HISTO_TRACK_HITRATE); see kernel_histogram.cuh.
+          {
+            const unsigned long long zero = 0;
+            (void) cudaMemcpyToSymbol(detail::histogram::g_cub_histo_cache_hits, &zero, sizeof(zero));
+            (void) cudaMemcpyToSymbol(detail::histogram::g_cub_histo_cache_misses, &zero, sizeof(zero));
+          }
+#endif
           // For the very-high-bin GMEM-privatized path, dispatch the direct-atomic
           // kernel instead of the gather-merge persistent kernel. It needs the
           // output histograms, the privatized decode op (in second_level_array),
@@ -1463,6 +1473,29 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         if (coop_status == cudaSuccess)
         {
           launched_persistent = true;
+#if CUB_HISTO_TRACK_HITRATE
+          // Read back the grid-wide cache hit/miss totals for this launch (cached
+          // kernels only; gather / no_cache report 0 hits). Sync first so the kernel
+          // has finished accumulating. Emitted per launch under CUB_HISTO_LOG_HITRATE
+          // so the hit-rate sweep can parse a rate per (bins, elements).
+          if (use_direct_atomic_to_output && !use_no_cache && ::std::getenv("CUB_HISTO_LOG_HITRATE"))
+          {
+            (void) cudaStreamSynchronize(stream);
+            unsigned long long h = 0, m = 0;
+            (void) cudaMemcpyFromSymbol(&h, detail::histogram::g_cub_histo_cache_hits, sizeof(h));
+            (void) cudaMemcpyFromSymbol(&m, detail::histogram::g_cub_histo_cache_misses, sizeof(m));
+            const double rate      = (h + m) ? (static_cast<double>(h) / static_cast<double>(h + m)) : 0.0;
+            const long long pixels = static_cast<long long>(num_row_pixels) * static_cast<long long>(num_rows);
+            ::std::fprintf(stderr,
+                           "[hitrate] bins=%d ch=%d pixels=%lld hits=%llu misses=%llu rate=%.6f\n",
+                           max_num_output_bins,
+                           NUM_ACTIVE_CHANNELS,
+                           pixels,
+                           h,
+                           m,
+                           rate);
+          }
+#endif
         }
         else
         {

@@ -5,8 +5,9 @@
 # zero-overhead binaries. DO NOT run while a benchmark is on the GPU.
 set -euo pipefail
 # Benchmark build dir (override with HIST_BENCH_BUILD). Must already contain the
-# prebuilt nvbench objects + the 4 stock histogram bench targets.
-BUILD=${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}
+# prebuilt nvbench objects + the 4 stock histogram bench targets. Resolve to an
+# absolute path so the inner python's cwd=BUILD is correct after we cd into it.
+BUILD=$(cd "${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}" && pwd)
 CMDS=/tmp/hist_compile_cmds.json
 LABELS="even range multi_even multi_range"
 cd "$BUILD"
@@ -20,7 +21,10 @@ L=os.environ['L']; obj=os.environ['OBJ']; out=os.environ['OUT']; build=os.enviro
 m=json.load(open(os.environ['CMDS']))
 toks=shlex.split(m[L]['cmd'])
 i=toks.index('-o'); toks[i+1]=obj
-toks=[toks[0], '-DCUB_HISTO_TRACK_HITRATE=1'] + toks[1:]
+# Insert the define right after the nvcc compiler token (the command may be
+# prefixed by a launcher such as `ccache`, so do NOT inject after toks[0]).
+nvcc_i=next(j for j,t in enumerate(toks) if t.endswith('nvcc'))
+toks=toks[:nvcc_i+1] + ['-DCUB_HISTO_TRACK_HITRATE=1'] + toks[nvcc_i+1:]
 if not os.path.exists(obj):
     r=subprocess.run(toks, cwd=build)
     if r.returncode!=0: sys.exit(f'compile {L} hitrate failed')
