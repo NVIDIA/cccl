@@ -36,6 +36,7 @@
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstdint>
@@ -51,12 +52,26 @@ namespace detail::batched_topk
 
 // The selection direction is compile-time only: callers pass `::cuda::__argument::__constant<Dir>`, which maps to a
 // value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
-// can never disagree with its only supported option, so dispatch can never silently degrade to a no-op. Anything other
-// than a `__constant<Dir>` is rejected at compile time (no matching overload).
+// can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
 template <detail::topk::select Dir>
 [[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::__argument::__constant<Dir>)
 {
   return params::static_discrete_param<detail::topk::select, Dir>{};
+}
+
+// Explicitly reject any non-`__constant<Dir>` direction (e.g. a runtime `detail::topk::select` or a per-segment
+// iterator of directions) with a clear, self-explaining diagnostic at the call site, rather than deep template errors
+// from inside `dispatch`. A compile-fail test (test_device_segmented_topk_direction_fail.cu) locks in this contract.
+template <typename SelectDirectionT>
+[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(SelectDirectionT)
+{
+  static_assert(::cuda::std::__always_false_v<SelectDirectionT>,
+                "the batched top-k selection direction must be a compile-time option: pass "
+                "::cuda::__argument::__constant<cub::detail::topk::select> (a runtime or per-segment direction is not "
+                "supported)");
+  // Unreachable (the static_assert above always fires); keeps the return type well-formed so the only diagnostic is
+  // the message above.
+  return params::static_discrete_param<detail::topk::select, detail::topk::select::min>{};
 }
 
 // -----------------------------------------------------------------------------
