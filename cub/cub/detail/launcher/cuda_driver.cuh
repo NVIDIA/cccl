@@ -75,6 +75,8 @@ struct CudaDriverLauncher
 
 struct CudaDriverLauncherFactory
 {
+  static constexpr bool force_device_kernel_emission = false;
+
   CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
   {
     if (dependent_launch)
@@ -90,6 +92,31 @@ struct CudaDriverLauncherFactory
   {
     __assert_pdl_allowed(dependent_launch);
     return CudaDriverLauncher{grid, block, shared_mem, stream, dependent_launch};
+  }
+
+  // Cooperative launch (grid-wide `grid.sync()` kernels). The kernel handle is a
+  // JIT `CUkernel` (NVRTC) or registered device entry; resolve it to a `CUfunction`
+  // and use the driver's cooperative launch entry point. This lets the C Parallel
+  // Library run the cooperative histogram kernels it JIT-compiles -- the runtime
+  // `cudaLaunchCooperativeKernel(host_ptr, ...)` path is unavailable there because a
+  // JIT kernel has no host function pointer.
+  // `kernel` is a `CUkernel` handle passed as `const void*` (the dispatch layer
+  // selects among kernel variants through a `const void*`, since the typed host
+  // pointers differ per variant; for C-parallel every variant is the same
+  // `CUkernel` JIT handle).
+  template <typename... Args>
+  ::cudaError_t doit_cooperative(
+    dim3 grid, dim3 block, unsigned int shared_mem, ::CUstream stream, const void* kernel, Args const&... args) const
+  {
+    void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+    ::CUfunction kernel_fn;
+    auto kernel_handle = reinterpret_cast<::CUkernel>(const_cast<void*>(kernel));
+    if (auto status = static_cast<::cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel_handle)); status != cudaSuccess)
+    {
+      return status;
+    }
+    return static_cast<::cudaError_t>(::cuLaunchCooperativeKernel(
+      kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args));
   }
 
   ::cudaError_t PtxVersion(int& version) const
