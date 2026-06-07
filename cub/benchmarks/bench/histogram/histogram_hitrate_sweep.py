@@ -35,15 +35,21 @@ BINARIES = [("even", "cub.bench.histogram.even.base.hitrate"),
             ("range", "cub.bench.histogram.range.base.hitrate"),
             ("multi_even", "cub.bench.histogram.multi_even.base.hitrate"),
             ("multi_range", "cub.bench.histogram.multi_range.base.hitrate")]
-SHAPES = ["concentrated:1.0", "concentrated:0.25", "concentrated:0.0", "powerlaw:0.5",
-          "zipf", "temporal_phases", "sawtooth", "stale_resident", "hash_synonym"]
+# Match the main perf sweep's shape set (current taxonomy: zipf:1.0, the swept
+# concentrated/powerlaw knobs, strided_sweep, sawtooth).
+SHAPES = ["concentrated:1.0", "concentrated:0.0", "powerlaw:0.5", "zipf:1.0",
+          "hash_synonym", "stale_resident", "temporal_phases", "strided_sweep", "sawtooth"]
 BINS = [32768, 65536, 131072, 262144, 524288, 1048576]
 # Hit rate is essentially N-invariant once N >> bins (the per-block cache reaches
 # steady state within the first tiles), so the expensive 1G/2G cells add ~no signal
 # while dominating runtime on the instrumented (slower, sync-per-launch) build. Use
 # four representative sizes spanning small->large for the "# elements" series.
 ELEMENTS = [1048576, 16777216, 67108864, 268435456]
-ALGOS = ["direct_atomic_cuckoo", "direct_atomic_single_probe"]
+# Current CUB_HISTO_FORCE_ALGO names for the two cached high-bin kernels (the old
+# direct_atomic_* spellings are no longer recognized -> forcing would silently
+# no-op and report no cached launch). These keys are also what histogram_algo_perf.py
+# reads for the hit-rate panels.
+ALGOS = ["direct_cuckoo", "direct_single_probe"]
 SAMPLE = "I32"  # hit rate is sample-independent
 
 HITRATE_RE = re.compile(r"\[hitrate\] bins=(\d+) ch=(\d+) pixels=(\d+) hits=(\d+) misses=(\d+) rate=([0-9.]+)")
