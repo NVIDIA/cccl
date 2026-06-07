@@ -59,16 +59,20 @@ template <detail::topk::select Dir>
   return params::static_discrete_param<detail::topk::select, Dir>{};
 }
 
-// Explicitly reject any non-`__constant<Dir>` direction (e.g. a runtime `detail::topk::select` or a per-segment
-// iterator of directions) with a clear, self-explaining diagnostic at the call site, rather than deep template errors
-// from inside `dispatch`. A compile-fail test (test_device_segmented_topk_direction_fail.cu) locks in this contract.
+// The selection direction is intentionally a compile-time constant: only `::cuda::__argument::__constant<Dir>` is
+// accepted (the overload above maps it to a value-less static_discrete_param). This catch-all documents that
+// deliberate limitation and rejects anything else (e.g. a runtime `detail::topk::select` or a per-segment iterator of
+// directions) with a clear diagnostic. It is an intent/documentation guard rather than a user-facing one: callers
+// reach the algorithm through the min/max device entry points (DeviceBatchedTopK::{Max,Min}{Keys,Pairs}), which
+// construct the matching `__constant<Dir>` internally, so `dispatch` is only ever invoked with a direction we create.
 template <typename SelectDirectionT>
 [[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(SelectDirectionT)
 {
   static_assert(::cuda::std::__always_false_v<SelectDirectionT>,
-                "the batched top-k selection direction must be a compile-time option: pass "
-                "::cuda::__argument::__constant<cub::detail::topk::select> (a runtime or per-segment direction is not "
-                "supported)");
+                "DeviceBatchedTopK currently supports only compile-time selection directions: the min/max entry "
+                "points (DeviceBatchedTopK::{Max,Min}{Keys,Pairs}) dispatch with a "
+                "::cuda::__argument::__constant<cub::detail::topk::select>; runtime or per-segment directions are "
+                "intentionally not supported");
   // Unreachable (the static_assert above always fires); keeps the return type well-formed so the only diagnostic is
   // the message above.
   return params::static_discrete_param<detail::topk::select, detail::topk::select::min>{};
