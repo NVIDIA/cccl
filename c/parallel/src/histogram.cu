@@ -61,6 +61,44 @@ struct histogram_kernel_source
     return build.sweep_kernel;
   }
 
+  // Cooperative GMEM-privatized gather kernel (HybridSplit=false). Reached on the
+  // high-bin tier (PRIVATIZED_SMEM_BINS == 0); JIT-compiled in the build under the
+  // same name. Lower tiers never instantiate this (the if-constexpr branch is
+  // discarded), so a null handle there is never launched.
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  CUkernel HistogramGmemPrivatizedKernel() const
+  {
+    return build.gather_kernel;
+  }
+
+  // Direct-atomic cuckoo-cache kernel family. The host dispatch instantiates this
+  // accessor for all six (ProbeOp x SpillOp) combinations, but the C Parallel
+  // Library only ever launches `direct_atomic_cache_mode == 0` (cuckoo +
+  // output_atomic_spill, with the second probe gated off on the >=262144-bin
+  // tier): it never routes through dispatch_by_algorithm / select_algorithm. So
+  // only the two output-spill cuckoo handles need to be valid; the unreachable
+  // single-probe / no-cache / private-spill variants resolve to the primary
+  // cuckoo handle and are never launched.
+  template <typename PolicyT,
+            int PRIVATIZED_SMEM_BINS,
+            typename PrivatizedDecodeOpT,
+            typename OutputDecodeOpT,
+            typename ProbeOp,
+            typename SpillOp>
+  CUkernel HistogramDirectKernel() const
+  {
+    using ::cuda::std::is_same_v;
+    if constexpr (is_same_v<ProbeOp, cub::detail::histogram::cuckoo_cache_probe</*DisableSecondProbe=*/true>>
+                  && is_same_v<SpillOp, cub::detail::histogram::output_atomic_spill>)
+    {
+      return build.direct_cuckoo_noprobe2_kernel;
+    }
+    else
+    {
+      return build.direct_cuckoo_kernel;
+    }
+  }
+
   std::size_t CounterSize() const
   {
     return build.counter_type.size;
@@ -90,6 +128,60 @@ std::string get_init_kernel_name(int num_active_channels, std::string_view count
     offset_t);
 }
 
+// Common type-name pieces shared by every histogram sweep/gather/direct kernel
+// name. Factored out so the SMEM-privatized, GMEM-privatized-gather and
+// direct-atomic kernel names all agree on the policy, sample-iterator and decode
+// op spellings (the decode ops are template parameters that MUST match what the
+// host dispatch instantiates, or the JIT lowered name won't resolve).
+struct histogram_kernel_type_names
+{
+  std::string chained_policy_t;
+  std::string samples_iterator_t;
+  // Per-channel decode ops, already swapped for byte vs non-byte (matches
+  // __dispatch_even_host_init / dispatch_even): non-byte EVEN -> privatized =
+  // ScaleTransform, output = PassThruTransform; byte -> the reverse.
+  std::string privatized_decode_op_t;
+  std::string output_decode_op_t;
+};
+
+histogram_kernel_type_names get_histogram_kernel_type_names(
+  cccl_iterator_t d_samples,
+  std::string_view level_t,
+  std::string_view offset_t,
+  bool is_evenly_segmented,
+  bool is_byte_sample)
+{
+  histogram_kernel_type_names names;
+  check(cccl_type_name_from_nvrtc<device_histogram_policy>(&names.chained_policy_t));
+
+  std::string samples_iterator_name;
+  check(cccl_type_name_from_nvrtc<samples_iterator_t>(&samples_iterator_name));
+
+  names.samples_iterator_t =
+    d_samples.type == cccl_iterator_kind_t::CCCL_POINTER //
+      ? cccl_type_enum_to_name(d_samples.value_type.type, true) //
+      : samples_iterator_name;
+
+  const std::string transforms_t = std::format(
+    "cub::detail::histogram::Transforms<{0}, {1}, {2}>",
+    level_t,
+    offset_t,
+    cccl_type_enum_to_name(d_samples.value_type.type));
+
+  names.privatized_decode_op_t = std::format("{0}::PassThruTransform", transforms_t);
+  names.output_decode_op_t =
+    is_evenly_segmented
+      ? std::format("{0}::ScaleTransform", transforms_t)
+      : std::format("{0}::SearchTransform<const {1}*>", transforms_t, level_t);
+
+  if (!is_byte_sample)
+  {
+    std::swap(names.privatized_decode_op_t, names.output_decode_op_t);
+  }
+
+  return names;
+}
+
 std::string get_sweep_kernel_name(
   int privatized_smem_bins,
   int num_channels,
@@ -101,33 +193,7 @@ std::string get_sweep_kernel_name(
   bool is_evenly_segmented,
   bool is_byte_sample)
 {
-  std::string chained_policy_t;
-  check(cccl_type_name_from_nvrtc<device_histogram_policy>(&chained_policy_t));
-
-  std::string samples_iterator_name;
-  check(cccl_type_name_from_nvrtc<samples_iterator_t>(&samples_iterator_name));
-
-  const std::string samples_iterator_t =
-    d_samples.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(d_samples.value_type.type, true) //
-      : samples_iterator_name;
-
-  const std::string transforms_t = std::format(
-    "cub::detail::histogram::Transforms<{0}, {1}, {2}>",
-    level_t,
-    offset_t,
-    cccl_type_enum_to_name(d_samples.value_type.type));
-
-  std::string privatized_decode_op_t = std::format("{0}::PassThruTransform", transforms_t);
-  std::string output_decode_op_t =
-    is_evenly_segmented
-      ? std::format("{0}::ScaleTransform", transforms_t)
-      : std::format("{0}::SearchTransform<const {1}*>", transforms_t, level_t);
-
-  if (!is_byte_sample)
-  {
-    std::swap(privatized_decode_op_t, output_decode_op_t);
-  }
+  const auto names = get_histogram_kernel_type_names(d_samples, level_t, offset_t, is_evenly_segmented, is_byte_sample);
 
   // HOST-INIT sweep kernel (no device-init): DeviceHistogramSmemPrivatizedKernel.
   // Its template params are <PolicySelector, PrivatizedSmemBins, NumChannels,
@@ -137,15 +203,76 @@ std::string get_sweep_kernel_name(
   // IsEven / IsByteSample template params.
   return std::format(
     "cub::detail::histogram::DeviceHistogramSmemPrivatizedKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
-    chained_policy_t,
+    names.chained_policy_t,
     privatized_smem_bins,
     num_channels,
     num_active_channels,
-    samples_iterator_t,
+    names.samples_iterator_t,
     counter_t,
-    privatized_decode_op_t,
-    output_decode_op_t,
+    names.privatized_decode_op_t,
+    names.output_decode_op_t,
     offset_t);
+}
+
+// High-bin cooperative kernel names (privatized_smem_bins == 0). These mirror the
+// host-dispatch instantiations reached through the histogram_kernel_source
+// accessors on the PRIVATIZED_SMEM_BINS == 0 path. High-bin is always non-byte
+// (byte samples cap at 256 bins -> the 256 tier), so the decode ops are
+// privatized = ScaleTransform / output = PassThruTransform.
+
+// GMEM-privatized gather kernel: DeviceHistogramGmemPrivatizedKernel<Policy, 0,
+// NumChannels, NumActiveChannels, SampleItr, Counter, PrivDecode, OutDecode,
+// Offset, /*HybridSplit=*/false>.
+std::string get_gather_kernel_name(
+  int num_channels,
+  int num_active_channels,
+  cccl_iterator_t d_samples,
+  std::string_view counter_t,
+  std::string_view level_t,
+  std::string_view offset_t,
+  bool is_evenly_segmented)
+{
+  const auto names = get_histogram_kernel_type_names(
+    d_samples, level_t, offset_t, is_evenly_segmented, /*is_byte_sample=*/false);
+  return std::format(
+    "cub::detail::histogram::DeviceHistogramGmemPrivatizedKernel<{0}, 0, {1}, {2}, {3}, {4}, {5}, {6}, {7}, false>",
+    names.chained_policy_t,
+    num_channels,
+    num_active_channels,
+    names.samples_iterator_t,
+    counter_t,
+    names.privatized_decode_op_t,
+    names.output_decode_op_t,
+    offset_t);
+}
+
+// Direct-atomic cuckoo-cache kernel: DeviceHistogramDirectKernel<Policy, 0,
+// NumChannels, NumActiveChannels, SampleItr, Counter, PrivDecode, OutDecode,
+// Offset, cuckoo_cache_probe<DisableSecondProbe>, output_atomic_spill>.
+std::string get_direct_cuckoo_kernel_name(
+  int num_channels,
+  int num_active_channels,
+  cccl_iterator_t d_samples,
+  std::string_view counter_t,
+  std::string_view level_t,
+  std::string_view offset_t,
+  bool is_evenly_segmented,
+  bool disable_second_probe)
+{
+  const auto names = get_histogram_kernel_type_names(
+    d_samples, level_t, offset_t, is_evenly_segmented, /*is_byte_sample=*/false);
+  return std::format(
+    "cub::detail::histogram::DeviceHistogramDirectKernel<{0}, 0, {1}, {2}, {3}, {4}, {5}, {6}, {7}, "
+    "cub::detail::histogram::cuckoo_cache_probe<{8}>, cub::detail::histogram::output_atomic_spill>",
+    names.chained_policy_t,
+    num_channels,
+    num_active_channels,
+    names.samples_iterator_t,
+    counter_t,
+    names.privatized_decode_op_t,
+    names.output_decode_op_t,
+    offset_t,
+    disable_second_probe ? "true" : "false");
 }
 
 template <typename T>
@@ -486,8 +613,42 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
     is_evenly_segmented,
     is_byte_sample);
 
+  // On the high-bin tier the host dispatch takes the cooperative path and launches
+  // the GMEM-privatized gather kernel and (for >=65536 / >=262144 bins) the
+  // direct-atomic cuckoo kernels, all via cuLaunchCooperativeKernel. JIT them here
+  // and resolve their handles below; the <=256-bin tier never reaches them, so we
+  // skip compiling them there. (sweep_kernel stays the cooperative fallback used
+  // when a cooperative launch is unsupported.)
+  const bool high_bin                       = (privatized_smem_bins == 0);
+  std::string gather_kernel_name            = high_bin ? histogram::get_gather_kernel_name(
+                                        num_channels, num_active_channels, d_samples, counter_cpp, level_cpp, offset_cpp, is_evenly_segmented)
+                                                        : std::string{};
+  std::string direct_cuckoo_kernel_name     = high_bin ? histogram::get_direct_cuckoo_kernel_name(
+                                            num_channels,
+                                            num_active_channels,
+                                            d_samples,
+                                            counter_cpp,
+                                            level_cpp,
+                                            offset_cpp,
+                                            is_evenly_segmented,
+                                            /*disable_second_probe=*/false)
+                                                            : std::string{};
+  std::string direct_cuckoo_noprobe2_kernel_name = high_bin ? histogram::get_direct_cuckoo_kernel_name(
+                                                     num_channels,
+                                                     num_active_channels,
+                                                     d_samples,
+                                                     counter_cpp,
+                                                     level_cpp,
+                                                     offset_cpp,
+                                                     is_evenly_segmented,
+                                                     /*disable_second_probe=*/true)
+                                                                : std::string{};
+
   std::string init_kernel_lowered_name;
   std::string sweep_kernel_lowered_name;
+  std::string gather_kernel_lowered_name;
+  std::string direct_cuckoo_kernel_lowered_name;
+  std::string direct_cuckoo_noprobe2_kernel_lowered_name;
 
   const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
@@ -521,9 +682,15 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
       ->add_program(nvrtc_translation_unit({final_src.c_str(), name}))
       ->add_expression({init_kernel_name})
       ->add_expression({sweep_kernel_name})
+      ->add_expression_if(high_bin, {gather_kernel_name})
+      ->add_expression_if(high_bin, {direct_cuckoo_kernel_name})
+      ->add_expression_if(high_bin, {direct_cuckoo_noprobe2_kernel_name})
       ->compile_program({args.data(), args.size()})
       ->get_name({init_kernel_name, init_kernel_lowered_name})
       ->get_name({sweep_kernel_name, sweep_kernel_lowered_name})
+      ->get_name_if(high_bin, {gather_kernel_name, gather_kernel_lowered_name})
+      ->get_name_if(high_bin, {direct_cuckoo_kernel_name, direct_cuckoo_kernel_lowered_name})
+      ->get_name_if(high_bin, {direct_cuckoo_noprobe2_kernel_name, direct_cuckoo_noprobe2_kernel_lowered_name})
       ->link_program()
       ->add_link_list(linkable_list)
       ->finalize_program();
@@ -545,6 +712,12 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
   auto init_name  = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
   auto sweep_name = std::unique_ptr<char[]>(duplicate_c_string(sweep_kernel_lowered_name));
+  auto gather_name = std::unique_ptr<char[]>(
+    high_bin ? duplicate_c_string(gather_kernel_lowered_name) : nullptr);
+  auto direct_cuckoo_name = std::unique_ptr<char[]>(
+    high_bin ? duplicate_c_string(direct_cuckoo_kernel_lowered_name) : nullptr);
+  auto direct_cuckoo_noprobe2_name = std::unique_ptr<char[]>(
+    high_bin ? duplicate_c_string(direct_cuckoo_noprobe2_kernel_lowered_name) : nullptr);
 
   build_ptr->cc                  = cc.get();
   build_ptr->counter_type        = d_output_histograms.value_type;
@@ -557,6 +730,9 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   build_ptr->library      = nullptr;
   build_ptr->init_kernel  = nullptr;
   build_ptr->sweep_kernel = nullptr;
+  build_ptr->gather_kernel = nullptr;
+  build_ptr->direct_cuckoo_kernel = nullptr;
+  build_ptr->direct_cuckoo_noprobe2_kernel = nullptr;
 
   build_ptr->payload      = (void*) result.data.release();
   build_ptr->payload_size = result.size;
@@ -566,6 +742,9 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   build_ptr->runtime_policy_size       = policy_size;
   build_ptr->init_kernel_lowered_name  = init_name.release();
   build_ptr->sweep_kernel_lowered_name = sweep_name.release();
+  build_ptr->gather_kernel_lowered_name = gather_name.release();
+  build_ptr->direct_cuckoo_kernel_lowered_name = direct_cuckoo_name.release();
+  build_ptr->direct_cuckoo_noprobe2_kernel_lowered_name = direct_cuckoo_noprobe2_name.release();
 
   return CUDA_SUCCESS;
 }
@@ -597,6 +776,15 @@ try
   {
     check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, build_ptr->init_kernel_lowered_name));
     check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, build_ptr->sweep_kernel_lowered_name));
+    if (build_ptr->gather_kernel_lowered_name != nullptr)
+    {
+      check(cuLibraryGetKernel(&build_ptr->gather_kernel, build_ptr->library, build_ptr->gather_kernel_lowered_name));
+      check(cuLibraryGetKernel(
+        &build_ptr->direct_cuckoo_kernel, build_ptr->library, build_ptr->direct_cuckoo_kernel_lowered_name));
+      check(cuLibraryGetKernel(&build_ptr->direct_cuckoo_noprobe2_kernel,
+                               build_ptr->library,
+                               build_ptr->direct_cuckoo_noprobe2_kernel_lowered_name));
+    }
   }
   catch (...)
   {
@@ -857,6 +1045,9 @@ try
   std::free(build_ptr->runtime_policy);
   std::unique_ptr<char[]> init_name(build_ptr->init_kernel_lowered_name);
   std::unique_ptr<char[]> sweep_name(build_ptr->sweep_kernel_lowered_name);
+  std::unique_ptr<char[]> gather_name(build_ptr->gather_kernel_lowered_name);
+  std::unique_ptr<char[]> direct_cuckoo_name(build_ptr->direct_cuckoo_kernel_lowered_name);
+  std::unique_ptr<char[]> direct_cuckoo_noprobe2_name(build_ptr->direct_cuckoo_noprobe2_kernel_lowered_name);
   if (build_ptr->library != nullptr)
   {
     check(cuLibraryUnload(build_ptr->library));
@@ -944,6 +1135,9 @@ try
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
   w.write_cstring(build_ptr->init_kernel_lowered_name);
   w.write_cstring(build_ptr->sweep_kernel_lowered_name);
+  w.write_cstring(build_ptr->gather_kernel_lowered_name);
+  w.write_cstring(build_ptr->direct_cuckoo_kernel_lowered_name);
+  w.write_cstring(build_ptr->direct_cuckoo_noprobe2_kernel_lowered_name);
   w.release(out_buf, out_size);
   return CUDA_SUCCESS;
 }
@@ -996,6 +1190,9 @@ try
 
   std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_sweep{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_gather{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_direct_cuckoo{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_direct_cuckoo_noprobe2{r.read_cstring_dup()};
 
   cccl_device_histogram_build_result_t result{};
   result.cc                        = static_cast<int>(h.cc);
@@ -1011,6 +1208,9 @@ try
   result.runtime_policy_size       = sizeof(cub::detail::histogram::policy_selector);
   result.init_kernel_lowered_name  = n_init.release();
   result.sweep_kernel_lowered_name = n_sweep.release();
+  result.gather_kernel_lowered_name = n_gather.release();
+  result.direct_cuckoo_kernel_lowered_name = n_direct_cuckoo.release();
+  result.direct_cuckoo_noprobe2_kernel_lowered_name = n_direct_cuckoo_noprobe2.release();
   *build_ptr                       = result;
   return CUDA_SUCCESS;
 }

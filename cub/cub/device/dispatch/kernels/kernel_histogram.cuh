@@ -27,9 +27,11 @@
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cooperative_groups.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+// The high-bin GMEM-privatized / direct-atomic histogram kernels do a grid-wide
+// `cooperative_groups::this_grid().sync()`, so cooperative_groups is required in
+// device code -- including under NVRTC, where the C Parallel Library JIT-compiles
+// these cooperative kernels and launches them via cuLaunchCooperativeKernel.
+#include <cooperative_groups.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram

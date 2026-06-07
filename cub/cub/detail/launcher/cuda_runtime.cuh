@@ -25,6 +25,8 @@ namespace detail
 {
 struct TripleChevronFactory
 {
+  static constexpr bool force_device_kernel_emission = true;
+
   CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
   {
     if (dependent_launch)
@@ -46,6 +48,30 @@ struct TripleChevronFactory
   {
     __assert_pdl_allowed(dependent_launch);
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
+  }
+
+  // Cooperative launch (grid-wide `grid.sync()` kernels). Regular CUB passes a host
+  // function pointer; the runtime cooperative launch entry point handles the
+  // co-resident grid. Mirrors CudaDriverLauncher::doit_cooperative so dispatch code
+  // can issue cooperative launches through the launcher abstraction rather than a
+  // hard-coded `cudaLaunchCooperativeKernel`.
+  template <typename Kernel, typename... Args>
+  CUB_RUNTIME_FUNCTION ::cudaError_t doit_cooperative(
+    dim3 grid,
+    dim3 block,
+    ::cuda::std::size_t shared_mem,
+    ::cudaStream_t stream,
+    Kernel kernel,
+    Args const&... args) const
+  {
+    void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+    return ::cudaLaunchCooperativeKernel(
+      reinterpret_cast<const void*>(kernel),
+      grid,
+      block,
+      kernel_args,
+      shared_mem,
+      stream);
   }
 
   template <class T = void>
