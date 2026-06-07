@@ -226,7 +226,7 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     hit-rate vs #bins (one series per #elements)."""
     bins, counts, char_bins = C.char_input(shape)
     hr_for_binary = hr_for_binary or {}
-    has_hr = bool(hr_for_binary.get("direct_atomic_cuckoo") or hr_for_binary.get("direct_atomic_single_probe"))
+    has_hr = bool(hr_for_binary.get("direct_cuckoo") or hr_for_binary.get("direct_single_probe"))
 
     ncols = 3
     nperf = len(elements_list)
@@ -268,9 +268,9 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
 
     if has_hr:
         hr_row = 1 + perf_rows
-        draw_hitrate(fig.add_subplot(gs[hr_row, 0]), hr_for_binary.get("direct_atomic_cuckoo", {}),
+        draw_hitrate(fig.add_subplot(gs[hr_row, 0]), hr_for_binary.get("direct_cuckoo", {}),
                      shape, elements_list, "cuckoo cache — hit rate vs #bins")
-        draw_hitrate(fig.add_subplot(gs[hr_row, 1]), hr_for_binary.get("direct_atomic_single_probe", {}),
+        draw_hitrate(fig.add_subplot(gs[hr_row, 1]), hr_for_binary.get("direct_single_probe", {}),
                      shape, elements_list, "single-probe cache — hit rate vs #bins")
         # third column of the hit-rate row: short explainer
         ax = fig.add_subplot(gs[hr_row, 2]); ax.axis("off")
