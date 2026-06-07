@@ -46,31 +46,17 @@ CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
 {
 // -----------------------------------------------------------------------------
-// Internal: wrap user-facing select direction into discrete param for dispatch
+// Internal: wrap the compile-time select direction into a discrete param for dispatch
 // -----------------------------------------------------------------------------
 
-// Uniform (compile-time): __constant<Dir> -> single-option uniform_discrete_param.
+// The selection direction is compile-time only: callers pass `::cuda::__argument::__constant<Dir>`, which maps to a
+// value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
+// can never disagree with its only supported option, so dispatch can never silently degrade to a no-op. Anything other
+// than a `__constant<Dir>` is rejected at compile time (no matching overload).
 template <detail::topk::select Dir>
 [[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::__argument::__constant<Dir>)
 {
-  return params::uniform_discrete_param<detail::topk::select, Dir>{Dir};
-}
-
-// Uniform: single enum value → uniform_discrete_param
-[[nodiscard]] _CCCL_HOST_DEVICE inline auto wrap_select_direction(detail::topk::select dir)
-{
-  return params::uniform_discrete_param<detail::topk::select, detail::topk::select::max, detail::topk::select::min>{
-    dir};
-}
-
-// Per-segment: iterator of enums → per_segment_discrete_param
-_CCCL_TEMPLATE(typename IteratorT)
-_CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cv_t<IteratorT>, detail::topk::select>) )
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(IteratorT iter)
-{
-  return params::
-    per_segment_discrete_param<IteratorT, detail::topk::select, detail::topk::select::max, detail::topk::select::min>{
-      iter};
+  return params::static_discrete_param<detail::topk::select, Dir>{};
 }
 
 // -----------------------------------------------------------------------------
