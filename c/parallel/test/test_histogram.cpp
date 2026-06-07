@@ -340,6 +340,83 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   }
 }
 
+// Exercises the HIGH-BIN cooperative path end to end through C-parallel. Above 256
+// bins the host dispatch JIT-compiles and cooperatively launches (via
+// cuLaunchCooperativeKernel) the GMEM-privatized gather kernel and, above the
+// direct-atomic thresholds, the direct-atomic cuckoo kernels. The bin counts here
+// straddle all three single-channel tiers so every cooperative kernel C-parallel
+// can launch is covered:
+//   - 4096      -> gather                 (257 .. 65535)
+//   - 65537     -> direct cuckoo          (>= 65536)
+//   - 262145    -> direct cuckoo, 2nd probe gated off (>= 262144)
+// Samples are spread across [0, num_bins) so the bins are actually populated (the
+// generic `generate<>` helper only emits [1,42], which would touch one bin).
+C2H_TEST("DeviceHistogram::HistogramEven high-bin cooperative path", "[histogram][device][cooperative]")
+{
+  using counter_t = int;
+  using sample_t  = std::int32_t;
+  using offset_t  = int;
+  using level_t   = int;
+
+  constexpr int channels        = 1;
+  constexpr int active_channels = 1;
+
+  const int num_bins   = static_cast<int>(GENERATE(4096, 65537, 262145));
+  const int num_levels = num_bins + 1;
+
+  const level_t lower = 0;
+  const level_t upper = num_bins; // one sample value per bin -> bin width 1.
+
+  const offset_t width      = 4099; // not a multiple of the tile size, exercises the ragged tail.
+  const offset_t height     = 16;
+  const offset_t row_pitch  = width * channels * sizeof(sample_t);
+  const offset_t total      = height * (row_pitch / sizeof(sample_t));
+
+  // Spread samples across the full level range (plus a few out-of-range values
+  // that must be dropped) so many distinct bins receive counts.
+  std::vector<int64_t> raw = generate<int64_t>(total);
+  std::vector<sample_t> h_samples(total);
+  for (offset_t i = 0; i < total; ++i)
+  {
+    h_samples[i] = static_cast<sample_t>((raw[i] * 2654435761ull) % static_cast<uint64_t>(num_bins + 3));
+  }
+
+  const std::vector<int> num_levels_vec{num_levels};
+  auto sample_to_bin_index = [&](int /*channel*/, sample_t sample) {
+    const auto promoted = static_cast<int64_t>(sample);
+    if (promoted < lower || promoted >= upper)
+    {
+      return num_levels; // out of range
+    }
+    return static_cast<int>(
+      static_cast<uint64_t>(promoted - lower) * static_cast<uint64_t>(num_levels - 1)
+      / static_cast<uint64_t>(upper - lower));
+  };
+  auto h_histogram = compute_reference_result<channels, counter_t, active_channels>(
+    h_samples, sample_to_bin_index, num_levels_vec, width, height, row_pitch);
+
+  pointer_t<sample_t> sample_ptr(h_samples);
+  std::vector<counter_t> d_single_histogram(num_bins, 0);
+  pointer_t<counter_t> d_single_histogram_ptr(d_single_histogram);
+
+  value_t<int> num_levels_val{num_levels};
+  value_t<level_t> lower_level_val{lower};
+  value_t<level_t> upper_level_val{upper};
+
+  histogram_even(
+    sample_ptr,
+    d_single_histogram_ptr,
+    num_levels_val,
+    num_levels,
+    lower_level_val,
+    upper_level_val,
+    width,
+    height,
+    row_pitch / sizeof(sample_t));
+
+  CHECK(h_histogram[0] == std::vector<counter_t>(d_single_histogram_ptr));
+}
+
 C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram][device]")
 {
   using counter_t = int;
