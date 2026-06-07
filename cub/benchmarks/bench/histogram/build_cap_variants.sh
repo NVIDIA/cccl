@@ -6,8 +6,9 @@
 # Surgical (no full project rebuild). DO NOT run while a sweep is benchmarking on
 # the GPU -- nvcc CPU/mem load perturbs timings. Run only when the GPU is idle.
 set -euo pipefail
-# Benchmark build dir (override with HIST_BENCH_BUILD).
-BUILD=${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}
+# Benchmark build dir (override with HIST_BENCH_BUILD). Resolve to an absolute path
+# so the inner python's cwd=BUILD is correct after we cd into it.
+BUILD=$(cd "${HIST_BENCH_BUILD:-build/autocuda/cub-benchmark}" && pwd)
 CMDS=/tmp/hist_compile_cmds.json
 CAPS="${1:-24576 32768 49152}"
 LABELS="even range multi_even multi_range"
@@ -25,8 +26,10 @@ m=json.load(open(os.environ['CMDS']))
 toks=shlex.split(m[L]['cmd'])
 # Replace the -o <obj> target with our object path; keep original -c <src>.
 i=toks.index('-o'); toks[i+1]=obj
-# Add our define right after nvcc.
-toks=[toks[0], f'-DCUB_HISTO_MAX_DYN_SMEM_BINS={cap}'] + toks[1:]
+# Add our define right after the nvcc compiler token (the command may be prefixed
+# by a launcher such as `ccache`, so do NOT inject after toks[0]).
+nvcc_i=next(j for j,t in enumerate(toks) if t.endswith('nvcc'))
+toks=toks[:nvcc_i+1] + [f'-DCUB_HISTO_MAX_DYN_SMEM_BINS={cap}'] + toks[nvcc_i+1:]
 if os.path.exists(obj):
     print(f'    (reuse cached object {obj})')
 else:
