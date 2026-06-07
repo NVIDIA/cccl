@@ -49,20 +49,20 @@ struct no_init_t
 inline constexpr auto no_init = no_init_t{};
 
 template <class OutputIteratorT, class InitValueT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT d_out, InitValueT init)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&& d_out, InitValueT init)
 {
   *d_out = init;
 }
 
 template <class OutputIteratorT, class InitValueT>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
-handle_empty_problem(OutputIteratorT d_out, empty_problem_init_t<InitValueT> empty_problem_init)
+handle_empty_problem(OutputIteratorT&& d_out, empty_problem_init_t<InitValueT> empty_problem_init)
 {
   *d_out = empty_problem_init.init;
 }
 
 template <class OutputIteratorT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT, no_init_t)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void handle_empty_problem(OutputIteratorT&&, no_init_t)
 {}
 
 /**
