@@ -26,3 +26,6 @@ bench-artifacts/
 CLAUDE.local.md
 .codegraph/*
 .cursor/rules/codegraph.mdc
+# autocuda experiment scratch dir (sweep drivers, result JSON/CSV, generated
+# figures): local provenance only, never committed.
+autocuda/
