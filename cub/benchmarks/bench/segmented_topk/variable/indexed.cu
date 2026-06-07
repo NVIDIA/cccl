@@ -9,14 +9,18 @@
 
 #include <cuda/__argument_>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
 
 #include <nvbench_helper.cuh>
 
 #include "common.cuh"
 
-template <typename KeyT, int MaxSegmentSize, int K>
-void variable_seg_size_topk_keys(nvbench::state& state,
-                                 nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
+// Indexed (arg-top-k) variant: each key carries a segment-local index as its value payload. The input values are
+// produced by a counting iterator that restarts at 0 for every segment, so indices are not (pre-)materialized in global
+// memory
+template <typename KeyT, typename IndexT, int MaxSegmentSize, int K>
+void variable_seg_size_topk_indexed(
+  nvbench::state& state, nvbench::type_list<KeyT, IndexT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
 {
   if constexpr (K > MaxSegmentSize)
   {
@@ -36,7 +40,8 @@ void variable_seg_size_topk_keys(nvbench::state& state,
 
   auto in_keys_buffer = gen_data<MaxSegmentSize, K>(
     num_segments, string_to_pattern(state.get_string("Pattern")), thrust::raw_pointer_cast(d_segment_sizes.data()));
-  auto out_keys_buffer = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
+  auto out_keys_buffer    = thrust::device_vector<KeyT>(output_elements, thrust::no_init);
+  auto out_indices_buffer = thrust::device_vector<IndexT>(output_elements, thrust::no_init);
 
   auto segment_sizes_param = ::cuda::__argument::__immediate_sequence{
     thrust::raw_pointer_cast(d_segment_sizes.data()), ::cuda::__argument::__bounds<1, MaxSegmentSize>()};
@@ -51,10 +56,17 @@ void variable_seg_size_topk_keys(nvbench::state& state,
     cuda::make_counting_iterator(thrust::raw_pointer_cast(out_keys_buffer.data())),
     static_cast<cuda::std::ptrdiff_t>(K));
 
+  // Input values: every segment maps to the same counting iterator starting at 0, so values are segment-local indices.
+  auto d_indices_in  = cuda::make_constant_iterator(cuda::make_counting_iterator(IndexT{0}));
+  auto d_indices_out = cuda::make_strided_iterator(
+    cuda::make_counting_iterator(thrust::raw_pointer_cast(out_indices_buffer.data())),
+    static_cast<cuda::std::ptrdiff_t>(K));
+
   state.add_element_count(input_elements, "NumElements");
   state.add_global_memory_reads<KeyT>(input_elements, "InputKeys");
   state.add_global_memory_reads<cuda::std::int64_t>(num_segments, "SegmentSizes");
   state.add_global_memory_writes<KeyT>(output_elements, "OutputKeys");
+  state.add_global_memory_writes<IndexT>(output_elements, "OutputIndices");
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -65,8 +77,8 @@ void variable_seg_size_topk_keys(nvbench::state& state,
       "batched topk failed",
       d_keys_in,
       d_keys_out,
-      static_cast<cub::NullType**>(nullptr),
-      static_cast<cub::NullType**>(nullptr),
+      d_indices_in,
+      d_indices_out,
       segment_sizes_param,
       k_param,
       select_direction,
@@ -76,8 +88,12 @@ void variable_seg_size_topk_keys(nvbench::state& state,
   });
 }
 
-NVBENCH_BENCH_TYPES(variable_seg_size_topk_keys, NVBENCH_TYPE_AXES(key_type_list, max_segment_size_list, k_list))
-  .set_name("decode_style_variable_topk")
-  .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "K{ct}"})
+// Index type is a compile-time axis: i32 for now, extensible to i64.
+using index_type_list = nvbench::type_list<cuda::std::int32_t>;
+
+NVBENCH_BENCH_TYPES(variable_seg_size_topk_indexed,
+                    NVBENCH_TYPE_AXES(key_type_list, index_type_list, max_segment_size_list, k_list))
+  .set_name("decode_style_variable_topk_indexed")
+  .set_type_axes_names({"KeyT{ct}", "IndexT{ct}", "MaxSegmentSize{ct}", "K{ct}"})
   .add_int64_axis("NumSegments", {1, 2, 4, 8, 16, 32})
   .add_string_axis("Pattern", valid_patterns);
