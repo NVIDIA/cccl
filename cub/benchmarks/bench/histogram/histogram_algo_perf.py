@@ -15,14 +15,18 @@ Each image:
     histogram_input_characterization.py (so the characterization here matches the
     standalone characterization figures exactly), plus an algorithm legend.
   * below   : one performance graph per #input-elements; X = #bins (log2),
-    Y = GiB/s, one connect-the-dots line per algorithm valid for this
-    (transform, channels) combination (markers = measured points, no fitted line).
+    Y = GiB/s, one connect-the-dots line per algorithm present in the data
+    (markers = measured points, no fitted line). Two reference series stand out:
+    `default` (the shipping selector's pick, thick black) and `main` (upstream
+    main's default dispatch, dashed grey) -- the baseline this branch improves on.
 
-`hybrid_single_pass` is single-channel-only, so it is omitted from the
-multi-channel folders.
+The `main` series is only drawn for InputShape generators that are byte-identical
+between upstream main and this branch (the sweep driver omits it elsewhere, since
+a reweighted/ reordered generator would not be an apples-to-apples comparison).
 
-The sweep JSON is produced by the (scratch, force-hook) sweep driver; see the
-accompanying README. Run with a Python that has numpy + matplotlib:
+The sweep JSON is produced by `histogram_algo_sweep.py` (the force-hook +
+upstream-main sweep driver); see the accompanying README. Run with a Python that
+has numpy + matplotlib:
   python histogram_algo_perf.py --results sweep_results.json --outdir algo_perf_figs
 """
 
@@ -52,20 +56,41 @@ BINARY_META = {
     "multi_range": ("range", "multi"),
 }
 
-# Algorithms + fixed colors/markers (consistent across every plot).
+# Algorithms + fixed colors/markers/linestyles (consistent across every plot).
+# Names match the post-rework algorithm enum / the CUB_HISTO_FORCE_ALGO values
+# the sweep driver (histogram_algo_sweep.py) forces, plus two reference series:
+#   default -- the shipping selector's own pick (select_algorithm), drawn as a
+#              thick black line so "what CUB actually does" stands out.
+#   main    -- upstream `main`'s default dispatch (the baseline this branch
+#              improves on), drawn dashed grey. Only present for InputShape
+#              generators that are byte-identical between main and this branch
+#              (see MAIN_COMPARABLE_SHAPES in the sweep driver).
+# (color, marker, label, linestyle, linewidth)
+# The two reference series are deliberately the most prominent marks on the plot:
+# `default` = thick solid black (what CUB ships), `main` = thick bright-red
+# dash-dot with big X markers (the upstream baseline we beat). They are drawn LAST
+# (highest zorder) so they sit on top of the candidate-algorithm cluster instead of
+# being buried under it.
 ALGO_STYLE = {
-    "direct_atomic_cuckoo": ("#1f77b4", "o", "cuckoo cache"),
-    "direct_atomic_single_probe": ("#2ca02c", "s", "single-probe cache"),
-    "direct_atomic_no_cache": ("#ff7f0e", "v", "no cache (direct atomics)"),
-    "gmem_priv_gather": ("#9467bd", "^", "gmem gather-merge"),
-    "hybrid_single_pass": ("#d62728", "D", "hybrid SMEM+GMEM"),
+    "default": ("#000000", "*", "selector default (ships)", "-", 3.4),
+    "main": ("#e6194B", "X", "UPSTREAM main (default)", "-.", 3.4),
+    "gmem_privatized_nocache": ("#9467bd", "^", "gmem-priv gather (no cache)", "-", 1.6),
+    "gmem_privatized_cuckoo": ("#1f77b4", "o", "gmem-priv + cuckoo", "-", 1.6),
+    "gmem_privatized_single_probe": ("#17becf", "s", "gmem-priv + single-probe", "-", 1.6),
+    "direct_cuckoo": ("#2ca02c", "o", "direct-atomic + cuckoo", "-", 1.6),
+    "direct_single_probe": ("#8c8c00", "s", "direct-atomic + single-probe", "-", 1.6),
+    "direct_nocache": ("#ff7f0e", "v", "direct atomics (no cache)", "-", 1.6),
 }
+# Draw order: reference series last (on top). gmem/direct candidates first.
 ALGO_ORDER = [
-    "direct_atomic_cuckoo",
-    "direct_atomic_single_probe",
-    "direct_atomic_no_cache",
-    "gmem_priv_gather",
-    "hybrid_single_pass",
+    "gmem_privatized_nocache",
+    "gmem_privatized_cuckoo",
+    "gmem_privatized_single_probe",
+    "direct_cuckoo",
+    "direct_single_probe",
+    "direct_nocache",
+    "main",
+    "default",
 ]
 
 # Plot the whole swept bin range. The force harness overrides both dispatch
@@ -112,26 +137,48 @@ def perf_series(per_algo_cells, sample, elements, shape, algos):
 def draw_perf(ax, series, title):
     ax.set_title(title, fontsize=9)
     ax.set_xlabel("# bins")
-    ax.set_ylabel("GiB/s")
+    ax.set_ylabel("GiB/s (log)")
     ax.set_xscale("log", base=2)
+    # Log y: the upstream `main` baseline can be 30x slower than the branch at high
+    # bins; on a linear axis it is pinned to ~0 and unreadable. Log y keeps the slow
+    # baseline visible AND makes the multiplicative speedup (vertical gap) the
+    # eye-level quantity.
+    ax.set_yscale("log")
     any_pts = False
     drawn = [a for a in ALGO_ORDER if a in series and len(series[a][0])]
-    # cuckoo / single-probe / no-cache often land on nearly the same curve: taper
-    # linewidth across draw order (earlier = wider, underneath) and keep lines
-    # semi-transparent + distinctly marked so every series stays visible.
+    # cuckoo / single-probe / no-cache often land on nearly the same curve, so each
+    # series carries its own color/marker/linestyle/linewidth (the reference series
+    # -- default, main -- are wider/dashed and drawn last so they sit on top).
     for i, algo in enumerate(drawn):
-        color, marker, label = ALGO_STYLE[algo]
+        color, marker, label, ls, lw = ALGO_STYLE[algo]
         xb, yv = series[algo]
         any_pts = True
-        lw = 3.0 - 0.5 * i
-        ax.plot(xb, yv, color=color, marker=marker, markersize=6, lw=max(lw, 1.0),
-                alpha=0.75, label=label, zorder=3 + i)
+        # Reference series (default, main) get larger markers, full opacity, and the
+        # highest zorder so they read clearly over the candidate-algorithm cluster.
+        is_ref = algo in ("default", "main")
+        ax.plot(xb, yv, color=color, marker=marker, markersize=10 if is_ref else 6,
+                lw=lw, linestyle=ls, alpha=1.0 if is_ref else 0.8,
+                label=label, zorder=(20 if is_ref else 3 + i))
+    # Shade the speedup region between the upstream `main` baseline and the shipping
+    # `default` so the gap reads even at small panel size (and where main's thin line
+    # would otherwise hug the bottom). Only where both series share bin points.
+    if "main" in series and "default" in series:
+        mb, mv = series["main"]
+        db, dv = series["default"]
+        common = sorted(set(int(x) for x in mb) & set(int(x) for x in db))
+        if common:
+            mmap = {int(x): y for x, y in zip(mb, mv)}
+            dmap = {int(x): y for x, y in zip(db, dv)}
+            xs = np.array(common)
+            lo = np.array([mmap[x] for x in common])
+            hi = np.array([dmap[x] for x in common])
+            ax.fill_between(xs, lo, hi, where=(hi >= lo), color="#e6194B", alpha=0.08,
+                            zorder=1, label="_nolegend_")
     ax.grid(True, which="both", linestyle=":", alpha=0.4)
     ax.set_xticks(sorted({int(b) for s in series.values() for b in s[0]}))
     ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: fmt_bins(int(round(v)))))
     ax.tick_params(axis="x", labelsize=7, rotation=45)
-    if any_pts:
-        ax.set_ylim(bottom=0)
+    # log y: leave matplotlib's autoscaled positive limits (a bottom=0 is invalid).
     return any_pts
 
 
@@ -205,7 +252,8 @@ def render_one(binary_label, per_algo_cells, sample, shape, elements_list, algos
     legend_ax = fig.add_subplot(gs[0, 2])
     legend_ax.axis("off")
     handles = [
-        plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1], lw=1.5, label=ALGO_STYLE[a][2])
+        plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1],
+                   linestyle=ALGO_STYLE[a][3], lw=ALGO_STYLE[a][4], label=ALGO_STYLE[a][2])
         for a in algos
     ]
     legend_ax.legend(handles=handles, loc="center", fontsize=11, title="algorithms", frameon=True)
@@ -260,7 +308,11 @@ def main():
     written = []
     for binary_label, per_algo_cells in data.items():
         transform, channels = BINARY_META[binary_label]
-        algos = list(ALGO_ORDER) if channels == "single" else [a for a in ALGO_ORDER if a != "hybrid_single_pass"]
+        # Plot every algorithm series actually present in the data for this binary
+        # (in canonical ALGO_ORDER). `main` appears only for the generator-identical
+        # shapes (the sweep driver omits it elsewhere); a forced algo absent at a
+        # given (transform, channels) simply has no points and is dropped per panel.
+        algos = [a for a in ALGO_ORDER if a in per_algo_cells]
 
         samples, elements = set(), set()
         for cells in per_algo_cells.values():
