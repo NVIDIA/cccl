@@ -389,4 +389,42 @@ C2H_TEST("Device reduce works with a non copy assignable reduction operator", "[
     REQUIRE(0 == output_index[0]);
   }
 }
+
+struct checking_reduce
+{
+  static constexpr auto sentinel = 42;
+
+  _CCCL_HOST_DEVICE_API auto operator()(int a, int b) const -> int
+  {
+    CHECK(a == sentinel);
+    CHECK(b == sentinel);
+    return sentinel;
+  }
+};
+
+struct faulting_reduce
+{
+  _CCCL_HOST_DEVICE_API auto operator()(int a, int b) const -> int
+  {
+    CHECK(false);
+    return 0;
+  }
+};
+
+C2H_TEST("Device reduce works without initial value", "[reduce][device]")
+{
+  constexpr int num_items = 1000;
+  c2h::device_vector<int> input(num_items, checking_reduce::sentinel);
+
+  SECTION("for some elements")
+  {
+    c2h::device_vector<int> output(1);
+    device_reduce(input.data(), output.data(), num_items, checking_reduce{}, cub::detail::reduce::no_init);
+    CHECK(output[0] == checking_reduce::sentinel);
+  }
+  SECTION("for no elements")
+  {
+    device_reduce(input.data(), static_cast<int*>(nullptr), 0, faulting_reduce{}, cub::detail::reduce::no_init);
+  }
+}
 #endif // TEST_TYPES == 0
