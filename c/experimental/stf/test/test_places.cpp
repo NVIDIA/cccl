@@ -10,6 +10,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 
+#include <string>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -478,6 +479,59 @@ C2H_TEST("machine_init idempotent", "[places][machine]")
 {
   stf_machine_init();
   stf_machine_init();
+}
+
+C2H_TEST("green_context_helper and green-context places", "[places][green_ctx]")
+{
+#if !defined(CUDART_VERSION) || CUDART_VERSION < 12040
+  REQUIRE(stf_green_context_helper_create(1, 0) == nullptr);
+#else
+  stf_machine_init();
+  stf_green_context_helper_handle helper = stf_green_context_helper_create(1, 0);
+  if (helper == nullptr)
+  {
+    SKIP("green context support is not available");
+  }
+
+  REQUIRE(stf_green_context_helper_get_device_id(helper) == 0);
+  const size_t count = stf_green_context_helper_get_count(helper);
+  REQUIRE(count >= 1);
+
+  stf_exec_place_handle default_affine_ep = stf_exec_place_green_ctx(helper, 0, /*use_green_ctx_data_place=*/0);
+  REQUIRE(default_affine_ep != nullptr);
+  REQUIRE(stf_exec_place_is_device(default_affine_ep) != 0);
+
+  stf_data_place_handle default_affine_dp = stf_exec_place_get_affine_data_place(default_affine_ep);
+  REQUIRE(default_affine_dp != nullptr);
+  REQUIRE(stf_data_place_get_device_ordinal(default_affine_dp) == 0);
+
+  stf_exec_place_handle green_affine_ep = stf_exec_place_green_ctx(helper, 0, /*use_green_ctx_data_place=*/1);
+  REQUIRE(green_affine_ep != nullptr);
+  REQUIRE(stf_exec_place_is_device(green_affine_ep) != 0);
+
+  stf_data_place_handle green_affine_dp = stf_exec_place_get_affine_data_place(green_affine_ep);
+  REQUIRE(green_affine_dp != nullptr);
+  REQUIRE(stf_data_place_get_device_ordinal(green_affine_dp) == 0);
+  const std::string green_affine_desc = stf_data_place_to_string(green_affine_dp);
+  REQUIRE(green_affine_desc.find("green_ctx") != std::string::npos);
+
+  stf_data_place_handle green_dp = stf_data_place_green_ctx(helper, 0);
+  REQUIRE(green_dp != nullptr);
+  REQUIRE(stf_data_place_get_device_ordinal(green_dp) == 0);
+  REQUIRE(stf_data_place_allocation_is_stream_ordered(green_dp) == 1);
+  const std::string green_dp_desc = stf_data_place_to_string(green_dp);
+  REQUIRE(green_dp_desc.find("green_ctx") != std::string::npos);
+
+  REQUIRE(stf_exec_place_green_ctx(helper, count, /*use_green_ctx_data_place=*/0) == nullptr);
+  REQUIRE(stf_data_place_green_ctx(helper, count) == nullptr);
+
+  stf_data_place_destroy(green_dp);
+  stf_data_place_destroy(green_affine_dp);
+  stf_exec_place_destroy(green_affine_ep);
+  stf_data_place_destroy(default_affine_dp);
+  stf_exec_place_destroy(default_affine_ep);
+  stf_green_context_helper_destroy(helper);
+#endif
 }
 
 C2H_TEST("data_place_allocate_device", "[places][allocate]")
