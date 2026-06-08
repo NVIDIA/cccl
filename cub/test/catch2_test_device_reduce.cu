@@ -404,7 +404,7 @@ struct checking_reduce
 
 struct faulting_reduce
 {
-  _CCCL_HOST_DEVICE_API auto operator()(int a, int b) const -> int
+  _CCCL_HOST_DEVICE_API auto operator()(int, int) const -> int
   {
     CHECK(false);
     return 0;
