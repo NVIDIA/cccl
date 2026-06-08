@@ -149,7 +149,7 @@ std::string get_scan_kernel_name(
 
   auto tile_state_t = std::format("cub::ScanTileState<{0}>", accum_cpp_t);
   return std::format(
-    "cub::detail::scan::DeviceScanKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
+    "cub::detail::scan::DeviceScanKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, false, {9}>",
     policy_selector_t, // 0
     input_iterator_t, // 1
     output_iterator_t, // 2
