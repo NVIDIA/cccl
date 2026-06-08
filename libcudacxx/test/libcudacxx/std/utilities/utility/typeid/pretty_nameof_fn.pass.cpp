@@ -40,9 +40,9 @@ static_assert(cuda::std::__pretty_nameof_fn<&a_free_function>() == cuda::std::__
 static_assert(
   cuda::std::__pretty_nameof_fn<another_free_function>() == cuda::std::__string_view("another_free_function"), "");
 
-// Any namespace qualifier is dropped, matching the proof of concept.
+// Namespace qualifiers are kept, matching __pretty_nameof for types.
 static_assert(cuda::std::__pretty_nameof_fn<a_namespace::a_function_in_a_namespace>()
-                == cuda::std::__string_view("a_function_in_a_namespace"),
+                == cuda::std::__string_view("a_namespace::a_function_in_a_namespace"),
               "");
 
 // Distinct functions yield distinct names.
@@ -61,7 +61,7 @@ int main(int, char**)
     (assert(cuda::std::__pretty_nameof_fn<a_free_function>() == cuda::std::__string_view("a_free_function"));
      assert(cuda::std::__pretty_nameof_fn<&a_free_function>() == cuda::std::__string_view("a_free_function"));
      assert(cuda::std::__pretty_nameof_fn<a_namespace::a_function_in_a_namespace>()
-            == cuda::std::__string_view("a_function_in_a_namespace"));))
+            == cuda::std::__string_view("a_namespace::a_function_in_a_namespace"));))
 #endif // !_CCCL_BROKEN_MSVC_FUNCSIG
 
   return 0;

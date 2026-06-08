@@ -199,8 +199,9 @@ static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_name
 //    via __pretty_nameof. This reuses all of the compiler-specific machinery
 //    (and quirk handling) that __pretty_nameof already implements.
 // 2. The resulting string looks like "...__pretty_func_name_wrapper<&ns::fn>...".
-//    Trim the surrounding wrapper, an optional leading '&' (clang and cudafe spell
-//    a function template argument as "&fn"), and any namespace qualifier.
+//    Trim the surrounding wrapper and an optional leading '&' (clang and cudafe
+//    spell a function template argument as "&fn"). Any namespace qualifier is
+//    kept, matching __pretty_nameof for types.
 
 template <auto _Fn>
 struct __pretty_func_name_wrapper
@@ -217,12 +218,6 @@ struct __pretty_func_name_wrapper
   if (__sv.size() != 0 && __sv[0] == '&')
   {
     __sv = __sv.substr(1, ptrdiff_t(__sv.size()));
-  }
-  // Drop any namespace qualifier ("a::b::fn" -> "fn").
-  const ptrdiff_t __scope = __sv.find_end("::");
-  if (__scope != -1)
-  {
-    __sv = __sv.substr(__scope + (ptrdiff_t(sizeof("::")) - 1), ptrdiff_t(__sv.size()));
   }
   return __sv;
 }
@@ -244,9 +239,11 @@ template <auto _Fn>
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
 // A quick smoke test to ensure that the function name extraction is working. We
 // use a host/device function defined above so this works in both compilation
-// passes without depending on any external symbols.
-static_assert(::cuda::std::__pretty_nameof_fn<&::cuda::std::__add_string_view_position>()
-              == __string_view("__add_string_view_position"));
+// passes without depending on any external symbols. The function lives in an
+// inline namespace, whose spelling varies between compilers, so we only check
+// that the unqualified name is present rather than matching it exactly.
+static_assert(
+  ::cuda::std::__pretty_nameof_fn<&::cuda::std::__add_string_view_position>().find("__add_string_view_position") != -1);
 #endif
 
 // There are many complications with defining a unique constexpr global object
