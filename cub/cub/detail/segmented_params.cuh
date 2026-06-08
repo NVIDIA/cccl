@@ -113,7 +113,7 @@ struct static_discrete_param
   using supported_options_t = supported_options<T, Value>;
 
   template <typename SegmentIndexT>
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr T get_param([[maybe_unused]] SegmentIndexT segment_id) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr T get_param(SegmentIndexT) const noexcept
   {
     return Value;
   }
