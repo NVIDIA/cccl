@@ -29,6 +29,8 @@
 
 #include <cooperative_groups.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental::cuco
 {
 //! @brief Public linear probing scheme class.
@@ -261,5 +263,7 @@ template <int _CgSize, class _Hash1, class _Hash2>
 struct is_double_hashing<double_hashing<_CgSize, _Hash1, _Hash2>> : ::cuda::std::true_type
 {};
 } // namespace cuda::experimental::cuco
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX___CUCO_PROBING_SCHEME_CUH

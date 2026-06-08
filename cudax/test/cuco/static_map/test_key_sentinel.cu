@@ -14,8 +14,7 @@
 #endif
 
 #include <thrust/device_vector.h>
-#include <thrust/sequence.h>
-#include <thrust/transform.h>
+#include <thrust/logical.h>
 
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
@@ -32,6 +31,15 @@ constexpr int empty_value = -1;
 
 // Constructing a map with an erased-key sentinel must keep insert and contains correct (no key ever
 // collides with the empty or erased sentinels).
+template <class _Pair>
+struct iota_pair
+{
+  __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
+  {
+    return _Pair{__i, __i};
+  }
+};
+
 C2H_TEST("static_map — empty and erased key sentinels", "[sentinel]")
 {
   constexpr int erased_sentinel = -2;
@@ -46,17 +54,11 @@ C2H_TEST("static_map — empty and erased key sentinels", "[sentinel]")
   map_type map{
     cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}, cudax::cuco::erased_key{erased_sentinel}};
 
-  thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
-  thrust::transform(
-    cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
-      return ::cuda::std::pair<int, int>{i, i};
-    });
-  map.insert(pairs.begin(), pairs.end());
+  auto __pairs = cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<::cuda::std::pair<int, int>>{});
+  map.insert(__pairs, __pairs + num_keys);
 
-  thrust::device_vector<int> keys(num_keys);
-  thrust::sequence(keys.begin(), keys.end(), 0);
   thrust::device_vector<int> found(num_keys, 0);
-  map.contains(keys.begin(), keys.end(), found.begin());
+  map.contains(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   REQUIRE(thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
     return v != 0;

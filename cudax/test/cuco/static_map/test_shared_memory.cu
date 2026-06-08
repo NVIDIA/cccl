@@ -14,8 +14,7 @@
 #endif
 
 #include <thrust/device_vector.h>
-#include <thrust/sequence.h>
-#include <thrust/transform.h>
+#include <thrust/logical.h>
 
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
@@ -39,9 +38,18 @@ inline constexpr ::cuda::std::size_t static_capacity =
   cudax::cuco::make_valid_capacity<default_probing, default_bucket>(::cuda::std::size_t{512});
 using static_map_512_type = cudax::cuco::static_map<int, int, static_capacity>;
 
+template <class _Pair>
+struct iota_pair
+{
+  __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
+  {
+    return _Pair{__i, __i};
+  }
+};
+
 // Demonstrates compile-time __shared__ sizing via ref_type::capacity_v.
-__global__ void
-insert_shmem_kernel(static_map_512_type::ref_type global_ref, const ::cuda::std::pair<int, int>* pairs, int n)
+template <class _PairIt>
+__global__ void insert_shmem_kernel(static_map_512_type::ref_type global_ref, _PairIt pairs, int n)
 {
   using ref_t = static_map_512_type::ref_type;
   static_assert(ref_t::capacity_v != ::cuda::std::dynamic_extent,
@@ -64,23 +72,18 @@ C2H_TEST("static_map static extent — shared memory sizing via capacity_v", "[s
 
   static_map_512_type map{cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
-  thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
-  thrust::transform(
-    cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
-      return ::cuda::std::pair<int, int>{i, i};
-    });
-
   const int block_size = 128;
   const int grid_size  = (num_keys + block_size - 1) / block_size;
 
-  insert_shmem_kernel<<<grid_size, block_size>>>(map.ref(), pairs.data().get(), num_keys);
+  insert_shmem_kernel<<<grid_size, block_size>>>(
+    map.ref(),
+    cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<static_map_512_type::value_type>{}),
+    num_keys);
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   // Verify the insertions actually landed in the global map
-  thrust::device_vector<int> keys(num_keys);
-  thrust::sequence(keys.begin(), keys.end(), 0);
   thrust::device_vector<int> found(num_keys, 0);
-  map.contains(keys.begin(), keys.end(), found.begin());
+  map.contains(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   REQUIRE(thrust::all_of(found.begin(), found.end(), [] __device__(int v) {
     return v != 0;

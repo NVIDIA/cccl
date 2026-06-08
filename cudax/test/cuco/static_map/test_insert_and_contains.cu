@@ -14,9 +14,9 @@
 #endif
 
 #include <thrust/device_vector.h>
+#include <thrust/fill.h>
 #include <thrust/host_vector.h>
-#include <thrust/sequence.h>
-#include <thrust/transform.h>
+#include <thrust/logical.h>
 
 #include <cuda/iterator>
 #include <cuda/std/cstddef>
@@ -39,6 +39,15 @@ using key_types     = c2h::type_list<::cuda::std::int32_t, ::cuda::std::int64_t>
 using cg_sizes      = c2h::type_list<_int_c<1>, _int_c<2>>;
 using bucket_sizes  = c2h::type_list<_int_c<1>, _int_c<2>>;
 using probing_kinds = c2h::type_list<_int_c<0>, _int_c<1>>; // 0 = linear probing, 1 = double hashing
+
+template <class _Pair>
+struct iota_pair
+{
+  __host__ __device__ _Pair operator()(typename _Pair::first_type __i) const noexcept
+  {
+    return _Pair{__i, __i};
+  }
+};
 
 C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
@@ -68,18 +77,12 @@ C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, b
                cudax::cuco::empty_key{key_type{-1}},
                cudax::cuco::empty_value{key_type{-1}}};
 
-  thrust::device_vector<value_type> pairs(num_keys);
-  thrust::transform(
-    cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
-      return value_type{static_cast<key_type>(i), static_cast<key_type>(i)};
-    });
-  map.insert(pairs.begin(), pairs.end());
+  auto __pairs = cuda::transform_iterator(cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{});
+  map.insert(__pairs, __pairs + num_keys);
 
   // Query present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
-  thrust::device_vector<key_type> keys(2 * num_keys);
-  thrust::sequence(keys.begin(), keys.end(), key_type{0});
   thrust::device_vector<int> found(2 * num_keys, 0);
-  map.contains(keys.begin(), keys.end(), found.begin());
+  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   thrust::host_vector<int> h_found(found);
@@ -94,7 +97,7 @@ C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, b
   // After clear the map is empty, so none of the previously inserted keys are found
   map.clear();
   thrust::fill(found.begin(), found.end(), 1);
-  map.contains(keys.begin(), keys.begin() + num_keys, found.begin());
+  map.contains(cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{num_keys}, found.begin());
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
   REQUIRE(thrust::none_of(found.begin(), found.begin() + num_keys, [] __device__(int v) {
     return v != 0;

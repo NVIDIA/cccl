@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__cstddef/types.h>
@@ -62,19 +63,25 @@ template <class _ProbingScheme, int _BucketSize, class _Size>
 {
   constexpr auto __stride = static_cast<_Size>(_ProbingScheme::cg_size * _BucketSize);
   const auto __cycles     = ::cuda::ceil_div(::cuda::std::max(__requested, static_cast<_Size>(1)), __stride);
+  _Size __capacity{};
   if constexpr (::cuda::experimental::cuco::is_double_hashing_v<_ProbingScheme>)
   {
-    if (__cycles > ::cuda::std::numeric_limits<_Size>::max() / __stride)
+    const auto __prime =
+      ::cuda::experimental::cuco::__detail::__next_prime(static_cast<::cuda::std::uint64_t>(__cycles));
+    if (::cuda::mul_overflow(__capacity, __prime, __stride))
     {
       _CCCL_THROW(::std::logic_error, "Invalid input capacity");
     }
-    return static_cast<_Size>(
-      ::cuda::experimental::cuco::__detail::__next_prime(static_cast<::cuda::std::uint64_t>(__cycles)) * __stride);
   }
   else
   {
-    return static_cast<_Size>((__cycles + static_cast<_Size>(__requested == 0)) * __stride);
+    const auto __num_buckets = __cycles + static_cast<_Size>(__requested == 0);
+    if (::cuda::mul_overflow(__capacity, __num_buckets, __stride))
+    {
+      _CCCL_THROW(::std::logic_error, "Invalid input capacity");
+    }
   }
+  return __capacity;
 }
 
 //! @brief Rounds a requested capacity up to a valid capacity for a desired load factor.
