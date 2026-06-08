@@ -21,6 +21,7 @@
 
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // error: global scope non-placement dynamic deallocation is unsupported in tile code
 struct B
 {
   int id_;
@@ -38,6 +39,7 @@ struct D : B
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct E
 {
@@ -160,6 +162,7 @@ int main(int, char**)
   test();
   static_assert(test());
 
+#if !_CCCL_TILE_COMPILATION() // error: global scope non-placement dynamic deallocation is unsupported in tile code
   {
     using T0 = cuda::std::tuple<long, char, D>;
     using T1 = cuda::std::tuple<long long, int, B>;
@@ -182,6 +185,8 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == int('a'));
     assert(cuda::std::get<2>(t1).id_ == 2);
   }
+#endif // !_CCCL_TILE_COMPILATION()
+#if !_CCCL_TILE_COMPILATION() // error: global scope non-placement dynamic deallocation is unsupported in tile code
   {
     using T0 = cuda::std::tuple<long, char, cuda::std::unique_ptr<D>>;
     using T1 = cuda::std::tuple<long long, int, cuda::std::unique_ptr<B>>;
@@ -192,6 +197,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == int('a'));
     assert(cuda::std::get<2>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     using T = cuda::std::tuple<int, NonAssignable>;
