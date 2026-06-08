@@ -219,7 +219,7 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
-constexpr int ldgsts_size_and_align = 16;
+inline constexpr int ldgsts_size_and_align = 16;
 
 template <int InputCount>
 _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
