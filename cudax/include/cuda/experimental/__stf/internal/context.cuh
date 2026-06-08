@@ -321,6 +321,50 @@ public:
       };
     }
 
+    /** When the task's exec place is a grid (size > 1), get the stream for the place at \p place_index
+     * (linear index). Returns nullptr for graph_task (no per-place streams), for non-grid exec places, or
+     * when \p place_index is out of range. */
+    cudaStream_t get_stream(size_t place_index) const
+    {
+      return payload->*[&](auto& self) -> cudaStream_t {
+        if constexpr (::std::is_same_v<stream_task<Deps...>, ::std::decay_t<decltype(self)>>)
+        {
+          // Per-place streams only exist for grid exec places. stream_task::get_stream(size_t) indexes the
+          // stream grid without bounds checking, so guard the linear index here before forwarding.
+          const exec_place& e = self.get_exec_place();
+          if (e.size() <= 1 || place_index >= e.size())
+          {
+            return nullptr;
+          }
+          return self.get_stream(place_index);
+        }
+        else
+        {
+          (void) place_index;
+          return nullptr;
+        }
+      };
+    }
+
+    /** When the task's exec place is a grid (size > 1), write its shape to \p out_dims and return true; else return
+     * false. */
+    bool get_grid_dims(dim4* out_dims) const
+    {
+      if (out_dims == nullptr)
+      {
+        return false;
+      }
+      return payload->*[&](auto& self) -> bool {
+        const exec_place& e = self.get_exec_place();
+        if (e.size() <= 1)
+        {
+          return false;
+        }
+        *out_dims = e.get_dims();
+        return true;
+      };
+    }
+
     // Get the underlying task base class - both stream_task and graph_task inherit from task. This is convenient when
     // we do not need the "typed" task, for example when using the "low-level" add_deps method.
     ::cuda::experimental::stf::task& get_base_task()

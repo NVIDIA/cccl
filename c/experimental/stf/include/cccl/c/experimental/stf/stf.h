@@ -106,6 +106,12 @@ typedef struct stf_exec_place_opaque_t* stf_exec_place_handle;
 //! \brief Opaque handle to a \c data_place.
 typedef struct stf_data_place_opaque_t* stf_data_place_handle;
 
+//! \brief Opaque handle to a \c green_context_helper.
+typedef struct stf_green_context_helper_opaque_t* stf_green_context_helper_handle;
+
+//! \brief Opaque handle to an active exec_place_scope (RAII context activation).
+typedef struct stf_exec_place_scope_opaque_t* stf_exec_place_scope_handle;
+
 //! \brief Opaque handle to an \c exec_place_resources registry.
 //!
 //! Handles returned by stf_exec_place_resources_create() are owned by the
@@ -150,6 +156,19 @@ stf_exec_place_handle stf_exec_place_device(int dev_id);
 //! \brief Create execution place for the current CUDA device.
 stf_exec_place_handle stf_exec_place_current_device(void);
 
+//! \brief Create a green-context helper for \p dev_id with \p sm_count SMs per green context.
+//! Requires CUDA 12.4+. Returns NULL on failure.
+stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id);
+
+//! \brief Destroy a green-context helper handle.
+void stf_green_context_helper_destroy(stf_green_context_helper_handle h);
+
+//! \brief Number of green contexts created by \p h.
+size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h);
+
+//! \brief Device ordinal used by this green-context helper.
+int stf_green_context_helper_get_device_id(stf_green_context_helper_handle h);
+
 //! \brief Deep copy of an execution place handle (caller must stf_exec_place_destroy the result).
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h);
 
@@ -181,7 +200,20 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
-//! \brief Create a fresh exec_place_resources registry for standalone place-layer use.
+//! \brief Activate the sub-place at linear index \p idx (0 for scalar places).
+//! Saves the current CUDA context; call stf_exec_place_scope_exit to restore.
+//! \return Opaque scope handle, or NULL on failure (including when \p idx is out of bounds).
+stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx);
+
+//! \brief Restore the CUDA context saved by stf_exec_place_scope_enter and destroy the scope.
+//! \p scope may be NULL (no-op).
+void stf_exec_place_scope_exit(stf_exec_place_scope_handle scope);
+
+//! \brief Get the affine data_place associated with this exec_place.
+//! Caller must stf_data_place_destroy the result.
+stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle h);
+
+//! \brief Create a fresh, empty exec_place_resources registry.
 //!
 //! The registry lazily creates and owns stream pools for places used with
 //! stf_exec_place_pick_stream(). Destroying it releases every stream it owns.
@@ -202,6 +234,23 @@ void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
 //! finalized for a borrowed registry.
 CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation);
 
+//! \brief Get the sub-place at linear index \p idx.
+//! For scalar places, \p idx must be 0. Returns NULL if \p idx is out of bounds.
+//! Caller must stf_exec_place_destroy the result.
+stf_exec_place_handle stf_exec_place_get_place(stf_exec_place_handle h, size_t idx);
+
+//! \brief Create an exec_place from green-context helper \p helper and view index \p idx.
+//! If \p use_green_ctx_data_place is non-zero, set the affine data_place to a green-context data place.
+//! Returns NULL on failure or if \p idx is out of range.
+stf_exec_place_handle
+stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int use_green_ctx_data_place);
+
+//! \brief Initialize the machine singleton (P2P access, memory pool setup, topology).
+//! Safe to call multiple times; only the first call has effect. Any C++ exception
+//! raised during initialization is caught and reported to stderr (never propagated
+//! across the C boundary).
+void stf_machine_init(void);
+
 //! \brief Host (CPU/pinned) data placement.
 stf_data_place_handle stf_data_place_host(void);
 
@@ -220,6 +269,10 @@ stf_data_place_handle stf_data_place_current_device(void);
 //! \brief Composite partitioned placement over a grid of execution places.
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
 
+//! \brief Create a data_place from green-context helper \p helper and view index \p idx.
+//! Returns NULL on failure or if \p idx is out of range.
+stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx);
+
 //! \brief Deep copy (caller must stf_data_place_destroy).
 stf_data_place_handle stf_data_place_clone(stf_data_place_handle h);
 
@@ -231,6 +284,45 @@ int stf_data_place_get_device_ordinal(stf_data_place_handle h);
 
 //! \brief Human-readable description; pointer valid until the next call on this thread.
 const char* stf_data_place_to_string(stf_data_place_handle h);
+
+//! \brief Allocate \p size bytes at this data place.
+//!
+//! For device places the allocation is stream-ordered (cudaMallocAsync).
+//! For host/managed places \p stream is ignored.
+//! Returns NULL on failure (e.g. unsupported place type or out of memory).
+//!
+//! \note \p size is signed (ptrdiff_t) to mirror the underlying C++ allocator
+//! interface, where the requested size is passed by reference and negated to
+//! signal allocation failure while preserving the requested amount. The matching
+//! stf_data_place_deallocate() takes an unsigned size_t because at deallocation
+//! the size is a known-good quantity with no error to signal.
+//!
+//! \param h     Data place handle (must not be NULL)
+//! \param size  Allocation size in bytes (must be non-negative)
+//! \param stream CUDA stream for stream-ordered allocation (may be NULL)
+//! \return Pointer to allocated memory, or NULL on failure
+void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream);
+
+//! \brief Deallocate memory previously obtained from stf_data_place_allocate().
+//!
+//! For device places the deallocation is stream-ordered (cudaFreeAsync).
+//! For host/managed places \p stream is ignored.
+//!
+//! \note \p size is unsigned (size_t) on purpose: unlike stf_data_place_allocate(),
+//! deallocation never signals failure through the size argument (see that
+//! function's note), so it mirrors the unsigned C++ deallocate() signature.
+//!
+//! \param h      Data place handle (must not be NULL)
+//! \param ptr    Pointer returned by stf_data_place_allocate()
+//! \param size   Size of the original allocation in bytes
+//! \param stream CUDA stream for stream-ordered deallocation (may be NULL)
+void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream);
+
+//! \brief Query whether allocations on this place are stream-ordered.
+//!
+//! \param h Data place handle (must not be NULL)
+//! \return 1 if stream-ordered, 0 otherwise
+int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h);
 
 //! \}
 
@@ -1061,6 +1153,66 @@ void stf_task_destroy(stf_task_handle t);
 //! \note Used internally for CUDA graph backend optimization
 
 void stf_task_enable_capture(stf_task_handle t);
+
+//! \brief Get grid dimensions of a task's exec place
+//!
+//! When the task's execution place is a grid (size > 1), writes its
+//! shape to \p out_dims. Returns 0 on success, non-zero if the task's
+//! exec place is not a grid or \p out_dims is NULL.
+//!
+//! \param t Task handle
+//! \param[out] out_dims On success, the grid shape (x, y, z, t) is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task exec place is not a grid or \p out_dims is NULL
+//!
+//! \pre t must be valid task handle
+//! \pre stf_task_start() must have been called
+//!
+//! \note Total number of grid entries is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
+//! \note A single-element exec place (size 1) is intentionally not treated as a grid: this
+//! returns non-zero for it, consistent with stf_task_get_custream_at_index().
+//!
+//! \par Example:
+//! \code
+//! stf_task_start(task);
+//! stf_dim4 dims;
+//! if (stf_task_get_grid_dims(task, &dims) == 0) {
+//!     printf("Grid: %lu x %lu\n", dims.x, dims.y);
+//! }
+//! \endcode
+//!
+//! \see stf_task_get_custream_at_index()
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims);
+
+//! \brief Get the CUDA stream for a specific grid index
+//!
+//! When the task's exec place is a grid, returns the CUstream for the
+//! given linear index (0 to product of grid dims - 1).
+//!
+//! \param t Task handle (must have been started; exec place must be a grid)
+//! \param place_index Linear index in the grid (0-based; use stf_task_get_grid_dims to get shape)
+//! \param[out] out_stream On success, the stream for that index is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task is not a grid, index out of range, or no per-index streams
+//!
+//! \pre t must be valid task handle
+//! \pre stf_task_start() must have been called
+//!
+//! \note On success \p out_stream is set to the grid index's stream; on failure it is left
+//! untouched and a non-zero code is returned. STF grids always use non-default streams, so a
+//! valid result is never the legacy default stream (CUstream 0).
+//!
+//! \par Example:
+//! \code
+//! stf_dim4 dims;
+//! stf_task_get_grid_dims(task, &dims);
+//! for (size_t i = 0; i < dims.x; ++i) {
+//!     CUstream s;
+//!     stf_task_get_custream_at_index(task, i, &s);
+//!     // launch work on stream s
+//! }
+//! \endcode
+//!
+//! \see stf_task_get_grid_dims()
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream);
 
 //! \}
 
