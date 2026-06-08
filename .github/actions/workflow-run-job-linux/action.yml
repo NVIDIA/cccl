@@ -239,6 +239,8 @@ runs:
               )
             fi
           fi
+
+          echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
         fi
 
         exit_code=0
