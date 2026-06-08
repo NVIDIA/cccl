@@ -82,9 +82,9 @@ TEST_FUNC constexpr bool test()
 
   // Static and runtime bounds intersection
   {
-    static_assert(cuda::__argument::__has_bounds_intersection<int, cuda::__argument::__static_bounds<1, 100>>(
+    static_assert(cuda::__argument::__valid_argument_bounds<int, cuda::__argument::__static_bounds<1, 100>>(
       cuda::__argument::__runtime_bounds<int>{50, 200}));
-    static_assert(!cuda::__argument::__has_bounds_intersection<int, cuda::__argument::__static_bounds<100, 200>>(
+    static_assert(!cuda::__argument::__valid_argument_bounds<int, cuda::__argument::__static_bounds<100, 200>>(
       cuda::__argument::__runtime_bounds<int>{0, 50}));
   }
 
