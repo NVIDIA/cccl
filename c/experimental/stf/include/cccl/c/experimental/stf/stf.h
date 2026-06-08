@@ -1816,6 +1816,14 @@ int stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchabl
 //!
 //! NULL is a no-op, matching the pattern used by other destroy entry points.
 //!
+//! \warning Releasing the last reference is not a pure refcount drop: it runs
+//!          the epilogue, which unfreezes the pushed data and synchronizes only
+//!          the support stream (dep A). If you embedded the graph returned by
+//!          \c stf_launchable_graph_shared_graph() into an outer graph launched
+//!          on your own stream, make sure that launch has completed (e.g. via
+//!          \c cudaStreamSynchronize) before freeing the final reference, or the
+//!          unfreeze will race the still-executing child graph.
+//!
 //! \param h Shared handle (or NULL).
 void stf_launchable_graph_shared_free(stf_launchable_graph_shared h);
 
@@ -1843,6 +1851,40 @@ cudaStream_t stf_launchable_graph_shared_stream(stf_launchable_graph_shared h);
 //! Like \c stf_launchable_graph_graph(), this does NOT trigger
 //! \c cudaGraphInstantiate but performs the lazy dep-A sync on the first call
 //! (ordering the support stream behind the nested context's freeze events).
+//!
+//! Lifetime caveat (mirror of \c stf_launchable_graph_graph()): on the shared
+//! path the epilogue is not an explicit call -- it runs automatically when the
+//! \b last shared reference is released via
+//! \c stf_launchable_graph_shared_free(). That epilogue unfreezes the pushed
+//! data and only synchronizes the support stream (dep A), \b not the stream you
+//! launch the embedding outer graph on. You are therefore responsible for
+//! keeping at least one shared handle alive -- and ensuring the embedded work
+//! has completed (e.g. via \c cudaStreamSynchronize on your launch stream) --
+//! before freeing the final reference, otherwise the unfreeze will race the
+//! child graph.
+//!
+//! \code
+//!   stf_stackable_push_graph(ctx);
+//!   // ... submit tasks ...
+//!   stf_launchable_graph_shared h;
+//!   stf_stackable_pop_prologue_shared(ctx, &h);
+//!
+//!   // Embed the child graph into a user-built outer graph.
+//!   cudaGraph_t body = stf_launchable_graph_shared_graph(h); // lazy dep-A sync
+//!   cudaGraphNode_t child{};
+//!   cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, body);
+//!
+//!   // Order the outer launch behind dep A using the support stream.
+//!   cudaStream_t launch_stream = ...;
+//!   cudaEvent_t dep_a = ...;
+//!   cudaEventRecord(dep_a, stf_launchable_graph_shared_stream(h));
+//!   cudaStreamWaitEvent(launch_stream, dep_a, 0);
+//!   cudaGraphLaunch(outer_exec, launch_stream);
+//!
+//!   // The embedded work must finish before the final free unfreezes data.
+//!   cudaStreamSynchronize(launch_stream);
+//!   stf_launchable_graph_shared_free(h); // last ref -> pop_epilogue (unfreeze)
+//! \endcode
 cudaGraph_t stf_launchable_graph_shared_graph(stf_launchable_graph_shared h);
 
 //! \brief Opaque handle for a while-loop scope (CUDA 12.4+).
