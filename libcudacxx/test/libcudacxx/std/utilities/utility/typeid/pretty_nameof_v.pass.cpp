@@ -23,6 +23,10 @@
 // Functions referenced only by taking their address; never defined or called.
 TEST_FUNC int a_free_function(double);
 
+// An overloaded function must be disambiguated with a cast to select one overload.
+TEST_FUNC int an_overloaded_function(int);
+TEST_FUNC int an_overloaded_function(double);
+
 namespace a_namespace
 {
 TEST_FUNC int a_function_in_a_namespace(int);
@@ -56,6 +60,18 @@ static_assert(cuda::std::__pretty_nameof_v<&a_free_function>() == cuda::std::__s
 
 static_assert(cuda::std::__pretty_nameof_v<a_namespace::a_function_in_a_namespace>()
                 == cuda::std::__string_view("a_namespace::a_function_in_a_namespace"),
+              "");
+
+// An overloaded function: a cast picks the overload, and every overload spells
+// out the same (the function's) name. This is only checked at namespace scope:
+// inside a function body cudafe++ rewrites the cast back to the (ambiguous)
+// `&an_overloaded_function`, so the cast disambiguation is best done where the
+// constant is used as a template argument directly.
+static_assert(cuda::std::__pretty_nameof_v<static_cast<int (*)(int)>(an_overloaded_function)>()
+                == cuda::std::__string_view("an_overloaded_function"),
+              "");
+static_assert(cuda::std::__pretty_nameof_v<static_cast<int (*)(double)>(an_overloaded_function)>()
+                == cuda::std::__string_view("an_overloaded_function"),
               "");
 
 #endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG
