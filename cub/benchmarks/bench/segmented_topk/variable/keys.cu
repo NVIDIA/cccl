@@ -299,7 +299,8 @@ void variable_seg_size_topk_keys(nvbench::state& state,
   cub::detail::batched_topk::segment_size_per_segment<const cuda::std::int64_t*, 1, MaxSegmentSize> segment_sizes_param{
     thrust::raw_pointer_cast(d_segment_sizes.data())};
   cub::detail::batched_topk::k_static<K> k_param{};
-  cub::detail::batched_topk::select_direction_static<cub::detail::topk::select::max> select_directions{};
+  cub::detail::batched_topk::select_direction_static<cub::detail::topk::select::max> select_directions{
+    cub::detail::topk::select::max};
   cub::detail::batched_topk::num_segments_uniform<> num_segments_uniform_param{
     static_cast<cuda::std::int64_t>(num_segments)};
 
