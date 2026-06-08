@@ -59,6 +59,23 @@ def test_iter_site_roots_is_deduplicated(monkeypatch):
     assert roots.count(Path(shared).resolve()) == 1
 
 
+def test_iter_site_roots_tolerates_none_user_site(monkeypatch):
+    """``getusersitepackages()`` can return ``None`` when user site is disabled
+    (``python -s`` / ``PYTHONNOUSERSITE``); it must not raise."""
+    monkeypatch.setattr("cuda.cccl.headers.include_paths.sys.path", ["/some/path"])
+    monkeypatch.setattr(
+        "cuda.cccl.headers.include_paths.site.getsitepackages", lambda: [None]
+    )
+    monkeypatch.setattr(
+        "cuda.cccl.headers.include_paths.site.getusersitepackages", lambda: None
+    )
+
+    roots = list(iter_site_roots())
+
+    assert Path("/some/path").resolve() in roots
+    assert None not in roots
+
+
 def test_iter_site_roots_tolerates_missing_getsitepackages(monkeypatch):
     """Some virtualenv setups lack ``getsitepackages``; it must be probed
     defensively rather than raising."""

@@ -36,6 +36,10 @@ def iter_site_roots():
 
     seen: set[Path] = set()
     for sp in [*sys.path, *site_dirs]:
+        # getsitepackages()/getusersitepackages() can return None when user
+        # site is disabled (e.g. ``python -s`` / ``PYTHONNOUSERSITE``).
+        if sp is None:
+            continue
         root = Path(sp).resolve()
         if root in seen:
             continue
