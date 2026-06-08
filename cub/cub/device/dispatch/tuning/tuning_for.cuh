@@ -20,42 +20,46 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::for_each
+//! The tuning policy for all algorithms in @ref DeviceFor.
+struct ForPolicy
 {
-struct for_policy
-{
-  int threads_per_block;
-  int items_per_thread;
+  int threads_per_block; //!< Number of threads in a CUDA block. If smaller than 1, this number will be determined at
+                         //!< runtime based on the maximum occupancy of the kernel.
+  int items_per_thread; //!< Number of items processed per thread
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const for_policy& lhs, const for_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const ForPolicy& lhs, const ForPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const for_policy& lhs, const for_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const ForPolicy& lhs, const ForPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const for_policy& policy)
+  friend ::std::ostream& operator<<(::std::ostream& os, const ForPolicy& policy)
   {
-    return os << "for_policy { .threads_per_block = " << policy.threads_per_block
+    return os << "ForPolicy { .threads_per_block = " << policy.threads_per_block
               << ", .items_per_thread = " << policy.items_per_thread << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
+namespace detail::for_each
+{
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept for_policy_selector = policy_selector<T, for_policy>;
+concept for_policy_selector = policy_selector<T, ForPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> for_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> ForPolicy
   {
-    return for_policy{256, 2};
+    return ForPolicy{256, 2};
   }
 };
 
