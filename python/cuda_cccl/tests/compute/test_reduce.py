@@ -995,3 +995,42 @@ def test_reduce_input_and_accumulator_type_mismatch():
         cuda.compute.reduce_into(
             d_in=d_data, d_out=d_out, op=op, num_items=d_data.size, h_init=h_init
         )
+
+
+def test_reduce_call_dunder_deprecation():
+    h_init = np.array([False])
+    h_input = random_int(1024, np.int64)
+    d_input = cp.array([True, False, True])
+    d_output = cp.empty_like(d_input, shape=(1,))
+
+    # Perform the reduction.
+    reducer = cuda.compute.make_reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=len(d_input),
+        op=OpKind.MAXIMUM,
+        h_init=h_init,
+    )
+    with pytest.warns(
+        DeprecationWarning, match="as callable to generate temporary storage"
+    ):
+        temp_storage_size = reducer(
+            temp_storage=None,
+            d_in=d_input,
+            d_out=d_output,
+            num_items=len(h_input),
+            op=OpKind.MAXIMUM,
+            h_init=h_init,
+        )
+    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+    with pytest.warns(DeprecationWarning, match="as callable to execute algorithm"):
+        reducer(
+            temp_storage=d_temp_storage,
+            d_in=d_input,
+            d_out=d_output,
+            num_items=len(h_input),
+            op=OpKind.MAXIMUM,
+            h_init=h_init,
+        )
+    expected = True
+    assert d_output.get()[0] == expected

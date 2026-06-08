@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Callable
 
 import numpy as np
@@ -87,6 +88,18 @@ class _Reduce:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
+        if temp_storage is not None:
+            msg = (
+                "Treating `Reducer` as callable to execute algorithm "
+                "is deprecated; Use `.compute()` instead."
+            )
+        else:
+            msg = (
+                "Treating `Reducer` as callable to generate temporary storage "
+                "is deprecated; Use `.get_temp_storage_bytes()` instead."
+            )
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
@@ -116,6 +129,32 @@ class _Reduce:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        *,
+        d_in,
+        d_out,
+        num_items: int,
+        op: Callable | OpAdapter,
+        h_init: np.ndarray | GpuStruct,
+    ):
+        # TODO: add functionality
+        pass
+
+    def compute(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        op: Callable | OpAdapter,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        # TODO: add functionality
+        pass
 
 
 @cache_with_registered_key_functions
