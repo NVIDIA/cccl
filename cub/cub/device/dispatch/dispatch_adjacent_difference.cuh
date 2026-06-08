@@ -65,11 +65,11 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
   static constexpr AdjacentDifferencePolicy policy = current_policy<PolicySelector>();
   using AdjacentDifferencePolicyT =
-    AgentAdjacentDifferencePolicy<policy.threads_per_block,
-                                  policy.items_per_thread,
-                                  policy.load_algorithm,
-                                  policy.load_modifier,
-                                  policy.store_algorithm>;
+    agent_adjacent_difference_policy<policy.threads_per_block,
+                                     policy.items_per_thread,
+                                     policy.load_algorithm,
+                                     policy.load_modifier,
+                                     policy.store_algorithm>;
 
   // It is OK to introspect the return type or parameter types of the
   // `operator()` function of `__device__` extended lambda within device code.

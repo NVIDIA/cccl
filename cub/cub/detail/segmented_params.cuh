@@ -99,48 +99,23 @@ struct supported_options
   static constexpr ::cuda::std::size_t count = sizeof...(Options);
 };
 
-//! @brief Uniform discrete parameter — a single runtime value with a known set of supported options.
-template <typename T, T... Options>
-struct uniform_discrete_param
+//! @brief Static discrete parameter — a single compile-time value that is also its only supported option.
+//!
+//! Holds no runtime value, so it cannot be put into a state that disagrees with its supported option, and
+//! @c dispatch_impl therefore always matches it. This is the safe representation for a compile-time-fixed discrete
+//! parameter (e.g. a statically known top-k selection direction): modeling such a parameter with a runtime value
+//! instead would risk that value silently disagreeing with the supported option (a no-op dispatch unless
+//! @c CCCL_ENABLE_ASSERTIONS is set).
+template <typename T, T Value>
+struct static_discrete_param
 {
   using value_type          = T;
-  using supported_options_t = supported_options<T, Options...>;
-
-  T value;
-
-  _CCCL_HOST_DEVICE constexpr uniform_discrete_param(T v)
-      : value(v)
-  {}
-
-  uniform_discrete_param() = default;
+  using supported_options_t = supported_options<T, Value>;
 
   template <typename SegmentIndexT>
-  _CCCL_HOST_DEVICE constexpr auto get_param([[maybe_unused]] SegmentIndexT segment_id) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr T get_param(SegmentIndexT) const noexcept
   {
-    return value;
-  }
-};
-
-//! @brief Per-segment discrete parameter — per-segment values with a known set of supported options.
-template <typename IteratorT, typename T, T... Options>
-struct per_segment_discrete_param
-{
-  using iterator_type       = IteratorT;
-  using value_type          = T;
-  using supported_options_t = supported_options<T, Options...>;
-
-  IteratorT iterator;
-
-  _CCCL_HOST_DEVICE constexpr per_segment_discrete_param(IteratorT iter)
-      : iterator(iter)
-  {}
-
-  per_segment_discrete_param() = default;
-
-  template <typename SegmentIndexT>
-  _CCCL_HOST_DEVICE constexpr auto get_param(SegmentIndexT segment_id) const
-  {
-    return iterator[segment_id];
+    return Value;
   }
 };
 
@@ -164,7 +139,7 @@ dispatch_impl(T val, [[maybe_unused]] supported_options<T, Opts...> __supported_
   return match_found;
 }
 
-//! @brief Dispatcher that resolves a per-segment discrete parameter to a compile-time constant
+//! @brief Dispatcher that resolves a discrete parameter to a compile-time constant
 //!        and invokes a functor with the matched option.
 //!
 //! @param[in] param Discrete parameter to resolve.

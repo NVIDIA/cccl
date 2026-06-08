@@ -52,7 +52,9 @@ def extract_function_name(source: str) -> str:
 
 def make_cpp_op(source: str, name: str = None, include_paths=None) -> RawOp:
     """
-    Compile C++ source to LTOIR and create a stateless RawOp.
+    Compile C++ source to LTO-IR and create a stateless RawOp. For v2 users
+    the LLVM-bitcode path is preferred (see ``examples/raw_op/llvm_stateless.py``);
+    this helper exercises the LTO-IR escape hatch.
 
     Args:
         source: C++ source code containing the operator function
@@ -74,7 +76,8 @@ def make_cpp_stateful_op(
     source: str, state: bytes, name: str = None, state_alignment: int = 8
 ) -> RawOp:
     """
-    Compile C++ source to LTOIR and create a stateful RawOp.
+    Compile C++ source to LTO-IR and create a stateful RawOp. See the note on
+    :func:`make_cpp_op` regarding the v2-preferred LLVM-bitcode path.
 
     Args:
         source: C++ source code containing the operator function

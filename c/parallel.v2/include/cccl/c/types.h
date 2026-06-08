@@ -90,23 +90,30 @@ typedef enum cccl_op_kind_t
 
 typedef enum cccl_op_code_type
 {
-  CCCL_OP_LTOIR      = 0, // Pre-compiled LTO-IR (default for backward compatibility)
-  CCCL_OP_CPP_SOURCE = 1 // C++ source code
+  CCCL_OP_LTOIR = 0, // Pre-compiled LTO-IR (escape hatch for callers with existing nvcc -dlto artifacts).
+                     // LTO-IR is a binary container passed to nvJitLink at the PTX level — the LLVM optimizer
+                     // never sees it, so the operator cannot be inlined into the CUB kernel and pays a real
+                     // CALL on every iteration. CCCL_OP_LLVM_IR feeds LLVM's bitcode linker instead, which
+                     // merges the operator into the CUB module before PTX codegen and enables full inlining.
+                     // Prefer CCCL_OP_LLVM_IR or CCCL_OP_CPP_SOURCE for any new code.
+  CCCL_OP_CPP_SOURCE = 1, // C++ source code (compiled to LLVM bitcode by hostjit's Clang).
+  CCCL_OP_LLVM_IR    = 2 // LLVM bitcode (recommended) — merges into the CUB module before PTX gen, so inlines.
 } cccl_op_code_type;
 
 typedef struct cccl_op_t
 {
   cccl_op_kind_t type;
   const char* name;
-  const char* code; // Renamed from 'ltoir' - can be either LTO-IR or C++ source
-  size_t code_size; // Renamed from 'ltoir_size'
-  cccl_op_code_type code_type; // New field to distinguish content type
+  const char* code;
+  size_t code_size;
+  cccl_op_code_type code_type;
   size_t size;
   size_t alignment;
   void* state;
   const char** extra_ltoirs;
   size_t* extra_ltoir_sizes;
   size_t num_extra_ltoirs;
+  cccl_op_code_type* extra_code_types;
 } cccl_op_t;
 
 typedef struct cccl_build_config

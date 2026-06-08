@@ -85,11 +85,16 @@ using key_types =
 >;
 // clang-format on
 
+// Selection direction is a compile-time option; cover both as a static test axis.
+using select_direction_list =
+  c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
+
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
          key_types,
          max_segment_size_list,
-         max_num_k_list)
+         max_num_k_list,
+         select_direction_list)
 {
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
@@ -100,8 +105,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
   constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
 
-  // Test both directions (as runtime value)
-  const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
+  // Selection direction comes from the compile-time test axis.
+  constexpr auto direction = c2h::get<3, TestType>::value;
 
   // Generate segment size
   constexpr segment_size_t min_segment_size = 1;
@@ -153,7 +158,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
     d_keys_out,
     ::cuda::__argument::__immediate{segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, max_segment_size>()},
     ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
-    direction,
+    ::cuda::__argument::__constant<direction>{},
     ::cuda::__argument::__immediate{num_segments},
     ::cuda::__argument::__immediate{num_segments * segment_size});
   // Prepare expected results
@@ -170,7 +175,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
          "[keys][segmented][topk][device]",
          key_types,
          max_segment_size_list,
-         max_num_k_list)
+         max_num_k_list,
+         select_direction_list)
 {
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
@@ -181,8 +187,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
   constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
 
-  // Test both directions (as runtime value)
-  const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
+  // Selection direction comes from the compile-time test axis.
+  constexpr auto direction = c2h::get<3, TestType>::value;
 
   constexpr segment_size_t min_items = 1;
   constexpr segment_size_t max_items = 1'000'000;
@@ -251,7 +257,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
     ::cuda::__argument::__immediate_sequence{
       segment_size_it, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
     ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
-    direction,
+    ::cuda::__argument::__constant<direction>{},
     ::cuda::__argument::__immediate{num_segments},
     ::cuda::__argument::__immediate{num_items});
 
@@ -289,7 +295,7 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
     ::cuda::__argument::__immediate{
       segment_size, ::cuda::__argument::__bounds<cuda::std::int64_t{1}, max_segment_size>()},
     ::cuda::__argument::__immediate{k, ::cuda::__argument::__bounds<cuda::std::int64_t{1}, k>()},
-    cub::detail::topk::select::min,
+    ::cuda::__argument::__constant<cub::detail::topk::select::min>{},
     ::cuda::__argument::__immediate{num_segments},
     ::cuda::__argument::__immediate{num_segments * segment_size});
 

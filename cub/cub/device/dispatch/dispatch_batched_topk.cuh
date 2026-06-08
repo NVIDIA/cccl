@@ -36,6 +36,7 @@
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstdint>
@@ -46,31 +47,35 @@ CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
 {
 // -----------------------------------------------------------------------------
-// Internal: wrap user-facing select direction into discrete param for dispatch
+// Internal: wrap the compile-time select direction into a discrete param for dispatch
 // -----------------------------------------------------------------------------
 
-// Uniform (compile-time): __constant<Dir> -> single-option uniform_discrete_param.
+// The selection direction is compile-time only: callers pass `::cuda::__argument::__constant<Dir>`, which maps to a
+// value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
+// can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
 template <detail::topk::select Dir>
 [[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::__argument::__constant<Dir>)
 {
-  return params::uniform_discrete_param<detail::topk::select, Dir>{Dir};
+  return params::static_discrete_param<detail::topk::select, Dir>{};
 }
 
-// Uniform: single enum value → uniform_discrete_param
-[[nodiscard]] _CCCL_HOST_DEVICE inline auto wrap_select_direction(detail::topk::select dir)
+// The selection direction is intentionally a compile-time constant: only `::cuda::__argument::__constant<Dir>` is
+// accepted (the overload above maps it to a value-less static_discrete_param). This catch-all documents that
+// deliberate limitation and rejects anything else (e.g. a runtime `detail::topk::select` or a per-segment iterator of
+// directions) with a clear diagnostic. It is an intent/documentation guard rather than a user-facing one: callers
+// reach the algorithm through the min/max device entry points (DeviceBatchedTopK::{Max,Min}{Keys,Pairs}), which
+// construct the matching `__constant<Dir>` internally, so `dispatch` is only ever invoked with a direction we create.
+template <typename SelectDirectionT>
+[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(SelectDirectionT)
 {
-  return params::uniform_discrete_param<detail::topk::select, detail::topk::select::max, detail::topk::select::min>{
-    dir};
-}
-
-// Per-segment: iterator of enums → per_segment_discrete_param
-_CCCL_TEMPLATE(typename IteratorT)
-_CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cv_t<IteratorT>, detail::topk::select>) )
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(IteratorT iter)
-{
-  return params::
-    per_segment_discrete_param<IteratorT, detail::topk::select, detail::topk::select::max, detail::topk::select::min>{
-      iter};
+  static_assert(::cuda::std::__always_false_v<SelectDirectionT>,
+                "DeviceBatchedTopK currently supports only compile-time selection directions: the min/max entry "
+                "points (DeviceBatchedTopK::{Max,Min}{Keys,Pairs}) dispatch with a "
+                "::cuda::__argument::__constant<cub::detail::topk::select>; runtime or per-segment directions are "
+                "intentionally not supported");
+  // Unreachable (the static_assert above always fires); keeps the return type well-formed so the only diagnostic is
+  // the message above.
+  return params::static_discrete_param<detail::topk::select, detail::topk::select::min>{};
 }
 
 // -----------------------------------------------------------------------------
