@@ -997,74 +997,77 @@ def test_reduce_input_and_accumulator_type_mismatch():
         )
 
 
-def test_reduce_call_dunder_deprecation():
-    h_init = np.array([False])
-    h_input = random_int(1024, np.int64)
-    d_input = cp.array([True, False, True])
-    d_output = cp.empty_like(d_input, shape=(1,))
+class TestReduceAPI:
+    def test_default_usage(self):
+        h_init = np.array([False])
+        d_input = cp.array([True, False, True])
+        d_output = cp.empty_like(d_input, shape=(1,))
 
-    # Perform the reduction.
-    reducer = cuda.compute.make_reduce_into(
-        d_in=d_input,
-        d_out=d_output,
-        num_items=len(d_input),
-        op=OpKind.MAXIMUM,
-        h_init=h_init,
-    )
-    with pytest.warns(
-        DeprecationWarning, match="as callable to generate temporary storage"
-    ):
-        temp_storage_size = reducer(
-            temp_storage=None,
+        # Perform the reduction.
+        reducer = cuda.compute.make_reduce_into(
             d_in=d_input,
             d_out=d_output,
-            num_items=len(h_input),
+            num_items=len(d_input),
             op=OpKind.MAXIMUM,
             h_init=h_init,
         )
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    with pytest.warns(DeprecationWarning, match="as callable to execute algorithm"):
-        reducer(
-            temp_storage=d_temp_storage,
+
+        reducer.compute()
+        expected = True
+        assert d_output.get()[0] == expected
+
+    def test_compute_with_explicit_storage_arg(self):
+        h_init = np.array([False])
+        d_input = cp.array([True, False, True])
+        d_output = cp.empty_like(d_input, shape=(1,))
+
+        # Perform the reduction.
+        reducer = cuda.compute.make_reduce_into(
             d_in=d_input,
             d_out=d_output,
-            num_items=len(h_input),
+            num_items=len(d_input),
             op=OpKind.MAXIMUM,
             h_init=h_init,
         )
-    expected = True
-    assert d_output.get()[0] == expected
+        temp_storage_size = reducer.get_temp_storage_bytes()
+        d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+        reducer.compute(temp_storage=d_temp_storage)
+        expected = True
+        assert d_output.get()[0] == expected
 
+    def test__call__dunder_deprecation(self):
+        h_init = np.array([False])
+        d_input = cp.array([True, False, True])
+        d_output = cp.empty_like(d_input, shape=(1,))
 
-def test_reduce_temp_storage_compute_api():
-    h_init = np.array([False])
-    h_input = random_int(1024, np.int64)
-    d_input = cp.array([True, False, True])
-    d_output = cp.empty_like(d_input, shape=(1,))
-
-    # Perform the reduction.
-    reducer = cuda.compute.make_reduce_into(
-        d_in=d_input,
-        d_out=d_output,
-        num_items=len(d_input),
-        op=OpKind.MAXIMUM,
-        h_init=h_init,
-    )
-    temp_storage_size = reducer.get_temp_storage_bytes(
-        d_in=d_input,
-        d_out=d_output,
-        num_items=len(h_input),
-        op=OpKind.MAXIMUM,
-        h_init=h_init,
-    )
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    reducer.compute(
-        temp_storage=d_temp_storage,
-        d_in=d_input,
-        d_out=d_output,
-        num_items=len(h_input),
-        op=OpKind.MAXIMUM,
-        h_init=h_init,
-    )
-    expected = True
-    assert d_output.get()[0] == expected
+        # Perform the reduction.
+        reducer = cuda.compute.make_reduce_into(
+            d_in=d_input,
+            d_out=d_output,
+            num_items=len(d_input),
+            op=OpKind.MAXIMUM,
+            h_init=h_init,
+        )
+        with pytest.warns(
+            DeprecationWarning, match="as callable to generate temporary storage"
+        ):
+            temp_storage_size = reducer(
+                temp_storage=None,
+                d_in=d_input,
+                d_out=d_output,
+                num_items=len(d_input),
+                op=OpKind.MAXIMUM,
+                h_init=h_init,
+            )
+        d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+        with pytest.warns(DeprecationWarning, match="as callable to execute algorithm"):
+            reducer(
+                temp_storage=d_temp_storage,
+                d_in=d_input,
+                d_out=d_output,
+                num_items=len(d_input),
+                op=OpKind.MAXIMUM,
+                h_init=h_init,
+            )
+        expected = True
+        assert d_output.get()[0] == expected

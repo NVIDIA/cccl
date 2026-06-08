@@ -99,7 +99,7 @@ class _Reduce:
                 "is deprecated; Use `.get_temp_storage_bytes()` instead."
             )
         warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        return self._execute_call(
+        return self._execute_call_legacy(
             temp_storage=temp_storage,
             d_in=d_in,
             d_out=d_out,
@@ -118,38 +118,30 @@ class _Reduce:
         op: Callable | OpAdapter,
         h_init: np.ndarray | GpuStruct,
     ):
-        return self._execute_call(
-            temp_storage=None,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=num_items,
-            op=op,
-            h_init=h_init,
-            stream=None,
-        )
+        pass
+        # return self._execute_call_legacy(
+        #     temp_storage=None,
+        #     d_in=d_in,
+        #     d_out=d_out,
+        #     num_items=num_items,
+        #     op=op,
+        #     h_init=h_init,
+        #     stream=None,
+        # )
 
-    def compute(
-        self,
-        *,
-        temp_storage,
-        d_in,
-        d_out,
-        num_items: int,
-        op: Callable | OpAdapter,
-        h_init: np.ndarray | GpuStruct,
-        stream=None,
-    ):
-        return self._execute_call(
-            temp_storage=temp_storage,
-            d_in=d_in,
-            d_out=d_out,
-            num_items=num_items,
-            op=op,
-            h_init=h_init,
-            stream=stream,
-        )
+    def compute(self, temp_storage=None):
+        pass
+        # return self._execute_call(
+        #     temp_storage=temp_storage,
+        #     d_in=d_in,
+        #     d_out=d_out,
+        #     num_items=num_items,
+        #     op=op,
+        #     h_init=h_init,
+        #     stream=stream,
+        # )
 
-    def _execute_call(
+    def _execute_call_legacy(
         self,
         *,
         temp_storage,
