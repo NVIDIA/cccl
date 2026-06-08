@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython"]
+# cmake>=3.30 is needed for FindCUDAToolkit's CUDA::nvfatbin /
+# CUDA::nvfatbin_static imported targets, which the v2 (HostJIT) backend links
+# against. Listed here so isolated builds (pip's default) pick it up.
+requires = ["scikit-build-core>=0.10", "setuptools_scm", "cython", "cmake>=3.30"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -101,7 +104,7 @@ minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
 
 [tool.scikit-build.cmake]
-version = ">=3.21"
+version = ">=3.30"
 args = []
 build-type = "Release"
 source-dir = "."

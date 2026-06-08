@@ -1,2 +1,2 @@
 FULL_BUILD=tidy
-LITE_BUILD=libcudacxx cub cudax cccl_c_parallel cccl_c_parallel_v2 cccl_c_stf python packaging
+LITE_BUILD=libcudacxx cub cudax cccl_c_parallel cccl_c_parallel_v2 python_v2 cccl_c_stf packaging

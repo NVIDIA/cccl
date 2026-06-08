@@ -238,6 +238,16 @@ TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_vec()
   return simd::basic_vec<T, simd::fixed_size<N>>(arr);
 }
 
+template <typename T, int N>
+TEST_FUNC constexpr simd::basic_vec<T, simd::fixed_size<N>> make_iota_reverse_vec()
+{
+  cuda::std::array<T, N> arr{};
+  for (int i = 0; i < N; ++i)
+  {
+    arr[i] = static_cast<T>(N - 1 - i);
+  }
+  return simd::basic_vec<T, simd::fixed_size<N>>(arr);
+}
 //----------------------------------------------------------------------------------------------------------------------
 // bit utilities
 

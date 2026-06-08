@@ -89,9 +89,9 @@ inline std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
   // TEST_CTK_PATH needed to include cuda_fp16.h
-  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", TEST_CTK_PATH};
+  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", "-D__NV_NO_VECTOR_DEPRECATION_DIAG", TEST_CTK_PATH};
 
-  if (nvrtcCompileProgram(prog, 4, options) != NVRTC_SUCCESS)
+  if (nvrtcCompileProgram(prog, 5, options) != NVRTC_SUCCESS)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
@@ -832,29 +832,97 @@ stateful_operation_t<OpT> make_operation(std::string_view name, const std::strin
   return {op, name, compile(code)};
 }
 
+// Designated initializers so this header builds against both v1's and v2's
+// cccl_op_t — v2 adds an extra_code_types field that v1 doesn't define, and
+// any unlisted field zero-inits (== nullptr for the pointer fields).
 static cccl_op_t make_well_known_unary_operation()
 {
-  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_NEGATE,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_binary_operation()
 {
-  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_PLUS,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_less_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_LESS,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_unique_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_EQUAL_TO,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 static cccl_op_t make_well_known_greater_equal_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_GREATER_EQUAL, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+  return cccl_op_t{
+    .type              = cccl_op_kind_t::CCCL_GREATER_EQUAL,
+    .name              = "",
+    .code              = "",
+    .code_size         = 0,
+    .code_type         = CCCL_OP_LTOIR,
+    .size              = 1,
+    .alignment         = 1,
+    .state             = nullptr,
+    .extra_ltoirs      = nullptr,
+    .extra_ltoir_sizes = nullptr,
+    .num_extra_ltoirs  = 0,
+    .extra_code_types  = nullptr,
+  };
 }
 
 template <class ValueT, class StateT>

@@ -41,7 +41,7 @@ template <typename MaxPolicyT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT,
           typename TransformOpT>
 struct DeviceReduceNondeterministicKernelSource
@@ -55,12 +55,12 @@ struct DeviceReduceNondeterministicKernelSource
       OffsetT,
       ReductionOpT,
       AccumT,
-      InitT,
+      InitValueT,
       TransformOpT>);
 
   CUB_RUNTIME_FUNCTION static constexpr size_t InitSize()
   {
-    return sizeof(InitT);
+    return sizeof(InitValueT);
   }
 };
 
@@ -78,14 +78,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* get_device_ptr(void* ptr)
 struct nondeterministic_no_override
 {};
 
-template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
+template <typename InputIteratorT, typename InitValueT, typename ReductionOpT, typename TransformOpT>
 _CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(nondeterministic_no_override*)
   -> ::cuda::std::__accumulator_t<ReductionOpT,
                                   ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
-                                  InitT>;
+                                  InitValueT>;
 
 template <typename InputIteratorT,
-          typename InitT,
+          typename InitValueT,
           typename ReductionOpT,
           typename TransformOpT,
           typename OverrideAccumT,
@@ -109,7 +109,7 @@ _CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> O
 //! @tparam ReductionOpT
 //!   Binary reduction functor type having member `auto operator()(const T &a, const U &b)`
 //!
-//! @tparam InitT
+//! @tparam InitValueT
 //!   Initial value type
 //!
 //! @param[in] d_temp_storage
@@ -136,26 +136,27 @@ _CCCL_HOST_DEVICE_API auto select_nondeterministic_accum_t(OverrideAccumT*) -> O
 //!
 //! @param[in] stream
 //!   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-template <typename OverrideAccumT = nondeterministic_no_override,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitT        = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-          typename TransformOpT = ::cuda::std::identity,
-          typename AccumT = decltype(select_nondeterministic_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(
-            static_cast<OverrideAccumT*>(nullptr))),
-          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource   = DeviceReduceNondeterministicKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitT,
-              AccumT,
-              TransformOpT>,
-          typename KernelLauncherFactory = TripleChevronFactory>
+template <
+  typename OverrideAccumT = nondeterministic_no_override,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitValueT   = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+  typename TransformOpT = ::cuda::std::identity,
+  typename AccumT = decltype(select_nondeterministic_accum_t<InputIteratorT, InitValueT, ReductionOpT, TransformOpT>(
+    static_cast<OverrideAccumT*>(nullptr))),
+  typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource   = DeviceReduceNondeterministicKernelSource<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      OffsetT,
+      ReductionOpT,
+      InitValueT,
+      AccumT,
+      TransformOpT>,
+  typename KernelLauncherFactory = TripleChevronFactory>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_nondeterministic_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -166,7 +167,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   OutputIteratorT d_out,
   OffsetT num_items,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op              = {},
   PolicySelector policy_selector         = {},

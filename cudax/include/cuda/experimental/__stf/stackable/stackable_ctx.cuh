@@ -1638,6 +1638,10 @@ UNITTEST("stackable task on exec_place::host()")
   stackable_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(exec_place::host(), lA.write())->*[](cudaStream_t stream, auto) {
+    // cuda_safe_call (not cuda_try) on purpose: this lambda body is invoked from
+    // the STF runtime under host-task dispatch, where exception safety has not
+    // been audited. An abort here is preferable to an unannotated throw escaping
+    // into the runtime.
     cuda_safe_call(cudaStreamSynchronize(stream));
   };
   ctx.finalize();
@@ -1648,6 +1652,8 @@ UNITTEST("stackable task with set_symbol and set_exec_place")
   stackable_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(lA.write()).set_symbol("task").set_exec_place(exec_place::host())->*[](cudaStream_t stream, auto) {
+    // Same rationale as the previous test: keep cuda_safe_call inside this
+    // host-task lambda until the dispatch path is audited for exception safety.
     cuda_safe_call(cudaStreamSynchronize(stream));
   };
   ctx.finalize();

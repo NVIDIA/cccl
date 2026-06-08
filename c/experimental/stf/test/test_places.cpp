@@ -236,15 +236,15 @@ C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[t
 {
   const size_t nplaces = 2;
   stf_exec_place_handle places[2];
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    places[i] = stf_exec_place_device(0);
+    place = stf_exec_place_device(0);
   }
   stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
   REQUIRE(grid != nullptr);
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    stf_exec_place_destroy(places[i]);
+    stf_exec_place_destroy(place);
   }
 
   stf_data_place_handle composite_dplace = stf_data_place_composite(grid, blocked_mapper_1d);
@@ -278,6 +278,10 @@ C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[t
   REQUIRE(stf_task_get_custream_at_index(t, 1, &s1) == 0);
   REQUIRE(s0 != nullptr);
   REQUIRE(s1 != nullptr);
+
+  // Out-of-range linear index must report an error rather than reading past the stream grid.
+  CUstream s_oob;
+  REQUIRE(stf_task_get_custream_at_index(t, 2, &s_oob) != 0);
 
   stf_task_end(t);
   stf_task_destroy(t);

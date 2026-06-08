@@ -9,6 +9,31 @@
 
 #include <nvbench_helper.cuh>
 
+// %RANGE% TUNE_LOAD ld 0:2:1
+// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
+// %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
+
+#if !TUNE_BASE
+#  if TUNE_LOAD == 0
+#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#  elif TUNE_LOAD == 1
+#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
+#  else // TUNE_LOAD == 2
+#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#  endif // TUNE_LOAD
+
+template <typename T>
+struct bench_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::find::find_policy
+  {
+    return cub::detail::find::find_policy{
+      (1 << TUNE_THREADS_PER_BLOCK_POW2), cub::Nominal4BItemsToItems<T>(TUNE_ITEMS_PER_THREAD), 4, TUNE_LOAD_MODIFIER};
+  }
+};
+#endif // !TUNE_BASE
+
 template <typename T, typename OffsetT>
 void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -23,33 +48,27 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
   thrust::device_vector<OffsetT> d_result(1, thrust::no_init);
 
-  void* d_temp_storage = nullptr;
-  size_t temp_storage_bytes{};
-
   state.add_global_memory_reads<T>(mismatch_point);
   state.add_global_memory_writes<OffsetT>(1);
 
-  cub::DeviceFind::FindIf(
-    d_temp_storage,
-    temp_storage_bytes,
-    thrust::raw_pointer_cast(dinput.data()),
-    thrust::raw_pointer_cast(d_result.data()),
-    cuda::equal_to_value<T>(val),
-    static_cast<OffsetT>(dinput.size()),
-    nullptr);
-
-  thrust::device_vector<uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::DeviceFind::FindIf(
-      d_temp_storage,
-      temp_storage_bytes,
+  caching_allocator_t alloc;
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_policy_selector<T>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceFind::FindIf,
+      "FindIf failed",
       thrust::raw_pointer_cast(dinput.data()),
       thrust::raw_pointer_cast(d_result.data()),
       cuda::equal_to_value<T>(val),
       static_cast<OffsetT>(dinput.size()),
-      launch.get_stream());
+      env);
   });
 }
 
