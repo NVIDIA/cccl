@@ -473,10 +473,13 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
     NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << "Dispatching DeviceTransform to compute capability " << cc.major_cap() << '.' << cc.minor_cap()
-                      << " with tuning: " << active_policy << '\n';
-                   log(ss.str());
+                   if (logging_enabled())
+                   {
+                     ::std::stringstream ss;
+                     ss << "Dispatching DeviceTransform to compute capability " << cc.major_cap() << '.'
+                        << cc.minor_cap() << " with tuning: " << active_policy << '\n';
+                     log_always(ss.str());
+                   }
                  }))
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
