@@ -45,9 +45,9 @@ namespace detail::rfa
 template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
 
-template <typename InitT, typename InputIteratorT, typename TransformOpT>
-using accum_t =
-  ::cuda::std::__accumulator_t<::cuda::std::plus<>, InitT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
+template <typename InitValueT, typename InputIteratorT, typename TransformOpT>
+using accum_t = ::cuda::std::
+  __accumulator_t<::cuda::std::plus<>, InitValueT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
 
 template <typename FloatType = float, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
@@ -83,7 +83,7 @@ template <typename PolicySelector,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename DeterministicAccumT,
           typename TransformOpT,
           typename KernelLauncherFactory>
@@ -94,7 +94,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   OutputIteratorT d_out,
   OffsetT num_items,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
   rfa_policy active_policy,
@@ -124,7 +124,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                   InputIteratorT,
                   OutputIteratorT,
                   ReductionOpT,
-                  InitT,
+                  InitValueT,
                   DeterministicAccumT,
                   TransformOpT>,
                 d_in,
@@ -152,7 +152,7 @@ template <typename PolicySelector,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename DeterministicAccumT,
           typename TransformOpT,
           typename KernelLauncherFactory>
@@ -163,7 +163,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   OutputIteratorT d_out,
   OffsetT num_items,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   cudaStream_t stream,
   TransformOpT transform_op,
   rfa_policy active_policy,
@@ -297,7 +297,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                   DeterministicAccumT*,
                   OutputIteratorT,
                   ReductionOpT,
-                  InitT,
+                  InitValueT,
                   DeterministicAccumT>,
                 d_block_reductions,
                 d_out,
@@ -322,9 +322,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename InitT,
+          typename InitValueT,
           typename TransformOpT          = ::cuda::std::identity,
-          typename AccumT                = accum_t<InitT, InputIteratorT, TransformOpT>,
+          typename AccumT                = accum_t<InitValueT, InputIteratorT, TransformOpT>,
           typename PolicySelector        = policy_selector_from_types<AccumT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
@@ -333,7 +333,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   OffsetT num_items,
-  InitT init                             = {},
+  InitValueT init                        = {},
   cudaStream_t stream                    = {},
   TransformOpT transform_op              = {},
   PolicySelector policy_selector         = {},
@@ -374,7 +374,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                               OutputIteratorT,
                               OffsetT,
                               deterministic_add_t,
-                              InitT,
+                              InitValueT,
                               typename deterministic_add_t::DeterministicAcc,
                               TransformOpT>(
       d_temp_storage,
@@ -395,7 +395,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                        OutputIteratorT,
                        OffsetT,
                        deterministic_add_t,
-                       InitT,
+                       InitValueT,
                        typename deterministic_add_t::DeterministicAcc,
                        TransformOpT>(
     d_temp_storage,
