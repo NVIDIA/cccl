@@ -19,11 +19,12 @@
 
 #include <cub/util_ptx.cuh>
 
-#include <cuda/__atomic/atomic.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__ptx/instructions/bfind.h>
+#include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/atomic>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/cstdint>
 
@@ -86,6 +87,13 @@ struct BlockHistogramAtomicWarpAggregated
     }
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool IsLeader(::cuda::std::uint32_t peer_mask) const
+  {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (return ::cuda::ptx::elect_sync(peer_mask);),
+                      (return ::cuda::ptx::get_sreg_laneid() == ::cuda::ptx::bfind(peer_mask);));
+  }
+
   template <typename CounterT>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Add(CounterT& counter_ref, CounterT count) const
   {
@@ -107,7 +115,7 @@ struct BlockHistogramAtomicWarpAggregated
   //!   Calling thread's input values to histogram
   //!
   //! @param[out] histogram
-  //!   Reference to shared/device-accessible memory histogram
+  //!   Reference to shared or global memory histogram
   template <typename T, typename CounterT, int ItemsPerThread>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins]) const
   {
@@ -116,9 +124,8 @@ struct BlockHistogramAtomicWarpAggregated
     {
       const auto bin       = static_cast<unsigned>(items[i]);
       const auto peer_mask = this->PeerMask(bin);
-      const auto leader    = ::cuda::ptx::bfind(peer_mask);
 
-      if (::cuda::ptx::get_sreg_laneid() == leader)
+      if (IsLeader(peer_mask))
       {
         const auto count = static_cast<CounterT>(::cuda::std::popcount(peer_mask));
         Add(histogram[bin], count);
