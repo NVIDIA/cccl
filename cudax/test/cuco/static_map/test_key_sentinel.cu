@@ -37,8 +37,8 @@ C2H_TEST("static_map — empty and erased key sentinels", "[sentinel]")
   constexpr int erased_sentinel = -2;
   constexpr int num_keys        = 256;
 
-  using probing        = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
-  constexpr int bucket = 1;
+  using probing                         = cudax::cuco::linear_probing<1, cudax::cuco::hash<int>>;
+  [[maybe_unused]] constexpr int bucket = 1;
   constexpr ::cuda::std::size_t capacity =
     cudax::cuco::make_valid_capacity<probing, bucket>(static_cast<::cuda::std::size_t>(num_keys * 2));
   using map_type = cudax::cuco::static_map<int, int, capacity>;

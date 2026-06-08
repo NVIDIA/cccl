@@ -72,7 +72,7 @@ struct __tile_size<::cooperative_groups::thread_block_tile<_Size, _ParentCG>>
 template <class _Tile>
 inline constexpr ::cuda::std::uint32_t __tile_size_v = __tile_size<_Tile>::__value;
 
-constexpr _CCCL_HOST_DEVICE auto __grid_size(
+constexpr _CCCL_HOST_DEVICE __index_type __grid_size(
   __index_type __num,
   ::cuda::std::int32_t __cg_size    = 1,
   ::cuda::std::int32_t __stride     = __default_stride(),

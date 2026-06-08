@@ -20,8 +20,8 @@ namespace cudax = cuda::experimental;
 
 C2H_TEST("cuco make_valid_capacity rounding and validation", "[capacity]")
 {
-  using probing        = cudax::cuco::double_hashing<1, cudax::cuco::hash<int>>;
-  constexpr int bucket = 1;
+  using probing                         = cudax::cuco::double_hashing<1, cudax::cuco::hash<int>>;
+  [[maybe_unused]] constexpr int bucket = 1;
 
   static_assert(cudax::cuco::is_double_hashing_v<probing>, "scheme is double hashing");
 
@@ -41,8 +41,8 @@ C2H_TEST("cuco make_valid_capacity rounding and validation", "[capacity]")
 
   // cuCollections extent_test parity: double hashing, cg_size 2, bucket_size 4.
   // 1234 rounds up to next_prime(ceil(1234 / 8) = 155) = 157, times the stride 8 -> 1256.
-  using dh4             = cudax::cuco::double_hashing<2, cudax::cuco::hash<int>>;
-  constexpr int bucket4 = 4;
+  using dh4                              = cudax::cuco::double_hashing<2, cudax::cuco::hash<int>>;
+  [[maybe_unused]] constexpr int bucket4 = 4;
   static_assert(cudax::cuco::make_valid_capacity<dh4, bucket4>(::cuda::std::size_t{1234}) == ::cuda::std::size_t{1256},
                 "compile-time valid capacity matches the cuCollections extent test");
   REQUIRE(cudax::cuco::make_valid_capacity<dh4, bucket4>(::cuda::std::size_t{1234}) == ::cuda::std::size_t{1256});

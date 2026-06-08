@@ -42,10 +42,10 @@ using probing_kinds = c2h::type_list<_int_c<0>, _int_c<1>>; // 0 = linear probin
 
 C2H_TEST("static_map insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
-  using key_type            = c2h::get<0, TestType>;
-  constexpr int cg_size     = c2h::get<1, TestType>::value;
-  constexpr int bucket_size = c2h::get<2, TestType>::value;
-  constexpr int probing     = c2h::get<3, TestType>::value;
+  using key_type                             = c2h::get<0, TestType>;
+  [[maybe_unused]] constexpr int cg_size     = c2h::get<1, TestType>::value;
+  [[maybe_unused]] constexpr int bucket_size = c2h::get<2, TestType>::value;
+  [[maybe_unused]] constexpr int probing     = c2h::get<3, TestType>::value;
 
   using hasher = cudax::cuco::hash<key_type>;
   using probing_type =

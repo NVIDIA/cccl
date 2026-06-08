@@ -47,8 +47,8 @@ C2H_TEST("static_map static capacity — valid capacity and capacity_v", "[capac
 {
   // Double hashing rounds a requested slot count up to a prime-cycle capacity, so the valid capacity
   // must be computed from the probing scheme and bucket size before it can name a static map type.
-  using probing        = cudax::cuco::double_hashing<1, cudax::cuco::hash<int>>;
-  constexpr int bucket = 1;
+  using probing                         = cudax::cuco::double_hashing<1, cudax::cuco::hash<int>>;
+  [[maybe_unused]] constexpr int bucket = 1;
 
   constexpr ::cuda::std::size_t requested = 1000;
   constexpr auto valid                    = cudax::cuco::make_valid_capacity<probing, bucket>(requested);
