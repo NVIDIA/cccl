@@ -26,7 +26,10 @@
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/empty.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -75,23 +78,12 @@ template <class _Tp>
 using __element_type_of_t = typename __element_type_of<::cuda::std::remove_cvref_t<_Tp>>::type;
 
 // =====================================================================
-// __is_sequence_v / __is_single_value_v
+// __is_sequence_v
 // =====================================================================
 
 template <class _Tp>
 inline constexpr bool __is_sequence_v =
-  !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, __element_type_of_t<_Tp>>;
-
-template <class _Tp>
-inline constexpr bool __is_single_value_v = !__is_sequence_v<_Tp>;
-
-template <class _Tp, class = void>
-inline constexpr bool __is_iterable_v = false;
-
-template <class _Tp>
-inline constexpr bool __is_iterable_v<_Tp,
-                                      ::cuda::std::void_t<decltype(::cuda::std::declval<const _Tp&>().begin()),
-                                                          decltype(::cuda::std::declval<const _Tp&>().end())>> = true;
+  ::cuda::std::is_array_v<::cuda::std::remove_cvref_t<_Tp>> || ::cuda::std::ranges::range<_Tp>;
 
 // =====================================================================
 // __constant
@@ -121,7 +113,9 @@ struct __constant_sequence
   using value_type     = ::cuda::std::remove_cvref_t<decltype(_Value)>;
   using __element_type = __element_type_of_t<value_type>;
 
-  static_assert(__is_sequence_v<value_type>, "constant sequence arguments must have a distinct element type");
+  static_assert(__is_sequence_v<value_type>, "The value type of __constant_sequence must be a range or an array");
+  static_assert(!::cuda::std::ranges::__empty::__fn{}(_Value),
+                "The value type of __constant_sequence must be a non-empty sequence");
 
   [[nodiscard]] _CCCL_API static constexpr value_type value() noexcept
   {
@@ -208,7 +202,7 @@ private:
 
   _CCCL_API constexpr void __validate_value() const noexcept
   {
-    if constexpr (__is_iterable_v<_Arg> && ::cuda::std::is_arithmetic_v<__element_type>)
+    if constexpr (__is_sequence_v<_Arg> && ::cuda::std::is_arithmetic_v<__element_type>)
     {
       for (const auto& __a : __arg_)
       {
@@ -492,46 +486,6 @@ template <class _Arg, class _StaticBounds>
   return ::cuda::std::move(__arg.__arg_);
 }
 
-template <auto _Value>
-_CCCL_API constexpr auto __constant_compute_lowest() noexcept
-{
-  return _Value;
-}
-
-template <auto _Value>
-_CCCL_API constexpr auto __constant_compute_highest() noexcept
-{
-  return _Value;
-}
-
-template <auto _Value>
-_CCCL_API constexpr auto __constant_sequence_compute_lowest() noexcept
-{
-  using _ElementType = __element_type_of_t<::cuda::std::remove_cvref_t<decltype(_Value)>>;
-  auto __first       = _Value.begin();
-  auto __last        = _Value.end();
-
-  if (__first == __last)
-  {
-    return ::cuda::std::numeric_limits<_ElementType>::lowest();
-  }
-  return static_cast<_ElementType>(*::cuda::std::min_element(__first, __last));
-}
-
-template <auto _Value>
-_CCCL_API constexpr auto __constant_sequence_compute_highest() noexcept
-{
-  using _ElementType = __element_type_of_t<::cuda::std::remove_cvref_t<decltype(_Value)>>;
-  auto __first       = _Value.begin();
-  auto __last        = _Value.end();
-
-  if (__first == __last)
-  {
-    return (::cuda::std::numeric_limits<_ElementType>::max)();
-  }
-  return static_cast<_ElementType>(*::cuda::std::max_element(__first, __last));
-}
-
 // =====================================================================
 // __traits
 // =====================================================================
@@ -547,7 +501,7 @@ struct __traits_impl
   using element_type                    = __element_type_of_t<_Tp>;
   static constexpr bool is_constant     = false;
   static constexpr bool is_deferred     = false;
-  static constexpr bool is_single_value = __is_single_value_v<_Tp>;
+  static constexpr bool is_single_value = !__is_sequence_v<_Tp>;
   static constexpr element_type lowest  = ::cuda::std::numeric_limits<element_type>::lowest();
   static constexpr element_type highest = (::cuda::std::numeric_limits<element_type>::max)();
 };
@@ -560,8 +514,8 @@ struct __traits_impl<__constant<_Value>>
   static constexpr bool is_constant     = true;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = true;
-  static constexpr element_type lowest  = __constant_compute_lowest<_Value>();
-  static constexpr element_type highest = __constant_compute_highest<_Value>();
+  static constexpr element_type lowest  = _Value;
+  static constexpr element_type highest = _Value;
 };
 
 template <class _Arg, class _StaticBounds>
@@ -588,8 +542,8 @@ struct __traits_impl<__constant_sequence<_Value>>
   static constexpr bool is_constant     = true;
   static constexpr bool is_deferred     = false;
   static constexpr bool is_single_value = false;
-  static constexpr element_type lowest  = __constant_sequence_compute_lowest<_Value>();
-  static constexpr element_type highest = __constant_sequence_compute_highest<_Value>();
+  static constexpr element_type lowest  = *::cuda::std::min_element(_Value.begin(), _Value.end());
+  static constexpr element_type highest = *::cuda::std::max_element(_Value.begin(), _Value.end());
 };
 
 template <class _Arg, class _StaticBounds>
@@ -657,13 +611,13 @@ _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 template <auto _Value>
 [[nodiscard]] _CCCL_API constexpr auto __lowest_(__constant<_Value>) noexcept
 {
-  return __constant_compute_lowest<_Value>();
+  return _Value;
 }
 
 template <auto _Value>
 [[nodiscard]] _CCCL_API constexpr auto __lowest_(__constant_sequence<_Value>) noexcept
 {
-  return __constant_sequence_compute_lowest<_Value>();
+  return *::cuda::std::min_element(_Value.begin(), _Value.end());
 }
 
 template <class _Arg, class _StaticBounds>
@@ -707,13 +661,13 @@ _CCCL_REQUIRES((!__is_wrapper_v<::cuda::std::remove_cv_t<_Tp>>) )
 template <auto _Value>
 [[nodiscard]] _CCCL_API constexpr auto __highest_(__constant<_Value>) noexcept
 {
-  return __constant_compute_highest<_Value>();
+  return _Value;
 }
 
 template <auto _Value>
 [[nodiscard]] _CCCL_API constexpr auto __highest_(__constant_sequence<_Value>) noexcept
 {
-  return __constant_sequence_compute_highest<_Value>();
+  return *::cuda::std::max_element(_Value.begin(), _Value.end());
 }
 
 template <class _Arg, class _StaticBounds>
