@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_merge_sort.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/util_device.cuh>
@@ -503,16 +504,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   constexpr MergeSortPolicy active_policy = vsmem_adapted_agents::policy;
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
     NV_IF_TARGET(NV_IS_HOST, ({
-                   std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceMergeSort to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
+                   if (logging_enabled())
+                   {
+                     std::stringstream ss;
+                     ss << active_policy;
+                     log_always("Dispatching DeviceMergeSort to compute capability %d.%d with tuning: %s\n",
+                                cc.major_cap(),
+                                cc.minor_cap(),
+                                ss.str().c_str());
+                   }
                  }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
     _CCCL_ASSERT(1 <= active_policy.threads_per_block && active_policy.threads_per_block <= 1024,
                  "Number of threads per block need to be inside [1;1024]");

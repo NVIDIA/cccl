@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -259,14 +260,12 @@ struct DispatchReduce
       return cudaSuccess;
     }
 
-// Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-            "%d items per thread\n",
-            policy.SingleTile().ThreadsPerBlock(),
-            (long long) stream,
-            policy.SingleTile().ItemsPerThread());
-#endif // CUB_DEBUG_LOG
+    // Log single_reduce_sweep_kernel configuration
+    detail::log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+                "%d items per thread\n",
+                policy.SingleTile().ThreadsPerBlock(),
+                (long long) stream,
+                policy.SingleTile().ItemsPerThread());
 
     // Invoke single_reduce_sweep_kernel
     launcher_factory(1, policy.SingleTile().ThreadsPerBlock(), 0, stream)
@@ -357,16 +356,15 @@ struct DispatchReduce
     // Get grid size for device_reduce_sweep_kernel
     int reduce_grid_size = even_share.grid_size;
 
-// Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            (unsigned long) reduce_grid_size,
-            active_policy.Reduce().ThreadsPerBlock(),
-            (long long) stream,
-            active_policy.Reduce().ItemsPerThread(),
-            reduce_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    // Log device_reduce_sweep_kernel configuration
+    detail::log(
+      "Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+      "per thread, %d SM occupancy\n",
+      (unsigned long) reduce_grid_size,
+      active_policy.Reduce().ThreadsPerBlock(),
+      (long long) stream,
+      active_policy.Reduce().ItemsPerThread(),
+      reduce_config.sm_occupancy);
 
     // Invoke DeviceReduceKernel
     launcher_factory(reduce_grid_size, active_policy.Reduce().ThreadsPerBlock(), 0, stream)
@@ -384,14 +382,12 @@ struct DispatchReduce
       return error;
     }
 
-// Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-            "%d items per thread\n",
-            active_policy.SingleTile().ThreadsPerBlock(),
-            (long long) stream,
-            active_policy.SingleTile().ItemsPerThread());
-#endif // CUB_DEBUG_LOG
+    // Log single_reduce_sweep_kernel configuration
+    detail::log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+                "%d items per thread\n",
+                active_policy.SingleTile().ThreadsPerBlock(),
+                (long long) stream,
+                active_policy.SingleTile().ItemsPerThread());
 
     // Invoke DeviceReduceSingleTileKernel
     launcher_factory(1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream)
@@ -644,16 +640,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   // Get grid size for device_reduce_sweep_kernel
   const int reduce_grid_size = even_share.grid_size;
 
-// Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
-          "per thread, %d SM occupancy\n",
-          (unsigned long) reduce_grid_size,
-          active_policy.reduce.threads_per_block,
-          (long long) stream,
-          active_policy.reduce.items_per_thread,
-          sm_occupancy);
-#endif // CUB_DEBUG_LOG
+  // Log device_reduce_sweep_kernel configuration
+  log("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+      "per thread, %d SM occupancy\n",
+      (unsigned long) reduce_grid_size,
+      active_policy.reduce.threads_per_block,
+      (long long) stream,
+      active_policy.reduce.items_per_thread,
+      sm_occupancy);
 
   // Invoke DeviceReduceKernel
   launcher_factory(reduce_grid_size, active_policy.reduce.threads_per_block, 0, stream)
@@ -671,14 +665,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
     return error;
   }
 
-// Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          active_policy.single_tile.threads_per_block,
-          (long long) stream,
-          active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+  // Log single_reduce_sweep_kernel configuration
+  log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+      "%d items per thread\n",
+      active_policy.single_tile.threads_per_block,
+      (long long) stream,
+      active_policy.single_tile.items_per_thread);
 
   // Invoke DeviceReduceSingleTileKernel
   launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
@@ -770,16 +762,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const reduce_policy active_policy = policy_selector(cc);
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format reduce_policy
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
+                 if (logging_enabled())
+                 {
+                   std::stringstream ss;
+                   ss << active_policy;
+                   log_always("Dispatching DeviceReduce to compute capability %d.%d with tuning: %s\n",
+                              cc.major_cap(),
+                              cc.minor_cap(),
+                              ss.str().c_str());
+                 }
                }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
   // Check for small, single tile size
   if (num_items
@@ -793,13 +788,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-            "%d items per thread\n",
-            active_policy.single_tile.threads_per_block,
-            (long long) stream,
-            active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+    log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+        "%d items per thread\n",
+        active_policy.single_tile.threads_per_block,
+        (long long) stream,
+        active_policy.single_tile.items_per_thread);
 
     // Invoke single_reduce_sweep_kernel
     launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)

@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan_by_key.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -455,9 +456,8 @@ struct DispatchScanByKey
 
     // Log init_kernel configuration
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    detail::log(
+      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -495,15 +495,14 @@ struct DispatchScanByKey
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread\n",
-              start_tile,
-              scan_grid_size,
-              active_policy.threads_per_block,
-              (long long) stream,
-              active_policy.items_per_thread);
-#endif // CUB_DEBUG_LOG
+      detail::log(
+        "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
+        "per thread\n",
+        start_tile,
+        scan_grid_size,
+        active_policy.threads_per_block,
+        (long long) stream,
+        active_policy.items_per_thread);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -640,16 +639,19 @@ struct DispatchScanByKey
       return error;
     }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format scan_by_key_policy
     NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << policy_selector(cc);
-                   _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
+                   if (detail::logging_enabled())
+                   {
+                     ::std::stringstream ss;
+                     ss << policy_selector(cc);
+                     detail::log_always("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
+                                        cc.major_cap(),
+                                        cc.minor_cap(),
+                                        ss.str().c_str());
+                   }
                  }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
@@ -743,16 +745,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format scan_by_key_policy
   NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
+                 if (logging_enabled())
+                 {
+                   ::std::stringstream ss;
+                   ss << policy_selector(cc);
+                   log_always("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
+                              cc.major_cap(),
+                              cc.minor_cap(),
+                              ss.str().c_str());
+                 }
                }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
   struct fake_policy
   {

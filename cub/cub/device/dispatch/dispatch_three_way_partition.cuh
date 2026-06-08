@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
@@ -226,12 +227,10 @@ struct dispatch_three_way_partition_if
       // Log three_way_partition_init_kernel configuration
       const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-              init_grid_size,
-              INIT_KERNEL_THREADS,
-              reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+      detail::log("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
+                  init_grid_size,
+                  INIT_KERNEL_THREADS,
+                  reinterpret_cast<long long>(stream));
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
       if (const auto error = CubDebug(
@@ -260,8 +259,7 @@ struct dispatch_three_way_partition_if
         return cudaSuccess;
       }
 
-// Log select_if_kernel configuration
-#ifdef CUB_DEBUG_LOG
+      // Log select_if_kernel configuration
       {
         // Get SM occupancy for select_if_kernel
         int range_select_sm_occupancy;
@@ -273,15 +271,15 @@ struct dispatch_three_way_partition_if
           return error;
         }
 
-        _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
-                "items per thread, %d SM occupancy\n",
-                current_num_tiles,
-                threads_per_block,
-                reinterpret_cast<long long>(stream),
-                items_per_thread,
-                range_select_sm_occupancy);
+        detail::log(
+          "Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
+          "items per thread, %d SM occupancy\n",
+          current_num_tiles,
+          threads_per_block,
+          reinterpret_cast<long long>(stream),
+          items_per_thread,
+          range_select_sm_occupancy);
       }
-#endif // CUB_DEBUG_LOG
 
       // Invoke select_if_kernel
       if (const auto error = CubDebug(
@@ -483,16 +481,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ThreeWayPartitionPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
   NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceThreeWayPartition to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
+                 if (logging_enabled())
+                 {
+                   ::std::stringstream ss;
+                   ss << active_policy;
+                   log_always("Dispatching DeviceThreeWayPartition to compute capability %d.%d with tuning: %s\n",
+                              cc.major_cap(),
+                              cc.minor_cap(),
+                              ss.str().c_str());
+                 }
                }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
   static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr int init_kernel_threads               = 256;

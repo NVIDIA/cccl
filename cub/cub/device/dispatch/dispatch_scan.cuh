@@ -26,6 +26,7 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
@@ -382,9 +383,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
     // Log init_kernel configuration
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    detail::log(
+      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -425,17 +425,16 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
     const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              start_tile,
-              scan_grid_size,
-              policy.Scan().ThreadsPerBlock(),
-              (long long) stream,
-              policy.Scan().ItemsPerThread(),
-              scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+      // Log scan_kernel configuration
+      detail::log(
+        "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
+        "per thread, %d SM occupancy\n",
+        start_tile,
+        scan_grid_size,
+        policy.Scan().ThreadsPerBlock(),
+        (long long) stream,
+        policy.Scan().ItemsPerThread(),
+        scan_sm_occupancy);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -585,12 +584,10 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
       constexpr auto init_kernel_threads = 128;
       const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
 
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
-              init_grid_size,
-              init_kernel_threads,
-              (long long) stream);
-#  endif // CUB_DEBUG_LOG
+      detail::log("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
+                  init_grid_size,
+                  init_kernel_threads,
+                  (long long) stream);
 
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size,
@@ -622,9 +619,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
     {
       const int block_dim = detail::scan::num_total_threads(lookahead_policy);
 
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
-#  endif // CUB_DEBUG_LOG
+      detail::log(
+        "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
 
       if (const auto error = CubDebug(
             launcher_factory(grid_dim, block_dim, smem_size, stream, /* dependent_launch */ ptx_version >= 900)
@@ -709,9 +705,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
     constexpr int init_kernel_threads = 128;
     const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    detail::log(
+      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -752,17 +747,16 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceScan") DispatchScan
     const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              start_tile,
-              scan_grid_size,
-              active_policy.threads_per_block,
-              (long long) stream,
-              active_policy.items_per_thread,
-              scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+      // Log scan_kernel configuration
+      detail::log(
+        "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
+        "per thread, %d SM occupancy\n",
+        start_tile,
+        scan_grid_size,
+        active_policy.threads_per_block,
+        (long long) stream,
+        active_policy.items_per_thread,
+        scan_sm_occupancy);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -1368,16 +1362,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format scan_policy
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceScan to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
+                 if (logging_enabled())
+                 {
+                   std::stringstream ss;
+                   ss << policy_selector(cc);
+                   log_always("Dispatching DeviceScan to compute capability %d.%d with tuning: %s\n",
+                              cc.major_cap(),
+                              cc.minor_cap(),
+                              ss.str().c_str());
+                 }
                }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return invoke(

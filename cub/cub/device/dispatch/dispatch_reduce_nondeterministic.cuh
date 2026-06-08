@@ -19,6 +19,7 @@
 #endif // no system header
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_nondeterministic.cuh>
@@ -182,16 +183,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const reduce_nondeterministic_policy active_policy = policy_selector(cc);
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format reduce_nondeterministic_policy
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceReduceNondeterministic to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
+                 if (logging_enabled())
+                 {
+                   std::stringstream ss;
+                   ss << active_policy;
+                   log_always("Dispatching DeviceReduceNondeterministic to compute capability %d.%d with tuning: %s\n",
+                              cc.major_cap(),
+                              cc.minor_cap(),
+                              ss.str().c_str());
+                 }
                }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
   // No temp storage needed but keep API consistent
   if (d_temp_storage == nullptr)
@@ -227,15 +231,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
-          "per thread, %d SM occupancy\n",
-          (unsigned long long) reduce_grid_size,
-          active_policy.reduce.threads_per_block,
-          (void*) stream,
-          active_policy.reduce.items_per_thread,
-          sm_occupancy);
-#endif // CUB_DEBUG_LOG
+  log("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
+      "per thread, %d SM occupancy\n",
+      (unsigned long long) reduce_grid_size,
+      active_policy.reduce.threads_per_block,
+      (void*) stream,
+      active_policy.reduce.items_per_thread,
+      sm_occupancy);
 
   // Invoke NondeterministicDeviceReduceAtomicKernel
   launcher_factory(reduce_grid_size, active_policy.reduce.threads_per_block, 0, stream)
