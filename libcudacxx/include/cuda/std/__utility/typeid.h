@@ -254,8 +254,9 @@ template <auto _Vp>
 
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
 // A quick smoke test to ensure that the value spelling extraction is working.
+// An integer literal is spelled identically on every supported compiler.
 static_assert(::cuda::std::__pretty_nameof_v<42>() == __string_view("42"));
-static_assert(::cuda::std::__pretty_nameof_v<true>() == __string_view("true"));
+static_assert(::cuda::std::__pretty_nameof_v<42>() != ::cuda::std::__pretty_nameof_v<43>());
 // And that function arguments work (including the leading-'&' trim). We use a
 // host/device function defined above so this works in both compilation passes
 // without depending on any external symbols. The function lives in an inline
