@@ -19,7 +19,7 @@
 // produced by a counting iterator that restarts at 0 for every segment, so indices are not (pre-)materialized in global
 // memory
 template <typename KeyT, typename IndexT, int MaxSegmentSize, int K>
-void variable_seg_size_topk_indexed(
+void decode_style_variable_topk_indexed(
   nvbench::state& state, nvbench::type_list<KeyT, IndexT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
 {
   if constexpr (K > MaxSegmentSize)
@@ -91,7 +91,7 @@ void variable_seg_size_topk_indexed(
 // Index type is a compile-time axis: i32 for now, extensible to i64.
 using index_type_list = nvbench::type_list<cuda::std::int32_t>;
 
-NVBENCH_BENCH_TYPES(variable_seg_size_topk_indexed,
+NVBENCH_BENCH_TYPES(decode_style_variable_topk_indexed,
                     NVBENCH_TYPE_AXES(key_type_list, index_type_list, max_segment_size_list, k_list))
   .set_name("decode_style_variable_topk_indexed")
   .set_type_axes_names({"KeyT{ct}", "IndexT{ct}", "MaxSegmentSize{ct}", "K{ct}"})

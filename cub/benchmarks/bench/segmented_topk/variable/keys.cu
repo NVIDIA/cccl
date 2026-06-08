@@ -15,8 +15,8 @@
 #include "common.cuh"
 
 template <typename KeyT, int MaxSegmentSize, int K>
-void variable_seg_size_topk_keys(nvbench::state& state,
-                                 nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
+void decode_style_variable_topk_keys(
+  nvbench::state& state, nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
 {
   if constexpr (K > MaxSegmentSize)
   {
@@ -76,8 +76,8 @@ void variable_seg_size_topk_keys(nvbench::state& state,
   });
 }
 
-NVBENCH_BENCH_TYPES(variable_seg_size_topk_keys, NVBENCH_TYPE_AXES(key_type_list, max_segment_size_list, k_list))
-  .set_name("decode_style_variable_topk")
+NVBENCH_BENCH_TYPES(decode_style_variable_topk_keys, NVBENCH_TYPE_AXES(key_type_list, max_segment_size_list, k_list))
+  .set_name("decode_style_variable_topk_keys")
   .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "K{ct}"})
   .add_int64_axis("NumSegments", {1, 2, 4, 8, 16, 32})
   .add_string_axis("Pattern", valid_patterns);
