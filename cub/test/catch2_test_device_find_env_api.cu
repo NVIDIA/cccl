@@ -7,6 +7,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -111,3 +112,46 @@ C2H_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]")
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_output == expected);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin find-if-policy-selector
+struct FindPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::FindPolicy
+  {
+    return {.threads_per_block = 128,
+            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 7,
+            .vec_size          = 4,
+            .load_modifier     = cub::LOAD_LDG};
+  }
+};
+// example-end find-if-policy-selector
+
+C2H_TEST("cub::DeviceFind::FindIf env-based API with tuning", "[find][env]")
+{
+  // example-begin find-if-tuning
+  auto d_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};
+  auto d_out = thrust::device_vector<int>(1, thrust::no_init);
+
+  const auto error = cub::DeviceFind::FindIf(
+    d_in.begin(),
+    d_out.begin(),
+    [] __host__ __device__(int v) {
+      return v > 4;
+    },
+    d_in.size(),
+    cuda::execution::tune(FindPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceFind::FindIf failed with status: " << error << '\n';
+  }
+
+  int expected = 5;
+  // example-end find-if-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out[0] == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020
