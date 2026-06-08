@@ -64,7 +64,7 @@ void cuda_launcher(interpreted_spec interpreted_policy, Fun&& f, void** args, St
   lconfig.dynamicSmemBytes = mem_config[2];
   lconfig.stream           = stream;
 
-  cuda_safe_call(cudaLaunchKernelExC(&lconfig, (void*) f, args));
+  cuda_try<cudaLaunchKernelExC>(&lconfig, (void*) f, args);
 }
 
 template <typename interpreted_spec, typename Fun>
@@ -81,7 +81,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
   kconfig.kernelParams   = args;
   kconfig.sharedMemBytes = static_cast<int>(mem_config[2]);
 
-  cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
+  n = cuda_try<cudaGraphAddKernelNode>(g, nullptr, 0, &kconfig);
 
   // Enable cooperative kernel if necessary by updating the node attributes
 
@@ -89,7 +89,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
 
   cudaKernelNodeAttrValue val;
   val.cooperative = cooperative_kernel ? 1 : 0;
-  cuda_safe_call(cudaGraphKernelNodeSetAttribute(n, cudaKernelNodeAttributeCooperative, &val));
+  cuda_try<cudaGraphKernelNodeSetAttribute>(n, cudaKernelNodeAttributeCooperative, &val);
 }
 
 template <typename Fun, typename interpreted_spec, typename Arg>
@@ -120,20 +120,25 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     if (th_mem_config[1] > 0)
     {
-      cuda_safe_call(cudaMallocAsync(&th_dev_tmp_ptr, th_mem_config[1], stream));
+      cuda_try(cudaMallocAsync(&th_dev_tmp_ptr, th_mem_config[1], stream));
       th.set_device_tmp(th_dev_tmp_ptr);
     }
+
+    // Free the temporary device memory on the way out, even if the launch throws.
+    // cuda_safe_call (not cuda_try) because SCOPE(exit) is noexcept.
+    SCOPE(exit)
+    {
+      if (th_dev_tmp_ptr)
+      {
+        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+      }
+    };
 
     auto kernel_args = tuple_prepend(mv(th), mv(arg));
     using args_type  = decltype(kernel_args);
     void* all_args[] = {&f, &kernel_args};
 
     cuda_launcher(interpreted_policy, reserved::launch_kernel<Fun, args_type>, all_args, stream);
-
-    if (th_mem_config[1] > 0)
-    {
-      cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
-    }
   };
 }
 
@@ -358,20 +363,12 @@ public:
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
 
-    int device;
-    cudaEvent_t start_event, end_event;
-
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
-    {
-      if (record_time)
-      {
-        cudaGetDevice(&device); // We will use this to force it during the next run
-        // Events must be created here to avoid issues with multi-gpu
-        cuda_safe_call(cudaEventCreate(&start_event));
-        cuda_safe_call(cudaEventCreate(&end_event));
-        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
-      }
-    }
+    int device              = -1;
+    cudaEvent_t start_event = nullptr, end_event = nullptr;
+    // Set only once both timing events exist and the start event has been recorded.
+    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
+    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
+    bool timing_active = false;
 
     const size_t grid_size = e_place.size();
 
@@ -403,8 +400,11 @@ public:
           deallocateManagedMemory(hostMemoryArrivedList, grid_size, t.get_stream());
         }
 
-        if (record_time)
+        if (timing_active)
         {
+          // These run inside the enclosing SCOPE(exit) body, which is noexcept;
+          // keep cuda_safe_call so a CUDA error aborts rather than throwing
+          // through the guard (which would call std::terminate).
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
 
@@ -425,6 +425,22 @@ public:
 
       t.clear();
     };
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        device = cuda_try<cudaGetDevice>(); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu.
+        // cudaEventCreate is an overload set (cuda_runtime.h adds a flags overload),
+        // so cuda_try<cudaEventCreate> cannot name it; use the non-overloaded
+        // cudaEventCreateWithFlags with the default flags (equivalent to cudaEventCreate).
+        start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+        cuda_try<cudaEventRecord>(start_event, t.get_stream());
+        timing_active = true;
+      }
+    }
 
     /* Should only be allocated / deallocated if the last level used is system wide. Unnecessary and wasteful
      * otherwise. */

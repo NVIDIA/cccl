@@ -90,6 +90,19 @@ class _SegmentedReduce:
         if max_segment_size is None:
             max_segment_size = 0  # CCCL.c treats 0 as "not specified"
 
+        if max_segment_size > 0:
+            try:
+                from .._build_info import USING_V2  # type: ignore[import-not-found]
+            except ImportError:
+                USING_V2 = False
+            if USING_V2:
+                import warnings
+
+                warnings.warn(
+                    "max_segment_size is not used by the v2 backend and will be ignored",
+                    stacklevel=4,
+                )
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)

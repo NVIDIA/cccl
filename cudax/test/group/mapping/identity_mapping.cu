@@ -42,11 +42,12 @@ __device__ void test_identity_mapping(Config config)
     const ThreadsInWarpMappingResult prev_mapping_result;
 
     static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                    parent_group, prev_mapping_result))>);
-    static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                    cuda::gpu_thread, parent_group, prev_mapping_result))>);
+    static_assert(
+      noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
     const Mapping mapping;
-    auto result  = mapping.map(parent_group, prev_mapping_result);
+    auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
     using Result = decltype(result);
 
     static_assert(cuda::std::is_same_v<Result, ThreadsInWarpMappingResult>);
