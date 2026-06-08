@@ -62,26 +62,15 @@ class __elements_view_iterator;
 template <class _View, size_t _Np, bool _Const>
 class __elements_view_sentinel;
 
-#if _CCCL_HAS_CONCEPTS()
-template <class _Tp, size_t _Np>
-concept __has_tuple_element = __tuple_like<_Tp> && (_Np < tuple_size_v<_Tp>);
-
-template <class _Tp, size_t _Np>
-concept __returnable_element = is_reference_v<_Tp> || move_constructible<tuple_element_t<_Np, _Tp>>;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp, class _Np>
 _CCCL_CONCEPT_FRAGMENT(__has_tuple_element_,
-                       requires()(requires(__tuple_like<_Tp>), requires(_Np::value < tuple_size<_Tp>::value)));
+                       requires()(requires(__tuple_like<_Tp>), requires(_Np::value < tuple_size_v<_Tp>)));
 
 template <class _Tp, size_t _Np>
 _CCCL_CONCEPT __has_tuple_element = _CCCL_FRAGMENT(__has_tuple_element_, _Tp, integral_constant<size_t, _Np>);
 
-template <class _Tp, size_t _Np, class = void>
-inline constexpr bool __returnable_element = is_reference_v<_Tp>;
-
 template <class _Tp, size_t _Np>
-inline constexpr bool __returnable_element<_Tp, _Np, enable_if_t<move_constructible<tuple_element_t<_Np, _Tp>>>> = true;
-#endif // !_CCCL_HAS_CONCEPTS()
+_CCCL_CONCEPT __returnable_element = is_reference_v<_Tp> || move_constructible<tuple_element_t<_Np, _Tp>>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <input_range _View, size_t _Np>
