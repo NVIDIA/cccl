@@ -1154,7 +1154,6 @@ void stf_task_destroy(stf_task_handle t);
 
 void stf_task_enable_capture(stf_task_handle t);
 
-//!
 //! \brief Get grid dimensions of a task's exec place
 //!
 //! When the task's execution place is a grid (size > 1), writes its
@@ -1180,10 +1179,8 @@ void stf_task_enable_capture(stf_task_handle t);
 //! \endcode
 //!
 //! \see stf_task_get_custream_at_index()
-
 int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims);
 
-//!
 //! \brief Get the CUDA stream for a specific grid index
 //!
 //! When the task's exec place is a grid, returns the CUstream for the
@@ -1209,7 +1206,6 @@ int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims);
 //! \endcode
 //!
 //! \see stf_task_get_grid_dims()
-
 int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream);
 
 //! \}
