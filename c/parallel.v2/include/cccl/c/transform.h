@@ -16,6 +16,7 @@
 #endif // !CCCL_C_EXPERIMENTAL
 
 #include <cuda.h>
+#include <stdint.h>
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
