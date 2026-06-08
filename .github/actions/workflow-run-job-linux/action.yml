@@ -112,6 +112,8 @@ runs:
         # Never fallback to building locally, fail instead
         SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
         SCCACHE_IDLE_TIMEOUT: 0
+        GH_RUN_NUMBER: ${{github.run_number}}
+        GH_RUN_ATTEMPT: ${{github.run_attempt}}
       run: |
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
@@ -216,6 +218,25 @@ runs:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh
 
+        # Temporary: only use the build cluster for every 1 out of 20 runs
+        if test $(((GH_RUN_NUMBER + GH_RUN_ATTEMPT) % 20)) -eq 0; then
+          SCCACHE_DIST_URL="https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com"
+
+          SCCACHE_DIST_AUTH_TOKEN="$(
+            curl -fsSL -H "Authorization: Bearer $(
+                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com"  |
+                jq -r '.value'
+              )" https://token.rapids.nvidia.com/gh/token/exchange |
+            jq -r '.token'
+          )"
+
+          echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
+
+          extra_launch_args+=(--env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL")
+          extra_launch_args+=(--env "SCCACHE_DIST_AUTH_TOKEN=$SCCACHE_DIST_AUTH_TOKEN")
+        fi
+
         exit_code=0
 
         # Launch this container using the host's docker daemon
@@ -237,13 +258,6 @@ runs:
           --env "JOB_ID=$JOB_ID" \
           --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
           --env "RUNNER_TEMP=$RUNNER_TEMP" \
-          --env "SCCACHE_DIST_AUTH_TOKEN=$(
-            curl -fsSL -H "Authorization: Bearer $(
-              curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-                "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
-            | jq -r '.value'
-            )" https://token.rapids.nvidia.com/gh/token/exchange \
-          | jq -r '.token')" \
           ${ENVARGS:-} \
           --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
           --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
