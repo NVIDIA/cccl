@@ -13,23 +13,36 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstdlib>
 #include <cuda/std/string_view>
-
-#include <cstdlib>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
+//! Returns if logging is enabled
+_CCCL_HOST_API inline bool logging_enabled()
+{
+  static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
+  return enabled;
+}
+
 // TODO(bgruber): switch to an interface like std::print once davebayer has implemented <cuda/std/format>
-inline void log(::cuda::std::string_view message)
+//! Logs the message, independently of whether logging is enabled
+_CCCL_HOST_API inline void log_always([[maybe_unused]] ::cuda::std::string_view message)
 {
 #if _CCCL_HOSTED()
-  static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
-  if (enabled)
-  {
-    ::printf("%.*s", static_cast<int>(message.size()), message.data());
-  }
+  ::printf("%.*s", static_cast<int>(message.size()), message.data());
 #endif // _CCCL_HOSTED()
+}
+
+// TODO(bgruber): switch to an interface like std::print once davebayer has implemented <cuda/std/format>
+//! Logs the message when logging is enabled
+_CCCL_HOST_API inline void log(::cuda::std::string_view message)
+{
+  if (logging_enabled())
+  {
+    log_always(message);
+  }
 }
 } // namespace detail
 CUB_NAMESPACE_END
