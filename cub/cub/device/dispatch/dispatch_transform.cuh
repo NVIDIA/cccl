@@ -16,6 +16,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -471,16 +472,12 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     CUB_DETAIL_CONSTEXPR_ISH TransformPolicy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
                    ::std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceTransform to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
+                   ss << "Dispatching DeviceTransform to compute capability " << cc.major_cap() << '.' << cc.minor_cap()
+                      << " with tuning: " << active_policy << '\n';
+                   log(ss.str());
                  }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {
