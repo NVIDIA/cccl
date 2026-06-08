@@ -298,8 +298,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -475,8 +474,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -645,8 +643,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -872,8 +869,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1069,8 +1065,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1205,8 +1200,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1489,8 +1483,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1588,8 +1581,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1818,10 +1810,8 @@ struct DeviceScan
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
-  //! @param[in]
-  //!   d_temp_storage Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1908,9 +1898,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to the size in bytes of the `d_temp_storage` allocation
@@ -2029,10 +2017,8 @@ struct DeviceScan
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
-  //! @param[in]
-  //!   d_temp_storage Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to
-  //!   `temp_storage_bytes` and no work is done.
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2374,8 +2360,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2538,8 +2523,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //!  @param[in] d_temp_storage
-  //!    Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!    required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!    @devicestorage
   //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
@@ -2677,8 +2661,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //!  @param[in] d_temp_storage
-  //!    Device-accessible allocation of temporary storage.
-  //!    When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!    @devicestorage
   //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
@@ -2831,8 +2814,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //!  @param[in] d_temp_storage
-  //!    Device-accessible allocation of temporary storage.
-  //!    When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!    @devicestorage
   //!
   //!  @param[in,out] temp_storage_bytes
   //!    Reference to size in bytes of `d_temp_storage` allocation
