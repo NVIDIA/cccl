@@ -37,6 +37,7 @@
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_radix_sort.cuh>
 #include <cub/block/block_reduce.cuh>
+#include <cub/block/block_reduce_broadcast.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 // #include <cub/block/block_shift.cuh>
