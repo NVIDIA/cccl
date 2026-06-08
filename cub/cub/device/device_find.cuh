@@ -445,7 +445,7 @@ struct DeviceFind
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::FindIf");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
 
