@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from ._bindings import Op, OpKind
 from ._caching import CachableFunction, cache_with_registered_key_functions
+from ._device_code import DeviceCode
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -91,29 +92,26 @@ class _WellKnownOp(_OpAdapter):
 
 class RawOp(_OpAdapter):
     """
-    ``RawOp`` can be used to directly pass compiled device code (LTO-IR) implementing custom operators.
-
-    This is useful for users who wish to implement custom operators in C++ or another language,
-    or wish to use a different compilation pipeline than the default
-    (JIT compilation from Python callables using Numba CUDA).
+    ``RawOp`` lets you supply pre-compiled device code (LTO-IR) implementing a
+    custom operator, bypassing the default Numba-based JIT pipeline.
 
     Example:
-        The example below shows how to compile C++ device code to LTOIR and use it with
-        :func:`reduce_into <cuda.compute.algorithms.reduce_into>`:
+        Supplying C++ device code compiled to LTO-IR via NVRTC:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
             :language: python
             :start-after: # example-begin
 
     Args:
-        name: The ABI name of the operator
-        ltoir: bytes object containing the LTO-IR of the compiled operator
-        state: Optional bytes representing the operator's state
-        state_alignment: Alignment requirement for the state bytes (default: 1)
-        extra_ltoirs: Optional list of additional LTO-IRs to include during linking
+        name: The ABI name of the operator.
+        ltoir: Raw ``bytes`` of pre-compiled LTO-IR implementing the operator
+            (for example, produced by ``nvcc -dlto`` or NVRTC).
+        state: Optional bytes representing the operator's state.
+        state_alignment: Alignment requirement for the state bytes (default: 1).
+        extra_ltoirs: Optional list of additional LTO-IR ``bytes`` to link.
 
     Notes:
-        - The provided LTO-IR must define a function with the specified name and the correct signature.
+        - The provided code must define a function with the specified name and the correct signature.
         - The function must use untyped pointers for all parameters and return type. The function body
           is responsible for correctly interpreting the pointer arguments based on the expected input and output types.
           For stateless operators, the signature is
@@ -125,16 +123,22 @@ class RawOp(_OpAdapter):
              void func(void* state, void* arg1, void* arg2, ...)
     """
 
-    __slots__ = ["_ltoir", "_name", "_state", "_state_alignment", "_extra_ltoirs"]
+    __slots__ = [
+        "_ltoir",
+        "_name",
+        "_state",
+        "_state_alignment",
+        "_extra_ltoirs",
+    ]
 
     def __init__(
         self,
         *,
-        ltoir: bytes,
+        ltoir: bytes | DeviceCode,
         name: str,
         state: bytes = b"",
         state_alignment: int = 1,
-        extra_ltoirs: list[bytes] | None = None,
+        extra_ltoirs: list[bytes | DeviceCode] | None = None,
     ):
         self._ltoir = ltoir
         self._name = name
