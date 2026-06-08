@@ -78,6 +78,7 @@ class group
 
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   using _MappingResult       = decltype(::cuda::std::declval<const _Mapping&>().map(
+    ::cuda::std::declval<const _Unit&>(),
     ::cuda::std::declval<const _ParentGroup&>(),
     __get_initial_mapping_result(::cuda::std::declval<const _ParentGroup&>())));
   using _SynchronizerInstance =
@@ -91,9 +92,9 @@ class group
   _SynchronizerInstance __synchronizer_instance_;
 
   [[nodiscard]] _CCCL_DEVICE_API static _MappingResult
-  __do_mapping(const _Mapping& __mapping, const _ParentGroup& __parent) noexcept
+  __do_mapping(const _Unit& __unit, const _Mapping& __mapping, const _ParentGroup& __parent) noexcept
   {
-    const auto __mapping_result = __mapping.map(__parent, __get_initial_mapping_result(__parent));
+    const auto __mapping_result = __mapping.map(__unit, __parent, __get_initial_mapping_result(__parent));
     if (__mapping_result.is_valid())
     {
       _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
@@ -108,6 +109,7 @@ class group
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static _SynchronizerInstance __make_synchronizer_instance(
+    const _Unit& __unit,
     const _Synchronizer& __synchronizer,
     const _ParentGroup& __parent,
     const _Mapping& __mapping,
@@ -123,7 +125,7 @@ class group
         return _SynchronizerInstance::invalid();
       }
     }
-    return __synchronizer.make_instance(_Unit{}, __parent, __mapping, __mapping_result);
+    return __synchronizer.make_instance(__unit, __parent, __mapping, __mapping_result);
   }
 
 public:
@@ -141,9 +143,10 @@ public:
     const _Synchronizer& __synchronizer) noexcept
       : __hier_{__parent.hierarchy()}
       , __mapping_{__mapping}
-      , __mapping_result_{__do_mapping(__mapping_, __parent)}
+      , __mapping_result_{__do_mapping(__unit, __mapping_, __parent)}
       , __synchronizer_{__synchronizer}
-      , __synchronizer_instance_{__make_synchronizer_instance(__synchronizer_, __parent, __mapping_, __mapping_result_)}
+      , __synchronizer_instance_{
+          __make_synchronizer_instance(__unit, __synchronizer_, __parent, __mapping_, __mapping_result_)}
   {}
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
@@ -171,7 +174,7 @@ public:
 
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     // Skip the synchronization for threads that are not part of this group.
     if constexpr (!_MappingResult::is_always_exhaustive())
@@ -184,7 +187,7 @@ public:
     __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_);
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     // Skip the synchronization for threads that are not part of this group.
     if constexpr (!_MappingResult::is_always_exhaustive())
