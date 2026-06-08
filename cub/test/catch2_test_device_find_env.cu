@@ -39,7 +39,7 @@ struct is_greater_than_t
 template <int ThreadsPerBlock>
 struct find_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::detail::find::find_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::FindPolicy
   {
     return {ThreadsPerBlock, 4, 4, cub::LOAD_LDG};
   }
