@@ -44,7 +44,10 @@
 #include <cuda/std/__string/string_view.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_function.h>
+#include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 
@@ -220,35 +223,31 @@ struct __pretty_nameof_v_wrapper
 }
 
 //! @brief Returns the compiler's spelling of a value passed as a non-type
-//! template parameter, e.g. `__pretty_nameof_v<42>()` yields `"42"`.
+//! template parameter, e.g. `__pretty_nameof_v<42>()` yields `"42"` and
+//! `__pretty_nameof_v<cudaStreamSynchronize>()` yields `"cudaStreamSynchronize"`.
 //!
 //! This is the value counterpart of `__pretty_nameof` (which spells types). It
 //! supports the same set of compilers and the same compiler quirks, because it
-//! is implemented on top of `__pretty_nameof`. The exact spelling is whatever
-//! the compiler emits and is not guaranteed to be identical across compilers.
+//! is implemented on top of `__pretty_nameof`.
+//!
+//! When the value is a function (or function pointer), the leading '&' that
+//! clang and cudafe prepend to a function template argument is dropped, so the
+//! result is just the function's (possibly qualified) name. The exact spelling
+//! of other values is whatever the compiler emits and is not guaranteed to be
+//! identical across compilers.
 template <auto _Vp>
 [[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof_v() noexcept
 {
-  return ::cuda::std::__find_pretty_nameof_v(
-    ::cuda::std::__pretty_nameof<::cuda::std::__pretty_nameof_v_wrapper<_Vp>>());
-}
-
-//! @brief Returns the spelling of a function passed as a non-type template
-//! parameter, e.g. `__pretty_nameof_fn<cudaStreamSynchronize>()` yields
-//! `"cudaStreamSynchronize"`.
-//!
-//! This is `__pretty_nameof_v` specialized for functions: it additionally drops
-//! the leading '&' that clang and cudafe prepend to a function template
-//! argument. Any namespace qualifier is kept, matching `__pretty_nameof` for
-//! types.
-template <auto _Fn>
-[[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof_fn() noexcept
-{
-  __string_view __sv = ::cuda::std::__pretty_nameof_v<_Fn>();
-  // Drop a leading '&'.
-  if (__sv.size() != 0 && __sv[0] == '&')
+  __string_view __sv =
+    ::cuda::std::__find_pretty_nameof_v(::cuda::std::__pretty_nameof<::cuda::std::__pretty_nameof_v_wrapper<_Vp>>());
+  // For a function argument, clang and cudafe prepend a '&' (e.g. "&fn"); drop
+  // it so the result is just the function's name.
+  if constexpr (is_function_v<remove_pointer_t<decltype(_Vp)>> || is_member_function_pointer_v<decltype(_Vp)>)
   {
-    __sv = __sv.substr(1, ptrdiff_t(__sv.size()));
+    if (__sv.size() != 0 && __sv[0] == '&')
+    {
+      __sv = __sv.substr(1, ptrdiff_t(__sv.size()));
+    }
   }
   return __sv;
 }
@@ -257,13 +256,13 @@ template <auto _Fn>
 // A quick smoke test to ensure that the value spelling extraction is working.
 static_assert(::cuda::std::__pretty_nameof_v<42>() == __string_view("42"));
 static_assert(::cuda::std::__pretty_nameof_v<true>() == __string_view("true"));
-// And that the function name extraction is working. We use a host/device
-// function defined above so this works in both compilation passes without
-// depending on any external symbols. The function lives in an inline namespace,
-// whose spelling varies between compilers, so we only check that the unqualified
-// name is present rather than matching it exactly.
+// And that function arguments work (including the leading-'&' trim). We use a
+// host/device function defined above so this works in both compilation passes
+// without depending on any external symbols. The function lives in an inline
+// namespace, whose spelling varies between compilers, so we only check that the
+// unqualified name is present rather than matching it exactly.
 static_assert(
-  ::cuda::std::__pretty_nameof_fn<&::cuda::std::__add_string_view_position>().find("__add_string_view_position") != -1);
+  ::cuda::std::__pretty_nameof_v<&::cuda::std::__add_string_view_position>().find("__add_string_view_position") != -1);
 #endif
 
 // There are many complications with defining a unique constexpr global object
