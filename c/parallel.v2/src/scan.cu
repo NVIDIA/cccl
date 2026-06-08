@@ -46,6 +46,10 @@ CUresult cccl_device_scan_build_ex(
   cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -92,7 +96,7 @@ try
 }
 catch (const std::exception& exc)
 {
-  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_build(): %s\n", exc.what());
+  fprintf(stderr, "\nEXCEPTION in cccl_device_scan_build_ex(): %s\n", exc.what());
   return CUDA_ERROR_UNKNOWN;
 }
 
@@ -144,6 +148,13 @@ static CUresult call_scan_init(
   CUstream stream)
 {
   if (!build.scan_fn)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  // Guard against ABI mismatch: this path uses the 8-arg scan_init_fn_t
+  // (with init pointer). Calling it with a build result compiled for
+  // CCCL_NO_INIT (7-arg scan_no_init_fn_t) would be undefined behaviour.
+  if (build.init_kind == CCCL_NO_INIT)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -258,6 +269,13 @@ CUresult cccl_device_inclusive_scan_no_init(
 try
 {
   if (!build.scan_fn)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  // Guard against ABI mismatch: this path uses the 7-arg scan_no_init_fn_t.
+  // A build result compiled with an init value stores an 8-arg scan_init_fn_t;
+  // casting it here would be undefined behaviour.
+  if (build.init_kind != CCCL_NO_INIT)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
