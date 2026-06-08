@@ -27,7 +27,6 @@
 #include <thrust/reduce.h>
 
 #include <cuda/__iterator/constant_iterator.h>
-#include <cuda/__utility/static_for.h>
 #include <cuda/atomic>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -374,33 +373,7 @@ public:
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
 
-      const auto [__state, __intra_bucket_index] = [&]() {
-        __bucket_probing_results __result{::cuda::experimental::cuco::__detail::__equal_result::__unequal, -1};
-        ::cuda::static_for<__bucket_size>([&] _CCCL_DEVICE(auto i) {
-          if (__result.__state == ::cuda::experimental::cuco::__detail::__equal_result::__unequal)
-          {
-            switch (this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
-              __key, this->__extract_key(__bucket_slots[i()])))
-            {
-              case ::cuda::experimental::cuco::__detail::__equal_result::__available:
-                __result =
-                  __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__available, i()};
-                break;
-              case ::cuda::experimental::cuco::__detail::__equal_result::__equal: {
-                if constexpr (!__allows_duplicates)
-                {
-                  __result =
-                    __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__equal, i()};
-                }
-                break;
-              }
-              default:
-                break;
-            }
-          }
-        });
-        return __result;
-      }();
+      const auto [__state, __intra_bucket_index] = this->__find_insert_slot(__key, __bucket_slots);
 
       if constexpr (not __allows_duplicates)
       {
@@ -522,19 +495,7 @@ public:
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
 
-      const auto __state = [&]() {
-        auto __res = ::cuda::experimental::cuco::__detail::__equal_result::__unequal;
-        for (auto i = 0; i < __bucket_size; ++i)
-        {
-          __res = this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
-            __key, this->__extract_key(__bucket_slots[i]));
-          if (__res != ::cuda::experimental::cuco::__detail::__equal_result::__unequal)
-          {
-            return __res;
-          }
-        }
-        return __res;
-      }();
+      const auto __state = this->__probe_bucket(__key, __bucket_slots);
 
       if (__group.any(__state == ::cuda::experimental::cuco::__detail::__equal_result::__equal))
       {
@@ -551,6 +512,69 @@ public:
         return false;
       }
     }
+  }
+
+  //!
+  //! @brief Scans a bucket for the first slot available for inserting @p __key.
+  //!
+  //! Returns the intra-bucket index of the first empty slot, or of a slot already holding an equal
+  //! key when duplicates are disallowed; otherwise reports that the bucket must be skipped.
+  //!
+  //! @tparam _ProbeKey Type of the probe key
+  //!
+  //! @param __key The key being inserted
+  //! @param __bucket_slots The bucket to scan
+  //!
+  //! @return The probing result for @p __bucket_slots
+  template <class _ProbeKey>
+  [[nodiscard]] _CCCL_DEVICE __bucket_probing_results
+  __find_insert_slot(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
+  {
+    for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
+    {
+      switch (this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__yes>(
+        __key, this->__extract_key(__bucket_slots[__i])))
+      {
+        case ::cuda::experimental::cuco::__detail::__equal_result::__available:
+          return __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__available, __i};
+        case ::cuda::experimental::cuco::__detail::__equal_result::__equal:
+          if constexpr (!__allows_duplicates)
+          {
+            return __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__equal, __i};
+          }
+          break;
+        default:
+          break;
+      }
+    }
+    return __bucket_probing_results{::cuda::experimental::cuco::__detail::__equal_result::__unequal, -1};
+  }
+
+  //!
+  //! @brief Scans a bucket for @p __key during a probe.
+  //!
+  //! @tparam _ProbeKey Type of the probe key
+  //!
+  //! @param __key The key being queried
+  //! @param __bucket_slots The bucket to scan
+  //!
+  //! @return The first non-`__unequal` result in the bucket, or `__unequal` if every slot differs
+  //!
+  template <class _ProbeKey>
+  [[nodiscard]] _CCCL_DEVICE ::cuda::experimental::cuco::__detail::__equal_result
+  __probe_bucket(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
+  {
+    auto __res = ::cuda::experimental::cuco::__detail::__equal_result::__unequal;
+    for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
+    {
+      __res = this->__predicate.template operator()<::cuda::experimental::cuco::__detail::__is_insert::__no>(
+        __key, this->__extract_key(__bucket_slots[__i]));
+      if (__res != ::cuda::experimental::cuco::__detail::__equal_result::__unequal)
+      {
+        return __res;
+      }
+    }
+    return __res;
   }
 
   //!
