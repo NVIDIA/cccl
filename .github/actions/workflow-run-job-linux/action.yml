@@ -115,6 +115,8 @@ runs:
         GH_RUN_NUMBER: ${{github.run_number}}
         GH_RUN_ATTEMPT: ${{github.run_attempt}}
       run: |
+        set -eo pipefail
+
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
 
