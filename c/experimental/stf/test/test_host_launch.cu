@@ -231,6 +231,11 @@ C2H_TEST("host_launch inside a stackable nested graph scope", "[host_launch][sta
   stf_task_handle t = stf_stackable_task_create(ctx);
   REQUIRE(t != nullptr);
   stf_stackable_task_add_dep(ctx, t, lData, STF_WRITE);
+  // Inside a nested graph scope the task is captured into the child graph, so we
+  // must enable capture to obtain the graph's capture stream. Otherwise
+  // stf_task_get_custream() returns a null/uninitialized stream and the kernel
+  // would run outside the STF graph, racing the host verifier below.
+  stf_task_enable_capture(t);
   stf_task_start(t);
   double* dData = (double*) stf_task_get(t, 0);
   fill_kernel<<<2, 128, 0, (cudaStream_t) stf_task_get_custream(t)>>>((int) N, dData, 42.0);

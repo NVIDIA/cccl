@@ -1230,6 +1230,14 @@ uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope)
 stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t count)
 {
   _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+  // The repeat counter is unsigned and decremented on every iteration, so a
+  // count of 0 would underflow and produce a huge / non-terminating loop. The
+  // public contract requires count > 0; reject 0 instead of forwarding it.
+  _CCCL_ASSERT(count > 0, "repeat count must be > 0");
+  if (count == 0)
+  {
+    return nullptr;
+  }
   auto* sctx = from_opaque_sctx(ctx);
   return to_opaque_repeat(stf_try_allocate([sctx, count] {
     return new repeat_graph_scope_guard(*sctx, count);

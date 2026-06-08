@@ -1577,7 +1577,23 @@ cudaStream_t stf_launchable_graph_stream(stf_launchable_graph_handle h);
 //! another graph (via \c cudaGraphAddChildGraphNode) rather than launching
 //! the pre-instantiated executable graph returned by
 //! \c stf_launchable_graph_exec(). Unlike that function, this accessor does
-//! NOT trigger \c cudaGraphInstantiate and performs no synchronization.
+//! NOT trigger \c cudaGraphInstantiate.
+//!
+//! On the first call it does, however, perform the same lazy dependency
+//! synchronization as \c stf_launchable_graph_exec() / \c
+//! stf_launchable_graph_launch(): it orders the support stream returned by
+//! \c stf_launchable_graph_stream() behind the nested context's freeze/get
+//! events (dep A). This makes that support stream a valid event source for
+//! ordering an outer launch stream: record an event on
+//! \c stf_launchable_graph_stream() and wait on it from your launch stream
+//! before launching the outer graph that embeds this child.
+//!
+//! Ordering caveat: \c stf_stackable_pop_epilogue() only synchronizes the
+//! support stream (dep A); it does NOT wait on whatever stream you launch the
+//! embedding outer graph on. You are therefore responsible for ensuring the
+//! embedded work has completed (e.g. via \c cudaStreamSynchronize on your
+//! launch stream) before calling \c stf_stackable_pop_epilogue(), otherwise
+//! the unfreeze of the pushed data will race the child graph.
 //!
 //! The graph stays valid only until \c stf_stackable_pop_epilogue() is
 //! called. Clone it with \c cudaGraphClone if you need it to outlive the
@@ -1671,6 +1687,10 @@ cudaStream_t stf_launchable_graph_shared_stream(stf_launchable_graph_shared h);
 
 //! \brief Return the underlying \c cudaGraph_t topology (for embedding as a
 //!        child graph). Aborts if \p h is NULL or invalid.
+//!
+//! Like \c stf_launchable_graph_graph(), this does NOT trigger
+//! \c cudaGraphInstantiate but performs the lazy dep-A sync on the first call
+//! (ordering the support stream behind the nested context's freeze events).
 cudaGraph_t stf_launchable_graph_shared_graph(stf_launchable_graph_shared h);
 
 //! \brief Opaque handle for a while-loop scope (CUDA 12.4+).
