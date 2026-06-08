@@ -392,6 +392,12 @@ public:
     // not clear all its resources yet.
     t.end_uncleared();
 
+    SCOPE(exit)
+    {
+      t.clear();
+      support_task.reset();
+    };
+
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
@@ -414,12 +420,6 @@ public:
         }
       }
     }
-
-    t.clear();
-
-    // Do release to the task structure as we don't need to reference it when
-    // we have called end()
-    support_task.reset();
 
     return *this;
   }
