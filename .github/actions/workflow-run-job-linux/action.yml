@@ -224,8 +224,10 @@ runs:
 
           echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
 
+          export SCCACHE_DIST_AUTH_TOKEN;
+
           extra_launch_args+=(--env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL")
-          extra_launch_args+=(--env "SCCACHE_DIST_AUTH_TOKEN=$SCCACHE_DIST_AUTH_TOKEN")
+          extra_launch_args+=(--env "SCCACHE_DIST_AUTH_TOKEN")
 
           # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
           # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
