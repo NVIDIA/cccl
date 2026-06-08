@@ -197,11 +197,11 @@ static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_name
 #endif
 
 // We find the spelling of a non-type template parameter value _Vp as follows:
-// 1. Wrap the value in the class template __pretty_nameof_v_wrapper and obtain
+// 1. Wrap the value in the class template __stringize_wrapper and obtain
 //    the pretty name of that type via __pretty_nameof. This reuses all of the
 //    compiler-specific machinery (and quirk handling) that __pretty_nameof
 //    already implements.
-// 2. The resulting string looks like "...__pretty_nameof_v_wrapper<42>...".
+// 2. The resulting string looks like "...__stringize_wrapper<42>...".
 //    Trim the surrounding wrapper to recover the value's spelling.
 //
 // The exact spelling is whatever the compiler emits for the value and is not
@@ -210,21 +210,21 @@ static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_name
 // such as `42` are spelled identically everywhere.
 
 template <auto _Vp>
-struct __pretty_nameof_v_wrapper
+struct __stringize_wrapper
 {};
 
-// Extract the value's spelling from the pretty name of __pretty_nameof_v_wrapper<_Vp>.
-[[nodiscard]] _CCCL_API constexpr __string_view __find_pretty_nameof_v(__string_view __sv) noexcept
+// Extract the value's spelling from the pretty name of __stringize_wrapper<_Vp>.
+[[nodiscard]] _CCCL_API constexpr __string_view __find_stringize(__string_view __sv) noexcept
 {
-  // Trim the surrounding "__pretty_nameof_v_wrapper<" ... ">".
+  // Trim the surrounding "__stringize_wrapper<" ... ">".
   return __sv.substr(::cuda::std::__add_string_view_position(
-                       __sv.find("__pretty_nameof_v_wrapper<"), ptrdiff_t(sizeof("__pretty_nameof_v_wrapper<")) - 1),
+                       __sv.find("__stringize_wrapper<"), ptrdiff_t(sizeof("__stringize_wrapper<")) - 1),
                      __sv.find_end(">"));
 }
 
 //! @brief Returns the compiler's spelling of a value passed as a non-type
-//! template parameter, e.g. `__pretty_nameof_v<42>()` yields `"42"` and
-//! `__pretty_nameof_v<cudaStreamSynchronize>()` yields `"cudaStreamSynchronize"`.
+//! template parameter, e.g. `__stringize<42>()` yields `"42"` and
+//! `__stringize<cudaStreamSynchronize>()` yields `"cudaStreamSynchronize"`.
 //!
 //! This is the value counterpart of `__pretty_nameof` (which spells types). It
 //! supports the same set of compilers and the same compiler quirks, because it
@@ -236,10 +236,10 @@ struct __pretty_nameof_v_wrapper
 //! of other values is whatever the compiler emits and is not guaranteed to be
 //! identical across compilers.
 template <auto _Vp>
-[[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof_v() noexcept
+[[nodiscard]] _CCCL_API constexpr __string_view __stringize() noexcept
 {
   __string_view __sv =
-    ::cuda::std::__find_pretty_nameof_v(::cuda::std::__pretty_nameof<::cuda::std::__pretty_nameof_v_wrapper<_Vp>>());
+    ::cuda::std::__find_stringize(::cuda::std::__pretty_nameof<::cuda::std::__stringize_wrapper<_Vp>>());
   // For a function argument, clang and cudafe prepend a '&' (e.g. "&fn"); drop
   // it so the result is just the function's name.
   if constexpr (is_function_v<remove_pointer_t<decltype(_Vp)>> || is_member_function_pointer_v<decltype(_Vp)>)
@@ -255,15 +255,15 @@ template <auto _Vp>
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
 // A quick smoke test to ensure that the value spelling extraction is working.
 // An integer literal is spelled identically on every supported compiler.
-static_assert(::cuda::std::__pretty_nameof_v<42>() == __string_view("42"));
-static_assert(::cuda::std::__pretty_nameof_v<42>() != ::cuda::std::__pretty_nameof_v<43>());
+static_assert(::cuda::std::__stringize<42>() == __string_view("42"));
+static_assert(::cuda::std::__stringize<42>() != ::cuda::std::__stringize<43>());
 // And that function arguments work (including the leading-'&' trim). We use a
 // host/device function defined above so this works in both compilation passes
 // without depending on any external symbols. The function lives in an inline
 // namespace, whose spelling varies between compilers, so we only check that the
 // unqualified name is present rather than matching it exactly.
-static_assert(
-  ::cuda::std::__pretty_nameof_v<&::cuda::std::__add_string_view_position>().find("__add_string_view_position") != -1);
+static_assert(::cuda::std::__stringize<&::cuda::std::__add_string_view_position>().find("__add_string_view_position")
+              != -1);
 #endif
 
 // There are many complications with defining a unique constexpr global object
