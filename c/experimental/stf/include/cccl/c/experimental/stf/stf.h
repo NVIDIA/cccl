@@ -291,8 +291,14 @@ const char* stf_data_place_to_string(stf_data_place_handle h);
 //! For host/managed places \p stream is ignored.
 //! Returns NULL on failure (e.g. unsupported place type or out of memory).
 //!
+//! \note \p size is signed (ptrdiff_t) to mirror the underlying C++ allocator
+//! interface, where the requested size is passed by reference and negated to
+//! signal allocation failure while preserving the requested amount. The matching
+//! stf_data_place_deallocate() takes an unsigned size_t because at deallocation
+//! the size is a known-good quantity with no error to signal.
+//!
 //! \param h     Data place handle (must not be NULL)
-//! \param size  Allocation size in bytes
+//! \param size  Allocation size in bytes (must be non-negative)
 //! \param stream CUDA stream for stream-ordered allocation (may be NULL)
 //! \return Pointer to allocated memory, or NULL on failure
 void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream);
@@ -301,6 +307,10 @@ void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStrea
 //!
 //! For device places the deallocation is stream-ordered (cudaFreeAsync).
 //! For host/managed places \p stream is ignored.
+//!
+//! \note \p size is unsigned (size_t) on purpose: unlike stf_data_place_allocate(),
+//! deallocation never signals failure through the size argument (see that
+//! function's note), so it mirrors the unsigned C++ deallocate() signature.
 //!
 //! \param h      Data place handle (must not be NULL)
 //! \param ptr    Pointer returned by stf_data_place_allocate()
