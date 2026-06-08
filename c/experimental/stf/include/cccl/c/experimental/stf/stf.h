@@ -1168,6 +1168,8 @@ void stf_task_enable_capture(stf_task_handle t);
 //! \pre stf_task_start() must have been called
 //!
 //! \note Total number of grid entries is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
+//! \note A single-element exec place (size 1) is intentionally not treated as a grid: this
+//! returns non-zero for it, consistent with stf_task_get_custream_at_index().
 //!
 //! \par Example:
 //! \code
@@ -1193,6 +1195,10 @@ int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims);
 //!
 //! \pre t must be valid task handle
 //! \pre stf_task_start() must have been called
+//!
+//! \note On success \p out_stream is set to the grid index's stream; on failure it is left
+//! untouched and a non-zero code is returned. STF grids always use non-default streams, so a
+//! valid result is never the legacy default stream (CUstream 0).
 //!
 //! \par Example:
 //! \code
