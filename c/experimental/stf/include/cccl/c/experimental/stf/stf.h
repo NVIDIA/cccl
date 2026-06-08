@@ -251,7 +251,9 @@ stf_exec_place_handle
 stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int use_green_ctx_data_place);
 
 //! \brief Initialize the machine singleton (P2P access, memory pool setup, topology).
-//! Safe to call multiple times; only the first call has effect.
+//! Safe to call multiple times; only the first call has effect. Any C++ exception
+//! raised during initialization is caught and reported to stderr (never propagated
+//! across the C boundary).
 void stf_machine_init(void);
 
 //! \brief Host (CPU/pinned) data placement.
