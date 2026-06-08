@@ -22,9 +22,8 @@
 #endif // no system header
 
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/cstdint>
 
 #include <cooperative_groups.h>
@@ -114,9 +113,7 @@ constexpr auto __max_occupancy_grid_size(
 template <class _Iterator>
 _CCCL_HOST_DEVICE constexpr __index_type __distance(_Iterator __begin, _Iterator __end)
 {
-  using __category = typename ::cuda::std::iterator_traits<_Iterator>::iterator_category;
-  static_assert(::cuda::std::is_base_of_v<::cuda::std::random_access_iterator_tag, __category>,
-                "Input iterator should be a random access iterator.");
+  static_assert(::cuda::std::random_access_iterator<_Iterator>, "Input iterator should be a random access iterator.");
   return static_cast<__index_type>(::cuda::std::distance(__begin, __end));
 }
 } // namespace cuda::experimental::cuco::__detail
