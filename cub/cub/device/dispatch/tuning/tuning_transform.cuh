@@ -75,11 +75,11 @@ struct TransformPrefetchPolicy
   // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost, so prevent unrolling
   // bgruber: but A6000 and H100 show small gains without pragma, so omitting pragma
   int unroll_factor = 0; //!< For any value >1, the unroll factor for the transformation loop in the kernel. The value 0
-                         //!< retains the compiler's default unrolling by specifying no unroll pragma. 1 prevents no
+                         //!< retains the compiler's default unrolling by specifying no unroll pragma. 1 prevents
                          //!< unrolling.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs)
+  operator==(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block
         && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
@@ -88,7 +88,7 @@ struct TransformPrefetchPolicy
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs)
+  operator!=(const TransformPrefetchPolicy& lhs, const TransformPrefetchPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
@@ -114,14 +114,14 @@ struct TransformVectorizedPolicy
   int vec_size; //!< Number of elements loaded/stored per vectorized access. Must evenly divide items_per_thread.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs)
+  operator==(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs)
+  operator!=(const TransformVectorizedPolicy& lhs, const TransformVectorizedPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
@@ -147,14 +147,14 @@ struct TransformAsyncCopyPolicy
                          //!< compiler's default unrolling (specifying no unroll pragma), 1 means no unrolling.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs)
+  operator==(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.min_items_per_thread == rhs.min_items_per_thread
         && lhs.max_items_per_thread == rhs.max_items_per_thread && lhs.unroll_factor == rhs.unroll_factor;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs)
+  operator!=(const TransformAsyncCopyPolicy& lhs, const TransformAsyncCopyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
@@ -184,14 +184,14 @@ struct TransformPolicy
                                        //!< ldgsts or @p ublkcp.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const TransformPolicy& lhs, const TransformPolicy& rhs)
+  operator==(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
   {
     return lhs.min_bytes_in_flight == rhs.min_bytes_in_flight && lhs.algorithm == rhs.algorithm
         && lhs.prefetch == rhs.prefetch && lhs.vectorized == rhs.vectorized && lhs.async_copy == rhs.async_copy;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const TransformPolicy& lhs, const TransformPolicy& rhs)
+  operator!=(const TransformPolicy& lhs, const TransformPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
