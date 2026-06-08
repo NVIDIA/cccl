@@ -28,6 +28,7 @@
 
 #include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 namespace cuda::experimental::stf
 {
