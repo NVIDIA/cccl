@@ -193,6 +193,62 @@ static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"));
 static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>());
 #endif
 
+// We find a function _Fn's name as follows:
+// 1. Wrap the function, passed as a non-type template parameter, in the class
+//    template __pretty_func_name_wrapper and obtain the pretty name of that type
+//    via __pretty_nameof. This reuses all of the compiler-specific machinery
+//    (and quirk handling) that __pretty_nameof already implements.
+// 2. The resulting string looks like "...__pretty_func_name_wrapper<&ns::fn>...".
+//    Trim the surrounding wrapper, an optional leading '&' (clang and cudafe spell
+//    a function template argument as "&fn"), and any namespace qualifier.
+
+template <auto _Fn>
+struct __pretty_func_name_wrapper
+{};
+
+// Extract the function name from the pretty name of __pretty_func_name_wrapper<_Fn>.
+[[nodiscard]] _CCCL_API constexpr __string_view __find_pretty_func_name(__string_view __sv) noexcept
+{
+  // Trim the surrounding "__pretty_func_name_wrapper<" ... ">".
+  __sv = __sv.substr(::cuda::std::__add_string_view_position(
+                       __sv.find("__pretty_func_name_wrapper<"), ptrdiff_t(sizeof("__pretty_func_name_wrapper<")) - 1),
+                     __sv.find_end(">"));
+  // Drop a leading '&'.
+  if (__sv.size() != 0 && __sv[0] == '&')
+  {
+    __sv = __sv.substr(1, ptrdiff_t(__sv.size()));
+  }
+  // Drop any namespace qualifier ("a::b::fn" -> "fn").
+  const ptrdiff_t __scope = __sv.find_end("::");
+  if (__scope != -1)
+  {
+    __sv = __sv.substr(__scope + (ptrdiff_t(sizeof("::")) - 1), ptrdiff_t(__sv.size()));
+  }
+  return __sv;
+}
+
+//! @brief Returns the unqualified spelling of a function passed as a non-type
+//! template parameter, e.g. `__pretty_nameof_fn<cudaStreamSynchronize>()` yields
+//! `"cudaStreamSynchronize"`.
+//!
+//! This is the function-name counterpart of `__pretty_nameof`. It supports the
+//! same set of compilers and the same compiler quirks, because it is implemented
+//! on top of `__pretty_nameof`.
+template <auto _Fn>
+[[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof_fn() noexcept
+{
+  return ::cuda::std::__find_pretty_func_name(
+    ::cuda::std::__pretty_nameof<::cuda::std::__pretty_func_name_wrapper<_Fn>>());
+}
+
+#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
+// A quick smoke test to ensure that the function name extraction is working. We
+// use a host/device function defined above so this works in both compilation
+// passes without depending on any external symbols.
+static_assert(::cuda::std::__pretty_nameof_fn<&::cuda::std::__add_string_view_position>()
+              == __string_view("__add_string_view_position"));
+#endif
+
 // There are many complications with defining a unique constexpr global object
 // for each type in device code, particularly on Windows. So rather than try,
 // we use an alternate formulation of typeid that does not require such objects.
