@@ -20,6 +20,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__cmath/round_down.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -195,7 +196,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 
   using warp_reduce_or_t = WarpReduce<::cuda::std::uint32_t>;
-  typename warp_reduce_or_t::TempStorage temp_storage_or;
+  warp_reduce_or_t::TempStorage temp_storage_or;
   warp_reduce_or_t warp_reduce_or{temp_storage_or};
   constexpr ::cuda::std::bit_or<::cuda::std::uint32_t> or_op{};
 
@@ -279,8 +280,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int laneIdx                      = specialRegisters.laneIdx;
   const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
 
-  // Adjust the left pointer down to the nearest 32-multiple so we do batched sums
-  int idxTileCur             = (idxTilePrev / 32) * 32;
+  // Adjust the left pointer down to the previous 32-multiple so we do batched sums
+  int idxTileCur             = ::cuda::round_down(idxTilePrev, 32);
   AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
 
   using warp_reduce_t = WarpReduce<AccumT>;
@@ -289,7 +290,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 
   using warp_reduce_or_t = WarpReduce<::cuda::std::uint32_t>;
-  typename warp_reduce_or_t::TempStorage temp_storage_or;
+  warp_reduce_or_t::TempStorage temp_storage_or;
   warp_reduce_or_t warp_reduce_or{temp_storage_or};
   constexpr ::cuda::std::bit_or<::cuda::std::uint32_t> or_op{};
 
@@ -307,7 +308,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
       // Bitmask with 1 bits indicating which lane has a tile aggregate
       const ::cuda::std::uint32_t warp_has_aggregate_mask = warp_reduce_or.Reduce(lane_has_aggregate, or_op);
 
-      // Bitmask with 1 bits for all rightmost lanes having a tile aggregate
+      // Bitmask with 1 bits for the contiguous run of lanes having a tile aggregate starting from LSB
       const ::cuda::std::uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
 
       const ::cuda::std::uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);

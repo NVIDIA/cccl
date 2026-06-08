@@ -1036,7 +1036,7 @@ struct policy_selector
   {
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the old scan impl.
     // For stable reduction order (fp + plus), lookahead can only be used on sm_100+, Older arches fall back to classic
-    // lookback stable reduction order verison below.
+    // lookback stable reduction order implementation below.
     if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{10, 0})
     {
       const auto lookahead_policy_opt = get_lookahead_policy(cc);
