@@ -472,6 +472,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     CUB_DETAIL_CONSTEXPR_ISH TransformPolicy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
+#if _CCCL_HOSTED() // FIXME(bgruber): guard needed for stringstream. Remove it when we can log std::print-like
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (logging_enabled())
                    {
@@ -481,6 +482,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
                      log_always(ss.str());
                    }
                  }))
+#endif // _CCCL_HOSTED()
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {
