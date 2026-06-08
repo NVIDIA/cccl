@@ -23,22 +23,9 @@
 //!      the next pass.
 //!
 //! Output cursors live in the same cluster-shared `state` and are reached the
-//! same way (cluster-scope DSMEM atomics). Defining
-//! `CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT` switches the final filter pass
-//! to a block-aggregated variant that first counts selected / candidate keys
-//! in block-local shared-memory counters and then issues a single DSMEM
-//! atomic per block per counter to reserve a contiguous output range. This
-//! lets us A/B the two strategies without touching the rest of the kernel.
-//!
-//! Defining `CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE` flips the histogram
-//! pipeline from reduce-then-scan to scan-then-reduce: every block does a
-//! block-local `InclusiveSum` over its own histogram, then folds the scans
-//! (not the raw counts) into the leader. The leader then identifies the
-//! k-th bucket directly from `hist[bucket]` / `hist[bucket - 1]`.
+//! same way (cluster-scope DSMEM atomics).
 
 #pragma once
-
-#define CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
 
 #include <cub/config.cuh>
 
@@ -223,15 +210,6 @@ struct agent_batched_topk_cluster
     ::cuda::std::uint32_t broadcast_early_stop;
     typename block_scan_t::TempStorage scan_storage;
     typename block_load_t::TempStorage load_storage[PipelineStages];
-#ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
-    // Final-filter block-aggregation slots. First populated by per-thread
-    // `atomicAdd_block` calls that count the block's selected / candidate
-    // keys, then overwritten by thread 0 with the leader-side base position
-    // returned from a single DSMEM atomic per counter, so the same slots
-    // double as the broadcast channel for the base to the rest of the block.
-    out_offset_t block_out_cnt;
-    out_offset_t block_out_back_cnt;
-#endif
   };
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char> block_tile_buffer() const
@@ -473,41 +451,6 @@ private:
       }
     }
   }
-
-#ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
-  // Scan-then-reduce counterpart of `leader_identify_kth_bucket`. Assumes
-  // `hist[i]` already holds the cluster-wide inclusive prefix sum. The
-  // per-bucket count is recovered as `inclusive - exclusive`, where
-  // `exclusive` is `hist[bucket - 1]` (or `0` for `bucket == 0`).
-  //
-  // `target_k` is `state.k` read by the caller before the `cluster.sync()`
-  // that precedes this call, so that barrier orders the read against the
-  // write this function may issue to `state.k`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void leader_identify_kth_bucket_from_inclusive(int pass, out_offset_t target_k)
-  {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int j = 0; j < buckets_per_thread; ++j)
-    {
-      const int bucket = static_cast<int>(threadIdx.x) * buckets_per_thread + j;
-      if (bucket >= num_buckets)
-      {
-        continue;
-      }
-      const offset_t inclusive = temp_storage.hist[bucket];
-      const offset_t exclusive = (bucket == 0) ? offset_t{0} : temp_storage.hist[bucket - 1];
-      if (exclusive < target_k && inclusive >= target_k)
-      {
-        const out_offset_t new_k = target_k - static_cast<out_offset_t>(exclusive);
-        const offset_t new_len   = inclusive - exclusive;
-        temp_storage.state.len   = new_len;
-        temp_storage.state.k     = new_k;
-        temp_storage.state.early_stop =
-          (static_cast<out_offset_t>(new_len) == new_k) ? ::cuda::std::uint32_t{1} : ::cuda::std::uint32_t{0};
-        detail::topk::set_kth_key_bits<key_t, bits_per_pass>(temp_storage.state.kth_key_bits, pass, bucket);
-      }
-    }
-  }
-#endif
 
   // ---------------------------------------------------------------------------
   // Overflow streamer
@@ -989,42 +932,11 @@ private:
         streamer.process_pass(add_hist);
       }
 
-#  ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
-      // Step 1b (scan-then-reduce): in-place block-local `InclusiveSum`
-      // over `hist[]`. The barrier publishes Step 1's atomic writes to
-      // the scan's reads.
-      __syncthreads();
-      {
-        offset_t bucket_vals[buckets_per_thread];
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int j = 0; j < buckets_per_thread; ++j)
-        {
-          const int bucket = static_cast<int>(threadIdx.x) * buckets_per_thread + j;
-          bucket_vals[j]   = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
-        }
-        block_scan_t(temp_storage.scan_storage).InclusiveSum(bucket_vals, bucket_vals);
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int j = 0; j < buckets_per_thread; ++j)
-        {
-          const int bucket = static_cast<int>(threadIdx.x) * buckets_per_thread + j;
-          if (bucket < num_buckets)
-          {
-            temp_storage.hist[bucket] = bucket_vals[j];
-          }
-        }
-      }
-      // Cluster-wide barrier: the leader's scan write-back to `hist[]`
-      // is non-atomic and would be lost if a remote Step 2 RMW
-      // interleaved with it, so every block must finish its write-back
-      // before anyone starts the fold.
-      cluster.sync();
-#  else
       // Local barrier is enough: all Step 1 / Step 2 writes to `hist[]`
       // are atomic at compatible scopes (see Step 1 dispatch). The
       // cluster-wide ordering before Step 3's leader read of `hist[]`
       // is supplied by the `cluster.sync()` further below.
       __syncthreads();
-#  endif
 
       // Step 2: non-leader blocks fold their per-bucket values
       // (raw counts in the reduce-then-scan path, block-local inclusive
@@ -1047,15 +959,6 @@ private:
         }
       }
 
-#  ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
-      // Hoist the leader's read of `state.k` above the upcoming
-      // `cluster.sync()` so that barrier separates it from the write
-      // `leader_identify_kth_bucket_from_inclusive` may issue to
-      // `state.k`. Unconditional in every block to avoid predication;
-      // safe because `process_impl` initializes `state` everywhere.
-      const out_offset_t leader_target_k = temp_storage.state.k;
-#  endif
-
       cluster.sync();
 
       // Step 3: the leader walks the merged `hist` (raw counts in the
@@ -1065,11 +968,7 @@ private:
       // these writes after the next cluster sync.
       if (cluster_rank == 0)
       {
-#  ifdef CUB_ENABLE_CLUSTER_TOPK_SCAN_THEN_REDUCE
-        leader_identify_kth_bucket_from_inclusive(pass, leader_target_k);
-#  else
         leader_identify_kth_bucket(pass);
-#  endif
       }
       cluster.sync();
     }
@@ -1081,14 +980,6 @@ private:
     if (threadIdx.x == 0)
     {
       temp_storage.broadcast_kth = leader_state->kth_key_bits;
-#  ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
-      // Piggyback the block-local output-counter init on the broadcast_kth
-      // publish: the `__syncthreads()` below already orders these writes
-      // against the per-thread `atomicAdd_block` calls in the first phase
-      // of the block-aggregated path, so no dedicated init+sync is needed.
-      temp_storage.block_out_cnt      = 0;
-      temp_storage.block_out_back_cnt = 0;
-#  endif
     }
     __syncthreads();
     kth_key_bits_local = temp_storage.broadcast_kth;
@@ -1104,103 +995,6 @@ private:
     // identified prefix.
     identify_candidates_op_t identify_op(&kth_key_bits_local, last_pass, total_bits, decomposer_t{});
 
-#  ifdef CUB_ENABLE_CLUSTER_TOPK_BLOCK_AGG_OUTPUT
-    // Block-aggregated variant: each thread first reserves its slot in the
-    // block's local counters via cheap `atomicAdd_block`, then thread 0 of
-    // every block claims the block's contiguous range in the leader's
-    // counters with a single DSMEM `atomicAdd` per counter. This collapses
-    // up to the block's resident key count DSMEM atomics per block
-    // down to two, at the cost of one extra block-wide barrier (the local
-    // counters are zeroed inside the pre-existing broadcast_kth publish)
-    // and one additional pass over the per-thread keys to materialize the
-    // writes.
-
-    auto count_selected = [&](const key_t& key) {
-      const auto res = identify_op(key);
-      if (res == detail::topk::candidate_class::selected)
-      {
-        atomicAdd_block(&temp_storage.block_out_cnt, out_offset_t{1});
-      }
-      else if (res == detail::topk::candidate_class::candidate)
-      {
-        atomicAdd_block(&temp_storage.block_out_back_cnt, out_offset_t{1});
-      }
-    };
-    if constexpr (use_block_load_to_shared)
-    {
-      for_each_chunk_key(resident_keys, count_selected);
-    }
-    else
-    {
-      for (offset_t p = 0; p < my_resident_chunks; ++p)
-      {
-        const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
-        const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-        key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
-        for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, count_selected);
-      }
-    }
-    streamer.process_pass(count_selected);
-    __syncthreads();
-
-    // Thread 0 of every block (leader block included) reserves the block's
-    // contiguous range in the leader's counters. The returned old value is
-    // the block's base; we stash it back into the same shared-memory slot
-    // so the rest of the block can pick it up after the barrier without a
-    // separate broadcast field. For the leader block these atomics target
-    // its own shared memory; for non-leaders they go through DSMEM.
-    if (threadIdx.x == 0)
-    {
-      const out_offset_t fwd_count    = temp_storage.block_out_cnt;
-      const out_offset_t back_count   = temp_storage.block_out_back_cnt;
-      temp_storage.block_out_cnt      = atomicAdd(&leader_state->out_cnt, fwd_count);
-      temp_storage.block_out_back_cnt = atomicAdd(&leader_state->out_back_cnt, back_count);
-    }
-    __syncthreads();
-
-    const out_offset_t fwd_base  = temp_storage.block_out_cnt;
-    const out_offset_t back_base = temp_storage.block_out_back_cnt;
-
-    if (threadIdx.x == 0)
-    {
-      temp_storage.block_out_cnt      = 0;
-      temp_storage.block_out_back_cnt = 0;
-    }
-    __syncthreads();
-
-    auto write_selected = [&](const key_t& key) {
-      const auto res = identify_op(key);
-      if (res == detail::topk::candidate_class::selected)
-      {
-        const out_offset_t pos = fwd_base + atomicAdd_block(&temp_storage.block_out_cnt, out_offset_t{1});
-        block_keys_out[pos]    = key;
-      }
-      else if (res == detail::topk::candidate_class::candidate)
-      {
-        const out_offset_t back_pos = back_base + atomicAdd_block(&temp_storage.block_out_back_cnt, out_offset_t{1});
-        if (back_pos < num_kth)
-        {
-          const out_offset_t pos = k - 1 - back_pos;
-          block_keys_out[pos]    = key;
-        }
-      }
-    };
-    if constexpr (use_block_load_to_shared)
-    {
-      for_each_chunk_key(resident_keys, write_selected);
-    }
-    else
-    {
-      for (offset_t p = 0; p < my_resident_chunks; ++p)
-      {
-        const offset_t chunk_idx = static_cast<offset_t>(cluster_rank) + p * static_cast<offset_t>(cluster_size);
-        const auto chunk         = get_chunk(chunk_idx, segment_size_u32, head_items);
-        key_t* const chunk_keys  = slot_keys_unpadded(static_cast<int>(p));
-        for_each_chunk_key({chunk_keys, static_cast<::cuda::std::size_t>(chunk.count)}, write_selected);
-      }
-    }
-    streamer.process_pass(write_selected);
-#  else
     auto write_selected = [&](const key_t& key) {
       const auto res = identify_op(key);
       if (res == detail::topk::candidate_class::selected)
@@ -1233,7 +1027,6 @@ private:
       }
     }
     streamer.process_pass(write_selected);
-#  endif
 
     // Final cluster barrier: hold every block in the cluster until all DSMEM
     // atomics into the leader's state are complete. Without this, a fast

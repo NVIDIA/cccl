@@ -98,6 +98,7 @@ struct launch_config
 // Dynamic-cluster kernel for host launches; the agent reads the active cluster
 // width via cooperative groups.
 template <int ThreadsPerBlock,
+          int MinBlocksPerSm,
           int UnrollFactor,
           int PipelineStages,
           int ChunkBytes,
@@ -109,7 +110,7 @@ template <int ThreadsPerBlock,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_cluster_kernel(
+__launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void device_segmented_topk_cluster_kernel(
   KeyInputItItT d_key_segments_it,
   KeyOutputItItT d_key_segments_out_it,
   SegmentSizeParameterT segment_sizes,
@@ -324,6 +325,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // CCs, so pin the selector query to the minimum supported CC.
   constexpr cluster_topk_policy policy = PolicySelector{}(::cuda::compute_capability{9, 0});
   constexpr int ThreadsPerBlock        = policy.threads_per_block;
+  constexpr int MinBlocksPerSm         = policy.min_blocks_per_sm;
   constexpr int UnrollFactor           = policy.unroll_factor;
   constexpr int PipelineStages         = policy.pipeline_stages;
   constexpr int ChunkBytes             = policy.chunk_bytes;
@@ -399,6 +401,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   constexpr auto dynamic_kernel = &device_segmented_topk_cluster_kernel<
     ThreadsPerBlock,
+    MinBlocksPerSm,
     UnrollFactor,
     PipelineStages,
     ChunkBytes,

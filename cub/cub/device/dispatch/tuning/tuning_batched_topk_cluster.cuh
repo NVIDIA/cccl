@@ -38,6 +38,10 @@ struct cluster_topk_policy
   int chunk_bytes;
   int load_align_bytes;
   int bits_per_pass;
+  // Minimum number of CTAs per SM passed to the dynamic-cluster kernel's launch bounds. Defaults to 1: most cluster
+  // configurations already have an occupancy of 1 due to their shared-memory usage, so allowing the compiler to
+  // optimize for higher occupancy (fewer registers per thread) provides no benefit.
+  int min_blocks_per_sm;
   ::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_configs> launch_configs;
 };
 
@@ -55,12 +59,13 @@ make_policy(::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_c
   -> cluster_topk_policy
 {
   return cluster_topk_policy{
-    /*threads_per_block=*/256,
-    /*unroll_factor=*/8,
+    /*threads_per_block=*/512,
+    /*unroll_factor=*/0,
     /*pipeline_stages=*/3,
-    /*chunk_bytes=*/8 * 1024,
+    /*chunk_bytes=*/16 * 1024,
     /*load_align_bytes=*/128,
-    /*bits_per_pass=*/8,
+    /*bits_per_pass=*/11,
+    /*min_blocks_per_sm=*/1,
     launch_configs};
 }
 
@@ -88,9 +93,9 @@ make_policy(::cuda::std::inplace_vector<cluster_topk_launch_config, max_launch_c
     cluster_topk_launch_config{8, 163 * 1024}, // 1304 KiB
     cluster_topk_launch_config{8, 195 * 1024}, // 1560 KiB
     cluster_topk_launch_config{8, 227 * 1024}, // 1816 KiB
-    cluster_topk_launch_config{16, 131 * 1024}, // 2096 KiB
-    cluster_topk_launch_config{16, 163 * 1024}, // 2608 KiB
-    cluster_topk_launch_config{16, 195 * 1024}, // 3120 KiB
+    // cluster_topk_launch_config{16, 131 * 1024}, // 2096 KiB
+    // cluster_topk_launch_config{16, 163 * 1024}, // 2608 KiB
+    // cluster_topk_launch_config{16, 195 * 1024}, // 3120 KiB
     cluster_topk_launch_config{16, 227 * 1024} // 3632 KiB
     ));
 }
