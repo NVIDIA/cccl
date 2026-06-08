@@ -136,11 +136,8 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpReduce(const Tp input, ScanOpT& scan_op)
 {
   using warp_reduce_t = WarpReduce<Tp>;
-
-  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-  static_assert(sizeof(typename warp_reduce_t::TempStorage) <= 4,
-                "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
-
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+                "WarpReduce for a full warp must not require temporary storage");
   typename warp_reduce_t::TempStorage temp_storage;
   return warp_reduce_t{temp_storage}.Reduce(input, scan_op);
 }
@@ -149,11 +146,8 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpReducePartial(const Tp input, ScanOpT& scan_op, const int num_items)
 {
   using warp_reduce_t = WarpReduce<Tp>;
-
-  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-  static_assert(sizeof(typename warp_reduce_t::TempStorage) <= 4,
-                "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
-
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+                "WarpReduce for a full warp must not require temporary storage");
   typename warp_reduce_t::TempStorage temp_storage;
   return warp_reduce_t{temp_storage}.Reduce(input, scan_op, num_items);
 }
@@ -162,16 +156,11 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 {
   using warp_scan_t = WarpScan<Tp>;
-
-  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-  static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
-                "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
-
-  Tp result;
+  static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, Uninitialized<NullType>>,
+                "WarpScan for a full warp must not require temporary storage");
   typename warp_scan_t::TempStorage temp_storage;
-
+  Tp result;
   warp_scan_t{temp_storage}.ExclusiveScan(regInput, result, scan_op);
-
   return result;
 }
 
@@ -191,11 +180,8 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
   else
   {
     using warp_scan_t = WarpScan<Tp>;
-
-    // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-    static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
-                  "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
-
+    static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, Uninitialized<NullType>>,
+                  "WarpScan for a full warp must not require temporary storage");
     Tp result;
     typename warp_scan_t::TempStorage temp_storage;
     warp_scan_t{temp_storage}.ExclusiveScanPartial(regInput, result, scan_op, num_items);
