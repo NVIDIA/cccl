@@ -20,7 +20,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 //! Returns if logging is enabled
-_CCCL_HOST_API inline bool logging_enabled()
+_CCCL_HOST_API inline bool logging_enabled() noexcept
 {
   static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
   return enabled;
@@ -28,7 +28,7 @@ _CCCL_HOST_API inline bool logging_enabled()
 
 // TODO(bgruber): switch to an interface like std::print once davebayer has implemented <cuda/std/format>
 //! Logs the message, independently of whether logging is enabled
-_CCCL_HOST_API inline void log_always([[maybe_unused]] ::cuda::std::string_view message)
+_CCCL_HOST_API inline void log_always([[maybe_unused]] ::cuda::std::string_view message) noexcept
 {
 #if _CCCL_HOSTED()
   ::printf("%.*s", static_cast<int>(message.size()), message.data());
@@ -37,7 +37,7 @@ _CCCL_HOST_API inline void log_always([[maybe_unused]] ::cuda::std::string_view 
 
 // TODO(bgruber): switch to an interface like std::print once davebayer has implemented <cuda/std/format>
 //! Logs the message when logging is enabled
-_CCCL_HOST_API inline void log(::cuda::std::string_view message)
+_CCCL_HOST_API inline void log(::cuda::std::string_view message) noexcept
 {
   if (logging_enabled())
   {
