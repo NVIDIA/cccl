@@ -152,6 +152,52 @@ launch_docker() {
     source <(python3 .devcontainer/launch.py "${path}/devcontainer.json")
 
     ###
+    # Worktree support
+    ###
+
+    # In a linked git worktree, `.git` is a file containing
+    #   gitdir: <main-repo>/.git/worktrees/<name>
+    # an absolute host path. The container only mounts the worktree at
+    # /home/coder/cccl, so that gitdir path (and the main .git it links
+    # back to via commondir) is unreachable, and every git operation in
+    # the container fails. Bind-mount the main .git at its host path so
+    # both the absolute gitdir pointer and the relative commondir
+    # resolve inside the container.
+    if [[ -f .git ]]; then
+        local git_common_dir
+        git_common_dir="$(cd "$(git rev-parse --git-common-dir)" && pwd)"
+        MOUNTS+=(--mount "source=${git_common_dir},target=${git_common_dir},type=bind")
+
+        # The devcontainer mounts ${localWorkspaceFolder}/.config to
+        # /home/coder/.config, which in a fresh worktree has no gh/ subdir,
+        # so devcontainer-utils-init-git triggers an interactive
+        # `gh auth login` device flow on startup. Share the main checkout's
+        # .config/gh (where the host's gh auth lives, populated by prior
+        # main-checkout container runs) so init-git skips the device flow.
+        local main_repo
+        main_repo="$(cd "${git_common_dir}/.." && pwd)"
+        local main_gh_config="${main_repo}/.config/gh"
+        local gh_auth_shared=false
+        if [[ -d "${main_gh_config}" ]]; then
+            MOUNTS+=(--mount "source=${main_gh_config},target=/home/coder/.config/gh,type=bind")
+            gh_auth_shared=true
+        fi
+
+        echo "warning: launching from a git worktree." >&2
+        echo "         The 'cccl-build' and 'cccl-wheelhouse' docker volumes are" >&2
+        echo "         shared across all worktrees and the main checkout, so build" >&2
+        echo "         artifacts will collide between them. Avoid running multiple" >&2
+        echo "         worktree devcontainers concurrently." >&2
+        if ! ${gh_auth_shared}; then
+            echo "         The main checkout has no .config/gh/ to share, so" >&2
+            echo "         devcontainer-utils-init-git will block on an interactive" >&2
+            echo "         'gh auth login' device flow. Launch the main checkout's" >&2
+            echo "         devcontainer once and complete the gh login there to" >&2
+            echo "         persist auth state, then re-launch this worktree." >&2
+        fi
+    fi
+
+    ###
     # Run the initialize command(s) before starting the container
     ###
 

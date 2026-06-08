@@ -90,6 +90,11 @@ cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
 )
 
+cudax_add_catch2_test(test_target fill_bytes
+    fill_bytes/fill_bytes_mdspan.cu
+    fill_bytes/fill_bytes_mdspan_example.cu
+)
+
 cudax_add_catch2_test(test_target copy
     copy/copy.cu
     copy/copy_edge_cases.cu
@@ -101,9 +106,15 @@ cudax_add_catch2_test(test_target copy
     copy/copy_shared_memory.cu
 )
 
-cudax_add_catch2_test(test_target cuco
-    cuco/utility/test_hashers.cu
+# nvcc 12.0 fails to compile cuco hashers test
+if (
+  NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+  OR "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "12.1"
 )
+  cudax_add_catch2_test(test_target cuco
+    cuco/utility/test_hashers.cu
+  )
+endif()
 
 cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
@@ -130,60 +141,61 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+cudax_add_catch2_test(test_target group.mapping.binary_partition
+    group/mapping/binary_partition.cu
+)
 cudax_add_catch2_test(test_target group.mapping.composite_mapping
     group/mapping/composite_mapping.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.mapping.group_as
     group/mapping/group_as.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.mapping.group_by
     group/mapping/group_by.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.mapping.identity_mapping
     group/mapping/identity_mapping.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
     group/synchronizer/barrier_synchronizer.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.cooperative_algorithm
     group/cooperative_algorithm.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.group
     group/group.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.make_this_group
     group/make_this_group.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.segmented_algorithm
     group/segmented_algorithm.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
-
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+cudax_add_catch2_test(test_target group.invoke_one
+    group/invoke_one.cu
+)
+
+cudax_add_catch2_test(test_target coop.reduce.this_thread
+    coop/reduce/this_thread.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_warp
+    coop/reduce/this_warp.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_block
+    coop/reduce/this_block.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_cluster
+    coop/reduce/this_cluster.cu
+)
+cudax_add_catch2_test(test_target coop.reduce.this_grid
+    coop/reduce/this_grid.cu
+)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes

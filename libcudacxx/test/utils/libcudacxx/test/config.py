@@ -915,6 +915,16 @@ class Configuration(object):
         if gcc_toolchain:
             self.cxx.flags += ["--gcc-toolchain=" + gcc_toolchain]
 
+        # Suppress attribute related warnings when compiling with nvcc 12.0 and gcc because they lead to warnings in
+        # compute_XX.cudafe1.stub.c which are promoted to errors.
+        if (
+            self.cxx.type == "nvcc"
+            and self.cxx.version[0] == 12
+            and self.cxx.version[1] == 0
+            and self.cxx.host_cxx.type == "gcc"
+        ):
+            self.cxx.flags += ["-Xcompiler", "-Wno-attributes"]
+
         if self.use_target:
             if not self.cxx.addFlagIfSupported(
                 ["--target=" + self.config.target_triple]

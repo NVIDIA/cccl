@@ -79,9 +79,9 @@ public:
     return static_cast<unsigned>(_Count);
   }
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
     constexpr auto __static_prev_nunits  = _PrevMappingResult::static_count();
@@ -130,11 +130,16 @@ public:
         return _MappingResult::invalid_with_group_count(__ngroups);
       }
     }
-    return _MappingResult{
-      __ngroups,
-      __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank,
-      count(),
-      __prev_unit_rank % count()};
+
+    const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank;
+    const auto __n          = count();
+    const auto __rank       = __prev_unit_rank % __n;
+    const auto __lane_mask =
+      (::cuda::std::is_same_v<_Unit, thread_level>)
+        ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+            __prev_mapping_result.lane_mask(), __n, __rank)
+        : __prev_mapping_result.lane_mask();
+    return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
   }
 };
 
@@ -173,9 +178,9 @@ public:
     return __count_;
   }
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
     using _MappingResult =
       __mapping_result<::cuda::std::dynamic_extent,
@@ -206,11 +211,16 @@ public:
         return _MappingResult::invalid_with_group_count(__ngroups);
       }
     }
-    return _MappingResult{
-      __ngroups,
-      __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank,
-      __count_,
-      __prev_unit_rank % __count_};
+
+    const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank;
+    const auto __n          = __count_;
+    const auto __rank       = __prev_unit_rank % __count_;
+    const auto __lane_mask =
+      (::cuda::std::is_same_v<_Unit, thread_level>)
+        ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+            __prev_mapping_result.lane_mask(), __n, __rank)
+        : __prev_mapping_result.lane_mask();
+    return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
   }
 };
 

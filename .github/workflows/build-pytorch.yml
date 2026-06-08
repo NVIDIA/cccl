@@ -87,7 +87,7 @@ jobs:
 
           .devcontainer/launch.sh \
             --docker \
-            --cuda 13.2 \
+            --cuda 13.3 \
             --host gcc14 \
             --cuda-ext \
             --env "PARALLEL_LEVEL=$(ulimit -Hn)" \

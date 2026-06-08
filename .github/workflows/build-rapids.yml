@@ -63,10 +63,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '13.2', libs: 'rmm kvikio cudf cudf_kafka' }
+          - { cuda: '13.2', libs: 'rmm ucxx kvikio cudf cudf_kafka' }
           # TODO: remove the PYTHON_VERSION override when all of cuml's dependencies have Python 3.14 support
-          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs cuml', python_version: '3.13' }
-          - { cuda: '13.2', libs: 'rmm ucxx raft cugraph'      }
+          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs nvforest cuml cuopt', python_version: '3.13' }
+          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs cugraph wholegraph' }
     permissions:
       id-token: write
       contents: read
@@ -96,12 +96,13 @@ jobs:
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
-          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cuopt_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_nvforest_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'

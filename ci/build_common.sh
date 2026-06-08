@@ -52,7 +52,7 @@ function check_required_dependencies() {
     local missing_deps=()
 
     # Check for essential tools
-    local required_tools=("cmake" "git" "ninja" "nproc")
+    local required_tools=("cmake" "git" "jq" "ninja" "nproc")
     for tool in "${required_tools[@]}"; do
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
@@ -284,6 +284,53 @@ fail_if_no_gpu() {
     fi
 }
 
+function cccl_configure_preset_for_test() {
+    local test_preset=$1
+    local presets_file="${BUILD_ROOT}/../CMakePresets.json"
+    local configure_preset
+
+    if [[ ! -f "${presets_file}" ]]; then
+        echo "Error: CMakePresets.json not found: ${presets_file}" >&2
+        return 1
+    fi
+
+    configure_preset=$(
+        jq -r --arg t "${test_preset}" '
+            .testPresets[] | select(.name == $t) | .configurePreset // empty
+        ' "${presets_file}"
+    )
+
+    if [[ -z "${configure_preset}" ]]; then
+        configure_preset="${test_preset}"
+    fi
+
+    echo "${configure_preset}"
+}
+
+function cccl_smoke_tests_enabled() {
+    local configure_preset=$1
+    local cache_file="${BUILD_DIR}/${configure_preset}/CMakeCache.txt"
+
+    [[ -f "${cache_file}" ]] \
+        && grep -q '^CCCL_ENABLE_CUDA_SMOKE_TESTS:BOOL=ON' "${cache_file}"
+}
+
+function run_cuda_smoke_test() {
+    local BUILD_NAME=$1
+    local test_preset=$2
+
+    local configure_preset
+    configure_preset="$(cccl_configure_preset_for_test "${test_preset}")"
+    local smoke_bin="${BUILD_DIR}/${configure_preset}/bin/cccl.test.cuda_runtime_smoke"
+
+    if [[ -x "${smoke_bin}" ]]; then
+        run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" || return $?
+    elif cccl_smoke_tests_enabled "${configure_preset}"; then
+        echo "Error: CCCL_ENABLE_CUDA_SMOKE_TESTS=ON but smoke binary not found: ${smoke_bin}" >&2
+        return 1
+    fi
+}
+
 function print_test_time_summary()
 {
     ctest_log=${1}
@@ -415,6 +462,9 @@ function test_preset()
 
     if $GPU_REQUIRED; then
         fail_if_no_gpu
+        if [[ -z "${CCCL_SKIP_CI_SMOKE:-}" ]]; then
+            run_cuda_smoke_test "${BUILD_NAME}" "${PRESET}" || return $?
+        fi
     fi
 
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"

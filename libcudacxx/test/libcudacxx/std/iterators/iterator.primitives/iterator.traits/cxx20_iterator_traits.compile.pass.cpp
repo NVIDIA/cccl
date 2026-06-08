@@ -329,8 +329,7 @@ struct LegacyBidirectional
   TEST_FUNC friend short operator-(LegacyBidirectional, LegacyBidirectional);
 };
 using LegacyBidirectionalTraits = cuda::std::iterator_traits<LegacyBidirectional>;
-static_assert(cuda::std::same_as<LegacyBidirectionalTraits::iterator_category, cuda::std::bidirectional_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<LegacyBidirectionalTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyBidirectionalTraits::value_type, LegacyBidirectional::value_type>);
 static_assert(cuda::std::same_as<LegacyBidirectionalTraits::difference_type, short>);
 static_assert(cuda::std::same_as<LegacyBidirectionalTraits::reference, const LegacyBidirectional::value_type&>);
@@ -392,8 +391,7 @@ struct cuda::std::incrementable_traits<MinusNotDeclaredIter>
   using difference_type = short;
 };
 using MinusNotDeclaredIterTraits = cuda::std::iterator_traits<MinusNotDeclaredIter>;
-static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::iterator_category, cuda::std::bidirectional_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::value_type, MinusNotDeclaredIter::value_type>);
 static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::difference_type, short>);
 static_assert(cuda::std::same_as<MinusNotDeclaredIterTraits::reference, const MinusNotDeclaredIter::value_type&>);
@@ -450,7 +448,7 @@ struct WrongSubscriptReturnType
 };
 using WrongSubscriptReturnTypeTraits = cuda::std::iterator_traits<WrongSubscriptReturnType>;
 static_assert(
-  cuda::std::same_as<WrongSubscriptReturnTypeTraits::iterator_category, cuda::std::bidirectional_iterator_tag>, "");
+  cuda::std::same_as<WrongSubscriptReturnTypeTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<WrongSubscriptReturnTypeTraits::value_type, WrongSubscriptReturnType::value_type>);
 static_assert(cuda::std::same_as<WrongSubscriptReturnTypeTraits::difference_type, short>);
 static_assert(cuda::std::same_as<WrongSubscriptReturnTypeTraits::reference, WrongSubscriptReturnType::value_type&>);
@@ -484,8 +482,7 @@ struct LegacyRandomAccess
   TEST_FUNC friend LegacyRandomAccess operator+(int, LegacyRandomAccess);
 };
 using LegacyRandomAccessTraits = cuda::std::iterator_traits<LegacyRandomAccess>;
-static_assert(cuda::std::same_as<LegacyRandomAccessTraits::iterator_category, cuda::std::random_access_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<LegacyRandomAccessTraits::iterator_category, cuda::std::random_access_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyRandomAccessTraits::value_type, LegacyRandomAccess::value_type>);
 static_assert(cuda::std::same_as<LegacyRandomAccessTraits::difference_type, short>);
 static_assert(cuda::std::same_as<LegacyRandomAccessTraits::reference, const LegacyRandomAccess::value_type&>);
@@ -555,12 +552,12 @@ struct cuda::std::incrementable_traits<LegacyRandomAccessSpaceship>
 };
 using LegacyRandomAccessSpaceshipTraits = cuda::std::iterator_traits<LegacyRandomAccessSpaceship>;
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::iterator_category, cuda::std::random_access_iterator_tag>, "");
+  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::iterator_category, cuda::std::random_access_iterator_tag>);
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::value_type, LegacyRandomAccessSpaceship::not_value_type>, "");
+  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::value_type, LegacyRandomAccessSpaceship::not_value_type>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::difference_type, short>);
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::reference, LegacyRandomAccessSpaceship::not_value_type&>, "");
+  cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::reference, LegacyRandomAccessSpaceship::not_value_type&>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpaceshipTraits::pointer, void>);
 static_assert(!has_iterator_concept_v<LegacyRandomAccessSpaceshipTraits>);
 
@@ -619,8 +616,7 @@ struct LegacyOutputWithMemberTypes
   // Since (*it) is not convertible to value_type, this is not a LegacyInputIterator.
 };
 using LegacyOutputWithMemberTypesTraits = cuda::std::iterator_traits<LegacyOutputWithMemberTypes>;
-static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::iterator_category, cuda::std::output_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::iterator_category, cuda::std::output_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::value_type, void>);
 static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::difference_type, long>);
 static_assert(cuda::std::same_as<LegacyOutputWithMemberTypesTraits::reference, void>);
@@ -685,7 +681,7 @@ struct cuda::std::iterator_traits<LegacyRandomAccessSpecialized>
 };
 using LegacyRandomAccessSpecializedTraits = cuda::std::iterator_traits<LegacyRandomAccessSpecialized>;
 static_assert(
-  cuda::std::same_as<LegacyRandomAccessSpecializedTraits::iterator_category, cuda::std::output_iterator_tag>, "");
+  cuda::std::same_as<LegacyRandomAccessSpecializedTraits::iterator_category, cuda::std::output_iterator_tag>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpecializedTraits::value_type, short>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpecializedTraits::difference_type, short>);
 static_assert(cuda::std::same_as<LegacyRandomAccessSpecializedTraits::reference, short&>);
@@ -720,7 +716,7 @@ static_assert(!has_iterator_concept_v<ForwardTestIteratorTraits>);
 
 using BidirectionalTestIteratorTraits = cuda::std::iterator_traits<bidirectional_iterator<int*>>;
 static_assert(
-  cuda::std::same_as<BidirectionalTestIteratorTraits::iterator_category, cuda::std::bidirectional_iterator_tag>, "");
+  cuda::std::same_as<BidirectionalTestIteratorTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
 static_assert(cuda::std::same_as<BidirectionalTestIteratorTraits::value_type, int>);
 static_assert(cuda::std::same_as<BidirectionalTestIteratorTraits::difference_type, cuda::std::ptrdiff_t>);
 static_assert(cuda::std::same_as<BidirectionalTestIteratorTraits::reference, int&>);
@@ -729,7 +725,7 @@ static_assert(!has_iterator_concept_v<BidirectionalTestIteratorTraits>);
 
 using RandomAccessTestIteratorTraits = cuda::std::iterator_traits<random_access_iterator<int*>>;
 static_assert(
-  cuda::std::same_as<RandomAccessTestIteratorTraits::iterator_category, cuda::std::random_access_iterator_tag>, "");
+  cuda::std::same_as<RandomAccessTestIteratorTraits::iterator_category, cuda::std::random_access_iterator_tag>);
 static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::value_type, int>);
 static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::difference_type, cuda::std::ptrdiff_t>);
 static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::reference, int&>);
@@ -737,8 +733,7 @@ static_assert(cuda::std::same_as<RandomAccessTestIteratorTraits::pointer, int*>)
 static_assert(!has_iterator_concept_v<RandomAccessTestIteratorTraits>);
 
 using ContiguousTestIteratorTraits = cuda::std::iterator_traits<contiguous_iterator<int*>>;
-static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::iterator_category, cuda::std::contiguous_iterator_tag>,
-              "");
+static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::iterator_category, cuda::std::contiguous_iterator_tag>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::value_type, int>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::difference_type, cuda::std::ptrdiff_t>);
 static_assert(cuda::std::same_as<ContiguousTestIteratorTraits::reference, int&>);

@@ -43,14 +43,15 @@ struct empty_problem_init_t
   }
 };
 
-template <class InitT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(InitT init)
+template <class InitValueT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitValueT unwrap_empty_problem_init(InitValueT init)
 {
   return init;
 }
 
-template <class InitT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(empty_problem_init_t<InitT> empty_problem_init)
+template <class InitValueT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitValueT
+unwrap_empty_problem_init(empty_problem_init_t<InitValueT> empty_problem_init)
 {
   return empty_problem_init.init;
 }
@@ -63,9 +64,9 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(empty_proble
  * @param init Initial value
  * @param block_aggregate Aggregate value computed by the block
  */
-template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
+template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
 _CCCL_HOST_DEVICE void
-finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, InitT init, AccumT block_aggregate)
+finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, InitValueT init, AccumT block_aggregate)
 {
   *d_out = reduction_op(init, block_aggregate);
 }
@@ -76,9 +77,9 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, I
  * @param d_out Iterator to the output aggregate
  * @param block_aggregate Aggregate value computed by the block
  */
-template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
-_CCCL_HOST_DEVICE void
-finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitT>, AccumT block_aggregate)
+template <class OutputIteratorT, class ReductionOpT, class InitValueT, class AccumT>
+_CCCL_HOST_DEVICE void finalize_and_store_aggregate(
+  OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitValueT>, AccumT block_aggregate)
 {
   *d_out = block_aggregate;
 }
@@ -100,7 +101,7 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
  *   Binary reduction functor type having member
  *   `auto operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @tparam AccumT
@@ -192,7 +193,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().reduce.threads_per_block)
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @tparam AccumT
@@ -218,7 +219,7 @@ template <typename PolicySelector,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 #if _CCCL_HAS_CONCEPTS()
@@ -230,7 +231,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        ReductionOpT reduction_op,
-                                       _CCCL_GRID_CONSTANT const InitT init,
+                                       _CCCL_GRID_CONSTANT const InitValueT init,
                                        TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = current_policy<PolicySelector>().single_tile;
@@ -282,7 +283,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename ReductionOpT,
           typename AccumT,
-          typename InitT,
+          typename InitValueT,
           typename TransformOpT>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_nondeterministic::reduce_nondeterministic_policy_selector<PolicySelector>
@@ -295,7 +296,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                                                        GridEvenShare<OffsetT> even_share,
                                                                        ReductionOpT reduction_op,
-                                                                       _CCCL_GRID_CONSTANT const InitT init,
+                                                                       _CCCL_GRID_CONSTANT const InitValueT init,
                                                                        TransformOpT transform_op)
 {
   // todo: This static_assert fails with nvc++ CUDA compilation.

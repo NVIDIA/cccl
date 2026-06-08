@@ -47,14 +47,12 @@ struct SquadDesc
     return 32 * warpCount();
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator==(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator==(SquadDesc lhs, SquadDesc rhs) noexcept
   {
     return lhs.mSquadIdx == rhs.mSquadIdx;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator!=(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(SquadDesc lhs, SquadDesc rhs) noexcept
   {
     return lhs.mSquadIdx != rhs.mSquadIdx;
   }

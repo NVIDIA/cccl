@@ -4,8 +4,22 @@ set -euo pipefail
 # Target script for `docker run` command in build_cuda_cccl_python.sh
 # The /workspace pathnames are hard-wired here.
 
-# Install GCC 13 toolset (needed for the build)
-/workspace/ci/util/retry.sh 5 30 dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
+# Install GCC 13 toolset (needed for the build) and ccache (shared between
+# cu12 and cu13 builds via /root/.ccache bind-mount from the host).
+/workspace/ci/util/retry.sh 5 30 dnf -y install \
+  gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ ccache
+
+# When the caller bind-mounts a ccache dir, wire it through to CMake. This
+# transparently caches every compile, so the second wheel build (cu13 after
+# cu12, or vice versa) reuses the entire LLVM/clang object tree.
+if [[ -n "${CCACHE_DIR:-}" ]]; then
+  export CMAKE_C_COMPILER_LAUNCHER=ccache
+  export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+  export CMAKE_CUDA_COMPILER_LAUNCHER=ccache
+  echo "ccache enabled: CCACHE_DIR=${CCACHE_DIR}"
+  ccache --version 2>&1 | head -1 || true
+  ccache --show-stats 2>&1 | head -5 || true
+fi
 echo -e "#!/usr/bin/env bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
 # shellcheck disable=SC1091
 source /etc/profile.d/enable_devtools.sh
@@ -51,6 +65,34 @@ export CUDAHOSTCXX
 
 if ${set_git_safe_directory:-false}; then
     git config --global --add safe.directory /workspace
+fi
+
+# When CCCL_PYTHON_USE_V2 is set (=1/true/on), build the wheel against the
+# HostJIT-based cccl.c.parallel.v2 library instead of the default v1.
+if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  export CMAKE_ARGS="${CMAKE_ARGS:-} -DCCCL_PYTHON_USE_V2=ON"
+  echo "Building wheel with CCCL v2 backend: CMAKE_ARGS=${CMAKE_ARGS}"
+
+  # v2's hostjit links against libnvJitLink and libnvfatbin, which aren't in
+  # the base rapidsai/ci-wheel image. Install the matching CTK devel packages
+  # so CMake's FindCUDAToolkit picks them up. nvcc is on PATH; derive the
+  # version (e.g. "13-0") from it.
+  ctk_pkg_ver=$(nvcc --version 2>/dev/null \
+    | grep -oP 'release \K[0-9]+\.[0-9]+' | tr '.' '-')
+  if [[ -n "${ctk_pkg_ver}" ]]; then
+    echo "Installing libnvjitlink-devel-${ctk_pkg_ver} libnvfatbin-devel-${ctk_pkg_ver}..."
+    /workspace/ci/util/retry.sh 5 30 dnf -y install \
+      "libnvjitlink-devel-${ctk_pkg_ver}" \
+      "libnvfatbin-devel-${ctk_pkg_ver}"
+  else
+    echo "WARNING: could not derive CTK version from nvcc; skipping nvJitLink/nvfatbin install"
+  fi
+
+  # FindCUDAToolkit learned about CUDA::nvfatbin only in CMake 3.27. The base
+  # rapidsai/ci-wheel image ships an older CMake; install a newer one into
+  # the active venv so scikit-build-core picks it up over the system cmake.
+  echo "Pinning cmake>=3.27 for FindCUDAToolkit nvfatbin support..."
+  python -m pip install --upgrade 'cmake>=3.27'
 fi
 
 # Build the wheel

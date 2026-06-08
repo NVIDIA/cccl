@@ -1,6 +1,9 @@
 .idea/
 build*/
 .cache
+# Shared caches for the cu12/cu13 Python wheel builds (ccache + CPM source).
+.ccache/
+.cpm-cache/
 .aws
 .config
 _deps/catch2-src/

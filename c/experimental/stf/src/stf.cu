@@ -11,7 +11,9 @@
 #include <cuda/experimental/places.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -118,6 +120,16 @@ template <class P>
   {
     return static_cast<stf_host_launch_deps_handle>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<P, exec_place_scope>)
+  {
+    return static_cast<stf_exec_place_scope_handle>(opaque_bits);
+  }
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  else if constexpr (::std::is_same_v<P, green_context_helper>)
+  {
+    return static_cast<stf_green_context_helper_handle>(opaque_bits);
+  }
+#endif
   else
   {
     static_assert(stf_dependent_false_v<P>, "to_opaque: missing pointee -> handle pairing");
@@ -159,6 +171,16 @@ template <class Opaque>
   {
     return static_cast<const reserved::host_launch_deps*>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<Opaque*, stf_exec_place_scope_handle>)
+  {
+    return static_cast<const exec_place_scope*>(opaque_bits);
+  }
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  else if constexpr (::std::is_same_v<Opaque*, stf_green_context_helper_handle>)
+  {
+    return static_cast<const green_context_helper*>(opaque_bits);
+  }
+#endif
   else
   {
     static_assert(stf_dependent_false_v<Opaque>, "from_opaque_const: missing handle -> pointee pairing");
@@ -194,6 +216,50 @@ stf_exec_place_handle stf_exec_place_current_device(void)
   return to_opaque(stf_try_allocate([] {
     return new exec_place(exec_place::current_device());
   }));
+}
+
+stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  return to_opaque(stf_try_allocate([sm_count, dev_id] {
+    return new green_context_helper(sm_count, dev_id);
+  }));
+#else
+  (void) sm_count;
+  (void) dev_id;
+  return nullptr;
+#endif
+}
+
+void stf_green_context_helper_destroy(stf_green_context_helper_handle h)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  delete from_opaque(h);
+#else
+  (void) h;
+#endif
+}
+
+size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(h != nullptr, "green_context_helper handle must not be null");
+  return from_opaque(h)->get_count();
+#else
+  (void) h;
+  return 0;
+#endif
+}
+
+int stf_green_context_helper_get_device_id(stf_green_context_helper_handle h)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(h != nullptr, "green_context_helper handle must not be null");
+  return static_cast<int>(from_opaque(h)->get_device_id());
+#else
+  (void) h;
+  return -1;
+#endif
 }
 
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h)
@@ -279,6 +345,31 @@ void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
   stf_exec_place_destroy(grid);
 }
 
+stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx)
+{
+  _CCCL_ASSERT(place != nullptr, "exec_place handle must not be null");
+  if (idx >= from_opaque(place)->size())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place_scope(*from_opaque(place), idx);
+  }));
+}
+
+void stf_exec_place_scope_exit(stf_exec_place_scope_handle scope)
+{
+  delete from_opaque(scope);
+}
+
+stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
+  return to_opaque(stf_try_allocate([h] {
+    return new data_place(from_opaque(h)->affine_data_place());
+  }));
+}
+
 stf_exec_place_resources_handle stf_exec_place_resources_create(void)
 {
   return stf_try_allocate([] {
@@ -315,7 +406,63 @@ CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exe
 {
   _CCCL_ASSERT(res != nullptr, "exec_place_resources handle must not be null");
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
-  return reinterpret_cast<CUstream>(from_opaque(h)->pick_stream(*res->resources, for_computation != 0));
+  return reinterpret_cast<CUstream>(from_opaque(h)->pick_stream(*from_opaque(res), for_computation != 0));
+}
+
+stf_exec_place_handle stf_exec_place_get_place(stf_exec_place_handle h, size_t idx)
+{
+  _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
+  if (idx >= from_opaque(h)->size())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([h, idx] {
+    return new exec_place(from_opaque(h)->get_place(idx));
+  }));
+}
+
+stf_exec_place_handle
+stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int use_green_ctx_data_place)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(helper != nullptr, "green_context_helper handle must not be null");
+  auto* gc_helper = from_opaque(helper);
+  if (idx >= gc_helper->get_count())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([gc_helper, idx, use_green_ctx_data_place] {
+    return new exec_place(exec_place::green_ctx(gc_helper->get_view(idx), use_green_ctx_data_place != 0));
+  }));
+#else
+  (void) helper;
+  (void) idx;
+  (void) use_green_ctx_data_place;
+  return nullptr;
+#endif
+}
+
+void stf_machine_init(void)
+{
+  // machine::instance() does real work on first call (P2P/mempool/topology
+  // setup) and can throw. Guard the extern "C" boundary so a C++ exception
+  // never unwinds into a C caller (which would be UB / std::terminate).
+  try
+  {
+    cuda::experimental::places::reserved::machine::instance();
+  }
+  catch (const ::std::exception& exc)
+  {
+    ::fflush(stdout);
+    ::std::fprintf(stderr, "\nEXCEPTION in STF C API (machine init): %s\n", exc.what());
+    ::fflush(stderr);
+  }
+  catch (...)
+  {
+    ::fflush(stdout);
+    ::std::fprintf(stderr, "\nEXCEPTION in STF C API (machine init): non-standard exception\n");
+    ::fflush(stderr);
+  }
 }
 
 stf_data_place_handle stf_data_place_host(void)
@@ -358,12 +505,32 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
   auto* grid_ptr = from_opaque(grid);
-  // Distinct function pointer types (C typedef vs C++ alias); not convertible via static_cast under nvcc.
-  partition_fn_t cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp                  = stf_try_allocate([cpp_mapper, grid_ptr] {
+  // Distinct function pointer types (C typedef vs C++ alias) are not
+  // convertible via static_cast under nvcc.
+  const auto cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
+  auto* dp              = stf_try_allocate([cpp_mapper, grid_ptr] {
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);
+}
+
+stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  _CCCL_ASSERT(helper != nullptr, "green_context_helper handle must not be null");
+  auto* gc_helper = from_opaque(helper);
+  if (idx >= gc_helper->get_count())
+  {
+    return nullptr;
+  }
+  return to_opaque(stf_try_allocate([gc_helper, idx] {
+    return new data_place(data_place::green_ctx(gc_helper->get_view(idx)));
+  }));
+#else
+  (void) helper;
+  (void) idx;
+  return nullptr;
+#endif
 }
 
 stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
@@ -394,6 +561,48 @@ const char* stf_data_place_to_string(stf_data_place_handle h)
   return s.c_str();
 }
 
+void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  try
+  {
+    return from_opaque(h)->allocate(static_cast<::std::ptrdiff_t>(size), stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_allocate failed: %s\n", e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_allocate failed: unknown exception\n");
+    return nullptr;
+  }
+}
+
+void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  try
+  {
+    from_opaque(h)->deallocate(ptr, size, stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_deallocate failed: %s\n", e.what());
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_deallocate failed: unknown exception\n");
+  }
+}
+
+int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
+}
+
 stf_ctx_handle stf_ctx_create(void)
 {
   return to_opaque(stf_try_allocate([] {
@@ -405,6 +614,75 @@ stf_ctx_handle stf_ctx_create_graph(void)
 {
   return to_opaque(stf_try_allocate([] {
     return new context{graph_ctx()};
+  }));
+}
+
+// Opaque bridge types for the extern-C `async_resources_handle` wrapper.
+// `async_resources_handle` is defined in cudax and not listed in the generic
+// `to_opaque/from_opaque` registry above, so we just reinterpret the pointer
+// directly here.
+namespace
+{
+inline stf_async_resources_handle async_resources_to_opaque(async_resources_handle* p) noexcept
+{
+  return reinterpret_cast<stf_async_resources_handle>(p);
+}
+
+inline async_resources_handle* async_resources_from_opaque(stf_async_resources_handle h) noexcept
+{
+  return reinterpret_cast<async_resources_handle*>(h);
+}
+} // namespace
+
+stf_async_resources_handle stf_async_resources_create(void)
+{
+  return async_resources_to_opaque(stf_try_allocate([] {
+    return new async_resources_handle{};
+  }));
+}
+
+void stf_async_resources_destroy(stf_async_resources_handle h)
+{
+  delete async_resources_from_opaque(h);
+}
+
+stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts)
+{
+  // NULL opts matches stf_ctx_create().
+  const stf_ctx_options defaults{};
+  const stf_ctx_options& o = opts ? *opts : defaults;
+
+  const bool has_stream           = (o.has_stream != 0);
+  const async_resources_handle ah = o.handle ? *async_resources_from_opaque(o.handle) : async_resources_handle{nullptr};
+
+  // C++ overloads distinguish "caller supplied a stream" from "use the
+  // default constructor". `cudaStream_t` is pointer-like, so a separate flag is
+  // required to let callers intentionally bind the CUDA default stream.
+  return to_opaque(stf_try_allocate([&]() -> context* {
+    switch (o.backend)
+    {
+      case STF_BACKEND_GRAPH:
+        if (has_stream)
+        {
+          return new context{graph_ctx(o.stream, ah)};
+        }
+        if (o.handle != nullptr)
+        {
+          return new context{graph_ctx(ah)};
+        }
+        return new context{graph_ctx()};
+      case STF_BACKEND_STREAM:
+      default:
+        if (has_stream)
+        {
+          return new context{stream_ctx(o.stream, ah)};
+        }
+        if (o.handle != nullptr)
+        {
+          return new context{stream_ctx(ah)};
+        }
+        return new context{};
+    }
   }));
 }
 
@@ -430,6 +708,51 @@ cudaStream_t stf_fence(stf_ctx_handle ctx)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   auto* context_ptr = from_opaque(ctx);
   return context_ptr->fence();
+}
+
+int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size)
+{
+  if (ctx == nullptr || ld == nullptr || out == nullptr)
+  {
+    return 1;
+  }
+
+  try
+  {
+    auto* context_ptr = from_opaque(ctx);
+    auto* ld_ptr      = from_opaque(ld);
+
+    void* dst  = out;
+    size_t cap = size;
+
+    auto builder = context_ptr->host_launch();
+    builder.add_deps(task_dep_untyped(*ld_ptr, access_mode::read));
+    builder.set_symbol("wait");
+    builder->*[dst, cap](reserved::host_launch_deps& deps) {
+      auto data      = deps.get<slice<char>>(0);
+      size_t copy_sz = ::std::min(cap, static_cast<size_t>(data.extent(0)));
+      // The destination must not overlap the logical data range: in practice the
+      // logical data is backed by storage that is allocated independently from the
+      // caller's readback buffer, so use uintptr_t comparisons (relational pointer
+      // comparison across unrelated allocations is unspecified) to encode that
+      // contract.
+      const auto src_begin = reinterpret_cast<::std::uintptr_t>(data.data_handle());
+      const auto src_end   = src_begin + copy_sz;
+      const auto dst_begin = reinterpret_cast<::std::uintptr_t>(dst);
+      const auto dst_end   = dst_begin + copy_sz;
+      _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
+                   "stf_ctx_wait destination buffer must not overlap the logical data range");
+      ::std::memcpy(dst, data.data_handle(), copy_sz);
+    };
+
+    cudaStream_t fence_stream = context_ptr->fence();
+    cuda_safe_call(cudaStreamSynchronize(fence_stream));
+    return 0;
+  }
+  catch (...)
+  {
+    return 1;
+  }
 }
 
 stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
@@ -583,6 +906,41 @@ CUstream stf_task_get_custream(stf_task_handle t)
 
   auto* task_ptr = from_opaque(t);
   return static_cast<CUstream>(task_ptr->get_stream());
+}
+
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
+{
+  if (t == nullptr || out_dims == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = from_opaque(t);
+  dim4 d;
+  if (!task_ptr->get_grid_dims(&d))
+  {
+    return -1;
+  }
+  out_dims->x = static_cast<uint64_t>(d.x);
+  out_dims->y = static_cast<uint64_t>(d.y);
+  out_dims->z = static_cast<uint64_t>(d.z);
+  out_dims->t = static_cast<uint64_t>(d.t);
+  return 0;
+}
+
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream)
+{
+  if (t == nullptr || out_stream == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = from_opaque(t);
+  cudaStream_t s = task_ptr->get_stream(place_index);
+  if (s == nullptr)
+  {
+    return -1;
+  }
+  *out_stream = static_cast<CUstream>(s);
+  return 0;
 }
 
 void stf_task_destroy(stf_task_handle t)
