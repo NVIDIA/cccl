@@ -360,7 +360,7 @@ public:
   //! @param __value The element to insert
   //!
   //! @return True if the given element is successfully inserted
-  template <bool _SupportsErase, class _Value, class _ParentCG>
+  template <class _Value, class _ParentCG>
   _CCCL_DEVICE bool insert(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group,
                            _Value __value) noexcept
   {
@@ -419,16 +419,8 @@ public:
         auto __status         = __insert_result::__continue;
         if (__group.thread_rank() == __src_lane)
         {
-          if constexpr (_SupportsErase)
-          {
-            __status = __attempt_insert(
-              this->__get_slot_ptr(*__probing_iter, __intra_bucket_index), __bucket_slots[__intra_bucket_index], __val);
-          }
-          else
-          {
-            __status = __attempt_insert(
-              this->__get_slot_ptr(*__probing_iter, __intra_bucket_index), this->empty_slot_sentinel(), __val);
-          }
+          __status = __attempt_insert(
+            this->__get_slot_ptr(*__probing_iter, __intra_bucket_index), this->empty_slot_sentinel(), __val);
         }
 
         switch (__group.shfl(__status, __src_lane))
