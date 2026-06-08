@@ -22,8 +22,12 @@ namespace detail
 //! Returns if logging is enabled
 _CCCL_HOST_API inline bool logging_enabled() noexcept
 {
+#if _CCCL_HOSTED()
   static bool enabled = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING") != nullptr;
   return enabled;
+#else // _CCCL_HOSTED()
+  return false;
+#endif // _CCCL_HOSTED()
 }
 
 // TODO(bgruber): switch to an interface like std::print once davebayer has implemented <cuda/std/format>
