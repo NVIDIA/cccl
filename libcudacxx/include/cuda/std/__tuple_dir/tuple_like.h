@@ -38,53 +38,53 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-inline constexpr bool __tuple_like_impl = false;
+inline constexpr bool __tuple_like_ext = false;
 
 template <class _Tp>
-inline constexpr bool __tuple_like_impl<const _Tp> = __tuple_like_impl<_Tp>;
+inline constexpr bool __tuple_like_ext<const _Tp> = __tuple_like_ext<_Tp>;
 template <class _Tp>
-inline constexpr bool __tuple_like_impl<volatile _Tp> = __tuple_like_impl<_Tp>;
+inline constexpr bool __tuple_like_ext<volatile _Tp> = __tuple_like_ext<_Tp>;
 template <class _Tp>
-inline constexpr bool __tuple_like_impl<const volatile _Tp> = __tuple_like_impl<_Tp>;
+inline constexpr bool __tuple_like_ext<const volatile _Tp> = __tuple_like_ext<_Tp>;
 
 template <class... _Tp>
-inline constexpr bool __tuple_like_impl<tuple<_Tp...>> = true;
+inline constexpr bool __tuple_like_ext<tuple<_Tp...>> = true;
 
 #if _CCCL_HAS_HOST_STD_LIB()
 template <class... _Tp>
-inline constexpr bool __tuple_like_impl<::std::tuple<_Tp...>> = true;
+inline constexpr bool __tuple_like_ext<::std::tuple<_Tp...>> = true;
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
 template <class _T1, class _T2>
-inline constexpr bool __tuple_like_impl<pair<_T1, _T2>> = true;
+inline constexpr bool __tuple_like_ext<pair<_T1, _T2>> = true;
 
 #if _CCCL_HAS_HOST_STD_LIB()
 template <class _T1, class _T2>
-inline constexpr bool __tuple_like_impl<::std::pair<_T1, _T2>> = true;
+inline constexpr bool __tuple_like_ext<::std::pair<_T1, _T2>> = true;
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
 template <class _Tp, size_t _Size>
-inline constexpr bool __tuple_like_impl<array<_Tp, _Size>> = true;
+inline constexpr bool __tuple_like_ext<array<_Tp, _Size>> = true;
 
 #if _CCCL_HAS_HOST_STD_LIB()
 template <class _Tp, size_t _Size>
-inline constexpr bool __tuple_like_impl<::std::array<_Tp, _Size>> = true;
+inline constexpr bool __tuple_like_ext<::std::array<_Tp, _Size>> = true;
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
 template <class _Tp>
-inline constexpr bool __tuple_like_impl<complex<_Tp>> = true;
+inline constexpr bool __tuple_like_ext<complex<_Tp>> = true;
 
 template <class _Tp>
-inline constexpr bool __tuple_like_impl<::cuda::complex<_Tp>> = true;
+inline constexpr bool __tuple_like_ext<::cuda::complex<_Tp>> = true;
 
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
-inline constexpr bool __tuple_like_impl<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> = true;
+inline constexpr bool __tuple_like_ext<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> = true;
 
 template <class... _Tp>
-inline constexpr bool __tuple_like_impl<__tuple_types<_Tp...>> = true;
+inline constexpr bool __tuple_like_ext<__tuple_types<_Tp...>> = true;
 
 template <class _Tp>
-_CCCL_CONCEPT __tuple_like = __tuple_like_impl<remove_cvref_t<_Tp>>;
+_CCCL_CONCEPT __tuple_like = __tuple_like_ext<remove_cvref_t<_Tp>>;
 
 // Not on line 74 because of __COUNTER__ missing in NVRTC
 template <class _Tp>

@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -69,10 +70,11 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
     _OutputIterator __result,
     _UnaryPredicate __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType = iter_difference_t<_InputIterator>;
     _OffsetType __ret;
-
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     // Determine temporary device storage requirements
     void* __temp_storage = nullptr;
@@ -144,7 +146,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
         }
         else
         {
-          throw;
+          _CCCL_RETHROW;
         }
       }
       _CCCL_CATCH_FALLTHROUGH

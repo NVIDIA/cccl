@@ -504,7 +504,7 @@ def test_zip_iterator_of_transform_iterator_kind():
 
 def test_caching_zip_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
-    from cuda.compute._cpp_compile import compile_cpp_to_ltoir
+    from cuda.compute._cpp_compile import compile_cpp_op_code
 
     # Test 1: Iterators with same structure should have same kind
     z1 = ZipIterator(CountingIterator(np.int32(0)))
@@ -517,7 +517,7 @@ def test_caching_zip_iterator():
 
     # Test 3: Verify compilation caching with cache statistics
     # Clear cache to get clean measurements
-    compile_cpp_to_ltoir.cache_clear()
+    compile_cpp_op_code.cache_clear()
 
     # Create multiple instances with same structure
     iterators = []
@@ -530,7 +530,7 @@ def test_caching_zip_iterator():
         iterators.append(z)
 
     # Check cache statistics
-    cache_info = compile_cpp_to_ltoir.cache_info()
+    cache_info = compile_cpp_op_code.cache_info()
 
     # With deterministic symbols: only first instance misses, rest hit the cache
     # With random UUIDs: all instances would miss
@@ -540,17 +540,17 @@ def test_caching_zip_iterator():
     )
 
     # Test 4: Arrays with different dtypes should not share cache
-    compile_cpp_to_ltoir.cache_clear()
+    compile_cpp_op_code.cache_clear()
 
     z_int32 = ZipIterator(cp.arange(10, dtype=np.int32))
     z_int32.get_advance_op()
     z_int32.get_input_deref_op()
-    misses_after_first = compile_cpp_to_ltoir.cache_info().misses
+    misses_after_first = compile_cpp_op_code.cache_info().misses
 
     z_int64 = ZipIterator(cp.arange(10, dtype=np.int64))
     z_int64.get_advance_op()
     z_int64.get_input_deref_op()
-    misses_after_second = compile_cpp_to_ltoir.cache_info().misses
+    misses_after_second = compile_cpp_op_code.cache_info().misses
 
     # Different dtypes should not share cache
     assert misses_after_second > misses_after_first, (
@@ -559,7 +559,7 @@ def test_caching_zip_iterator():
     assert z_int32.kind != z_int64.kind
 
     # Test 5: Verify basic iterator types share compilation cache
-    compile_cpp_to_ltoir.cache_clear()
+    compile_cpp_op_code.cache_clear()
 
     # CountingIterators with same type
     count_iters = [ZipIterator(CountingIterator(np.int32(i * 10))) for i in range(3)]
@@ -567,7 +567,7 @@ def test_caching_zip_iterator():
         z.get_advance_op()
         z.get_input_deref_op()
 
-    cache_info = compile_cpp_to_ltoir.cache_info()
+    cache_info = compile_cpp_op_code.cache_info()
     assert cache_info.hits >= 2, (
         f"CountingIterators with same type should share cache, got {cache_info}"
     )
@@ -580,17 +580,17 @@ def test_caching_zip_iterator():
 def test_compilation_caching_across_iterator_types():
     """Test that compilation caching works across different iterator types."""
     from cuda.compute import ConstantIterator
-    from cuda.compute._cpp_compile import compile_cpp_to_ltoir
+    from cuda.compute._cpp_compile import compile_cpp_op_code
 
     # Test ConstantIterator caching
-    compile_cpp_to_ltoir.cache_clear()
+    compile_cpp_op_code.cache_clear()
 
     const_iterators = [ConstantIterator(np.int32(i)) for i in range(5)]
     for it in const_iterators:
         it.get_advance_op()
         it.get_input_deref_op()
 
-    cache_info = compile_cpp_to_ltoir.cache_info()
+    cache_info = compile_cpp_op_code.cache_info()
     assert cache_info.hits >= 3, (
         f"ConstantIterator: Expected cache hits across instances, "
         f"got {cache_info.hits} hits, {cache_info.misses} misses"
@@ -603,14 +603,14 @@ def test_compilation_caching_across_iterator_types():
     )
 
     # Test CountingIterator caching
-    compile_cpp_to_ltoir.cache_clear()
+    compile_cpp_op_code.cache_clear()
 
     counting_iterators = [CountingIterator(np.int64(i * 100)) for i in range(5)]
     for it in counting_iterators:
         it.get_advance_op()
         it.get_input_deref_op()
 
-    cache_info = compile_cpp_to_ltoir.cache_info()
+    cache_info = compile_cpp_op_code.cache_info()
     assert cache_info.hits >= 3, (
         f"CountingIterator: Expected cache hits across instances, "
         f"got {cache_info.hits} hits, {cache_info.misses} misses"
