@@ -226,6 +226,8 @@ struct __stringize_wrapper
 //! template parameter, e.g. `__stringize<42>()` yields `"42"` and
 //! `__stringize<cudaStreamSynchronize>()` yields `"cudaStreamSynchronize"`.
 //!
+//! @return A string view containing the compiler's spelling of `_Vp`.
+//!
 //! This is the value counterpart of `__pretty_nameof` (which spells types). It
 //! supports the same set of compilers and the same compiler quirks, because it
 //! is implemented on top of `__pretty_nameof`.
