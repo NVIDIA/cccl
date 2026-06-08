@@ -444,7 +444,25 @@ stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int
 
 void stf_machine_init(void)
 {
-  cuda::experimental::places::reserved::machine::instance();
+  // machine::instance() does real work on first call (P2P/mempool/topology
+  // setup) and can throw. Guard the extern "C" boundary so a C++ exception
+  // never unwinds into a C caller (which would be UB / std::terminate).
+  try
+  {
+    cuda::experimental::places::reserved::machine::instance();
+  }
+  catch (const ::std::exception& exc)
+  {
+    ::fflush(stdout);
+    ::std::fprintf(stderr, "\nEXCEPTION in STF C API (machine init): %s\n", exc.what());
+    ::fflush(stderr);
+  }
+  catch (...)
+  {
+    ::fflush(stdout);
+    ::std::fprintf(stderr, "\nEXCEPTION in STF C API (machine init): non-standard exception\n");
+    ::fflush(stderr);
+  }
 }
 
 stf_data_place_handle stf_data_place_host(void)
