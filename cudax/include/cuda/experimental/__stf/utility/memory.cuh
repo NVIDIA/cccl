@@ -131,7 +131,7 @@ inline void* allocateManagedMemory(size_t sz)
   // ``cudaMallocManaged`` is a C++ overload set, so ``cuda_try<F>(...)``
   // cannot deduce it. Use the runtime-status form.
   void* p = nullptr;
-  cuda_try(cudaMallocManaged(&p, sz));
+  cuda_try(cudaMallocManaged(&p, sz, cudaMemAttachGlobal));
   return p;
 }
 
