@@ -76,9 +76,7 @@ public:
     const cudaGraphNode_t* input_nodes,
     size_t input_cnt) override
   {
-    cudaGraphNode_t dummy;
-    cuda_safe_call(cudaGraphAddEmptyNode(&dummy, graph, input_nodes, input_cnt));
-    return dummy;
+    return cuda_try<cudaGraphAddEmptyNode>(graph, input_nodes, input_cnt);
   }
 
   bool pin_host_memory(instance_id_t) override

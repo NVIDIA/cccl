@@ -262,10 +262,7 @@ public:
         .kind     = kind};
     }
 
-    cudaGraphNode_t result;
-    cuda_safe_call(cudaGraphAddMemcpyNode(&result, graph, input_nodes, input_cnt, &cpy_params));
-
-    return result;
+    return cuda_try<cudaGraphAddMemcpyNode>(graph, input_nodes, input_cnt, &cpy_params);
   }
 
   /// @brief Implementation of interface primitive

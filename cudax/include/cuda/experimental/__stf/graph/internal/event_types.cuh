@@ -123,7 +123,7 @@ protected:
 
         // Create a new empty graph node which depends on the previous ones,
         // empty the list of events and replace it with this single "empty" event
-        cuda_safe_call(cudaGraphAddEmptyNode(&n, bctx_graph, nodes.data(), nodes.size()));
+        n = cuda_try<cudaGraphAddEmptyNode>(bctx_graph, nodes.data(), nodes.size());
       }
 
       events.clear();
