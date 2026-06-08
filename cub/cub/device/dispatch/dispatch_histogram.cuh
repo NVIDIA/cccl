@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_histogram.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -200,16 +201,19 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   const HistogramPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() // guard needed for stringstream used to format find_policy
   NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceHistogram to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
+                 if (logging_enabled())
+                 {
+                   std::stringstream ss;
+                   ss << active_policy;
+                   log_always("Dispatching DeviceHistogram to compute capability %d.%d with tuning: %s\n",
+                              cc.major_cap(),
+                              cc.minor_cap(),
+                              ss.str().c_str());
+                 }
                }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED()
 
   const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
   auto sweep_kernel      = [&] {
@@ -325,13 +329,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   int histogram_init_grid_dims =
     (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
-// Log DeviceHistogramInitKernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
-          histogram_init_grid_dims,
-          histogram_init_threads_per_block,
-          (long long) stream);
-#endif // CUB_DEBUG_LOG
+  // Log DeviceHistogramInitKernel configuration
+  log("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
+      histogram_init_grid_dims,
+      histogram_init_threads_per_block,
+      (long long) stream);
 
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
@@ -351,18 +353,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-// Log histogram_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
-          "per thread, %d SM occupancy\n",
-          sweep_grid_dims.x,
-          sweep_grid_dims.y,
-          sweep_grid_dims.z,
-          threads_per_block,
-          (long long) stream,
-          pixels_per_thread,
-          histogram_sweep_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+  // Log histogram_sweep_kernel configuration
+  log("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
+      "per thread, %d SM occupancy\n",
+      sweep_grid_dims.x,
+      sweep_grid_dims.y,
+      sweep_grid_dims.z,
+      threads_per_block,
+      (long long) stream,
+      pixels_per_thread,
+      histogram_sweep_sm_occupancy);
 
   if (const auto error = CubDebug(
         launcher_factory(

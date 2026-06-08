@@ -14,7 +14,11 @@
 #endif // no system header
 
 #include <cuda/std/cstdlib>
-#include <cuda/std/string_view>
+
+#if _CCCL_HOSTED()
+#  include <cstdarg>
+#  include <cstdio>
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -30,22 +34,28 @@ _CCCL_HOST_API inline bool logging_enabled() noexcept
 #endif // _CCCL_HOSTED()
 }
 
-// TODO(bgruber): switch to an interface like std::print once davebayer has implemented <cuda/std/format>
 //! Logs the message, independently of whether logging is enabled
-_CCCL_HOST_API inline void log_always([[maybe_unused]] ::cuda::std::string_view message) noexcept
+_CCCL_HOST_API inline void log_always([[maybe_unused]] const char* fmt, ...) noexcept
 {
 #if _CCCL_HOSTED()
-  ::printf("%.*s", static_cast<int>(message.size()), message.data());
+  va_list args;
+  va_start(args, fmt);
+  ::vprintf(fmt, args);
+  va_end(args);
 #endif // _CCCL_HOSTED()
 }
 
-// TODO(bgruber): switch to an interface like std::print once davebayer has implemented <cuda/std/format>
 //! Logs the message when logging is enabled
-_CCCL_HOST_API inline void log(::cuda::std::string_view message) noexcept
+_CCCL_HOST_API inline void log(const char* fmt, ...) noexcept
 {
   if (logging_enabled())
   {
-    log_always(message);
+#if _CCCL_HOSTED()
+    va_list args;
+    va_start(args, fmt);
+    ::vprintf(fmt, args);
+    va_end(args);
+#endif // _CCCL_HOSTED()
   }
 }
 } // namespace detail
