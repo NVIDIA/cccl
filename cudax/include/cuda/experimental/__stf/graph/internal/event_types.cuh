@@ -87,7 +87,7 @@ protected:
     // graph events by making them depend on a single node instead
     if (events.size() > 16)
     {
-      cudaGraphNode_t n;
+      cudaGraphNode_t n = nullptr;
 
       ::std::vector<cudaGraphNode_t> nodes;
 
