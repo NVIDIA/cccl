@@ -55,11 +55,13 @@ def init_logical_data(ctx, ld, value, data_place=None, exec_place=None):
         core_stream = Stream.from_handle(t.stream_ptr())
         buf = Buffer.from_handle(ptr, size, owner=None)
 
-        if dtype.itemsize in (1, 2, 4):
-            if value == 0 or value == 0.0:
-                fill_val = 0
-            else:
-                fill_val = np.array([value], dtype=dtype).tobytes()
+        # A bytewise zero fill is valid for any numeric dtype, including 8-byte
+        # types that cannot use cuda.core's nonzero fill patterns.
+        if value == 0 or value == 0.0:
+            fill_val = 0
+            buf.fill(fill_val, stream=core_stream)
+        elif dtype.itemsize in (1, 2, 4):
+            fill_val = np.array([value], dtype=dtype).tobytes()
             buf.fill(fill_val, stream=core_stream)
         else:
             # 8-byte: single fallback via CuPy
