@@ -72,21 +72,21 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     const auto __num_items = ::cuda::std::distance(__first, __last);
-    using _OffsetType      = remove_cvref_t<decltype(__num_items)>;
+    using _OffsetType      = CUB_NS_QUALIFIER::detail::choose_offset_t<remove_cvref_t<decltype(__num_items)>>;
     _OffsetType __ret;
 
     // Determine temporary device storage requirements for find_if
-    void* __temp_storage = nullptr;
-    size_t __num_bytes   = 0;
+    size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceFind::FindIf,
       "__pstl_cuda_find_if: determining temporary storage failed",
-      __temp_storage,
+      static_cast<void*>(nullptr),
       __num_bytes,
       __first,
       static_cast<_OffsetType*>(nullptr),
       __pred,
-      __num_items);
+      __num_items,
+      __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
@@ -98,17 +98,17 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         ::cuda::std::move(__pred),
         __num_items,
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_find_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
         __stream.get());
