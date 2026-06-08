@@ -28,6 +28,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
@@ -554,14 +555,20 @@ inline constexpr bool is_simd_enabled_cuda_operator =
   is_cuda_std_plus_mul_v<Op, T> || //
   is_cuda_std_bitwise_v<Op, T>;
 
+template <typename Op, typename T, typename UnqualifiedOp = ::cuda::std::remove_cvref_t<Op>>
+inline constexpr bool is_cuda_redux_operator_v =
+  is_cuda_minimum_maximum_v<UnqualifiedOp, T> || //
+  is_cuda_std_plus_v<UnqualifiedOp, T> || //
+  is_cuda_std_bitwise_v<UnqualifiedOp, T>;
+
 // TODO: enable FP32 min/max (SM100a/SM100f)
+// Operator-kind support and type support are intentionally checked separately; the hardware REDUX path also requires
+// an integral type small enough for the native instruction.
 template <typename Op, typename T, typename UnqualifiedOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_redux_enabled_cuda_operator =
   ::cuda::std::is_integral_v<T> && //
   sizeof(T) <= sizeof(unsigned) && //
-  (is_cuda_minimum_maximum_v<UnqualifiedOp, T> || //
-   is_cuda_std_plus_v<UnqualifiedOp, T> || //
-   is_cuda_std_bitwise_v<UnqualifiedOp, T>);
+  is_cuda_redux_operator_v<UnqualifiedOp, T>;
 
 template <typename Op, typename T = void>
 inline constexpr bool is_cuda_binary_operator =

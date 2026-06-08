@@ -313,6 +313,49 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
   return output;
 }
 
+//! @brief Shuffle-butterfly for any data type.
+//!        Each <em>warp-lane<sub>i</sub></em> obtains the value @p input contributed by
+//!        <em>warp-lane</em><sub><tt>i ^ lane_mask</tt></sub>.
+//!
+//! @tparam LOGICAL_WARP_THREADS
+//!   The number of threads per "logical" warp.  Must be a power-of-two <= 32.
+//!
+//! @tparam T
+//!   <b>[inferred]</b> The input/output element type
+//!
+//! @param[in] input
+//!   The value to exchange
+//!
+//! @param[in] lane_mask
+//!   The bitwise XOR mask selecting the source lane
+//!
+//! @param[in] member_mask
+//!   32-bit mask of participating warp lanes
+template <int LOGICAL_WARP_THREADS, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleXor(T input, int lane_mask, unsigned int member_mask)
+{
+  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
+
+  constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
+
+  T output;
+  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
+  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+
+  unsigned int shuffle_word;
+  shuffle_word    = __shfl_xor_sync(member_mask, (unsigned int) input_alias[0], lane_mask, LOGICAL_WARP_THREADS);
+  output_alias[0] = shuffle_word;
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int WORD = 1; WORD < WORDS; ++WORD)
+  {
+    shuffle_word = __shfl_xor_sync(member_mask, (unsigned int) input_alias[WORD], lane_mask, LOGICAL_WARP_THREADS);
+    output_alias[WORD] = shuffle_word;
+  }
+
+  return output;
+}
+
 /**
  * @brief Shuffle-broadcast for any data type.
  *        Each <em>warp-lane<sub>i</sub></em> obtains the value @p input
