@@ -74,10 +74,10 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const
-    -> three_way_partition_policy
+    -> ThreeWayPartitionPolicy
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
-    return three_way_partition_policy{
+    return ThreeWayPartitionPolicy{
       active_policy::BLOCK_THREADS,
       active_policy::ITEMS_PER_THREAD,
       active_policy::LOAD_ALGORITHM,
@@ -118,7 +118,7 @@ template <
     detail::three_way_partition::streaming_context_t<OffsetT>,
     OffsetT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchThreeWayPartitionIf
+struct CCCL_DEPRECATED_BECAUSE("Please use DevicePartition") DispatchThreeWayPartitionIf
 {
   /*****************************************************************************
    * Types and constants
@@ -440,7 +440,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const three_way_partition_policy active_policy = policy_selector(cc);
+  const ThreeWayPartitionPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
