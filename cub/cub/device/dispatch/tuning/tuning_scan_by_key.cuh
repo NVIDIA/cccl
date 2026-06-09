@@ -44,7 +44,7 @@ struct ScanByKeyPolicy
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs)
+  operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
@@ -53,7 +53,7 @@ struct ScanByKeyPolicy
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs)
+  operator!=(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
