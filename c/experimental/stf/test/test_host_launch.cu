@@ -333,6 +333,7 @@ C2H_TEST("host_launch inside a stackable nested graph scope", "[host_launch][sta
   stf_task_handle t = stf_stackable_task_create(ctx);
   REQUIRE(t != nullptr);
   stf_stackable_task_add_dep(ctx, t, lData, STF_WRITE);
+  stf_task_enable_capture(t);
   stf_task_start(t);
   double* dData = (double*) stf_task_get(t, 0);
   fill_kernel<<<2, 128, 0, (cudaStream_t) stf_task_get_custream(t)>>>((int) N, dData, 42.0);

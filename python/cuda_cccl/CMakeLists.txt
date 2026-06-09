@@ -30,8 +30,6 @@ message(
 # it replaces v1 across the matrix.
 set(_cccl_root ../..)
 set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
-set(CCCL_ENABLE_C_PARALLEL ON) # Build the cccl.c.parallel library
-set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 
 # Build cccl.c.experimental.stf alongside cccl.c.parallel on platforms that
 # support it. STF currently does not ship on Windows.
@@ -57,12 +55,14 @@ option(
   OFF
 )
 if (CCCL_PYTHON_USE_V2)
+  set(CCCL_ENABLE_C_PARALLEL OFF)
   set(CCCL_ENABLE_C_PARALLEL_V2 ON)
   set(CCCL_C_PARALLEL_V2_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
   set(_cccl_c_parallel_target cccl.c.parallel.v2)
   set(_using_v2_py "True")
 else()
   set(CCCL_ENABLE_C_PARALLEL ON)
+  set(CCCL_ENABLE_C_PARALLEL_V2 OFF)
   set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
   set(_cccl_c_parallel_target cccl.c.parallel)
   set(_using_v2_py "False")
