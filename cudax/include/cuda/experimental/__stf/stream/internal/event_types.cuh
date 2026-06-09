@@ -98,21 +98,26 @@ public:
 
     // Query the context associated with a stream by using the underlying driver API
     cuda_try<cuCtxPushCurrent>(ctx);
+    SCOPE(exit)
+    {
+      cuda_safe_call(cuCtxPopCurrent(&ctx));
+    };
     const CUdevice s2_dev = cuda_try<cuCtxGetDevice>();
-    cuda_try(cuCtxPopCurrent(&ctx));
 
     // ::std::cout << "STREAM DEVICE = " << s2_dev << ::'\n';
 
     exec_place::device(s2_dev)->*[&] {
       // Disable timing to avoid implicit barriers
       const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
+      SCOPE(exit)
+      {
+        // Asynchronously destroy event to avoid a memleak
+        cuda_safe_call(cudaEventDestroy(sync_event));
+      };
       cuda_try<cudaEventRecord>(sync_event, s2);
 
       // According to documentation "event may be from a different device than stream."
       cuda_try<cudaStreamWaitEvent>(s1, sync_event, 0);
-
-      // Asynchronously destroy event to avoid a memleak
-      cuda_try<cudaEventDestroy>(sync_event);
     };
   }
 
@@ -128,6 +133,11 @@ public:
     exec_place::device(dstream.dev_id)->*[&] {
       // Disable timing to avoid implicit barriers
       cudaEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
+      SCOPE(fail)
+      {
+        cuda_safe_call(cudaEventDestroy(cudaEvent));
+        cudaEvent = nullptr;
+      };
       // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
       assert(cudaEvent);
       cuda_try<cudaEventRecord>(cudaEvent, dstream.stream);
@@ -407,8 +417,11 @@ private:
       CUcontext ctx      = cuda_try<cuStreamGetCtx>(stream_driver);
 
       cuda_try<cuCtxPushCurrent>(ctx);
+      SCOPE(exit)
+      {
+        cuda_safe_call(cuCtxPopCurrent(&ctx));
+      };
       const CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
-      cuda_try(cuCtxPopCurrent(&ctx));
 
       if (stream_dev == devid)
       {
