@@ -123,12 +123,12 @@ struct DeviceScanKernelSource
     return {};
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_size()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t lookahead_tile_state_size()
   {
     return sizeof(warpspeed::tile_state_t<AccumT>);
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_alignment()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t lookahead_tile_state_alignment()
   {
     return alignof(warpspeed::tile_state_t<AccumT>);
   }
@@ -140,7 +140,7 @@ struct DeviceScanKernelSource
     return arg;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto look_ahead_make_tile_state_kernel_arg(void* ts)
+  CUB_RUNTIME_FUNCTION static constexpr auto lookahead_make_tile_state_kernel_arg(void* ts)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
     ::cuda::std::__construct_at(&arg.warpspeed, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
@@ -150,30 +150,30 @@ struct DeviceScanKernelSource
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> scan_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanPolicy
 {
   // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
   // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
   // the policy_selector.
   using scan_policy_t = typename LegacyActivePolicy::ScanPolicyT;
-  return scan_policy{
-    scan_algorithm::lookback,
-    scan_lookback_policy{
+  return ScanPolicy{
+    ScanAlgorithm::lookback,
+    ScanLookbackPolicy{
       scan_policy_t::BLOCK_THREADS,
       scan_policy_t::ITEMS_PER_THREAD,
       scan_policy_t::LOAD_ALGORITHM,
       scan_policy_t::LOAD_MODIFIER,
       scan_policy_t::STORE_ALGORITHM,
       scan_policy_t::SCAN_ALGORITHM,
-      detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
-    scan_warpspeed_policy{}};
+      detail::lookback_delay_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
+    ScanWarpspeedPolicy{}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> scan_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ScanPolicy
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
@@ -488,14 +488,20 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_warpspeed_policy warpspeed_policy = policy_getter().warpspeed;
+    CUB_DETAIL_CONSTEXPR_ISH const ScanWarpspeedPolicy warpspeed_policy = policy_getter().warpspeed;
+    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.reduce_and_scan_warps >= 1,
+                                 "Warpspeed scan policy have at least 1 warp for reducing and scanning");
+    CUB_DETAIL_STATIC_ISH_ASSERT(
+      warpspeed_policy.items_per_thread >= 1, "Warpspeed scan policy must have at least 1 item per thread");
+    CUB_DETAIL_STATIC_ISH_ASSERT(warpspeed_policy.lookahead_items_per_thread >= 1,
+                                 "Warpspeed scan policy must look ahead at least 1 item per thread");
 
     const int grid_dim =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
 
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size();
+      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.lookahead_tile_state_size();
       return cudaSuccess;
     }
 
@@ -518,7 +524,7 @@ struct DispatchScan
     }
 
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
-    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
+    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.lookahead_tile_state_alignment()), "");
 
     auto scan_kernel                 = kernel_source.ScanKernel();
     [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
@@ -593,7 +599,7 @@ struct DispatchScan
                              stream,
                              /* dependent_launch */ ptx_version >= 900)
               .doit(kernel_source.InitKernel(),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
                     grid_dim)))
       {
         return error;
@@ -625,7 +631,7 @@ struct DispatchScan
               .doit(scan_kernel,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    kernel_source.lookahead_make_tile_state_kernel_arg(d_temp_storage),
                     /* start_tile, unused */ 0,
                     ::cuda::std::move(scan_op),
                     init_value,
@@ -657,8 +663,11 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookback_algorithm(PolicyGetter policy_getter)
   {
-    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_lookback_policy active_policy = policy_getter().lookback;
-
+    CUB_DETAIL_CONSTEXPR_ISH const ScanLookbackPolicy active_policy = policy_getter().lookback;
+    CUB_DETAIL_STATIC_ISH_ASSERT(
+      active_policy.threads_per_block >= 1, "Lookback scan policy must have at least 1 thread per block");
+    CUB_DETAIL_STATIC_ISH_ASSERT(
+      active_policy.items_per_thread >= 1, "Lookback scan policy must have at least 1 item per thread");
     CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
 
@@ -791,7 +800,7 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
   {
-    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::warpspeed)
     {
       return __invoke_warpspeed_algorithm(policy_getter);
     }

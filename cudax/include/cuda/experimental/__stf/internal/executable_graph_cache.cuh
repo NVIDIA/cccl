@@ -53,13 +53,11 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
 // Instantiate a CUDA graph
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
-  // Custom deleter specifically for cudaGraphExec_t
-  auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-    cudaGraphExecDestroy(*pGraphExec);
-  };
+  ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+                                           cuda_safe_call(cudaGraphExecDestroy(*p));
+                                         }};
 
-  ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
-
+<<<<<<< stf_c_api
   // Use cudaGraphInstantiateFlagAutoFreeOnLaunch so that any cudaMallocAsync /
   // cudaMemAllocNode allocations captured into `g` that lack a matching free
   // node (e.g. allocations whose deallocation lives in a sibling captured
@@ -68,6 +66,9 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   // graph aborts with `cudaErrorInvalidValue` ("Attempting to launch a graph
   // with unfreed allocation"). Available since CTK 11.4.
   cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch));
+=======
+  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, 0);
+>>>>>>> main
 
   return res;
 }
@@ -107,8 +108,7 @@ public:
       cache_size_limit = atol(str) * 1024 * 1024;
     }
 
-    int ndevices;
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
+    const int ndevices = cuda_try<cudaGetDeviceCount>();
 
     // One individual cache per device (TODO per execution place at some point
     // if we consider green contexts or multi-gpu graphs ?)

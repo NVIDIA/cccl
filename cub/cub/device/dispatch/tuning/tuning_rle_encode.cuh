@@ -369,7 +369,7 @@ struct policy_selector
           BLOCK_LOAD_DIRECT,
           LOAD_CA,
           BLOCK_SCAN_WARP_SCANS,
-          {delay_constructor_kind::exponential_backon, 468, 300}};
+          {LookbackDelayAlgorithm::exponential_backon, 468, 300}};
       }
       if (key_size == 2)
       {
@@ -379,7 +379,7 @@ struct policy_selector
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          {delay_constructor_kind::exponential_backon, 376, 420}};
+          {LookbackDelayAlgorithm::exponential_backon, 376, 420}};
       }
       if (key_size == 4)
       {
@@ -389,7 +389,7 @@ struct policy_selector
           BLOCK_LOAD_DIRECT,
           LOAD_CA,
           BLOCK_SCAN_WARP_SCANS,
-          {delay_constructor_kind::exponential_backon, 956, 70}};
+          {LookbackDelayAlgorithm::exponential_backon, 956, 70}};
       }
       if (key_size == 8)
       {
@@ -399,7 +399,7 @@ struct policy_selector
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          {delay_constructor_kind::exponential_backoff, 188, 765}};
+          {LookbackDelayAlgorithm::exponential_backoff, 188, 765}};
       }
     }
 
@@ -410,12 +410,12 @@ struct policy_selector
         if (key_is_primitive && key_size == 1)
         {
           return rle_encode_policy{
-            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 620}};
+            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 620}};
         }
         if (key_is_primitive && key_size == 2)
         {
           return rle_encode_policy{
-            128, 22, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 775}};
+            128, 22, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 775}};
         }
         if (key_is_primitive && key_size == 4)
         {
@@ -425,7 +425,7 @@ struct policy_selector
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::fixed_delay, 284, 480}};
+            {LookbackDelayAlgorithm::fixed_delay, 284, 480}};
         }
         if (key_is_primitive && key_size == 8)
         {
@@ -435,7 +435,7 @@ struct policy_selector
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 515}};
+            {LookbackDelayAlgorithm::no_delay, 0, 515}};
         }
         if (key_t == type_t::int128 || key_t == type_t::uint128)
         {
@@ -445,7 +445,7 @@ struct policy_selector
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::fixed_delay, 428, 930}};
+            {LookbackDelayAlgorithm::fixed_delay, 428, 930}};
         }
       }
 
@@ -465,12 +465,12 @@ struct policy_selector
         if (key_is_primitive && key_size == 1)
         {
           return rle_encode_policy{
-            256, 14, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 640}};
+            256, 14, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 640}};
         }
         if (key_is_primitive && key_size == 2)
         {
           return rle_encode_policy{
-            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 900}};
+            256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 900}};
         }
         if (key_is_primitive && key_size == 4)
         {
@@ -480,7 +480,7 @@ struct policy_selector
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 1080}};
+            {LookbackDelayAlgorithm::no_delay, 0, 1080}};
         }
         if (key_is_primitive && key_size == 8)
         {
@@ -490,7 +490,7 @@ struct policy_selector
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 1075}};
+            {LookbackDelayAlgorithm::no_delay, 0, 1075}};
         }
         if (key_t == type_t::int128 || key_t == type_t::uint128)
         {
@@ -500,7 +500,7 @@ struct policy_selector
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            {delay_constructor_kind::no_delay, 0, 630}};
+            {LookbackDelayAlgorithm::no_delay, 0, 630}};
         }
       }
 
