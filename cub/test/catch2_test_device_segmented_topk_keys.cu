@@ -270,6 +270,204 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per-segment k",
+         "[keys][segmented][topk][device]",
+         key_types,
+         max_segment_size_list,
+         max_num_k_list,
+         select_direction_list)
+{
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using key_t = c2h::get<0, TestType>;
+
+  // Statically constrained maximum segment size and k
+  constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
+  constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
+
+  // Selection direction comes from the compile-time test axis.
+  constexpr auto direction = c2h::get<3, TestType>::value;
+
+  // Generate the (uniform) input segment size. Unlike the uniform-k tests, k still varies per segment below.
+  constexpr segment_size_t min_segment_size = 1;
+  constexpr auto max_segment_size           = static_max_segment_size;
+  const segment_size_t segment_size = GENERATE_COPY(values({min_segment_size, segment_size_t{3}, max_segment_size}),
+                                                    take(2, random(min_segment_size, max_segment_size)));
+
+  // Skip invalid combinations
+  if (segment_size > max_segment_size)
+  {
+    SKIP("The given segment size may not exceed the maximum segment size, we statically constrained the algorithm on.");
+  }
+
+  // Generate number of segments
+  const segment_index_t num_segments = GENERATE_COPY(
+    values({segment_index_t{1}, segment_index_t{42}}), take(2, random(segment_index_t{1}, segment_index_t{1000})));
+
+  // Generate a per-segment k in [1, static_max_k]
+  c2h::device_vector<segment_size_t> segment_k(num_segments, thrust::no_init);
+  c2h::gen(C2H_SEED(1), segment_k, segment_size_t{1}, static_max_k);
+
+  // Capture test parameters
+  CAPTURE(c2h::type_name<key_t>(),
+          c2h::type_name<segment_size_t>(),
+          c2h::type_name<segment_index_t>(),
+          static_max_segment_size,
+          static_max_k,
+          segment_size,
+          num_segments,
+          direction);
+
+  // Materialize fixed-size input offsets: [0, segment_size, 2 * segment_size, ...]
+  auto fixed_offsets_it = cuda::make_strided_iterator(cuda::make_counting_iterator<segment_size_t>(0), segment_size);
+  c2h::device_vector<segment_size_t> segment_offsets(num_segments + 1, thrust::no_init);
+  thrust::copy(fixed_offsets_it, fixed_offsets_it + (num_segments + 1), segment_offsets.begin());
+
+  // Compute compacted output offsets: each output segment holds exactly min(k[i], segment_size) items, tightly packed.
+  auto compacted_output_sizes_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), get_output_size_op{segment_offsets.cbegin(), segment_k.cbegin()});
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
+  thrust::exclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  segment_size_t total_output_size = compacted_offsets.back();
+
+  // Prepare input & output. Input segments are fixed-size (strided); output segments are compacted (variable).
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(total_output_size, thrust::no_init);
+  const int num_key_seeds = 1;
+  c2h::gen(C2H_SEED(num_key_seeds), keys_in_buffer);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_out_ptr), compacted_offsets.cbegin());
+
+  // Copy input for verification
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // Run the top-k algorithm with a per-segment k passed as an immediate sequence
+  batched_topk_keys(
+    d_keys_in,
+    d_keys_out,
+    ::cuda::__argument::__immediate{segment_size, ::cuda::__argument::__bounds<segment_size_t{1}, max_segment_size>()},
+    ::cuda::__argument::__immediate_sequence{
+      thrust::raw_pointer_cast(segment_k.data()), ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<direction>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_segments * segment_size});
+
+  // Prepare expected results: sort each fixed-size input segment, then compact each to its per-segment top-k.
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, segment_k.cbegin());
+
+  // Since the results of top-k are unordered, sort compacted output segments before comparison.
+  segmented_sort_keys(
+    keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and per-segment k",
+         "[keys][segmented][topk][device]",
+         key_types,
+         max_segment_size_list,
+         max_num_k_list,
+         select_direction_list)
+{
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using key_t = c2h::get<0, TestType>;
+
+  // Statically constrained maximum segment size and k
+  constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
+  constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
+
+  // Selection direction comes from the compile-time test axis.
+  constexpr auto direction = c2h::get<3, TestType>::value;
+
+  constexpr segment_size_t min_items = 1;
+  constexpr segment_size_t max_items = 1'000'000;
+
+  // Number of items
+  const segment_size_t num_items = GENERATE_COPY(
+    take(2, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+
+  // Generate segment sizes
+  constexpr segment_size_t min_segment_size = 1;
+  constexpr auto max_segment_size           = static_max_segment_size;
+  c2h::device_vector<segment_size_t> segment_offsets =
+    c2h::gen_uniform_offsets<segment_size_t>(C2H_SEED(3), num_items, min_segment_size, max_segment_size);
+  const segment_index_t num_segments = static_cast<segment_index_t>(segment_offsets.size() - 1);
+  auto segment_offsets_it            = thrust::raw_pointer_cast(segment_offsets.data());
+  auto segment_size_it               = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>{segment_offsets_it});
+
+  // Generate a per-segment k in [1, static_max_k]
+  c2h::device_vector<segment_size_t> segment_k(num_segments, thrust::no_init);
+  c2h::gen(C2H_SEED(1), segment_k, segment_size_t{1}, static_max_k);
+
+  // Capture test parameters
+  CAPTURE(c2h::type_name<key_t>(),
+          c2h::type_name<segment_size_t>(),
+          c2h::type_name<segment_index_t>(),
+          static_max_segment_size,
+          static_max_k,
+          num_segments,
+          direction);
+
+  // Compute compacted output offsets:
+  // Each output segment holds exactly min(k[i], segment_size[i]) items, tightly packed.
+  auto compacted_output_sizes_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(segment_index_t{0}), get_output_size_op{segment_offsets.cbegin(), segment_k.cbegin()});
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
+  thrust::exclusive_scan(
+    compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
+  segment_size_t total_output_size = compacted_offsets.back();
+
+  // Prepare keys input & output
+  c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(total_output_size, thrust::no_init);
+  const int num_key_seeds = 1;
+  c2h::gen(C2H_SEED(num_key_seeds), keys_in_buffer);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_offsets.cbegin());
+  auto d_keys_out =
+    cuda::make_permutation_iterator(cuda::make_counting_iterator(d_keys_out_ptr), compacted_offsets.cbegin());
+
+  // Copy input for verification
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // Run the top-k algorithm with a per-segment k passed as an immediate sequence
+  batched_topk_keys(
+    d_keys_in,
+    d_keys_out,
+    ::cuda::__argument::__immediate_sequence{
+      segment_size_it, ::cuda::__argument::__bounds<segment_size_t{1}, static_max_segment_size>()},
+    ::cuda::__argument::__immediate_sequence{
+      thrust::raw_pointer_cast(segment_k.data()), ::cuda::__argument::__bounds<segment_size_t{1}, static_max_k>()},
+    ::cuda::__argument::__constant<direction>{},
+    ::cuda::__argument::__immediate{num_segments},
+    ::cuda::__argument::__immediate{num_items});
+
+  // Verify keys are returned correctly: sort each segment of the expected input, then compact the per-segment top-k
+  segmented_sort_keys(expected_keys, num_segments, segment_offsets.cbegin(), segment_offsets.cbegin() + 1, direction);
+  expected_keys = compact_to_topk_batched(expected_keys, segment_offsets, segment_k.cbegin());
+
+  // Since the results of top-k are unordered, sort compacted output segments before comparison
+  segmented_sort_keys(
+    keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
 // Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
 C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
 {

@@ -11,6 +11,7 @@
 
 #include <cuda/iterator>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -283,10 +284,15 @@ void compact_sorted_keys_to_topk(
   d_keys_in.resize(new_end - d_keys_in.begin());
 }
 
-// Stream-compacts each segment to only contain the top-k elements
-template <typename KeyT, typename OffsetT>
+// Stream-compacts each segment to only contain its top-k elements, where the number of elements to keep is provided
+// per segment by `k_it` (k_it[segment_id] -> k for that segment). Each output segment holds exactly
+// min(k_it[segment_id], segment_size[segment_id]) items, tightly packed.
+template <typename KeyT,
+          typename OffsetT,
+          typename KSizesItT,
+          ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<KSizesItT>, int> = 0>
 c2h::device_vector<KeyT> compact_to_topk_batched(
-  c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<OffsetT>& d_offsets, cuda::std::int64_t k)
+  c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<OffsetT>& d_offsets, KSizesItT k_it)
 {
   // Expects d_offsets includes the number of items at the end
   const auto num_segments = d_offsets.size() - 1;
@@ -296,8 +302,8 @@ c2h::device_vector<KeyT> compact_to_topk_batched(
     cuda::make_counting_iterator(0), offset_iterator_op{d_keys_in.cbegin(), d_offsets.cbegin()});
 
   // Calculates the output sizes (if segment size is smaller than k, then output size is segment size, otherwise k)
-  auto copy_sizes_it = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(0), get_output_size_op{d_offsets.cbegin(), cuda::constant_iterator(k)});
+  auto copy_sizes_it =
+    cuda::make_transform_iterator(cuda::make_counting_iterator(0), get_output_size_op{d_offsets.cbegin(), k_it});
 
   // Calculate destination offsets via prefix sum
   c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1, thrust::no_init);
@@ -321,6 +327,14 @@ c2h::device_vector<KeyT> compact_to_topk_batched(
   cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, src_ptrs_it, dst_ptrs_it, copy_sizes_it, num_segments);
 
   return d_keys_out;
+}
+
+// Stream-compacts each segment to only contain the top-k elements, using a single uniform k across all segments.
+template <typename KeyT, typename OffsetT>
+c2h::device_vector<KeyT> compact_to_topk_batched(
+  c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<OffsetT>& d_offsets, cuda::std::int64_t k)
+{
+  return compact_to_topk_batched(d_keys_in, d_offsets, cuda::constant_iterator(k));
 }
 
 template <typename KeyT, typename OffsetItT>
