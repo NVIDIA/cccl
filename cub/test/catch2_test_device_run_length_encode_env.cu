@@ -303,7 +303,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("RleEncodePolicy", "[reduce][device]")
+C2H_TEST("RleEncodePolicy", "[run_length_encode][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::RleEncodePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::RleEncodePolicy>);
