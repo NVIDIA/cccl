@@ -83,6 +83,24 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @linear_performance{prefix scan}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All non-ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! selector <cub-policy-selectors>` that returns a @ref ScanPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-policy-selector
+//!      :end-before: example-end exclusive-sum-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin exclusive-sum-tuning
+//!      :end-before: example-end exclusive-sum-tuning
+//!
 //! @endrst
 struct DeviceScan
 {

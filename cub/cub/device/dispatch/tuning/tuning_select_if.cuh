@@ -1598,7 +1598,7 @@ struct select_if_policy
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
   BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
+  LookbackDelayPolicy delay_constructor;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const select_if_policy& lhs, const select_if_policy& rhs)
@@ -1653,7 +1653,7 @@ private:
       BLOCK_LOAD_DIRECT,
       load_modifier,
       BLOCK_SCAN_WARP_SCANS,
-      delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}};
+      LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_scaled_policy(
@@ -1661,7 +1661,7 @@ private:
     int nominal_4b_items,
     BlockLoadAlgorithm load_alg,
     CacheLoadModifier load_mod,
-    delay_constructor_policy delay) const -> select_if_policy
+    LookbackDelayPolicy delay) const -> select_if_policy
   {
     const int items_per_thread = nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
     return select_if_policy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
@@ -1682,7 +1682,7 @@ private:
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1140}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1140}};
       }
       if (has_flags && not keep_rejects)
       {
@@ -1692,7 +1692,7 @@ private:
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 464, 1025}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 464, 1025}};
       }
       if (not has_flags && keep_rejects)
       {
@@ -1702,7 +1702,7 @@ private:
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 400, 1090}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 400, 1090}};
       }
       if (has_flags && keep_rejects)
       {
@@ -1712,7 +1712,7 @@ private:
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 400, 1090}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 400, 1090}};
       }
     }
 
@@ -1732,7 +1732,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 395}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 395}};
         case 2:
           return select_if_policy{
             576,
@@ -1740,7 +1740,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 870}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 870}};
         case 4:
           return select_if_policy{
             256,
@@ -1748,7 +1748,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1130}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1130}};
         case 8:
           return select_if_policy{
             192,
@@ -1756,7 +1756,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 832, 1165}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
         default:
           break;
       }
@@ -1772,7 +1772,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 735}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 735}};
         case 2:
           return select_if_policy{
             256,
@@ -1780,7 +1780,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1155}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1155}};
         case 4:
           return select_if_policy{
             320,
@@ -1788,7 +1788,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 124, 1115}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 124, 1115}};
         case 8:
           return select_if_policy{
             384,
@@ -1796,7 +1796,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1130}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1130}};
         default:
           break;
       }
@@ -1812,7 +1812,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 510}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 510}};
         case 2:
           return select_if_policy{
             224,
@@ -1820,7 +1820,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1045}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1045}};
         case 4:
           return select_if_policy{
             192,
@@ -1828,7 +1828,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1040}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1040}};
         case 8:
           return select_if_policy{
             192,
@@ -1836,7 +1836,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 68, 1160}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 68, 1160}};
         default:
           break;
       }
@@ -1852,7 +1852,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 595}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 595}};
         case 2:
           return select_if_policy{
             224,
@@ -1860,7 +1860,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1105}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1105}};
         case 4:
           return select_if_policy{
             192,
@@ -1868,7 +1868,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 912, 1025}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 912, 1025}};
         case 8:
           return select_if_policy{
             192,
@@ -1876,7 +1876,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 884, 1130}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 884, 1130}};
         default:
           break;
       }
@@ -1899,7 +1899,7 @@ private:
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 460, 1145}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 460, 1145}};
       }
       if (has_flags && not keep_rejects)
       {
@@ -1909,7 +1909,7 @@ private:
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 284, 1130}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 284, 1130}};
       }
       if (not has_flags && keep_rejects)
       {
@@ -1919,7 +1919,7 @@ private:
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 1616, 1115}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 1616, 1115}};
       }
       if (has_flags && keep_rejects)
       {
@@ -1929,7 +1929,7 @@ private:
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 720, 1105}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 720, 1105}};
       }
     }
 
@@ -1949,7 +1949,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 580}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 580}};
         case 2:
           return select_if_policy{
             256,
@@ -1957,7 +1957,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 320, 605}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 320, 605}};
         case 4:
           return select_if_policy{
             384,
@@ -1965,7 +1965,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 76, 1150}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 76, 1150}};
         case 8:
           return select_if_policy{
             384,
@@ -1973,7 +1973,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 380, 1140}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 380, 1140}};
         default:
           break;
       }
@@ -1989,7 +1989,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 715}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 715}};
         case 2:
           return select_if_policy{
             448,
@@ -1997,7 +1997,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 504, 765}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 504, 765}};
         case 4:
           return select_if_policy{
             384,
@@ -2005,7 +2005,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 415, 1125}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 415, 1125}};
         case 8:
           return select_if_policy{
             384,
@@ -2013,7 +2013,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 360, 1170}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 360, 1170}};
         default:
           break;
       }
@@ -2029,7 +2029,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 908, 995}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 908, 995}};
         case 2:
           return select_if_policy{
             320,
@@ -2037,7 +2037,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 500, 560}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 500, 560}};
         case 4:
           return select_if_policy{
             256,
@@ -2045,7 +2045,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 536, 1055}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 536, 1055}};
         case 8:
           return select_if_policy{
             128,
@@ -2053,7 +2053,7 @@ private:
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 512, 1075}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 512, 1075}};
         default:
           break;
       }
@@ -2069,7 +2069,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 580, 850}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 580, 850}};
         case 2:
           return select_if_policy{
             512,
@@ -2077,7 +2077,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 388, 1055}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 388, 1055}};
         case 4:
           return select_if_policy{
             256,
@@ -2085,7 +2085,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 72, 1165}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 72, 1165}};
         case 8:
           return select_if_policy{
             224,
@@ -2093,7 +2093,7 @@ private:
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 532, 1180}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 532, 1180}};
         default:
           break;
       }
@@ -2120,7 +2120,7 @@ private:
           22,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backoff, 0, 915});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, 0, 915});
       }
       if (input_size_bytes == 1 && may_alias)
       {
@@ -2130,7 +2130,7 @@ private:
           20,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 596, 295});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 596, 295});
       }
       if (input_size_bytes == 4 && not may_alias)
       {
@@ -2140,7 +2140,7 @@ private:
           15,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1508, 585});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1508, 585});
       }
     }
 
@@ -2155,7 +2155,7 @@ private:
           20,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon, 84, 480});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 84, 480});
       }
       if (input_size_bytes == 1 && may_alias)
       {
@@ -2165,7 +2165,7 @@ private:
           20,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 360, 380});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 360, 380});
       }
       if (input_size_bytes == 2 && not may_alias)
       {
@@ -2175,7 +2175,7 @@ private:
           22,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1292, 750});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1292, 750});
       }
       if (input_size_bytes == 2 && may_alias)
       {
@@ -2185,7 +2185,7 @@ private:
           20,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backoff, 136, 760});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, 136, 760});
       }
       if (input_size_bytes == 4 && not may_alias)
       {
@@ -2195,7 +2195,7 @@ private:
           14,
           BLOCK_LOAD_DIRECT,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 844, 675});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 844, 675});
       }
       if (input_size_bytes == 4 && may_alias)
       {
@@ -2205,7 +2205,7 @@ private:
           14,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_DEFAULT,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon, 524, 635});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 524, 635});
       }
       if (input_size_bytes == 8 && not may_alias)
       {
@@ -2215,7 +2215,7 @@ private:
           22,
           BLOCK_LOAD_DIRECT,
           LOAD_CA,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon, 660, 1030});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 660, 1030});
       }
       if (input_size_bytes == 8 && may_alias)
       {
@@ -2225,7 +2225,7 @@ private:
           21,
           BLOCK_LOAD_WARP_TRANSPOSE,
           LOAD_CA,
-          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1316, 990});
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1316, 990});
       }
       return {};
     }
@@ -2243,7 +2243,7 @@ private:
             15,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 676, 500});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 676, 500});
         }
         if (offset_size_bytes == 4 && input_size_bytes == 2)
         {
@@ -2253,7 +2253,7 @@ private:
             22,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1756, 615});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 1756, 615});
         }
         if (offset_size_bytes == 4 && input_size_bytes == 4)
         {
@@ -2263,7 +2263,7 @@ private:
             19,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 716, 570});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 716, 570});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
@@ -2273,7 +2273,7 @@ private:
             22,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 368, 680});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 368, 680});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
@@ -2283,7 +2283,7 @@ private:
             20,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 516, 635});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 516, 635});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
@@ -2293,7 +2293,7 @@ private:
             18,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1712, 825});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1712, 825});
         }
       }
       else // not distinct_partitions
@@ -2306,7 +2306,7 @@ private:
             22,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 68, 990});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, 68, 990});
         }
         if (offset_size_bytes == 4 && input_size_bytes == 2)
         {
@@ -2316,7 +2316,7 @@ private:
             22,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 560, 640});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 560, 640});
         }
         if (offset_size_bytes == 4 && input_size_bytes == 4)
         {
@@ -2326,7 +2326,7 @@ private:
             19,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 724, 970});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 724, 970});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
@@ -2336,7 +2336,7 @@ private:
             20,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1016, 545});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 1016, 545});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
@@ -2346,7 +2346,7 @@ private:
             22,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 124, 690});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, 124, 690});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
@@ -2356,7 +2356,7 @@ private:
             19,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1884, 950});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 1884, 950});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 8)
         {
@@ -2366,7 +2366,7 @@ private:
             23,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 0, 1200});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, 0, 1200});
         }
       }
     }
@@ -2384,7 +2384,7 @@ private:
             20,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 964, 385});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 964, 385});
         }
         if (offset_size_bytes == 4 && input_size_bytes == 8)
         {
@@ -2394,7 +2394,7 @@ private:
             21,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 300, 580});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 300, 580});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
@@ -2404,7 +2404,7 @@ private:
             20,
             BLOCK_LOAD_DIRECT,
             LOAD_CA,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 240, 845});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 240, 845});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
@@ -2414,7 +2414,7 @@ private:
             14,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 1428, 830});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1428, 830});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
@@ -2424,7 +2424,7 @@ private:
             14,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1204, 635});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1204, 635});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 8)
         {
@@ -2434,7 +2434,7 @@ private:
             19,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 1016, 875});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1016, 875});
         }
       }
       else // not distinct_partitions
@@ -2447,7 +2447,7 @@ private:
             24,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 2024, 835});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 2024, 835});
         }
         if (offset_size_bytes == 4 && input_size_bytes == 4)
         {
@@ -2457,7 +2457,7 @@ private:
             11,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 476, 665});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 476, 665});
         }
         if (offset_size_bytes == 4 && input_size_bytes == 8)
         {
@@ -2467,7 +2467,7 @@ private:
             20,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1420, 525});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1420, 525});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
@@ -2477,7 +2477,7 @@ private:
             12,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 0, 850});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 0, 850});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
@@ -2487,7 +2487,7 @@ private:
             12,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon, 1552, 730});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1552, 730});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
@@ -2497,7 +2497,7 @@ private:
             14,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1444, 655});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1444, 655});
         }
         if (offset_size_bytes == 8 && input_size_bytes == 8)
         {
@@ -2507,7 +2507,7 @@ private:
             11,
             BLOCK_LOAD_DIRECT,
             LOAD_DEFAULT,
-            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 536, 845});
+            LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, 536, 845});
         }
       }
     }
