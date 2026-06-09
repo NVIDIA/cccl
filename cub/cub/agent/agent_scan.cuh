@@ -36,6 +36,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// TODO(bgruber): remove when C++20 is the minimum, since then we can pass policy values as NTTPs
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
