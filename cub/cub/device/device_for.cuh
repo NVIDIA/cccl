@@ -218,8 +218,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -288,8 +287,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -361,8 +359,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -440,8 +437,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -516,8 +512,7 @@ public:
   //!   is a model of [Unary Function](https://en.cppreference.com/w/cpp/utility/functional/unary_function)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1099,8 +1094,7 @@ public:
   //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`,
-  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
