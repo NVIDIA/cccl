@@ -453,42 +453,175 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  struct fake_hub
-  {
-    using MaxPolicy = void;
-  };
+  static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+  static constexpr int init_kernel_threads               = 256;
 
-  using dispatch_t = DispatchThreeWayPartitionIf<
-    InputIteratorT,
-    FirstOutputIteratorT,
-    SecondOutputIteratorT,
-    UnselectedOutputIteratorT,
-    NumSelectedIteratorT,
-    SelectFirstPartOp,
-    SelectSecondPartOp,
-    OffsetT,
-    fake_hub,
-    KernelSource,
-    KernelLauncherFactory>;
-  auto dispatch = dispatch_t{
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in,
-    d_first_part_out,
-    d_second_part_out,
-    d_unselected_out,
-    d_num_selected_out,
-    select_first_part_op,
-    select_second_part_op,
-    num_items,
-    stream,
-    kernel_source,
-    launcher_factory};
-  return dispatch.__invoke(
-    active_policy.threads_per_block,
-    active_policy.items_per_thread,
-    kernel_source.ThreeWayPartitionInitKernel(),
-    kernel_source.ThreeWayPartitionKernel());
+  const int threads_per_block = active_policy.threads_per_block;
+  const int items_per_thread  = active_policy.items_per_thread;
+  const int tile_size         = threads_per_block * items_per_thread;
+
+  auto three_way_partition_init_kernel = kernel_source.ThreeWayPartitionInitKernel();
+  auto three_way_partition_kernel      = kernel_source.ThreeWayPartitionKernel();
+
+  // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
+  auto const max_partition_size =
+    static_cast<OffsetT>((::cuda::std::min) (static_cast<uint64_t>(num_items), static_cast<uint64_t>(partition_size)));
+
+  // The number of partitions required to "iterate" over the total input
+  auto const num_partitions = (max_partition_size == 0) ? OffsetT{1} : ::cuda::ceil_div(num_items, max_partition_size);
+
+  // The maximum number of tiles for which we will ever invoke the kernel
+  auto const max_num_tiles_per_invocation = static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
+
+  // For streaming invocations, we need two sets (for double-buffering) of three counters each
+  constexpr ::cuda::std::size_t num_counters_per_pass  = 3;
+  constexpr ::cuda::std::size_t num_streaming_counters = 2 * num_counters_per_pass;
+  ::cuda::std::size_t streaming_selection_storage_bytes =
+    (num_partitions > 1) ? num_streaming_counters * sizeof(OffsetT) : ::cuda::std::size_t{0};
+
+  // Specify temporary storage allocation requirements
+  size_t allocation_sizes[2] = {0ULL, streaming_selection_storage_bytes};
+
+  if (const auto error =
+        CubDebug(ScanTileStateT::AllocationSize(static_cast<int>(max_num_tiles_per_invocation), allocation_sizes[0])))
+  {
+    return error;
+  }
+
+  // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
+  void* allocations[2] = {};
+
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    // Return if the caller is simply requesting the size of the storage allocation
+    return cudaSuccess;
+  }
+
+  // Initialize the streaming context with the temporary storage for double-buffering the previously selected items
+  // and the total number (across all partitions) of items
+  OffsetT* tmp_num_selected_out = static_cast<OffsetT*>(allocations[1]);
+  streaming_context_t streaming_context{
+    tmp_num_selected_out, (tmp_num_selected_out + num_counters_per_pass), (num_partitions <= 1)};
+
+  // Iterate over the partitions until all input is processed
+  for (OffsetT partition_idx = 0; partition_idx < num_partitions; partition_idx++)
+  {
+    OffsetT current_partition_offset = partition_idx * max_partition_size;
+    OffsetT current_num_items =
+      (partition_idx + 1 == num_partitions) ? (num_items - current_partition_offset) : max_partition_size;
+
+    // Construct the tile status interface
+    const auto current_num_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
+
+    // Construct the tile status interface
+    ScanTileStateT tile_status;
+    if (const auto error = CubDebug(tile_status.Init(current_num_tiles, allocations[0], allocation_sizes[0])))
+    {
+      return error;
+    }
+
+    // Log three_way_partition_init_kernel configuration
+    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
+
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
+            init_grid_size,
+            init_kernel_threads,
+            reinterpret_cast<long long>(stream));
+#endif // CUB_DEBUG_LOG
+
+    // Invoke three_way_partition_init_kernel to initialize tile descriptors
+    if (const auto error = CubDebug(
+          launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
+            .doit(three_way_partition_init_kernel, tile_status, current_num_tiles, d_num_selected_out)))
+    {
+      return error;
+    }
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // No more items to process (note, we do not want to return early for num_items==0, because we need to make sure
+    // that `three_way_partition_init_kernel` has written '0' to d_num_selected_out)
+    if (current_num_items == 0)
+    {
+      return cudaSuccess;
+    }
+
+    // Log select_if_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    {
+      // Get SM occupancy for three_way_partition_kernel
+      int range_select_sm_occupancy;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            range_select_sm_occupancy, // out
+            three_way_partition_kernel,
+            threads_per_block)))
+      {
+        return error;
+      }
+
+      _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
+              "items per thread, %d SM occupancy\n",
+              current_num_tiles,
+              threads_per_block,
+              reinterpret_cast<long long>(stream),
+              items_per_thread,
+              range_select_sm_occupancy);
+    }
+#endif // CUB_DEBUG_LOG
+
+    // Invoke three_way_partition_kernel
+    if (const auto error = CubDebug(
+          launcher_factory(current_num_tiles, threads_per_block, 0, stream)
+            .doit(three_way_partition_kernel,
+                  d_in,
+                  d_first_part_out,
+                  d_second_part_out,
+                  d_unselected_out,
+                  d_num_selected_out,
+                  tile_status,
+                  select_first_part_op,
+                  select_second_part_op,
+                  static_cast<per_partition_offset_t>(current_num_items),
+                  current_num_tiles,
+                  streaming_context)))
+    {
+      return error;
+    }
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Prepare streaming context for next partition (swap double buffers, advance number of processed items, etc.)
+    streaming_context.advance(current_num_items, (partition_idx + OffsetT{2} == num_partitions));
+  }
+
+  return cudaSuccess;
 }
 } // namespace detail::three_way_partition
 
