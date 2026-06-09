@@ -59,6 +59,30 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceRunLengthEncode
 {
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // DeviceRunLengthEncode::Encode dispatches to ReduceByKey, but we want to have a dedicated tuning policy, so we need
+  // to adapt the policy selector to convert the tuning policy
+  template <typename PolicySelector>
+#  if _CCCL_HAS_CONCEPTS()
+    requires detail::rle::rle_encode_policy_selector<PolicySelector>
+#  endif // _CCCL_HAS_CONCEPTS()
+  struct __policy_selector_adapter
+  {
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+      -> ReduceByKeyPolicy
+    {
+      const RLEEncodePolicy policy = PolicySelector{}(cc);
+      return ReduceByKeyPolicy{
+        policy.threads_per_block,
+        policy.items_per_thread,
+        policy.load_algorithm,
+        policy.load_modifier,
+        policy.scan_algorithm,
+        policy.lookback_delay};
+    }
+  };
+#endif // _CCCL_DOXYGEN_INVOKED
+
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
   //!
@@ -203,7 +227,7 @@ struct DeviceRunLengthEncode
       reduction_op{},
       static_cast<offset_t>(num_items),
       stream,
-      policy_selector_t{});
+      __policy_selector_adapter<policy_selector_t>{});
   }
 
   //! @rst
