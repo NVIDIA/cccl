@@ -13,6 +13,7 @@ from numba import cuda  # noqa: E402
 import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental.interop.numba import (  # noqa: E402
     get_arg_numba,
+    jit,
     numba_arguments,
 )
 
@@ -306,6 +307,15 @@ def test_numba_exec_place():
         dY = get_arg_numba(t, 0)
         dZ = get_arg_numba(t, 1)
         axpy[32, 64, nb_stream](2.0, dY, dZ)
+
+
+def test_jit_requires_context_or_dep_args():
+    def noop(_x):
+        return None
+
+    wrapped = jit(noop)[1, 1]
+    with pytest.raises(TypeError, match="No STF context could be inferred"):
+        wrapped(1.0)
 
 
 def test_numba_places():

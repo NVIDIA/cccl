@@ -159,7 +159,6 @@ class stf_kernel_decorator:
                 "launch configuration missing -- use kernel[grid, block, ctx](...)"
             )
 
-        cuda = _import_numba_cuda()
         gridDim, blockDim, ctx, exec_pl = self._launch_cfg
 
         dep_items = []
@@ -170,6 +169,13 @@ class stf_kernel_decorator:
                     ctx = ld.borrow_ctx_handle()
                 dep_items.append((i, a))
 
+        if ctx is None:
+            raise TypeError(
+                "No STF context could be inferred. Provide at least one dep argument "
+                "or pass an explicit context via kernel[grid, block, exec_place, ctx]."
+            )
+
+        cuda = _import_numba_cuda()
         task_args = [exec_pl] if exec_pl else []
         task_args.extend(a for _, a in dep_items)
 
