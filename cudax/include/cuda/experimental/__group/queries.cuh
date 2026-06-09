@@ -103,9 +103,9 @@ template <class _Tp, class _Unit, class _Group>
   }
   else
   {
-    const auto __unit_rank        = __rank_query<_Unit, _GroupUnit>::template __call<_Tp>(__group.hierarchy());
-    const auto __group_unit_count = ::cuda::experimental::__count_query_group<_Tp, _Unit>(__group);
-    return static_cast<_Tp>(__group_unit_rank * __group_unit_count + __unit_rank);
+    const auto __unit_rank  = __rank_query<_Unit, _GroupUnit>::template __call<_Tp>(__group.hierarchy());
+    const auto __unit_count = __count_query<_Unit, _GroupUnit>::template __call<_Tp>(__group.hierarchy());
+    return static_cast<_Tp>(__group_unit_rank * __unit_count + __unit_rank);
   }
 }
 

@@ -65,7 +65,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @param[in] d_in
@@ -105,7 +105,7 @@ template <typename PolicySelector,
           typename EndOffsetIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
@@ -118,7 +118,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
     _CCCL_GRID_CONSTANT const int num_segments,
     ReductionOpT reduction_op,
-    _CCCL_GRID_CONSTANT const InitT init,
+    _CCCL_GRID_CONSTANT const InitValueT init,
     _CCCL_GRID_CONSTANT const size_t max_segment_size)
 {
   static constexpr segmented_reduce_policy full_policy = current_policy<PolicySelector>();
@@ -198,7 +198,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
         {
           if (lane_id == 0)
           {
-            *(d_out + global_segment_id) = reduce::unwrap_empty_problem_init(init);
+            reduce::handle_empty_problem(d_out + global_segment_id, init);
           }
           return;
         }
@@ -240,7 +240,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     {
       if (tid == 0)
       {
-        *(d_out + bid) = reduce::unwrap_empty_problem_init(init);
+        reduce::handle_empty_problem(d_out + bid, init);
       }
       return;
     }
@@ -275,7 +275,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
  *
- * @tparam InitT
+ * @tparam InitValueT
  *   Initial value type
  *
  * @param[in] d_in
@@ -310,7 +310,7 @@ template <typename PolicySelector,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename AccumT>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
@@ -322,7 +322,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   _CCCL_GRID_CONSTANT const OffsetT segment_size,
   _CCCL_GRID_CONSTANT const int num_segments,
   ReductionOpT reduction_op,
-  _CCCL_GRID_CONSTANT const InitT init,
+  _CCCL_GRID_CONSTANT const InitValueT init,
   _CCCL_GRID_CONSTANT AccumT* const d_partial_out,
   _CCCL_GRID_CONSTANT const int full_chunk_size,
   _CCCL_GRID_CONSTANT const int blocks_per_segment)
@@ -399,7 +399,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
       {
         if (lane_id == 0)
         {
-          *(d_out + global_segment_id) = detail::reduce::unwrap_empty_problem_init(init);
+          detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
         }
         return;
       }

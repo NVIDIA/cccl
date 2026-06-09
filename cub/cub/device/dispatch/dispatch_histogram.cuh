@@ -335,7 +335,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
-        launcher_factory(histogram_init_grid_dims, histogram_init_threads_per_block, 0, stream, true)
+        launcher_factory(histogram_init_grid_dims,
+                         histogram_init_threads_per_block,
+                         0,
+                         stream,
+                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
   {
     return error;
@@ -361,7 +365,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
-        launcher_factory(sweep_grid_dims, threads_per_block, 0, stream, true)
+        launcher_factory(
+          sweep_grid_dims, threads_per_block, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(sweep_kernel,
                 d_samples,
                 num_output_bins_wrapper,
@@ -773,7 +778,7 @@ public:
                       ({
                         histogram_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
-                        MaxPolicy::Invoke(cc.get() * 10, dispatch);
+                        _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
                       ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));

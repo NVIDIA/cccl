@@ -53,6 +53,24 @@ struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<
 CUB_NAMESPACE_BEGIN
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
 //! sequences into an output sequence.
+//!
+//! @par Tuning
+//! @rst
+//! All algorithms in DeviceTransform that accept an environment can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a @ref TransformPolicy, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_transform_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin transform-policy-selector
+//!      :end-before: example-end transform-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_transform_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin transform-tuning
+//!      :end-before: example-end transform-tuning
+//! @endrst
 struct DeviceTransform
 {
   template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
@@ -89,8 +107,8 @@ struct DeviceTransform
                                                     ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                                     RandomAccessIteratorOut>;
 
-    using policy_selector = ::cuda::std::execution::
-      __query_result_or_t<tuning_env, detail::transform::transform_policy, default_policy_selector>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<tuning_env, TransformPolicy, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
     static_assert(detail::transform::transform_policy_selector<policy_selector>);

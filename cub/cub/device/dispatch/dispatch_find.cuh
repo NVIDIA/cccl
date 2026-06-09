@@ -55,7 +55,7 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
   IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
-  constexpr find_policy policy = current_policy<PolicySelector>();
+  constexpr FindPolicy policy = current_policy<PolicySelector>();
   using agent_find_t =
     agent_t<policy.threads_per_block,
             policy.items_per_thread,
@@ -112,7 +112,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const find_policy active_policy = policy_selector(cc);
+  const FindPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
@@ -181,7 +181,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
   // output iterator.
-  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+                                    1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
                                     .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
   {
     return error;
@@ -190,9 +191,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
   // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
   auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
-  if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-                                    findif_grid_size, active_policy.threads_per_block, 0, stream, true)
-                                    .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+  if (const auto error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          findif_grid_size,
+          active_policy.threads_per_block,
+          0,
+          stream,
+          /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+          .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
   {
     return error;
   }
@@ -200,7 +206,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   if constexpr (!can_write_to_output_directly)
   {
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+            1, 1, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
             .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out)))
     {
       return error;

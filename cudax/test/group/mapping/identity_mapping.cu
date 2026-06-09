@@ -15,6 +15,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -41,11 +42,12 @@ __device__ void test_identity_mapping(Config config)
     const ThreadsInWarpMappingResult prev_mapping_result;
 
     static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                    parent_group, prev_mapping_result))>);
-    static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                    cuda::gpu_thread, parent_group, prev_mapping_result))>);
+    static_assert(
+      noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
     const Mapping mapping;
-    auto result  = mapping.map(parent_group, prev_mapping_result);
+    auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
     using Result = decltype(result);
 
     static_assert(cuda::std::is_same_v<Result, ThreadsInWarpMappingResult>);
@@ -57,6 +59,8 @@ __device__ void test_identity_mapping(Config config)
     static_assert(Result::static_count() == ThreadsInWarpMappingResult::static_count());
     CHECK(result.count() == prev_mapping_result.count());
     CHECK(result.rank() == prev_mapping_result.rank());
+
+    CHECK(result.lane_mask() == prev_mapping_result.lane_mask());
 
     CHECK(result.is_valid() == prev_mapping_result.is_valid());
     static_assert(Result::is_always_exhaustive() == ThreadsInWarpMappingResult::is_always_exhaustive());

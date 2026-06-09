@@ -48,6 +48,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -67,6 +68,9 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
   [[nodiscard]] _CCCL_HOST_API static _Iter
   __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _UnaryOp __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     const auto __num_items = ::cuda::std::distance(__first, __last);
     using _OffsetType      = remove_cvref_t<decltype(__num_items)>;
     _OffsetType __ret;
@@ -83,9 +87,6 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
       static_cast<_OffsetType*>(nullptr),
       __pred,
       __num_items);
-
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};

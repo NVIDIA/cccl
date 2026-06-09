@@ -16,6 +16,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -104,11 +105,12 @@ __device__ void test_group_as(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
@@ -132,6 +134,10 @@ __device__ void test_group_as(Config config)
       static_assert(Result::static_count() == cuda::std::dynamic_extent);
       CHECK(result.count() == ns[group_rank_ref]);
       CHECK(result.rank() == rank_ref);
+
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
 
       CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
@@ -201,11 +207,12 @@ __device__ void test_group_as(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{ns};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
@@ -229,6 +236,10 @@ __device__ void test_group_as(Config config)
       static_assert(Result::static_count() == cuda::std::dynamic_extent);
       CHECK(result.count() == ns[group_rank_ref]);
       CHECK(result.rank() == rank_ref);
+
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
 
       CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
@@ -320,11 +331,12 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
@@ -356,6 +368,10 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
         CHECK(result.count() == ns[group_rank_ref]);
         CHECK(result.rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }
@@ -422,11 +438,12 @@ __device__ void test_group_as_non_exhaustive(Config config)
       const ThreadsInWarpMappingResult prev_mapping_result;
 
       static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(parent_group, prev_mapping_result)));
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{ns, cudax::non_exhaustive};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
@@ -458,6 +475,10 @@ __device__ void test_group_as_non_exhaustive(Config config)
 
         CHECK(result.count() == ns[group_rank_ref]);
         CHECK(result.rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }

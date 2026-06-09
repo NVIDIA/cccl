@@ -23,9 +23,12 @@
 
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/algorithm.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/basic_vec.h>
+#include <cuda/std/__simd/bit.h>
 #include <cuda/std/__simd/complex_math.h>
+#include <cuda/std/__simd/creation.h>
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/load.h>
 #include <cuda/std/__simd/permute.h>

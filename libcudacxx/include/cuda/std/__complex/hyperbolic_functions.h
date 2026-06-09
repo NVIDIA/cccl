@@ -364,7 +364,9 @@ template <class _Tp>
   if (__real_x_reduced >= __reduction_needed_bound)
   {
     // Set some very specific values to help with range reduction.
-    constexpr _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? _Tp{648.0} : _Tp{58.0f};
+    // This value was originally 648.0, but quite unluckily this resulted in different values of expm1() below on
+    // different compilers, and large inputs which should have ans.real() == 1 were off by a bit. This tweak fixes it.
+    constexpr _Tp __clamp_huge_values_bound = is_same_v<_Tp, double> ? _Tp{647.99999} : _Tp{58.0f};
 
     // Use two intervals to reduce values. Some values will be reduced twice.
     constexpr _Tp __large_interval_bound = is_same_v<_Tp, double> ? _Tp{334.0} : _Tp{34.0f};
