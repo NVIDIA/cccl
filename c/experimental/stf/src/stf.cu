@@ -906,7 +906,22 @@ CUstream stf_task_get_custream(stf_task_handle t)
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
   auto* task_ptr = from_opaque(t);
-  return static_cast<CUstream>(task_ptr->get_stream());
+  cudaStream_t s = task_ptr->get_stream();
+  // In a graph context, get_stream() only returns a valid capture stream once
+  // stf_task_enable_capture() has been called. A null stream here means the
+  // caller would launch work on the NULL stream, outside the STF graph -- a
+  // silent correctness bug (the task's graph node stays empty). Fail loudly and
+  // point at the two supported options instead of returning a null stream.
+  _CCCL_ASSERT(s != nullptr,
+               "task has no CUDA stream: in a graph context call stf_task_enable_capture() before stf_task_start() to "
+               "launch kernels on a stream, or use stf_task_get_graph() to add graph nodes explicitly");
+  return static_cast<CUstream>(s);
+}
+
+cudaGraph_t stf_task_get_graph(stf_task_handle t)
+{
+  _CCCL_ASSERT(t != nullptr, "task handle must not be null");
+  return from_opaque(t)->get_graph();
 }
 
 int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)

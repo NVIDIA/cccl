@@ -1065,11 +1065,20 @@ void stf_task_end(stf_task_handle t);
 //! Returns CUDA stream associated with the task. All CUDA operations
 //! within task must use this stream for proper synchronization.
 //!
+//! \note In a graph context (including a stackable graph scope) the task has no
+//!       stream unless \c stf_task_enable_capture() was called before
+//!       \c stf_task_start(). Calling this function without capture enabled in a
+//!       graph context is a usage error and aborts (in debug builds) rather than
+//!       silently returning a null stream, which would launch work outside the
+//!       STF graph. If you want to populate the task's graph explicitly instead
+//!       of capturing a stream, use \c stf_task_get_graph().
+//!
 //! \param t Task handle
 //! \return CUDA stream for launching operations
 //!
 //! \pre t must be valid task handle
 //! \pre stf_task_start() must have been called
+//! \pre in a graph context, stf_task_enable_capture() must have been called
 //!
 //! \par Example:
 //! \code
@@ -1080,9 +1089,32 @@ void stf_task_end(stf_task_handle t);
 //! my_kernel<<<grid, block, 0, (cudaStream_t)stream>>>(args...);
 //! \endcode
 //!
-//! \see stf_task_start(), stf_task_get()
+//! \see stf_task_start(), stf_task_get(), stf_task_enable_capture(), stf_task_get_graph()
 
 CUstream stf_task_get_custream(stf_task_handle t);
+
+//!
+//! \brief Get the task's child CUDA graph for explicit node insertion.
+//!
+//! Advanced/expert alternative to \c stf_task_get_custream() for tasks running
+//! in a graph context: instead of capturing a stream, the caller adds nodes
+//! directly into the returned \c cudaGraph_t (e.g. via \c cudaGraphAddKernelNode).
+//! STF wires the task's dependencies around this child graph.
+//!
+//! This is mutually exclusive with the capture path: do \b not call
+//! \c stf_task_enable_capture() / \c stf_task_get_custream() on a task for which
+//! you use \c stf_task_get_graph().
+//!
+//! \param t Task handle
+//! \return The task's child \c cudaGraph_t (owned by STF; do not destroy).
+//!
+//! \pre t must be valid task handle
+//! \pre stf_task_start() must have been called
+//! \pre the task must run in a graph context (aborts otherwise in debug builds)
+//!
+//! \see stf_task_get_custream(), stf_task_start()
+
+cudaGraph_t stf_task_get_graph(stf_task_handle t);
 
 //!
 //! \brief Get data pointer for task dependency

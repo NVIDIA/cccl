@@ -59,6 +59,7 @@ C2H_TEST("stackable: token in push_graph scope (no prologue)", "[stackable][toke
     stf_task_handle t = stf_stackable_task_create(ctx);
     REQUIRE(t != nullptr);
     stf_stackable_task_add_dep(ctx, t, tok, STF_WRITE);
+    stf_task_enable_capture(t);
     stf_task_start(t);
     noop_kernel<<<1, 1, 0, (cudaStream_t) stf_task_get_custream(t)>>>();
     stf_task_end(t);
