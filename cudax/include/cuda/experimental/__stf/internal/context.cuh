@@ -335,7 +335,7 @@ public:
         }
         else
         {
-          _CCCL_ASSERT(false, "get_graph() is only valid for tasks in a graph context");
+          _CCCL_VERIFY(false, "get_graph() is only valid for tasks in a graph context");
           return nullptr;
         }
       };
