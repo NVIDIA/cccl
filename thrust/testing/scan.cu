@@ -812,7 +812,7 @@ void TestInclusiveScanForInvalidValues()
   ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
   using policy_selector_t = cub::detail::scan::
     policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
-  if (policy_selector_t{}(cc).algorithm == cub::detail::scan::scan_algorithm::warpspeed)
+  if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::warpspeed)
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   {
     for (int n : {1, 100, 10'000})

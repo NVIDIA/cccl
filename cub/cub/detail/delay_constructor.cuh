@@ -19,9 +19,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-enum class delay_constructor_kind
+//! The delay algorithm used by decoupled lookback
+enum class LookbackDelayAlgorithm
 {
   no_delay,
   fixed_delay,
@@ -31,175 +30,177 @@ enum class delay_constructor_kind
   exponential_backon_jitter_window,
   exponential_backon_jitter,
   exponential_backon,
-  reduce_by_key
+  __reduce_by_key //!< Internal
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kind)
+inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm kind)
 {
   switch (kind)
   {
-    case delay_constructor_kind::no_delay:
-      return os << "delay_constructor_kind::no_delay";
-    case delay_constructor_kind::fixed_delay:
-      return os << "delay_constructor_kind::fixed_delay";
-    case delay_constructor_kind::exponential_backoff:
-      return os << "delay_constructor_kind::exponential_backoff";
-    case delay_constructor_kind::exponential_backoff_jitter:
-      return os << "delay_constructor_kind::exponential_backoff_jitter";
-    case delay_constructor_kind::exponential_backoff_jitter_window:
-      return os << "delay_constructor_kind::exponential_backoff_jitter_window";
-    case delay_constructor_kind::exponential_backon_jitter_window:
-      return os << "delay_constructor_kind::exponential_backon_jitter_window";
-    case delay_constructor_kind::exponential_backon_jitter:
-      return os << "delay_constructor_kind::exponential_backon_jitter";
-    case delay_constructor_kind::exponential_backon:
-      return os << "delay_constructor_kind::exponential_backon";
-    case delay_constructor_kind::reduce_by_key:
-      return os << "delay_constructor_kind::reduce_by_key";
+    case LookbackDelayAlgorithm::no_delay:
+      return os << "LookbackDelayAlgorithm::no_delay";
+    case LookbackDelayAlgorithm::fixed_delay:
+      return os << "LookbackDelayAlgorithm::fixed_delay";
+    case LookbackDelayAlgorithm::exponential_backoff:
+      return os << "LookbackDelayAlgorithm::exponential_backoff";
+    case LookbackDelayAlgorithm::exponential_backoff_jitter:
+      return os << "LookbackDelayAlgorithm::exponential_backoff_jitter";
+    case LookbackDelayAlgorithm::exponential_backoff_jitter_window:
+      return os << "LookbackDelayAlgorithm::exponential_backoff_jitter_window";
+    case LookbackDelayAlgorithm::exponential_backon_jitter_window:
+      return os << "LookbackDelayAlgorithm::exponential_backon_jitter_window";
+    case LookbackDelayAlgorithm::exponential_backon_jitter:
+      return os << "LookbackDelayAlgorithm::exponential_backon_jitter";
+    case LookbackDelayAlgorithm::exponential_backon:
+      return os << "LookbackDelayAlgorithm::exponential_backon";
+    case LookbackDelayAlgorithm::__reduce_by_key:
+      return os << "LookbackDelayAlgorithm::__reduce_by_key";
     default:
-      return os << "<unknown delay_constructor_kind: " << static_cast<int>(kind) << ">";
+      return os << "<unknown LookbackDelayAlgorithm: " << static_cast<int>(kind) << ">";
   }
 }
 #endif // _CCCL_HOSTED()
 
-struct delay_constructor_policy
+//! The policy configuring the delay algorithm used by decoupled lookback
+struct LookbackDelayPolicy
 {
-  delay_constructor_kind kind;
-  unsigned int delay;
-  unsigned int l2_write_latency;
+  LookbackDelayAlgorithm kind; //!< The algorithm used for delaying during decoupled lookback
+  unsigned int delay; //!< The delay in nanoseconds
+  unsigned int l2_write_latency; //!< The write latency of the L2 cache in nanoseconds
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs)
   {
     return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs)
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const delay_constructor_policy& p)
+  friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
   {
-    return os << "delay_constructor_policy { .kind = " << p.kind << ", .delay = " << p.delay
+    return os << "LookbackDelayPolicy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
+namespace detail
+{
 template <typename DelayConstructor>
-inline constexpr auto delay_constructor_policy_from_type = 0;
+inline constexpr auto lookback_delay_policy_from_type = 0;
 
 template <unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<no_delay_constructor_t<L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::no_delay, 0, L2WriteLatency};
+inline constexpr auto lookback_delay_policy_from_type<no_delay_constructor_t<L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::fixed_delay, Delay, L2WriteLatency};
+inline constexpr auto lookback_delay_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::exponential_backoff, Delay, L2WriteLatency};
+inline constexpr auto lookback_delay_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>> =
-    delay_constructor_policy{delay_constructor_kind::exponential_backoff_jitter, Delay, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>> =
-    delay_constructor_policy{delay_constructor_kind::exponential_backoff_jitter_window, Delay, L2WriteLatency};
+inline constexpr auto lookback_delay_policy_from_type<exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff_jitter, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>> =
-    delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, Delay, L2WriteLatency};
+  lookback_delay_policy_from_type<exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>> =
+    LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff_jitter_window, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, Delay, L2WriteLatency};
+inline constexpr auto
+  lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>> =
+    LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::exponential_backon, Delay, L2WriteLatency};
+inline constexpr auto lookback_delay_policy_from_type<exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto lookback_delay_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
+  LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, Delay, L2WriteLatency};
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold>
 inline constexpr auto
-  delay_constructor_policy_from_type<reduce_by_key_delay_constructor_t<Delay, L2WriteLatency, GridThreshold>> =
-    delay_constructor_policy{delay_constructor_kind::reduce_by_key, Delay, L2WriteLatency};
+  lookback_delay_policy_from_type<reduce_by_key_delay_constructor_t<Delay, L2WriteLatency, GridThreshold>> =
+    LookbackDelayPolicy{LookbackDelayAlgorithm::__reduce_by_key, Delay, L2WriteLatency};
 
-template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
+template <LookbackDelayAlgorithm Kind, unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for;
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::no_delay, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::no_delay, Delay, L2WriteLatency>
 {
   using type = no_delay_constructor_t<L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::fixed_delay, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::fixed_delay, Delay, L2WriteLatency>
 {
   using type = fixed_delay_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::exponential_backoff, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backoff, Delay, L2WriteLatency>
 {
   using type = exponential_backoff_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::exponential_backoff_jitter, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backoff_jitter, Delay, L2WriteLatency>
 {
   using type = exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::exponential_backoff_jitter_window, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backoff_jitter_window, Delay, L2WriteLatency>
 {
   using type = exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::exponential_backon_jitter_window, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backon_jitter_window, Delay, L2WriteLatency>
 {
   using type = exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::exponential_backon_jitter, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backon_jitter, Delay, L2WriteLatency>
 {
   using type = exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::exponential_backon, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::exponential_backon, Delay, L2WriteLatency>
 {
   using type = exponential_backon_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::reduce_by_key, Delay, L2WriteLatency>
+struct delay_constructor_for<LookbackDelayAlgorithm::__reduce_by_key, Delay, L2WriteLatency>
 {
   using type = reduce_by_key_delay_constructor_t<Delay, L2WriteLatency>;
 };
 
-template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
+template <LookbackDelayAlgorithm Kind, unsigned int Delay, unsigned int L2WriteLatency>
 using delay_constructor_t = typename delay_constructor_for<Kind, Delay, L2WriteLatency>::type;
 
 _CCCL_HOST_DEVICE_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_trivially_copyable)
 {
   if (is_primitive_or_trivially_copyable)
   {
-    return delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450};
+    return LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 350, 450};
   }
-  return delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
+  return LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 450};
 }
 
 _CCCL_HOST_DEVICE_API constexpr auto default_reduce_by_key_delay_constructor_policy(
@@ -210,7 +211,7 @@ _CCCL_HOST_DEVICE_API constexpr auto default_reduce_by_key_delay_constructor_pol
 {
   if (value_is_primitive_or_trivially_copyable && (value_size + key_size < 16))
   {
-    return delay_constructor_policy{delay_constructor_kind::reduce_by_key, 350, 450};
+    return LookbackDelayPolicy{LookbackDelayAlgorithm::__reduce_by_key, 350, 450};
   }
   return default_delay_constructor_policy(key_is_primitive_or_trivially_copyable);
 }
