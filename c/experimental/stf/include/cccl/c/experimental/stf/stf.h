@@ -1105,6 +1105,15 @@ CUstream stf_task_get_custream(stf_task_handle t);
 //! \c stf_task_enable_capture() / \c stf_task_get_custream() on a task for which
 //! you use \c stf_task_get_graph().
 //!
+//! \note This is primarily a C/C++ affordance. In C++ the returned handle can be
+//!       adopted with \c cuda::experimental::graph_builder::from_native_handle()
+//!       to add nodes ergonomically. There is currently \b no equivalent in the
+//!       Python \c cuda.core graph API (its \c GraphBuilder is created only from a
+//!       device/stream and builds via stream capture; it cannot adopt an existing
+//!       \c cudaGraph_t), so this entry point may not be backed by a Python
+//!       interface. From Python, prefer the capture path
+//!       (\c stf_task_enable_capture() + \c stf_task_get_custream()).
+//!
 //! \param t Task handle
 //! \return The task's child \c cudaGraph_t (owned by STF; do not destroy).
 //!
