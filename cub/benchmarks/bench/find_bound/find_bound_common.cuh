@@ -11,7 +11,6 @@
 #include <thrust/sort.h>
 
 #include <cstddef>
-#include <cstdint>
 
 #include <nvbench_helper.cuh>
 
@@ -25,12 +24,12 @@ struct bounds_bench_data
 
   explicit bounds_bench_data(nvbench::state& state)
   {
-    elements                 = static_cast<std::size_t>(state.get_int64("Elements"));
+    elements                 = static_cast<std::size_t>(state.get_int64("Elements{io}"));
     const auto needles_ratio = static_cast<std::size_t>(state.get_int64("NeedlesRatio"));
     needles                  = needles_ratio * static_cast<std::size_t>(static_cast<double>(elements) / 100.0);
 
     data   = generate(elements + needles);
-    result = thrust::device_vector<std::ptrdiff_t>(needles);
+    result = thrust::device_vector<std::ptrdiff_t>(needles, thrust::no_init);
 
     thrust::sort(data.begin(),
                  data.begin() + static_cast<typename thrust::device_vector<T>::difference_type>(elements));
@@ -57,5 +56,3 @@ struct bounds_bench_data
     return thrust::raw_pointer_cast(result.data());
   }
 };
-
-using bounds_value_types = nvbench::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t>;
