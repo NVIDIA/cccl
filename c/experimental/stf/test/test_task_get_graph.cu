@@ -90,5 +90,5 @@ C2H_TEST("task_get_graph: explicit kernel node in a stackable graph scope", "[st
     REQUIRE(std::fabs(host_data[i] - 3.0 * static_cast<double>(i)) < 1e-10);
   }
 
-  cudaFreeHost(host_data);
+  REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }

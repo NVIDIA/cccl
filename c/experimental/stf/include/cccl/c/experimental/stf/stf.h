@@ -1626,6 +1626,7 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps);
 //! {
 //!   stf_task_handle t = stf_stackable_task_create(sctx);
 //!   stf_stackable_task_add_dep(sctx, t, lA, STF_RW);
+//!   stf_task_enable_capture(t);                          // Required before launching work in a graph scope
 //!   stf_task_start(t);
 //!   /* launch CUDA work on stf_task_get_custream(t) */
 //!   stf_task_end(t);
@@ -2109,6 +2110,11 @@ void stf_stackable_token_destroy(stf_logical_data_handle ld);
 //! stackable variant — \c stf_task_add_dep() will not auto-push data across
 //! scopes), then call \c stf_task_start() / \c stf_task_end() and use
 //! \c stf_task_get_custream() / \c stf_task_get() as usual.
+//!
+//! \note Inside a nested graph scope (\c stf_stackable_push_graph()), call
+//!       \c stf_task_enable_capture() before \c stf_task_start() if you launch
+//!       work through \c stf_task_get_custream(); otherwise use
+//!       \c stf_task_get_graph() for the explicit-graph path.
 //!
 //! \param ctx Stackable context handle
 //! \return Task handle, or NULL on allocation failure (release with
