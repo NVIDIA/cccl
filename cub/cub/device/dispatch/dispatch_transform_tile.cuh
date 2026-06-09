@@ -55,7 +55,7 @@ namespace detail::transform::tile
 {
 
 template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std::size_t... Idx>
-cudaError_t launch_impl(
+[[nodiscard]] cudaError_t launch_impl(
   ::cuda::std::tuple<Ins*...> inputs,
   Out* output,
   int64_t num_items,
@@ -78,7 +78,7 @@ cudaError_t launch_impl(
 struct DeviceTransform
 {
   template <int TileSize = 0, bool MufuHeavy = false, typename Fn, typename Out, typename... Ins>
-  static cudaError_t
+  [[nodiscard]] static cudaError_t
   Transform(::cuda::std::tuple<Ins*...> inputs, Out* output, int64_t num_items, Fn, cudaStream_t stream = 0)
   {
     constexpr int chosen = (TileSize > 0) ? TileSize : pick_tile_size<Out, Ins...>(MufuHeavy);
@@ -87,7 +87,7 @@ struct DeviceTransform
 
   // Fill
   template <int TileSize = 0, typename T>
-  static cudaError_t Fill(T* output, int64_t num_items, T value, cudaStream_t stream = 0)
+  [[nodiscard]] static cudaError_t Fill(T* output, int64_t num_items, T value, cudaStream_t stream = 0)
   {
     if (num_items <= 0)
     {
@@ -127,7 +127,7 @@ inline constexpr bool tile_dispatch_eligible_v =
 // and ct::assume_divisible<16>, so violating these at runtime is UB.
 // Returns false to tell the hook to fall back to the standard CUB dispatch.
 template <typename OutIter, typename... InIters, typename OffsetT>
-CUB_RUNTIME_FUNCTION bool
+[[nodiscard]] CUB_RUNTIME_FUNCTION bool
 runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIter output, OffsetT num_items)
 {
   // Pointer alignment is in bytes (for LDG.E.128); the kernel's
@@ -160,7 +160,7 @@ runtime_preconditions_valid(::cuda::std::tuple<InIters...> const& inputs, OutIte
 // mirror of Op with __tile__ operator), NOT the user's Op instance -- the
 // user's scalar functor cannot be invoked on ct::tile arguments.
 template <typename TransformOp, typename OutIter, typename... InIters, typename OffsetT>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch(
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   ::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_items, cudaStream_t stream)
 {
   auto out_ptr = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(output);

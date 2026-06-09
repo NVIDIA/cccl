@@ -34,7 +34,7 @@ namespace detail::transform::tile
 // The caller is responsible for honoring assume_aligned<16>; the dispatch header's
 // runtime_preconditions_valid enforces this before launching either kernel.
 template <int TileSize, typename T, typename N>
-__tile__ auto make_partition_view(T* ptr, N n)
+[[nodiscard]] __tile__ auto make_partition_view(T* ptr, N n)
 {
   namespace ct        = ::cuda::tiles;
   const auto ptr_align = ct::assume_aligned<16>(ptr);
