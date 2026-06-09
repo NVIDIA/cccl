@@ -400,7 +400,7 @@ struct policy_selector_from_hub
       active_policy::LOAD_ALGORITHM,
       active_policy::LOAD_MODIFIER,
       active_policy::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>};
   }
 };
 } // namespace detail::select
