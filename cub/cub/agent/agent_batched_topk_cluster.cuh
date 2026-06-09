@@ -100,25 +100,23 @@ struct alignas(16) cluster_topk_state
 template <typename KeyT, int ChunkBytes, int LoadAlignBytes>
 struct smem_block_tile_layout
 {
+  static constexpr int chunk_bytes      = ChunkBytes; // one chunk == one slot; this is the slot stride
   static constexpr int chunk_items      = ChunkBytes / int{sizeof(KeyT)};
   static constexpr int load_align_items = LoadAlignBytes / int{sizeof(KeyT)};
-  static constexpr int slot_alignment =
-    (::cuda::std::max) (LoadAlignBytes, detail::LoadToSharedBufferAlignBytes<KeyT>());
-  // Each chunk maps to exactly one slot of ChunkBytes: boundary chunks are loaded as an aligned bulk plus a small
-  // hand-rolled edge, so no chunk ever needs the scalar-load guard headroom.
-  static constexpr int slot_stride_bytes  = ::cuda::round_up(ChunkBytes, slot_alignment); // == ChunkBytes normally
-  static constexpr int base_padding_bytes = (alignof(KeyT) > 16) ? slot_alignment : 0;
-  static_assert(chunk_items >= load_align_items, "ChunkBytes must hold at least one load_align unit");
-  // The aligned full-chunk buffer (no guard, since LoadAlignBytes >= bulk_copy_min_align) is exactly its byte count
-  // and must fit one slot.
-  static_assert(detail::LoadToSharedBufferSizeBytes<KeyT, LoadAlignBytes>(chunk_items) <= slot_stride_bytes,
-                "An aligned full chunk must fit one slot");
+  // Base/slot alignment: at least the load alignment, bumped up for over-aligned key types. The slot stride is exactly
+  // one chunk (`ChunkBytes`), so `ChunkBytes` must be a multiple of this for consecutive slots to stay aligned, which
+  // also rejects a key alignment larger than a whole chunk at compile time (it makes no sense).
+  static constexpr int slot_alignment = (::cuda::std::max) (LoadAlignBytes, int{alignof(KeyT)});
+  // Reserve one alignment quantum so the agent can round the dynamic-SMEM base up to `slot_alignment` (>= LoadAlign),
+  // giving every bulk-copy destination the same `load_align` alignment the gmem sources already have.
+  static constexpr int base_padding_bytes = slot_alignment;
+  static_assert(ChunkBytes % slot_alignment == 0, "ChunkBytes must be a multiple of the load and key alignment");
 
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr ::cuda::std::uint32_t
   block_tile_capacity(int dynamic_smem_bytes) noexcept
   {
     const int usable_bytes = (::cuda::std::max) (0, dynamic_smem_bytes - base_padding_bytes);
-    const int slots        = usable_bytes / slot_stride_bytes;
+    const int slots        = usable_bytes / ChunkBytes;
     return static_cast<::cuda::std::uint32_t>(slots * chunk_items);
   }
 
@@ -177,13 +175,11 @@ struct agent_batched_topk_cluster
   static constexpr int chunk_items       = smem_layout_t::chunk_items;
   static constexpr int load_align_items  = smem_layout_t::load_align_items;
   static constexpr int slot_alignment    = smem_layout_t::slot_alignment;
-  static constexpr int slot_stride_bytes = smem_layout_t::slot_stride_bytes;
 
   static_assert(PipelineStages > 0);
   static_assert(ChunkBytes > 0);
   static_assert(LoadAlignBytes > 0);
-  static_assert(ChunkBytes % LoadAlignBytes == 0);
-  static_assert(LoadAlignBytes % int{sizeof(key_t)} == 0);
+  static_assert(ChunkBytes % LoadAlignBytes == 0, "ChunkBytes must be a multiple of LoadAlignBytes");
   // The hybrid load relies on the aligned bulk-copy path being exact (no scalar guard), which requires the load
   // alignment to be at least the bulk-copy minimum alignment.
   static_assert(LoadAlignBytes >= detail::bulk_copy_min_align, "LoadAlignBytes must be >= bulk_copy_min_align");
@@ -193,8 +189,15 @@ struct agent_batched_topk_cluster
   // Resident/streamed chunks are pulled into the block_tile with elected-thread `cp.async.bulk`/TMA copies against
   // raw per-stage mbarriers; see the async bulk-copy pipeline helpers below.
 
+  // The aligned bulk (TMA) path tiles gmem into `load_align`-aligned units and dense-packs them by bytes into smem.
+  // That is only sound when a `load_align` unit is a whole number of keys and a key has no internal padding; otherwise
+  // (e.g. `float3`: 12 bytes, 4-byte aligned) a `load_align` boundary would slice a key or leave bubbles in the
+  // resident range, so such types fall back to plain per-element loads/stores.
+  static constexpr bool key_is_bulk_tileable =
+    int{sizeof(key_t)} == int{alignof(key_t)} && LoadAlignBytes % int{sizeof(key_t)} == 0;
   static constexpr bool use_block_load_to_shared =
-    THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<key_it_t>;
+    THRUST_NS_QUALIFIER::is_trivially_relocatable_v<key_t> && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<key_it_t>
+    && key_is_bulk_tileable;
 
   // ---------------------------------------------------------------------------
   // Block-scan used by the leader block to prefix-sum its merged histogram
@@ -232,12 +235,12 @@ struct agent_batched_topk_cluster
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char> block_tile_buffer() const
   {
     const int slots = static_cast<int>(block_tile_capacity / chunk_items);
-    return {key_slots, static_cast<::cuda::std::size_t>(slots * slot_stride_bytes)};
+    return {key_slots, static_cast<::cuda::std::size_t>(slots * ChunkBytes)};
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE key_t* slot_keys_unpadded(int slot) const
   {
-    return reinterpret_cast<key_t*>(key_slots + slot * slot_stride_bytes);
+    return reinterpret_cast<key_t*>(key_slots + slot * ChunkBytes);
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<char>
@@ -468,8 +471,9 @@ struct agent_batched_topk_cluster
     const int num_bytes = static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
     if (num_bytes > 0)
     {
-      // The TMA path requires `bulk_copy_min_align` (>= 16); the cursor carries the stronger `load_align_bytes`.
-      _CCCL_ASSERT(::cuda::is_aligned(dst, detail::bulk_copy_min_align),
+      // The TMA path only requires `bulk_copy_min_align` (>= 16), but the aligned base + `load_align`-multiple bulk
+      // packing give every destination the stronger `load_align_bytes` alignment (matching the gmem sources).
+      _CCCL_ASSERT(::cuda::is_aligned(dst, load_align_bytes),
                    "block_tile destination must satisfy the shared-memory bulk-copy alignment");
 #if __cccl_ptx_isa >= 860
       ::cuda::ptx::cp_async_bulk(
@@ -739,7 +743,7 @@ private:
       // The boundary chunks (unaligned head and tail) are kept resident, so every streamed chunk is fully aligned
       // and uses the guard-free aligned (TMA bulk) path.
       _CCCL_ASSERT(agent.is_aligned_chunk(block_keys_base, chunk), "overflow streamer received an unaligned chunk");
-      char* const dst = agent.key_slots + (stream_slot_base + stage) * slot_stride_bytes;
+      char* const dst = agent.key_slots + (stream_slot_base + stage) * ChunkBytes;
       const ::cuda::std::span<const key_t> src{
         block_keys_base + chunk.offset, static_cast<::cuda::std::size_t>(chunk.count)};
       agent.issue_bulk_copy(stage, dst, src);
@@ -751,7 +755,7 @@ private:
     // spillable `pending[]` array (see `bulk_span`).
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<key_t> stage_span(int stage, offset_t o) const
     {
-      char* const dst  = agent.key_slots + (stream_slot_base + stage) * slot_stride_bytes;
+      char* const dst  = agent.key_slots + (stream_slot_base + stage) * ChunkBytes;
       const auto chunk = agent.get_chunk(chunk_index_of(o), segment_size, head_items);
       return agent.bulk_span({static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(dst)), chunk.count});
     }
@@ -1006,16 +1010,18 @@ private:
           };
 
           // First resident slot's unaligned front edge (the head prefix on rank 0). Reserve an aligned-up gap in
-          // front of its bulk so the bulk stays 16-aligned and the edge sits contiguously right before it.
+          // front of its bulk so the bulk stays `load_align`-aligned and the edge sits contiguously right before it.
           const auto first_chunk = get_chunk(
             static_cast<offset_t>(cluster_rank) + resident_local(offset_t{0}) * static_cast<offset_t>(cluster_size),
             segment_size_u32,
             head_items);
-          const auto first_split  = split_chunk(block_keys_base, first_chunk);
-          const int front_edge    = static_cast<int>(first_split.prefix);
-          const int sba           = detail::LoadToSharedBufferAlignBytes<key_t>();
-          const int front_bytes   = front_edge * int{sizeof(key_t)};
-          const int head_bulk_off = ::cuda::round_up(front_bytes, sba);
+          const auto first_split = split_chunk(block_keys_base, first_chunk);
+          const int front_edge   = static_cast<int>(first_split.prefix);
+          const int front_bytes  = front_edge * int{sizeof(key_t)};
+          // Round the first bulk up to `load_align` (not just BlockLoadToShared's 16B): with a `load_align`-aligned
+          // base and `load_align`-multiple bulk sizes, every densely packed resident bulk lands on a `load_align`
+          // boundary.
+          const int head_bulk_off = ::cuda::round_up(front_bytes, load_align_bytes);
           // Write cursor as a byte offset from `key_slots`; the destination is always `key_slots + offset` (rooted at
           // the extern-shared base) so it keeps shared address-space provenance.
           const int resident_begin_off = head_bulk_off - front_bytes;

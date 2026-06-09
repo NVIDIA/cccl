@@ -136,9 +136,8 @@ __launch_bounds__(ThreadsPerBlock, MinBlocksPerSm) _CCCL_KERNEL_ATTRIBUTES void 
   __shared__ typename agent_t::TempStorage temp_storage;
   extern __shared__ char topk_cluster_smem[];
   char* key_slots = topk_cluster_smem;
-  // Without manual realignment (`alignof(key_t) <= 16`), `slot_alignment` is a stride quantum; the base is only
-  // required to satisfy BlockLoadToShared's 16-byte shared-memory destination alignment.
-  if constexpr (alignof(typename agent_t::key_t) > 16)
+  // Align the base up to `slot_alignment` (>= load_align) so every bulk-copy destination gets the same `load_align`
+  // alignment the gmem sources have (peak TMA throughput on Hopper). The layout reserves `base_padding_bytes` for this.
   {
     ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(key_slots);
     smem32 = ::cuda::round_up(smem32, static_cast<::cuda::std::uint32_t>(agent_t::slot_alignment));
@@ -202,9 +201,8 @@ __launch_bounds__(ThreadsPerBlock) __cluster_dims__(max_portable_cluster_blocks,
   __shared__ typename agent_t::TempStorage temp_storage;
   extern __shared__ char topk_cluster_smem[];
   char* key_slots = topk_cluster_smem;
-  // Without manual realignment (`alignof(key_t) <= 16`), `slot_alignment` is a stride quantum; the base is only
-  // required to satisfy BlockLoadToShared's 16-byte shared-memory destination alignment.
-  if constexpr (alignof(typename agent_t::key_t) > 16)
+  // Align the base up to `slot_alignment` (>= load_align) so every bulk-copy destination gets the same `load_align`
+  // alignment the gmem sources have (peak TMA throughput on Hopper). The layout reserves `base_padding_bytes` for this.
   {
     ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(key_slots);
     smem32 = ::cuda::round_up(smem32, static_cast<::cuda::std::uint32_t>(agent_t::slot_alignment));
@@ -598,7 +596,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         const auto required_slots =
           ::cuda::ceil_div(required_block_tile_capacity, static_cast<::cuda::std::uint64_t>(layout_t::chunk_items));
         selected_config.dynamic_smem_bytes =
-          layout_t::base_padding_bytes + static_cast<int>(required_slots) * layout_t::slot_stride_bytes;
+          layout_t::base_padding_bytes + static_cast<int>(required_slots) * layout_t::chunk_bytes;
         selected_config.block_tile_capacity = layout_t::block_tile_capacity(selected_config.dynamic_smem_bytes);
       }
 
