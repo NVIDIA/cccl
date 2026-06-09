@@ -115,9 +115,10 @@ struct DevicePartition
     [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
     {
       // the user-provided policy selector returns a PartitionPolicy, the default one a SelectPolicy
+      using policy_t = ::cuda::std::remove_cvref_t<decltype(PolicySelector{}(cc))>;
+      static_assert(
+        ::cuda::std::is_same_v<policy_t, PartitionPolicy> || ::cuda::std::is_same_v<policy_t, SelectPolicy>);
       const auto policy = PolicySelector{}(cc);
-      static_assert(::cuda::std::is_same_v<decltype(policy), PartitionPolicy>
-                    || ::cuda::std::is_same_v<decltype(policy), SelectPolicy>);
       return SelectPolicy{
         policy.threads_per_block,
         policy.items_per_thread,
