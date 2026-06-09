@@ -776,6 +776,9 @@ private:
         // ping-pongs) is exactly the first `p_eff` chunks of this direction.
         if (!primed)
         {
+          // Wait for all threads to leave the resident load's final wait before re-arming its shared mbarriers; else
+          // the phase advances twice and a lagging thread misses the flip and spins forever.
+          __syncthreads();
           for (int i = 0; i < p_eff; ++i)
           {
             const offset_t o = forward ? static_cast<offset_t>(i) : (m - 1 - static_cast<offset_t>(i));
@@ -1044,6 +1047,9 @@ private:
             if (next_p < my_resident_chunks)
             {
               const auto src = bulk_src(next_p);
+              // Phase safety, not data safety (the target offset is fresh): re-arming this stage before all threads
+              // leave the wait above would advance the phase twice, stranding a lagging waiter forever.
+              __syncthreads();
               issue_bulk_copy(stage, key_slots + next_off, src);
               next_off += static_cast<int>(::cuda::std::size(src)) * int{sizeof(key_t)};
             }
