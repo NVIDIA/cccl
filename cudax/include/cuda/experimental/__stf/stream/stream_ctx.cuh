@@ -89,7 +89,7 @@ public:
     if (!memory_node.allocation_is_stream_ordered())
     {
       // Blocking deallocation - synchronize stream first, then free
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
+      cuda_try<cudaStreamSynchronize>(dstream.stream);
       memory_node.deallocate(ptr, sz, dstream.stream);
       return;
     }
@@ -504,7 +504,7 @@ public:
 
     if (state.blocking_finalize)
     {
-      cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
+      cuda_try<cudaStreamSynchronize>(state.submitted_stream);
     }
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
@@ -522,8 +522,23 @@ public:
     _CCCL_ASSERT(!state.submitted_stream, "");
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
 
-    cudaEvent_t startEvent = nullptr;
-    cudaEvent_t stopEvent  = nullptr;
+    cudaEvent_t startEvent   = nullptr;
+    cudaEvent_t stopEvent    = nullptr;
+    bool timing_events_owned = false;
+    SCOPE(fail)
+    {
+      if (timing_events_owned)
+      {
+        if (startEvent)
+        {
+          cuda_safe_call(cudaEventDestroy(startEvent));
+        }
+        if (stopEvent)
+        {
+          cuda_safe_call(cudaEventDestroy(stopEvent));
+        }
+      }
+    };
 
     ::std::unordered_map<int, reserved::reorderer_payload> payloads;
     if (reordering_tasks())
@@ -544,11 +559,13 @@ public:
         }
       }
 
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaStreamSynchronize(fence()));
-      cuda_safe_call(cudaEventCreate(&startEvent));
-      cuda_safe_call(cudaEventCreate(&stopEvent));
-      cuda_safe_call(cudaEventRecord(startEvent, fence()));
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaStreamSynchronize>(fence());
+      // cudaEventCreate is an overload set; use cudaEventCreateWithFlags instead.
+      startEvent          = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      stopEvent           = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      timing_events_owned = true;
+      cuda_try<cudaEventRecord>(startEvent, fence());
     }
 
     for (int id : state.deferred_tasks)
@@ -559,10 +576,11 @@ public:
 
     if (reordering_tasks())
     {
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaEventRecord(stopEvent, fence()));
-      cuda_safe_call(cudaEventSynchronize(stopEvent));
-      cuda_safe_call(cudaEventElapsedTime(&state.submission_time, startEvent, stopEvent));
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaEventRecord>(stopEvent, fence());
+      cuda_try<cudaEventSynchronize>(stopEvent);
+      state.submission_time = cuda_try<cudaEventElapsedTime>(startEvent, stopEvent);
+      timing_events_owned   = false;
     }
 
     // Write-back data and erase automatically created data instances
@@ -600,8 +618,8 @@ public:
   {
     typename owning_container_of<T>::type out;
 
-    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
+    task(exec_place::host(), ldata.read())->set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+      cuda_try<cudaStreamSynchronize>(stream);
       out = owning_container_of<T>::get_value(data);
     };
 
@@ -787,7 +805,11 @@ UNITTEST("logical_data_untyped moveable")
     {
       size_t s       = sizeof(double);
       double* h_addr = (double*) malloc(s);
-      cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
+      SCOPE(fail)
+      {
+        free(h_addr);
+      };
+      cuda_try<cudaHostRegister>(h_addr, s, cudaHostRegisterPortable);
       handle = ctx.logical_data(h_addr, 1);
     }
 
@@ -922,7 +944,7 @@ UNITTEST("non contiguous slice")
   int X[32 * 32];
 
   // Pinning non contiguous memory is extremely expensive, so we do it now
-  cuda_safe_call(cudaHostRegister(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable));
+  cuda_try<cudaHostRegister>(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable);
 
   for (size_t i = 0; i < 32 * 32; i++)
   {
@@ -954,7 +976,7 @@ UNITTEST("non contiguous slice")
     }
   }
 
-  cuda_safe_call(cudaHostUnregister(&X[0]));
+  cuda_try<cudaHostUnregister>(&X[0]);
 };
 
 UNITTEST("logical data from a shape of 2D slice")
