@@ -33,8 +33,8 @@ struct small_buffer_policy
   int block_level_tile_size;
   int warp_level_threshold;
   int block_level_threshold;
-  delay_constructor_policy buff_delay_constructor;
-  delay_constructor_policy block_delay_constructor;
+  LookbackDelayPolicy buff_delay_constructor;
+  LookbackDelayPolicy block_delay_constructor;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const small_buffer_policy& lhs, const small_buffer_policy& rhs)
