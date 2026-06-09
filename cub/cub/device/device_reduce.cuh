@@ -85,6 +85,25 @@ inline constexpr bool is_non_deterministic_v =
 //!
 //! @linear_performance{reduction, reduce-by-key, and run-length encode}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! ``DeviceReduce::ReduceByKey`` can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ReduceByKeyPolicy, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin reduce-by-key-policy-selector
+//!      :end-before: example-end reduce-by-key-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_by_key_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin reduce-by-key-tuning
+//!      :end-before: example-end reduce-by-key-tuning
+//!
 //! @endrst
 struct DeviceReduce
 {
@@ -2155,25 +2174,6 @@ public:
   //!     :dedent:
   //!     :start-after: example-begin reduce-by-key-env
   //!     :end-before: example-end reduce-by-key-env
-  //!
-  //! Tuning
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  //!
-  //! ``DeviceReduce::ReduceByKey`` can be tuned by passing a custom
-  //! :ref:`policy selector <cub-policy-selectors>` that returns a @ref ReduceByKeyPolicy, as shown in the
-  //! example below:
-  //!
-  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_by_key_env_api.cu
-  //!      :language: c++
-  //!      :dedent:
-  //!      :start-after: example-begin reduce-by-key-policy-selector
-  //!      :end-before: example-end reduce-by-key-policy-selector
-  //!
-  //!  .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_by_key_env_api.cu
-  //!      :language: c++
-  //!      :dedent:
-  //!      :start-after: example-begin reduce-by-key-tuning
-  //!      :end-before: example-end reduce-by-key-tuning
   //!
   //! @endrst
   //!

@@ -59,6 +59,7 @@ struct agent_reduce_by_key_policy
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
