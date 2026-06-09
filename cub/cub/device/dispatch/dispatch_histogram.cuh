@@ -778,7 +778,7 @@ public:
                       ({
                         histogram_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
-                        MaxPolicy::Invoke(cc.get() * 10, dispatch);
+                        _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
                       ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));

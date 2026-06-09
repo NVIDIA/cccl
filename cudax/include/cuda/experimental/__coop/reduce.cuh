@@ -196,9 +196,51 @@ __reduce_impl(this_grid<_Hierarchy> __group, _Tp (&__thread_data)[_Np], _RedFn _
   return ::cuda::std::nullopt;
 }
 
+_CCCL_TEMPLATE(class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
+_CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
+                 _CCCL_AND ::cuda::std::is_same_v<block_level, typename _Group::level_type>)
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
+__reduce_impl(_Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+{
+  constexpr auto __nwarps_in_group = warp.static_count(__group);
+  static_assert(__nwarps_in_group != ::cuda::std::dynamic_extent,
+                "cuda::coop::reduce requires the group to have statically known size");
+
+  using _WarpReduce = ::cub::WarpReduce<_Tp>;
+  union _Scratch
+  {
+    typename _WarpReduce::TempStorage __warp_reduce_[__nwarps_in_group];
+    _Tp __partials_[__nwarps_in_group];
+  };
+  __shared__ _Scratch __scratch;
+
+  const auto __partial = _WarpReduce{__scratch.__warp_reduce_[warp.rank(__group)]}.Reduce(__thread_data, __red_fn);
+  __group.sync_aligned();
+
+  this_warp __warp{__group.hierarchy()};
+  if (gpu_thread.is_root_rank(__warp))
+  {
+    __scratch.__partials_[warp.rank(__group)] = __partial;
+  }
+  __group.sync_aligned();
+
+  if (warp.is_root_rank(__group))
+  {
+    const auto __value  = (gpu_thread.rank(__warp) < __nwarps_in_group)
+                          ? __scratch.__partials_[gpu_thread.rank(__warp)]
+                          : ::cuda::identity_element<_RedFn, _Tp>();
+    const auto __result = _WarpReduce{__scratch.__warp_reduce_[0]}.Reduce(__value, __red_fn);
+    if (gpu_thread.is_root_rank(__warp))
+    {
+      return ::cuda::std::optional{__result};
+    }
+  }
+  return ::cuda::std::nullopt;
+}
+
 template <class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
-reduce(_Group __group, _Tp (&__thread_data)[_Np], _RedFn&& __red_fn)
+reduce(_Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
   static_assert(gpu_thread.static_count(__group) != ::cuda::std::dynamic_extent,
                 "cuda::coop::reduce requires the group to have statically known size");
